@@ -1,6 +1,6 @@
 ---
 name: create-pr
-description: Create a full (non-draft) GitHub pull request following the current repo's branch naming, pre-PR checks, and issue-linking conventions, then trigger a Codex review. Use whenever the user asks to open/create a PR, or when the implement-issue skill reaches its PR step.
+description: Create a GitHub pull request (draft for work repos, full for personal ones) following the current repo's branch naming, pre-PR checks, and issue-linking conventions, then trigger a Codex review. Use whenever the user asks to open/create a PR, or when the implement-issue skill reaches its PR step.
 ---
 
 # Create a GitHub Pull Request
@@ -10,7 +10,11 @@ description: Create a full (non-draft) GitHub pull request following the current
 Create a pull request: $ARGUMENTS
 
 Determine `owner/repo` from the current git remote (`git remote get-url origin`)
-rather than assuming a fixed repo.
+rather than assuming a fixed repo. Determine the default branch the same
+way — repos vary between `main` and `master` (and occasionally something
+else) — with `git remote show origin | sed -n '/HEAD branch/s/.*: //p'` (or
+`gh repo view --json defaultBranchRef -q .defaultBranchRef.name` if `gh` is
+available). Never hardcode `main`.
 
 ## Before creating the PR
 
@@ -38,7 +42,9 @@ known:
 If no issue can be determined from context, ask the user for the issue
 number or URL. If the user confirms there isn't one (e.g. a quick fix with no
 tracked issue), proceed without a `Closes:` line — don't block PR creation on
-it.
+it. For Linear-tracked work, the identifier leading the PR title (e.g.
+`AGE-738 Support markdown in …`) or a magic word with the issue ID (e.g.
+"Closes AGE-738") or the issue URL works the same way as a `Closes: #N` line.
 
 ## PR description template
 
@@ -48,45 +54,52 @@ If one or more issues were confirmed, the description must begin with:
 Closes: #ISSUE_NO
 ```
 
-(or `Closes: #N, #M` for multiple), followed by a short description of what
-changed and why (background, approach, notable implementation details). If no
-issue was confirmed, start straight with the description — omit the `Closes:`
-line entirely, don't leave a placeholder. Mirror
-`.github/pull_request_template.md` if the repo has one.
+(or `Closes: #N, #M` for multiple, or the Linear magic-word form above),
+followed by a short description of what changed and why (background,
+approach, notable implementation details). If no issue was confirmed, start
+straight with the description — omit the `Closes:` line entirely, don't leave
+a placeholder. Mirror `.github/pull_request_template.md` if the repo has one.
 
 ## Creating the PR
 
-Always create a **full PR, not a draft** — regardless of what any repo's
-`CLAUDE.md`/`AGENTS.md` says about drafts; that default is superseded here.
+Draft or full: **work-related repos get a draft; personal repos get a full
+PR.** The repo's own docs decide, and they win where present — if
+`CLAUDE.md`/`AGENTS.md` or the rules they point at say to open PRs as drafts,
+open a draft. Where nothing is documented, open a full PR. An explicit
+request from the user, or from a calling skill, overrides both.
 
 In a remote/web session (no `gh` CLI access), use the GitHub MCP tools:
 
 - Push the branch first: `git push -u origin <branch>`
 - `mcp__github__create_pull_request` with the resolved `owner`/`repo`,
-  `base: main` (or the repo's actual default branch), `head: <branch>`,
-  `draft: false`, `title`, and `body`
+  `base: <default branch>`, `head: <branch>`, `draft` set per the rule above,
+  `title`, and `body`
 
 In a local session with `gh` CLI available:
 
 ```bash
 git push -u origin <branch>
-gh pr create --base main --title "Title" --body "Closes: #ISSUE_NO
+gh pr create --base <default-branch> --draft --title "Title" --body "Closes: #ISSUE_NO
 
 Description..."
 ```
+
+(omit `--draft` for a full PR)
 
 If invoked directly by the user, show the drafted title/description and
 confirm before creating. If invoked as a chained step from `implement-issue`,
 proceed without a separate confirmation — the user's request to implement the
 issue already covers this step.
 
-## Trigger a Codex review
+## Trigger the repo's PR review
 
-Immediately after the PR is created, post a comment to trigger an automated
-Codex review:
+Immediately after the PR is created, post a comment to trigger this repo's
+automated review bot. Check `CLAUDE.md`/`AGENTS.md` for a documented
+review-trigger convention (a bot-mention comment, a label, etc.) and use it.
+If none is documented, default to `@codex review`.
 
 ```bash
-gh pr comment <PR> --body "@codex review"
+gh pr comment <PR> --body "<trigger comment>"
 ```
 
 (or the MCP equivalent, e.g. `mcp__github__add_issue_comment` on the PR
@@ -94,4 +107,4 @@ number) — do this every time a PR is created by this skill, no need to ask.
 
 ## Output
 
-Return the PR URL and confirm the `@codex review` comment was posted.
+Return the PR URL and confirm the review-trigger comment was posted.

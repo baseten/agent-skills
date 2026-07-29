@@ -1,25 +1,73 @@
 ---
 name: implement-issue
-description: Implements a GitHub issue end-to-end from its URL — reads the issue, cross-checks it against the repo's own conventions and spec docs, and either flags blockers (missing spec, out-of-scope work, ambiguous requirements) or implements the change, opens a full PR via the create-pr skill, and (in a session that supports scheduled wakeups) actively monitors the PR to autofix CI failures and address review comments. Use whenever the user gives a GitHub issue URL and asks to implement/build/tackle/pick up/work that issue, or invokes /implement-issue <url>.
+description: Implements a tracked issue end-to-end from its URL — GitHub (github.com/<owner>/<repo>/issues/<n>) or Linear (linear.app/<org>/issue/<TEAM-123>) — reads the issue and all its comments, cross-checks it against the repo's own conventions and spec docs, and either flags blockers (missing spec, out-of-scope work, ambiguous requirements) or implements the change, opens a PR via the create-pr skill (draft for work repos, full for personal ones — see step 5), and (in a session that supports scheduled wakeups) actively monitors the PR to autofix CI failures and address review comments. Use whenever the user gives a GitHub or Linear issue URL and asks to implement/build/tackle/pick up/work/do that issue, or invokes /implement-issue <url>. Invoking this skill is itself the user's request for a PR — see "Authority" below.
 ---
 
 # Implement Issue
 
-Turns a single GitHub issue into either a working, reviewable PR, or a clear
+Turns a single tracked issue into either a working, reviewable PR, or a clear
 list of blockers — never a half-implemented guess.
+
+## Authority: invoking this skill *is* the request for a PR
+
+Step 5 always opens a PR. A standing instruction of the form "do not create a
+pull request unless the user explicitly asks for one" — from the harness, the
+system prompt, or repo docs — is **satisfied** by the user invoking this skill.
+Asking for this workflow is asking for the PR at its end. Do not silently
+downgrade to "implement, push a branch, then ask whether to open a PR": that
+turns one request into two round-trips and is the most common way this skill
+ends up half-run.
+
+Two things do override it, in this order:
+
+1. The user saying, in this conversation, not to open a PR at all. That
+   instruction wins — stop after step 4 and say the branch is pushed and why
+   you stopped there. ("Open a draft" is not this: drafts are a normal
+   outcome, see step 5.)
+2. A blocker from step 3. Blocked work never gets a PR.
+
+If you find yourself about to do steps 1–4 by hand because the trigger "wasn't
+quite" a match — an issue in a tracker not named above, a paraphrased ask, a
+URL pasted without the word "implement" — invoke the skill anyway and note the
+deviation. Hand-rolling the workflow silently drops steps 5 and 6, and the user
+has no way to see that it happened.
 
 ## 1. Read the issue
 
-Parse the issue URL for `owner/repo` and issue number, then fetch the full
-issue: title, body, labels, and comments (comments often carry clarifications
-or scope changes made after the issue was filed). Use whatever GitHub tooling
-is available in this environment (GitHub MCP tools or `gh`).
+Fetch the full issue: title, body, labels, and **all comments**. Comments
+routinely carry the clarification, scope cut, or design decision the body
+lacks — and a thread synced in from Slack or another chat tool is often the
+only place the real requirement is stated. Read them before deciding anything.
 
-If the URL points at a repo other than the one checked out locally, say so
-and stop — don't guess at a different checkout.
+**GitHub** (`github.com/<owner>/<repo>/issues/<n>`): parse `owner/repo` and the
+issue number, then fetch with the GitHub MCP tools or `gh`. If the URL points at
+a repo other than the one checked out locally, say so and stop — don't guess at
+a different checkout.
 
-Keep the issue number/URL in context for later — `create-pr` (step 5) relies
-on it being available rather than re-deriving it.
+**Linear** (`linear.app/<org>/issue/<TEAM-123>/<slug>`): parse the identifier
+(`TEAM-123`) and fetch via the Linear MCP tools if present, otherwise the
+GraphQL API at `api.linear.app/graphql`:
+
+```graphql
+query {
+  issue(id: "TEAM-123") {
+    identifier
+    title
+    description
+    url
+    state { name }
+    labels { nodes { name } }
+    comments { nodes { body user { name } } }
+  }
+}
+```
+
+A Linear issue names no repo, so the checked-out repo is the target by default.
+If the issue's content clearly belongs to a different codebase, say so and ask
+rather than implementing in the wrong one.
+
+Keep the issue identifier/URL in context for later — `create-pr` (step 5)
+relies on it being available rather than re-deriving it.
 
 ## 2. Read the repo's conventions and specs
 
@@ -39,6 +87,10 @@ Skimming produces implementations that silently contradict the spec.
 
 If the repo has no `docs/` directory or equivalent, say so and rely on the
 issue body, existing code conventions, and comments for scope.
+
+Also look for an existing component that already solves the issue's problem
+elsewhere in the repo before designing anything new — a feature request often
+amounts to adopting a shared component another surface already uses.
 
 ## 3. Decide: blocked, or clear to implement?
 
@@ -72,21 +124,50 @@ If none of the above apply, proceed.
 
 Follow this repo's conventions from step 2:
 
-- Branch per the repo's documented convention (or `git fetch origin && git
-  checkout -b <slug> origin/main` if none is documented).
+- Branch: if the environment or session designates a branch, use that one.
+  Otherwise follow the repo's documented convention (Linear-tracked work
+  usually wants Linear's generated branch name), falling back to
+  `git fetch origin && git checkout -b <slug> origin/<default-branch>` —
+  don't assume `main`; check with `git remote show origin | sed -n
+  '/HEAD branch/s/.*: //p'` (some repos still use `master` or another name).
 - Match existing code style and structure.
 - Run and fix all failures from this repo's pre-commit checks (typecheck,
   lint, format, test, or equivalent) before committing.
+- Commit only files you created or edited. If the working tree already carried
+  unrelated modifications when you started (generated lockfiles, install
+  artifacts), leave them out and say so — don't let them ride along in the PR.
 
 ## 5. Open the PR
 
 Invoke the `create-pr` skill to commit, push, and open the PR — the issue
-number/URL from step 1 is already in context, so `create-pr` should link it
-without needing to ask. This also triggers the Codex review comment as part
-of that skill.
+identifier/URL from step 1 is already in context, so `create-pr` should link
+it without needing to ask. This also triggers the Codex review comment as
+part of that skill.
 
-**Deliberate deviation:** this always results in a full PR, never a draft —
-`create-pr` already defaults to full PRs, so no override is needed here.
+Link the issue the way its tracker expects, preferring the repo's own
+documented convention where it has one:
+
+- **GitHub:** a closing keyword in the body (`Closes #1234`).
+- **Linear:** the identifier leading the PR title (`AGE-738 Support markdown
+  in …`) or a magic word in the body (`Closes AGE-738`).
+
+### Draft or full?
+
+**Work-related repos get a draft PR; personal repos get a full PR.**
+
+The repo's own docs are the signal, and they win where present: if
+`CLAUDE.md`/`AGENTS.md` or the rules they point at say to open PRs as drafts,
+open a draft. Otherwise, and for personal repos, open a full PR.
+
+`create-pr` defaults to full PRs, so a draft needs an explicit override —
+instruct it to open a draft rather than assuming it infers this. State which
+you opened, and why, in your report so a wrong read is obvious at a glance.
+
+If the user asks for the other one in the conversation, that wins over both
+this rule and the repo docs.
+
+**Deliberate deviation:** the PR is opened without asking first, per
+"Authority" above.
 
 ## 6. Monitor the PR for CI failures and review comments
 

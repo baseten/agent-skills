@@ -35,9 +35,9 @@ rm -rf /tmp/agent-skills
 
 ## Skills
 
-- `create-pr` — full (non-draft) PR creation with issue linking and an
-  automatic `@codex review` trigger.
+- `create-pr` — PR creation (draft for work repos, full for personal ones)
+  with GitHub/Linear issue linking and an automatic `@codex review` trigger.
 - `resolve-pr-comment` — apply a fix, push, reply, resolve the thread.
-- `implement-issue` — end-to-end GitHub issue implementation, chains into
-  `create-pr`, and (where scheduled wakeups are supported) monitors the PR
-  for CI failures and review comments.
+- `implement-issue` — end-to-end GitHub or Linear issue implementation,
+  chains into `create-pr`, and (where scheduled wakeups are supported)
+  monitors the PR for CI failures and review comments.
