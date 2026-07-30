@@ -145,11 +145,16 @@ it without needing to ask. This also triggers the Codex review comment as
 part of that skill.
 
 Link the issue the way its tracker expects, preferring the repo's own
-documented convention where it has one:
+documented convention where it has one. Always link with the full issue URL
+in the `Closes:` line, never a bare number or identifier — a bare Linear
+identifier (`AGE-738`) renders as plain, unclickable text, and a bare
+`#1234` only resolves correctly inside the exact repo it's typed in:
 
-- **GitHub:** a closing keyword in the body (`Closes #1234`).
-- **Linear:** the identifier leading the PR title (`AGE-738 Support markdown
-  in …`) or a magic word in the body (`Closes AGE-738`).
+- **GitHub:** `Closes: https://github.com/<owner>/<repo>/issues/1234`.
+- **Linear:** `Closes: https://linear.app/<org>/issue/AGE-738/<slug>`. The
+  identifier leading the PR title (`AGE-738 Support markdown in …`) is a
+  separate convention Linear also recognizes — keep it if the repo uses it,
+  but it doesn't substitute for the linked `Closes:` line.
 
 ### Draft or full?
 
@@ -183,8 +188,11 @@ Where supported:
    - CI status (`gh pr checks <PR>` or MCP equivalent). If a check failed,
      investigate the failure and push a fix directly (small, targeted commit
      addressing the failure — same discipline as step 4).
-   - New review comments/threads since the last check. For each, invoke the
-     `resolve-pr-comment` skill to address it.
+   - New review comments/threads since the last check. Always invoke the
+     `resolve-pr-comment` skill for each one — never hand-roll the
+     fix/push/reply/resolve flow yourself. That skill already owns replying
+     to the comment with the commit SHA and resolving the thread; doing it
+     by hand here silently drops those steps.
 3. Keep rescheduling wakeups until the PR is merged, closed, or the user says
    to stop monitoring it. Stop immediately if asked.
 4. If a CI failure or comment requires a judgment call you're not confident

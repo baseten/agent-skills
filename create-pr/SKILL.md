@@ -31,31 +31,41 @@ invent a convention.
 
 ## Linking the issue
 
-Try to determine the issue number(s) this PR closes **from the conversation
-context only** — never guess from the branch name. This is usually already
-known:
+Try to determine the issue this PR closes **from the conversation context
+only** — never guess from the branch name. This is usually already known:
 
 - The user named an issue earlier in the conversation.
 - This skill was invoked as the final step of `implement-issue`, which already
-  has the issue URL/number in context.
+  has the issue URL in context.
 
-If no issue can be determined from context, ask the user for the issue
-number or URL. If the user confirms there isn't one (e.g. a quick fix with no
-tracked issue), proceed without a `Closes:` line — don't block PR creation on
-it. For Linear-tracked work, the identifier leading the PR title (e.g.
-`AGE-738 Support markdown in …`) or a magic word with the issue ID (e.g.
-"Closes AGE-738") or the issue URL works the same way as a `Closes: #N` line.
+The `Closes:` line below always needs the full issue URL, never a bare
+number or identifier — a bare Linear identifier (`AGE-738`) renders as
+plain, unclickable text, and a bare `#1234` only resolves correctly inside
+the exact repo it's typed in. If you only have a number or identifier in
+hand, resolve it to a URL first
+(`https://github.com/<owner>/<repo>/issues/<n>` for GitHub; ask the user or
+look it up via the Linear MCP tools for Linear) before writing the `Closes:`
+line.
+
+If no issue can be determined from context, ask the user for the issue URL.
+If the user confirms there isn't one (e.g. a quick fix with no tracked
+issue), proceed without a `Closes:` line — don't block PR creation on it.
+For Linear-tracked work, the identifier leading the PR title (e.g.
+`AGE-738 Support markdown in …`) is a separate convention Linear recognizes
+on its own — keep using it if the repo does, but it doesn't substitute for a
+linked `Closes:` line in the body.
 
 ## PR description template
 
-If one or more issues were confirmed, the description must begin with:
+If one or more issues were confirmed, the description must begin with one
+`Closes:` line per issue, each the full URL:
 
 ```
-Closes: #ISSUE_NO
+Closes: <issue URL>
 ```
 
-(or `Closes: #N, #M` for multiple, or the Linear magic-word form above),
-followed by a short description of what changed and why (background,
+Never a bare `#N` or bare identifier — see "Linking the issue" above for why.
+Follow with a short description of what changed and why (background,
 approach, notable implementation details). If no issue was confirmed, start
 straight with the description — omit the `Closes:` line entirely, don't leave
 a placeholder. Mirror `.github/pull_request_template.md` if the repo has one.
@@ -79,7 +89,7 @@ In a local session with `gh` CLI available:
 
 ```bash
 git push -u origin <branch>
-gh pr create --base <default-branch> --draft --title "Title" --body "Closes: #ISSUE_NO
+gh pr create --base <default-branch> --draft --title "Title" --body "Closes: <issue URL>
 
 Description..."
 ```
@@ -104,6 +114,14 @@ gh pr comment <PR> --body "<trigger comment>"
 
 (or the MCP equivalent, e.g. `mcp__github__add_issue_comment` on the PR
 number) — do this every time a PR is created by this skill, no need to ask.
+
+## Addressing review comments
+
+This skill's job ends at PR creation. If review comments come in later —
+whether the user asks you to address one now or you're monitoring the PR as
+part of `implement-issue` step 6 — invoke the `resolve-pr-comment` skill for
+each one rather than fixing it ad hoc. Don't hand-roll the fix/push/reply/
+resolve flow here.
 
 ## Output
 
