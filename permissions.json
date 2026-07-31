@@ -5,7 +5,8 @@
     "mcp__linear__get_project",
     "mcp__linear__update_issue",
     "mcp__claude-code-remote__update_trigger",
-    "mcp__claude-code-remote__send_later"
+    "mcp__claude-code-remote__send_later",
+    "mcp__claude-code-remote__subscribe_pr_activity"
   ],
   "deny": []
 }
