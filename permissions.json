@@ -1,0 +1,11 @@
+{
+  "allow": [
+    "mcp__github__list_issues",
+    "mcp__linear__get_issue",
+    "mcp__linear__get_project",
+    "mcp__linear__update_issue",
+    "mcp__claude-code-remote__update_trigger",
+    "mcp__claude-code-remote__send_later"
+  ],
+  "deny": []
+}
