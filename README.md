@@ -47,13 +47,15 @@ monitoring step (and `create-pr`'s issue linking) rely on:
 
 - `mcp__github__list_issues`
 - `mcp__linear__get_issue`, `mcp__linear__get_project`, `mcp__linear__update_issue`
-- `mcp__claude-code-remote__update_trigger`, `mcp__claude-code-remote__send_later`
-  — rescheduling the next PR check-in and messaging the user without
-  blocking on approval each time.
+- `mcp__claude-code-remote__update_trigger`, `mcp__claude-code-remote__send_later`,
+  `mcp__claude-code-remote__subscribe_pr_activity` — rescheduling the next PR
+  check-in, messaging the user, and subscribing to webhook-driven PR activity
+  (comments, CI status, reviews) without blocking on approval each time.
 
-If a skill starts needing a new tool, add it here rather than approving it
-ad hoc in a running container — that approval doesn't persist to the next
-session.
+This list only covers tools observed so far. If a skill starts needing a new
+one — or a container prompts for a new `(Claude Code Remote)`/`(Linear)`/
+`(GitHub)` tool call — add it here rather than approving it ad hoc in a
+running container; that approval doesn't persist to the next session.
 
 ## Skills
 
