@@ -27,7 +27,11 @@ if [ ! -f "$PERMISSIONS_FILE" ]; then
   echo "No permissions.json found, skipping"
 elif [ -f "$SETTINGS_FILE" ] && command -v jq >/dev/null 2>&1; then
   echo "Merging permissions into existing $SETTINGS_FILE..."
-  jq --slurpfile perms "$PERMISSIONS_FILE" '.permissions = $perms[0]' "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp"
+  jq --slurpfile perms "$PERMISSIONS_FILE" '
+    .permissions //= {} |
+    .permissions.allow = ((.permissions.allow // []) + $perms[0].allow | unique) |
+    .permissions.deny = ((.permissions.deny // []) + $perms[0].deny | unique)
+  ' "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp"
   mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
 elif [ -f "$SETTINGS_FILE" ]; then
   echo "WARNING: $SETTINGS_FILE already exists and jq is unavailable to merge." >&2
