@@ -20,18 +20,40 @@ done
 
 Cloud sandboxes (Claude Code on the web, cloud environments) don't have
 access to `~/.claude-personal/`. Each cloud environment's setup script clones
-this repo and copies the skills into `~/.claude/skills/` inside the sandbox
-before the session starts — see the environment's setup script config for the 
-exact clone command. But it may look something like:
+this repo and runs `bootstrap.sh` to install the skills and permissions into
+`~/.claude/` before the session starts — see the environment's setup script
+config for the exact invocation, but it looks like:
 
-```
-#!/bin/bash                                                                                                                                                                                                                  
+```bash
+#!/bin/bash
+set -euo pipefail
 
-mkdir -p ~/.claude/skills
 git clone --depth 1 https://github.com/baseten/agent-skills.git /tmp/agent-skills
-cp -r /tmp/agent-skills/* ~/.claude/skills/
+bash /tmp/agent-skills/bootstrap.sh
 rm -rf /tmp/agent-skills
-```  
+```
+
+`bootstrap.sh` copies `create-pr`, `resolve-pr-comment`, and
+`implement-issue` into `~/.claude/skills/`, then merges `permissions.json`
+into `~/.claude/settings.json` (creating the file if it doesn't exist yet,
+merging with `jq` on top of anything already there otherwise) so the
+container doesn't have to prompt mid-session for tool calls these skills
+routinely make.
+
+## Permissions
+
+`permissions.json` pre-approves the MCP tools `implement-issue`'s PR
+monitoring step (and `create-pr`'s issue linking) rely on:
+
+- `mcp__github__list_issues`
+- `mcp__linear__get_issue`, `mcp__linear__get_project`, `mcp__linear__update_issue`
+- `mcp__claude-code-remote__update_trigger`, `mcp__claude-code-remote__send_later`
+  — rescheduling the next PR check-in and messaging the user without
+  blocking on approval each time.
+
+If a skill starts needing a new tool, add it here rather than approving it
+ad hoc in a running container — that approval doesn't persist to the next
+session.
 
 ## Skills
 
