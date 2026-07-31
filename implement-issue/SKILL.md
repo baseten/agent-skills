@@ -141,9 +141,10 @@ Follow this repo's conventions from step 2:
 
 Invoke the `create-pr` skill to commit, push, and open the PR — the issue
 identifier/URL from step 1 is already in context, so `create-pr` should link
-it without needing to ask. This also triggers `create-pr`'s own
-review-trigger comment as part of that skill — that skill decides which bot
-to mention (repo docs win, otherwise its own default), not this one.
+it without needing to ask. This also applies `create-pr`'s own review-trigger
+convention as part of that skill — that skill decides how review gets
+triggered for this repo (a bot-mention comment, a label, or whatever its
+docs say), not this one.
 
 Link the issue the way its tracker expects, preferring the repo's own
 documented convention where it has one. Always link with the full issue URL
