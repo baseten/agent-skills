@@ -1,6 +1,6 @@
 ---
 name: create-pr
-description: Create a GitHub pull request (draft for work repos, full for personal ones) following the current repo's branch naming, pre-PR checks, and issue-linking conventions, then trigger a Codex review. Use whenever the user asks to open/create a PR, or when the implement-issue skill reaches its PR step.
+description: Create a GitHub pull request (draft for work repos, full for personal ones) following the current repo's branch naming, pre-PR checks, and issue-linking conventions, then trigger a PR review. Use whenever the user asks to open/create a PR, or when the implement-issue skill reaches its PR step.
 ---
 
 # Create a GitHub Pull Request
