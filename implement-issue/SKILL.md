@@ -208,10 +208,19 @@ Where supported, prefer event-driven monitoring over pure polling:
    thread.
 4. On a CI failure, investigate and push a fix directly (small, targeted
    commit addressing the failure — same discipline as step 4).
-5. Keep monitoring until the PR is merged, closed, or the user says to stop.
-   Stop immediately if asked, and tear down any subscription/trigger this
-   environment requires explicit teardown for (e.g. `delete_trigger`)
-   rather than leaving it dangling.
+5. Keep monitoring until the PR is merged, closed, the user says to stop, or
+   a time limit is hit — whichever comes first. Cap total monitoring at 8
+   hours from when it started by default, adjustable if the user states a
+   different limit in conversation; a forgotten PR job shouldn't poll
+   indefinitely. Since nothing else carries state between check-ins, stamp
+   the start time into the wakeup/trigger's own prompt (or the subscription
+   setup message) so each check-in can compute elapsed time for itself.
+   Stop immediately if asked. When the cap is hit, stop the same way and
+   tell the user monitoring ended because of the time limit, not because
+   the PR resolved — they can ask you to resume it if it's still open.
+   Either way, tear down any subscription/trigger this environment requires
+   explicit teardown for (e.g. `delete_trigger`) rather than leaving it
+   dangling.
 6. If a CI failure or comment requires a judgment call you're not confident
    about, don't guess — surface it to the user and pause monitoring on that
    specific issue rather than pushing a speculative fix.
