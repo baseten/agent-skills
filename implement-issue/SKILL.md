@@ -179,24 +179,48 @@ this rule and the repo docs.
 ## 6. Monitor the PR for CI failures and review comments
 
 This step only applies in a session that supports scheduling follow-up work
-(e.g. via a wakeup/loop mechanism). If this environment can't schedule
-follow-up turns, skip this step and tell the user the PR is open but won't be
+(e.g. via a wakeup/loop mechanism) or subscribing to PR activity. If neither
+is available, skip this step and tell the user the PR is open but won't be
 auto-monitored — they'll need to ask again later to check on it.
 
-Where supported:
+Where supported, prefer event-driven monitoring over pure polling:
 
-1. Schedule a wakeup (roughly every 10–20 minutes) to check on the PR.
-2. On each wakeup, check:
-   - CI status (`gh pr checks <PR>` or MCP equivalent). If a check failed,
-     investigate the failure and push a fix directly (small, targeted commit
-     addressing the failure — same discipline as step 4).
-   - New review comments/threads since the last check. Always invoke the
-     `resolve-pr-comment` skill for each one — never hand-roll the
-     fix/push/reply/resolve flow yourself. That skill already owns replying
-     to the comment with the commit SHA and resolving the thread; doing it
-     by hand here silently drops those steps.
-3. Keep rescheduling wakeups until the PR is merged, closed, or the user says
-   to stop monitoring it. Stop immediately if asked.
-4. If a CI failure or comment requires a judgment call you're not confident
+1. If an event-driven subscription tool is available (e.g. Claude Code
+   Remote's `subscribe_pr_activity`), subscribe to the PR right after
+   opening it. Comments, CI status changes, reviews, and other PR events
+   then arrive on their own — delivered as `<github-webhook-activity>`
+   messages, or this environment's equivalent — instead of requiring an
+   active poll to discover them.
+2. If wakeup scheduling is *also* available in this environment, schedule a
+   periodic wakeup too (roughly every 10–20 minutes), alongside the
+   subscription rather than instead of it — it's the fallback if the
+   subscription drops or misses something, and a natural point to do an
+   explicit CI check (`gh pr checks <PR>` or MCP equivalent) rather than
+   trusting the event feed alone. If wakeup scheduling *isn't* available but
+   the subscription is, rely on the subscription alone — there's nothing to
+   schedule, and that's fine. If no subscription mechanism exists at all,
+   the wakeup is the only monitoring available — poll CI and review threads
+   on every one.
+3. On any new review comment/thread — whether surfaced by the subscription
+   feed or found on a poll — always invoke the `resolve-pr-comment` skill
+   for it. Never hand-roll the fix/push/reply/resolve flow yourself; that
+   skill already owns replying with the commit SHA and resolving the
+   thread.
+4. On a CI failure, investigate and push a fix directly (small, targeted
+   commit addressing the failure — same discipline as step 4).
+5. Keep monitoring until the PR is merged, closed, the user says to stop, or
+   a time limit is hit — whichever comes first. Cap total monitoring at 8
+   hours from when it started by default, adjustable if the user states a
+   different limit in conversation; a forgotten PR job shouldn't poll
+   indefinitely. Since nothing else carries state between check-ins, stamp
+   the start time into the wakeup/trigger's own prompt (or the subscription
+   setup message) so each check-in can compute elapsed time for itself.
+   Stop immediately if asked. When the cap is hit, stop the same way and
+   tell the user monitoring ended because of the time limit, not because
+   the PR resolved — they can ask you to resume it if it's still open.
+   Either way, tear down any subscription/trigger this environment requires
+   explicit teardown for (e.g. `delete_trigger`) rather than leaving it
+   dangling.
+6. If a CI failure or comment requires a judgment call you're not confident
    about, don't guess — surface it to the user and pause monitoring on that
    specific issue rather than pushing a speculative fix.
