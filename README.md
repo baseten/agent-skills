@@ -47,7 +47,7 @@ monitoring step (and `create-pr`'s issue linking) rely on:
 
 - `mcp__github__list_issues`
 - `mcp__linear__get_issue`, `mcp__linear__get_project`, `mcp__linear__update_issue`,
-  `mcp__linear__save_issue`
+  `mcp__linear__save_issue`, `mcp__linear__list_comments`
 - `mcp__Claude_Code_Remote__update_trigger`, `mcp__Claude_Code_Remote__delete_trigger`,
   `mcp__Claude_Code_Remote__send_later`, `mcp__Claude_Code_Remote__subscribe_pr_activity`
   — rescheduling and tearing down the PR check-in loop, messaging the user,
