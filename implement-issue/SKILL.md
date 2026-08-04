@@ -191,11 +191,14 @@ Where supported, prefer event-driven monitoring over pure polling:
    then arrive on their own — delivered as `<github-webhook-activity>`
    messages, or this environment's equivalent — instead of requiring an
    active poll to discover them.
-2. Still schedule a periodic wakeup too (roughly every 10–20 minutes),
-   alongside the subscription rather than instead of it — it's the fallback
-   if the subscription drops or misses something, and a natural point to do
-   an explicit CI check (`gh pr checks <PR>` or MCP equivalent) rather than
-   trusting the event feed alone. If no subscription mechanism exists here,
+2. If wakeup scheduling is *also* available in this environment, schedule a
+   periodic wakeup too (roughly every 10–20 minutes), alongside the
+   subscription rather than instead of it — it's the fallback if the
+   subscription drops or misses something, and a natural point to do an
+   explicit CI check (`gh pr checks <PR>` or MCP equivalent) rather than
+   trusting the event feed alone. If wakeup scheduling *isn't* available but
+   the subscription is, rely on the subscription alone — there's nothing to
+   schedule, and that's fine. If no subscription mechanism exists at all,
    the wakeup is the only monitoring available — poll CI and review threads
    on every one.
 3. On any new review comment/thread — whether surfaced by the subscription
