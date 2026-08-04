@@ -46,11 +46,15 @@ routinely make.
 monitoring step (and `create-pr`'s issue linking) rely on:
 
 - `mcp__github__list_issues`
-- `mcp__linear__get_issue`, `mcp__linear__get_project`, `mcp__linear__update_issue`
-- `mcp__claude-code-remote__update_trigger`, `mcp__claude-code-remote__send_later`,
-  `mcp__claude-code-remote__subscribe_pr_activity` — rescheduling the next PR
-  check-in, messaging the user, and subscribing to webhook-driven PR activity
-  (comments, CI status, reviews) without blocking on approval each time.
+- `mcp__linear__get_issue`, `mcp__linear__get_project`, `mcp__linear__update_issue`,
+  `mcp__linear__save_issue`
+- `mcp__Claude_Code_Remote__update_trigger`, `mcp__Claude_Code_Remote__delete_trigger`,
+  `mcp__Claude_Code_Remote__send_later`, `mcp__Claude_Code_Remote__subscribe_pr_activity`
+  — rescheduling and tearing down the PR check-in loop, messaging the user,
+  and subscribing to webhook-driven PR activity (comments, CI status,
+  reviews) without blocking on approval each time. Note the server name is
+  `Claude_Code_Remote` (not kebab-case) — that's the registered name, confirmed
+  the hard way after a wrong guess.
 
 This list only covers tools observed so far. If a skill starts needing a new
 one — or a container prompts for a new `(Claude Code Remote)`/`(Linear)`/
