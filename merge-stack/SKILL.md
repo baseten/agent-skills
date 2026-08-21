@@ -184,6 +184,12 @@ Rewriting C changes C's head SHA. Any child D based on C must be rebased from **
 ```bash
 git checkout <D_HEAD_BRANCH>
 git reset --hard origin/<D_HEAD_BRANCH>
+git merge-base --is-ancestor <C_HEAD_OLD> <D_HEAD_BRANCH> || echo NOT_ANCESTOR
+```
+
+As with the direct-child rebase above, confirm `C_HEAD_OLD` is actually an ancestor of D's current head before rebasing. If it is not, stop and treat that path as blocked rather than rebasing from an unproven boundary.
+
+```bash
 git rebase --onto <C_HEAD_NEW> <C_HEAD_OLD> <D_HEAD_BRANCH>
 git push --force-with-lease origin <D_HEAD_BRANCH>
 ```
