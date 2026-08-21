@@ -18,6 +18,7 @@ SKILLS=(
   resolve-pr-comment
   implement-issue
   validate-backlog
+  normalize-github-dependencies
   backlog-orchestrator
   merge-stack
 )
