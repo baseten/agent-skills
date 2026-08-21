@@ -1,6 +1,6 @@
 ---
 name: implement-issue
-description: Implements one tracked issue end-to-end from its URL — reads the issue/comments/specs, validates dependencies, implements in the assigned checkout, opens a PR via create-pr, triggers automated review, and where supported performs bounded CI/review repair. When orchestrated, preserves the supplied base/worktree and returns structured state including NEEDS_USER when autonomous repair budgets are exhausted.
+description: Implements one tracked issue end-to-end from its canonical URL (GitHub, Linear, or another supported tracker) — reads issue/comments/specs, validates dependencies, implements in the assigned checkout, opens a PR via create-pr, triggers automated review, and where supported performs bounded CI/review repair. When orchestrated, preserves supplied base/worktree and returns structured state including NEEDS_USER when repair budgets are exhausted.
 ---
 
 # Implement Issue
@@ -9,166 +9,132 @@ Turn one tracked issue into either a working/reviewable PR or a clear durable bl
 
 ## Authority
 
-Invoking this skill is authorization to implement the issue and create its PR unless the user explicitly says otherwise. It is **not** authorization to merge the PR.
+Invoking this skill authorizes implementation and PR creation unless the user explicitly says otherwise. It does **not** authorize merging.
 
-When called by `backlog-orchestrator`, the caller's repository, worktree/working directory, branch, required base, dependency context, and repair budgets are authoritative execution constraints.
+When called by `backlog-orchestrator`, the caller's repository, worktree, branch, required base, dependency context, tracker issue URL, and repair budgets are authoritative.
+
+## Canonical issue identity
+
+The issue's full URL is its canonical identity throughout the workflow.
+
+Examples:
+
+- GitHub: `https://github.com/owner/repo/issues/123`
+- Linear: `https://linear.app/workspace/issue/TEAM-123/slug`
+
+A short key (`#123`, `TEAM-123`) may be shown additionally for readability but must not replace the full URL in worker results, PR-linking context, dependency maps, or recovery state.
+
+Determine tracker from the URL and use its native issue API/integration when available.
 
 ## Orchestrated constraints
 
-- Preserve the supplied required base; never silently replace it with the default branch.
+- Preserve the supplied required base; never silently replace it with default.
 - Work only in the supplied isolated checkout/worktree.
-- Do not switch to another worker's checkout.
-- Do not select or implement another backlog issue.
+- Do not switch to another worker checkout.
+- Do not choose or implement another issue.
 - Do not broaden scope into dependency/context tickets.
-- Pass the supplied required base to `create-pr`.
-- Respect the caller's remaining implementation/CI/review/model-escalation budgets.
-- When a budget is exhausted or a judgment call remains, return `NEEDS_USER` rather than trying indefinitely.
-
-If no orchestrated context is supplied, use normal standalone behavior and the default repair limits below.
+- Pass the canonical issue URL and supplied required base to `create-pr`.
+- Respect implementation/CI/review/escalation budgets.
+- When a budget is exhausted or a judgment call remains, return `NEEDS_USER`.
 
 ## Default repair limits
 
-Unless the caller/user explicitly supplies different limits:
+Unless overridden:
 
 - implementation attempts: **2 total**;
-- CI repair cycles after PR creation: **2**;
-- review-fix cycles after PR creation: **2**;
-- autonomous model escalation: **none inside this skill** — return the failure to the orchestrator, which owns escalation.
+- CI repair cycles: **2**;
+- review-fix cycles: **2**;
+- model escalation: owned by orchestrator, not this skill.
 
-A cycle may address multiple related failures/comments together. Avoid token-expensive one-comment-at-a-time loops where one coherent patch can resolve a review round.
+A cycle may address multiple related failures/comments coherently.
 
 ## 1. Read the issue
 
-Fetch title, body, labels, and all relevant comments. Preserve the full issue URL for PR linking.
+Fetch title, body, state, labels/properties, native parent/sub-issue relationships, native blocker/dependency relationships, and relevant comments using the issue tracker appropriate to the canonical URL.
 
-For GitHub, verify the issue belongs to the designated repository. For Linear, use the designated/checked-out repository unless the issue clearly states another owner.
+For GitHub, verify repository ownership. For Linear, use the designated repository unless issue/spec/project metadata indicates another repo.
 
-## 2. Read repository conventions and specs
+Preserve the full URL for PR linkage and results.
 
-Read `CLAUDE.md`/`AGENTS.md`, relevant docs/specs, ownership boundaries, and existing patterns. Do not invent a new architecture when the repository already documents one.
+## 2. Read repository conventions/specs
+
+Read `CLAUDE.md`/`AGENTS.md`, relevant docs/specs, ownership boundaries, and existing patterns.
 
 ## 3. Decide whether implementation is clear
 
-Return `BLOCKED` or `NEEDS_USER` without speculative code when:
+Return `BLOCKED` or `NEEDS_USER` rather than speculative code when required work is missing, behavior is materially underspecified, the issue contradicts current specs, a required base is absent, a destructive decision needs approval, or budgets are exhausted.
 
-- required work belongs to another repo/service and the required surface does not exist;
-- behavior is materially underspecified and no spec/comment resolves it;
-- the issue contradicts an existing spec without clearly superseding it;
-- the required base/dependency is absent;
-- a destructive/irreversible decision needs approval;
-- continuing would exceed a supplied attempt budget.
-
-An orchestrator-provided upstream feature branch may satisfy a dependency even when that dependency is not merged; inspect the supplied base before declaring it unfinished.
+An orchestrator-supplied upstream feature branch may satisfy an otherwise-unmerged dependency; inspect the supplied base first.
 
 ## 4. Implement
 
-If a required base was supplied:
+If a required base was supplied, fetch/verify it and ensure the assigned worktree/branch descends from it. Never reset/rebase it to default just because standalone behavior normally would.
 
-1. fetch/verify it;
-2. verify the assigned branch/worktree descends from it;
-3. never reset/rebase to the repository default merely because standalone execution normally would;
-4. retain the required base for PR creation.
-
-Otherwise follow repository branch conventions and discover the default branch rather than assuming `main`.
+Otherwise follow repo branch conventions and discover default branch rather than assuming `main`.
 
 Implement only issue scope. Run required typecheck/lint/format/tests. Commit only files belonging to this issue.
 
-If implementation fails for a transient/operational reason and an implementation attempt remains, make at most the allowed retry. If the remaining failure is architectural/reasoning-heavy, return `FAILED`/`NEEDS_USER` to the orchestrator rather than independently escalating models.
+For transient failure, retry only within remaining implementation budget. Return reasoning-heavy repeated failure to the orchestrator for its single allowed escalation.
 
 ## 5. Open the PR
 
 Invoke `create-pr` with:
 
-- the full issue URL;
-- the exact orchestrator-supplied base when present;
-- any caller-provided draft/full preference.
+- the **full canonical issue URL**;
+- tracker identity when useful;
+- exact orchestrator-supplied base when present;
+- draft/full preference when supplied.
 
-`create-pr` owns PR description conventions, stack `Depends on:` metadata, pushing, PR creation, and automated review triggering.
+`create-pr` owns tracker-specific linkage semantics:
 
-Do not ask for another confirmation when this skill was invoked from an authorized implementation request.
+- GitHub issues use a full-URL closing relationship so merge can auto-close the issue;
+- Linear issues retain the full Linear URL and use the Linear issue ID/magic-word convention needed for GitHub integration/status automation;
+- other trackers follow documented integration rules.
+
+`create-pr` also owns stack `Depends on:` metadata, pushing, PR creation, verification, and automated review triggering.
 
 ## 6. Monitor and repair CI/review where supported
 
-Prefer event-driven PR activity notifications/subscriptions. Use scheduled/poll fallback only when needed and avoid frequent no-change polling.
+Prefer event-driven activity. Use bounded polling only when needed.
 
-### CI repair loop
+### CI repair
 
-For each failed CI round:
+For each failed CI round: inspect minimal useful logs, decide whether failure belongs to this PR, make one coherent targeted repair, run relevant local checks, push, increment cycle count, and reconcile resulting CI. After the allowed cycles, return `NEEDS_USER` if still red.
 
-1. inspect the smallest useful failure/log context;
-2. determine whether it is caused by this issue's changes;
-3. make one coherent targeted repair;
-4. run the relevant local check when practical;
-5. push;
-6. increment `ci_repair_cycles_used`;
-7. wait for the resulting CI state.
+### Review repair
 
-After **2 CI repair cycles by default**, or the caller's lower remaining allowance, stop autonomous repair and return `NEEDS_USER` if CI remains red.
+Group coherent comments by review round. Invoke `resolve-pr-comment` for actionable threads, run checks, push coherently, increment cycle count, and reconcile. After the allowed cycles, return `NEEDS_USER` for remaining actionable requests.
 
-Do not repeatedly make speculative unrelated changes simply to make CI green.
-
-### Review-fix loop
-
-When actionable review comments arrive:
-
-1. group comments from the same review round when they can be addressed coherently;
-2. invoke `resolve-pr-comment` for each thread that requires a code change/reply/resolution;
-3. run relevant checks;
-4. push once for the coherent review round where practical;
-5. increment `review_fix_cycles_used`;
-6. wait for/reconcile the next review state.
-
-After **2 review-fix cycles by default**, or the caller's lower remaining allowance, return `NEEDS_USER` for remaining actionable requests.
-
-Do not argue with or repeatedly rewrite code around subjective review feedback when product/architecture judgment is required; surface it.
+Do not burn cycles on subjective/product judgment; surface it.
 
 ### Monitoring lifetime
 
-When standalone, stop monitoring on merge/close, user stop, budget exhaustion, or an 8-hour cap where persistent monitoring is actually supported.
-
-When orchestrated, report durable state promptly enough for the parent to schedule downstream work. The orchestrator owns worker-pool lifetime and high-level supervision; this worker must not disappear into an unbounded monitoring loop.
+Standalone monitoring stops on merge/close, user stop, budget exhaustion, or the supported monitoring cap. Under orchestration, return durable state promptly; parent owns worker-pool lifetime.
 
 ## Outcome rules
 
-### PR_OPEN
-
-Use when the implementation/PR exists and no currently known issue requires user intervention. Include current CI/review state even if checks are still running.
-
-### BLOCKED
-
-Use when a concrete prerequisite prevents implementation and autonomous work cannot proceed safely.
-
-### FAILED
-
-Use for a bounded operational/implementation failure that the orchestrator may reasonably retry or escalate within its own budget.
-
-### NEEDS_USER
-
-Use when:
-
-- implementation attempts are exhausted;
-- CI remains broken after the repair budget;
-- actionable review remains after the review-fix budget;
-- product/architecture judgment is required;
-- a destructive/sensitive operation needs approval;
-- repeated tooling/infrastructure failure makes another autonomous attempt wasteful.
-
-Include what failed, what was attempted, the latest relevant failure/comment, and a recommended next action.
+- `PR_OPEN`: implementation/PR exists and no known item requires user intervention.
+- `BLOCKED`: concrete prerequisite prevents safe implementation.
+- `FAILED`: bounded operational failure orchestrator may retry/escalate.
+- `NEEDS_USER`: budgets exhausted, persistent CI/review failure, product/architecture decision, destructive operation, or repeated infrastructure failure.
 
 ## Worker result
 
-When called by an orchestrator, finish with structured state:
+When orchestrated return:
 
-- issue
+- canonical issue URL
+- short issue key/number if useful
+- tracker (`github`, `linear`, ...)
 - repository
 - working directory
 - outcome: `PR_OPEN` | `BLOCKED` | `FAILED` | `NEEDS_USER`
 - branch
 - base branch
-- PR URL/number if created
-- head commit SHA
+- PR URL/number
+- head SHA
+- issue linkage verified: yes/no
 - checks run
-- CI/review state if known
+- CI/review state
 - implementation attempts used
 - CI repair cycles used
 - review-fix cycles used
