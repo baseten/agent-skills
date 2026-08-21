@@ -17,6 +17,7 @@ SKILLS=(
   create-pr
   resolve-pr-comment
   implement-issue
+  validate-backlog
   backlog-orchestrator
   merge-stack
 )
