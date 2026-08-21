@@ -1,226 +1,110 @@
 ---
 name: implement-issue
-description: Implements a tracked issue end-to-end from its URL — GitHub (github.com/<owner>/<repo>/issues/<n>) or Linear (linear.app/<org>/issue/<TEAM-123>) — reads the issue and all its comments, cross-checks it against the repo's own conventions and spec docs, and either flags blockers (missing spec, out-of-scope work, ambiguous requirements) or implements the change, opens a PR via the create-pr skill (draft for work repos, full for personal ones — see step 5), and (in a session that supports scheduled wakeups) actively monitors the PR to autofix CI failures and address review comments. Use whenever the user gives a GitHub or Linear issue URL and asks to implement/build/tackle/pick up/work/do that issue, or invokes /implement-issue <url>. Invoking this skill is itself the user's request for a PR — see "Authority" below.
+description: Implements a tracked issue end-to-end from its URL — GitHub (github.com/<owner>/<repo>/issues/<n>) or Linear (linear.app/<org>/issue/<TEAM-123>) — reads the issue and all its comments, cross-checks it against the repo's own conventions and spec docs, and either flags blockers or implements the change, opens a PR via create-pr, and where supported monitors CI/review. When invoked by an orchestrator with an explicit required base branch, preserves that base through implementation and PR creation. Use whenever asked to implement a tracked issue or invoked by backlog-orchestrator.
 ---
 
 # Implement Issue
 
-Turns a single tracked issue into either a working, reviewable PR, or a clear
-list of blockers — never a half-implemented guess.
+Turns a single tracked issue into either a working, reviewable PR, or a clear list of blockers — never a half-implemented guess.
 
 ## Authority: invoking this skill *is* the request for a PR
 
-Step 5 always opens a PR. A standing instruction of the form "do not create a
-pull request unless the user explicitly asks for one" — from the harness, the
-system prompt, or repo docs — is **satisfied** by the user invoking this skill.
-Asking for this workflow is asking for the PR at its end. Do not silently
-downgrade to "implement, push a branch, then ask whether to open a PR": that
-turns one request into two round-trips and is the most common way this skill
-ends up half-run.
+Step 5 always opens a PR. A standing instruction of the form "do not create a pull request unless the user explicitly asks for one" is satisfied by the user invoking this skill or by an authorized calling orchestration skill dispatching it as part of an explicitly requested backlog run.
 
-Two things do override it, in this order:
+Two things override it:
 
-1. The user saying, in this conversation, not to open a PR at all. That
-   instruction wins — stop after step 4 and say the branch is pushed and why
-   you stopped there. ("Open a draft" is not this: drafts are a normal
-   outcome, see step 5.)
+1. The user explicitly says not to open a PR. Stop after implementation/push as appropriate.
 2. A blocker from step 3. Blocked work never gets a PR.
 
-If you find yourself about to do steps 1–4 by hand because the trigger "wasn't
-quite" a match — an issue in a tracker not named above, a paraphrased ask, a
-URL pasted without the word "implement" — invoke the skill anyway and note the
-deviation. Hand-rolling the workflow silently drops steps 5 and 6, and the user
-has no way to see that it happened.
+## Orchestrated execution context
+
+When a calling skill (for example `backlog-orchestrator`) supplies an explicit repository, required base branch, or upstream dependency context, treat those values as authoritative execution constraints unless they are impossible or contradict repository safety rules.
+
+In particular:
+
+- **Preserve an explicit required base branch.** Do not replace it with the repository default branch merely because normal standalone execution would start there.
+- Verify the required base exists before implementation. If it does not, return `BLOCKED` rather than silently falling back.
+- Start the implementation branch/worktree from that required base unless the environment has already created the correctly based branch/worktree.
+- Pass the same required base to `create-pr` so the PR targets the correct parent branch.
+- Do not independently select another backlog issue after completion.
+- Do not broaden scope into upstream/downstream tickets supplied only as dependency context.
+
+If no orchestrated base is supplied, use the normal standalone behavior below.
 
 ## 1. Read the issue
 
-Fetch the full issue: title, body, labels, and **all comments**. Comments
-routinely carry the clarification, scope cut, or design decision the body
-lacks — and a thread synced in from Slack or another chat tool is often the
-only place the real requirement is stated. Read them before deciding anything.
+Fetch the full issue: title, body, labels, and **all comments**. Comments routinely carry clarifications and scope decisions. Read them before deciding anything.
 
-**GitHub** (`github.com/<owner>/<repo>/issues/<n>`): parse `owner/repo` and the
-issue number, then fetch with the GitHub MCP tools or `gh`. If the URL points at
-a repo other than the one checked out locally, say so and stop — don't guess at
-a different checkout.
+For GitHub, parse owner/repo and issue number and fetch with GitHub tools or `gh`. If the URL points at a different repo from the designated/checked-out repo, stop rather than guessing.
 
-**Linear** (`linear.app/<org>/issue/<TEAM-123>/<slug>`): parse the identifier
-(`TEAM-123`) and fetch via the Linear MCP tools if present, otherwise the
-GraphQL API at `api.linear.app/graphql`:
+For Linear, fetch the issue and comments through available Linear tooling/API. A Linear issue names no repo, so the designated/checked-out repo is the target unless the issue clearly belongs elsewhere.
 
-```graphql
-query {
-  issue(id: "TEAM-123") {
-    identifier
-    title
-    description
-    url
-    state { name }
-    labels { nodes { name } }
-    comments { nodes { body user { name } } }
-  }
-}
-```
+Keep the full issue URL in context for PR linking.
 
-A Linear issue names no repo, so the checked-out repo is the target by default.
-If the issue's content clearly belongs to a different codebase, say so and ask
-rather than implementing in the wrong one.
+## 2. Read repository conventions and specs
 
-Keep the issue identifier/URL in context for later — `create-pr` (step 5)
-relies on it being available rather than re-deriving it.
+Read `CLAUDE.md` or `AGENTS.md` for coding conventions, branch naming, and pre-PR checks. Explicitly inspect `docs/` or equivalent and read relevant specs in full. Check documented frontend/backend or service ownership boundaries. Look for existing components/patterns solving the same problem before designing something new.
 
-## 2. Read the repo's conventions and specs
+## 3. Decide: blocked or clear?
 
-Read this repo's contribution doc (`CLAUDE.md` or `AGENTS.md`) for coding
-conventions, branch naming, and pre-PR checks.
+Stop without code/PR when any of these apply:
 
-Explicitly check whether a `docs/` directory (or similar spec/design-doc
-location) exists — e.g. `ls docs/` — rather than assuming based on what
-`CLAUDE.md`/`AGENTS.md` happens to mention; doc directories grow past what
-any table lists. State plainly whether it exists.
+- required work belongs to another repo/service and its required surface does not exist;
+- behavior is materially underspecified and no spec resolves it;
+- the issue contradicts an existing spec without clearly superseding it;
+- a required dependency does not exist on the supplied base or otherwise is not available as expected;
+- an orchestrator-supplied required base branch does not exist.
 
-If it exists, check whether it documents an ownership split (e.g. frontend
-vs backend, service boundaries) — that split is often the biggest source of
-blockers, so check it early if present. Then read whichever spec docs
-actually cover the issue's area, in full — not just skimmed headers.
-Skimming produces implementations that silently contradict the spec.
+When orchestrated, distinguish a genuine unexpected dependency blocker from an already-declared upstream dependency. If the orchestrator intentionally based this worker on an upstream feature branch containing the dependency, inspect that branch before declaring the dependency unfinished.
 
-If the repo has no `docs/` directory or equivalent, say so and rely on the
-issue body, existing code conventions, and comments for scope.
-
-Also look for an existing component that already solves the issue's problem
-elsewhere in the repo before designing anything new — a feature request often
-amounts to adopting a shared component another surface already uses.
-
-## 3. Decide: blocked, or clear to implement?
-
-Flag it as a blocker (and stop — do not write code, do not open a PR) if any
-of these are true:
-
-- **Out-of-repo work.** The issue asks for behaviour that belongs to another
-  service/repo per the documented ownership split (new contracts, schemas,
-  logic owned elsewhere), and the required surface doesn't already exist in
-  this repo (generated client, schema file, etc.). This repo can't invent
-  another service's contracts — implementing against a guessed shape creates
-  drift.
-- **No spec covers it.** The issue describes behaviour that isn't documented
-  anywhere, and the issue body itself doesn't fully pin down the behaviour
-  (states, edge cases). Guessing here is how scope drifts from what the user
-  actually wants.
-- **Contradicts an existing spec.** The issue asks for something that
-  conflicts with a documented design, and it's not clear whether the issue is
-  intentionally superseding the doc or just out of date with it.
-- **Depends on unfinished work.** The issue references another issue/PR,
-  endpoint, or component that doesn't exist yet in the codebase.
-
-When blocked, report back concretely: quote the exact doc section (or note
-the total absence of one) that's missing, contradictory, or out-of-scope, and
-ask the specific question(s) that would unblock it. Don't open a PR or push a
-branch for blocked work — a stub PR just adds noise.
-
-If none of the above apply, proceed.
+Report concrete blocker details. Do not create stub PRs for blocked work.
 
 ## 4. Implement
 
-Follow this repo's conventions from step 2:
+Follow repository conventions.
 
-- Branch: if the environment or session designates a branch, use that one.
-  Otherwise follow the repo's documented convention (Linear-tracked work
-  usually wants Linear's generated branch name), falling back to
-  `git fetch origin && git checkout -b <slug> origin/<default-branch>` —
-  don't assume `main`; check with `git remote show origin | sed -n
-  '/HEAD branch/s/.*: //p'` (some repos still use `master` or another name).
-- Match existing code style and structure.
-- Run and fix all failures from this repo's pre-commit checks (typecheck,
-  lint, format, test, or equivalent) before committing.
-- Commit only files you created or edited. If the working tree already carried
-  unrelated modifications when you started (generated lockfiles, install
-  artifacts), leave them out and say so — don't let them ride along in the PR.
+### Branch/base behavior
+
+If an explicit required base was supplied by the caller:
+
+1. fetch it from origin;
+2. verify the current implementation branch/worktree descends from that base, or create the issue branch from `origin/<required-base>`;
+3. never rebase/reset it onto the default branch simply because that is the standalone convention;
+4. retain `<required-base>` for step 5.
+
+Otherwise, if the environment/session designates a branch, use it. Otherwise follow repo branch conventions, falling back to creating a branch from the discovered repository default branch. Never assume `main`.
+
+Match existing code style/structure. Run and fix required typecheck/lint/format/tests. Commit only files belonging to this issue; never sweep unrelated working-tree changes into the PR.
 
 ## 5. Open the PR
 
-Invoke the `create-pr` skill to commit, push, and open the PR — the issue
-identifier/URL from step 1 is already in context, so `create-pr` should link
-it without needing to ask. This also applies `create-pr`'s own review-trigger
-convention as part of that skill — that skill decides how review gets
-triggered for this repo (a bot-mention comment, a label, or whatever its
-docs say), not this one.
+Invoke `create-pr` to commit/push/open the PR. Preserve the issue URL for `Closes:` linking.
 
-Link the issue the way its tracker expects, preferring the repo's own
-documented convention where it has one. Always link with the full issue URL
-in the `Closes:` line, never a bare number or identifier — a bare Linear
-identifier (`AGE-738`) renders as plain, unclickable text, and a bare
-`#1234` only resolves correctly inside the exact repo it's typed in:
+**If this issue was dispatched with an explicit required base, explicitly pass that same base to `create-pr`.** The PR must target the orchestrator-supplied base, not the repository default.
 
-- **GitHub:** `Closes: https://github.com/<owner>/<repo>/issues/1234`.
-- **Linear:** `Closes: https://linear.app/<org>/issue/AGE-738/<slug>`. The
-  identifier leading the PR title (`AGE-738 Support markdown in …`) is a
-  separate convention Linear also recognizes — keep it if the repo uses it,
-  but it doesn't substitute for the linked `Closes:` line.
+Link issues with full URLs in `Closes:` lines. Follow repo conventions for draft/full PRs; an explicit user/caller instruction wins.
 
-### Draft or full?
+The user's request to implement this issue (or the backlog containing it) authorizes this chained PR creation; do not add another confirmation round-trip.
 
-**Work-related repos get a draft PR; personal repos get a full PR.**
+## 6. Monitor CI and review where supported
 
-The repo's own docs are the signal, and they win where present: if
-`CLAUDE.md`/`AGENTS.md` or the rules they point at say to open PRs as drafts,
-open a draft. Otherwise, and for personal repos, open a full PR.
+If event-driven PR activity subscription is available, subscribe after opening the PR. If scheduled wakeups are also available, use a roughly 10–20 minute fallback check. If neither exists, report that monitoring cannot continue automatically.
 
-`create-pr` defaults to full PRs, so a draft needs an explicit override —
-instruct it to open a draft rather than assuming it infers this. State which
-you opened, and why, in your report so a wrong read is obvious at a glance.
+On review comments, invoke `resolve-pr-comment` rather than hand-rolling the workflow. On CI failure, make a targeted fix and push. Keep monitoring until merged/closed, user stop, or the default 8-hour monitoring cap. Stop and surface judgment calls rather than making speculative product decisions.
 
-If the user asks for the other one in the conversation, that wins over both
-this rule and the repo docs.
+When operating as a worker under `backlog-orchestrator`, report completion promptly enough for the orchestrator to unlock downstream work; per-PR monitoring must not prevent the worker from returning the PR's durable state to the orchestrator.
 
-**Deliberate deviation:** the PR is opened without asking first, per
-"Authority" above.
+## Worker result
 
-## 6. Monitor the PR for CI failures and review comments
+When called by an orchestrator, finish with a structured result containing:
 
-This step only applies in a session that supports scheduling follow-up work
-(e.g. via a wakeup/loop mechanism) or subscribing to PR activity. If neither
-is available, skip this step and tell the user the PR is open but won't be
-auto-monitored — they'll need to ask again later to check on it.
-
-Where supported, prefer event-driven monitoring over pure polling:
-
-1. If an event-driven subscription tool is available (e.g. Claude Code
-   Remote's `subscribe_pr_activity`), subscribe to the PR right after
-   opening it. Comments, CI status changes, reviews, and other PR events
-   then arrive on their own — delivered as `<github-webhook-activity>`
-   messages, or this environment's equivalent — instead of requiring an
-   active poll to discover them.
-2. If wakeup scheduling is *also* available in this environment, schedule a
-   periodic wakeup too (roughly every 10–20 minutes), alongside the
-   subscription rather than instead of it — it's the fallback if the
-   subscription drops or misses something, and a natural point to do an
-   explicit CI check (`gh pr checks <PR>` or MCP equivalent) rather than
-   trusting the event feed alone. If wakeup scheduling *isn't* available but
-   the subscription is, rely on the subscription alone — there's nothing to
-   schedule, and that's fine. If no subscription mechanism exists at all,
-   the wakeup is the only monitoring available — poll CI and review threads
-   on every one.
-3. On any new review comment/thread — whether surfaced by the subscription
-   feed or found on a poll — always invoke the `resolve-pr-comment` skill
-   for it. Never hand-roll the fix/push/reply/resolve flow yourself; that
-   skill already owns replying with the commit SHA and resolving the
-   thread.
-4. On a CI failure, investigate and push a fix directly (small, targeted
-   commit addressing the failure — same discipline as step 4).
-5. Keep monitoring until the PR is merged, closed, the user says to stop, or
-   a time limit is hit — whichever comes first. Cap total monitoring at 8
-   hours from when it started by default, adjustable if the user states a
-   different limit in conversation; a forgotten PR job shouldn't poll
-   indefinitely. Since nothing else carries state between check-ins, stamp
-   the start time into the wakeup/trigger's own prompt (or the subscription
-   setup message) so each check-in can compute elapsed time for itself.
-   Stop immediately if asked. When the cap is hit, stop the same way and
-   tell the user monitoring ended because of the time limit, not because
-   the PR resolved — they can ask you to resume it if it's still open.
-   Either way, tear down any subscription/trigger this environment requires
-   explicit teardown for (e.g. `delete_trigger`) rather than leaving it
-   dangling.
-6. If a CI failure or comment requires a judgment call you're not confident
-   about, don't guess — surface it to the user and pause monitoring on that
-   specific issue rather than pushing a speculative fix.
+- issue
+- repository
+- outcome: `PR_OPEN`, `BLOCKED`, or `FAILED`
+- branch
+- base branch
+- PR URL/number if created
+- head commit SHA
+- checks run
+- CI/review state if known
+- blocker details if applicable
