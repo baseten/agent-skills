@@ -1,15 +1,19 @@
 {
   "allow": [
-    "mcp__github__list_issues",
-    "mcp__linear__get_issue",
-    "mcp__linear__get_project",
-    "mcp__linear__list_comments",
-    "mcp__linear__save_issue",
-    "mcp__linear__update_issue",
-    "mcp__Claude_Code_Remote__update_trigger",
-    "mcp__Claude_Code_Remote__delete_trigger",
-    "mcp__Claude_Code_Remote__send_later",
-    "mcp__Claude_Code_Remote__subscribe_pr_activity"
+    "Bash(git status*)",
+    "Bash(git diff*)",
+    "Bash(git log*)",
+    "Bash(git branch*)",
+    "Bash(git remote*)",
+    "Bash(git fetch*)",
+    "Bash(git checkout*)",
+    "Bash(git switch*)",
+    "Bash(git worktree*)",
+    "Bash(git add -- *)",
+    "Bash(git commit*)",
+    "Bash(git push*)",
+    "Bash(git rebase*)",
+    "Bash(gh *)"
   ],
   "deny": []
 }
