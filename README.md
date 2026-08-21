@@ -21,6 +21,8 @@ Reusable Claude Code skills for issue implementation, PR workflows, backlog vali
 
 Local/cloud worktrees are isolation, not durable storage. `implement-issue-core` pushes the issue branch early and pushes coherent implementation checkpoints. If a cloud container disappears, backlog orchestration resumes from the latest remote branch/PR state rather than relying on the lost worktree.
 
+Long-lived CI/review waiting is parent-owned in `backlog-orchestrator`: implementation workers return after durable PR creation; the parent consumes events/polls, keeps the orchestration loop active, and dispatches bounded repair workers only when action is required.
+
 ## Cloud bootstrap
 
 Run `bootstrap.sh` from a checkout of this repository to install all skills into the standard Claude configuration for a cloud/container session. The orchestration skills remain environment-agnostic and can also be used from local Claude Code setups.
