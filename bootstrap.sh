@@ -16,6 +16,8 @@ mkdir -p "$CLAUDE_DIR/skills"
 SKILLS=(
   create-pr
   resolve-pr-comment
+  implement-issue-core
+  repair-pr
   implement-issue
   validate-backlog
   normalize-github-dependencies
