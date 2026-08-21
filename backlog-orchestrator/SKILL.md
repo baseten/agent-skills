@@ -228,13 +228,37 @@ When complete report:
 - blocker details if blocked
 ```
 
-## 7. Stacked PRs
+## 7. Stacked PRs and PR bases
 
-Use the repository's supported GitHub stacked-PR tooling for same-repository hard dependency chains where available. The PR workflow must preserve the explicit base supplied by this orchestrator.
+**PR base relationships are authoritative.** Do not require `gh stack`, native GitHub Stack metadata, or any other stack-specific tool in order to execute dependent work correctly.
 
-If `create-pr` cannot target the required non-default base, do not pretend the stack is correct: use supported stack tooling or report the missing capability.
+For same-repository hard dependency chains, construct the stack with ordinary branches and explicit PR bases. Example:
 
-Never attempt to create one Git stack across multiple repositories. Cross-repo dependencies are coordinated by dispatch order/readiness instead.
+```text
+main
+  -> feature-a   (PR A base: main)
+      -> feature-b   (PR B base: feature-a)
+          -> feature-c   (PR C base: feature-b)
+```
+
+For fanout, preserve sibling ancestry rather than linearizing it:
+
+```text
+main
+  -> feature-a
+      -> feature-b   (PR B base: feature-a)
+      -> feature-c   (PR C base: feature-a)
+```
+
+The ordinary GitHub PR base/head relationships are the durable representation the orchestrator must use for reconciliation and recovery. `create-pr` must receive the calculated explicit base and create the PR against that branch.
+
+If native GitHub Stacked PR tooling or `gh stack` is available, it may be used **optionally** to add native stack metadata/UI or convenience operations, but absence of that tooling must never block orchestration. Do not make correctness depend on ephemeral local stack metadata such as `.git/gh-stack`.
+
+If the available GitHub integration exposes only ordinary PR operations, use those operations directly. Creating a PR with `head: feature-b` and `base: feature-a` is sufficient to preserve the stack's Git ancestry and review diff even if GitHub does not expose that chain as a native Stack object.
+
+If `create-pr` cannot target the required non-default base, stop that path and report the missing capability rather than silently targeting the repository default.
+
+Never attempt to create one Git stack across multiple repositories. Cross-repo dependencies are coordinated by dispatch order/readiness and remain separately based PRs.
 
 ## 8. Active orchestration loop
 
