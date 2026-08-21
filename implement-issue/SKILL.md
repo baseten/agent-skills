@@ -1,6 +1,6 @@
 ---
 name: implement-issue
-description: Single-issue orchestrator for one tracked issue from its canonical full URL. Composes implement-issue-core for issue→code→checks→durable PR, then owns bounded CI/review monitoring and dispatches repair-pr as needed until the PR is healthy, blocked, or needs user input. Useful standalone and as a one-issue workflow.
+description: Single-issue orchestrator for one tracked issue from its canonical full URL. Composes implement-issue-core for issue→code→checks→durable PR, then supervises bounded CI/review activity and dispatches repair-pr as needed until the PR is healthy, blocked, or needs user input. Useful standalone and as a one-issue workflow.
 ---
 
 # Implement Issue
@@ -55,9 +55,19 @@ At this point the code is already durable remotely even if the current container
 
 # Phase 2 — single-issue PR supervision
 
-After PR creation, this skill owns monitoring **only because it is the standalone single-issue orchestrator**.
+After PR creation, this skill owns supervision **only because it is the standalone single-issue orchestrator**.
 
-Prefer event-driven PR/check/review notifications where available. Use bounded polling fallback only when no event mechanism is available. Avoid frequent no-change polling.
+If Claude Desktop/Claude Code promotes the worker-created PR into the top-level session or provides first-class PR/CI/review events, use those directly. Do not create a duplicate monitoring mechanism merely because `implement-issue-core` created the PR in a child worker.
+
+Prefer, in order:
+
+1. first-class/promoted PR events from the current Claude runtime;
+2. other event-driven PR/check/review notifications;
+3. bounded polling fallback when no event mechanism is available.
+
+The platform may observe an event; this skill remains the **policy owner** deciding whether a repair is appropriate and whether the remaining repair budget permits it.
+
+Avoid frequent no-change polling and do not keep a child agent alive solely to wait for GitHub.
 
 Maintain explicit state:
 
@@ -77,7 +87,7 @@ When CI fails:
 2. if the failure is attributable to this PR and the CI budget remains, invoke `repair-pr` once with `repair type = ci`;
 3. pass the exact failure context and remaining budget;
 4. adopt the returned remote head SHA;
-5. wait for the next CI result;
+5. wait for the next CI result using first-class/event-driven state where available;
 6. after the budget is exhausted, return `NEEDS_USER` rather than trying again.
 
 If CI is clearly unrelated/external/flaky and no code repair is justified, report/monitor it without consuming a repair cycle.
@@ -90,7 +100,7 @@ When actionable review feedback arrives:
 2. if review budget remains, invoke `repair-pr` once with `repair type = review` and the relevant threads/comments;
 3. adopt the returned remote head;
 4. retrigger/request review when repository convention requires it;
-5. wait for the next review state;
+5. wait for the next review state using first-class/event-driven state where available;
 6. after the budget is exhausted, return `NEEDS_USER`.
 
 Subjective product/architecture judgment returns `NEEDS_USER` immediately rather than burning repair cycles.
@@ -98,6 +108,8 @@ Subjective product/architecture judgment returns `NEEDS_USER` immediately rather
 # Completion
 
 Return `PR_OPEN`/healthy when the PR is implemented, linked correctly, and has no currently known CI/review item requiring autonomous repair. When persistent monitoring is supported, continue until healthy, merge/close, user stop, budget exhaustion, or monitoring cap.
+
+If the runtime cannot remain active while waiting only on external events, return a durable checkpoint rather than pretending background monitoring will continue.
 
 Return `NEEDS_USER` with the exact PR/issue URLs, remaining failure/comment, attempts performed, and recommended next action when autonomous repair cannot safely finish.
 
