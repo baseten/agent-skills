@@ -57,7 +57,7 @@ At this point the code is already durable remotely even if the current container
 
 After PR creation, this skill owns supervision **only because it is the standalone single-issue orchestrator**.
 
-If Claude Desktop/Claude Code promotes the worker-created PR into the top-level session or provides first-class PR/CI/review events, use those directly. Do not create a duplicate monitoring mechanism merely because `implement-issue-core` created the PR in a child worker.
+If Claude Code's own background PR watch/notification behavior promotes the worker-created PR into the top-level session or provides first-class PR/CI/review events, use those directly. Do not create a duplicate monitoring mechanism merely because `implement-issue-core` created the PR in a child worker. If that background behavior has auto-merge enabled, it will merge the PR itself once checks pass — since this skill never authorizes merging (see Authority above), confirm auto-merge is off, or treat an auto-merge as outside this skill's control rather than an outcome it produced.
 
 Prefer, in order:
 

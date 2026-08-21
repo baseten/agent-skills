@@ -1,13 +1,23 @@
 ---
 name: backlog-orchestrator
-description: Autonomously executes a bounded dependency-linked implementation tranche from GitHub Issues, Linear, or another supported tracker. Prefers Claude Code Dynamic Workflows when available, while preserving a validated issue DAG, Sonnet workers, isolated worktrees, durable remote checkpoints, stacked PR topology, centralized PR supervision, bounded repairs, and restart-safe tracker/GitHub state.
+description: Autonomously executes a bounded dependency-linked implementation tranche from GitHub Issues, Linear, or another supported tracker. Can fan the implementation phase out onto a Claude Code Dynamic Workflow when the user opts into one, while preserving a validated issue DAG, Sonnet workers, isolated worktrees, durable remote checkpoints, stacked PR topology, centralized PR supervision, bounded repairs, and restart-safe tracker/GitHub state.
 ---
 
 # Backlog Orchestrator
 
 Execute a prepared implementation tranche autonomously.
 
-This skill is the **policy and backlog layer**. Claude's runtime may provide the worker scheduling/persistence layer.
+This skill is the **policy and backlog layer**. Claude's runtime may provide the worker scheduling/persistence layer for the bounded implementation fan-out.
+
+## Invocation
+
+Dynamic Workflows can only start from the invoking user's own prompt (containing `ultracode`/"use a workflow" wording, or the session already running with `/effort ultracode`) — this skill cannot switch one on by itself mid-run. To get Dynamic Workflow execution for the implementation fan-out, the user must ask for it explicitly, for example:
+
+```text
+use a workflow to run backlog-orchestrator on <root/manifest URL>
+```
+
+Without that wording (or `ultracode` effort already active), treat Dynamic Workflows as unavailable for this invocation and use the fallback runtime chain below. Do not attempt to "detect" or silently opt into a workflow — there is no such detection; it is invocation-gated by the platform, not by this skill.
 
 The orchestrator owns:
 
@@ -54,54 +64,34 @@ The orchestration policy must be independent of the mechanism used to run worker
 
 ## Preferred runtime: Claude Code Dynamic Workflows
 
-When Dynamic Workflows are available in the current Claude Code/Desktop environment and can preserve the supplied execution contract, **prefer a Dynamic Workflow** as the runtime for the backlog run.
+A Dynamic Workflow is a JavaScript orchestration script that fans plain subagents out, runs them (up to 16 concurrent, capped at 1000 total) in the background, and returns only final agent results to the caller. It is well suited to the **bounded implementation fan-out** this skill dispatches — many independent, isolated one-issue-per-worker tasks — because that is exactly the "many small independent transformations" shape workflows are documented for.
 
-Use the Dynamic Workflow for:
+When the user has opted into a workflow for this invocation (see Invocation above), use it **only for the implementation fan-out**:
 
-- persistent multi-agent scheduling;
-- fanout/concurrency;
-- worker lifecycle and completion signaling;
-- runtime-level progress persistence/resumption;
-- first-class PR promotion/visibility when the platform provides it;
-- platform-native CI/review/PR event surfacing where available.
+- write the workflow script yourself so each `agent()` call's prompt/model explicitly encodes: exact authorized issue set and normalized dependency DAG (as separate fan-out stages honoring the DAG's ordering), Sonnet worker model, one issue per worker, isolated checkout/worktree per worker, exact calculated branch/base, remote checkpoint rules, retry budget;
+- do **not** give the workflow permission to redefine the product backlog — it must execute the already validated bounded DAG supplied by this skill;
+- treat the workflow purely as an **execution substrate** for that one fan-out run, not as the source of truth for issue/PR state.
 
-Do **not** give the Dynamic Workflow permission to redefine the product backlog. It must execute the already validated bounded DAG supplied by this skill.
-
-The workflow must preserve all of these policies:
-
-- exact authorized issue set;
-- normalized dependency DAG;
-- maximum concurrency;
-- Sonnet worker model by default;
-- one issue per implementation worker;
-- isolated checkout/worktree per mutating worker;
-- exact calculated branch/base for each issue;
-- remote checkpoint rules;
-- retry/repair budgets;
-- stack/fanout topology;
-- tracker/PR completion semantics;
-- no merge authority unless explicitly granted.
-
-A Dynamic Workflow is the **execution substrate**, not the source of truth.
+A Dynamic Workflow does **not** persist across a Claude Code session exiting — a workflow interrupted by session exit restarts fresh next session, it accepts no external input mid-run, and it cannot be woken later by a CI/webhook event. For those reasons, do not use a Dynamic Workflow for **long-lived PR/CI/review supervision** — that responsibility always stays with this skill's own parent-level supervision loop (see PR promotion and central supervision, below), regardless of whether the implementation fan-out ran inside a workflow.
 
 ## Fallback runtimes
 
-If Dynamic Workflows are unavailable or cannot honor the required DAG/worker constraints, degrade in this order where possible:
+When a Dynamic Workflow was not requested for this invocation, or cannot honor the required DAG/worker constraints, degrade in this order where possible:
 
-1. native/background Claude sessions or agent-team/task primitives;
+1. native/background Claude sessions or agent-team primitives (agent teams are an experimental, opt-in Claude Code feature — confirm they are enabled before relying on them);
 2. ordinary isolated subagents with the explicit parent supervision loop defined below;
 3. serialized execution when safe isolation/concurrency cannot be provided.
 
-Do not abandon the orchestration run merely because Dynamic Workflows are unavailable.
+Do not abandon the orchestration run merely because no Dynamic Workflow was requested.
 
 ## Runtime detection
 
-At startup determine whether the current environment provides:
+At startup determine:
 
-- Dynamic Workflows;
-- first-class/background agent sessions;
+- whether this invocation opted into a Dynamic Workflow (see Invocation above — this is not autodetected, it depends on the user's own prompt/effort setting);
+- whether first-class/background agent sessions or agent-team primitives are available;
 - native worktree isolation;
-- PR promotion/event monitoring;
+- whether Claude Code's own background PR watch/notification behavior is active for this session (see PR promotion and central supervision, below) — and, if so, whether its auto-merge behavior is enabled, since that would conflict with this skill's no-automatic-merge invariant and should be disabled or reported before autonomous work proceeds;
 - local `git`;
 - authenticated `gh`;
 - GitHub MCP;
@@ -244,7 +234,7 @@ A cloud worktree is ephemeral. Never claim restart safety for unpushed local cha
 
 ## Restart / resume
 
-On restart, including after Dynamic Workflow interruption:
+A Dynamic Workflow interrupted by session exit restarts fresh next session rather than resuming — it has no cross-session persistence of its own. Restart recovery therefore always comes from tracker + GitHub remote state, never from workflow-runtime state:
 
 1. re-expand the exact same bounded manifest/scope;
 2. rerun `validate-backlog shallow`;
@@ -253,11 +243,10 @@ On restart, including after Dynamic Workflow interruption:
 5. skip every proven `DONE` issue;
 6. adopt existing open PRs;
 7. adopt matching remote issue branches/checkpoints even when no PR exists yet;
-8. reconcile any runtime-level Dynamic Workflow resume state when available;
-9. identify the earliest still-unfinished executable frontier;
-10. resume there.
+8. identify the earliest still-unfinished executable frontier;
+9. resume there, dispatching fresh workers (in a new Dynamic Workflow fan-out if the user re-opts in, or via the fallback runtime chain) for whatever is not yet durable.
 
-Runtime persistence is useful but **must not be required** for correctness. A fresh orchestration session must be able to recover from tracker + GitHub remote state alone.
+A fresh orchestration session must be able to recover from tracker + GitHub remote state alone.
 
 "Latest unclosed ticket" means the earliest remaining unfinished point in established build order, not the numerically newest issue. Parallel groups may have multiple resume-frontier nodes.
 
@@ -333,7 +322,9 @@ Do not create meaningless checkpoint commits merely as heartbeat activity. Check
 
 # PR promotion and central supervision
 
-A PR opened by a worker may be promoted by Claude Desktop/Dynamic Workflows into the parent/top-level session. **Use that first-class platform PR state when available.** Do not create a duplicate monitor merely because the PR originated in a child worker.
+A PR opened by a worker may be surfaced back to the parent/top-level session by Claude Code's own background PR watch/notification behavior (a session-level feature, distinct from Dynamic Workflows — a Dynamic Workflow run does not itself persist or surface PR/CI/review events once it returns its fan-out results) or by an explicit event subscription such as `subscribe_pr_activity`. **Use that platform PR state when available.** Do not create a duplicate monitor merely because the PR originated in a child worker.
+
+If Claude Code's background PR behavior has auto-merge enabled, it will merge PRs itself once checks pass — this conflicts directly with this skill's no-automatic-merge invariant. Confirm auto-merge is off (or explicitly authorized by the user for this run) before relying on that background behavior for CI/review surfacing.
 
 Once an implementation worker reaches `PR_OPEN`, release that implementation worker. Long-lived PR supervision belongs to the parent/runtime orchestration layer.
 
@@ -354,7 +345,7 @@ stack parent/children
 
 ## Event handling
 
-Prefer platform-native/promoted PR events and Dynamic Workflow notifications for:
+Prefer platform-native/promoted PR events (Claude Code's background PR watch behavior, or an explicit subscription such as `subscribe_pr_activity`) for:
 
 - CI/check completion/failure;
 - review/comment activity;
@@ -363,7 +354,7 @@ Prefer platform-native/promoted PR events and Dynamic Workflow notifications for
 
 If those are unavailable, fall back to other event subscriptions, then bounded parent polling.
 
-The parent remains the **policy owner** even when Claude Desktop performs the observation. The platform may surface that CI failed or review feedback arrived; this skill decides whether budgets allow repair and what worker to dispatch.
+The parent remains the **policy owner** even when the platform performs the observation. The platform may surface that CI failed or review feedback arrived; this skill decides whether budgets allow repair and what worker to dispatch.
 
 Do not keep one Sonnet worker alive per PR merely to wait.
 
@@ -395,45 +386,28 @@ Product/architecture judgment -> `NEEDS_USER` rather than speculative repair.
 
 A PR branch may have only **one active mutating worker** at a time. Before repair, verify the remote head has not moved unexpectedly.
 
-# Parent / Dynamic Workflow supervision loop
+# Parent supervision loop
 
-## Dynamic Workflow path
+Long-lived PR/CI/review supervision always runs in this parent loop, never inside a Dynamic Workflow: a workflow run accepts no external input once started and does not persist past the current Claude Code session, so it cannot sit and wait across hours/days for CI or review to come back. This holds even for a run whose implementation fan-out did execute inside a Dynamic Workflow — once that workflow returns its worker results (PR URLs, branches, heads), supervision reverts to this same parent loop.
 
-When running as a Dynamic Workflow, keep the workflow/lead responsible for:
-
-1. worker completion events;
-2. promoted PR/CI/review events;
-3. tracker + GitHub reconciliation;
-4. repair budgets;
-5. repair-worker dispatch;
-6. READY-frontier recomputation;
-7. new implementation-worker dispatch;
-8. stack ancestry state;
-9. `NEEDS_USER` surfacing;
-10. stop/checkpoint decisions.
-
-Use the workflow runtime's own persistence/waiting primitives instead of inventing artificial keepalive work.
-
-## Fallback explicit parent loop
-
-If Dynamic Workflows are unavailable, the main parent thread must remain active while mutating workers run or active PR events can lead to more in-scope work.
+The main parent thread must remain active while mutating workers run or active PR events can lead to more in-scope work.
 
 Each cycle performs real work:
 
-1. consume worker completions;
+1. consume worker completions (including a Dynamic Workflow's returned fan-out results, if one was used);
 2. reconcile tracker + remote branches/PRs;
 3. consume/reconcile CI/review events;
 4. update heads/budgets;
 5. dispatch repairs;
 6. recompute READY frontier;
-7. fill available worker slots;
+7. fill available worker slots (optionally via a fresh Dynamic Workflow fan-out if the user re-opts in for the next batch);
 8. inspect stack ancestry changes;
 9. surface `NEEDS_USER`;
 10. wait using native task/event wait, then repeat.
 
 Do not use CPU loops, file-touch loops, detached sleeps, meaningless commits, or other fake activity solely to prevent idling.
 
-Dynamic Workflow persistence substantially reduces reliance on this fallback anti-idle behavior, but remote Git checkpoints remain mandatory because platform/runtime persistence is not the same as durable source control.
+Remote Git checkpoints remain mandatory regardless of runtime, because no platform/runtime persistence substitutes for durable source control.
 
 # Lost worker / workflow recovery
 

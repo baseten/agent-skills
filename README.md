@@ -21,24 +21,24 @@ Reusable Claude Code skills for issue implementation, PR workflows, backlog vali
 
 `backlog-orchestrator` separates **policy** from **execution runtime**.
 
-Preferred runtime order:
+A Claude Code Dynamic Workflow is only used for the bounded implementation fan-out, and only when the invoking user's own prompt opts into one (e.g. "use a workflow to run backlog-orchestrator on ...") or the session already has `/effort ultracode` on — the skill has no way to switch one on itself. When used, the workflow gives the fan-out persistent multi-agent scheduling and worker lifecycle up front, but it does not persist across a session exit and cannot receive events mid-run, so it is never used for PR supervision (see below).
 
-1. Claude Code Dynamic Workflows;
-2. native/background Claude sessions or agent/task primitives;
+Preferred runtime order for the implementation fan-out:
+
+1. Claude Code Dynamic Workflows, when the user opted in for this invocation;
+2. native/background Claude sessions or agent-team primitives (agent teams are experimental/opt-in);
 3. ordinary isolated subagents with an explicit parent supervision loop;
 4. serialized execution when safe parallel isolation is unavailable.
 
-Dynamic Workflows may provide persistent multi-agent scheduling, worker lifecycle, first-class PR promotion, and native CI/review event surfacing. They do not replace the orchestrator's validated issue DAG, scope boundary, model policy, worktree isolation, repair budgets, stack topology, or tracker/GitHub recovery semantics.
+None of these replace the orchestrator's validated issue DAG, scope boundary, model policy, worktree isolation, repair budgets, stack topology, or tracker/GitHub recovery semantics.
 
 ## Recovery model
 
-Local/cloud worktrees are isolation, not durable storage. `implement-issue-core` pushes the issue branch early and pushes coherent implementation checkpoints. If a cloud container or workflow disappears, backlog orchestration resumes from tracker + remote branch/PR state rather than relying on the lost worktree or runtime state.
-
-A Dynamic Workflow's own persistence is useful but is not required for correctness.
+Local/cloud worktrees are isolation, not durable storage. `implement-issue-core` pushes the issue branch early and pushes coherent implementation checkpoints. If a cloud container or a Dynamic Workflow's session disappears, backlog orchestration resumes from tracker + remote branch/PR state rather than relying on the lost worktree or runtime state — a Dynamic Workflow does not persist across a session exit, so this recovery path is required, not just a fallback.
 
 ## PR supervision
 
-Implementation workers return after durable PR creation. When Claude Desktop/Dynamic Workflows promote worker-created PRs to the parent session, the orchestrator consumes that first-class PR/CI/review state directly. The **platform may observe the event; the orchestrator remains the policy owner** deciding whether repair budgets allow another Sonnet `repair-pr` worker.
+Implementation workers return after durable PR creation. When Claude Code's own background PR watch/notification behavior (a session-level feature, separate from Dynamic Workflows) surfaces worker-created PRs to the parent session, the orchestrator consumes that PR/CI/review state directly. The **platform may observe the event; the orchestrator remains the policy owner** deciding whether repair budgets allow another Sonnet `repair-pr` worker. If that background behavior has auto-merge enabled, disable it or treat any resulting merge as outside the orchestrator's control — it conflicts with the no-automatic-merge invariant.
 
 When first-class PR events are unavailable, the parent falls back to other subscriptions or bounded polling. It does not keep one idle Sonnet agent alive per PR.
 
