@@ -8,21 +8,19 @@ This directory *is* `~/.claude-personal/skills` — the `claude-personal` shell
 alias sets `CLAUDE_CONFIG_DIR=~/.claude-personal`, so Claude Code picks these
 up automatically for any repo run under that alias.
 
-Codex reads the same files via symlinks in `~/.codex/skills/`:
+Codex can read the same files via symlinks in `~/.codex/skills/`:
 
 ```bash
-for s in create-pr resolve-pr-comment implement-issue; do
+for s in create-pr resolve-pr-comment implement-issue backlog-orchestrator merge-stack; do
   ln -sfn "$HOME/.claude-personal/skills/$s" "$HOME/.codex/skills/$s"
 done
 ```
 
 ## Cloud/container sessions
 
-Cloud sandboxes (Claude Code on the web, cloud environments) don't have
-access to `~/.claude-personal/`. Each cloud environment's setup script clones
-this repo and runs `bootstrap.sh` to install the skills and permissions into
-`~/.claude/` before the session starts — see the environment's setup script
-config for the exact invocation, but it looks like:
+Cloud sandboxes don't have access to `~/.claude-personal/`. Each cloud
+environment's setup script clones this repo and runs `bootstrap.sh` to install
+the skills and permissions into `~/.claude/` before the session starts:
 
 ```bash
 #!/bin/bash
@@ -33,39 +31,27 @@ bash /tmp/agent-skills/bootstrap.sh
 rm -rf /tmp/agent-skills
 ```
 
-`bootstrap.sh` copies `create-pr`, `resolve-pr-comment`, and
-`implement-issue` into `~/.claude/skills/`, then merges `permissions.json`
-into `~/.claude/settings.json` (creating the file if it doesn't exist yet,
-merging with `jq` on top of anything already there otherwise) so the
-container doesn't have to prompt mid-session for tool calls these skills
-routinely make.
+`bootstrap.sh` installs all five skills listed below into `~/.claude/skills/`,
+then merges `permissions.json` into `~/.claude/settings.json`.
 
 ## Permissions
 
-`permissions.json` pre-approves the MCP tools `implement-issue`'s PR
-monitoring step (and `create-pr`'s issue linking) rely on:
-
-- `mcp__github__list_issues`
-- `mcp__linear__get_issue`, `mcp__linear__get_project`, `mcp__linear__update_issue`,
-  `mcp__linear__save_issue`, `mcp__linear__list_comments`
-- `mcp__Claude_Code_Remote__update_trigger`, `mcp__Claude_Code_Remote__delete_trigger`,
-  `mcp__Claude_Code_Remote__send_later`, `mcp__Claude_Code_Remote__subscribe_pr_activity`
-  — rescheduling and tearing down the PR check-in loop, messaging the user,
-  and subscribing to webhook-driven PR activity (comments, CI status,
-  reviews) without blocking on approval each time. Note the server name is
-  `Claude_Code_Remote` (not kebab-case) — that's the registered name, confirmed
-  the hard way after a wrong guess.
-
-This list only covers tools observed so far. If a skill starts needing a new
-one — or a container prompts for a new `(Claude Code Remote)`/`(Linear)`/
-`(GitHub)` tool call — add it here rather than approving it ad hoc in a
-running container; that approval doesn't persist to the next session.
+`permissions.json` pre-approves MCP tools routinely used by issue/PR monitoring
+and linked tracker workflows. This list only covers tools observed so far; if a
+cloud session prompts for a new recurring GitHub/Linear/Claude Code Remote tool,
+add it here rather than relying on a one-session approval.
 
 ## Skills
 
-- `create-pr` — PR creation (draft for work repos, full for personal ones)
-  with GitHub/Linear issue linking and an automatic `@codex review` trigger.
-- `resolve-pr-comment` — apply a fix, push, reply, resolve the thread.
-- `implement-issue` — end-to-end GitHub or Linear issue implementation,
-  chains into `create-pr`, and (where scheduled wakeups are supported)
-  monitors the PR for CI failures and review comments.
+- `create-pr` — PR creation with GitHub/Linear issue linking, explicit-base
+  support for stacks, automatic `Depends on: <parent PR>` metadata for stacked
+  PRs, and the repository's review trigger.
+- `resolve-pr-comment` — apply a fix, push, reply, and resolve the thread.
+- `implement-issue` — end-to-end GitHub or Linear issue implementation; chains
+  into `create-pr` and monitors CI/review where the environment supports it.
+- `backlog-orchestrator` — execute a bounded dependency DAG across one or more
+  repositories/projects with parallel implementation workers and durable GitHub
+  state/recovery.
+- `merge-stack` — merge one PR, a prefix, or an explicitly requested entire
+  same-repository stack, rebasing and retargeting descendants after each merge
+  so parent commits do not leak into child PR diffs (including squash merges).
