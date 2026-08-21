@@ -1,6 +1,6 @@
 ---
 name: backlog-orchestrator
-description: Autonomously executes a bounded dependency-linked GitHub issue tranche across one or more repositories and GitHub Projects. Prefer a parent/epic/build-order issue as the execution manifest. Builds and reconciles the DAG, delegates one issue per Sonnet worker using isolated worktrees and installed skills, coordinates stacked PR ancestry, supervises workers end-to-end, and stops on explicit scope/repair budgets instead of consuming unbounded usage.
+description: Autonomously executes a bounded dependency-linked GitHub issue tranche across one or more repositories and GitHub Projects. Prefer a parent/epic/build-order issue as the execution manifest. Builds and reconciles the DAG, resumes from the earliest still-open executable issue after interruption, delegates one issue per Sonnet worker using isolated worktrees and installed skills, coordinates stacked PR ancestry, supervises workers end-to-end, and stops on explicit scope/repair budgets instead of consuming unbounded usage.
 ---
 
 # Backlog Orchestrator
@@ -12,15 +12,16 @@ The orchestrator owns scope, dependency reasoning, scheduling, worker-pool lifet
 ## Core invariants
 
 1. **GitHub is durable state.** Reconstruct from issues, dependencies, branches, PRs, and CI after interruption.
-2. **A run is bounded.** Never turn one build-order ticket into an open-ended project crawl.
-3. **One worker = one issue = one isolated checkout.** Concurrent workers never share a working tree/index.
-4. **Sonnet is the default worker model.** The orchestrator may use the strongest available reasoning model.
-5. **Only READY work is dispatched.** Hard dependencies must be available on the calculated base.
-6. **Execution dependency is not automatically Git ancestry.** Stack only when code ancestry requires it.
-7. **Workers implement; the orchestrator coordinates.** Reuse installed skills (`implement-issue`, `create-pr`, `resolve-pr-comment`, `merge-stack`) rather than reproducing them.
-8. **The parent owns worker lifetime.** It remains in a supervision/heartbeat loop while workers are active.
-9. **Retries and repair cycles are bounded.** Failure eventually becomes `NEEDS_USER`, not another autonomous attempt.
-10. **Recovery is idempotent.** Never duplicate branches, PRs, or implementations after a restart.
+2. **Closed implementation issues are completed durable state.** A correctly merged PR must close its implementation issue through a canonical GitHub closing relationship.
+3. **A run is bounded.** Never turn one build-order ticket into an open-ended project crawl.
+4. **One worker = one issue = one isolated checkout.** Concurrent workers never share a working tree/index.
+5. **Sonnet is the default worker model.** The orchestrator may use the strongest available reasoning model.
+6. **Only READY work is dispatched.** Hard dependencies must be available on the calculated base.
+7. **Execution dependency is not automatically Git ancestry.** Stack only when code ancestry requires it.
+8. **Workers implement; the orchestrator coordinates.** Reuse installed skills (`implement-issue`, `create-pr`, `resolve-pr-comment`, `merge-stack`) rather than reproducing them.
+9. **The parent owns worker lifetime.** It remains in a supervision/heartbeat loop while workers are active.
+10. **Retries and repair cycles are bounded.** Failure eventually becomes `NEEDS_USER`, not another autonomous attempt.
+11. **Recovery is idempotent.** Never duplicate branches, PRs, or implementations after a restart.
 
 # Environment capabilities
 
@@ -112,17 +113,9 @@ A restart caused by infrastructure failure does **not** reset the conceptual bud
 
 ## Repair-budget behavior
 
-Workers and the orchestrator must track repair attempts. When a PR exhausts CI/review/implementation repair allowance, return `NEEDS_USER` with:
+Workers and the orchestrator must track repair attempts. When a PR exhausts CI/review/implementation repair allowance, return `NEEDS_USER` with issue + PR, failing state, fixes already attempted, latest relevant error/review request, and recommended next action.
 
-- issue + PR;
-- what is failing;
-- fixes already attempted;
-- latest relevant error/review request;
-- recommended next action.
-
-Do not perform another speculative repair merely because capacity remains elsewhere.
-
-`NEEDS_USER` blocks that node and its dependents but does not stop independent DAG branches.
+Do not perform another speculative repair merely because capacity remains elsewhere. `NEEDS_USER` blocks that node and its dependents but does not stop independent DAG branches.
 
 # Models and skills
 
@@ -130,28 +123,15 @@ Use the strongest available reasoning model for orchestration.
 
 Normal implementation workers must use **Sonnet** explicitly when the worker API permits model selection. Do not accidentally inherit the orchestrator's model.
 
-Escalate one worker to the strongest available model only when:
+Escalate one worker to the strongest available model only when Sonnet has failed and the remaining problem is reasoning/architecture related, the user explicitly requests it, or the issue is clearly unusually ambiguous/cross-system before implementation begins. Do not repeatedly alternate models.
 
-- Sonnet has failed and the remaining problem is reasoning/architecture related;
-- the user explicitly requests it; or
-- the issue is clearly unusually ambiguous/cross-system before implementation begins.
-
-Do not repeatedly alternate models.
-
-Workers must have access to the active installed skill set, especially:
-
-- `implement-issue`
-- `create-pr`
-- `resolve-pr-comment`
-- repository/project-specific skills required by the issue
-
-`merge-stack` is used only when merge authority has been explicitly granted; normal implementation workers do not merge their PRs.
+Workers must have access to the active installed skill set, especially `implement-issue`, `create-pr`, `resolve-pr-comment`, and repository/project-specific skills required by the issue. `merge-stack` is used only when merge authority has been explicitly granted; normal implementation workers do not merge their PRs.
 
 If a required skill is unavailable in the worker context, return `BLOCKED` instead of hand-rolling a replacement workflow.
 
 # 1. Discover and validate the bounded DAG
 
-For every in-scope issue capture repository, issue URL, body/comments as needed, state, parent/sub-issue relationships, blocked-by/blocking relationships, linked PRs, explicit build order, and source manifest.
+For every in-scope issue capture repository, canonical issue URL, body/comments as needed, state, parent/sub-issue relationships, blocked-by/blocking relationships, linked PRs, explicit build order, and source manifest.
 
 Read each participating repo's `CLAUDE.md`/`AGENTS.md` and relevant specs. Repositories may use different default branches/workflows.
 
@@ -167,9 +147,9 @@ Classify dependencies:
 
 Validate cycles, missing targets, contradictory edges, cancelled/closed inconsistencies, and manifest references to missing issues. Pause affected paths only where possible.
 
-# 2. Reconcile durable state
+# 2. Reconcile durable state and resume cursor
 
-Before dispatch classify each in-scope issue using GitHub evidence:
+Before dispatch, classify each in-scope issue using GitHub evidence:
 
 - `DONE`
 - `PR_OPEN`
@@ -183,9 +163,36 @@ Before dispatch classify each in-scope issue using GitHub evidence:
 - `NEEDS_USER`
 - `NOT_READY`
 
-Never create a second matching PR. If a branch exists without a PR, determine whether it contains recoverable work before assigning another worker.
+## Canonical completion rule
 
-On restart, re-expand the same manifest/scope and reconcile GitHub before dispatching anything.
+For an implementation issue, prefer the GitHub issue's **closed state** as the durable completion signal, because correctly linked implementation PRs should auto-close their issue on merge.
+
+Reconcile inconsistencies rather than trusting one field blindly:
+
+- issue closed + linked/known implementation PR merged -> `DONE`;
+- issue open + implementation PR merged -> verify whether the PR contained a valid GitHub closing relationship; if it did but GitHub did not close the issue due to unusual base/repository behavior, close the issue explicitly after confirming that PR is the implementation for that issue;
+- issue closed but implementation PR still open/unmerged -> treat as inconsistent and inspect why the issue was closed before using it as `DONE`;
+- PR open -> never dispatch a duplicate worker merely because the issue is still open.
+
+Every PR created by this workflow must use the canonical closing linkage enforced by `create-pr` and must be verified after creation.
+
+## Restart / resume rule
+
+When an orchestration run is restarted after container/session/worker failure:
+
+1. re-expand the exact same bounded manifest/scope;
+2. order its issues by the manifest's explicit build order / DAG priority;
+3. fetch current issue + PR state from GitHub;
+4. skip every issue already proven `DONE`;
+5. adopt existing open PRs/branches as active durable work instead of reimplementing them;
+6. identify the **earliest still-open in-scope issue in build order that is not already represented by a healthy active PR and is otherwise executable**;
+7. resume dispatch from that issue/frontier and then continue normally through the DAG.
+
+"Latest unclosed ticket" means the first remaining unfinished point in the established build sequence, **not** the numerically newest GitHub issue. With parallel groups/fanout, resume the earliest unfinished executable frontier rather than forcing a single linear cursor.
+
+Never restart from issue 1 merely because the parent session died. Never skip an earlier open issue just because later tickets have higher issue numbers.
+
+Never create a second matching PR. If a branch exists without a PR, determine whether it contains recoverable work before assigning another worker.
 
 # 3. Compute the READY frontier
 
@@ -199,6 +206,8 @@ An issue is READY only when:
 6. both concurrency and run-start budgets allow dispatch.
 
 Prioritize explicit manifest build order, then project priority, then work unlocking the largest downstream subtree, then stable issue order.
+
+On restart, preserve this same ordering after skipping `DONE` and adopting existing active PRs. The first new worker should therefore come from the earliest unfinished executable frontier.
 
 # 4. Calculate branch and PR topology
 
@@ -233,7 +242,7 @@ Worker contract:
 ```text
 You are a Sonnet implementation worker. You own exactly one backlog issue.
 
-Issue: <ISSUE URL>
+Issue: <CANONICAL ISSUE URL>
 Repository: <OWNER/REPO>
 Working directory: <DEDICATED WORKTREE/CHECKOUT>
 Branch: <ISSUE BRANCH>
@@ -243,6 +252,8 @@ Execution manifest: <ROOT ISSUE OR NONE>
 Required installed skill: implement-issue
 
 Use the installed implement-issue skill end-to-end. Do not hand-roll its workflow. Do not switch checkout, broaden scope, choose another ticket, or merge the PR.
+
+The PR MUST be created through `create-pr` using the exact canonical implementation issue URL so the PR contains a valid GitHub closing relationship and the issue auto-closes on merge.
 
 Budgets for this issue:
 - implementation attempts remaining: <N>
@@ -260,6 +271,7 @@ Return:
 - branch/base
 - PR URL/number
 - head SHA
+- canonical issue linkage verified: yes/no
 - checks run
 - CI/review state
 - attempts/cycles consumed
@@ -276,14 +288,15 @@ After durable branch/PR state exists and no follow-up needs the exact checkout, 
 2. validate scope/dependencies;
 3. implement in the assigned worktree;
 4. run required local checks;
-5. invoke `create-pr` with the calculated base;
-6. trigger the repository's automated review via `create-pr`;
-7. monitor CI/review where supported;
-8. make bounded targeted CI fixes;
-9. use `resolve-pr-comment` for bounded review fixes;
-10. return durable PR state or `NEEDS_USER`/`BLOCKED`.
+5. invoke `create-pr` with the calculated base **and exact canonical implementation issue URL**;
+6. verify the PR contains the expected GitHub closing relationship;
+7. trigger the repository's automated review via `create-pr`;
+8. monitor CI/review where supported;
+9. make bounded targeted CI fixes;
+10. use `resolve-pr-comment` for bounded review fixes;
+11. return durable PR state or `NEEDS_USER`/`BLOCKED`.
 
-The orchestrator does not duplicate those fixes. It tracks the high-level state, budgets, and whether downstream work can be dispatched.
+The orchestrator does not duplicate those fixes. It tracks the high-level state, budgets, canonical issue linkage, and whether downstream work can be dispatched.
 
 # 7. Parent supervision / heartbeat
 
@@ -294,12 +307,13 @@ Each heartbeat cycle performs real work:
 1. consume worker status/completion messages;
 2. classify workers running/complete/blocked/failed/lost;
 3. reconcile GitHub branches/PRs for changed workers;
-4. inspect relevant CI/review summaries;
-5. update per-issue attempt/repair budgets;
-6. recompute READY frontier;
-7. fill free slots only when the run-start budget allows;
-8. surface any new `NEEDS_USER` item promptly while continuing independent work;
-9. wait using a native task/agent wait mechanism when available, then repeat.
+4. verify canonical issue linkage for newly opened PRs;
+5. inspect relevant CI/review summaries;
+6. update per-issue attempt/repair budgets;
+7. recompute READY frontier;
+8. fill free slots only when the run-start budget allows;
+9. surface any new `NEEDS_USER` item promptly while continuing independent work;
+10. wait using a native task/agent wait mechanism when available, then repeat.
 
 If no native wait exists, perform bounded periodic checks of actual worker/GitHub state. Do not use fake CPU/file-touch/unbounded shell activity as a keepalive.
 
@@ -319,7 +333,7 @@ On worker disappearance:
 
 ## PR_OPEN
 
-Verify PR exists, head/base topology is correct, issue is linked, and expected commits exist. Same-repo descendants may become READY once the upstream branch safely exists; they do not always need the parent PR merged.
+Verify PR exists, head/base topology is correct, canonical issue closing linkage is present, and expected commits exist. Same-repo descendants may become READY once the upstream branch safely exists; they do not always need the parent PR merged.
 
 ## BLOCKED / BLOCKED_EXTERNAL
 
@@ -338,6 +352,8 @@ Surface it to the user in the parent progress/output as soon as practical, inclu
 For dependent PRs, `create-pr` records `Depends on: <parent PR URL>` and uses the calculated base branch.
 
 The orchestrator may create stacks/fanout while implementing, but **does not merge them automatically**. If the user later invokes/authorizes `merge-stack`, that skill owns merge ordering and descendant rebasing/restacking.
+
+After any merge performed by `merge-stack`, reconciliation must verify the corresponding implementation issue is closed. If it is not, inspect the PR's closing relationship and close the issue explicitly only after confirming the correct implementation PR merged.
 
 # Stop conditions
 
@@ -359,9 +375,10 @@ Keep concise state such as:
 ```text
 Manifest: backend#500 — Custom Fields build order
 Scope: 18 authorized issues
+Resume frontier: FE#207
 Run budget: 9/12 issues started
-Complete/PR open: 6
-Active: 3
+Complete (closed): 6
+Active PRs: 3
 Ready: 4
 Blocked: 3
 Needs user: 2
@@ -374,8 +391,10 @@ For each `NEEDS_USER`, include the issue/PR and reason without burying it in gen
 Before returning, reconcile GitHub. Report:
 
 - manifest/scope executed;
+- resume frontier / earliest still-open executable issue;
 - issues started vs run budget;
 - PRs grouped by repository and stack relationship;
+- canonical issue-linkage inconsistencies, if any;
 - remaining CI/review work;
 - `NEEDS_USER` failures with attempted fixes;
 - blocked external prerequisites;
