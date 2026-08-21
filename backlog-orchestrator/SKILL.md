@@ -1,84 +1,100 @@
 ---
 name: backlog-orchestrator
-description: Autonomously executes a bounded dependency-linked implementation tranche from GitHub Issues, Linear, or another supported tracker. Prefers a parent/epic/build-order issue as the execution manifest, validates the DAG before dispatch, resumes safely after interruption, delegates one issue per Sonnet worker using isolated worktrees and installed skills, coordinates stacked PR ancestry, supervises workers end-to-end, and enforces explicit usage/repair budgets.
+description: Autonomously executes a bounded dependency-linked implementation tranche from GitHub Issues, Linear, or another supported tracker. Prefers a parent/epic/build-order issue as the execution manifest, validates the DAG before dispatch, resumes safely after interruption, delegates one issue per Sonnet implementation worker using isolated worktrees and durable remote checkpoints, centrally supervises all PR CI/review activity, dispatches bounded repair workers, coordinates stacked PR ancestry, and enforces explicit usage/repair budgets.
 ---
 
 # Backlog Orchestrator
 
-Execute a prepared implementation tranche autonomously using parallel workers.
+Execute a prepared implementation tranche autonomously using a supervised worker pool.
 
-The orchestrator owns scope, DAG reasoning, scheduling, worker-pool lifetime, recovery, and escalation. It does **not** implement tickets itself. Each implementation issue is delegated to one worker using `implement-issue`.
+The orchestrator owns **scope, DAG reasoning, scheduling, worker-pool lifetime, PR event supervision, repair budgets, recovery, and escalation**. It does not implement application code itself.
 
-## Core invariants
+Implementation and repair logic lives in reusable worker skills:
 
-1. **The issue tracker + GitHub PR state are durable state.** Reconstruct after interruption; never depend only on conversation/task state.
-2. **Canonical issue identity is always the full issue URL.** Short keys/numbers are display helpers only.
+- `validate-backlog` — mandatory shallow DAG preflight; optional deep validation;
+- `implement-issue-core` — one issue → code → checks → durable remote checkpoints → PR;
+- `repair-pr` — one bounded CI or review repair pass;
+- `create-pr` — tracker linkage, stack metadata, PR creation/review trigger;
+- `resolve-pr-comment` — thread-level review repair primitive used by `repair-pr`;
+- `merge-stack` — separately authorized merge/restack workflow.
+
+`implement-issue` remains a standalone one-ticket orchestrator and is **not** the normal worker primitive for this backlog orchestrator. Using `implement-issue-core` directly prevents implementation workers from sitting idle while waiting for CI/reviews and keeps lifecycle ownership centralized in the parent.
+
+# Core invariants
+
+1. **Tracker + GitHub remote state are durable truth.** Never depend only on parent/subagent conversation state or local worktrees.
+2. **Canonical issue identity is the full issue URL.** Short keys/numbers are display helpers only.
 3. **A run is bounded.** Never turn one build-order ticket into an open-ended project crawl.
-4. **One worker = one issue = one isolated checkout.** Concurrent workers never share a mutable worktree/index.
-5. **Sonnet is the default implementation model.** The orchestrator may use the strongest available reasoning model.
-6. **Only validated READY work is dispatched.**
-7. **Execution dependency is not automatically Git ancestry.** Stack only when code ancestry requires it.
-8. **Workers implement; the orchestrator coordinates.** Reuse `validate-backlog`, `implement-issue`, `create-pr`, `resolve-pr-comment`, and `merge-stack`.
-9. **The parent owns worker lifetime.** Stay in the supervision/heartbeat loop while workers are active.
-10. **Retries/repair are bounded.** Failure eventually becomes `NEEDS_USER`.
-11. **Recovery is idempotent.** Never duplicate branches, PRs, or implementations after restart.
+4. **One implementation worker = one issue = one isolated checkout.** Concurrent workers never share mutable Git state.
+5. **In-flight implementation is remotely checkpointed.** Meaningful completed work must not live only inside an ephemeral cloud worktree.
+6. **Sonnet is the default implementation and repair model.** The orchestrator may use the strongest available reasoning model.
+7. **Only validated READY work is dispatched.**
+8. **Execution dependency is not automatically Git ancestry.** Stack only where code ancestry requires it.
+9. **The parent owns all long-lived PR supervision.** Implementation/repair workers perform bounded work and return; they do not wait indefinitely for GitHub events.
+10. **Retries and repair are bounded.** Failure eventually becomes `NEEDS_USER`.
+11. **Recovery is idempotent.** Never duplicate implementations, branches, PRs, or repairs after restart.
+12. **No automatic merges.** Merge authority is separate and explicit.
 
 # Tracker abstraction
 
 Determine tracker from each canonical issue URL.
 
-Supported primary trackers:
+Primary supported trackers:
 
 - GitHub Issues: `https://github.com/.../issues/...`
 - Linear: `https://linear.app/.../issue/...`
 
-Other trackers may be used only when the environment has reliable read/status/dependency support and the repository documents PR-linking semantics.
+Other trackers may be used only when reliable read/status/dependency support and PR-linking semantics exist.
 
-For every tracker prefer native structured metadata where available:
+Prefer tracker-native structured metadata where available:
 
 - parent/sub-issue hierarchy;
 - `blocked by` / `blocking` relationships;
-- state/status;
+- status/state;
 - project/priority/build-order fields.
 
-Always also inspect issue description/comments for explicit dependency language because textual blockers may not yet have been normalized into native relationships.
+Also inspect descriptions/comments for explicit dependency language because textual dependencies may not yet have been normalized.
 
 ## Completion semantics
 
-Completion is tracker-specific:
+### GitHub
 
-### GitHub issue
+A correctly linked implementation PR uses a full-URL GitHub closing relationship. Treat issue closed + implementation PR merged as canonical `DONE`. If a correctly linked merged PR failed to auto-close due to unusual stack/base behavior, explicitly close only after verifying that exact PR implemented the issue.
 
-A correctly linked implementation PR should contain a GitHub closing relationship using the full issue URL. On merge to the appropriate closing branch, the issue should close automatically. Treat issue closed + implementation PR merged as canonical `DONE` evidence.
+### Linear
 
-### Linear issue
-
-A PR must contain the full Linear issue URL plus the Linear issue identifier/linking convention required by the repository's Linear↔GitHub integration. Linear status automation may move the issue to Done/Completed on merge. Treat the configured terminal Linear status + linked implementation PR merged as canonical `DONE` evidence.
-
-Do not manually close/complete a Linear issue merely because a PR merged unless repository/workspace policy explicitly requires that fallback.
+A PR must retain the full Linear issue URL and repository/workspace linking convention. Treat configured terminal Linear status + linked merged implementation PR as canonical `DONE`. Do not manually complete Linear issues unless workspace policy explicitly requires that fallback.
 
 # Environment capabilities
 
-Work in Claude Desktop cloud, local Claude Code folders/worktrees, Remote Control, or equivalent environments.
+This skill must work in Claude Desktop cloud containers, local Claude Code folders/worktrees, Remote Control sessions, and equivalent environments.
 
-Prefer available capabilities safely:
+Prefer safely available capabilities:
 
-1. local `git` for worktrees/history;
-2. authenticated `gh` for GitHub operations;
+1. local `git` for branch/worktree/history operations;
+2. authenticated local `gh` for GitHub operations;
 3. GitHub MCP when `gh` is unavailable;
-4. tracker-specific tools/MCP for issue reads/writes (e.g. Linear);
-5. native Claude subagent/task APIs for worker dispatch, Sonnet selection, worktree isolation, status, and waiting;
+4. tracker-specific tools/MCP (for example Linear) for issue reads/writes;
+5. native Claude task/subagent APIs for model choice, isolated worktrees, completion notifications, and waits;
 6. installed skills from the active Claude configuration.
 
-Missing optional tooling must degrade safely. No worktree isolation => serialize that repo. No tracker dependency fields exposed => use available structured metadata + text and report limitations. No `gh` => GitHub MCP. No native Stack support => ordinary PR base/head relationships.
+Missing optional capabilities degrade safely:
+
+- no `gh` → GitHub MCP;
+- no native Stack feature → ordinary PR base/head relationships;
+- no tracker dependency fields → structured metadata available + text scan + warning;
+- no worktree isolation → serialize that repository;
+- no event subscription → bounded meaningful polling from the parent.
+
+Do not hardcode one skills directory. Workers must inherit/preload required installed skills.
 
 # Invocation and bounded scope
 
-Support these modes, in preference order.
+Support these entry modes, in preference order.
 
 ## 1. Parent / epic / build-order issue — preferred
 
-Treat the supplied root issue as an execution manifest.
+Treat the supplied root as an execution manifest.
 
 Default authorized implementation set:
 
@@ -86,124 +102,139 @@ Default authorized implementation set:
 - recursive sub-issues/descendants;
 - issues explicitly named by the manifest as implementation items.
 
-External dependency issues may be inspected for readiness but are **not** authorized for implementation unless the root explicitly includes them or the user supplies them.
+External dependencies may be inspected for readiness but are not authorized for implementation unless explicitly included by the root/user.
 
-Do not absorb unrelated work merely because it shares a project, repo, label, milestone, or appears in a child's contextual links.
+Do not absorb work merely because it shares a project, repo, label, milestone, or contextual link.
 
-The root issue itself is coordination metadata unless it has independent implementation acceptance criteria.
+The root itself is coordination metadata unless it contains independent implementation acceptance criteria.
 
 ## 2. Explicit issue set
 
-The supplied canonical issue URLs are the implementation boundary. Read external dependencies for readiness only.
+The supplied full issue URLs form the implementation boundary. Read external dependencies for readiness only.
 
 ## 3. One or more project boards/projects
 
-A project is a discovery surface, not the execution graph. Combine supplied boards/projects across FE/BE repos into one candidate DAG. Prefer an identifiable build-order/root issue as the bounded manifest before dispatch.
+Projects are discovery surfaces, not execution graphs. Combine FE/BE/shared projects into one candidate DAG. Prefer an identifiable selected build-order/root issue before dispatching broad project work.
 
-# Mandatory preflight validation
+# Mandatory validation preflight
 
-**Before dispatching any new implementation worker, invoke `validate-backlog` in `shallow` mode on the complete bounded scope.**
+Before dispatching any **new** implementation worker, invoke `validate-backlog shallow` on the entire bounded scope.
 
-Do not hand-roll this check inside the orchestrator.
+Use the validator's normalized DAG rather than rebuilding a separate competing graph.
 
-Pass the root manifest / explicit issue set and tracker context to `validate-backlog`.
+The validator must inspect native hierarchy/dependencies plus text dependency statements and detect cycles, missing targets, contradictions, duplicates, and scope leaks.
 
-The preflight must:
+Results:
 
-- read native parent/sub-issue relationships;
-- read native `blocked by` / `blocking` relationships when available;
-- scan descriptions/comments for dependency language;
-- compare text dependencies with native metadata;
-- detect cycles, missing targets, contradictory edges, duplicates, and scope leaks;
-- return a normalized DAG using canonical full issue URLs.
+- `PASS` → proceed;
+- `PASS_WITH_WARNINGS` → proceed only where warnings do not make ordering unsafe;
+- `FAIL` → stop affected paths, continuing only validator-confirmed safe independent branches.
 
-Behavior by result:
+Do not automatically mutate dependency metadata. GitHub normalization is handled separately by `normalize-github-dependencies` when requested.
 
-- `PASS` => use the returned normalized DAG and continue.
-- `PASS_WITH_WARNINGS` => continue only when warnings do not make ordering unsafe; surface material warnings.
-- `FAIL` => do not dispatch affected work. Surface the validation errors and continue only independent safe branches if the validator explicitly identifies them.
-
-The orchestrator does **not** automatically mutate dependency metadata. If the user wants GitHub description-based relationships converted into native links, use `normalize-github-dependencies` separately.
-
-A user may explicitly request `validate-backlog deep` before orchestration. Deep validation is optional and is **not** the default preflight because it can consume substantial tokens/code-reading time.
+`validate-backlog deep` is optional and user-invoked because it can consume materially more model/code-reading budget.
 
 # Default usage safeguards
 
-Unless user overrides:
+Unless explicitly overridden:
 
-- maximum concurrent implementation workers: **4**;
-- maximum newly started issues per orchestrator invocation: **12**;
-- maximum implementation attempts per issue: **2 total**;
-- maximum strongest-model escalation per issue: **1**;
-- maximum CI repair cycles per PR: **2**;
-- maximum review-fix cycles per PR: **2**;
-- maximum lost-worker redispatches per issue: **1**;
+- max concurrent implementation workers: **4**;
+- max newly started issues per invocation: **12**;
+- max implementation attempts per issue: **2 total**;
+- max strongest-model escalation per issue: **1**;
+- max CI repair cycles per PR: **2**;
+- max review-fix cycles per PR: **2**;
+- max lost-worker redispatches per issue: **1**;
 - automatic merges: **disabled**.
 
-When the 12-new-issue run budget is reached, allow active workers to reach durable state, stop starting more issues, reconcile, and return a checkpoint. A restarted session does not count already-started/adopted work as newly started again.
+A repair cycle may handle one coherent group of related failures/comments. Never create infinite fix/review loops.
 
-Budget exhaustion on a node => `NEEDS_USER`, not another speculative retry. Continue independent branches where safe.
+When the 12-new-issue limit is reached, allow active workers/repairs to reach durable state, stop starting new issues, reconcile, and return a checkpoint. Restarting does not count already-adopted work as newly started.
 
-# Models and worker skills
+Budget exhaustion on a node → `NEEDS_USER`, not another speculative attempt. Continue unrelated DAG branches safely.
 
-Use strongest available reasoning model for orchestration.
+# Model and skill policy
 
-Normal implementation workers must explicitly use **Sonnet** when the worker API supports model selection. Do not accidentally inherit Opus from the parent.
+The orchestrator uses the strongest available reasoning model where available.
 
-Escalate one issue to strongest model only for reasoning-heavy repeated failure or clearly exceptional ambiguity.
+Normal implementation and repair workers use **Sonnet explicitly** when the subagent API supports model selection. Do not accidentally inherit the parent's stronger model.
 
-Workers must inherit/preload installed skills, especially `implement-issue`, `create-pr`, and `resolve-pr-comment`. If a required skill is unavailable, return `BLOCKED` rather than improvising.
+At most one strongest-model implementation escalation is allowed for a reasoning-heavy repeated failure.
 
-# Reconcile durable state and restart
+Implementation workers must have `implement-issue-core` and `create-pr`. Repair workers must have `repair-pr` and, for review fixes, `resolve-pr-comment`.
 
-After preflight and before dispatch, classify every in-scope issue from tracker + GitHub evidence:
+If a required skill is unavailable in a worker, return `BLOCKED` rather than improvising a substitute workflow.
+
+# Durable state and restart
+
+After validation and before dispatch, reconcile every in-scope issue from tracker + GitHub remote evidence:
 
 - `DONE`
 - `PR_OPEN`
 - `CI_RUNNING`
 - `CI_FAILED`
 - `IN_REVIEW`
-- `IMPLEMENTING`
+- `IMPLEMENTING_REMOTE`
 - `READY`
 - `BLOCKED`
 - `BLOCKED_EXTERNAL`
 - `NEEDS_USER`
 - `NOT_READY`
 
-Never create a duplicate PR for an issue that already has a valid active implementation PR.
+## Durable implementation evidence
 
-## Restart / resume rule
+Prefer evidence in this order:
 
-On orchestration restart:
+1. merged linked implementation PR + tracker terminal state;
+2. open linked implementation PR;
+3. remote issue branch with pushed commits/checkpoints;
+4. local worktree only (least durable; never sufficient across container restart).
 
-1. re-expand the exact same bounded scope;
-2. rerun shallow `validate-backlog` to account for tracker changes since the previous session;
-3. order issues according to validated DAG + explicit manifest build order;
-4. query current tracker status and GitHub PR/branch state;
+A cloud worktree is ephemeral. **Do not claim restart safety for unpushed local changes.**
+
+## Restart / resume
+
+On restart:
+
+1. re-expand exactly the same bounded scope;
+2. rerun shallow validation;
+3. order by normalized DAG + explicit build order;
+4. fetch current tracker status, PRs, and remote branches;
 5. skip every proven `DONE` issue;
-6. adopt existing open PRs/branches as durable active work;
-7. identify the **earliest still-unfinished executable frontier** in build order;
-8. resume new dispatch there.
+6. adopt existing PRs;
+7. adopt matching remote issue branches with checkpoints even when no PR exists yet;
+8. identify the earliest still-unfinished executable frontier;
+9. resume there.
 
-"Latest unclosed ticket" means the first remaining unfinished point in the established sequence, not the numerically newest issue. Parallel/fanout groups can have multiple resume-frontier nodes.
+"Latest unclosed ticket" means the earliest remaining unfinished point in the established build sequence, not the numerically newest issue. Parallel groups can have multiple resume-frontier nodes.
 
-# DAG / PR topology
+Never restart from the beginning merely because the parent session died.
 
-Use validator output plus implementation reality to classify dependencies:
+## Branch discoverability
 
-- **hard same-repo code dependency**: downstream needs unmerged upstream code;
-- **execution dependency only**: order matters but code ancestry does not;
-- **fanout**: multiple children depend on one parent but not each other;
-- **cross-repo dependency**: scheduler/readiness edge only;
-- **external prerequisite**: out of authorized scope, inspect only.
+Follow repository branch conventions. Where conventions permit, branch names should include the issue key/number to improve recovery (`123-...`, `FEP-195-...`). Never violate repo naming rules just to enforce this.
 
-PR base relationships are authoritative for stacks:
+If branch naming is not enough to identify an orphan remote branch safely, inspect commit messages/diffs/tracker development metadata. If still ambiguous, return `NEEDS_USER` rather than attaching the wrong branch to an issue.
+
+# DAG and PR topology
+
+Classify validated dependencies by implementation reality:
+
+- hard same-repo code dependency;
+- execution dependency only;
+- shared-parent fanout;
+- cross-repo scheduler dependency;
+- external prerequisite.
+
+PR base relationships are the durable stack representation.
+
+Linear same-repo chain:
 
 ```text
 main -> A -> B -> C
 ```
 
-means B's PR targets A's branch, C targets B's branch.
+means B targets A's branch and C targets B's.
 
 Fanout:
 
@@ -213,138 +244,248 @@ main -> A
         └-> C
 ```
 
-B and C both target A; never linearize them merely due to completion order.
+B and C both target A and never each other merely due to timing.
 
-Multiple unmerged sibling dependencies with no valid common base => block rather than invent an integration merge.
+Multiple unmerged siblings with no valid common base → block rather than invent an integration merge.
 
 Cross-repo dependencies never become Git stack ancestry.
 
 # Worker dispatch and mandatory isolation
 
-Every implementation worker owns one isolated checkout for the lifetime of its issue.
+Every implementation worker owns one isolated checkout for its issue.
 
-For local repos, create a dedicated Git worktree from the exact calculated base. If the Claude worker API supports native worktree isolation, use it. An environment-provided isolated clone is acceptable if exclusively owned by the worker.
+For local repos, create a dedicated worktree from the exact calculated base. Use native worktree isolation where available. An exclusive environment clone also qualifies.
 
-Concurrent workers must never share a working tree/index or switch branches underneath one another. If isolation is unavailable, reduce that repository to one active worker.
+Concurrent workers must never share one working tree/index or switch branches under one another. If isolation cannot be created, reduce that repository's concurrency to one.
 
 Before dispatch:
 
 1. calculate/fetch exact required base;
-2. allocate issue branch + isolated worktree;
-3. record canonical issue URL -> tracker -> repo -> worktree -> branch -> base -> worker;
-4. increment newly-started count only for genuinely new work in this invocation;
-5. dispatch Sonnet worker.
+2. create/identify issue branch;
+3. allocate isolated worktree/check-out;
+4. record canonical issue URL → tracker → repo → worktree → branch → base → worker;
+5. dispatch Sonnet worker with `implement-issue-core`.
 
-Worker prompt must include:
+Worker prompt includes canonical issue URL, tracker, repo, worktree, branch, required base, manifest, dependency context, and implementation budget.
+
+## Remote checkpoint requirement
+
+`implement-issue-core` must:
+
+1. push the issue branch early so it has remote identity;
+2. commit/push meaningful coherent checkpoints during substantial implementation;
+3. push final implementation state before returning;
+4. create/verify the PR;
+5. return remote branch/PR/head SHA.
+
+Do not use commits as fake heartbeat activity. Checkpoint after meaningful completed work so container destruction loses only the most recent unfinished chunk.
+
+# Central PR supervision — parent responsibility
+
+Once an implementation worker returns `PR_OPEN`, **its worker slot is released**. The implementation worker does not remain alive waiting for CI/review.
+
+The parent owns all long-lived PR state for every active PR.
+
+For each PR maintain:
 
 ```text
-Canonical issue URL: <FULL URL>
-Tracker: <github|linear|...>
-Repository: <OWNER/REPO>
-Working directory: <DEDICATED WORKTREE>
-Branch: <ISSUE BRANCH>
-Required base: <BASE BRANCH>
-Execution manifest: <ROOT FULL URL OR NONE>
-Required skill: implement-issue
-Budgets: implementation <N>, CI <N>, review <N>, escalation <N>
+canonical issue URL
+tracker
+PR URL
+branch/base
+remote head SHA
+CI state
+review state
+CI repair cycles used/remaining
+review repair cycles used/remaining
+stack parent/children
 ```
 
-Worker must use `implement-issue` end-to-end and return canonical issue URL, tracker, PR URL, branch/base, linkage verification, checks, CI/review state, attempts consumed, and blocker/`NEEDS_USER` details.
+## Event subscriptions
 
-# End-to-end worker lifecycle
+Prefer available event-driven mechanisms for:
 
-`implement-issue` owns:
+- workflow/check completion/failure;
+- PR review/comment activity;
+- branch/head changes;
+- merge/close events.
 
-1. issue/comments/spec reading;
-2. dependency/scope validation;
-3. implementation;
-4. local checks;
-5. `create-pr` with full canonical issue URL and exact base;
-6. tracker-specific PR linkage verification;
-7. automated review trigger;
-8. bounded CI repair;
-9. bounded review-comment resolution;
-10. durable result.
+If event subscriptions are unavailable, the **parent** performs bounded polling at reasonable intervals. Avoid one child agent per PR sitting idle.
 
-The orchestrator does not duplicate worker fixes. It tracks high-level state and budgets.
+The parent heartbeat therefore has genuine work: consuming worker completions, consuming/reconciling PR events, updating state/budgets, dispatching repairs, and unlocking DAG nodes.
 
-# Parent supervision / heartbeat
+## CI failure handling
 
-The main thread remains active while any worker is running or completion may unlock more work.
+On relevant CI failure:
 
-Each cycle:
+1. retrieve the smallest useful failure/log context;
+2. determine whether failure belongs to the PR;
+3. if code repair is justified and budget remains, allocate an isolated checkout/worktree for the PR branch and dispatch one Sonnet worker invoking `repair-pr` with `repair type = ci`;
+4. adopt its pushed remote head and increment the repair cycle;
+5. release the repair worker immediately;
+6. parent resumes waiting for CI.
 
-1. consume worker status/completion messages;
-2. classify running/complete/blocked/failed/lost;
-3. reconcile tracker + GitHub branch/PR state;
-4. verify canonical issue linkage on newly opened PRs;
-5. inspect relevant CI/review summaries;
-6. update budgets;
-7. recompute READY frontier from validated DAG;
-8. fill free slots while run budget permits;
-9. surface new `NEEDS_USER` items promptly;
-10. wait using native task/agent waiting when available, then repeat.
+If failure is external/flaky and no code change is justified, do not consume a repair cycle.
 
-Do not use fake CPU/file-touch loops merely as keepalive. If no native wait exists, use bounded meaningful task/GitHub/tracker reconciliation.
+After CI budget exhaustion → `NEEDS_USER`.
 
-The parent must not return final while workers remain active unless the task runtime itself has failed and safe continuation is impossible.
+## Review handling
 
-## Lost worker handling
+On actionable review feedback:
 
-Inspect worktree + GitHub first. Adopt durable branch/PR state if present. Preserve recoverable unpushed work if possible. Redispatch at most once. After that mark `NEEDS_USER`/infrastructure failure and continue independent paths.
+1. group the coherent current review round;
+2. if review budget remains, allocate an isolated checkout of the PR branch and dispatch one Sonnet `repair-pr` worker with `repair type = review`;
+3. the repair worker uses `resolve-pr-comment` where relevant, commits/pushes, and returns;
+4. adopt new head and increment review cycle;
+5. retrigger/request review if repo convention requires it;
+6. parent resumes waiting.
 
-# Outcome handling
+Product/architecture judgment → `NEEDS_USER` without speculative repair.
+
+## Repair-worker isolation
+
+Never allow an implementation worker and repair worker to mutate the same branch simultaneously. A PR branch may have only one active mutating worker at a time.
+
+Before repair, verify remote head has not moved unexpectedly. If it has, reconcile/recreate the repair checkout from the current remote head.
+
+# Parent supervision / anti-idle loop
+
+The main orchestrator thread must remain active while any of the following exists:
+
+- implementation worker running;
+- repair worker running;
+- active PR waiting for CI/review and more in-scope work/repair may occur;
+- a completion/event may unlock another READY issue;
+- the run has not hit a stop condition.
+
+Each heartbeat cycle performs real orchestration work:
+
+1. consume implementation/repair worker completion messages;
+2. verify all active workers still exist;
+3. reconcile tracker status + GitHub remote branches/PRs;
+4. consume/reconcile CI/review/PR events;
+5. update remote-head and repair-budget state;
+6. dispatch required bounded repair workers;
+7. recompute READY frontier;
+8. fill available implementation slots while run budget permits;
+9. inspect stack ancestry changes that affect descendants;
+10. surface new `NEEDS_USER` states promptly;
+11. wait using native task/event wait where available, then repeat.
+
+Do not use detached sleeps, CPU loops, file-touch loops, or meaningless commits solely to keep the container alive.
+
+### Why parent-owned PR supervision matters
+
+This event loop is deliberately parent-owned because it:
+
+- gives the Desktop cloud parent continuing legitimate work while children are short-lived;
+- avoids Sonnet agents consuming context/slots while idle;
+- centralizes repair budgets and DAG unlocking;
+- makes restart reconstruction possible entirely from remote state.
+
+This reduces but **does not guarantee elimination** of cloud container idle/session termination. Remote checkpoints remain mandatory recovery protection.
+
+## Parent termination
+
+Do not return final while a mutating worker is active.
+
+For PRs merely waiting on external CI/review, continue event supervision while the environment supports it and the run remains active. If the runtime cannot remain alive reliably while only external events are pending, reconcile all remote durable state and return a restartable checkpoint rather than pretending monitoring will continue.
+
+# Lost worker handling
+
+If an implementation worker disappears:
+
+1. inspect GitHub remote branch/PR first;
+2. inspect local worktree if container still exists;
+3. adopt pushed checkpoints/PR when present;
+4. if only local unpushed work survives, preserve it and push before redispatch if safe;
+5. redispatch at most once from latest durable remote checkpoint;
+6. after repeated loss → `NEEDS_USER`/infrastructure failure.
+
+If the entire cloud container disappears, local worktrees are assumed lost. Resume from the most recent remote branch checkpoint/PR only.
+
+A lost repair worker follows the same rule: inspect remote head before retrying and never double-apply a repair that was already pushed.
+
+# Stack mutation while PRs are open
+
+When an upstream stack branch receives a new implementation/review/CI commit, descendants may temporarily be based on its older history.
+
+Do not blindly restack every descendant after every parent push; this creates unnecessary churn. Instead:
+
+- record that descendants may be `STACK_STALE`;
+- before treating a descendant as final review-ready/merge-ready, reconcile its ancestry;
+- before/after parent merge, use `merge-stack`/restack logic as required;
+- if stale ancestry makes CI/review diffs misleading, restack earlier before continuing that descendant.
+
+Any rebase/restack that changes a descendant remote branch must be reflected in parent PR state before more repairs are dispatched to that branch.
+
+# Outcomes
 
 ## PR_OPEN
 
-Verify PR exists, correct head/base, full canonical issue URL + tracker linking semantics, and expected commits.
+Implementation reached durable remote PR state. Parent assumes supervision.
 
 ## BLOCKED / BLOCKED_EXTERNAL
 
-Stop that path. Never silently add an external prerequisite to implementation scope.
+Stop affected path; never silently enlarge scope.
 
 ## FAILED
 
-Retry only within budget. At most one reasoning escalation. Then `NEEDS_USER`.
+Retry only inside implementation/lost-worker budgets. At most one strongest-model escalation when reasoning-heavy. Then `NEEDS_USER`.
 
 ## NEEDS_USER
 
-Surface canonical issue URL, PR URL if any, failure, attempts, latest relevant error/review request, and recommended next action. Stop spending tokens on that node.
+Surface canonical issue URL + PR URL, failure/review state, attempts already consumed, and recommended action. Stop spending tokens on the node but continue safe independent branches.
 
-# Stack behavior
+# Merge behavior
 
-`create-pr` writes `Depends on: <full parent PR URL>` for direct stacked parents. The orchestrator may construct stacks/fanout but does not merge automatically. `merge-stack` owns authorized merge/restack operations.
+Normal orchestration never merges automatically.
 
-After merge, reconcile tracker-specific completion:
-
-- GitHub: verify implementation issue closed; if closing relationship was correct but unusual stack/base behavior prevented auto-close, explicitly close only after confirming the implementation PR merged.
-- Linear: verify configured Linear workflow automation moved the issue to its expected terminal status; report mismatch rather than guessing workspace policy.
+If user separately authorizes `merge-stack`, that skill owns merge ordering and descendant rebasing/restacking. After merge, parent/restart reconciliation verifies tracker completion semantics.
 
 # Stop conditions
 
-Stop starting new work when:
+Stop starting new implementation work when:
 
 - all in-scope issues reached requested durable state;
-- 12-new-issue run budget is reached;
-- all remaining paths are blocked/`NEEDS_USER`;
+- 12-new-issue budget reached;
+- every remaining path is blocked/`NEEDS_USER`;
 - user asks to stop;
 - safety approval is needed;
 - infrastructure repeatedly fails.
 
-# Progress and completion
+If only external CI/review is pending and the environment cannot safely stay active, return a durable checkpoint explicitly stating what needs reconciliation on restart.
 
-Report canonical URLs for issues/PRs when ambiguity matters. A compact status may show short keys additionally.
+# Progress and checkpoint output
 
-Before returning, reconcile tracker + GitHub and report:
+Keep concise parent state such as:
 
-- manifest/scope;
+```text
+Manifest: <full URL>
+Validation: PASS
+Scope: 18 issues
+Run budget: 9/12 newly started
+Implementation workers: 3
+Repair workers: 1
+Active PRs: 7
+Waiting CI/review: 4
+Ready: 3
+Blocked: 2
+Needs user: 1
+Resume frontier: <full URL(s)>
+```
+
+Before returning, reconcile tracker + GitHub remote state and report:
+
 - validation result/warnings;
+- manifest/scope;
 - resume frontier;
-- issues started vs run budget;
-- PRs by repository/stack;
-- issue-linkage or tracker-status inconsistencies;
-- remaining CI/review work;
+- implementation/repair workers still active (normally none before final);
+- PRs and stack topology;
+- remote checkpoint branches without PRs;
+- CI/review states and repair budgets consumed;
+- issue-linkage/tracker-status inconsistencies;
 - `NEEDS_USER` items;
 - external blockers;
 - unstarted work and why;
-- whether the same manifest can safely resume later.
+- whether invoking the same manifest can safely resume.
