@@ -1,6 +1,6 @@
 ---
 name: create-pr
-description: Create a GitHub pull request (draft for work repos, full for personal ones) following the current repo's branch naming, pre-PR checks, and issue-linking conventions, then trigger a PR review. Use whenever the user asks to open/create a PR, or when the implement-issue skill reaches its PR step.
+description: Create a GitHub pull request (draft for work repos, full for personal ones) following the current repo's branch naming, pre-PR checks, issue-linking conventions, and any explicit base branch supplied by a calling orchestration skill, then trigger a PR review. Use whenever the user asks to open/create a PR, or when the implement-issue skill reaches its PR step.
 ---
 
 # Create a GitHub Pull Request
@@ -15,6 +15,23 @@ way — repos vary between `main` and `master` (and occasionally something
 else) — with `git remote show origin | sed -n '/HEAD branch/s/.*: //p'` (or
 `gh repo view --json defaultBranchRef -q .defaultBranchRef.name` if `gh` is
 available). Never hardcode `main`.
+
+## PR base branch
+
+If the user or a calling skill explicitly supplies a required PR base branch,
+**that base takes precedence over the repository default branch**. Preserve it
+through branch creation and PR creation; do not silently replace it with the
+default branch. This is required for stacked PRs and fanout from an unmerged
+parent branch.
+
+Validate that the supplied base exists in the same repository before creating
+the PR. If it does not exist, stop and report the blocker rather than falling
+back to the default branch.
+
+If no explicit base is supplied, use the repository default branch discovered
+above.
+
+Call the resulting branch `<pr-base>` throughout this workflow.
 
 ## Before creating the PR
 
@@ -82,14 +99,14 @@ In a remote/web session (no `gh` CLI access), use the GitHub MCP tools:
 
 - Push the branch first: `git push -u origin <branch>`
 - `mcp__github__create_pull_request` with the resolved `owner`/`repo`,
-  `base: <default branch>`, `head: <branch>`, `draft` set per the rule above,
+  `base: <pr-base>`, `head: <branch>`, `draft` set per the rule above,
   `title`, and `body`
 
 In a local session with `gh` CLI available:
 
 ```bash
 git push -u origin <branch>
-gh pr create --base <default-branch> --draft --title "Title" --body "Closes: <issue URL>
+gh pr create --base <pr-base> --draft --title "Title" --body "Closes: <issue URL>
 
 Description..."
 ```
@@ -125,4 +142,4 @@ resolve flow here.
 
 ## Output
 
-Return the PR URL and confirm the review-trigger comment was posted.
+Return the PR URL, the PR base branch (especially when non-default), and confirm the review-trigger comment was posted.
