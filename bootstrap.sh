@@ -13,8 +13,21 @@ CLAUDE_DIR="$HOME/.claude"
 # --- Skills ---
 echo "Installing skills..."
 mkdir -p "$CLAUDE_DIR/skills"
-cp -r "$SCRIPT_DIR/create-pr" "$SCRIPT_DIR/resolve-pr-comment" "$SCRIPT_DIR/implement-issue" "$CLAUDE_DIR/skills/"
-echo "  Installed: create-pr resolve-pr-comment implement-issue"
+SKILLS=(
+  create-pr
+  resolve-pr-comment
+  implement-issue-core
+  repair-pr
+  implement-issue
+  validate-backlog
+  normalize-github-dependencies
+  backlog-orchestrator
+  merge-stack
+)
+for skill in "${SKILLS[@]}"; do
+  cp -r "$SCRIPT_DIR/$skill" "$CLAUDE_DIR/skills/"
+done
+echo "  Installed: ${SKILLS[*]}"
 
 # --- Permissions ---
 PERMISSIONS_FILE="$SCRIPT_DIR/permissions.json"

@@ -1,6 +1,6 @@
 ---
 name: create-pr
-description: Create a GitHub pull request (draft for work repos, full for personal ones) following the current repo's branch naming, pre-PR checks, and issue-linking conventions, then trigger a PR review. Use whenever the user asks to open/create a PR, or when the implement-issue skill reaches its PR step.
+description: Create a GitHub pull request following repo conventions and any explicit base branch supplied by an orchestrator. Ensures tracker-specific implementation linkage, records direct stacked parent PRs with `Depends on:`, verifies the created PR, and triggers the repository's automated review convention when requested by the calling workflow.
 ---
 
 # Create a GitHub Pull Request
@@ -9,120 +9,131 @@ description: Create a GitHub pull request (draft for work repos, full for person
 
 Create a pull request: $ARGUMENTS
 
-Determine `owner/repo` from the current git remote (`git remote get-url origin`)
-rather than assuming a fixed repo. Determine the default branch the same
-way — repos vary between `main` and `master` (and occasionally something
-else) — with `git remote show origin | sed -n '/HEAD branch/s/.*: //p'` (or
-`gh repo view --json defaultBranchRef -q .defaultBranchRef.name` if `gh` is
-available). Never hardcode `main`.
+Determine `owner/repo` from the current git remote. Determine the default branch from the repository rather than hardcoding `main`.
+
+## PR base branch
+
+If the user or calling skill supplies a required PR base branch, **that base takes precedence over the repository default branch**. Validate it exists in the same repository. If it does not, stop rather than falling back.
+
+If no explicit base is supplied, use the repository default branch. Call the resulting branch `<pr-base>`.
+
+## Detect a stacked-PR parent
+
+A non-default base is not automatically a stack parent because repositories may have long-lived integration branches.
+
+Use this precedence:
+
+1. If the caller supplies a parent PR URL, fetch it and verify its head branch is exactly `<pr-base>`.
+2. Otherwise search open PRs in the same repository for a PR whose head branch is exactly `<pr-base>`.
+3. If exactly one exists, it is `<parent-pr>`.
+4. If none exists, treat `<pr-base>` as an ordinary integration base and do not add stack metadata.
+5. If ambiguous, stop rather than writing incorrect metadata.
+
+A parent PR must be in the same repository. Cross-repository dependencies are scheduler/tracker relationships, never Git stack parents.
 
 ## Before creating the PR
 
-Check this repo's contribution doc (`CLAUDE.md` or `AGENTS.md`) for pre-PR
-checks — typecheck, lint, format, test, or equivalent. Run whatever it
-specifies and fix all failures before opening the PR. If no such doc exists,
-run whatever check scripts the repo's `package.json` (or equivalent) defines.
+Read `CLAUDE.md`/`AGENTS.md` for pre-PR checks, branch conventions, PR templates, draft/full rules, tracker linkage, and review-trigger conventions. Run required checks before opening the PR unless the caller explicitly documents that final verification was already completed by `implement-issue-core`.
 
 ## Branch naming
 
-Follow the branch naming convention documented in this repo's `CLAUDE.md` /
-`AGENTS.md` if one exists. Otherwise use the current branch as-is — don't
-invent a convention.
+Follow documented repo convention. Otherwise preserve the current branch; do not invent a convention.
 
-## Linking the issue
+# Tracker-specific issue linkage
 
-Try to determine the issue this PR closes **from the conversation context
-only** — never guess from the branch name. This is usually already known:
+Every implementation PR must be unambiguously linked to the exact canonical issue URL it implements.
 
-- The user named an issue earlier in the conversation.
-- This skill was invoked as the final step of `implement-issue`, which already
-  has the issue URL in context.
+Determine tracker from the full canonical issue URL.
 
-The `Closes:` line below always needs the full issue URL, never a bare
-number or identifier — a bare Linear identifier (`AGE-738`) renders as
-plain, unclickable text, and a bare `#1234` only resolves correctly inside
-the exact repo it's typed in. If you only have a number or identifier in
-hand, resolve it to a URL first
-(`https://github.com/<owner>/<repo>/issues/<n>` for GitHub; ask the user or
-look it up via the Linear MCP tools for Linear) before writing the `Closes:`
-line.
+## GitHub Issues
 
-If no issue can be determined from context, ask the user for the issue URL.
-If the user confirms there isn't one (e.g. a quick fix with no tracked
-issue), proceed without a `Closes:` line — don't block PR creation on it.
-For Linear-tracked work, the identifier leading the PR title (e.g.
-`AGE-738 Support markdown in …`) is a separate convention Linear recognizes
-on its own — keep using it if the repo does, but it doesn't substitute for a
-linked `Closes:` line in the body.
+Use a GitHub-recognized closing keyword with the **full canonical issue URL**, for example:
 
-## PR description template
-
-If one or more issues were confirmed, the description must begin with one
-`Closes:` line per issue, each the full URL:
-
-```
-Closes: <issue URL>
+```text
+Closes: https://github.com/acme/repo/issues/123
 ```
 
-Never a bare `#N` or bare identifier — see "Linking the issue" above for why.
-Follow with a short description of what changed and why (background,
-approach, notable implementation details). If no issue was confirmed, start
-straight with the description — omit the `Closes:` line entirely, don't leave
-a placeholder. Mirror `.github/pull_request_template.md` if the repo has one.
+`Fixes:` or `Resolves:` are acceptable when repo convention requires them. `Part of:` alone is insufficient when the implementation issue should auto-close on merge.
 
-## Creating the PR
+## Linear
 
-Draft or full: **work-related repos get a draft; personal repos get a full
-PR.** The repo's own docs decide, and they win where present — if
-`CLAUDE.md`/`AGENTS.md` or the rules they point at say to open PRs as drafts,
-open a draft. Where nothing is documented, open a full PR. An explicit
-request from the user, or from a calling skill, overrides both.
+Preserve the **full Linear issue URL** near the top of the PR body and follow the repository/workspace's documented Linear↔GitHub linking convention. Where the integration recognizes the Linear identifier in the PR title/body, preserve that identifier as well.
 
-In a remote/web session (no `gh` CLI access), use the GitHub MCP tools:
+Do not invent GitHub `Closes:` semantics for a Linear issue. Linear completion/status automation is workspace-specific.
 
-- Push the branch first: `git push -u origin <branch>`
-- `mcp__github__create_pull_request` with the resolved `owner`/`repo`,
-  `base: <default branch>`, `head: <branch>`, `draft` set per the rule above,
-  `title`, and `body`
+## Other trackers
 
-In a local session with `gh` CLI available:
+Follow documented integration semantics. If no reliable linking convention exists, retain the full canonical issue URL and report that automatic status transition cannot be guaranteed.
 
-```bash
-git push -u origin <branch>
-gh pr create --base <default-branch> --draft --title "Title" --body "Closes: <issue URL>
+If an implementation PR cannot be linked to an exact issue, stop rather than creating an orphan PR. Directly-invoked ad-hoc PRs with no tracked issue are the exception only after the user confirms there is no issue.
 
-Description..."
+# PR description template
+
+Put tracker relationship line(s) first. Immediately after them, if `<parent-pr>` exists, add exactly one:
+
+```text
+Depends on: <full parent PR URL>
 ```
 
-(omit `--draft` for a full PR)
+Then a blank line and normal description/template.
 
-If invoked directly by the user, show the drafted title/description and
-confirm before creating. If invoked as a chained step from `implement-issue`,
-proceed without a separate confirmation — the user's request to implement the
-issue already covers this step.
+GitHub example:
 
-## Trigger the repo's PR review
+```text
+Closes: https://github.com/acme/repo/issues/123
+Depends on: https://github.com/acme/repo/pull/456
 
-Immediately after the PR is created, post a comment to trigger this repo's
-automated review bot. Check `CLAUDE.md`/`AGENTS.md` for a documented
-review-trigger convention (a bot-mention comment, a label, etc.) and use it.
-If none is documented, default to `@codex review`.
-
-```bash
-gh pr comment <PR> --body "<trigger comment>"
+Description...
 ```
 
-(or the MCP equivalent, e.g. `mcp__github__add_issue_comment` on the PR
-number) — do this every time a PR is created by this skill, no need to ask.
+Linear example:
 
-## Addressing review comments
+```text
+Issue: https://linear.app/acme/issue/FEP-195/example
+Depends on: https://github.com/acme/repo/pull/456
 
-This skill's job ends at PR creation. If review comments come in later —
-whether the user asks you to address one now or you're monitoring the PR as
-part of `implement-issue` step 6 — invoke the `resolve-pr-comment` skill for
-each one rather than fixing it ad hoc. Don't hand-roll the fix/push/reply/
-resolve flow here.
+Description...
+```
 
-## Output
+`Depends on:` always means the direct Git stack parent PR, not tracker issue dependencies.
 
-Return the PR URL and confirm the review-trigger comment was posted.
+# Creating and verifying the PR
+
+Draft/full behavior follows repo docs; otherwise work repos default to draft and personal repos to full. Explicit caller/user preference wins.
+
+Use GitHub MCP in remote/web environments and `gh pr create --base <pr-base>` locally when available.
+
+When directly invoked by a user, show proposed title/body and confirm before creation. When chained from an authorized implementation workflow, no second confirmation is needed.
+
+After creation fetch/read the PR and verify:
+
+1. head/base are correct;
+2. canonical tracker issue linkage is present exactly as intended;
+3. `Depends on:` is correct when stacked and absent when not stacked.
+
+Do not report success before verification.
+
+# Automated review trigger
+
+By default, implementation workflows (`implement-issue-core`, `implement-issue`, `backlog-orchestrator`) expect this skill to trigger the repository's documented automated review after the PR is created and final implementation state has been pushed.
+
+Use the repo's documented trigger. If none exists, default to `@codex review` where that convention is supported.
+
+A caller may explicitly request **deferred review trigger** (for example an intentionally early WIP draft PR). In that case create/verify the PR but do not trigger review until the caller later requests it.
+
+Do not repeatedly trigger review merely because subsequent CI checks run. Re-trigger after a substantive review-fix round only when repo convention requires it.
+
+# Addressing later review comments
+
+This skill ends after PR creation/verification/review trigger. Later review fixes belong to `repair-pr` / `resolve-pr-comment`, with long-lived event supervision owned by whichever orchestrator invoked them.
+
+# Output
+
+Return:
+
+- PR URL;
+- canonical issue URL + tracker;
+- PR base branch;
+- parent PR URL when stacked;
+- issue linkage verified: yes/no;
+- review triggered/deferred and how.

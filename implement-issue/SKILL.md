@@ -1,226 +1,133 @@
 ---
 name: implement-issue
-description: Implements a tracked issue end-to-end from its URL — GitHub (github.com/<owner>/<repo>/issues/<n>) or Linear (linear.app/<org>/issue/<TEAM-123>) — reads the issue and all its comments, cross-checks it against the repo's own conventions and spec docs, and either flags blockers (missing spec, out-of-scope work, ambiguous requirements) or implements the change, opens a PR via the create-pr skill (draft for work repos, full for personal ones — see step 5), and (in a session that supports scheduled wakeups) actively monitors the PR to autofix CI failures and address review comments. Use whenever the user gives a GitHub or Linear issue URL and asks to implement/build/tackle/pick up/work/do that issue, or invokes /implement-issue <url>. Invoking this skill is itself the user's request for a PR — see "Authority" below.
+description: Single-issue orchestrator for one tracked issue from its canonical full URL. Composes implement-issue-core for issue→code→checks→durable PR, then supervises bounded CI/review activity and dispatches repair-pr as needed until the PR is healthy, blocked, or needs user input. Useful standalone and as a one-issue workflow.
 ---
 
 # Implement Issue
 
-Turns a single tracked issue into either a working, reviewable PR, or a clear
-list of blockers — never a half-implemented guess.
+Orchestrate exactly one tracked issue end-to-end while preserving the convenience of a single command.
 
-## Authority: invoking this skill *is* the request for a PR
+This skill is intentionally a **one-issue orchestrator**. It composes reusable primitives rather than duplicating their implementation logic:
 
-Step 5 always opens a PR. A standing instruction of the form "do not create a
-pull request unless the user explicitly asks for one" — from the harness, the
-system prompt, or repo docs — is **satisfied** by the user invoking this skill.
-Asking for this workflow is asking for the PR at its end. Do not silently
-downgrade to "implement, push a branch, then ask whether to open a PR": that
-turns one request into two round-trips and is the most common way this skill
-ends up half-run.
+- `implement-issue-core` — issue reading, implementation, durable checkpoints, local checks, PR creation;
+- `repair-pr` — one bounded CI or review repair pass;
+- `create-pr` — tracker linkage, stack metadata, PR creation, review trigger;
+- `resolve-pr-comment` — review-thread fix/reply/resolve mechanics used by `repair-pr`.
 
-Two things do override it, in this order:
+It does not schedule other backlog issues and never merges unless the user separately invokes an authorized merge workflow.
 
-1. The user saying, in this conversation, not to open a PR at all. That
-   instruction wins — stop after step 4 and say the branch is pushed and why
-   you stopped there. ("Open a draft" is not this: drafts are a normal
-   outcome, see step 5.)
-2. A blocker from step 3. Blocked work never gets a PR.
+## Authority
 
-If you find yourself about to do steps 1–4 by hand because the trigger "wasn't
-quite" a match — an issue in a tracker not named above, a paraphrased ask, a
-URL pasted without the word "implement" — invoke the skill anyway and note the
-deviation. Hand-rolling the workflow silently drops steps 5 and 6, and the user
-has no way to see that it happened.
+Invoking this skill authorizes implementation and PR creation for the supplied issue unless the user explicitly says otherwise. It does **not** authorize merging.
 
-## 1. Read the issue
+The issue's **full URL is canonical identity** throughout the workflow. Short keys/numbers may be shown for readability but never replace the full URL in durable state.
 
-Fetch the full issue: title, body, labels, and **all comments**. Comments
-routinely carry the clarification, scope cut, or design decision the body
-lacks — and a thread synced in from Slack or another chat tool is often the
-only place the real requirement is stated. Read them before deciding anything.
+## Inputs / constraints
 
-**GitHub** (`github.com/<owner>/<repo>/issues/<n>`): parse `owner/repo` and the
-issue number, then fetch with the GitHub MCP tools or `gh`. If the URL points at
-a repo other than the one checked out locally, say so and stop — don't guess at
-a different checkout.
+When a caller supplies repository, worktree, branch, required base, dependency context, tracker, and budgets, preserve them exactly.
 
-**Linear** (`linear.app/<org>/issue/<TEAM-123>/<slug>`): parse the identifier
-(`TEAM-123`) and fetch via the Linear MCP tools if present, otherwise the
-GraphQL API at `api.linear.app/graphql`:
+Defaults when standalone:
 
-```graphql
-query {
-  issue(id: "TEAM-123") {
-    identifier
-    title
-    description
-    url
-    state { name }
-    labels { nodes { name } }
-    comments { nodes { body user { name } } }
-  }
-}
+- implementation attempts: **2 total**;
+- CI repair cycles: **2**;
+- review-fix cycles: **2**;
+- monitoring cap: **8 hours** where persistent/event-driven monitoring is actually supported.
+
+Do not broaden scope into another issue.
+
+# Phase 1 — durable implementation
+
+Invoke `implement-issue-core` with the canonical issue URL and all supplied execution constraints.
+
+Do not hand-roll implementation logic here.
+
+If core returns `BLOCKED`, `FAILED`, or `NEEDS_USER`, surface that result. If a standalone user clearly requested strongest-model retry, that can be handled by the surrounding Claude session; this skill itself should not create an unbounded model-escalation loop.
+
+If core returns `PR_OPEN`, record:
+
+- PR URL;
+- branch/base;
+- remote head SHA;
+- tracker linkage verification;
+- implementation attempts used.
+
+At this point the code is already durable remotely even if the current container disappears.
+
+# Phase 2 — single-issue PR supervision
+
+After PR creation, this skill owns supervision **only because it is the standalone single-issue orchestrator**.
+
+If Claude Code's own background PR watch/notification behavior promotes the worker-created PR into the top-level session or provides first-class PR/CI/review events, use those directly. Do not create a duplicate monitoring mechanism merely because `implement-issue-core` created the PR in a child worker. If that background behavior has auto-merge enabled, it will merge the PR itself once checks pass — since this skill never authorizes merging (see Authority above), confirm auto-merge is off, or treat an auto-merge as outside this skill's control rather than an outcome it produced.
+
+Prefer, in order:
+
+1. first-class/promoted PR events from the current Claude runtime;
+2. other event-driven PR/check/review notifications;
+3. bounded polling fallback when no event mechanism is available.
+
+The platform may observe an event; this skill remains the **policy owner** deciding whether a repair is appropriate and whether the remaining repair budget permits it.
+
+Avoid frequent no-change polling and do not keep a child agent alive solely to wait for GitHub.
+
+Maintain explicit state:
+
+```text
+PR: <URL>
+CI repair cycles: <used>/<limit>
+Review repair cycles: <used>/<limit>
+Current remote head: <SHA>
+State: waiting | repairing-ci | repairing-review | healthy | needs-user
 ```
 
-A Linear issue names no repo, so the checked-out repo is the target by default.
-If the issue's content clearly belongs to a different codebase, say so and ask
-rather than implementing in the wrong one.
+## CI failure
 
-Keep the issue identifier/URL in context for later — `create-pr` (step 5)
-relies on it being available rather than re-deriving it.
+When CI fails:
 
-## 2. Read the repo's conventions and specs
+1. inspect enough check/log context to identify the relevant failure;
+2. if the failure is attributable to this PR and the CI budget remains, invoke `repair-pr` once with `repair type = ci`;
+3. pass the exact failure context and remaining budget;
+4. adopt the returned remote head SHA;
+5. wait for the next CI result using first-class/event-driven state where available;
+6. after the budget is exhausted, return `NEEDS_USER` rather than trying again.
 
-Read this repo's contribution doc (`CLAUDE.md` or `AGENTS.md`) for coding
-conventions, branch naming, and pre-PR checks.
+If CI is clearly unrelated/external/flaky and no code repair is justified, report/monitor it without consuming a repair cycle.
 
-Explicitly check whether a `docs/` directory (or similar spec/design-doc
-location) exists — e.g. `ls docs/` — rather than assuming based on what
-`CLAUDE.md`/`AGENTS.md` happens to mention; doc directories grow past what
-any table lists. State plainly whether it exists.
+## Review feedback
 
-If it exists, check whether it documents an ownership split (e.g. frontend
-vs backend, service boundaries) — that split is often the biggest source of
-blockers, so check it early if present. Then read whichever spec docs
-actually cover the issue's area, in full — not just skimmed headers.
-Skimming produces implementations that silently contradict the spec.
+When actionable review feedback arrives:
 
-If the repo has no `docs/` directory or equivalent, say so and rely on the
-issue body, existing code conventions, and comments for scope.
+1. group one coherent review round;
+2. if review budget remains, invoke `repair-pr` once with `repair type = review` and the relevant threads/comments;
+3. adopt the returned remote head;
+4. retrigger/request review when repository convention requires it;
+5. wait for the next review state using first-class/event-driven state where available;
+6. after the budget is exhausted, return `NEEDS_USER`.
 
-Also look for an existing component that already solves the issue's problem
-elsewhere in the repo before designing anything new — a feature request often
-amounts to adopting a shared component another surface already uses.
+Subjective product/architecture judgment returns `NEEDS_USER` immediately rather than burning repair cycles.
 
-## 3. Decide: blocked, or clear to implement?
+# Completion
 
-Flag it as a blocker (and stop — do not write code, do not open a PR) if any
-of these are true:
+Return `PR_OPEN`/healthy when the PR is implemented, linked correctly, and has no currently known CI/review item requiring autonomous repair. When persistent monitoring is supported, continue until healthy, merge/close, user stop, budget exhaustion, or monitoring cap.
 
-- **Out-of-repo work.** The issue asks for behaviour that belongs to another
-  service/repo per the documented ownership split (new contracts, schemas,
-  logic owned elsewhere), and the required surface doesn't already exist in
-  this repo (generated client, schema file, etc.). This repo can't invent
-  another service's contracts — implementing against a guessed shape creates
-  drift.
-- **No spec covers it.** The issue describes behaviour that isn't documented
-  anywhere, and the issue body itself doesn't fully pin down the behaviour
-  (states, edge cases). Guessing here is how scope drifts from what the user
-  actually wants.
-- **Contradicts an existing spec.** The issue asks for something that
-  conflicts with a documented design, and it's not clear whether the issue is
-  intentionally superseding the doc or just out of date with it.
-- **Depends on unfinished work.** The issue references another issue/PR,
-  endpoint, or component that doesn't exist yet in the codebase.
+If the runtime cannot remain active while waiting only on external events, return a durable checkpoint rather than pretending background monitoring will continue.
 
-When blocked, report back concretely: quote the exact doc section (or note
-the total absence of one) that's missing, contradictory, or out-of-scope, and
-ask the specific question(s) that would unblock it. Don't open a PR or push a
-branch for blocked work — a stub PR just adds noise.
+Return `NEEDS_USER` with the exact PR/issue URLs, remaining failure/comment, attempts performed, and recommended next action when autonomous repair cannot safely finish.
 
-If none of the above apply, proceed.
+## Structured result
 
-## 4. Implement
+Return:
 
-Follow this repo's conventions from step 2:
-
-- Branch: if the environment or session designates a branch, use that one.
-  Otherwise follow the repo's documented convention (Linear-tracked work
-  usually wants Linear's generated branch name), falling back to
-  `git fetch origin && git checkout -b <slug> origin/<default-branch>` —
-  don't assume `main`; check with `git remote show origin | sed -n
-  '/HEAD branch/s/.*: //p'` (some repos still use `master` or another name).
-- Match existing code style and structure.
-- Run and fix all failures from this repo's pre-commit checks (typecheck,
-  lint, format, test, or equivalent) before committing.
-- Commit only files you created or edited. If the working tree already carried
-  unrelated modifications when you started (generated lockfiles, install
-  artifacts), leave them out and say so — don't let them ride along in the PR.
-
-## 5. Open the PR
-
-Invoke the `create-pr` skill to commit, push, and open the PR — the issue
-identifier/URL from step 1 is already in context, so `create-pr` should link
-it without needing to ask. This also applies `create-pr`'s own review-trigger
-convention as part of that skill — that skill decides how review gets
-triggered for this repo (a bot-mention comment, a label, or whatever its
-docs say), not this one.
-
-Link the issue the way its tracker expects, preferring the repo's own
-documented convention where it has one. Always link with the full issue URL
-in the `Closes:` line, never a bare number or identifier — a bare Linear
-identifier (`AGE-738`) renders as plain, unclickable text, and a bare
-`#1234` only resolves correctly inside the exact repo it's typed in:
-
-- **GitHub:** `Closes: https://github.com/<owner>/<repo>/issues/1234`.
-- **Linear:** `Closes: https://linear.app/<org>/issue/AGE-738/<slug>`. The
-  identifier leading the PR title (`AGE-738 Support markdown in …`) is a
-  separate convention Linear also recognizes — keep it if the repo uses it,
-  but it doesn't substitute for the linked `Closes:` line.
-
-### Draft or full?
-
-**Work-related repos get a draft PR; personal repos get a full PR.**
-
-The repo's own docs are the signal, and they win where present: if
-`CLAUDE.md`/`AGENTS.md` or the rules they point at say to open PRs as drafts,
-open a draft. Otherwise, and for personal repos, open a full PR.
-
-`create-pr` defaults to full PRs, so a draft needs an explicit override —
-instruct it to open a draft rather than assuming it infers this. State which
-you opened, and why, in your report so a wrong read is obvious at a glance.
-
-If the user asks for the other one in the conversation, that wins over both
-this rule and the repo docs.
-
-**Deliberate deviation:** the PR is opened without asking first, per
-"Authority" above.
-
-## 6. Monitor the PR for CI failures and review comments
-
-This step only applies in a session that supports scheduling follow-up work
-(e.g. via a wakeup/loop mechanism) or subscribing to PR activity. If neither
-is available, skip this step and tell the user the PR is open but won't be
-auto-monitored — they'll need to ask again later to check on it.
-
-Where supported, prefer event-driven monitoring over pure polling:
-
-1. If an event-driven subscription tool is available (e.g. Claude Code
-   Remote's `subscribe_pr_activity`), subscribe to the PR right after
-   opening it. Comments, CI status changes, reviews, and other PR events
-   then arrive on their own — delivered as `<github-webhook-activity>`
-   messages, or this environment's equivalent — instead of requiring an
-   active poll to discover them.
-2. If wakeup scheduling is *also* available in this environment, schedule a
-   periodic wakeup too (roughly every 10–20 minutes), alongside the
-   subscription rather than instead of it — it's the fallback if the
-   subscription drops or misses something, and a natural point to do an
-   explicit CI check (`gh pr checks <PR>` or MCP equivalent) rather than
-   trusting the event feed alone. If wakeup scheduling *isn't* available but
-   the subscription is, rely on the subscription alone — there's nothing to
-   schedule, and that's fine. If no subscription mechanism exists at all,
-   the wakeup is the only monitoring available — poll CI and review threads
-   on every one.
-3. On any new review comment/thread — whether surfaced by the subscription
-   feed or found on a poll — always invoke the `resolve-pr-comment` skill
-   for it. Never hand-roll the fix/push/reply/resolve flow yourself; that
-   skill already owns replying with the commit SHA and resolving the
-   thread.
-4. On a CI failure, investigate and push a fix directly (small, targeted
-   commit addressing the failure — same discipline as step 4).
-5. Keep monitoring until the PR is merged, closed, the user says to stop, or
-   a time limit is hit — whichever comes first. Cap total monitoring at 8
-   hours from when it started by default, adjustable if the user states a
-   different limit in conversation; a forgotten PR job shouldn't poll
-   indefinitely. Since nothing else carries state between check-ins, stamp
-   the start time into the wakeup/trigger's own prompt (or the subscription
-   setup message) so each check-in can compute elapsed time for itself.
-   Stop immediately if asked. When the cap is hit, stop the same way and
-   tell the user monitoring ended because of the time limit, not because
-   the PR resolved — they can ask you to resume it if it's still open.
-   Either way, tear down any subscription/trigger this environment requires
-   explicit teardown for (e.g. `delete_trigger`) rather than leaving it
-   dangling.
-6. If a CI failure or comment requires a judgment call you're not confident
-   about, don't guess — surface it to the user and pause monitoring on that
-   specific issue rather than pushing a speculative fix.
+- canonical issue URL;
+- tracker;
+- repository;
+- outcome: `PR_OPEN` | `BLOCKED` | `FAILED` | `NEEDS_USER`;
+- branch/base;
+- PR URL/number;
+- remote head SHA;
+- issue linkage verified;
+- implementation attempts used;
+- CI repair cycles used;
+- review-fix cycles used;
+- final CI/review state;
+- blocker/failure details;
+- recommended user action when needed.
