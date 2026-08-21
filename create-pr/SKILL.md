@@ -1,6 +1,6 @@
 ---
 name: create-pr
-description: Create a GitHub pull request following repo conventions and any explicit base branch supplied by an orchestrator. Ensures the PR is canonically linked to its implementation issue so merging auto-closes that issue, and for stacked PRs records the direct parent PR with a `Depends on:` line. Use whenever asked to create a PR or when implement-issue reaches its PR step.
+description: Create a GitHub pull request following repo conventions and any explicit base branch supplied by an orchestrator. Links the PR canonically to the tracked implementation issue (GitHub or Linear), records direct stack parent metadata when applicable, and triggers automated review.
 ---
 
 # Create a GitHub Pull Request
@@ -9,71 +9,75 @@ description: Create a GitHub pull request following repo conventions and any exp
 
 Create a pull request: $ARGUMENTS
 
-Determine `owner/repo` from the current git remote. Determine the default branch from the repository rather than hardcoding `main`.
+Determine `owner/repo` from the current git remote. Determine the default branch from repository metadata rather than hardcoding `main`.
 
 ## PR base branch
 
-If the user or a calling skill explicitly supplies a required PR base branch, **that base takes precedence over the repository default branch**. Validate it exists in the same repository. If it does not, stop rather than falling back.
+If the user/calling skill supplies an explicit base, it takes precedence over the repository default. Validate it exists in the same repository. Otherwise use the discovered default branch. Call it `<pr-base>`.
 
-If no explicit base is supplied, use the repository default branch. Call the resulting branch `<pr-base>`.
+## Detect a stacked parent PR
 
-## Detect a stacked-PR parent
+A non-default base is not automatically a stack parent.
 
-A non-default base is not automatically a stack parent because repositories may have long-lived integration branches.
+1. If a parent PR URL was supplied, verify its head branch equals `<pr-base>`.
+2. Otherwise search open PRs in the same repo whose head branch equals `<pr-base>`.
+3. Exactly one match => `<parent-pr>`.
+4. No match => ordinary integration/base branch; no stack metadata.
+5. Ambiguous match => stop rather than guessing.
 
-Use this precedence:
-
-1. If the user/calling skill supplies a parent PR URL, fetch it and verify its head branch is exactly `<pr-base>`.
-2. Otherwise search open PRs in the same repository for a PR whose head branch is exactly `<pr-base>`.
-3. If exactly one exists, it is `<parent-pr>`.
-4. If none exists, treat `<pr-base>` as an ordinary base/integration branch and do not add stack metadata.
-5. If the relationship is ambiguous, stop rather than writing incorrect metadata.
-
-A parent PR must be in the same repository. Cross-repository dependencies are DAG/issue dependencies, not Git stack parents.
+Cross-repository issue dependencies are never Git stack parent relationships.
 
 ## Before creating the PR
 
-Read `CLAUDE.md` or `AGENTS.md` for pre-PR checks, branch conventions, PR templates, and draft/full rules. Run and fix required checks before opening the PR. If no contribution doc exists, run the repository's normal check scripts.
+Read `CLAUDE.md`/`AGENTS.md` for checks, branch conventions, PR template, draft/full behavior, and issue-linking rules. Run required checks first.
 
-## Branch naming
+## Canonical tracked-issue identity
 
-Follow the repository's documented branch convention. Otherwise preserve the current branch; do not invent a convention.
+Every implementation PR must be linked to the **exact tracked issue** using its canonical full URL. Never rely only on an ambiguous bare `#123` or `ABC-123` in reporting/context.
 
-## Canonical issue linkage and auto-close invariant
+Determine tracker from the canonical issue URL.
 
-Every implementation PR must be unambiguously linked to the exact issue it implements.
+### GitHub issue
 
-For GitHub issues, use a GitHub closing keyword with the **full canonical issue URL**, for example:
+For `https://github.com/<owner>/<repo>/issues/<n>`, use a GitHub closing keyword plus the full URL, e.g.:
 
 ```text
 Closes: https://github.com/acme/repo/issues/123
 ```
 
-`Fixes:` or `Resolves:` are also acceptable when repository convention requires them, but the chosen syntax must be one that GitHub recognizes for automatic issue closure when the PR is merged into the repository's default branch.
+`Fixes:`/`Resolves:` are acceptable when repo convention prefers them. The relationship must be valid for GitHub auto-close when the implementation PR ultimately merges to the closing branch/default branch.
 
-Do not use `Part of:` as the sole relationship for an implementation issue that should auto-close; it is descriptive only and does not satisfy this invariant.
+### Linear issue
 
-Determine the issue from conversation/calling-skill context, never from a guessed branch name. When chained from `implement-issue` or `backlog-orchestrator`, the canonical implementation issue URL must already be supplied.
+For `https://linear.app/.../issue/TEAM-123/...`, preserve the **full Linear URL** and also include the Linear issue ID in a linking/closing magic-word form understood by the Linear GitHub integration. Prefer repository/team convention; otherwise use:
 
-If an implementation PR cannot be linked to an exact issue, stop rather than creating an orphan PR. Directly-invoked ad-hoc PRs with no tracked implementation issue are the only exception, and only after the user confirms there is no issue to close.
+```text
+Fixes TEAM-123 — https://linear.app/<workspace>/issue/TEAM-123/<slug>
+```
 
-### Stacked PR caveat
+The full URL is canonical identity; the issue ID is included because Linear's GitHub integration uses IDs in PR titles/branches or magic-word references to link PRs and drive configured status automation. Do not reduce the relationship to only `TEAM-123`.
 
-A stacked child PR can target a non-default parent branch. Keep its canonical `Closes:` line on the PR anyway so the issue relationship is durable and remains correct when the PR is later retargeted/restacked to the default branch before merge.
+If the repo convention puts the Linear ID in the PR title or branch, preserve that too, but still include the full Linear URL in the body.
 
-Before any merge workflow treats an issue as complete, verify the merged PR contained the correct closing relationship and that the GitHub issue is closed after merge. If GitHub did not auto-close it because of unusual repository/base behavior, explicitly close the issue only after confirming the PR that implements it has merged.
+Linear completion semantics are controlled by the workspace/team GitHub integration and workflow automation; do not pretend GitHub itself closes a Linear issue.
 
-## PR description template
+### Other trackers
 
-Put canonical issue relationship line(s) first. Immediately after them, if `<parent-pr>` exists, add exactly one canonical stack line:
+If another tracker is supplied, preserve its full canonical issue URL and follow documented repository/tracker integration conventions. If no reliable linkage rule exists, stop rather than inventing one.
+
+If a directly invoked ad-hoc PR genuinely has no tracked issue, proceed only after the user confirms that exception. Chained implementation PRs must always have an exact issue URL.
+
+## PR description layout
+
+Put tracked-issue relationship line(s) first. Immediately after them, if `<parent-pr>` exists, add:
 
 ```text
 Depends on: <full parent PR URL>
 ```
 
-Then add a blank line and the normal description.
+Then a blank line and the normal description/template.
 
-Example:
+Examples:
 
 ```text
 Closes: https://github.com/acme/repo/issues/123
@@ -82,40 +86,40 @@ Depends on: https://github.com/acme/repo/pull/456
 Description...
 ```
 
-Rules:
+```text
+Fixes TEAM-123 — https://linear.app/acme/issue/TEAM-123/example
+Depends on: https://github.com/acme/repo/pull/456
 
-- `Depends on:` means the **direct Git stack parent PR**, not every issue dependency.
-- There is at most one `Depends on:` line because a Git branch has one direct base branch.
-- Always use the full canonical parent PR URL.
-- Do not add the line when `<pr-base>` is merely an integration branch with no open PR owning it.
-- Preserve the repository PR template while keeping relationship lines at the top.
+Description...
+```
 
-## Creating the PR
+`Depends on:` means only the direct Git stack parent PR, never arbitrary issue dependencies.
 
-Draft/full behavior follows repository docs; otherwise work repos default to draft and personal repos to full. Explicit user/caller instruction wins.
+## Create the PR
 
-In a remote/web session, push with git and create the PR with GitHub MCP using `base: <pr-base>` and `head: <branch>`.
+Follow repo draft/full rules. Push the branch, then create the PR with explicit `base: <pr-base>` and `head: <branch>` using authenticated `gh` or GitHub MCP depending on environment.
 
-Locally, use the equivalent `gh pr create --base <pr-base>` flow when `gh` is available.
+If invoked directly, show title/body before creation when confirmation is normally required. If chained from `implement-issue`, the original implementation request authorizes PR creation.
 
-If invoked directly by the user, show the proposed title/body and confirm before creating. If chained from `implement-issue`, proceed without a second confirmation.
+## Verify after creation
 
-After creation, fetch/read the resulting PR and verify:
+Fetch the PR and verify:
 
-1. the head/base are correct;
-2. the canonical implementation issue closing line is present exactly as intended;
-3. `Depends on:` is present when stacked and absent when not stacked.
+1. head/base are correct;
+2. full canonical issue URL is present;
+3. tracker-specific link/closing syntax is present;
+4. `Depends on:` is correct when stacked and absent when not stacked.
 
-Do not report success until those relationships are verified.
+For GitHub issues, verify the closing keyword relationship is syntactically correct. For Linear, verify the full URL plus issue ID/magic-word relationship is present; actual status transition happens through configured Linear integration automation.
 
 ## Trigger review
 
-Immediately trigger the repository's documented automated review convention. If none exists, default to `@codex review`, using `gh` locally or the GitHub MCP equivalent remotely.
+Immediately trigger the repository's documented automated review convention. If none exists, default to `@codex review`, using `gh` or the GitHub MCP equivalent.
 
-## Addressing review comments
+## Review comments
 
-If comments arrive later, invoke `resolve-pr-comment` rather than hand-rolling the fix/push/reply/resolve flow.
+Later review fixes must use `resolve-pr-comment` rather than hand-rolling the workflow.
 
 ## Output
 
-Return the PR URL, implementation issue URL, PR base branch, parent PR URL when stacked, and confirm both canonical issue linkage and review trigger were verified.
+Return PR URL, canonical issue URL, tracker type, base branch, parent PR URL when stacked, and confirmation that issue linkage + review trigger were verified.
