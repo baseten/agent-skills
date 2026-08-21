@@ -135,6 +135,14 @@ Then rebase only C's own commits, dropping P's now-merged commits:
 git fetch origin
 git checkout <C_HEAD_BRANCH>
 git reset --hard origin/<C_HEAD_BRANCH>
+git merge-base --is-ancestor <P_HEAD_OLD> <C_HEAD_BRANCH> || echo NOT_ANCESTOR
+```
+
+Before rebasing, verify `P_HEAD_OLD` is actually an ancestor of C's current head. If the `merge-base --is-ancestor` check fails, `P_BASE_BRANCH` was force-rewritten after C forked (e.g. an amended or rebased parent): `rebase --onto` would then treat obsolete parent commits reachable only from C as C-owned, and force-push them into C's PR. Stop and report the path as blocked instead of rebasing; restacking must resume from a proven old-parent boundary (the last commit both P's pre-merge history and C's current history actually share), not from the recorded `P_HEAD_OLD`.
+
+Only once ancestry is confirmed, proceed:
+
+```bash
 git rebase --onto origin/<P_BASE_BRANCH> <P_HEAD_OLD> <C_HEAD_BRANCH>
 ```
 
