@@ -314,6 +314,10 @@ Before dispatch:
 
 A dispatch prompt that enumerates a required process is followed literally: a default left out of that enumeration is a default skipped, and the worker will accurately report that the task never asked for it. Every dispatched prompt must therefore carry the automated review trigger instruction — `create-pr` owns the trigger rules, do not restate them here — unless this run explicitly defers review. Deferral is a conscious choice recorded in run state, naming what review is owed and on which PRs; it is never an omission.
 
+Issuing the trigger is not the end of that step. Confirm it took effect: a review from the repository's automated reviewer materializes within a bounded window, and the reviewer does not instead answer indicating it is not configured or not authorized for the identity this run acts under. Verify per attempt — a review that arrived once by some other path is not evidence the trigger works. A trigger that silently no-ops is worse than one that fails loudly, because the run then reports PRs as reviewed and clean when nothing reviewed them.
+
+If it did not take effect, stop issuing the trigger for the remainder of the run and surface one `NEEDS_USER` recording that review cannot be triggered from this run's identity, listing the affected PRs so the user can trigger it themselves. Do not retry: an identity or authorization limitation does not resolve by repeating the same action on the next PR, and each failed attempt leaves trigger and refusal comments behind on the PR. One escalation per run, not one per PR — detecting this on the first PR and suppressing the rest is the intended outcome.
+
 Under Dynamic Workflows, provide these constraints to every workflow worker explicitly. Do not let a worker select another backlog ticket when it finishes.
 
 ## Shared environment
@@ -358,6 +362,7 @@ branch/base
 remote head SHA
 CI state
 review state
+review trigger: issued/verified/unavailable
 CI repair cycles used/remaining
 review repair cycles used/remaining
 stack parent/children
@@ -399,7 +404,7 @@ On actionable review feedback:
 3. dispatch one Sonnet `repair-pr` worker with `repair type = review`;
 4. `repair-pr` uses `resolve-pr-comment` where relevant;
 5. adopt the new remote head and increment review cycle;
-6. retrigger/request review when repo convention requires it;
+6. retrigger/request review when repo convention requires it, unless triggering was suppressed for this run;
 7. release worker and resume event supervision.
 
 Review feedback may reference a head already superseded by a rebase/restack. Locate each finding by content rather than line number, and confirm it still applies to the current head before repairing.
@@ -517,6 +522,7 @@ Implementation workers: 3
 Repair workers: 1
 Active PRs: 7
 Waiting CI/review: 4
+Unreviewed (trigger unavailable): 0
 Ready: 3
 Blocked: 2
 Needs user: 1
@@ -532,6 +538,7 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - PRs + stack topology;
 - remote checkpoint branches without PRs;
 - CI/review states + repair budgets consumed;
+- PRs left unreviewed, and whether the review trigger was deferred or unavailable;
 - issue-linkage/tracker-status inconsistencies;
 - `NEEDS_USER` items;
 - external blockers;
