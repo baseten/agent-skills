@@ -316,7 +316,9 @@ A dispatch prompt that enumerates a required process is followed literally: a de
 
 Issuing the trigger is not the end of that step. Confirm it took effect: a review from the repository's automated reviewer materializes within a bounded window, and the reviewer does not instead answer indicating it is not configured or not authorized for the identity this run acts under. Verify per attempt — a review that arrived once by some other path is not evidence the trigger works. A trigger that silently no-ops is worse than one that fails loudly, because the run then reports PRs as reviewed and clean when nothing reviewed them.
 
-If it did not take effect, stop issuing the trigger for the remainder of the run and surface one `NEEDS_USER` recording that review cannot be triggered from this run's identity, listing the affected PRs so the user can trigger it themselves. Do not retry: an identity or authorization limitation does not resolve by repeating the same action on the next PR, and each failed attempt leaves trigger and refusal comments behind on the PR. One escalation per run, not one per PR — detecting this on the first PR and suppressing the rest is the intended outcome.
+An elapsed window is not a refusal. A reviewer that is merely queued or slow leaves the PR unreviewed-pending, reconciled through ordinary event supervision and visible as such in checkpoint output; only an explicit not-configured/not-authorized response marks the trigger unavailable.
+
+On that explicit response, stop issuing the trigger for the remainder of the run in that repository and surface one `NEEDS_USER` recording that review cannot be triggered from this run's identity, listing the affected PRs so the user can trigger it themselves. Do not retry: an identity or authorization limitation does not resolve by repeating the same action on the next PR, and each failed attempt leaves trigger and refusal comments behind on the PR. One escalation per affected repository, not one per PR — detecting this on the first PR and suppressing the rest is the intended outcome. Suppression is scoped to the repository that refused, because review configuration is repository-specific.
 
 Under Dynamic Workflows, provide these constraints to every workflow worker explicitly. Do not let a worker select another backlog ticket when it finishes.
 
@@ -362,7 +364,7 @@ branch/base
 remote head SHA
 CI state
 review state
-review trigger: issued/verified/unavailable
+review trigger: issued/verified/pending/unavailable
 CI repair cycles used/remaining
 review repair cycles used/remaining
 stack parent/children
@@ -448,7 +450,7 @@ Periodically compare each in-flight worker's remote branch head against its base
 
 ## Cross-branch artifact collisions
 
-After each PR reaches durable state, compare the files it **adds** against those added by sibling branches in the same run, and flag same-named or same-sequence-numbered additions. The general class is any artifact whose identity is claimed rather than derived: sequentially numbered files, generated manifests, lockfiles, shared registries and index files.
+After each PR reaches durable state, compare it against sibling branches in the same run and flag two things: files that two branches both **add** under the same name or sequence number, and incompatible edits two branches make to a shared claimed artifact — a generated manifest, lockfile, registry or index that branches amend rather than create, and which therefore collides with no added path in common. The general class is any artifact whose identity or ordering is claimed rather than derived.
 
 Two chains cut from the same base can each be internally consistent and both pass CI while colliding, because neither can see the other; the conflict only materializes when the second one merges. Dependency edges and stack ancestry do not detect this — the branches are siblings, not ancestors.
 
@@ -522,7 +524,7 @@ Implementation workers: 3
 Repair workers: 1
 Active PRs: 7
 Waiting CI/review: 4
-Unreviewed (trigger unavailable): 0
+Unreviewed (trigger pending/unavailable): 0
 Ready: 3
 Blocked: 2
 Needs user: 1
