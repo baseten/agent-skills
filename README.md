@@ -17,6 +17,21 @@ Reusable Claude Code skills for issue implementation, PR workflows, backlog vali
 - `backlog-orchestrator` — policy layer for a bounded build-order/parent issue or issue set. It validates the DAG, fans out isolated Sonnet workers via `implement-issue-core` (onto a Claude Code **Dynamic Workflow** when the user explicitly opts into one for this invocation, otherwise onto native/background sessions or ordinary supervised subagents), consumes platform-surfaced PR events on its own parent-level supervision loop, dispatches bounded `repair-pr` workers, and enforces stack/budget/recovery rules.
 - `merge-stack` — safely merges one PR, part of a stack, or an explicitly authorized whole stack while rebasing/restacking descendants.
 
+## Writing skills
+
+- `draft-blog-post` — draft a technical blog post using Alex's writing style and blog template from `ai-alex`.
+- `draft-slack-message` — draft a Slack message using Alex's Slack examples and writing style from `ai-alex`.
+
+## Local Codex usage
+
+Codex reads the local-only skills via symlinks in `~/.codex/skills/`:
+
+```bash
+for s in create-pr resolve-pr-comment implement-issue draft-blog-post draft-slack-message; do
+  ln -sfn "$HOME/.claude-personal/skills/$s" "$HOME/.codex/skills/$s"
+done
+```
+
 ## Runtime model
 
 `backlog-orchestrator` separates **policy** from **execution runtime**.
