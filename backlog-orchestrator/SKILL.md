@@ -258,6 +258,8 @@ Follow repository branch conventions. Where permitted, include the issue key/num
 
 If an orphan remote branch cannot be safely mapped to an issue, inspect commit/diff/tracker development metadata. If still ambiguous -> `NEEDS_USER`.
 
+A session-level mandate that all work land on one fixed branch is incompatible with the per-issue stacked topology below; the two cannot be reconciled silently. Detect the conflict at startup and resolve it with the user before any dispatch.
+
 # DAG and PR topology
 
 Classify validated dependencies by implementation reality:
@@ -305,10 +307,26 @@ Before dispatch:
 1. calculate/fetch exact required base;
 2. create/identify issue branch;
 3. allocate isolated worktree/check-out;
-4. record canonical issue URL -> tracker -> repo -> worktree -> branch -> base -> worker;
-5. dispatch Sonnet worker with `implement-issue-core`.
+4. resolve shared-resource access details (see Shared environment, below);
+5. record canonical issue URL -> tracker -> repo -> worktree -> branch -> base -> worker;
+6. compose the dispatch prompt so it carries every default the worker skills already own;
+7. dispatch Sonnet worker with `implement-issue-core`.
+
+A dispatch prompt that enumerates a required process is followed literally: a default left out of that enumeration is a default skipped, and the worker will accurately report that the task never asked for it. Every dispatched prompt must therefore carry the automated review trigger instruction — `create-pr` owns the trigger rules, do not restate them here — unless this run explicitly defers review. Deferral is a conscious choice recorded in run state, naming what review is owed and on which PRs; it is never an omission.
 
 Under Dynamic Workflows, provide these constraints to every workflow worker explicitly. Do not let a worker select another backlog ticket when it finishes.
+
+## Shared environment
+
+Filesystem isolation is necessary but not sufficient. Workers with private checkouts still contend over shared mutable resources — a shared backing service instance, a fixed port, a shared cache or state directory, one set of credentials, a single external sandbox account.
+
+At startup, enumerate the shared mutable resources workers in this run will contend for. That inventory is repository- and environment-specific: take it from repository configuration (`CLAUDE.md`/`AGENTS.md`, the session startup hook, the environment manifest), never from assumption. If a rule cannot be expressed without naming a concrete technology, it belongs in that configuration, not here.
+
+For each enumerated resource, either give every worker its own namespace/instance, or serialize access to it. If neither is possible, serialize the affected workers.
+
+Pass the resolved access details explicitly in each dispatch prompt so no worker has to guess them. A worker that guesses wrong reports failures that are not real.
+
+Standing rule in every dispatch prompt: never stop, reset, reconfigure, or clean up a shared resource — a sibling worker may be using it.
 
 ## Remote checkpoint requirement
 
@@ -384,6 +402,8 @@ On actionable review feedback:
 6. retrigger/request review when repo convention requires it;
 7. release worker and resume event supervision.
 
+Review feedback may reference a head already superseded by a rebase/restack. Locate each finding by content rather than line number, and confirm it still applies to the current head before repairing.
+
 Product/architecture judgment -> `NEEDS_USER` rather than speculative repair.
 
 A PR branch may have only **one active mutating worker** at a time. Before repair, verify the remote head has not moved unexpectedly.
@@ -404,14 +424,34 @@ Each cycle performs real work:
 6. recompute READY frontier;
 7. fill available worker slots (optionally via a fresh Dynamic Workflow fan-out if the user re-opts in for the next batch);
 8. inspect stack ancestry changes;
-9. surface `NEEDS_USER`;
-10. wait using native task/event wait, then repeat.
+9. check in-flight branches for checkpoint advance;
+10. check sibling branches for colliding added artifacts;
+11. surface `NEEDS_USER`;
+12. wait using native task/event wait, then repeat.
 
 Do not use CPU loops, file-touch loops, detached sleeps, meaningless commits, or other fake activity solely to prevent idling.
 
 Remote Git checkpoints remain mandatory regardless of runtime, because no platform/runtime persistence substitutes for durable source control.
 
+## Verifying worker reports
+
+A worker's reported check results are a claim about its own environment, which may be misconfigured in ways the worker cannot see. Before relaying or acting on reported results, verify them against durable evidence: CI on the pushed head, or a re-run outside that worker's environment. Never escalate a worker-reported mass failure to the user, or block a merge decision on it, unverified.
+
+## Checkpoint compliance
+
+Periodically compare each in-flight worker's remote branch head against its base. A branch that has not advanced well past dispatch means meaningful work exists only in an ephemeral container, contrary to invariant 5. Treat it as a red flag and intervene while the worker is still alive — require an immediate checkpoint push — rather than discovering it during lost-worker recovery.
+
+## Cross-branch artifact collisions
+
+After each PR reaches durable state, compare the files it **adds** against those added by sibling branches in the same run, and flag same-named or same-sequence-numbered additions. The general class is any artifact whose identity is claimed rather than derived: sequentially numbered files, generated manifests, lockfiles, shared registries and index files.
+
+Two chains cut from the same base can each be internally consistent and both pass CI while colliding, because neither can see the other; the conflict only materializes when the second one merges. Dependency edges and stack ancestry do not detect this — the branches are siblings, not ancestors.
+
+Correct resolution depends on merge order, which this skill does not own. Surface the collision as `NEEDS_USER` with both PR URLs and the colliding paths. Never renumber or rewrite the artifact pre-emptively.
+
 # Lost worker / workflow recovery
+
+A worker whose remote branch never advanced is the expensive case; prefer catching it through the checkpoint-compliance check above, before it is lost.
 
 If a worker disappears:
 
