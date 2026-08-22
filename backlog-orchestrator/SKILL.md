@@ -318,9 +318,9 @@ Issuing the trigger is not the end of that step. Confirm it took effect: a revie
 
 An elapsed window is not a refusal. A reviewer that is merely queued or slow leaves the PR unreviewed-pending, reconciled through ordinary event supervision and visible as such in checkpoint output; only an explicit not-configured/not-authorized response marks the trigger unavailable.
 
-A refusal is first evidence of the wrong write path, not of insufficient authority. Where the platform offers more than one way to perform the write, reissue the trigger once through a different available mechanism before drawing any conclusion. Do not otherwise repeat the same write path: it will not start working on the next PR, and each failed attempt leaves trigger and refusal comments behind on the PR.
+A refusal is first evidence of the wrong write path, not of insufficient authority. Where the platform offers more than one way to perform the write, reissue the trigger once through a different available mechanism before drawing any conclusion. Where the platform exposes only one write mechanism, the available paths are already exhausted. Do not otherwise repeat the same write path: it will not start working on the next PR, and each failed attempt leaves trigger and refusal comments behind on the PR.
 
-Only if the alternate path also fails, record it as `NEEDS_USER`: surface once, with the affected PRs, that review could not be triggered, and stop issuing the trigger for the remainder of the run in that repository. One escalation per affected repository, not one per PR; suppression is scoped to the repository that refused, because review configuration is repository-specific. Never conclude from a refusal alone that review cannot be triggered from this run at all — that conclusion is cheap to draw, hard to disprove afterwards, and costs precisely the reviews it skips.
+Only once every available path has failed, record it as `NEEDS_USER`: surface once, with the affected PRs, that review could not be triggered, and stop issuing the trigger for the remainder of the run in that repository. One escalation per affected repository, not one per PR; suppression is scoped to the repository that refused, because review configuration is repository-specific. Never conclude from a refusal alone that review cannot be triggered from this run at all — that conclusion is cheap to draw, hard to disprove afterwards, and costs precisely the reviews it skips.
 
 This generalizes past review triggers. When the platform offers several ways to perform the same write, prefer its first-class integration tooling over raw transport: attribution, permissions, and downstream automation can all differ between them, and the difference is invisible until a write is made and read back. Where identity matters to a workflow, verify it by inspecting an object the run actually created and reading its author — never by asking the credential who it is, which can answer differently from what its writes carry.
 
@@ -336,7 +336,7 @@ For each enumerated resource, either give every worker its own namespace/instanc
 
 Pass the resolved access details explicitly in each dispatch prompt so no worker has to guess them. A worker that guesses wrong reports failures that are not real.
 
-Standing rule in every dispatch prompt: never stop, reset, reconfigure, or clean up a shared resource — a sibling worker may be using it.
+Standing rule in every dispatch prompt: never stop, reset, reconfigure, or clean up a concurrently shared resource — a sibling worker may be using it. A worker holding serialized exclusive access may perform the lifecycle operations the repository's own configuration sanctions, since nothing else holds the resource during its turn.
 
 ## Remote checkpoint requirement
 
@@ -410,7 +410,7 @@ On actionable review feedback:
 3. dispatch one Sonnet `repair-pr` worker with `repair type = review`;
 4. `repair-pr` uses `resolve-pr-comment` where relevant;
 5. adopt the new remote head and increment review cycle;
-6. retrigger/request review when repo convention requires it, unless triggering was suppressed for this run;
+6. retrigger/request review when repo convention requires it, unless review is still deferred for this PR or triggering was suppressed for this run;
 7. release worker and resume event supervision.
 
 Review feedback may reference a head already superseded by a rebase/restack. Locate each finding by content rather than line number, and confirm it still applies to the current head before repairing.
@@ -436,7 +436,7 @@ Each cycle performs real work:
 7. fill available worker slots (optionally via a fresh Dynamic Workflow fan-out if the user re-opts in for the next batch);
 8. inspect stack ancestry changes;
 9. check in-flight branches for checkpoint advance;
-10. check sibling branches for colliding added artifacts;
+10. check sibling branches for colliding added or modified claimed artifacts;
 11. surface `NEEDS_USER`;
 12. wait using native task/event wait, then repeat.
 
