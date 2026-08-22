@@ -258,6 +258,8 @@ Follow repository branch conventions. Where permitted, include the issue key/num
 
 If an orphan remote branch cannot be safely mapped to an issue, inspect commit/diff/tracker development metadata. If still ambiguous -> `NEEDS_USER`.
 
+A session-level mandate that all work land on one fixed branch is incompatible with the per-issue stacked topology below; the two cannot be reconciled silently. Detect the conflict at startup and resolve it with the user before any dispatch.
+
 # DAG and PR topology
 
 Classify validated dependencies by implementation reality:
@@ -305,10 +307,36 @@ Before dispatch:
 1. calculate/fetch exact required base;
 2. create/identify issue branch;
 3. allocate isolated worktree/check-out;
-4. record canonical issue URL -> tracker -> repo -> worktree -> branch -> base -> worker;
-5. dispatch Sonnet worker with `implement-issue-core`.
+4. resolve shared-resource access details (see Shared environment, below);
+5. record canonical issue URL -> tracker -> repo -> worktree -> branch -> base -> worker;
+6. compose the dispatch prompt so it carries every default the worker skills already own;
+7. dispatch Sonnet worker with `implement-issue-core`.
+
+A dispatch prompt that enumerates a required process is followed literally: a default left out of that enumeration is a default skipped, and the worker will accurately report that the task never asked for it. Every dispatched prompt must therefore carry the automated review trigger instruction — `create-pr` owns the trigger rules, do not restate them here — unless this run explicitly defers review. Deferral is a conscious choice recorded in run state, naming what review is owed and on which PRs; it is never an omission.
+
+Issuing the trigger is not the end of that step. Confirm it took effect: a review from the repository's automated reviewer materializes within a bounded window, and the reviewer does not instead answer indicating it is not configured or not authorized. Verify per attempt, on every PR — one review arriving elsewhere in the run is not evidence the trigger works. A trigger that silently no-ops is worse than one that fails loudly, because the run then reports PRs as reviewed and clean when nothing reviewed them.
+
+An elapsed window is not a refusal. A reviewer that is merely queued or slow leaves the PR unreviewed-pending, reconciled through ordinary event supervision and visible as such in checkpoint output; only an explicit not-configured/not-authorized response marks the trigger unavailable.
+
+A refusal is first evidence of the wrong write path, not of insufficient authority. Where the platform offers more than one way to perform the write, reissue the trigger once through a different available mechanism before drawing any conclusion. Where the platform exposes only one write mechanism, the available paths are already exhausted. Do not otherwise repeat the same write path: it will not start working on the next PR, and each failed attempt leaves trigger and refusal comments behind on the PR.
+
+Only once every available path has failed, record it as `NEEDS_USER`: surface once, with the affected PRs, that review could not be triggered, and stop issuing the trigger for the remainder of the run in that repository. One escalation per affected repository, not one per PR; suppression is scoped to the repository that refused, because review configuration is repository-specific. Never conclude from a refusal alone that review cannot be triggered from this run at all — that conclusion is cheap to draw, hard to disprove afterwards, and costs precisely the reviews it skips.
+
+This generalizes past review triggers. When the platform offers several ways to perform the same write, prefer its first-class integration tooling over raw transport: attribution, permissions, and downstream automation can all differ between them, and the difference is invisible until a write is made and read back. Where identity matters to a workflow, verify it by inspecting an object the run actually created and reading its author — never by asking the credential who it is, which can answer differently from what its writes carry.
 
 Under Dynamic Workflows, provide these constraints to every workflow worker explicitly. Do not let a worker select another backlog ticket when it finishes.
+
+## Shared environment
+
+Filesystem isolation is necessary but not sufficient. Workers with private checkouts still contend over shared mutable resources — a shared backing service instance, a fixed port, a shared cache or state directory, one set of credentials, a single external sandbox account.
+
+At startup, enumerate the shared mutable resources workers in this run will contend for. That inventory is repository- and environment-specific: take it from repository configuration (`CLAUDE.md`/`AGENTS.md`, the session startup hook, the environment manifest), never from assumption. If a rule cannot be expressed without naming a concrete technology, it belongs in that configuration, not here.
+
+For each enumerated resource, either give every worker its own namespace/instance, or serialize access to it. If neither is possible, serialize the affected workers.
+
+Pass the resolved access details explicitly in each dispatch prompt so no worker has to guess them. A worker that guesses wrong reports failures that are not real.
+
+Standing rule in every dispatch prompt: never stop, reset, reconfigure, or clean up a concurrently shared resource — a sibling worker may be using it. A worker holding serialized exclusive access may perform the lifecycle operations the repository's own configuration sanctions, since nothing else holds the resource during its turn.
 
 ## Remote checkpoint requirement
 
@@ -340,6 +368,7 @@ branch/base
 remote head SHA
 CI state
 review state
+review trigger: issued/verified/pending/unavailable
 CI repair cycles used/remaining
 review repair cycles used/remaining
 stack parent/children
@@ -381,8 +410,10 @@ On actionable review feedback:
 3. dispatch one Sonnet `repair-pr` worker with `repair type = review`;
 4. `repair-pr` uses `resolve-pr-comment` where relevant;
 5. adopt the new remote head and increment review cycle;
-6. retrigger/request review when repo convention requires it;
+6. retrigger/request review when repo convention requires it, unless review is still deferred for this PR or triggering was suppressed for this run;
 7. release worker and resume event supervision.
+
+Review feedback may reference a head already superseded by a rebase/restack. Locate each finding by content rather than line number, and confirm it still applies to the current head before repairing.
 
 Product/architecture judgment -> `NEEDS_USER` rather than speculative repair.
 
@@ -404,14 +435,34 @@ Each cycle performs real work:
 6. recompute READY frontier;
 7. fill available worker slots (optionally via a fresh Dynamic Workflow fan-out if the user re-opts in for the next batch);
 8. inspect stack ancestry changes;
-9. surface `NEEDS_USER`;
-10. wait using native task/event wait, then repeat.
+9. check in-flight branches for checkpoint advance;
+10. check sibling branches for colliding added or modified claimed artifacts;
+11. surface `NEEDS_USER`;
+12. wait using native task/event wait, then repeat.
 
 Do not use CPU loops, file-touch loops, detached sleeps, meaningless commits, or other fake activity solely to prevent idling.
 
 Remote Git checkpoints remain mandatory regardless of runtime, because no platform/runtime persistence substitutes for durable source control.
 
+## Verifying worker reports
+
+A worker's reported check results are a claim about its own environment, which may be misconfigured in ways the worker cannot see. Before relaying or acting on reported results, verify them against durable evidence: CI on the pushed head, or a re-run outside that worker's environment. Never escalate a worker-reported mass failure to the user, or block a merge decision on it, unverified.
+
+## Checkpoint compliance
+
+Periodically compare each in-flight worker's remote branch head against its base. A branch that has not advanced well past dispatch means meaningful work exists only in an ephemeral container, contrary to invariant 5. Treat it as a red flag and intervene while the worker is still alive — require an immediate checkpoint push — rather than discovering it during lost-worker recovery.
+
+## Cross-branch artifact collisions
+
+After each PR reaches durable state, compare it against sibling branches in the same run and flag two things: files that two branches both **add** under the same name or sequence number, and incompatible edits two branches make to a shared claimed artifact — a generated manifest, lockfile, registry or index that branches amend rather than create, and which therefore collides with no added path in common. The general class is any artifact whose identity or ordering is claimed rather than derived.
+
+Two chains cut from the same base can each be internally consistent and both pass CI while colliding, because neither can see the other; the conflict only materializes when the second one merges. Dependency edges and stack ancestry do not detect this — the branches are siblings, not ancestors.
+
+Correct resolution depends on merge order, which this skill does not own. Surface the collision as `NEEDS_USER` with both PR URLs and the colliding paths. Never renumber or rewrite the artifact pre-emptively.
+
 # Lost worker / workflow recovery
+
+A worker whose remote branch never advanced is the expensive case; prefer catching it through the checkpoint-compliance check above, before it is lost.
 
 If a worker disappears:
 
@@ -477,6 +528,7 @@ Implementation workers: 3
 Repair workers: 1
 Active PRs: 7
 Waiting CI/review: 4
+Unreviewed (trigger pending/unavailable): 0
 Ready: 3
 Blocked: 2
 Needs user: 1
@@ -492,6 +544,7 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - PRs + stack topology;
 - remote checkpoint branches without PRs;
 - CI/review states + repair budgets consumed;
+- PRs left unreviewed, and whether the review trigger was deferred or unavailable;
 - issue-linkage/tracker-status inconsistencies;
 - `NEEDS_USER` items;
 - external blockers;
