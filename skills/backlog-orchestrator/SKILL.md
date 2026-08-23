@@ -590,7 +590,13 @@ Securing a worker's work never waits on that worker finishing. A worker mid-chec
 
 This contract assumes the parent can see a worker's checkout and send it an instruction. That holds for subagents in parent-created worktrees and for remote worker sessions, and **not** for a Dynamic Workflow fan-out: workflow agents accept no input mid-run, and the worktrees the runtime creates for them are not paths the parent was given. Neither half of the escalation above is available there.
 
-So under a Dynamic Workflow, enforcement has to be structural — encoded in the script's control flow, which is deterministic, rather than in an agent prompt, which is the thing that does not land. Make the checkpoint push its own pipeline stage after implementation rather than a line inside the implementation prompt, so the script guarantees it runs instead of hoping the worker chose to. Where that restructuring is not practical, prefer a runtime whose workers the parent can actually reach: unreachable-mid-run is a real cost of the workflow runtime, the same one that already disqualifies it for PR supervision.
+So under a Dynamic Workflow, enforcement has to be structural — encoded in the script's control flow, which is deterministic, rather than in an agent prompt, which is the thing that does not land.
+
+**Checkpoint granularity equals stage granularity.** A script can only interpose where it has a stage boundary, so a single checkpoint stage after implementation is not a checkpoint at all — it is the final push, which the worker was going to make anyway. If implementation hangs or the container dies inside that one long stage, the stage never returns and nothing was saved. Bounded loss requires implementation split into several bounded stages, each ending with a push: the number of boundaries is the granularity, and one boundary at the end is none.
+
+That only works where the issue's work decomposes into units the script can name in advance — per-file tranches, per-module conversions, work already sliced by the ticket. Where it does not, the workflow runtime **cannot** satisfy invariant 5 for that issue, and no arrangement of stages changes that.
+
+So the runtime preference is conditional, not absolute. A Dynamic Workflow suits the fan-out shape, but invariant 5 outranks that convenience: prefer a runtime whose workers the parent can reach whenever the implementation cannot be staged into script-visible units. Unreachable-mid-run is a real cost of the workflow runtime, the same one that already disqualifies it for PR supervision — this is the second thing it cannot do, not a footnote on the first.
 
 ## Capacity during the run
 
