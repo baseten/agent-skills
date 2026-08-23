@@ -40,7 +40,9 @@ When given a manifest, derive the PR set from it rather than listing every open 
 
 For each candidate PR record: URL, canonical issue URL, head branch/SHA, base branch, draft state, CI state, review state (triggered / complete / findings outstanding), and mergeability.
 
-Derive stack edges from actual base/head relationships, and from the machine-readable `Depends on:` line in PR bodies where present. A PR whose base is not the repository default branch is a stack child; its parent must merge first regardless of leverage.
+Derive stack edges the way `merge-stack` does: parent -> child when the child's base branch equals **another candidate PR's head branch**. Use a `Depends on:` line to locate candidates and to cross-check, never as the edge itself.
+
+A base that is merely not the repository default branch does not make a PR a stack child. A PR can legitimately target a long-lived integration or release branch that is no candidate's head, and treating that as a stack edge invents a parent-first constraint that does not exist. Where a real parent does exist, it must merge first regardless of leverage.
 
 ## 2. Map PRs to issues
 
@@ -71,9 +73,11 @@ Report both. They diverge in the case that matters most: a PR can unblock nothin
 
 ## 5. Find all-or-nothing sets
 
-Group the issues in `U` by their set of unmet blockers restricted to in-flight issues. Any group whose blocker set has more than one member is an **all-or-nothing set**: no partial subset of those PRs unblocks anything, and merging some of them buys zero startable work.
+Group the issues in `U` by their set of unmet blockers restricted to in-flight issues. Any group whose blocker set has more than one member is an **all-or-nothing set for the issues in that group**: until every member of the set merges, none of those particular issues becomes startable.
 
-State these explicitly. They are the single most common reason a "merge the biggest one first" instinct wastes a cycle.
+Scope the claim to the group and no further. A member of an all-or-nothing set can still unblock other issues that do not need the whole set — if X needs `{A, B}` and Y needs only `A`, then merging `A` starts Y even though it does nothing for X. Before describing a partial merge as buying nothing, check the rest of `U` and report whatever leverage it does have.
+
+State these sets explicitly. They are the most common reason a "merge the biggest one first" instinct wastes a cycle.
 
 ## 6. Find hard sequencing constraints
 
@@ -100,7 +104,11 @@ Then separate the two questions the user is actually asking:
 - **Review order** — which PR deserves a human's attention first. Free of stack ordering: a child can be reviewed before its parent even though it cannot merge first.
 - **Merge order** — constrained by ancestry and by hard constraints.
 
-For merge batching, prefer whole chains over prefixes. Merging part of a chain retargets and staleness-marks every survivor, so each partial merge costs a restack round that merging the chain in one sitting does not. Recommend holding a chain's tail only when there is a review reason to hold it, not to sequence it.
+For merge batching, prefer completing a chain over stopping partway — but do not claim that completing it avoids restacking. `merge-stack` merges one node, fully restacks the remaining descendant subtree, and refreshes checks and mergeability before selecting the next node, so an N-PR chain performs those rewrites whether it is merged in one sitting or several, and may wait on CI after each one.
+
+What one sitting actually saves is work **outside** the chain: every other open PR absorbs one base movement per sitting rather than one per merge, and a tail left open restacks now and then again when you return to it. Estimate turnaround from the per-node rewrite-and-recheck cost, not from the batch count.
+
+Recommend holding a chain's tail only when there is a review reason to hold it, not to sequence it.
 
 # Output
 
