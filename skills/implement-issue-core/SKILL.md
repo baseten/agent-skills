@@ -75,6 +75,10 @@ Answer by observation, not by claim. Available — proceed. Not available — re
 | non-ancestry dependency: not yet complete by its own measure | name the blocker and the state it is actually in — waiting on a release or a deploy is not a base problem and no restack fixes it |
 | no implementation anywhere: nothing merged, no open PR, nothing in the base | name each unmet blocker by canonical full URL — a real dependency gap |
 
+Return `BLOCKED_EXTERNAL` rather than `BLOCKED` where the unmet blocker is an **external prerequisite outside the authorized set**. The caller routes the two differently and only one of them means its readiness computation was wrong: waiting on work nobody in this run was authorized to do is a known state, not a graph error, and reporting it as one sends the caller off re-deriving a frontier that was correct.
+
+Externality changes what the block *means*, not whether a source disagreement is worth reporting. A prerequisite the prose named that native metadata did not return is still evidence about the transport, external or not — report the disagreement either way.
+
 **Observation beats assertion.** Caller-supplied dependency context settles only what you cannot check: where it asserts a blocker is satisfied and you observe that it is not reachable, the observation wins and the disagreement is reported. Deferring to the assertion would disable this reconciliation exactly when it matters — when the caller chose the wrong base — and would trade a restack the caller could act on for an implementation built without its dependency.
 
 Never implement against a contract that does not exist yet in order to keep a worker busy. The behavioural catch in step 1 — `BLOCKED` when required external work is absent — only fires when the absence breaks the code. A UI ticket whose backend is missing will render against the parts that do exist, stub the rest, pass its mocked tests, and produce a PR that looks complete and is not.
@@ -153,7 +157,7 @@ Return structured state:
 - tracker;
 - repository;
 - working directory;
-- outcome: `PR_OPEN` | `BLOCKED` | `FAILED` | `NEEDS_USER`;
+- outcome: `PR_OPEN` | `BLOCKED` | `BLOCKED_EXTERNAL` | `FAILED` | `NEEDS_USER`;
 - branch;
 - base branch;
 - PR URL/number;
