@@ -16,7 +16,7 @@ Accept:
 - dedicated working directory/worktree;
 - issue branch;
 - exact required base branch;
-- optional upstream dependency context, and whether the caller marks it as its **complete** dependency set or a targeted answer — the two are read differently, and unmarked means targeted. Also the **provenance** of each edge in it: produced by the caller's own native read, or recorded outside native metadata from an earlier finding;
+- optional upstream dependency context, and whether the caller marks it as its **complete** dependency set or a targeted answer — the two are read differently, and unmarked means targeted. Also the **provenance** of each edge in it: produced by the caller's own native read, or recorded outside native metadata from an earlier finding. And whether the read behind a complete set had **proven relationship visibility** for the boundaries in play: a complete set from an unproven read claims to list every edge the caller could see, which is a different claim from listing every edge there is;
 - optional authorization membership — the run's bounded authorized set, or a per-blocker flag saying whether each is inside it;
 - implementation-attempt budget;
 - draft/full PR preference when supplied.
@@ -51,6 +51,23 @@ Do this even when a caller judged the issue READY. That judgement was computed f
 - dependency context the caller supplied.
 
 Never rely on one alone, because they fail in different directions. Prose goes stale the moment someone edits a ticket without updating it. Native metadata can be truncated by a scoped or relayed credential, which returns a partial list with a success status and no warning — and **a partial list is more dangerous than an empty one**, because it presents as a complete answer. One blocker returned where four exist reads as "nearly ready" and suppresses exactly the doubt that would have sent you looking elsewhere. Individually each source has a failure mode that resembles success; together they are hard to fool.
+
+### What an empty answer is worth
+
+Three sources are hard to fool only while at least one is carrying information. Where prose names nothing and no caller context arrived, the union collapses to a single native read: the sources then agree because two are silent, not because they corroborate. Readiness resting on that rests on one unproven absence — the failure this step exists to catch, arriving in the shape that looks most like success.
+
+So establish what backs the absence before treating it as one:
+
+- **the caller marked its context complete and reports the read behind it as having proven visibility** for the boundaries this issue's blockers could cross — backed; proceed. An orchestrator has this by its own contract: an unproven boundary over dispatchable scope is a `FAIL` at its preflight, so a dispatch either carries a proven view or should not have happened;
+- **a known-true case is at hand** — an edge the caller confirmed, crossing the same boundary — so the native read is proven for that boundary and its silence means something. Nothing weaker establishes it: not a second read, not another transport or credential, for the reasons the orchestrator's proof rules give at length;
+- **neither** — the absence is unproven, and it does not become readiness by being reported alongside it.
+
+In that last case, what to do turns on whether anything upstream computed readiness from a graph:
+
+- **a caller supplied a READY judgement but no proven view** — return `NEEDS_USER`, naming the boundary. Do not implement. Its own rules required a proven view before dispatch, so the mismatch is upstream information it needs more than it needs this PR, and one confirmed edge or a marked-complete context settles it.
+- **nothing upstream judged readiness** — a direct invocation on one issue. Proceed: that invocation is the authority here, and refusing every issue whose dependency view cannot be proven would refuse nearly all of them, which is the same error as gating on issue state. Carry the unproven view into the report, plainly, so the claim the PR makes matches the evidence behind it.
+
+Either way, an issue where some source *did* name a blocker is not this case. Resolve those as below, and let the report carry the proof state.
 
 ### Resolve each blocker's real state
 
@@ -92,6 +109,8 @@ Return `BLOCKED_EXTERNAL` rather than `BLOCKED` **only when every unmet blocker 
 1. **any unmet in-scope blocker → `BLOCKED`.** A graph correction is the only response that another outcome would suppress: the caller reads `NEEDS_USER` and `BLOCKED_EXTERNAL` as *not* graph errors and may skip re-deriving its frontier, so choosing either would lose the correction entirely;
 2. **otherwise any unverifiable prerequisite → `NEEDS_USER`.** A question a person answers in seconds, which nothing else in the report will prompt;
 3. **otherwise, every unmet blocker external → `BLOCKED_EXTERNAL`.** A known wait.
+
+This ranking covers the blockers you found. The unproven-view `NEEDS_USER` above is not in it and never competes with it: that case arises only where **no source named anything**, so there is no blocker to rank against. The two are told apart by exactly that — one reports blockers and asks a question about one of them, the other reports none and says the silence was never established.
 
 Report all of them regardless of which outcome won. The ranking exists because a single value cannot carry three states, not because the others stopped mattering — an unverifiable prerequisite reported under a `BLOCKED` still needs its question asked. The reverse precedence would let a single external prerequisite mask an in-scope dependency the caller's graph got wrong — the caller would skip the frontier re-derivation, and its siblings would stay scheduled against a graph already known to be incomplete. Choose the outcome that demands the most of the caller; the per-blocker detail carries the rest.
 
@@ -191,6 +210,7 @@ Return structured state:
 - PR URL/number;
 - remote head SHA;
 - issue linkage verified: yes/no;
+- whether the absence of further blockers was **backed** — by a caller's proven complete set, or by a known-true case — or left unproven, and on what boundary. A `PR_OPEN` carrying an unproven absence is making a narrower claim than it looks like it is making, and this line is the only place that distinction survives;
 - the transport tier used for relationship reads and a **non-secret identity of the credential behind it** — the authenticated account and its scopes, never the credential itself. A caller comparing this against its own identity is what turns a caller/native mismatch into a cross-credential demonstration rather than a coincidence, and it cannot make that comparison if you do not say;
 - dependencies checked: for each, the canonical full URL, which of the three sources named it, **the class you judged it under**, and how it resolved by that class's measure — for a code dependency: reachable from base / open PR not in base, with that PR's URL / merged but not reachable, with the merge and base; for a non-ancestry dependency: complete by its own measure / incomplete, with the state it is in / **unverifiable, naming the measure that was out of reach**; or unmet entirely — plus any caller assertion the observation contradicted. Naming the class matters because it tells the caller which measure was applied, and therefore whether a block is a base problem, a wait, or a real gap;
 - source disagreements, reported as **two distinct kinds** because they mean different things and warrant different responses:
@@ -210,4 +230,4 @@ Return structured state:
 - checks run;
 - implementation attempts used;
 - blocker/failure details;
-- recommended user action when `NEEDS_USER`.
+- on `NEEDS_USER`, **which kind** it is — an unverifiable prerequisite, or an unproven dependency view — and the recommended user action. The two demand opposite things of a caller: one is a question to put to a person, the other is transport evidence that invalidates a visibility proof and holds up every sibling dispatched through the same read. Leaving the caller to infer it from whether the blocker list is empty is how the expensive one gets handled as the cheap one.
