@@ -575,8 +575,12 @@ On first observing uncommitted completed work, instruct that worker to commit an
 
 **Capture without racing the worker.** A live worker owns its index and `HEAD`, and the shared-resource rule above applies to its own checkout as much as to a service — two actors staging into one `.git/index` can capture a half-written tree, or make each other's commits fail. So never run `git add` in a live worker's index. Either:
 
-- snapshot into a private index (`GIT_INDEX_FILE` pointed at a scratch file), commit that tree, and push it to the issue branch — the worker's index, worktree and `HEAD` are untouched, so whatever it does next still works; or
-- if the worker looks wedged rather than working, stop it first and then commit normally in the now-quiesced worktree. Stopping consumes that issue's lost-worker budget, so it needs the same evidence any redispatch does.
+- **live worker** — snapshot into a private index (`GIT_INDEX_FILE` pointed at a scratch file), commit that tree, and push it to a **recovery ref**, never to the issue branch: something like `refs/checkpoints/<issue-branch>/<sha>`. The work becomes durable off-container, which is the entire point, while the issue branch stays the worker's alone;
+- **wedged worker** — stop it first, then commit normally onto the issue branch in the now-quiesced worktree. Stopping consumes that issue's lost-worker budget, so it needs the same evidence any redispatch does.
+
+The issue branch has exactly one writer at a time, and while a worker lives that writer is the worker. Advancing the branch underneath it is not a neutral act even when its index and worktree are untouched: its next push becomes a non-fast-forward rejection, and a worker that reacts by force-pushing destroys the snapshot that was protecting it. A recovery ref buys durability without a second writer. Making the worker fetch and reconcile instead would put the fix back in the worker's hands — the same hands that did not commit when told to.
+
+Once the worker pushes its own commit covering that work, its recovery refs are redundant; drop them when the PR reaches durable state. Lost-worker recovery reads them.
 
 A snapshot that caught a file mid-write is still worth having: it is a WIP checkpoint, never the PR's final state, and a partial save beats an empty branch. Prefer the worker doing its own commit precisely because it has no such hazard — parent capture is the fallback, not the mechanism.
 
@@ -607,10 +611,11 @@ A worker whose remote branch never advanced is the expensive case; prefer catchi
 If a worker disappears:
 
 1. inspect remote branch/PR first;
-2. inspect local worktree only if the container still exists;
-3. adopt pushed checkpoints/PR;
-4. redispatch at most once from latest durable remote checkpoint;
-5. repeated loss -> `NEEDS_USER`/infrastructure failure.
+2. inspect any recovery refs the parent pushed for that issue (see Checkpoint compliance) — work captured from a live worker lives there, not on the issue branch;
+3. inspect local worktree only if the container still exists;
+4. adopt pushed checkpoints/PR, merging a recovery ref into the issue branch where it holds work the branch does not;
+5. redispatch at most once from latest durable remote checkpoint;
+6. repeated loss -> `NEEDS_USER`/infrastructure failure.
 
 If the whole cloud container/workflow disappears, assume local worktrees are lost. Resume from remote branches/PRs plus tracker state.
 
@@ -658,11 +663,25 @@ On reaching settled:
 
 1. reconcile tracker + remote state one final time, so both the summary and the ranking are computed from durable truth rather than cached run state;
 2. invoke `summarize-tranche` with the manifest/scope, this run's PR set, and the worker/review findings it produced;
-3. invoke `plan-merge-order` with the manifest/scope and this run's PR set;
-4. surface the summary and action points first, then the ranking table, as the run's closing output;
-5. stop dispatching work and stop spending tokens re-deriving the same state.
+3. **act on its action points before ranking anything** (below);
+4. invoke `plan-merge-order` with the manifest/scope, this run's PR set, and any `MERGE_RISK`/`DECISION` items the summary produced, so the ranking is computed against those constraints rather than around them;
+5. surface the summary and action points first, then the ranking table, as the run's closing output;
+6. stop dispatching work and stop spending tokens re-deriving the same state.
 
 Summarize before ranking. An action point can change whether something should merge at all, and a ranking the user has already begun acting on is the wrong place to discover that. Run the summary once per settled tranche rather than saving one up for the end of a whole backlog: its findings come from run context that the next session will not have, and follow-ups need to exist while later tranches are still running, so they get picked up instead of rediscovered.
+
+## The summary can un-settle the run
+
+Settlement was computed before the summary existed, so the summary is capable of falsifying it. Branch on what it returns rather than proceeding to the ranking unconditionally:
+
+| action point | effect |
+|---|---|
+| `IN_FLIGHT_FIX` | the tranche is **not settled** — that PR has actionable work outstanding. Return it to supervision, dispatch the repair within budget, and re-test the settled conditions before ranking |
+| `MERGE_RISK` | still settled, but the ranking must carry it. Pass it to `plan-merge-order`, and raise it as `NEEDS_USER` where it blocks a merge decision outright |
+| `DECISION` | pass to `plan-merge-order` and surface as `NEEDS_USER`; it gates a human, not the run |
+| `NEW_ISSUE` | no effect on settlement or ordering — report it |
+
+An `IN_FLIGHT_FIX` reaching the ranking is the same defect the settled conditions already guard against: a table that orders PRs which are not actually finished is a table the user cannot act on. Finding it one step later does not make it acceptable.
 
 Do not merge, and do not treat the ranking as authorization to merge — invariant 12 still holds.
 

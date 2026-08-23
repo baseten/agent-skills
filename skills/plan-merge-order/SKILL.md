@@ -23,7 +23,10 @@ Accept:
 
 - a manifest/parent/build-order issue URL, an explicit issue set, or an explicit PR set;
 - the repositories in scope;
-- optionally, the run's own PR/branch/stack state when a caller already holds it.
+- optionally, the run's own PR/branch/stack state when a caller already holds it;
+- optionally, `MERGE_RISK` and `DECISION` action points from `summarize-tranche`.
+
+Treat supplied action points as hard constraints on the ordering, not as commentary: a PR carrying a `MERGE_RISK` is ranked with that risk stated in its row, and one gated by a `DECISION` cannot be placed in a merge batch ahead of the decision it waits on. Where an action point makes a PR unmergeable as it stands, say so in the table rather than ranking it as ready.
 
 When given a manifest, derive the PR set from it rather than listing every open PR in the repository. Work the caller did not open is context, not a candidate.
 
