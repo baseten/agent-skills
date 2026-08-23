@@ -593,7 +593,11 @@ Do not blindly restack every descendant after every upstream push. Instead:
 
 Neither direction, in either class, touches a visibility proof. Invalidating a proof and halting slot-filling for a stale base is an expensive answer to a cheap problem. Everything below applies to **visibility** disagreements, where some other source named an edge the worker's native read did not return.
 
-Two variants are demonstrations rather than suspicions, and the worker names which by reporting sources-had against sources-lacked. Where **you supplied** an edge the worker's native read lacks, or where **its native read has one your context omitted**, two credentials have disagreed about one graph — the cross-credential comparison the corroboration rules ask you to arrange, arriving unasked. Treat it as a proven partial view rather than evidence of one: invalidate immediately rather than spending a round establishing what you already hold.
+Two variants can be demonstrations rather than suspicions — but only on a condition you must check, not assume. Where **you supplied** an edge the worker's native read lacks, or where **its native read has one your context omitted**, compare the credential identity behind your read against the one behind the worker's. You already record yours per credential; the worker reports the transport and identity it used.
+
+**Distinct identities** — two credentials have disagreed about one graph. That is the cross-credential comparison the corroboration rules ask you to arrange, arriving unasked, and it is proof rather than evidence: invalidate immediately rather than spending a round establishing what you already hold.
+
+**The same identity** — and a subagent worker inheriting this session's credential is the common case, not the exception — this proves nothing on its own. One credential cannot corroborate itself, which is the rule this skill states about transports and applies no less to two reads at different moments: the mismatch may be an edge that changed between the reads, or caller context that went stale. Take the ordinary corroboration path and treat it as evidence.
 
 The direction says whose view was partial, and therefore what to fix. Yours missing an edge the worker saw means **your** frontier was computed short — recheck it for every issue that shared that read, not only this one. The worker missing an edge you had means its transport is the partial one, and the recovery below applies as written.
 
