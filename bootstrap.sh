@@ -5,30 +5,30 @@
 #   git clone --depth 1 https://github.com/baseten/agent-skills.git /tmp/agent-skills
 #   bash /tmp/agent-skills/bootstrap.sh
 #   rm -rf /tmp/agent-skills
+#
+# Every directory under skills/ containing a SKILL.md is installed. Adding a
+# skill needs no edit here — create the directory and it ships.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_DIR="$HOME/.claude"
 
 # --- Skills ---
-echo "Installing skills..."
 mkdir -p "$CLAUDE_DIR/skills"
-SKILLS=(
-  create-pr
-  resolve-pr-comment
-  implement-issue-core
-  repair-pr
-  implement-issue
-  validate-backlog
-  normalize-github-dependencies
-  backlog-orchestrator
-  plan-merge-order
-  merge-stack
-)
-for skill in "${SKILLS[@]}"; do
-  cp -r "$SCRIPT_DIR/$skill" "$CLAUDE_DIR/skills/"
+
+echo "Installing skills..."
+for skill_path in "$SCRIPT_DIR"/skills/*/; do
+  skill_path="${skill_path%/}"
+  # A directory without a SKILL.md is not a skill. This also absorbs the
+  # unmatched glob if skills/ ever holds no directories.
+  if [ ! -f "$skill_path/SKILL.md" ]; then
+    continue
+  fi
+  # The trailing slash is stripped above because BSD cp reads
+  # `cp -r src/ dest/` as "copy the contents of src", unlike GNU cp.
+  cp -r "$skill_path" "$CLAUDE_DIR/skills/"
+  echo "  + $(basename "$skill_path")"
 done
-echo "  Installed: ${SKILLS[*]}"
 
 # --- Permissions ---
 PERMISSIONS_FILE="$SCRIPT_DIR/permissions.json"

@@ -20,12 +20,25 @@ Reusable Claude Code skills for issue implementation, PR workflows, backlog vali
 
 ## Writing skills
 
+These read files from a personal machine (`~/Documents/version-control/ai-alex/...`) at load time, so their content is empty in a cloud container where those paths do not exist. They install everywhere regardless; use them from a local setup.
+
 - `draft-blog-post` — draft a technical blog post using Alex's writing style and blog template from `ai-alex`.
 - `draft-slack-message` — draft a Slack message using Alex's Slack examples and writing style from `ai-alex`.
 
+## Repository layout
+
+```
+skills/           every directory with a SKILL.md ships
+permissions.json
+bootstrap.sh
+```
+
+Adding a skill requires no change to `bootstrap.sh` — create a directory under
+`skills/` with a `SKILL.md` in it and the next bootstrap run installs it.
+
 ## Local Codex usage
 
-Codex reads the local-only skills via symlinks in `~/.codex/skills/`:
+Codex reads a subset of the skills via symlinks in `~/.codex/skills/`:
 
 ```bash
 for s in create-pr resolve-pr-comment implement-issue draft-blog-post draft-slack-message; do
@@ -72,4 +85,4 @@ At that point `backlog-orchestrator` invokes `plan-merge-order`, which ranks the
 
 ## Cloud bootstrap
 
-Run `bootstrap.sh` from a checkout of this repository to install all skills into the standard Claude configuration for a cloud/container session. The orchestration skills remain environment-agnostic and can also be used from local Claude Code setups.
+Run `bootstrap.sh` from a checkout of this repository to install the skills into the standard Claude configuration for a cloud/container session. It discovers every directory under `skills/` that contains a `SKILL.md`, so the install list never drifts from the repository. The orchestration skills remain environment-agnostic and can also be used from local Claude Code setups.
