@@ -22,6 +22,7 @@ SKILLS=(
   validate-backlog
   normalize-github-dependencies
   backlog-orchestrator
+  plan-merge-order
   merge-stack
 )
 for skill in "${SKILLS[@]}"; do

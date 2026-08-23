@@ -53,9 +53,12 @@ When `repair type = review`:
 4. run relevant local verification;
 5. commit/push once for the coherent review round where practical;
 6. verify required replies/thread resolutions were performed;
-7. return immediately.
+7. count the actionable review threads still unresolved on the PR — including any outside the round supplied to this invocation — and report the number;
+8. return immediately.
 
 Do not spend cycles arguing with subjective feedback or inventing product intent.
+
+Never change the PR's draft state. Promoting a draft PR to ready once its first review round is fully resolved is a supervisor decision that needs the whole-PR picture — which review rounds have completed, what the PR's as-created draft state was, whether CI is green. Report the remaining-thread count and let the caller decide.
 
 ## Recovery / checkpointing
 
@@ -77,5 +80,6 @@ Return:
 - repair cycle consumed: yes/no;
 - checks run;
 - review threads resolved/replied when relevant;
+- actionable review threads still unresolved on the PR: count;
 - failure/judgment details;
 - recommended next action.

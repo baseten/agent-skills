@@ -41,6 +41,7 @@ Reusable worker skills:
 - `repair-pr` — one bounded CI or review repair pass;
 - `create-pr` — issue linkage, stack metadata, PR creation, review trigger;
 - `resolve-pr-comment` — thread-level review fix primitive;
+- `plan-merge-order` — read-only review/merge-order ranking for a settled tranche;
 - `merge-stack` — separately authorized stack merge/restack workflow.
 
 `implement-issue` remains the convenient standalone **single-issue orchestrator**. Do not replace it with this skill for normal one-ticket work.
@@ -205,6 +206,7 @@ At most one strongest-model implementation escalation is allowed for a reasoning
 
 Implementation workers require `implement-issue-core` and `create-pr`.
 Repair workers require `repair-pr` and, for review fixes, `resolve-pr-comment`.
+The parent layer requires `validate-backlog` at preflight and `plan-merge-order` when the run settles.
 
 Workers must inherit/preload the active installed skills. If a required skill is unavailable, return `BLOCKED` rather than improvising a replacement workflow.
 
@@ -369,6 +371,8 @@ remote head SHA
 CI state
 review state
 review trigger: issued/verified/pending/unavailable
+first review round: pending/complete-with-findings/clean
+draft state: as-created -> current
 CI repair cycles used/remaining
 review repair cycles used/remaining
 stack parent/children
@@ -418,6 +422,30 @@ Review feedback may reference a head already superseded by a rebase/restack. Loc
 Product/architecture judgment -> `NEEDS_USER` rather than speculative repair.
 
 A PR branch may have only **one active mutating worker** at a time. Before repair, verify the remote head has not moved unexpectedly.
+
+## Draft promotion after a clean first review
+
+A PR opened as a draft is signalling "not finished yet". Once its **first** automated review round has completed and every actionable finding from it is resolved, that signal is stale and the PR should be marked ready for review.
+
+Promote when all of these hold:
+
+- the PR was created as a draft by this run (`create-pr` reports its as-created draft state);
+- the automated review trigger was issued and a review round actually came back — a review that was deferred, suppressed, or never fired is not a completed round;
+- no actionable finding from that round is unresolved, whether it was fixed, or answered with a reply explaining why no change is warranted;
+- CI is green on the current remote head;
+- the PR is not `NEEDS_USER` and has no unanswered product/architecture question.
+
+Then mark the PR ready for review once, and record the transition in the per-PR state.
+
+Rules:
+
+- Promote at most once per PR. Never flip a PR back to draft, and never re-promote one a human returned to draft.
+- Never promote a PR this run did not open.
+- Repository convention or an explicit user instruction to keep PRs in draft overrides this, as does a caller passing an explicit draft preference through `implement-issue-core`.
+- Later review rounds do not re-trigger promotion; the PR is already ready.
+- Promotion is not merge authorization and does not interact with invariant 12. It changes the PR's review-readiness signal and nothing else.
+
+A repair worker never promotes. `repair-pr` reports how many actionable threads remain unresolved; this parent layer owns the decision.
 
 # Parent supervision loop
 
@@ -501,11 +529,37 @@ Normal orchestration never merges automatically.
 
 If the user separately authorizes `merge-stack`, that skill owns merge ordering and descendant rebasing/restacking. Reconcile tracker completion after every merge.
 
+# Settled tranche
+
+A run is **settled** when no further implementation can start and every open PR is individually finished:
+
+- no in-scope issue is READY — each unstarted issue is blocked by work that is implemented but unmerged;
+- no implementation or repair worker is in flight;
+- every open PR from this run has had at least one **completed** automated review round, not merely a trigger issued;
+- every actionable review finding on every open PR is resolved or answered;
+- no open PR is `NEEDS_USER` or waiting on CI.
+
+Settled is not the same as finished. The run has produced everything it can; the remaining move belongs to whoever holds merge authority.
+
+On reaching settled:
+
+1. reconcile tracker + remote state one final time, so the ranking is computed from durable truth rather than cached run state;
+2. invoke `plan-merge-order` with the manifest/scope and this run's PR set;
+3. surface its table and recommendations to the user as the run's closing output;
+4. stop dispatching work and stop spending tokens re-deriving the same state.
+
+Do not merge, and do not treat the ranking as authorization to merge — invariant 12 still holds.
+
+If a run reaches all other settled conditions but some PR still has an unresolved finding, an unfired review, or red CI, it is **not** settled. Finish that PR within budget, or surface it as `NEEDS_USER`, before ranking. Ranking PRs that are not actually finished produces a merge order the user cannot act on.
+
+After the ranking is delivered, supervision continues only for merge/close events and for the restack work a merge triggers. Re-run `plan-merge-order` when merges change the graph enough that the previous ordering is stale.
+
 # Stop conditions
 
 Stop starting new implementation work when:
 
 - all in-scope issues reached requested durable state;
+- the run is settled (see above) and the merge-order ranking has been delivered;
 - the 12-new-issue budget is reached;
 - all remaining paths are blocked/`NEEDS_USER`;
 - the user asks to stop;
@@ -529,6 +583,8 @@ Repair workers: 1
 Active PRs: 7
 Waiting CI/review: 4
 Unreviewed (trigger pending/unavailable): 0
+Unresolved review findings: 0
+Drafts promoted to ready: 2
 Ready: 3
 Blocked: 2
 Needs user: 1
@@ -545,6 +601,8 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - remote checkpoint branches without PRs;
 - CI/review states + repair budgets consumed;
 - PRs left unreviewed, and whether the review trigger was deferred or unavailable;
+- PRs promoted from draft to ready, and any left in draft with the reason;
+- the `plan-merge-order` table when the run settled;
 - issue-linkage/tracker-status inconsistencies;
 - `NEEDS_USER` items;
 - external blockers;

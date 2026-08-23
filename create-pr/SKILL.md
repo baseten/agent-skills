@@ -101,6 +101,8 @@ Description...
 
 Draft/full behavior follows repo docs; otherwise work repos default to draft and personal repos to full. Explicit caller/user preference wins.
 
+Report the as-created draft state in the output. A supervising workflow uses it to decide later whether the PR is eligible to be promoted to ready once its first review round comes back clean; it cannot tell a PR this run drafted from one a human drafted unless this skill says so. This skill itself never promotes — it ends at creation.
+
 Use GitHub MCP in remote/web environments and `gh pr create --base <pr-base>` locally when available.
 
 When directly invoked by a user, show proposed title/body and confirm before creation. When chained from an authorized implementation workflow, no second confirmation is needed.
@@ -136,4 +138,5 @@ Return:
 - PR base branch;
 - parent PR URL when stacked;
 - issue linkage verified: yes/no;
+- draft state as created: draft/ready, and what decided it (repo docs, caller preference, default);
 - review triggered/deferred and how.
