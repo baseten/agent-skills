@@ -60,6 +60,8 @@ When first-class PR events are unavailable, the parent falls back to other subsc
 
 `implement-issue` keeps the same behavior on a single ticket: it remains a useful one-issue orchestrator that composes the same primitives and supervises just that PR.
 
+A **mechanical** push — a restack, or a renumber/regeneration of a claimed artifact such as a migration number or a lockfile — moves identity or ordering rather than behavior. It consumes no review cycle, re-triggers no review, and does not reset a PR's reviewed state; the repository's deterministic checks validate it instead. This matters right after a sibling merges, when descendants restack for reasons unrelated to their own diffs. Where no such check exists, the push is substantive like any other.
+
 A PR opened as a draft is promoted to ready for review once its first automated review round has completed and every finding from it is resolved, CI is green, and nothing is waiting on the user. The supervisor owns that decision — `repair-pr` reports how many actionable threads remain but never changes draft state itself. Promotion is a review-readiness signal only; it never implies merge authority.
 
 ## Settled tranches

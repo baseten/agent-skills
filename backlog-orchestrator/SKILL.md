@@ -423,6 +423,18 @@ Product/architecture judgment -> `NEEDS_USER` rather than speculative repair.
 
 A PR branch may have only **one active mutating worker** at a time. Before repair, verify the remote head has not moved unexpectedly.
 
+## Mechanical pushes do not consume review
+
+A restack, or a renumber/regeneration of a claimed artifact, moves identity or ordering rather than behavior. Such a push:
+
+- does not consume a review repair cycle;
+- does not re-trigger automated review;
+- does not reset the PR's reviewed state or its eligibility for draft promotion.
+
+The repository's deterministic checks are what validate it. Where the repository has no check that would catch a bad renumber, treat the push as substantive instead — `create-pr` carries the full test for which is which.
+
+This matters most right after a sibling merges. Descendants restack and claimed artifacts renumber for reasons that have nothing to do with their own diffs, and re-reviewing every one of them spends the review budget on code that did not change.
+
 ## Draft promotion after a clean first review
 
 A PR opened as a draft is signalling "not finished yet". Once its **first** automated review round has completed and every actionable finding from it is resolved, that signal is stale and the PR should be marked ready for review.
@@ -513,6 +525,7 @@ Do not blindly restack every descendant after every upstream push. Instead:
 - record stale ancestry;
 - restack before descendant diffs/CI/review become misleading;
 - ensure ancestry is correct before merge-ready state;
+- treat a restack-only push as mechanical (see above): no review re-trigger, no cycle consumed;
 - use `merge-stack` for authorized merge/restack operations;
 - reconcile new remote heads before dispatching further repairs.
 
