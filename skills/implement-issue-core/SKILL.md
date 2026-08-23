@@ -63,6 +63,7 @@ An open blocker does not mean the work is unavailable. A stacked child is dispat
 |---|---|
 | the dependency's implementation is present in the supplied base, or otherwise reachable from this checkout | proceed |
 | the caller supplied dependency context asserting it is satisfied | proceed — the caller owns that claim |
+| an open, unmerged PR implements the blocker, but it is not reachable from this base | return `BLOCKED`, and name that PR — the work exists and is not available *here*, which is a restack the caller can act on rather than a dead end |
 | no implementation anywhere: no merged PR, nothing in the base, no caller assurance | return `BLOCKED`, naming each unmet blocker by canonical full URL |
 
 Never implement against a contract that does not exist yet in order to keep a worker busy. The behavioural catch in step 1 — `BLOCKED` when required external work is absent — only fires when the absence breaks the code. A UI ticket whose backend is missing will render against the parts that do exist, stub the rest, pass its mocked tests, and produce a PR that looks complete and is not.
@@ -147,7 +148,7 @@ Return structured state:
 - PR URL/number;
 - remote head SHA;
 - issue linkage verified: yes/no;
-- dependencies checked: for each, the canonical full URL, which of the three sources named it, and how it resolved (present in base / caller-asserted / unmet);
+- dependencies checked: for each, the canonical full URL, which of the three sources named it, and how it resolved (present in base / caller-asserted / implemented in an open PR, with that PR's URL / unmet);
 - source disagreements: any dependency the prose named that native metadata did not return, and any mismatch against the caller's supplied dependency context — report these even on a successful run, since they are evidence about the graph rather than about this issue;
 - draft state as created, exactly as `create-pr` reported it;
 - checkpoints pushed: count/SHAs when useful;

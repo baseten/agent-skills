@@ -591,6 +591,10 @@ Do not blindly restack every descendant after every upstream push. Instead:
 
 **Visibility proven for that boundary** — native metadata is trustworthy there, so prose naming an edge it does not show is more likely stale text than a hidden edge: a dependency deliberately removed from metadata and left behind in the description. Do not auto-adopt it. Classify it — verify whether the relationship still holds, not merely whether the referenced issue is implemented, which is all the worker checked — and surface it as `NEEDS_USER` where that cannot be settled from the issues themselves. Never persist an unclassified prose edge: persistence is what makes every future restart re-adopt it, so a stale edge written down once blocks the issue indefinitely.
 
+When classifying, use the preflight you already ran. `validate-backlog` emits a warning for exactly this shape — text names a blocker with no structured edge — so check whether it flagged this edge before dispatch. An edge flagged at preflight **and** independently reported by a worker is two observations from different actors, materially stronger than either alone and usually real. One with no preflight warning behind it is likelier to be prose the validator could already see was stale. Correlating them costs nothing, since the warning is in hand.
+
+The reverse also holds: a preflight warning no worker ever confirmed stays outstanding. Do not let it expire quietly because the issue it concerned happened to complete.
+
 Either way, do the graph work **before** filling further worker slots.
 
 One worker's disagreement is the cheapest evidence available that the graph is wrong; discarding it because that worker happened to succeed wastes the only signal the system gets.
