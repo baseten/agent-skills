@@ -45,6 +45,14 @@ If core returns `BLOCKED`, `FAILED`, or `NEEDS_USER`, surface that result. If a 
 
 `BLOCKED` on an unmet dependency is a special case: it is authoritative information about the graph rather than a worker failure, so it is never retried. The issue was judged ready against a dependency view that turned out to be wrong — commonly a read that returned part of the blocker list with no indication it had. Surface the named blockers by canonical full URL, and pass on any source disagreement the worker reported (a dependency the prose named that native metadata did not return) even where the run otherwise succeeded: that is evidence about the transport, and this is the only place it surfaces.
 
+Never retried is not the same as never resolved. There is no orchestrator here to re-derive a frontier, so this skill owns the classification itself, or a stale prose edge blocks the issue permanently with no route forward:
+
+- **a blocker named only in prose, whose referenced work exists nowhere** — establish whether the relationship still holds before treating it as final. Prose survives edits that remove a dependency from native metadata, so text naming a blocker that has no implementation anywhere is as likely to be a dependency someone deleted as one nobody built;
+- **it still holds** — `BLOCKED` stands; report the blocker and stop;
+- **it does not, or cannot be settled from the issues themselves** — `NEEDS_USER` with both readings and a recommendation, not a bare block. The user can retire a stale edge in seconds; they cannot act on a `BLOCKED` that does not say which reading it assumed.
+
+Where the blocker's work exists but is not reachable — an open PR, or a merge outside this base — pass on the PR or base the worker named. That is a restack or a base correction, and either is actionable without touching the dependency graph at all.
+
 If core returns `PR_OPEN`, record:
 
 - PR URL;

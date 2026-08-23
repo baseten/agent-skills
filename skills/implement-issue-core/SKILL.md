@@ -59,12 +59,19 @@ Read each referenced issue directly. A plain issue read works across repositorie
 
 An open blocker does not mean the work is unavailable. A stacked child is dispatched precisely while its parent is implemented but unmerged — that is the normal case, not an error. Gating on "the blocker is still open" would refuse nearly every stacked child and be worse than no gate at all.
 
-| finding | action |
+One question decides it: **is the dependency's implementation reachable from this checkout's base?** Answer it by observation, not by claim.
+
+Reachable — proceed.
+
+Not reachable — return `BLOCKED`. What you found determines what to report, and the report is the useful part:
+
+| why it is not reachable | report |
 |---|---|
-| the dependency's implementation is present in the supplied base, or otherwise reachable from this checkout | proceed |
-| the caller supplied dependency context asserting it is satisfied | proceed — the caller owns that claim |
-| an open, unmerged PR implements the blocker, but it is not reachable from this base | return `BLOCKED`, and name that PR — the work exists and is not available *here*, which is a restack the caller can act on rather than a dead end |
-| no implementation anywhere: no merged PR, nothing in the base, no caller assurance | return `BLOCKED`, naming each unmet blocker by canonical full URL |
+| an open, unmerged PR implements it | name that PR — the work exists and is not available *here*, so this is a restack the caller can act on, not a dead end |
+| merged, but that merge is not reachable from the supplied base — it landed on another branch, or this base is obsolete | name the merge and the base — the caller calculated the wrong base, which is a different repair from a missing dependency |
+| no implementation anywhere: nothing merged, no open PR, nothing in the base | name each unmet blocker by canonical full URL — a real dependency gap |
+
+**Observation beats assertion.** Caller-supplied dependency context settles only what you cannot check: where it asserts a blocker is satisfied and you observe that it is not reachable, the observation wins and the disagreement is reported. Deferring to the assertion would disable this reconciliation exactly when it matters — when the caller chose the wrong base — and would trade a restack the caller could act on for an implementation built without its dependency.
 
 Never implement against a contract that does not exist yet in order to keep a worker busy. The behavioural catch in step 1 — `BLOCKED` when required external work is absent — only fires when the absence breaks the code. A UI ticket whose backend is missing will render against the parts that do exist, stub the rest, pass its mocked tests, and produce a PR that looks complete and is not.
 
@@ -148,7 +155,7 @@ Return structured state:
 - PR URL/number;
 - remote head SHA;
 - issue linkage verified: yes/no;
-- dependencies checked: for each, the canonical full URL, which of the three sources named it, and how it resolved (present in base / caller-asserted / implemented in an open PR, with that PR's URL / unmet);
+- dependencies checked: for each, the canonical full URL, which of the three sources named it, and how it resolved — reachable from base / open PR not in base, with that PR's URL / merged but not reachable, with the merge and base / unmet — plus any caller assertion the observation contradicted;
 - source disagreements: any dependency the prose named that native metadata did not return, and any mismatch against the caller's supplied dependency context — report these even on a successful run, since they are evidence about the graph rather than about this issue;
 - draft state as created, exactly as `create-pr` reported it;
 - checkpoints pushed: count/SHAs when useful;
