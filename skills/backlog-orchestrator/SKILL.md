@@ -99,6 +99,7 @@ A Dynamic Workflow is a JavaScript orchestration script that fans plain subagent
 When the user has opted into a workflow for this invocation (see Invocation above), use it **only for the implementation fan-out**:
 
 - write the workflow script yourself so each `agent()` call's prompt/model explicitly encodes: exact authorized issue set and normalized dependency DAG (as separate fan-out stages honoring the DAG's ordering), Sonnet worker model, one issue per worker, isolated checkout/worktree per worker, exact calculated branch/base, remote checkpoint rules, retry budget;
+- make the checkpoint push a **pipeline stage of its own** rather than only a rule inside the implementation prompt. The parent cannot reach into a running fan-out to enforce it (see Where the parent cannot reach), so the script's control flow is the only thing that can guarantee the push happens;
 - do **not** give the workflow permission to redefine the product backlog — it must execute the already validated bounded DAG supplied by this skill;
 - treat the workflow purely as an **execution substrate** for that one fan-out run, not as the source of truth for issue/PR state.
 
@@ -552,18 +553,34 @@ A worker's reported check results are a claim about its own environment, which m
 
 **Assume the checkpoint instruction will not land.** Across observed runs, workers hold completed work uncommitted at a high rate — including workers whose dispatch prompt explicitly told them to push before running checks. Sonnet workers treat committing as something that follows green checks rather than something that protects work in progress, and no amount of prompt emphasis has reliably changed that. Parent-side verification, not the worker's instructions, is what actually satisfies invariant 5.
 
-So this is a step of every supervision cycle, not a periodic spot check, and it inspects the worktree rather than only the remote:
+So this is a step of every supervision cycle, not a periodic spot check, and it observes three things per in-flight worker — the worktree, the local branch, and the remote:
 
-1. `git status --porcelain` in each in-flight worker's worktree. Uncommitted modifications to issue-owned paths are the real signal, and the only one available early;
-2. the worker's remote branch head against its base and against its last observed head.
+| worktree | local vs. tracked remote | state | action |
+|---|---|---|---|
+| dirty | — | completed edits exist only on disk | capture, below |
+| clean | local ahead | committed, push failed or was deferred | push the stranded commits |
+| clean | level | nothing saved yet | leave alone unless dispatch was long ago |
 
-A remote head that has not advanced tells you nothing arrived; it cannot distinguish a worker still reading code from a worker sitting on eight finished files. Only the worktree distinguishes those, and only the first is safe to leave alone.
+A remote head that has not advanced tells you nothing arrived; it cannot distinguish a worker still reading code from a worker sitting on eight finished files. Only the worktree separates those. And a clean worktree is not proof of durability on its own: a worker that committed but whose push failed leaves `git status` clean while the remote stays put, so the local/remote comparison is what catches that case. Pushing stranded commits is always safe against a live worker — it touches neither its index nor its working tree.
 
 ### Enforce, do not re-ask
 
-On first observing uncommitted completed work, instruct that worker to commit and push immediately. If the next cycle still shows it uncommitted, **commit and push it yourself** from the recorded worktree path onto the recorded issue branch, and tell the worker you did. Do not nudge the same worker twice: the second nudge is evidence the instruction is not landing, and the parent already holds everything needed to act — worktree path, branch, and base are in the tracking record.
+On first observing uncommitted completed work, instruct that worker to commit and push immediately. If the next cycle still shows it uncommitted, the parent captures the work itself rather than nudging again: a second nudge is evidence the instruction is not landing, and the parent already holds worktree path, branch and base in the tracking record.
+
+**Capture without racing the worker.** A live worker owns its index and `HEAD`, and the shared-resource rule above applies to its own checkout as much as to a service — two actors staging into one `.git/index` can capture a half-written tree, or make each other's commits fail. So never run `git add` in a live worker's index. Either:
+
+- snapshot into a private index (`GIT_INDEX_FILE` pointed at a scratch file), commit that tree, and push it to the issue branch — the worker's index, worktree and `HEAD` are untouched, so whatever it does next still works; or
+- if the worker looks wedged rather than working, stop it first and then commit normally in the now-quiesced worktree. Stopping consumes that issue's lost-worker budget, so it needs the same evidence any redispatch does.
+
+A snapshot that caught a file mid-write is still worth having: it is a WIP checkpoint, never the PR's final state, and a partial save beats an empty branch. Prefer the worker doing its own commit precisely because it has no such hazard — parent capture is the fallback, not the mechanism.
 
 Securing a worker's work never waits on that worker finishing. A worker mid-check with completed edits uncommitted is the highest-risk state in the run, because a long check is exactly when a container is most likely to disappear.
+
+### Where the parent cannot reach
+
+This contract assumes the parent can see a worker's checkout and send it an instruction. That holds for subagents in parent-created worktrees and for remote worker sessions, and **not** for a Dynamic Workflow fan-out: workflow agents accept no input mid-run, and the worktrees the runtime creates for them are not paths the parent was given. Neither half of the escalation above is available there.
+
+So under a Dynamic Workflow, enforcement has to be structural — encoded in the script's control flow, which is deterministic, rather than in an agent prompt, which is the thing that does not land. Make the checkpoint push its own pipeline stage after implementation rather than a line inside the implementation prompt, so the script guarantees it runs instead of hoping the worker chose to. Where that restructuring is not practical, prefer a runtime whose workers the parent can actually reach: unreachable-mid-run is a real cost of the workflow runtime, the same one that already disqualifies it for PR supervision.
 
 ## Capacity during the run
 
