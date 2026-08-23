@@ -283,7 +283,10 @@ A cloud worktree is ephemeral. Never claim restart safety for unpushed local cha
 A Dynamic Workflow interrupted by session exit restarts fresh next session rather than resuming — it has no cross-session persistence of its own. Restart recovery therefore always comes from tracker + GitHub remote state, never from workflow-runtime state:
 
 1. re-expand the exact same bounded manifest/scope;
-2. rerun `validate-backlog shallow`, then reconcile its DAG against blockers a previous run's workers recorded on the issues themselves (see Outcomes) — the validator reads through a transport that may truncate identically to last time, so a previously discovered edge it still cannot see must be re-adopted rather than rediscovered by dispatching into it again;
+2. rerun `validate-backlog shallow`, then reconcile its DAG against blockers a previous run's workers recorded on the issues themselves. What an edge's **absence** from that DAG means is not one thing — it depends on the boundary's proof state and on the edge's provenance, and this step is the main caller of the retirement rule under Outcomes:
+   - **visibility unproven for that boundary** — the validator reads through a transport that may truncate identically to last time, so re-adopt the edge rather than rediscovering it by dispatching into it again;
+   - **proven, and the edge is native by now** — a later run may have made it native via `normalize-github-dependencies`. A proven read that no longer returns it is the retirement case: retire it, dated, rather than re-adopting a dependency someone deliberately removed;
+   - **proven, and the edge lives only in the persisted comment record** — absence still proves nothing, because native metadata was never supposed to show it. Re-adopt, then classify it here: **this step is the run adoption** the retirement rule anchors to, and skipping it is precisely how a retired dependency becomes permanent;
 3. order by normalized DAG + explicit build order;
 4. fetch current tracker statuses, PRs, and remote branches;
 5. skip every proven `DONE` issue;
@@ -591,6 +594,8 @@ So a verified availability resolution is historical evidence, never a standing e
 
 - **native-sourced** — a later native read with **proven visibility for that boundary** that no longer returns it retires it. An unproven read does not, on the asymmetry stated throughout: absence observed through an unvalidated transport is not evidence of absence. Nothing else is needed here, because your own reads recur;
 - **established by a worker and recorded as an issue comment** — no native read can retire it, since none was ever supposed to show it. Absence therefore proves nothing in this direction either, and the edge cannot simply stand forever on that technicality: from your own native view it is indistinguishable from a prose-only edge, so classify it on the same path — establish whether the relationship still holds, `NEEDS_USER` where the issues cannot settle it. Do that **when a run adopts it**, which is where the permanence would come from: a restart re-reads the comment and inherits the edge. Once per run is enough, and the answer holds for that run; classifying per dispatch attempt would re-ask the same question every cycle an issue stays legitimately blocked.
+
+**Provenance here is where the edge lives now, not where it came from.** An edge recorded as a comment and later made native by `normalize-github-dependencies` is native-sourced from then on, and takes the first row — which is the point of normalizing it, since a native edge is one your own reads can retire. Judging it by its origin instead leaves the edge in the row where absence proves nothing, and it becomes exactly the permanent edge this rule exists to prevent.
 
 An edge a worker found only in prose does not arrive here at all; it is classified first (see below), because persistence is what makes a stale edge permanent. Retirement does not retract what the worker observed — the observation stood when it was made. It records that the relationship no longer holds, dated the same way, so a later read finding the edge again is a change rather than a contradiction.
 
