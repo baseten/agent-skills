@@ -588,7 +588,7 @@ Do not blindly restack every descendant after every upstream push. Instead:
 
 | direction | code dependency | non-ancestry dependency |
 |---|---|---|
-| you asserted satisfied, worker observed otherwise | your base is wrong — recalculate and restack | your completion claim is stale — recheck it, or keep waiting; ancestry is irrelevant and no restack fixes it |
+| you asserted satisfied, worker observed otherwise | your base no longer holds — recalculate and restack, and check whether it was wrong when calculated or overtaken since, because a revert or force-push that keeps happening is a different problem from one bad calculation | your completion claim no longer holds — recheck it, or keep waiting; ancestry is irrelevant and no restack fixes it |
 | you asserted unmet, worker found it available | your constraint may be obsolete — recheck rather than leaving the issue parked | same: recheck the constraint, do not park indefinitely |
 
 Neither direction, in either class, touches a visibility proof. Invalidating a proof and halting slot-filling for a stale base is an expensive answer to a cheap problem. Everything below applies to **visibility** disagreements, where some other source named an edge the worker's native read did not return.
@@ -615,7 +615,11 @@ The direction says whose view was partial, and therefore what to fix. Yours miss
 
 **Visibility proven for that boundary** — native metadata is trustworthy there, so prose naming an edge it does not show is more likely stale text than a hidden edge: a dependency deliberately removed from metadata and left behind in the description. Do not auto-adopt it. Classify it — verify whether the relationship still holds, not merely whether the referenced issue is implemented, which is all the worker checked — and surface it as `NEEDS_USER` where that cannot be settled from the issues themselves. Never persist an unclassified prose edge: persistence is what makes every future restart re-adopt it, so a stale edge written down once blocks the issue indefinitely.
 
-When classifying, use the preflight you already ran. `validate-backlog` emits a warning for exactly this shape — text names a blocker with no structured edge — so check whether it flagged this edge before dispatch. An edge flagged at preflight **and** independently reported by a worker is two observations from different actors, materially stronger than either alone and usually real. One with no preflight warning behind it is likelier to be prose the validator could already see was stale. Correlating them costs nothing, since the warning is in hand.
+When classifying, use the preflight you already ran. `validate-backlog` emits a warning for exactly this shape — text names a blocker with no structured edge — so check whether it flagged this edge before dispatch. An edge flagged at preflight **and** reported by a worker is two observations from different actors — but be precise about what they corroborate, because they read the *same prose*. Their agreement about the prose is not independent and establishes nothing that was in doubt.
+
+What it does establish is on the other side: two native reads both lacked the edge. Where those reads used **different credentials**, that is evidence against truncation — a per-credential blind spot would not reproduce across both — which rules out the expensive response and narrows the question to a cheap one: the native edge was never created, or the prose is stale. Both are classification, not transport. Where they used the same credential, it establishes nothing further.
+
+That is the opposite of the reading it invites. Two actors agreeing does not make the prose edge more likely real; it makes a *partial view* less likely, which is a different and more useful conclusion. Correlating still costs nothing, since the warning is in hand.
 
 The reverse also holds: a preflight warning no worker ever confirmed stays outstanding. Do not let it expire quietly because the issue it concerned happened to complete.
 
