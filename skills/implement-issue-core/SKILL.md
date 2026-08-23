@@ -75,7 +75,9 @@ Answer by observation, not by claim. Available — proceed. Not available — re
 | non-ancestry dependency: not yet complete by its own measure | name the blocker and the state it is actually in — waiting on a release or a deploy is not a base problem and no restack fixes it |
 | no implementation anywhere: nothing merged, no open PR, nothing in the base | name each unmet blocker by canonical full URL — a real dependency gap |
 
-Return `BLOCKED_EXTERNAL` rather than `BLOCKED` where the unmet blocker is an **external prerequisite outside the authorized set**. The caller routes the two differently and only one of them means its readiness computation was wrong: waiting on work nobody in this run was authorized to do is a known state, not a graph error, and reporting it as one sends the caller off re-deriving a frontier that was correct.
+Return `BLOCKED_EXTERNAL` rather than `BLOCKED` **only when every unmet blocker is an external prerequisite outside the authorized set.** The caller routes the two differently and only one of them means its readiness computation was wrong: waiting on work nobody in this run was authorized to do is a known state, not a graph error, and reporting it as one sends the caller off re-deriving a frontier that was correct.
+
+**Mixed blockers take the stronger outcome.** One outcome cannot describe two states, so where any unmet blocker is non-external, return `BLOCKED` and report the external waits alongside it. The reverse precedence would let a single external prerequisite mask an in-scope dependency the caller's graph got wrong — the caller would skip the frontier re-derivation, and its siblings would stay scheduled against a graph already known to be incomplete. Choose the outcome that demands the most of the caller; the per-blocker detail carries the rest.
 
 Externality changes what the block *means*, not whether a source disagreement is worth reporting. A prerequisite the prose named that native metadata did not return is still evidence about the transport, external or not — report the disagreement either way.
 
