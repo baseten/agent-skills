@@ -49,6 +49,7 @@ If core returns `PR_OPEN`, record:
 - branch/base;
 - remote head SHA;
 - tracker linkage verification;
+- draft state as created;
 - implementation attempts used.
 
 At this point the code is already durable remotely even if the current container disappears.
@@ -76,6 +77,8 @@ PR: <URL>
 CI repair cycles: <used>/<limit>
 Review repair cycles: <used>/<limit>
 Current remote head: <SHA>
+First review round: pending | complete-with-findings | clean
+Draft state: <as-created> -> <current>
 State: waiting | repairing-ci | repairing-review | healthy | needs-user
 ```
 
@@ -105,6 +108,28 @@ When actionable review feedback arrives:
 
 Subjective product/architecture judgment returns `NEEDS_USER` immediately rather than burning repair cycles.
 
+## Draft promotion after a clean first review
+
+A PR opened as a draft is signalling "not finished yet". Once its **first** automated review round has completed and every actionable finding from it is resolved, that signal is stale and the PR should be marked ready for review.
+
+Promote when all of these hold:
+
+- the PR was created as a draft by this run (`create-pr` reports its as-created draft state through `implement-issue-core`);
+- the review trigger was issued and a review round actually came back — a review that was deferred, suppressed, or never fired is not a completed round;
+- no actionable finding from that round is unresolved, whether it was fixed, or answered with a reply explaining why no change is warranted — `repair-pr` reports the remaining count;
+- CI is green on the current remote head;
+- the PR is not `NEEDS_USER` and has no unanswered product/architecture question.
+
+Then mark the PR ready for review once, and record the transition.
+
+Rules:
+
+- Promote at most once. Never flip a PR back to draft, and never re-promote one a human returned to draft.
+- Never promote a PR this run did not open.
+- Repository convention or an explicit user/caller draft preference overrides this.
+- Later review rounds do not re-trigger promotion; the PR is already ready.
+- Promotion is not merge authorization — this skill still never merges (see Authority above).
+
 # Completion
 
 Return `PR_OPEN`/healthy when the PR is implemented, linked correctly, and has no currently known CI/review item requiring autonomous repair. When persistent monitoring is supported, continue until healthy, merge/close, user stop, budget exhaustion, or monitoring cap.
@@ -129,5 +154,6 @@ Return:
 - CI repair cycles used;
 - review-fix cycles used;
 - final CI/review state;
+- draft state as created, and whether it was promoted to ready (or why not);
 - blocker/failure details;
 - recommended user action when needed.

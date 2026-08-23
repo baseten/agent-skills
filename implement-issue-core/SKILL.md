@@ -111,6 +111,7 @@ Return structured state:
 - PR URL/number;
 - remote head SHA;
 - issue linkage verified: yes/no;
+- draft state as created, exactly as `create-pr` reported it;
 - checkpoints pushed: count/SHAs when useful;
 - checks run;
 - implementation attempts used;

@@ -101,6 +101,8 @@ Description...
 
 Draft/full behavior follows repo docs; otherwise work repos default to draft and personal repos to full. Explicit caller/user preference wins.
 
+Report the as-created draft state in the output. A supervising workflow uses it to decide later whether the PR is eligible to be promoted to ready once its first review round comes back clean; it cannot tell a PR this run drafted from one a human drafted unless this skill says so. This skill itself never promotes — it ends at creation.
+
 Use GitHub MCP in remote/web environments and `gh pr create --base <pr-base>` locally when available.
 
 When directly invoked by a user, show proposed title/body and confirm before creation. When chained from an authorized implementation workflow, no second confirmation is needed.
@@ -123,6 +125,22 @@ A caller may explicitly request **deferred review trigger** (for example an inte
 
 Do not repeatedly trigger review merely because subsequent CI checks run. Re-trigger after a substantive review-fix round only when repo convention requires it.
 
+## Substantive vs mechanical pushes
+
+Re-trigger review after a **substantive** push. Do not re-trigger after a **mechanical** one.
+
+A push is mechanical when it changes identity, location or formatting and nothing else:
+
+- a restack or rebase onto a new base, whose conflict resolutions reproduce the original intent of both sides rather than picking between them;
+- renumbering or regenerating a claimed artifact — a migration number and its index entry, a lockfile, a generated manifest or client — where the content is unchanged apart from the identity or ordering that had to move;
+- formatter-only output.
+
+Everything else is substantive. That includes a conflict resolution that had to choose between two behaviors, and a regeneration whose output differs beyond identity or ordering. When you cannot tell which one you are looking at, treat it as substantive.
+
+A mechanical push still has to pass the repository's deterministic checks — those, not another review round, are what validate it. If the repository has no check that would catch a bad renumber or a dropped hunk, the push is not mechanical for this purpose and needs review like any other.
+
+This governs what the workflow itself triggers, not what the review provider does on its own. A provider may re-review off its own events — marking a draft ready, for example. That is outside this skill's control, and is neither a reason to suppress a trigger that is due nor to issue one that is not.
+
 # Addressing later review comments
 
 This skill ends after PR creation/verification/review trigger. Later review fixes belong to `repair-pr` / `resolve-pr-comment`, with long-lived event supervision owned by whichever orchestrator invoked them.
@@ -136,4 +154,5 @@ Return:
 - PR base branch;
 - parent PR URL when stacked;
 - issue linkage verified: yes/no;
+- draft state as created: draft/ready, and what decided it (repo docs, caller preference, default);
 - review triggered/deferred and how.
