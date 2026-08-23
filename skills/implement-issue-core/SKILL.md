@@ -16,7 +16,7 @@ Accept:
 - dedicated working directory/worktree;
 - issue branch;
 - exact required base branch;
-- optional upstream dependency context;
+- optional upstream dependency context, and whether the caller marks it as its **complete** dependency set or a targeted answer — the two are read differently, and unmarked means targeted;
 - optional authorization membership — the run's bounded authorized set, or a per-blocker flag saying whether each is inside it;
 - implementation-attempt budget;
 - draft/full PR preference when supplied.
@@ -184,10 +184,12 @@ Return structured state:
 - source disagreements, reported as **two distinct kinds** because they mean different things and warrant different responses:
   - **visibility** — a source disagrees with another about **which edges exist**. Report the edge with the sources that had it and the sources that lacked it, since that pairing says whose read was short. But **only a source that claims to be exhaustive can contribute an absence**, and that asymmetry decides what counts:
     - **native metadata** claims exhaustiveness — it is the structured edge set — so an edge missing from it is a real signal;
-    - **caller context** claims exhaustiveness for what the caller considered, so an edge missing from it says the caller's own view was short;
+    - **caller context** claims exhaustiveness **only when the caller marks it as its complete READY dependency set.** Marked, an edge missing from it says the caller's own view was short. Unmarked — and it is optional, and is also how a user answers one previously unverifiable prerequisite — it is a targeted answer, so it contributes edges and availability assertions and never an absence. Treating an unmarked answer as exhaustive would report every unrelated native dependency as a visibility disagreement and tell the user their view was partial when they had simply answered a narrow question;
     - **prose** claims nothing. It mentions edges; it never purports to list them all. A blocker in native metadata that nobody wrote into the description is the ordinary case, not a finding.
 
-    So: prose has it and native lacks it is a disagreement, because prose can only *add* information. Native has it and prose lacks it is **not** — treating that as one would fire on nearly every issue and stop the run for a structured-only dependency, which is exactly what structured metadata is for;
+    So: prose has it and native lacks it is a disagreement, because prose can only *add* information. Native has it and prose lacks it is **not** — treating that as one would fire on nearly every issue and stop the run for a structured-only dependency, which is exactly what structured metadata is for.
+
+    The rule behind all three: **a source's properties are declared, not inferred, and an undeclared property is assumed absent.** Exhaustiveness is the case here; independence and contemporaneity are the same kind of claim. Assuming any of them is how a check that exists to catch a silent partial view starts inventing them;
   - **availability** — a mismatch against the caller's supplied dependency context, **in either direction**, naming which way it went: it asserted a blocker satisfied and observation disagreed, or it asserted one unmet and observation found the work available. Evidence that the caller's base or completion claim was stale, and nothing at all about what the transport can see. Direction matters because the resolutions differ — the first says the caller's base needs fixing, the second says its constraint may be obsolete — and a caller that cannot tell which way the mismatch went cannot act on either.
 
   Report both even on a successful run, since each is evidence about something beyond this issue. Do not collapse them into one label: a caller that cannot tell them apart must treat a stale base as a possible transport failure, which is a far more expensive response than the situation needs;

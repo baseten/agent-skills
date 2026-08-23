@@ -354,7 +354,7 @@ Before dispatch:
 4. resolve shared-resource access details (see Shared environment, below);
 5. record canonical issue URL -> tracker -> repo -> worktree -> branch -> base -> worker;
 6. compose the dispatch prompt so it carries every default the worker skills already own;
-7. include **the dependency context used to judge this issue READY** — the blockers considered, how each was resolved, and which transport and credential produced that view — so the worker can reconcile your view against what it finds and report a disagreement rather than silently inheriting it;
+7. include **the dependency context used to judge this issue READY** — the blockers considered, how each was resolved, and which transport and credential produced that view — so the worker can reconcile your view against what it finds and report a disagreement rather than silently inheriting it. **Mark it as your complete READY dependency set**, because it is: unmarked context is treated as a targeted answer whose omissions mean nothing, so an edge you never saw would come back unreported and your frontier would stay wrong;
 8. include **authorization membership**: the bounded authorized set, or a per-blocker flag for whether each is inside it. Only you know this, and the worker's block outcome turns on it — without it, an external-looking prerequisite you did authorize comes back as an out-of-scope wait and you skip the frontier re-derivation it needed. A worker given nothing defaults to the stronger outcome, which is safe but costs you the distinction;
 9. dispatch Sonnet worker with `implement-issue-core`.
 
@@ -595,7 +595,9 @@ Neither direction, in either class, touches a visibility proof. Invalidating a p
 
 Two variants can be demonstrations rather than suspicions — but only on a condition you must check, not assume. Where **you supplied** an edge the worker's native read lacks, or where **its native read has one your context omitted**, compare the credential identity behind your read against the one behind the worker's. You already record yours per credential; the worker reports the transport and identity it used.
 
-**Distinct identities** — two credentials have disagreed about one graph. That is the cross-credential comparison the corroboration rules ask you to arrange, arriving unasked, and it is proof rather than evidence: invalidate immediately rather than spending a round establishing what you already hold.
+**Distinct identities** — two credentials have disagreed about one graph, which is the cross-credential comparison the corroboration rules ask you to arrange, arriving unasked. It is proof only once you rule out the other explanation: the two reads were taken at different moments, so an edge added or removed in between makes both credentials correct and neither view partial. Rule that out first — re-read the relationship through both identities, or check the edge's own history — and then invalidate. Skipping that step spends a valid proof and halts every dispatch sharing the boundary on what may be an ordinary edit.
+
+Independence and contemporaneity are separate conditions, and a mismatch is proof only with both. Having fixed "different transport" into "different credential" earlier in this design, the same correction applies again along the time axis: two reads that differ may differ because the graph changed.
 
 **The same identity** — and a subagent worker inheriting this session's credential is the common case, not the exception — this proves nothing on its own. One credential cannot corroborate itself, which is the rule this skill states about transports and applies no less to two reads at different moments: the mismatch may be an edge that changed between the reads, or caller context that went stale. Take the ordinary corroboration path and treat it as evidence.
 
