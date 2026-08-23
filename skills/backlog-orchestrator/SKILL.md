@@ -578,14 +578,17 @@ On first observing uncommitted completed work, instruct that worker to commit an
 - **live worker** — build the commit **ref-neutrally** and push it to a **recovery ref**, never to the issue branch:
 
   ```bash
+  GIT_INDEX_FILE=<scratch> git -C <worktree> read-tree <worker-head-sha>   # seed first
   GIT_INDEX_FILE=<scratch> git -C <worktree> add -- <issue-owned paths>
-  GIT_INDEX_FILE=<scratch> git -C <worktree> write-tree            # -> <tree>
+  GIT_INDEX_FILE=<scratch> git -C <worktree> write-tree                    # -> <tree>
   git -C <worktree> commit-tree <tree> -p <worker-head-sha> \
-      -m "wip: parent checkpoint capture"                          # -> <commit>
+      -m "wip: parent checkpoint capture"                                  # -> <commit>
   git -C <worktree> push origin <commit>:refs/checkpoints/<issue-branch>/<commit>
   ```
 
-  `GIT_INDEX_FILE` isolates the index and nothing else — plain `git commit` would still advance whatever ref `HEAD` names, which is the worker's branch, reintroducing exactly the race this avoids. `commit-tree` writes a commit object attached to no ref, so nothing the worker holds moves. The work becomes durable off-container, which is the entire point, while the issue branch stays the worker's alone;
+  Every line is load-bearing. `read-tree` **must** come first: a scratch index starts empty, so `add` on a path list would produce a tree containing only those paths, and a commit parented on the worker's head then records every other file in the repository as a deletion — recovery merging that checkpoint would delete most of the repo. Seed from the worker's head, then overlay the issue-owned paths. `GIT_INDEX_FILE` isolates the index and nothing else, so plain `git commit` would still advance whatever ref `HEAD` names — the worker's branch — reintroducing the race this avoids; `commit-tree` writes a commit attached to no ref, so nothing the worker holds moves.
+
+  Verify a capture by diffing it **against its parent**, not by confirming the work is present: `git diff-tree -r --name-status <worker-head-sha> <commit>` must show only the paths you intended. Content being present says nothing about what else the tree dropped, and that is the failure mode this sequence had;
 - **wedged worker** — stop it first, then commit normally onto the issue branch in the now-quiesced worktree. Stopping consumes that issue's lost-worker budget, so it needs the same evidence any redispatch does.
 
 The issue branch has exactly one writer at a time, and while a worker lives that writer is the worker — locally as well as remotely. Advancing either end underneath it is not a neutral act even when its index and worktree are untouched: its next push becomes a non-fast-forward rejection, and a worker that reacts by force-pushing destroys the snapshot that was protecting it. A recovery ref buys durability without a second writer. Making the worker fetch and reconcile instead would put the fix back in the worker's hands — the same hands that did not commit when told to.

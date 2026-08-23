@@ -46,7 +46,9 @@ Leave out: worker mechanics, retry counts, runtime tiers, token spend, and every
 
 # 2. Action points
 
-Only items that need a human to do or decide something. Each one states:
+Anything that still needs an owner and an action — whether that owner is a human or the orchestrator. Most action points need a person, but an `IN_FLIGHT_FIX` is dispatched by the orchestrator and belongs here too: the caller relies on that class to discover a PR is not finished, so filtering to human-only items would hide exactly the finding that stops an unfinished PR being ranked as ready.
+
+Each one states:
 
 - **what** — the specific thing, in one line;
 - **where** — issue URL, PR URL, or `path:line`;
@@ -59,7 +61,7 @@ Classify each as:
 |---|---|
 | `NEW_ISSUE` | real follow-up work with no ticket yet |
 | `DECISION` | blocked on a human choice, not on effort |
-| `IN_FLIGHT_FIX` | belongs in an open PR from this tranche, not a new one |
+| `IN_FLIGHT_FIX` | belongs in an open PR from this tranche, not a new one; owned by the orchestrator rather than a person, and never omitted for that reason |
 | `MERGE_RISK` | something the merge decision needs to account for |
 
 Drop anything that is merely informational. "Worth keeping an eye on" is not an action point, and a list padded with observations trains the reader to skim past the real items.
