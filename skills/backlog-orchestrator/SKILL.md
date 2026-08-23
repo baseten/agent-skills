@@ -511,7 +511,7 @@ The main parent thread must remain active while mutating workers run or active P
 
 Each cycle performs real work:
 
-1. consume worker completions (including a Dynamic Workflow's returned fan-out results, if one was used), extracting each one's dependency evidence — unmet blockers and source disagreements — regardless of its outcome;
+1. consume worker completions (including a Dynamic Workflow's returned fan-out results, if one was used), extracting each one's dependency evidence — unmet blockers, source disagreements, **and the resolutions that confirmed your view** — regardless of its outcome;
 2. reconcile tracker + remote branches/PRs;
 3. consume/reconcile CI/review events;
 4. update heads/budgets;
@@ -579,6 +579,8 @@ Do not blindly restack every descendant after every upstream push. Instead:
 - `BLOCKED` / `BLOCKED_EXTERNAL` — stop affected path; never silently enlarge scope.
 - `BLOCKED_EXTERNAL` **on an unmet dependency** — a known wait, not a graph error, and by the worker's contract it means *every* unmet blocker was external. Work nobody in this run was authorized to do is not evidence that readiness was computed wrongly, so stop that path without re-deriving the frontier or invalidating a visibility proof over it. A worker that found any in-scope blocker alongside an external one returns `BLOCKED` instead, so this outcome never conceals one. A source disagreement reported alongside it is still transport evidence and still handled as such.
 - `BLOCKED` **on an unmet dependency** — authoritative new information about the graph, not a worker failure. It means the readiness computation was wrong, most often because the dependency read behind it was silently partial. Never redispatch the same issue unchanged; nothing about the second attempt would differ. Retry and escalation budgets do not apply, because there is no failure to retry.
+
+**Confirmations are evidence too.** A worker reports how every dependency it checked resolved, not only the ones that disagreed with you — and a resolution that matched your view is a verified edge where you previously had an assumed one. Record those against your graph: a later dispatch should not re-verify what a worker already established, and a checkpoint that distinguishes verified from assumed state is worth more to a restart than one that does not. This adopts findings, never a re-plan; the validated DAG remains the scheduling graph.
 
 **A worker returns two independent things: an outcome, and evidence about the graph.** Act on the evidence regardless of the outcome. A worker that found the prose naming a dependency native metadata did not return, and then proceeded because the work was present in its base, reports that disagreement on a `PR_OPEN` — and that report is the same evidence of a partial dependency view as a `BLOCKED` would have been. Treating only `BLOCKED` as a graph update leaves every sibling scheduled against the view already known to be wrong, choosing bases and dispatch order from it.
 
@@ -700,5 +702,6 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - `NEEDS_USER` items;
 - external blockers;
 - dependency edges discovered by workers that the validated DAG did not contain, where each was recorded durably, and any dependency-source disagreement reported on an otherwise successful run;
+- which edges in the scheduling graph are **verified** by a worker's own check versus still **assumed** from the preflight read — a restart resuming from this output can skip re-verifying the former and knows to be sceptical of the latter;
 - unstarted work and why;
 - whether invoking the same manifest can safely resume.
