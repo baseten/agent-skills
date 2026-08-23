@@ -37,7 +37,43 @@ Read the issue title/body, relevant comments, tracker-native parent/dependency m
 
 Return `BLOCKED`/`NEEDS_USER` rather than guessing when scope is materially underspecified, required external work is absent, the supplied base is invalid, or a destructive/product decision needs approval.
 
-## 2. Prepare durable branch state
+## 2. Dependency precondition
+
+Establish what this issue is blocked by, and whether that work exists, before preparing branch state. One level deep — this issue's own blockers. Transitive graph work belongs to `validate-backlog` and the orchestrator.
+
+Do this even when a caller judged the issue READY. That judgement was computed from a dependency read that can be wrong in a way it cannot detect, and this is the cheapest place in the system to notice.
+
+### Take the union of three sources
+
+- dependencies named in the issue body prose — `Depends on:`, `Blocked by:`, a `Dependencies` section, build-order wording;
+- tracker-native dependency metadata;
+- dependency context the caller supplied.
+
+Never rely on one alone, because they fail in different directions. Prose goes stale the moment someone edits a ticket without updating it. Native metadata can be truncated by a scoped or relayed credential, which returns a partial list with a success status and no warning — and **a partial list is more dangerous than an empty one**, because it presents as a complete answer. One blocker returned where four exist reads as "nearly ready" and suppresses exactly the doubt that would have sent you looking elsewhere. Individually each source has a failure mode that resembles success; together they are hard to fool.
+
+### Resolve each blocker's real state
+
+Read each referenced issue directly. A plain issue read works across repositories even where dependency-endpoint reads do not, so a cross-repository blocker stays checkable when the edge that should have declared it is invisible.
+
+### Gate on availability of the work, not on issue state
+
+An open blocker does not mean the work is unavailable. A stacked child is dispatched precisely while its parent is implemented but unmerged — that is the normal case, not an error. Gating on "the blocker is still open" would refuse nearly every stacked child and be worse than no gate at all.
+
+| finding | action |
+|---|---|
+| the dependency's implementation is present in the supplied base, or otherwise reachable from this checkout | proceed |
+| the caller supplied dependency context asserting it is satisfied | proceed — the caller owns that claim |
+| no implementation anywhere: no merged PR, nothing in the base, no caller assurance | return `BLOCKED`, naming each unmet blocker by canonical full URL |
+
+Never implement against a contract that does not exist yet in order to keep a worker busy. The behavioural catch in step 1 — `BLOCKED` when required external work is absent — only fires when the absence breaks the code. A UI ticket whose backend is missing will render against the parts that do exist, stub the rest, pass its mocked tests, and produce a PR that looks complete and is not.
+
+### Report what you found
+
+A dependency named in prose that native metadata did not return is a finding, not a discrepancy to reconcile silently. It means either a missing native edge or a transport that cannot see the one that exists. Surface it either way: this worker is already reading both sources for one issue, which makes it the cheapest detector in the system for a blind spot the orchestrator cannot see from above.
+
+Where the caller supplied its own dependency context, reconcile it against what you found and report any disagreement. The caller's view being wrong is the information worth returning.
+
+## 3. Prepare durable branch state
 
 Before substantial implementation:
 
@@ -48,7 +84,7 @@ Before substantial implementation:
 
 Follow repository branch naming conventions. Prefer a branch name containing the tracker issue key/number when repo conventions allow because this improves recovery, but never violate documented repo naming rules merely to do so.
 
-## 3. Implement with remote checkpoints
+## 4. Implement with remote checkpoints
 
 Implement only the issue scope and run required local checks.
 
@@ -73,11 +109,11 @@ The goal is bounded data loss if a cloud container disappears: at most the work 
 
 If an implementation retry is allowed, use only the caller's remaining budget. Return reasoning-heavy repeated failure to the caller rather than escalating models autonomously.
 
-## 4. Final local verification
+## 5. Final local verification
 
 Run the repository-required typecheck/lint/format/tests. Fix in-scope failures within the implementation budget. Push the resulting final implementation commit/checkpoint.
 
-## 5. Create and verify PR
+## 6. Create and verify PR
 
 Invoke `create-pr` with:
 
@@ -111,6 +147,8 @@ Return structured state:
 - PR URL/number;
 - remote head SHA;
 - issue linkage verified: yes/no;
+- dependencies checked: for each, the canonical full URL, which of the three sources named it, and how it resolved (present in base / caller-asserted / unmet);
+- source disagreements: any dependency the prose named that native metadata did not return, and any mismatch against the caller's supplied dependency context — report these even on a successful run, since they are evidence about the graph rather than about this issue;
 - draft state as created, exactly as `create-pr` reported it;
 - checkpoints pushed: count/SHAs when useful;
 - checks run;

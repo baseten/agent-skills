@@ -352,7 +352,8 @@ Before dispatch:
 4. resolve shared-resource access details (see Shared environment, below);
 5. record canonical issue URL -> tracker -> repo -> worktree -> branch -> base -> worker;
 6. compose the dispatch prompt so it carries every default the worker skills already own;
-7. dispatch Sonnet worker with `implement-issue-core`.
+7. include **the dependency context used to judge this issue READY** — the blockers considered, how each was resolved, and which transport and credential produced that view — so the worker can reconcile your view against what it finds and report a disagreement rather than silently inheriting it;
+8. dispatch Sonnet worker with `implement-issue-core`.
 
 A dispatch prompt that enumerates a required process is followed literally: a default left out of that enumeration is a default skipped, and the worker will accurately report that the task never asked for it. Every dispatched prompt must therefore carry the automated review trigger instruction — `create-pr` owns the trigger rules, do not restate them here — unless this run explicitly defers review. Deferral is a conscious choice recorded in run state, naming what review is owed and on which PRs; it is never an omission.
 
@@ -573,6 +574,7 @@ Do not blindly restack every descendant after every upstream push. Instead:
 
 - `PR_OPEN` — implementation reached durable remote PR state; parent/runtime owns supervision.
 - `BLOCKED` / `BLOCKED_EXTERNAL` — stop affected path; never silently enlarge scope.
+- `BLOCKED` **on an unmet dependency** — authoritative new information about the graph, not a worker failure. It means the readiness computation was wrong, most often because the dependency read behind it was silently partial. Update the frontier from what the worker returned, treat the named blockers as real edges whether or not native metadata shows them, and re-derive readiness for every issue that shared that view — not just this one. Never redispatch the same issue unchanged; nothing about the second attempt would differ. Retry and escalation budgets do not apply, because there is no failure to retry.
 - `FAILED` — retry only inside budgets; at most one reasoning escalation.
 - `NEEDS_USER` — surface full issue/PR URLs, failure/review state, attempts consumed, and recommended action; stop spending tokens on that node while continuing safe independent branches.
 

@@ -43,6 +43,8 @@ Do not hand-roll implementation logic here.
 
 If core returns `BLOCKED`, `FAILED`, or `NEEDS_USER`, surface that result. If a standalone user clearly requested strongest-model retry, that can be handled by the surrounding Claude session; this skill itself should not create an unbounded model-escalation loop.
 
+`BLOCKED` on an unmet dependency is a special case: it is authoritative information about the graph rather than a worker failure, so it is never retried. The issue was judged ready against a dependency view that turned out to be wrong — commonly a read that returned part of the blocker list with no indication it had. Surface the named blockers by canonical full URL, and pass on any source disagreement the worker reported (a dependency the prose named that native metadata did not return) even where the run otherwise succeeded: that is evidence about the transport, and this is the only place it surfaces.
+
 If core returns `PR_OPEN`, record:
 
 - PR URL;
