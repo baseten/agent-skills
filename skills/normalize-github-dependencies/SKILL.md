@@ -19,6 +19,8 @@ Accept one of:
 
 Preserve canonical full GitHub issue URLs in all reporting. Do not expand beyond the supplied tree/set merely because an issue references unrelated work. Out-of-scope referenced issues may be used as dependency endpoints when the text clearly declares them, but do not recursively normalize their other relationships.
 
+**Scanning a parent's sub-issues is itself a hierarchy read**, so the first input form is subject to the visibility precondition below rather than exempt from it. A credential that hides children in one repository yields a truncated candidate set, and a scope derived from a possibly-partial read cannot bound its own validation: the hidden repository never appears, so no control ever tests it, and every edge written afterwards rests on a view known to be incomplete. Cross-check the enumerated child set against the parent's own prose listing, an explicitly supplied issue set, or a second enumeration before treating it as the scope — a differing count is the finding, and here it is a finding that stops writes rather than merely warning. A matching count is not the converse: two enumerations sharing a blind spot agree exactly about what neither can see, so agreement clears nothing unless one of them had proven visibility. A second transport sharing the credential (`gh` and raw HTTP both on `GITHUB_TOKEN`) is not a cross-check: same scope, same blind spot, two coats.
+
 ## Dependency sources
 
 For every in-scope issue:
@@ -79,9 +81,26 @@ Classify candidates:
 - `ALREADY_PRESENT` — native dependency already exists;
 - `AMBIGUOUS` — wording does not establish direction strongly enough;
 - `CONFLICT` — contradicts native metadata or would introduce a cycle;
-- `OUT_OF_SCOPE_REFERENCE` — valid endpoint outside the normalized set; may still be added when explicitly declared, but do not traverse it further.
+- `OUT_OF_SCOPE_REFERENCE` — valid endpoint outside the normalized set; may still be added when explicitly declared, but do not traverse it further;
+- `UNVERIFIED` — the edge looks absent, but the read that showed it absent came from a transport whose visibility is unproven (see below).
 
-Do not mutate `AMBIGUOUS` or `CONFLICT` edges automatically.
+Do not mutate `AMBIGUOUS`, `CONFLICT`, or `UNVERIFIED` edges automatically.
+
+## Precondition: the read that showed the edge missing must be trustworthy
+
+**Do not create an edge because a read showed it absent, unless that read came from a validated transport.** This skill decides what to write from what it believes is missing, so a read that under-reports existing relationships converts directly into duplicate writes.
+
+A relayed, proxied, scoped, or short-lived credential can return a partial relationship set with no error and no warning — a credential scoped to one repository returns one repository's worth of a graph spanning several, and the response looks complete. The edge you are about to add may already be live and simply invisible.
+
+So before any mutation:
+
+1. read existing relationships through the highest transport tier available — a first-class tool, else an authenticated CLI, and raw HTTP only where neither exposes dependency fields at all;
+2. prove that read can see the class of edge you intend to write, using a case whose answer is known: an edge already confirmed to exist, crossing the same repository boundaries the candidate set crosses (see 4). **Required at every tier.** A first-class tool or a CLI running on a directly scoped credential under-reports exactly as quietly as a relayed one — the hazard is the credential's scope, not the transport's shape, so a higher tier lowers the odds without removing the need to check;
+3. a second read behind the same **credential** does not count — it reproduces the same blind spot and reads as confirmation. That includes a second read through a different transport authenticating the same way, which is the usual case rather than the exotic one. Only a known-true case proves visibility. A second read corroborates at best, however it differs — different credentials can still share insufficient scopes, a repository boundary, or a relationship transport, so their agreement clears nothing. Absent a known-true case the boundary is unproven, and on a skill that writes, unproven means write nothing;
+4. a control inside one repository proves that repository only. Where candidates span repositories, prove **every** boundary the write set touches — one visible A→B edge says nothing about C;
+5. a proof is bound to the credential that produced it. Revalidate after a restart and on reauthentication, since a rotated or narrowed credential leaves a stale proof looking applicable. An authorization error invalidates **every proof bound to that credential, across every transport using it** — not only the failed call, and not only the transport it arrived on. Grants narrow server-side, so a 403 through `gh` condemns cached raw-HTTP proofs on the same token; revalidating just the failed boundary, or just the failed transport, keeps writing against stale controls elsewhere.
+
+If visibility cannot be proven, report the candidate edges as `UNVERIFIED` and write nothing. Absence observed through an unvalidated transport is not evidence of absence, and the cost is asymmetric: not writing a needed edge leaves a report the user can act on, while writing a duplicate of a live edge mutates a graph on the strength of a blind spot.
 
 ## Applying dependencies
 

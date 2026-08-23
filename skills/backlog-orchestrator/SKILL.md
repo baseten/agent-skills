@@ -41,6 +41,7 @@ Reusable worker skills:
 - `repair-pr` — one bounded CI or review repair pass;
 - `create-pr` — issue linkage, stack metadata, PR creation, review trigger;
 - `resolve-pr-comment` — thread-level review fix primitive;
+- `summarize-tranche` — read-only short summary and action points for a settled tranche;
 - `plan-merge-order` — read-only review/merge-order ranking for a settled tranche;
 - `merge-stack` — separately authorized stack merge/restack workflow.
 
@@ -61,6 +62,33 @@ Reusable worker skills:
 11. **Recovery is idempotent.** Never duplicate work, branches, PRs, or repairs after restart.
 12. **No automatic merges.** Merge authority is explicit and separate.
 
+# Autonomy and interactive prompts
+
+Dispatch is the last point at which the user is expected to be present. Once the validation preflight completes, the run proceeds unattended: any decision this skill has a documented default for is resolved by applying that default and reporting it, not by asking.
+
+Never ask the user to:
+
+- choose an execution runtime — detection and the degrade chain decide it;
+- authorize subagents, worktrees, or worker dispatch — invoking this skill *is* that request (see Worker dispatch authority);
+- reconcile a session branch mandate with per-issue branches — the default resolution below decides it;
+- confirm applying a documented budget cap — apply it and report what was deferred;
+- pick a concurrency level — derive it from the cap and the machine.
+
+Only these may interrupt the user mid-run:
+
+- a platform-owned approval prompt this skill does not control (workflow launch, permission mode, a tool the session must approve);
+- `NEEDS_USER` after budgets are exhausted, or one that leaves no dispatchable work at all — the same shape as the `FAIL` case below. Every other `NEEDS_USER` is surfaced in the closing output instead of asked mid-run, including a dependency measure the run cannot observe and the summary's `DECISION`/`MERGE_RISK` escalations: those need a person eventually, not now, and the run still has work to do meanwhile;
+- a `FAIL` validation result leaving no safe independent path;
+- a genuine conflict with no documented default, where every available option loses work that cannot be recreated.
+
+Everything else belongs in the checkpoint output. A run that asks three questions before dispatching a single worker has already failed its main promise.
+
+## Worker dispatch authority
+
+A session may carry standing guidance not to use subagents or the Agent tool unless the user asked for them. Invoking this skill satisfies that guidance: fanning a validated issue set out to isolated one-issue workers is this skill's documented mechanism, so the invocation is the request. Dispatch subagent workers, create worktrees, and start worker sessions without a separate confirmation.
+
+That authority covers worker dispatch only. It is not permission to merge, to widen scope beyond the bounded set, or to work around a platform-owned permission prompt.
+
 # Execution runtime
 
 The orchestration policy must be independent of the mechanism used to run workers.
@@ -72,6 +100,7 @@ A Dynamic Workflow is a JavaScript orchestration script that fans plain subagent
 When the user has opted into a workflow for this invocation (see Invocation above), use it **only for the implementation fan-out**:
 
 - write the workflow script yourself so each `agent()` call's prompt/model explicitly encodes: exact authorized issue set and normalized dependency DAG (as separate fan-out stages honoring the DAG's ordering), Sonnet worker model, one issue per worker, isolated checkout/worktree per worker, exact calculated branch/base, remote checkpoint rules, retry budget;
+- make the checkpoint push a **pipeline stage of its own** rather than only a rule inside the implementation prompt. The parent cannot reach into a running fan-out to enforce it (see Where the parent cannot reach), so the script's control flow is the only thing that can guarantee the push happens;
 - do **not** give the workflow permission to redefine the product backlog — it must execute the already validated bounded DAG supplied by this skill;
 - treat the workflow purely as an **execution substrate** for that one fan-out run, not as the source of truth for issue/PR state.
 
@@ -79,20 +108,31 @@ A Dynamic Workflow does **not** persist across a Claude Code session exiting —
 
 ## Fallback runtimes
 
-When a Dynamic Workflow was not requested for this invocation, or cannot honor the required DAG/worker constraints, degrade in this order where possible:
+When a Dynamic Workflow was not requested for this invocation, or cannot honor the required DAG/worker constraints, degrade through the remaining tiers of Runtime selection below: remote worker sessions, then ordinary isolated subagents with the explicit parent supervision loop defined here, then serialized execution when safe isolation cannot be provided. Agent-team primitives may substitute for tier 2 where that experimental feature is confirmed enabled.
 
-1. native/background Claude sessions or agent-team primitives (agent teams are an experimental, opt-in Claude Code feature — confirm they are enabled before relying on them);
-2. ordinary isolated subagents with the explicit parent supervision loop defined below;
-3. serialized execution when safe isolation/concurrency cannot be provided.
+Degrade silently and get on with the run. Not requesting a Dynamic Workflow is neither a reason to abandon the orchestration nor a reason to ask the user which tier to use.
 
-Do not abandon the orchestration run merely because no Dynamic Workflow was requested.
+## Runtime selection
 
-## Runtime detection
+Choose the runtime yourself at startup, from what is actually callable in this session. Never present a runtime menu, and never offer a runtime whose tools are absent here.
 
-At startup determine:
+Determine availability in preference order:
 
-- whether this invocation opted into a Dynamic Workflow (see Invocation above — this is not autodetected, it depends on the user's own prompt/effort setting);
-- whether first-class/background agent sessions or agent-team primitives are available;
+1. **Dynamic Workflow** — only if this invocation opted in (see Invocation). Not autodetectable; without the opt-in wording or `ultracode` effort it is unavailable, and that is not a question for the user.
+2. **Remote worker sessions** — available when the session exposes a Claude Code Remote `create_session` tool. A cloud session exposes it whichever surface launched it: `origin` records the launch surface (`desktop_app`, web, mobile), `environment_kind` records where the session actually runs, and neither gates worker creation. Confirm with one cheap read (`list_environments` or `get_session`) rather than a speculative create.
+3. **Subagents** — available when the session exposes the Agent tool. The normal runtime for a local session, and the normal fallback everywhere else.
+4. **Serialized execution in this session** — always available; correct when safe isolation cannot be provided.
+
+Remote-session details worth not rediscovering each run: omit `environment_id` and the worker inherits this session's environment; `outcome_branch` is rejected unless `source_url` accompanies it; passing neither is valid, and the worker's prompt then pins the branch.
+
+### Bounded runtime probing
+
+A runtime that fails to start a worker gets **at most 2 attempts**, with a backoff measured in seconds, and is then unavailable — move down the chain. Varying arguments between attempts does not extend that budget: a service-side error (`temporarily unavailable`, 5xx) is not an argument problem, and a validation error names its own fix in one retry.
+
+Do not spend an orchestration run diagnosing a runtime. Degrading to subagents and reporting the outage in the checkpoint output always beats a ten-minute retry loop before any work has started.
+
+Also detect:
+
 - native worktree isolation;
 - whether Claude Code's own background PR watch/notification behavior is active for this session (see PR promotion and central supervision, below) — and, if so, whether its auto-merge behavior is enabled, since that would conflict with this skill's no-automatic-merge invariant and should be disabled or reported before autonomous work proceeds;
 - local `git`;
@@ -102,6 +142,44 @@ At startup determine:
 - installed required skills.
 
 Prefer native/runtime capabilities when they implement the required behavior safely, but retain tracker + GitHub remote state as recovery truth.
+
+## Transport precedence
+
+The detection above establishes what exists. This establishes which one to use. For every tracker/forge read and write, in order:
+
+1. a first-class MCP tool for that operation, where one exists;
+2. an authenticated CLI (`gh`, `linear`, equivalent) when running locally under the user's own credential;
+3. raw HTTP against the API, only where neither of the above exposes the operation at all.
+
+Raw HTTP is a last resort, not a default. Reaching for it must be a decision you record — which operation, and why no higher tier exposes it — not an accident of habit because `curl` is familiar and always available.
+
+Precedence lowers the odds of a partial view; it does not remove the need to check for one. A first-class tool or a CLI can run on a directly scoped credential and under-report just as quietly as a relayed one — the hazard is the **scope of the credential**, not the shape of the transport. So treat every relationship read as **provisional until validated below, whichever tier produced it**, and spend the extra scepticism on raw HTTP rather than reserving it for raw HTTP.
+
+## Proving a transport can see the graph
+
+Before a run depends on **relationship data** — dependency edges, hierarchy, cross-repository links, anything a server can legitimately return in part — prove the chosen transport can see it, using a case whose answer is already known: an edge this run just wrote, or one the user confirmed.
+
+A relayed, proxied, scoped, or short-lived credential can return a truthful-looking partial result. The server answers correctly for the credential it was actually given, and entries outside that credential's reach are simply absent: 200, no error, no warning, fewer rows. A credential scoped per repository returns a single repository's worth of a graph that spans several, and nothing in the response says so. This is not specific to any tracker, forge, or hosting arrangement — it follows from scoping a credential, so assume any transport can do it.
+
+**Independence is a property of the credential, not of the transport.** A second endpoint behind the same credential reproduces the same blind spot and reads as confirmation, which is worse than a single read because it manufactures confidence — and two *different* transports do this too whenever they authenticate the same way. `gh` and raw HTTP both reading `GITHUB_TOKEN` are one observation wearing two coats, and the precedence list above makes that the common case rather than the exotic one.
+
+So corroborate in this order:
+
+1. **a known-true case** — an edge this run just wrote, or one the user confirmed. Strongest, because its answer does not depend on any transport being trustworthy;
+2. **a second read** — corroborating at best, never proving. A different identity or token source is worth having, but two credentials can share insufficient scopes, a repository boundary, or a relationship transport, and every distinguishing feature offered so far has turned out able to coincide with a shared blind spot. Agreement between two reads narrows nothing on its own;
+3. **no known-true case available** — that is the finding. Report the boundary as unproven rather than promoting agreement into a proof.
+
+**Enumerating the bounded scope is itself one of these reads.** A manifest or parent issue is expanded through native hierarchy, so a credential that hides children in one repository produces a truncated scope — and the boundary list derived from that scope omits the very repository that was hidden, so nothing ever tests it. A scope obtained from a possibly-partial read cannot bound its own validation. Draw the boundary list from something independent of the enumeration: the issue set the user supplied, the manifest's own prose listing of its children, or a second enumeration. Note the asymmetry, because it is what makes a second enumeration worth running at all: **a differing count is the finding, and a matching count proves nothing** unless one of the two enumerations had proven visibility. Two reads that share a blind spot agree precisely about what they cannot see.
+
+**The control must match the shape of what the run consumes.** A credential scoped per repository reads a known edge inside one repository perfectly well while omitting every relationship that touches another — so a control drawn from a single repository proves visibility for that repository and nothing else. Cover each scope boundary the graph actually crosses, and where the graph spans repositories, at least one control must itself be a cross-repository edge. One passing control on the easy case is how a scoped credential looks validated.
+
+Record validation per **credential, transport and boundary**, not per transport alone. "MCP works" is not a finding; "MCP, as this account, resolves edges from A into B" is. The credential is the part that decides what was visible, so it is the part a later read has to match.
+
+**A cached proof is only as good as the credential it was made with.** Transport, class and boundary do not identify a credential, so the same tuple can later be backed by a narrower one — a short-lived token rotates, a transport reauthenticates mid-run, or a fresh session starts with different grants — and the stale proof reads as applicable. Store a non-secret identity of the credential alongside the proof (the authenticated account and its scopes, an expiry, a fingerprint — never the credential itself), and revalidate whenever that identity changes, whenever a transport reauthenticates, and always after a restart. Treat any authorization error mid-run as invalidating every proof bound to that **credential**, across every transport that uses it — not just the failed call, and not just the transport it arrived on. Grants narrow server-side, so a `gh` call returning 403 says nothing about `gh` and everything about the token; cached raw-HTTP proofs on the same token are equally stale even though nothing has failed there yet. A narrowing is exactly what a silent partial view looks like from one call away.
+
+The conclusion rule: **absence observed through an unvalidated transport is not evidence of absence.** Report it as "not visible via `<transport>`", never as "does not exist". A dependency edge that is invisible rather than missing produces a wrong DAG, dispatches work whose prerequisites are unbuilt, and reads as a clean validation the whole way — the graph is the thing the run schedules against, so a false absence there is not a cosmetic error.
+
+Record which transport was validated for which class of relationship read and across which boundaries, so a later read in the same run, or a restart, does not silently fall back to an unvalidated one.
 
 # Tracker abstraction
 
@@ -167,11 +245,21 @@ Before dispatching any **new** implementation worker, invoke `validate-backlog s
 
 Use the validator's normalized DAG as the scheduling graph. Do not let the execution runtime independently invent a competing decomposition.
 
+That prohibition is about re-planning, not about evidence. A worker reporting a blocker it verified against its own issue is not inventing a decomposition — it is correcting one, from a position the validator did not have (see Outcomes). Accept an edge a worker verified; reject a runtime's attempt to reorder or re-scope the backlog.
+
 Results:
 
 - `PASS` -> proceed;
 - `PASS_WITH_WARNINGS` -> proceed only where warnings do not make ordering unsafe;
 - `FAIL` -> stop affected paths; continue only validator-confirmed independent safe branches.
+
+One warning is never proceedable at any level: **unproven relationship visibility over dispatchable scope.** A current validator returns that as `FAIL`, but treat it as blocking wherever it arrives, including from an older validator or another tool. Every other warning can be weighed because you can see what it is about; this one asks you to weigh what you cannot see, so "it probably does not affect ordering" is not a judgement available to you.
+
+Verify empirically any baseline a ticket tells workers to diff against — "~40 pre-existing type errors", "these tests already fail" — before it goes into a dispatch prompt. Tickets go stale, and a wrong baseline is worse than none: genuinely new failures hide inside an imaginary one.
+
+Measure it at the parent level, but key it by **repository, base revision, and check** rather than broadcasting one number across the run. Workers in a fanout off a single base share a baseline; workers on stacked bases or in different repos do not, and handing them a number measured somewhere else reintroduces the same defect from the other direction — a real regression hidden inside a borrowed baseline, or a pre-existing failure reported as new. Measure once per distinct base, pass each worker only its own, and correct the ticket's claim in the checkpoint output.
+
+Run repo-relative checks from the repo root. Ticket paths are repo-relative, so a `cd` partway through a validation sweep silently invalidates them.
 
 Do not automatically mutate dependency metadata. GitHub normalization is handled separately by `normalize-github-dependencies` when requested.
 
@@ -192,6 +280,10 @@ Unless explicitly overridden:
 
 Dynamic Workflows do not override these limits. Do not increase concurrency merely because the runtime can fan out more agents.
 
+The concurrency number is a ceiling, not a target. Derive the level you actually run from machine capacity at startup — available CPUs, free disk against the container's fixed allowance, and whether each worker needs its own dependency install or test toolchain — and take the lower of the two. Decide that yourself and report it; do not ask.
+
+When the bounded scope exceeds the 12-new-issue limit, do not ask which issues to drop. Start the first 12 in scheduling order — DAG readiness first, then how much downstream work each unblocks — and defer the rest, naming the deferred issues in the checkpoint output so the next invocation adopts them. A user who wants a different cap says so in the invocation.
+
 When the 12-new-issue limit is reached, allow active workers/repairs to reach durable state, stop starting new issues, reconcile, and return a checkpoint. Restarting does not count already-adopted work as newly started.
 
 Budget exhaustion on a node -> `NEEDS_USER`, not another speculative attempt. Continue unrelated DAG branches safely.
@@ -206,7 +298,7 @@ At most one strongest-model implementation escalation is allowed for a reasoning
 
 Implementation workers require `implement-issue-core` and `create-pr`.
 Repair workers require `repair-pr` and, for review fixes, `resolve-pr-comment`.
-The parent layer requires `validate-backlog` at preflight and `plan-merge-order` when the run settles.
+The parent layer requires `validate-backlog` at preflight, and `summarize-tranche` followed by `plan-merge-order` when the run settles.
 
 Workers must inherit/preload the active installed skills. If a required skill is unavailable, return `BLOCKED` rather than improvising a replacement workflow.
 
@@ -241,7 +333,11 @@ A cloud worktree is ephemeral. Never claim restart safety for unpushed local cha
 A Dynamic Workflow interrupted by session exit restarts fresh next session rather than resuming — it has no cross-session persistence of its own. Restart recovery therefore always comes from tracker + GitHub remote state, never from workflow-runtime state:
 
 1. re-expand the exact same bounded manifest/scope;
-2. rerun `validate-backlog shallow`;
+2. rerun `validate-backlog shallow`, then reconcile its DAG against blockers a previous run's workers recorded on the issues themselves. What an edge's **absence** from that DAG means is not one thing — it depends on the boundary's proof state and on the edge's provenance, and this step is the main caller of the retirement rule under Outcomes. The validator run you just made supplies that proof state, so read it from there rather than carrying one over: either passing result means every boundary over dispatchable scope was proven, since an unproven dispatchable boundary is a `FAIL` by its contract and never arrives quietly, and the boundaries left unproven are named. Then:
+
+   - **visibility unproven for that boundary** — the validator reads through a transport that may truncate identically to last time, so re-adopt the edge rather than rediscovering it by dispatching into it again;
+   - **proven, and the edge is native by now** — a later run may have made it native via `normalize-github-dependencies`. A proven read that no longer returns it is the retirement case: retire it, dated, rather than re-adopting a dependency someone deliberately removed;
+   - **proven, and the edge lives only in the persisted comment record** — absence still proves nothing, because native metadata was never supposed to show it. Re-adopt, then classify it here: **this step is the run adoption** the retirement rule anchors to, and skipping it is precisely how a retired dependency becomes permanent;
 3. order by normalized DAG + explicit build order;
 4. fetch current tracker statuses, PRs, and remote branches;
 5. skip every proven `DONE` issue;
@@ -260,7 +356,21 @@ Follow repository branch conventions. Where permitted, include the issue key/num
 
 If an orphan remote branch cannot be safely mapped to an issue, inspect commit/diff/tracker development metadata. If still ambiguous -> `NEEDS_USER`.
 
-A session-level mandate that all work land on one fixed branch is incompatible with the per-issue stacked topology below; the two cannot be reconciled silently. Detect the conflict at startup and resolve it with the user before any dispatch.
+## Session branch mandates
+
+A cloud/remote session is usually created with one mandated outcome branch (`claude/<slug>-<suffix>`), injected as session-level instructions to land all work there and push nowhere else. It is chosen by the surface that created the session, applies per session rather than per repo, and cannot be removed from inside the session. Read its current value from the session context (`outcomes[].git_repository.git_info.branches`) rather than inferring it.
+
+It is incompatible with the per-issue stacked topology below. Resolve that by default, without asking:
+
+- **single-issue scope** — use the mandated branch as that issue's branch;
+- **remote worker sessions** — give each worker session its own `outcome_branch`, set to that issue's calculated branch. Then no mandate is overridden anywhere: each worker's own session authorizes exactly the branch it needs, and the parent, which dispatches rather than pushing implementation code, keeps its own. Prefer this whenever the runtime supports it — it dissolves the conflict instead of resolving it;
+- **shared-session workers (subagents, serialized)** — per-issue branches. One branch cannot carry an n-way fanout or a stack, so the mandate is unsatisfiable as written rather than merely inconvenient.
+
+That last case is an override, and this document cannot authorize one: a session-level mandate outranks skill content, so the permission has to come from the user. It does come from the invocation — asking a fanout orchestrator to execute an n-issue tranche is a request for n branches, and there is no reading of it that lands on one. Act on that without a prompt, name every branch used in the checkpoint output so the override is visible, and stop if the user says the mandate is externally imposed rather than theirs to waive.
+
+Ask only where the default would lose work: the mandated branch already carries unmerged commits, or an open PR overlapping this scope. A mandated branch holding no commits of its own is not a conflict.
+
+A user who wants the mandate honored strictly says so in the invocation, which reduces the run to a single-branch serialized tranche.
 
 # DAG and PR topology
 
@@ -312,7 +422,9 @@ Before dispatch:
 4. resolve shared-resource access details (see Shared environment, below);
 5. record canonical issue URL -> tracker -> repo -> worktree -> branch -> base -> worker;
 6. compose the dispatch prompt so it carries every default the worker skills already own;
-7. dispatch Sonnet worker with `implement-issue-core`.
+7. include **the dependency context used to judge this issue READY** — the blockers considered, how each was resolved, which transport and credential produced that view, and **the provenance of each edge**: your own native read, or a blocker a previous worker established that you recorded outside native metadata. The worker compares its native read against yours, and an edge you deliberately kept out of native metadata is one its native read is supposed to lack; unmarked, that comes back as a visibility disagreement against the very corrections you recorded. **Mark the context as your complete READY dependency set**, because it is: unmarked context is treated as a targeted answer whose omissions mean nothing, so an edge you never saw would come back unreported and your frontier would stay wrong. State too whether the read behind it had **proven visibility** for the boundaries this issue's blockers could cross. Marked complete, that is what makes the worker's own silent read meaningful — otherwise its three sources collapse to one unproven native read, agree because two are empty, and readiness rests on an absence nobody established. You will normally have the proof, since an unproven dispatchable boundary is a preflight `FAIL`; where you are dispatching without it, saying so is what lets the worker stop instead of building against it;
+8. include **authorization membership**: the bounded authorized set, or a per-blocker flag for whether each is inside it. Only you know this, and the worker's block outcome turns on it — without it, an external-looking prerequisite you did authorize comes back as an out-of-scope wait and you skip the frontier re-derivation it needed. A worker given nothing defaults to the stronger outcome, which is safe but costs you the distinction;
+9. dispatch Sonnet worker with `implement-issue-core`.
 
 A dispatch prompt that enumerates a required process is followed literally: a default left out of that enumeration is a default skipped, and the worker will accurately report that the task never asked for it. Every dispatched prompt must therefore carry the automated review trigger instruction — `create-pr` owns the trigger rules, do not restate them here — unless this run explicitly defers review. Deferral is a conscious choice recorded in run state, naming what review is owed and on which PRs; it is never an omission.
 
@@ -351,6 +463,8 @@ Standing rule in every dispatch prompt: never stop, reset, reconfigure, or clean
 5. return remote branch/PR/head SHA.
 
 Do not create meaningless checkpoint commits merely as heartbeat activity. Checkpoint after meaningful completed work so container loss discards only the most recent unfinished chunk.
+
+Treat all five as best-effort on the worker's part. They belong in every dispatch prompt, but do not count them as satisfied because they were instructed — Checkpoint compliance below is what actually enforces them.
 
 # PR promotion and central supervision
 
@@ -467,7 +581,7 @@ The main parent thread must remain active while mutating workers run or active P
 
 Each cycle performs real work:
 
-1. consume worker completions (including a Dynamic Workflow's returned fan-out results, if one was used);
+1. consume worker completions (including a Dynamic Workflow's returned fan-out results, if one was used), extracting each one's dependency evidence — unmet blockers, source disagreements, **and the resolutions that confirmed your view** — regardless of its outcome;
 2. reconcile tracker + remote branches/PRs;
 3. consume/reconcile CI/review events;
 4. update heads/budgets;
@@ -475,10 +589,11 @@ Each cycle performs real work:
 6. recompute READY frontier;
 7. fill available worker slots (optionally via a fresh Dynamic Workflow fan-out if the user re-opts in for the next batch);
 8. inspect stack ancestry changes;
-9. check in-flight branches for checkpoint advance;
-10. check sibling branches for colliding added or modified claimed artifacts;
-11. surface `NEEDS_USER`;
-12. wait using native task/event wait, then repeat.
+9. inspect every in-flight worktree for uncommitted work and enforce checkpoints (see Checkpoint compliance — this is a mandatory step, and the parent commits on the worker's behalf when a nudge has already failed);
+10. re-check disk/slot capacity;
+11. check sibling branches for colliding added or modified claimed artifacts;
+12. surface `NEEDS_USER`;
+13. wait using native task/event wait, then repeat.
 
 Do not use CPU loops, file-touch loops, detached sleeps, meaningless commits, or other fake activity solely to prevent idling.
 
@@ -490,7 +605,65 @@ A worker's reported check results are a claim about its own environment, which m
 
 ## Checkpoint compliance
 
-Periodically compare each in-flight worker's remote branch head against its base. A branch that has not advanced well past dispatch means meaningful work exists only in an ephemeral container, contrary to invariant 5. Treat it as a red flag and intervene while the worker is still alive — require an immediate checkpoint push — rather than discovering it during lost-worker recovery.
+**Assume the checkpoint instruction will not land.** Across observed runs, workers hold completed work uncommitted at a high rate — including workers whose dispatch prompt explicitly told them to push before running checks. Sonnet workers treat committing as something that follows green checks rather than something that protects work in progress, and no amount of prompt emphasis has reliably changed that. Parent-side verification, not the worker's instructions, is what actually satisfies invariant 5.
+
+So this is a step of every supervision cycle, not a periodic spot check, and it observes three things per in-flight worker — the worktree, the local branch, and the remote:
+
+| worktree | local vs. tracked remote | state | action |
+|---|---|---|---|
+| dirty | — | completed edits exist only on disk | capture, below |
+| clean | local ahead | committed, push failed or was deferred | push the stranded commits |
+| clean | level | nothing saved yet | leave alone unless dispatch was long ago |
+
+A remote head that has not advanced tells you nothing arrived; it cannot distinguish a worker still reading code from a worker sitting on eight finished files. Only the worktree separates those. And a clean worktree is not proof of durability on its own: a worker that committed but whose push failed leaves `git status` clean while the remote stays put, so the local/remote comparison is what catches that case. Pushing stranded commits is always safe against a live worker — it touches neither its index nor its working tree.
+
+### Enforce, do not re-ask
+
+On first observing uncommitted completed work, instruct that worker to commit and push immediately. If the next cycle still shows it uncommitted, the parent captures the work itself rather than nudging again: a second nudge is evidence the instruction is not landing, and the parent already holds worktree path, branch and base in the tracking record.
+
+**Capture without racing the worker.** A live worker owns its index and `HEAD`, and the shared-resource rule above applies to its own checkout as much as to a service — two actors staging into one `.git/index` can capture a half-written tree, or make each other's commits fail. So never run `git add` in a live worker's index. Either:
+
+- **live worker** — build the commit **ref-neutrally** and push it to a **recovery ref**, never to the issue branch:
+
+  ```bash
+  GIT_INDEX_FILE=<scratch> git -C <worktree> read-tree <worker-head-sha>   # seed first
+  GIT_INDEX_FILE=<scratch> git -C <worktree> add -- <issue-owned paths>
+  GIT_INDEX_FILE=<scratch> git -C <worktree> write-tree                    # -> <tree>
+  git -C <worktree> commit-tree <tree> -p <worker-head-sha> \
+      -m "wip: parent checkpoint capture"                                  # -> <commit>
+  git -C <worktree> push origin <commit>:refs/checkpoints/<issue-branch>/<commit>
+  ```
+
+  Every line is load-bearing. `read-tree` **must** come first: a scratch index starts empty, so `add` on a path list would produce a tree containing only those paths, and a commit parented on the worker's head then records every other file in the repository as a deletion — recovery merging that checkpoint would delete most of the repo. Seed from the worker's head, then overlay the issue-owned paths. `GIT_INDEX_FILE` isolates the index and nothing else, so plain `git commit` would still advance whatever ref `HEAD` names — the worker's branch — reintroducing the race this avoids; `commit-tree` writes a commit attached to no ref, so nothing the worker holds moves.
+
+  Verify a capture by diffing it **against its parent**, not by confirming the work is present: `git diff-tree -r --name-status <worker-head-sha> <commit>` must show only the paths you intended. Content being present says nothing about what else the tree dropped, and that is the failure mode this sequence had;
+- **wedged worker** — stop it first, then commit normally onto the issue branch in the now-quiesced worktree. Stopping consumes that issue's lost-worker budget, so it needs the same evidence any redispatch does.
+
+The issue branch has exactly one writer at a time, and while a worker lives that writer is the worker — locally as well as remotely. Advancing either end underneath it is not a neutral act even when its index and worktree are untouched: its next push becomes a non-fast-forward rejection, and a worker that reacts by force-pushing destroys the snapshot that was protecting it. A recovery ref buys durability without a second writer. Making the worker fetch and reconcile instead would put the fix back in the worker's hands — the same hands that did not commit when told to.
+
+The general rule behind all three cases: **capture must not move any ref the worker holds.** Test a proposed capture against that before running it, because several plausible sequences violate it silently — the index, the branch, and `HEAD` each have to be checked separately.
+
+Once the worker pushes its own commit covering that work, its recovery refs are redundant; drop them when the PR reaches durable state. Lost-worker recovery reads them.
+
+A snapshot that caught a file mid-write is still worth having: it is a WIP checkpoint, never the PR's final state, and a partial save beats an empty branch. Prefer the worker doing its own commit precisely because it has no such hazard — parent capture is the fallback, not the mechanism.
+
+Securing a worker's work never waits on that worker finishing. A worker mid-check with completed edits uncommitted is the highest-risk state in the run, because a long check is exactly when a container is most likely to disappear.
+
+### Where the parent cannot reach
+
+This contract assumes the parent can see a worker's checkout and send it an instruction. That holds for subagents in parent-created worktrees and for remote worker sessions, and **not** for a Dynamic Workflow fan-out: workflow agents accept no input mid-run, and the worktrees the runtime creates for them are not paths the parent was given. Neither half of the escalation above is available there.
+
+So under a Dynamic Workflow, enforcement has to be structural — encoded in the script's control flow, which is deterministic, rather than in an agent prompt, which is the thing that does not land.
+
+**Checkpoint granularity equals stage granularity.** A script can only interpose where it has a stage boundary, so a single checkpoint stage after implementation is not a checkpoint at all — it is the final push, which the worker was going to make anyway. If implementation hangs or the container dies inside that one long stage, the stage never returns and nothing was saved. Bounded loss requires implementation split into several bounded stages, each ending with a push: the number of boundaries is the granularity, and one boundary at the end is none.
+
+That only works where the issue's work decomposes into units the script can name in advance — per-file tranches, per-module conversions, work already sliced by the ticket. Where it does not, the workflow runtime **cannot** satisfy invariant 5 for that issue, and no arrangement of stages changes that.
+
+So the runtime preference is conditional, not absolute. A Dynamic Workflow suits the fan-out shape, but invariant 5 outranks that convenience: prefer a runtime whose workers the parent can reach whenever the implementation cannot be staged into script-visible units. Unreachable-mid-run is a real cost of the workflow runtime, the same one that already disqualifies it for PR supervision — this is the second thing it cannot do, not a footnote on the first.
+
+## Capacity during the run
+
+Re-check disk headroom and worker-slot capacity each cycle, not only at dispatch. Worktrees, dependency installs, and build caches accumulate as the run proceeds, so startup headroom does not predict headroom at the fifth concurrent worker. Report the current figure with the worker count in the checkpoint output, and stop filling slots before exhaustion rather than after a write fails.
 
 ## Cross-branch artifact collisions
 
@@ -507,10 +680,11 @@ A worker whose remote branch never advanced is the expensive case; prefer catchi
 If a worker disappears:
 
 1. inspect remote branch/PR first;
-2. inspect local worktree only if the container still exists;
-3. adopt pushed checkpoints/PR;
-4. redispatch at most once from latest durable remote checkpoint;
-5. repeated loss -> `NEEDS_USER`/infrastructure failure.
+2. inspect any recovery refs the parent pushed for that issue (see Checkpoint compliance) — work captured from a live worker lives there, not on the issue branch;
+3. inspect local worktree only if the container still exists;
+4. adopt pushed checkpoints/PR, merging a recovery ref into the issue branch where it holds work the branch does not;
+5. redispatch at most once from latest durable remote checkpoint;
+6. repeated loss -> `NEEDS_USER`/infrastructure failure.
 
 If the whole cloud container/workflow disappears, assume local worktrees are lost. Resume from remote branches/PRs plus tracker state.
 
@@ -533,8 +707,86 @@ Do not blindly restack every descendant after every upstream push. Instead:
 
 - `PR_OPEN` — implementation reached durable remote PR state; parent/runtime owns supervision.
 - `BLOCKED` / `BLOCKED_EXTERNAL` — stop affected path; never silently enlarge scope.
+- `BLOCKED_EXTERNAL` **on an unmet dependency** — a known wait, not a graph error, and by the worker's contract it means *every* unmet blocker was external. Work nobody in this run was authorized to do is not evidence that readiness was computed wrongly, so stop that path without re-deriving the frontier or invalidating a visibility proof over it. A worker that found any in-scope blocker alongside an external one returns `BLOCKED` instead, so this outcome never conceals one. A source disagreement reported alongside it is still transport evidence and still handled as such.
+- `BLOCKED` **on an unmet dependency** — authoritative new information about the graph, not a worker failure. It means the readiness computation was wrong, most often because the dependency read behind it was silently partial. Never redispatch the same issue unchanged; nothing about the second attempt would differ. Retry and escalation budgets do not apply, because there is no failure to retry.
+
+**Confirmations are evidence too.** A worker reports how every dependency it checked resolved, not only the ones that disagreed with you — and a resolution that matched your view is a verified edge where you previously had an assumed one. Record those against your graph — but record the right thing, because two claims are bundled in a resolution and they age differently:
+
+- **the edge exists** — structural, and long-lived. Persist it as verified, with the read it came from and when; it stops being an assumption. It does not stop being an observation: a dependency can be retired from the graph after a worker confirms it, and a verified edge with no way to retire blocks or orders work on it for every remaining run;
+- **the dependency was available** — an observation with a timestamp, and nothing more. A force-push, revert or rollback can undo it, as the availability-repair table below already acknowledges.
+
+So a verified availability resolution is historical evidence, never a standing exemption. Every dispatch re-checks the class-specific measure — the worker's dependency precondition runs regardless, and it would be a contradiction to build a record whose purpose was to let a caller skip it. What the record buys is a restart that knows which edges are verified and which are assumed, not a shortcut past the check.
+
+**How a verified edge retires.** By provenance, since provenance decides which read can speak to it:
+
+- **native-sourced** — a later native read with **proven visibility for that boundary** that no longer returns it retires it. An unproven read does not, on the asymmetry stated throughout: absence observed through an unvalidated transport is not evidence of absence. Nothing else is needed here, because your own reads recur;
+- **established by a worker and recorded as an issue comment** — no native read can retire it, since none was ever supposed to show it. Absence therefore proves nothing in this direction either, and the edge cannot simply stand forever on that technicality: from your own native view it is indistinguishable from a prose-only edge, so classify it on the same path — establish whether the relationship still holds, `NEEDS_USER` where the issues cannot settle it. Do that **when a run adopts it**, which is where the permanence would come from: a restart re-reads the comment and inherits the edge. Once per run is enough, and the answer holds for that run; classifying per dispatch attempt would re-ask the same question every cycle an issue stays legitimately blocked.
+
+**Provenance here is where the edge lives now, not where it came from.** An edge recorded as a comment and later made native by `normalize-github-dependencies` is native-sourced from then on, and takes the first row — which is the point of normalizing it, since a native edge is one your own reads can retire. Judging it by its origin instead leaves the edge in the row where absence proves nothing, and it becomes exactly the permanent edge this rule exists to prevent.
+
+An edge a worker found only in prose does not arrive here at all; it is classified first (see below), because persistence is what makes a stale edge permanent. Retirement does not retract what the worker observed — the observation stood when it was made. It records that the relationship no longer holds, dated the same way, so a later read finding the edge again is a change rather than a contradiction.
+
+This adopts findings, never a re-plan; the validated DAG remains the scheduling graph.
+
+**A worker returns two independent things: an outcome, and evidence about the graph.** Act on the evidence regardless of the outcome. A worker that found the prose naming a dependency native metadata did not return, and then proceeded because the work was present in its base, reports that disagreement on a `PR_OPEN` — and that report is the same evidence of a partial dependency view as a `BLOCKED` would have been. Treating only `BLOCKED` as a graph update leaves every sibling scheduled against the view already known to be wrong, choosing bases and dispatch order from it.
+
+**Only a visibility disagreement is transport evidence.** The worker reports two kinds and they warrant very different responses. An **availability** disagreement says your base or completion claim was stale. Two things pick the repair: the direction, and **the dependency class the worker reported** — it names the class precisely so you can route this, so read it rather than assuming a base problem.
+
+| direction | code dependency | non-ancestry dependency |
+|---|---|---|
+| you asserted satisfied, worker observed otherwise | your base no longer holds — recalculate and restack, and check whether it was wrong when calculated or overtaken since, because a revert or force-push that keeps happening is a different problem from one bad calculation | your completion claim no longer holds — recheck it, or keep waiting; ancestry is irrelevant and no restack fixes it |
+| you asserted unmet, worker found it available | your constraint may be obsolete — recheck rather than leaving the issue parked | same: recheck the constraint, do not park indefinitely |
+
+Neither direction, in either class, touches a visibility proof. Invalidating a proof and halting slot-filling for a stale base is an expensive answer to a cheap problem. Everything below applies to **visibility** disagreements, where some other source named an edge the worker's native read did not return.
+
+Two variants can be demonstrations rather than suspicions — but only on conditions you must check, not assume, and the first is that you are comparing like with like.
+
+**Compare native read against native read.** Your context is a union: edges from your own native read, plus blockers a previous worker established that the persistence rule above deliberately records as issue comments rather than native edges. A worker's native read is *supposed* to lack that second kind — you created them outside native metadata on purpose — so their absence demonstrates nothing. Mark the provenance of every edge you supply, and apply what follows only to edges your own native read produced. Without that, this rule fires on the graph corrections you yourself recorded, and each one invalidates a proof and halts dispatch.
+
+Then, for a native-sourced edge: where **you supplied** one the worker's native read lacks, or where **its native read has one your context omitted**, compare the credential identity behind your read against the one behind the worker's. You already record yours per credential; the worker reports the transport and identity it used.
+
+**Distinct identities** — two credentials have disagreed about one graph, which is the cross-credential comparison the corroboration rules ask you to arrange, arriving unasked. It is proof only once you rule out the other explanation: the two reads were taken at different moments, so an edge added or removed in between makes both credentials correct and neither view partial. Rule that out first — re-read the relationship through both identities, or check the edge's own history — and then invalidate. Skipping that step spends a valid proof and halts every dispatch sharing the boundary on what may be an ordinary edit.
+
+Independence and contemporaneity are separate conditions, and a mismatch is proof only with both. Having fixed "different transport" into "different credential" earlier in this design, the same correction applies again along the time axis: two reads that differ may differ because the graph changed.
+
+**The same identity** — and a subagent worker inheriting this session's credential is the common case, not the exception — this proves nothing on its own. One credential cannot corroborate itself, which is the rule this skill states about transports and applies no less to two reads at different moments: the mismatch may be an edge that changed between the reads, or caller context that went stale. Take the ordinary corroboration path and treat it as evidence.
+
+The direction says whose view was partial, and therefore what to fix. Yours missing an edge the worker saw means **your** frontier was computed short — recheck it for every issue that shared that read, not only this one. The worker missing an edge you had means its transport is the partial one, and the recovery below applies as written.
+
+**A visibility disagreement is first evidence about the transport, only second about one edge.** Adding the single dependency a worker happened to find and re-deriving against the same view leaves every other hidden edge hidden — the ones absent from both native metadata and prose are still invisible, and siblings still get dispatched from a frontier built on them. So read the disagreement against that boundary's visibility proof (see Proving a transport can see the graph), because the proof's state determines which of two very different things you are looking at:
+
+**Visibility unproven, or the proof invalidated** — treat this as truncation, not as one missing edge:
+
+1. adopt the named dependencies **provisionally** — real enough to schedule against, not yet established;
+2. invalidate the relationship-visibility proof for that credential, exactly as an authorization error would;
+3. **re-establish the proof** before filling further worker slots — a read with proven visibility for the boundary, established the way the proof is established: against a case whose answer is already known. Not merely another read through another credential; that is the proxy retired below, and it can share the blind spot you are trying to escape. The point is that you do not know what else is missing, and one recovered edge is not a reason to trust the rest;
+4. **re-evaluate every provisional edge against the read you just obtained.** If it proves the boundary and still shows no native edge, that edge has moved into the proven case below and needs its classification before it is kept — a stale prose edge adopted while visibility was unknown must not become permanent merely because it was adopted first. Provisional edges are not eligible for the persistence rule above until they survive this step;
+5. then re-derive readiness for every issue that shared that view, and re-check calculated bases for anything already dispatched against it.
+
+**Visibility proven for that boundary** — native metadata is trustworthy there, so prose naming an edge it does not show is more likely stale text than a hidden edge: a dependency deliberately removed from metadata and left behind in the description. Do not auto-adopt it. Classify it — verify whether the relationship still holds, not merely whether the referenced issue is implemented, which is all the worker checked — and surface it as `NEEDS_USER` where that cannot be settled from the issues themselves. Never persist an unclassified prose edge: persistence is what makes every future restart re-adopt it, so a stale edge written down once blocks the issue indefinitely.
+
+When classifying, use the preflight you already ran. `validate-backlog` emits a warning for exactly this shape — text names a blocker with no structured edge — so check whether it flagged this edge before dispatch. An edge flagged at preflight **and** reported by a worker is two observations from different actors — but be precise about what they corroborate, because they read the *same prose*. Their agreement about the prose is not independent and establishes nothing that was in doubt.
+
+What it does establish is on the other side: two native reads both lacked the edge. That rules out truncation only if at least one of those reads had **proven visibility for this boundary** — the proof this skill already defines. Distinct credential identities are not enough: two credentials can share the same insufficient scopes, the same repository boundary, or the same relationship transport, and then both omit the same real edge and their matching absence proves nothing. With a proven read among them, the expensive response is ruled out and the question narrows to a cheap one — the native edge was never created, or the prose is stale, both classification rather than transport. Without one, take the validated-read path as normal.
+
+Stop reaching for proxies here. Distinct transport, then distinct credential, then distinct moment were each offered as a stand-in for independent visibility and each failed, because a proxy can always coincide with the thing it is standing in for. The property the conclusion needs is visibility, proven; ask for that.
+
+That is the opposite of the reading it invites. Two actors agreeing does not make the prose edge more likely real; it makes a *partial view* less likely, which is a different and more useful conclusion. Correlating still costs nothing, since the warning is in hand.
+
+The reverse also holds: a preflight warning no worker ever confirmed stays outstanding. Do not let it expire quietly because the issue it concerned happened to complete.
+
+Either way, do the graph work **before** filling further worker slots.
+
+One worker's disagreement is the cheapest evidence available that the graph is wrong; discarding it because that worker happened to succeed wastes the only signal the system gets.
+
+**Persist it, or the next session repeats the mistake.** By invariant 1 conversation and run state are caches, so an edge a worker discovered lives only in this run unless it is written down — while restart re-expands the same manifest and reruns the same validator through the same transport that truncated in the first place. It would compute the identical wrong frontier and dispatch straight back into it. Record each **established** blocker — a truncation-case edge that survived re-evaluation against the validated read, or a classified prose edge confirmed to still hold — where the restart path already looks: a comment on the affected issue naming the blocker by canonical full URL and how it was verified, plus the checkpoint output. Persist nothing that is merely unclassified, for the reason above: writing it down is what makes every restart re-adopt it. Where dependency-write capability exists and the edge is high-confidence, `normalize-github-dependencies` is what makes it native — invoked explicitly, never as a side effect of this reconciliation.
 - `FAILED` — retry only inside budgets; at most one reasoning escalation.
 - `NEEDS_USER` — surface full issue/PR URLs, failure/review state, attempts consumed, and recommended action; stop spending tokens on that node while continuing safe independent branches.
+- `NEEDS_USER` **on an unverifiable prerequisite** — not a graph error and not a failure, and you can rely on that rather than re-checking: the worker's precedence returns `BLOCKED` whenever any in-scope blocker was also unmet, so this outcome carries none. the worker could not observe the completion measure that dependency's class requires, typically a release or deploy state outside the repository and tracker. Ask the specific question, and once answered supply it as dependency context on the redispatch — the caller asserting satisfaction is the documented path for a measure the worker cannot check. What asking buys is the **end of the uncertainty**, not the clearing of the blocker. Those come apart on a negative answer: told the release has not happened, the prerequisite becomes a known unmet blocker and the redispatch returns `BLOCKED` or `BLOCKED_EXTERNAL` by its authorization membership. Only an affirmative answer clears it.
+
+- `NEEDS_USER` **on an unproven dependency view** — the worker could not establish that its blocker list was *complete*, with or without entries in it: your context arrived without a proven read, so its sources collapsed to one native read of unknown reach. A list with one blocker in it is not the reassuring version of this — a partial list is the dangerous one. This is transport evidence, not a question about the issue, and it is the one `NEEDS_USER` you must act on before dispatching anything else. Invalidate the relationship-visibility proof for that boundary and re-establish it against a case whose answer is known, exactly as for a visibility disagreement — every sibling you judged READY through that read shares the blind spot, and the worker only stopped because you told it the view was unproven. Do not answer this one by re-asserting readiness; that suppresses the stop without changing what is invisible.
+
+And even an affirmative answer clears only this blocker, not the issue: the precedence ranks an unverifiable prerequisite above an external wait, so this outcome can arrive with an out-of-scope blocker still unmet and reported alongside. Read the reported blockers before expecting a redispatch to proceed. Do not invalidate a visibility proof over it; nothing here says the transport is partial.
 
 # Merge behavior
 
@@ -556,10 +808,27 @@ Settled is not the same as finished. The run has produced everything it can; the
 
 On reaching settled:
 
-1. reconcile tracker + remote state one final time, so the ranking is computed from durable truth rather than cached run state;
-2. invoke `plan-merge-order` with the manifest/scope and this run's PR set;
-3. surface its table and recommendations to the user as the run's closing output;
-4. stop dispatching work and stop spending tokens re-deriving the same state.
+1. reconcile tracker + remote state one final time, so both the summary and the ranking are computed from durable truth rather than cached run state;
+2. invoke `summarize-tranche` with the manifest/scope, this run's PR set, and the worker/review findings it produced;
+3. **act on its action points before ranking anything** (below);
+4. invoke `plan-merge-order` with the manifest/scope, this run's PR set, and every summary item with an ordering consequence — the `MERGE_RISK` and `DECISION` items, and any other class that also carries one, so the ranking is computed against those constraints rather than around them;
+5. surface the summary and action points first, then the ranking table, as the run's closing output;
+6. stop dispatching work and stop spending tokens re-deriving the same state.
+
+Summarize before ranking. An action point can change whether something should merge at all, and a ranking the user has already begun acting on is the wrong place to discover that. Run the summary once per settled tranche rather than saving one up for the end of a whole backlog: its findings come from run context that the next session will not have, and follow-ups need to exist while later tranches are still running, so they get picked up instead of rediscovered.
+
+## The summary can un-settle the run
+
+Settlement was computed before the summary existed, so the summary is capable of falsifying it. Branch on what it returns rather than proceeding to the ranking unconditionally:
+
+| action point | effect |
+|---|---|
+| `IN_FLIGHT_FIX` | the tranche is **not settled** — that PR has actionable work outstanding. Return it to supervision, dispatch the repair within budget, and re-test the settled conditions before ranking |
+| `MERGE_RISK` | still settled, but the ranking must carry it. Pass it to `plan-merge-order`, and raise it as `NEEDS_USER` where it blocks a merge decision outright |
+| `DECISION` | pass to `plan-merge-order` and surface as `NEEDS_USER`; it gates a human, not the run |
+| `NEW_ISSUE` | report it; no effect on settlement. No effect on ordering **unless the item carries an ordering consequence** — a follow-up that must land before one of this tranche's PRs is also a `MERGE_RISK`, and takes that row too. The classes answer different questions, so read the item rather than the label alone |
+
+An `IN_FLIGHT_FIX` reaching the ranking is the same defect the settled conditions already guard against: a table that orders PRs which are not actually finished is a table the user cannot act on. Finding it one step later does not make it acceptable.
 
 Do not merge, and do not treat the ranking as authorization to merge — invariant 12 still holds.
 
@@ -606,18 +875,23 @@ Resume frontier: <full URL(s)>
 
 Before returning, reconcile tracker + GitHub remote state and report:
 
-- runtime used;
+- runtime used, plus any runtime probed and rejected, with the reason;
+- documented defaults applied without asking — branch-mandate override, issues deferred at the budget cap, concurrency reduced for machine capacity, corrected ticket baselines;
 - validation result/warnings;
 - manifest/scope;
 - resume frontier;
 - PRs + stack topology;
 - remote checkpoint branches without PRs;
+- checkpoint enforcement: workers nudged, and workers whose work the parent committed itself;
+- disk headroom against the concurrent worker count;
 - CI/review states + repair budgets consumed;
 - PRs left unreviewed, and whether the review trigger was deferred or unavailable;
 - PRs promoted from draft to ready, and any left in draft with the reason;
-- the `plan-merge-order` table when the run settled;
+- the `summarize-tranche` summary and action points, and the `plan-merge-order` table, when the run settled;
 - issue-linkage/tracker-status inconsistencies;
 - `NEEDS_USER` items;
 - external blockers;
+- dependency edges discovered by workers that the validated DAG did not contain, where each was recorded durably, and any dependency-source disagreement reported on an otherwise successful run;
+- which edges in the scheduling graph are **verified** by a worker's own check versus still **assumed** from the preflight read, and when each was verified. This is history, not an exemption: a restart still runs the proof-and-provenance reconciliation in step 2 of Restart / resume over every edge, verified ones included, because the label records what was true when it was written and a dependency can be retired afterwards. What it buys is knowing which edges were established by observation and which rest on one preflight read — where to be sceptical, and what not to rediscover by dispatching into it;
 - unstarted work and why;
 - whether invoking the same manifest can safely resume.

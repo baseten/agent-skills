@@ -41,7 +41,31 @@ Invoke `implement-issue-core` with the canonical issue URL and all supplied exec
 
 Do not hand-roll implementation logic here.
 
-If core returns `BLOCKED`, `FAILED`, or `NEEDS_USER`, surface that result. If a standalone user clearly requested strongest-model retry, that can be handled by the surrounding Claude session; this skill itself should not create an unbounded model-escalation loop.
+If core returns `BLOCKED`, `BLOCKED_EXTERNAL`, `FAILED`, or `NEEDS_USER`, surface that result. Preserve the distinction between the two block outcomes rather than flattening them: `BLOCKED_EXTERNAL` means the issue waits on work outside the authorized set, so it needs no *frontier* reasoning — only the blocker, its state, and who owns it. It still needs the relationship classification below. Whether an edge is real is a separate question from whether the work behind it is external, and a stale prose edge pointing at an unfinished external prerequisite would otherwise wait forever. If a standalone user clearly requested strongest-model retry, that can be handled by the surrounding Claude session; this skill itself should not create an unbounded model-escalation loop.
+
+A `PR_OPEN` can also arrive with its **dependency view unproven** — the worker could not establish that its blocker list was complete, whether it found blockers or none. That is the normal standalone case rather than a defect: this skill supplies no graph judgement, so the worker proceeds on the invocation's authority and says the absence was never proven. Pass that on in one line rather than dropping it. The PR is making a narrower claim than it appears to — that no blocker was visible, not that none exists — and a user who wants the stronger one can supply a confirmed edge as dependency context on a re-invocation, which turns the next run's silence into evidence.
+
+A **visibility disagreement** means something specific here even though there is no frontier to re-derive: the transport may be returning a partial dependency view, so the issue you just implemented may have blockers nobody in this run could see. Say that plainly rather than filing it as a mismatch — name the edge and which sources had it against which lacked it, and note that the dependency view behind this run is unproven. The user can re-read through a different credential or check by hand; neither is available to them if the finding arrives as a generic disagreement line.
+
+An **availability disagreement in the obsolete-constraint direction** — the caller said a blocker was unmet, the worker found the work available — deserves naming rather than passing through as a generic mismatch. In a standalone run the caller is usually the user, so it is their own constraint that may be stale, and they are the only one who can retire it. Report which dependency, what was observed, and that the block rests on their assertion rather than on anything the worker could see.
+
+**An outcome is a ranking, not the whole finding.** Core returns one value for an issue that may have several kinds of blocker at once, and it ranks them — an in-scope blocker outranks an unverifiable prerequisite, which outranks an external wait. So a `BLOCKED` may still carry an unanswered question about a release or deployment, and you are the only thing that will ask it. Read the reported blockers, not just the outcome, and surface every one that needs the user.
+
+`NEEDS_USER` arrives in two kinds and core says which. An **unproven dependency view** means the completeness of the blocker list was never established — it should not reach a standalone user at all, since this skill supplies no readiness judgement and the worker proceeds on the invocation's authority instead. Arriving here, it means a caller passed a READY judgement through, and the answer is to prove the view or drop the claim, not to re-assert readiness.
+
+`NEEDS_USER` on an **unverifiable prerequisite** is its own case, and the cheapest one to resolve: the worker could not observe the measure that class needs — typically a release or deployment state that lives outside the repository and tracker. Surface the blocker, the measure, and why it was out of reach, and ask the specific question rather than reporting a generic need for input. The answer is usually seconds of a person's time, and once given it can be supplied as dependency context on a re-invocation. Say what that buys, without overstating it in either of the two available ways.
+
+An answer ends the *uncertainty*; only a **yes** clears the blocker. Told the release has not happened, the prerequisite becomes a known unmet blocker and the next run blocks on it — so frame the question as one whose answer decides which of two states you are in, not as a step that unblocks the work. And a yes clears only this blocker: whether the re-invocation proceeds depends on what else core reported, since an unverifiable prerequisite outranks an external wait and can arrive with one still unmet. Promising a proceed the user does not get is worse than naming two things to clear.
+
+Either block outcome on an unmet dependency is a special case: it is authoritative information about the graph rather than a worker failure, so it is never retried. Everything below applies to `BLOCKED` and `BLOCKED_EXTERNAL` alike — externality changes who resolves the blocker, not whether the edge is real. The issue was judged ready against a dependency view that turned out to be wrong — commonly a read that returned part of the blocker list with no indication it had. Surface the named blockers by canonical full URL, and pass on any source disagreement the worker reported (a dependency the prose named that native metadata did not return) even where the run otherwise succeeded: that is evidence about the transport, and this is the only place it surfaces.
+
+Never retried is not the same as never resolved. There is no orchestrator here to re-derive a frontier, so this skill owns the classification itself, or a stale prose edge blocks the issue permanently with no route forward:
+
+- **any blocker named only in prose** — establish whether the relationship still holds before acting on it, whatever state the referenced work is in. Prose survives edits that remove a dependency from native metadata, so a prose-only blocker is as likely to be a dependency someone deleted as one nobody built — and that is just as true when the referenced issue happens to have an open PR or an out-of-base merge. Gating this on "the work exists nowhere" would restack onto a dependency that is no longer real;
+- **it still holds** — the block stands, in whichever form core returned it; report the blocker and stop;
+- **it does not, or cannot be settled from the issues themselves** — `NEEDS_USER` with both readings and a recommendation, not a bare block. The user can retire a stale edge in seconds; they cannot act on a `BLOCKED` that does not say which reading it assumed.
+
+Where the blocker's work exists but is not available — an open PR, a merge outside this base, or a non-ancestry prerequisite still incomplete — pass on what the worker named. A restack or base correction is actionable without touching the dependency graph at all. But classify first where the blocker came only from prose: restacking onto a dependency that is no longer real costs more than leaving the issue blocked, because the resulting base becomes the justification for the next one.
 
 If core returns `PR_OPEN`, record:
 
@@ -145,7 +169,7 @@ Return:
 - canonical issue URL;
 - tracker;
 - repository;
-- outcome: `PR_OPEN` | `BLOCKED` | `FAILED` | `NEEDS_USER`;
+- outcome: `PR_OPEN` | `BLOCKED` | `BLOCKED_EXTERNAL` | `FAILED` | `NEEDS_USER`;
 - branch/base;
 - PR URL/number;
 - remote head SHA;
@@ -155,5 +179,7 @@ Return:
 - review-fix cycles used;
 - final CI/review state;
 - draft state as created, and whether it was promoted to ready (or why not);
-- blocker/failure details;
+- whether the completeness of the blocker set was backed or left unproven, and on what boundary;
+- dependencies checked, and any source disagreements, exactly as core reported them — including on `PR_OPEN`. A run that succeeded while its transport returned a partial dependency view is the case where this evidence is easiest to drop and most worth keeping: nothing else in a standalone run will surface it, and dropping it here means neither the user nor a surrounding workflow ever learns the view was partial;
+- blocker/failure details, including the dependency class each block was judged under;
 - recommended user action when needed.
