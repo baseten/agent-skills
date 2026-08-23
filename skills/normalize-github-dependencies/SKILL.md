@@ -19,6 +19,8 @@ Accept one of:
 
 Preserve canonical full GitHub issue URLs in all reporting. Do not expand beyond the supplied tree/set merely because an issue references unrelated work. Out-of-scope referenced issues may be used as dependency endpoints when the text clearly declares them, but do not recursively normalize their other relationships.
 
+**Scanning a parent's sub-issues is itself a hierarchy read**, so the first input form is subject to the visibility precondition below rather than exempt from it. A credential that hides children in one repository yields a truncated candidate set, and a scope derived from a possibly-partial read cannot bound its own validation: the hidden repository never appears, so no control ever tests it, and every edge written afterwards rests on a view known to be incomplete. Cross-check the enumerated child set against the parent's own prose listing, an explicitly supplied issue set, or a second transport before treating it as the scope — a differing count is the finding, and here it is a finding that stops writes rather than merely warning.
+
 ## Dependency sources
 
 For every in-scope issue:
