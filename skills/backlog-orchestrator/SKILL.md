@@ -409,6 +409,8 @@ Standing rule in every dispatch prompt: never stop, reset, reconfigure, or clean
 
 Do not create meaningless checkpoint commits merely as heartbeat activity. Checkpoint after meaningful completed work so container loss discards only the most recent unfinished chunk.
 
+Treat all five as best-effort on the worker's part. They belong in every dispatch prompt, but do not count them as satisfied because they were instructed — Checkpoint compliance below is what actually enforces them.
+
 # PR promotion and central supervision
 
 A PR opened by a worker may be surfaced back to the parent/top-level session by Claude Code's own background PR watch/notification behavior (a session-level feature, distinct from Dynamic Workflows — a Dynamic Workflow run does not itself persist or surface PR/CI/review events once it returns its fan-out results) or by an explicit event subscription such as `subscribe_pr_activity`. **Use that platform PR state when available.** Do not create a duplicate monitor merely because the PR originated in a child worker.
@@ -532,10 +534,11 @@ Each cycle performs real work:
 6. recompute READY frontier;
 7. fill available worker slots (optionally via a fresh Dynamic Workflow fan-out if the user re-opts in for the next batch);
 8. inspect stack ancestry changes;
-9. check in-flight branches for checkpoint advance;
-10. check sibling branches for colliding added or modified claimed artifacts;
-11. surface `NEEDS_USER`;
-12. wait using native task/event wait, then repeat.
+9. inspect every in-flight worktree for uncommitted work and enforce checkpoints (see Checkpoint compliance — this is a mandatory step, and the parent commits on the worker's behalf when a nudge has already failed);
+10. re-check disk/slot capacity;
+11. check sibling branches for colliding added or modified claimed artifacts;
+12. surface `NEEDS_USER`;
+13. wait using native task/event wait, then repeat.
 
 Do not use CPU loops, file-touch loops, detached sleeps, meaningless commits, or other fake activity solely to prevent idling.
 
@@ -547,7 +550,24 @@ A worker's reported check results are a claim about its own environment, which m
 
 ## Checkpoint compliance
 
-Periodically compare each in-flight worker's remote branch head against its base. A branch that has not advanced well past dispatch means meaningful work exists only in an ephemeral container, contrary to invariant 5. Treat it as a red flag and intervene while the worker is still alive — require an immediate checkpoint push — rather than discovering it during lost-worker recovery.
+**Assume the checkpoint instruction will not land.** Across observed runs, workers hold completed work uncommitted at a high rate — including workers whose dispatch prompt explicitly told them to push before running checks. Sonnet workers treat committing as something that follows green checks rather than something that protects work in progress, and no amount of prompt emphasis has reliably changed that. Parent-side verification, not the worker's instructions, is what actually satisfies invariant 5.
+
+So this is a step of every supervision cycle, not a periodic spot check, and it inspects the worktree rather than only the remote:
+
+1. `git status --porcelain` in each in-flight worker's worktree. Uncommitted modifications to issue-owned paths are the real signal, and the only one available early;
+2. the worker's remote branch head against its base and against its last observed head.
+
+A remote head that has not advanced tells you nothing arrived; it cannot distinguish a worker still reading code from a worker sitting on eight finished files. Only the worktree distinguishes those, and only the first is safe to leave alone.
+
+### Enforce, do not re-ask
+
+On first observing uncommitted completed work, instruct that worker to commit and push immediately. If the next cycle still shows it uncommitted, **commit and push it yourself** from the recorded worktree path onto the recorded issue branch, and tell the worker you did. Do not nudge the same worker twice: the second nudge is evidence the instruction is not landing, and the parent already holds everything needed to act — worktree path, branch, and base are in the tracking record.
+
+Securing a worker's work never waits on that worker finishing. A worker mid-check with completed edits uncommitted is the highest-risk state in the run, because a long check is exactly when a container is most likely to disappear.
+
+## Capacity during the run
+
+Re-check disk headroom and worker-slot capacity each cycle, not only at dispatch. Worktrees, dependency installs, and build caches accumulate as the run proceeds, so startup headroom does not predict headroom at the fifth concurrent worker. Report the current figure with the worker count in the checkpoint output, and stop filling slots before exhaustion rather than after a write fails.
 
 ## Cross-branch artifact collisions
 
@@ -670,6 +690,8 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - resume frontier;
 - PRs + stack topology;
 - remote checkpoint branches without PRs;
+- checkpoint enforcement: workers nudged, and workers whose work the parent committed itself;
+- disk headroom against the concurrent worker count;
 - CI/review states + repair budgets consumed;
 - PRs left unreviewed, and whether the review trigger was deferred or unavailable;
 - PRs promoted from draft to ready, and any left in draft with the reason;

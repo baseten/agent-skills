@@ -60,22 +60,28 @@ Do not allow significant completed work to exist only in the ephemeral worktree.
 - significant refactor complete;
 - before entering a potentially long debugging/test phase.
 
+**Commit before you check, not after.** Once an edit is complete, commit and push it before running any typecheck, lint, or test run. Checks take minutes, and those minutes are exactly when an ephemeral container is most likely to disappear — running a full suite over uncommitted work is the single most expensive habit available here.
+
+A commit is a save, not a claim that the work is correct. Green is not a precondition for committing, and neither is coherence: a checkpoint that exists and is imperfect always beats a perfect one that was never made. Prefer coherent checkpoints, but never defer a push to obtain one.
+
 Checkpoint rules:
 
-- checkpoint commits must compile/be internally coherent where practical;
 - never checkpoint secrets, generated junk, or unrelated files;
 - do not commit every tiny edit merely as a heartbeat;
 - commit only issue-owned paths;
 - push each checkpoint to the issue branch;
+- never enter a long check or debugging phase with completed edits uncommitted;
 - WIP checkpoint history is acceptable because normal squash-merge workflows remove it from the destination branch.
 
 The goal is bounded data loss if a cloud container disappears: at most the work since the last meaningful checkpoint, not the entire implementation.
+
+Under an orchestrator, expect the parent to inspect this worktree for uncommitted work and to commit on your behalf when it finds completed work held back. Holding a change until it is tidy does not keep it tidy — it hands the commit to something with less context about what you were doing.
 
 If an implementation retry is allowed, use only the caller's remaining budget. Return reasoning-heavy repeated failure to the caller rather than escalating models autonomously.
 
 ## 4. Final local verification
 
-Run the repository-required typecheck/lint/format/tests. Fix in-scope failures within the implementation budget. Push the resulting final implementation commit/checkpoint.
+Commit and push the implementation first, then run the repository-required typecheck/lint/format/tests. Fix in-scope failures within the implementation budget, committing each fix as it lands rather than accumulating them. Push the resulting final implementation commit/checkpoint.
 
 ## 5. Create and verify PR
 

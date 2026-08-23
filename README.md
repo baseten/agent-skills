@@ -69,7 +69,7 @@ Invoking the skill is itself the authorization to dispatch workers, so a session
 
 ## Recovery model
 
-Local/cloud worktrees are isolation, not durable storage. `implement-issue-core` pushes the issue branch early and pushes coherent implementation checkpoints. If a cloud container or a Dynamic Workflow's session disappears, backlog orchestration resumes from tracker + remote branch/PR state rather than relying on the lost worktree or runtime state — a Dynamic Workflow does not persist across a session exit, so this recovery path is required, not just a fallback.
+Local/cloud worktrees are isolation, not durable storage. `implement-issue-core` pushes the issue branch early and pushes coherent implementation checkpoints — but the orchestrator treats that as best-effort rather than done. Workers reliably hold completed work uncommitted even when told not to, so the parent inspects every in-flight worktree each supervision cycle and, where a nudge has already failed, commits the work itself. Enforcement lives in the loop, not in the dispatch prompt. If a cloud container or a Dynamic Workflow's session disappears, backlog orchestration resumes from tracker + remote branch/PR state rather than relying on the lost worktree or runtime state — a Dynamic Workflow does not persist across a session exit, so this recovery path is required, not just a fallback.
 
 ## PR supervision
 
