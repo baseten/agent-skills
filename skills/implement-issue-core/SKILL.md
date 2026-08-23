@@ -59,16 +59,20 @@ Read each referenced issue directly. A plain issue read works across repositorie
 
 An open blocker does not mean the work is unavailable. A stacked child is dispatched precisely while its parent is implemented but unmerged — that is the normal case, not an error. Gating on "the blocker is still open" would refuse nearly every stacked child and be worse than no gate at all.
 
-One question decides it: **is the dependency's implementation reachable from this checkout's base?** Answer it by observation, not by claim.
+**What counts as available depends on the kind of dependency.** Git reachability is the right test only for an edge whose code this issue builds on. An execution-only ordering, a cross-repository scheduler dependency, or an external prerequisite is *never* reachable from this checkout — not even when it is entirely finished — so testing those by reachability would block every one of them and misreport a completed cross-repo dependency as a wrong base. Use the classes the orchestrator already defines (hard same-repo code dependency, execution dependency only, shared-parent fanout, cross-repo scheduler dependency, external prerequisite), inferring the class from the issues where the caller did not supply it.
 
-Reachable — proceed.
-
-Not reachable — return `BLOCKED`. What you found determines what to report, and the report is the useful part:
-
-| why it is not reachable | report |
+| dependency class | availability evidence |
 |---|---|
-| an open, unmerged PR implements it | name that PR — the work exists and is not available *here*, so this is a restack the caller can act on, not a dead end |
-| merged, but that merge is not reachable from the supplied base — it landed on another branch, or this base is obsolete | name the merge and the base — the caller calculated the wrong base, which is a different repair from a missing dependency |
+| hard same-repo code dependency | its implementation is reachable from this checkout's base |
+| execution-only, shared-parent fanout, cross-repo, external prerequisite | its own completion state — merged, released, deployed, or the issue closed as done — independent of this checkout's ancestry |
+
+Answer by observation, not by claim. Available — proceed. Not available — return `BLOCKED`, and what you found determines what to report, which is the useful part:
+
+| why it is not available | report |
+|---|---|
+| code dependency: an open, unmerged PR implements it | name that PR — the work exists and is not available *here*, so this is a restack the caller can act on, not a dead end |
+| code dependency: merged, but that merge is not reachable from the supplied base — it landed on another branch, or this base is obsolete | name the merge and the base — the caller calculated the wrong base, which is a different repair from a missing dependency |
+| non-ancestry dependency: not yet complete by its own measure | name the blocker and the state it is actually in — waiting on a release or a deploy is not a base problem and no restack fixes it |
 | no implementation anywhere: nothing merged, no open PR, nothing in the base | name each unmet blocker by canonical full URL — a real dependency gap |
 
 **Observation beats assertion.** Caller-supplied dependency context settles only what you cannot check: where it asserts a blocker is satisfied and you observe that it is not reachable, the observation wins and the disagreement is reported. Deferring to the assertion would disable this reconciliation exactly when it matters — when the caller chose the wrong base — and would trade a restack the caller could act on for an implementation built without its dependency.

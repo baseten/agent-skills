@@ -47,11 +47,11 @@ If core returns `BLOCKED`, `FAILED`, or `NEEDS_USER`, surface that result. If a 
 
 Never retried is not the same as never resolved. There is no orchestrator here to re-derive a frontier, so this skill owns the classification itself, or a stale prose edge blocks the issue permanently with no route forward:
 
-- **a blocker named only in prose, whose referenced work exists nowhere** — establish whether the relationship still holds before treating it as final. Prose survives edits that remove a dependency from native metadata, so text naming a blocker that has no implementation anywhere is as likely to be a dependency someone deleted as one nobody built;
+- **any blocker named only in prose** — establish whether the relationship still holds before acting on it, whatever state the referenced work is in. Prose survives edits that remove a dependency from native metadata, so a prose-only blocker is as likely to be a dependency someone deleted as one nobody built — and that is just as true when the referenced issue happens to have an open PR or an out-of-base merge. Gating this on "the work exists nowhere" would restack onto a dependency that is no longer real;
 - **it still holds** — `BLOCKED` stands; report the blocker and stop;
 - **it does not, or cannot be settled from the issues themselves** — `NEEDS_USER` with both readings and a recommendation, not a bare block. The user can retire a stale edge in seconds; they cannot act on a `BLOCKED` that does not say which reading it assumed.
 
-Where the blocker's work exists but is not reachable — an open PR, or a merge outside this base — pass on the PR or base the worker named. That is a restack or a base correction, and either is actionable without touching the dependency graph at all.
+Where the blocker's work exists but is not available — an open PR, a merge outside this base, or a non-ancestry prerequisite still incomplete — pass on what the worker named. A restack or base correction is actionable without touching the dependency graph at all. But classify first where the blocker came only from prose: restacking onto a dependency that is no longer real costs more than leaving the issue blocked, because the resulting base becomes the justification for the next one.
 
 If core returns `PR_OPEN`, record:
 
