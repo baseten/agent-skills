@@ -17,16 +17,39 @@ Use structured issue metadata plus issue text to verify that the declared graph 
 
 Checks:
 
-1. enumerate the bounded issue set from the supplied manifest/root/explicit issue set;
-2. read native parent/sub-issue hierarchy where the tracker supports it;
-3. read native `blocked by` / `blocking` dependency relationships where supported;
-4. scan issue bodies/comments for textual dependency phrases and linked issue URLs, including `blocked by`, `depends on`, `after`, `requires`, `prerequisite`, `must land first`, and equivalent wording;
-5. compare structured dependencies against text-described dependencies;
-6. detect cycles, missing issue targets, contradictory ordering, closed/cancelled prerequisite inconsistencies, orphaned children, duplicates, and links outside the authorized scope;
-7. distinguish an external prerequisite from an authorized implementation issue;
-8. report whether the graph is safe to execute without guessing.
+1. enumerate the bounded issue set from the supplied manifest/root/explicit issue set — noting that for a root/parent invocation this enumeration *is* a hierarchy read, so it is subject to check 2 rather than exempt from it;
+2. **establish that the transport can see the relationships you are about to read**, including the ones enumeration just consumed — see Transport visibility below. This gates the whole check, not just the mismatch case, and the enumerated scope is not permitted to define its own boundary list;
+3. read native parent/sub-issue hierarchy where the tracker supports it;
+4. read native `blocked by` / `blocking` dependency relationships where supported;
+5. scan issue bodies/comments for textual dependency phrases and linked issue URLs, including `blocked by`, `depends on`, `after`, `requires`, `prerequisite`, `must land first`, and equivalent wording;
+6. compare structured dependencies against text-described dependencies;
+7. detect cycles, missing issue targets, contradictory ordering, closed/cancelled prerequisite inconsistencies, orphaned children, duplicates, and links outside the authorized scope;
+8. distinguish an external prerequisite from an authorized implementation issue;
+9. report whether the graph is safe to execute without guessing.
 
 Structured dependency metadata is authoritative when present, but textual descriptions remain a secondary consistency signal. A textual blocker absent from structured metadata should be flagged as a likely missing dependency rather than silently ignored.
+
+### Transport visibility
+
+A scoped or relayed credential can return a partial relationship set without error — the entries it cannot reach are absent rather than refused — so an edge that exists but is invisible looks identical to one that was never created. Establish that the transport can see the relationships in scope **before consuming them**, against **a case whose answer is already known** — an edge the caller confirmed, or one this run just wrote. Only a known-true case can establish the proof, because its answer does not depend on any transport being trustworthy.
+
+A second read is not a substitute, whatever distinguishes it. A read behind the same credential reproduces the same blind spot and returns looking like confirmation, which is worse than reading once; two different transports do exactly that when they authenticate the same way (`gh` and raw HTTP on one `GITHUB_TOKEN`); and two different credentials can still share insufficient scopes, a repository boundary, or a relationship transport. Each of those is a proxy for independent visibility and each can coincide with a shared blind spot, so a second read corroborates at best and never proves. Where no known-true case is available, the boundary is unproven — say so rather than promoting agreement into a proof. Cover **every** boundary the graph crosses, not one of them. A control inside a repository proves that repository only, and for a graph spanning A, B and C a visible A→B edge says nothing about C — so a single cross-repository control is enough to make a credential that cannot reach C look proven, while A→C and B→C vanish. One control per boundary in scope.
+
+Bind each proof to the credential that produced it — a non-secret identity such as the authenticated account and its scopes, never the credential itself — and revalidate after a restart and on reauthentication, since a rotated or narrowed credential makes a stale proof read as applicable. An authorization error invalidates **every proof bound to that credential, across every transport using it** — not only the failed call, and not only the transport it arrived on. Grants narrow server-side, so a failure through one transport condemns the cached proofs of every other transport sharing the token, even though none of them has failed yet.
+
+**Enumeration is itself a relationship read.** For a parent/root invocation, check 1 discovers the bounded set *through* native hierarchy — so a credential that hides children in one repository yields a truncated scope, and every later step inherits it. The boundary list then comes from the same truncated data, so the missing repository is never tested, never reported, and the result can still be `PASS`. A scope derived from a possibly-partial read cannot bound its own validation.
+
+So the boundary list must not come only from enumerated data. Establish it from something independent: the issue set the caller supplied, the root/manifest's own prose listing of its children — a legitimate mirror for exactly this reason, since text survives transports that redact structured relationships — or a second enumeration compared against the first. A differing count is the finding; a matching count is not a check, from the same credential or a different one, since two reads sharing a blind spot agree about exactly what neither can see. Where the scope can only be derived from one unproven transport, that is itself the finding: report it and do not return `PASS`.
+
+Do this before reading, not only when something looks wrong. A hidden edge with no prose mirror produces no mismatch to investigate, so a check that validates visibility only on disagreement will omit that edge from the normalized DAG and return `PASS` — the most damaging possible output, because `PASS` is what the caller dispatches against.
+
+So: **an unproven boundary involving dispatchable scope is a `FAIL`**, not a warning. `PASS_WITH_WARNINGS` is for warnings whose safety a reader can weigh, and this one cannot be weighed by construction — judging whether a hidden edge would change execution order requires seeing the edge. Returning it as a warning asks the caller to assess something neither of you can observe, and the caller's own policy then reads an unassessable warning as proceedable.
+
+`PASS_WITH_WARNINGS` remains available only where the unproven boundary touches nothing dispatchable — external prerequisites read for readiness, or issues outside the authorized set. Either way, name the transport, the credential identity, and every boundary left unproven, and report the shortfall as `not visible via <transport>`, never as a missing dependency.
+
+This is also why prose dependencies are a legitimate **mirror** rather than redundant noise. They live in issue text, so they survive transports that redact structured relationships, and a textual blocker with no visible structured edge is as likely to be evidence of a blind spot as of a missing link. Structured edges stay authoritative wherever both are visible; a mismatch is a finding to report, never a licence to trust one side by default.
+
+Cross-repository edges deserve the most scepticism on both counts: they are the likeliest to be redacted by scoping, and their loss changes execution order the most.
 
 ### Deep mode
 
@@ -58,7 +81,7 @@ Do not invent dependencies merely because two issues touch related areas. Give a
 
 Prefer first-class GitHub sub-issue hierarchy and issue dependency metadata (`blocked by` / `blocking`) when exposed by the available GitHub interface. GitHub supports native issue dependencies and hierarchy; use these instead of relying only on Markdown references.
 
-If the current MCP/tool surface does not expose those relationship fields directly, use authenticated `gh`/GitHub API when available; otherwise inspect issue relationship information available through the environment and explicitly report any metadata that could not be read.
+If the current MCP/tool surface does not expose those relationship fields directly, use authenticated `gh`/GitHub API when available; otherwise inspect issue relationship information available through the environment and explicitly report any metadata that could not be read. Prefer a first-class tool over a CLI and a CLI over raw HTTP, and treat a relationship set read over raw HTTP as provisional until its visibility is proven — dependency fields are exactly the data a scoped credential returns in part.
 
 Still parse issue descriptions/comments for textual blockers and compare them against structured metadata.
 
@@ -95,7 +118,7 @@ Suggested dependency changes (deep mode only):
 
 Also return a normalized DAG using canonical full issue URLs as node identities.
 
-`FAIL` means the orchestrator must not dispatch affected work until corrected. `PASS_WITH_WARNINGS` may proceed if warnings do not make execution order unsafe.
+`FAIL` means the orchestrator must not dispatch affected work until corrected. `PASS_WITH_WARNINGS` may proceed if warnings do not make execution order unsafe — which is why unproven relationship visibility over dispatchable scope is never one of those warnings: its safety is exactly what cannot be established. It is a `FAIL`.
 
 ## Mutation
 

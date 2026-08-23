@@ -16,7 +16,8 @@ Accept:
 - dedicated working directory/worktree;
 - issue branch;
 - exact required base branch;
-- optional upstream dependency context;
+- optional upstream dependency context, and whether the caller marks it as its **complete** dependency set or a targeted answer — the two are read differently, and unmarked means targeted. Also the **provenance** of each edge in it: produced by the caller's own native read, or recorded outside native metadata from an earlier finding;
+- optional authorization membership — the run's bounded authorized set, or a per-blocker flag saying whether each is inside it;
 - implementation-attempt budget;
 - draft/full PR preference when supplied.
 
@@ -35,9 +36,82 @@ The full issue URL is canonical identity. Never replace it with a short issue ke
 
 Read the issue title/body, relevant comments, tracker-native parent/dependency metadata, repository `CLAUDE.md`/`AGENTS.md`, relevant specs/docs, and existing implementation patterns.
 
-Return `BLOCKED`/`NEEDS_USER` rather than guessing when scope is materially underspecified, required external work is absent, the supplied base is invalid, or a destructive/product decision needs approval.
+Return `BLOCKED`/`NEEDS_USER` rather than guessing when scope is materially underspecified, the supplied base is invalid, or a destructive/product decision needs approval — and `BLOCKED_EXTERNAL` where the absent work is an external prerequisite outside the authorized set, per step 2.
 
-## 2. Prepare durable branch state
+## 2. Dependency precondition
+
+Establish what this issue is blocked by, and whether that work exists, before preparing branch state. One level deep — this issue's own blockers. Transitive graph work belongs to `validate-backlog` and the orchestrator.
+
+Do this even when a caller judged the issue READY. That judgement was computed from a dependency read that can be wrong in a way it cannot detect, and this is the cheapest place in the system to notice.
+
+### Take the union of three sources
+
+- dependencies named in prose — the issue body **and its relevant comments**: `Depends on:`, `Blocked by:`, a `Dependencies` section, build-order wording. Comments matter as much as the body, since a blocker discovered after filing is usually added as a comment rather than an edit, and step 1 has already read them;
+- tracker-native dependency metadata;
+- dependency context the caller supplied.
+
+Never rely on one alone, because they fail in different directions. Prose goes stale the moment someone edits a ticket without updating it. Native metadata can be truncated by a scoped or relayed credential, which returns a partial list with a success status and no warning — and **a partial list is more dangerous than an empty one**, because it presents as a complete answer. One blocker returned where four exist reads as "nearly ready" and suppresses exactly the doubt that would have sent you looking elsewhere. Individually each source has a failure mode that resembles success; together they are hard to fool.
+
+### Resolve each blocker's real state
+
+Read each referenced issue directly. A plain issue read works across repositories even where dependency-endpoint reads do not, so a cross-repository blocker stays checkable when the edge that should have declared it is invisible.
+
+### Gate on availability of the work, not on issue state
+
+An open blocker does not mean the work is unavailable. A stacked child is dispatched precisely while its parent is implemented but unmerged — that is the normal case, not an error. Gating on "the blocker is still open" would refuse nearly every stacked child and be worse than no gate at all.
+
+**What counts as available depends on the kind of dependency.** Git reachability is the right test only for an edge whose code this issue builds on. An execution-only ordering, a cross-repository scheduler dependency, or an external prerequisite is *never* reachable from this checkout — not even when it is entirely finished — so testing those by reachability would block every one of them and misreport a completed cross-repo dependency as a wrong base. Use the classes the orchestrator already defines (hard same-repo code dependency, execution dependency only, shared-parent fanout, cross-repo scheduler dependency, external prerequisite), inferring the class from the issues where the caller did not supply it.
+
+| dependency class | availability evidence |
+|---|---|
+| hard same-repo code dependency | its implementation is reachable from this checkout's base |
+| shared-parent fanout, **where the parent contributes code that this issue's base is cut from** | reachable from this base, exactly as a code dependency — the parent being unmerged is the normal state for a stacked child, and waiting for it to merge would defeat the parallel dispatch the topology exists for |
+| shared-parent fanout with a coordination-only parent, execution-only, cross-repo, external prerequisite | its own completion state — merged, released, deployed, or the issue closed as done — independent of this checkout's ancestry |
+
+The split inside shared-parent fanout is the point: what decides the measure is whether the dependency's code is in your base, not what the edge is called. A parent that carries code your base was cut from is a code dependency by any useful definition; a parent that only groups tickets is not a code dependency at all.
+
+Some of those measures are not observable from an issue and a repository. A merge or a closed issue is; a deployment usually is not, and a release only where the repository carries the tag. Where the measure a class needs is beyond what you can see, caller-supplied context is the authority — a caller asserting the prerequisite is satisfied is claiming something it can verify and you cannot.
+
+Absent that, the answer is neither available nor unavailable, and that third state gets its own outcome: **`NEEDS_USER`** — subject to the precedence below, since an in-scope blocker found elsewhere on the same issue outranks it — naming the blocker, the measure, and why it is out of reach. Not `BLOCKED`, because treating an unobservable measure as unmet blocks finished work and invites a caller to go looking for a dependency gap that may not exist. Not proceeding, because treating it as met is the failure this whole gate exists to prevent. A person can check a deploy dashboard in seconds; the value here is asking them rather than guessing in either direction.
+
+Answer by observation, not by claim, and the answer has three values rather than two. Available — proceed. Not determinable — `NEEDS_USER`, per the observability rule below. Not available — return `BLOCKED`, or `BLOCKED_EXTERNAL` per the rule below that, and what you found determines what to report, which is the useful part:
+
+| why it is not available | report |
+|---|---|
+| code dependency: an open, unmerged PR implements it | name that PR — the work exists and is not available *here*, so this is a restack the caller can act on, not a dead end |
+| code dependency: merged, but that merge is not reachable from the supplied base — it landed on another branch, or this base is obsolete | name the merge and the base — the caller calculated the wrong base, which is a different repair from a missing dependency |
+| non-ancestry dependency: not yet complete by its own measure | name the blocker and the state it is actually in — waiting on a release or a deploy is not a base problem and no restack fixes it |
+| no implementation anywhere: nothing merged, no open PR, nothing in the base | name each unmet blocker by canonical full URL — a real dependency gap |
+
+Return `BLOCKED_EXTERNAL` rather than `BLOCKED` **only when every unmet blocker sits outside the authorized set** — whatever its class. Membership decides the outcome; class decides only the availability measure, and conflating the two leaves a same-repo code dependency pointing at an unauthorized issue with no outcome at all. A worker that recovers an omitted edge aiming outside the bounded set hits exactly that case. The caller routes the two differently and only one of them means its readiness computation was wrong: waiting on work nobody in this run was authorized to do is a known state, not a graph error, and reporting it as one sends the caller off re-deriving a frontier that was correct.
+
+"Outside the authorized set" is a fact about the caller's run, not about the issue, so it is only observable if the caller said so. Where authorization membership was supplied, use it. Where it was not — a standalone invocation has no bounded set — **default to `BLOCKED`**: an external-looking prerequisite the root did in fact authorize would otherwise be reported as an out-of-scope wait, and the caller would skip the frontier re-derivation an in-scope blocker requires. Never infer non-membership from the blocker living in another repository or another team's tracker; that is what "external" looks like from here whether or not it is in scope.
+
+**Mixed blockers take the stronger outcome**, across all three block-ish outcomes rather than only the two external ones. One outcome cannot describe several states, so rank them by what the caller loses if that outcome is the one it sees:
+
+1. **any unmet in-scope blocker → `BLOCKED`.** A graph correction is the only response that another outcome would suppress: the caller reads `NEEDS_USER` and `BLOCKED_EXTERNAL` as *not* graph errors and may skip re-deriving its frontier, so choosing either would lose the correction entirely;
+2. **otherwise any unverifiable prerequisite → `NEEDS_USER`.** A question a person answers in seconds, which nothing else in the report will prompt;
+3. **otherwise, every unmet blocker external → `BLOCKED_EXTERNAL`.** A known wait.
+
+Report all of them regardless of which outcome won. The ranking exists because a single value cannot carry three states, not because the others stopped mattering — an unverifiable prerequisite reported under a `BLOCKED` still needs its question asked. The reverse precedence would let a single external prerequisite mask an in-scope dependency the caller's graph got wrong — the caller would skip the frontier re-derivation, and its siblings would stay scheduled against a graph already known to be incomplete. Choose the outcome that demands the most of the caller; the per-blocker detail carries the rest.
+
+Externality changes what the block *means*, not whether a source disagreement is worth reporting. A prerequisite some source named that the native read did not return is still evidence about the transport, external or not — report the disagreement either way.
+
+**Observation beats assertion — where you observed the right thing.** Caller-supplied dependency context settles only what you cannot check, so where it asserts a blocker is satisfied and **the availability measure for that dependency's class** says otherwise, the observation wins and the disagreement is reported. Deferring to the assertion would disable this reconciliation exactly when it matters — when the caller chose the wrong base — and would trade a restack the caller could act on for an implementation built without its dependency.
+
+The class qualifier is load-bearing, not a hedge. Overriding a satisfied assertion because a dependency is not Git-reachable, when that dependency is execution-only, cross-repository or external, blocks a prerequisite that is complete — reachability was never its measure. Unreachability is only contrary evidence for a code dependency.
+
+**The inverse does not flip.** Where the caller asserts a blocker is *unmet* and you observe the work is available, the caller's assertion stands: block, and report the disagreement. That is not inconsistent with the rule above, because the two observations are about different things. Unavailability is a fact that refutes "satisfied". Availability is a fact about presence, and "unmet" may be a claim about soundness — a merge pending revert, a known-bad implementation, a semantic incompatibility the worker cannot see from the code being there. Presence does not refute it. The cost asymmetry agrees: a needless block costs a cycle, while building against something the caller knows is unsound costs a wrong PR and everything stacked on it.
+
+Never implement against a contract that does not exist yet in order to keep a worker busy. The behavioural catch in step 1 — blocking when required work is absent — only fires when the absence breaks the code. A UI ticket whose backend is missing will render against the parts that do exist, stub the rest, pass its mocked tests, and produce a PR that looks complete and is not.
+
+### Report what you found
+
+A dependency named in prose that native metadata did not return is a finding, not a discrepancy to reconcile silently. It means either a missing native edge or a transport that cannot see the one that exists. Surface it either way: this worker is already reading both sources for one issue, which makes it the cheapest detector in the system for a blind spot the orchestrator cannot see from above.
+
+Where the caller supplied its own dependency context, reconcile it against what you found and report any disagreement. The caller's view being wrong is the information worth returning.
+
+## 3. Prepare durable branch state
 
 Before substantial implementation:
 
@@ -48,7 +122,7 @@ Before substantial implementation:
 
 Follow repository branch naming conventions. Prefer a branch name containing the tracker issue key/number when repo conventions allow because this improves recovery, but never violate documented repo naming rules merely to do so.
 
-## 3. Implement with remote checkpoints
+## 4. Implement with remote checkpoints
 
 Implement only the issue scope and run required local checks.
 
@@ -79,11 +153,11 @@ Under an orchestrator, expect the parent to inspect this worktree for uncommitte
 
 If an implementation retry is allowed, use only the caller's remaining budget. Return reasoning-heavy repeated failure to the caller rather than escalating models autonomously.
 
-## 4. Final local verification
+## 5. Final local verification
 
 Commit and push the implementation first, then run the repository-required typecheck/lint/format/tests. Fix in-scope failures within the implementation budget, committing each fix as it lands rather than accumulating them. Push the resulting final implementation commit/checkpoint.
 
-## 5. Create and verify PR
+## 6. Create and verify PR
 
 Invoke `create-pr` with:
 
@@ -111,12 +185,26 @@ Return structured state:
 - tracker;
 - repository;
 - working directory;
-- outcome: `PR_OPEN` | `BLOCKED` | `FAILED` | `NEEDS_USER`;
+- outcome: `PR_OPEN` | `BLOCKED` | `BLOCKED_EXTERNAL` | `FAILED` | `NEEDS_USER`;
 - branch;
 - base branch;
 - PR URL/number;
 - remote head SHA;
 - issue linkage verified: yes/no;
+- the transport tier used for relationship reads and a **non-secret identity of the credential behind it** — the authenticated account and its scopes, never the credential itself. A caller comparing this against its own identity is what turns a caller/native mismatch into a cross-credential demonstration rather than a coincidence, and it cannot make that comparison if you do not say;
+- dependencies checked: for each, the canonical full URL, which of the three sources named it, **the class you judged it under**, and how it resolved by that class's measure — for a code dependency: reachable from base / open PR not in base, with that PR's URL / merged but not reachable, with the merge and base; for a non-ancestry dependency: complete by its own measure / incomplete, with the state it is in / **unverifiable, naming the measure that was out of reach**; or unmet entirely — plus any caller assertion the observation contradicted. Naming the class matters because it tells the caller which measure was applied, and therefore whether a block is a base problem, a wait, or a real gap;
+- source disagreements, reported as **two distinct kinds** because they mean different things and warrant different responses:
+  - **visibility** — a source disagrees with another about **which edges exist**. Report the edge with the sources that had it and the sources that lacked it, since that pairing says whose read was short. But **only a source that claims to be exhaustive can contribute an absence**, and that asymmetry decides what counts:
+    - **native metadata** claims exhaustiveness — it is the structured edge set — so an edge missing from it is a real signal;
+    - **caller context** contributes an absence only for the edges its own native read produced. An edge marked as recorded outside native metadata — a blocker an earlier worker established, which the caller kept out of native by design — is one your native read is *supposed* to lack, so its absence is not a disagreement about anything. And caller context claims exhaustiveness at all **only when the caller marks it as its complete READY dependency set.** Marked, an edge missing from it says the caller's own view was short. Unmarked — and it is optional, and is also how a user answers one previously unverifiable prerequisite — it is a targeted answer, so it contributes edges and availability assertions and never an absence. Treating an unmarked answer as exhaustive would report every unrelated native dependency as a visibility disagreement and tell the user their view was partial when they had simply answered a narrow question;
+    - **prose** claims nothing. It mentions edges; it never purports to list them all. A blocker in native metadata that nobody wrote into the description is the ordinary case, not a finding.
+
+    So: prose has it and native lacks it is a disagreement, because prose can only *add* information. Native has it and prose lacks it is **not** — treating that as one would fire on nearly every issue and stop the run for a structured-only dependency, which is exactly what structured metadata is for.
+
+    The rule behind all three: **a source's properties are declared, not inferred, and an undeclared property is assumed absent.** Exhaustiveness is the case here; independence and contemporaneity are the same kind of claim. Assuming any of them is how a check that exists to catch a silent partial view starts inventing them;
+  - **availability** — a mismatch against the caller's supplied dependency context, **in either direction**, naming which way it went: it asserted a blocker satisfied and observation disagreed, or it asserted one unmet and observation found the work available. Evidence that the caller's base or completion claim no longer holds, and nothing at all about what the transport can see. Say "no longer holds" rather than "was wrong": the claim may have been true when made and overtaken since — a revert landed, a branch was force-pushed, a release was rolled back. The caller cannot tell those apart from its own error, so report what you observed and when, and leave the diagnosis to the side that knows what it claimed and why. Direction matters because the resolutions differ — the first says the caller's base needs fixing, the second says its constraint may be obsolete — and a caller that cannot tell which way the mismatch went cannot act on either.
+
+  Report both even on a successful run, since each is evidence about something beyond this issue. Do not collapse them into one label: a caller that cannot tell them apart must treat a stale base as a possible transport failure, which is a far more expensive response than the situation needs;
 - draft state as created, exactly as `create-pr` reported it;
 - checkpoints pushed: count/SHAs when useful;
 - checks run;

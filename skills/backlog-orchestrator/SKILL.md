@@ -77,7 +77,7 @@ Never ask the user to:
 Only these may interrupt the user mid-run:
 
 - a platform-owned approval prompt this skill does not control (workflow launch, permission mode, a tool the session must approve);
-- `NEEDS_USER` after budgets are exhausted;
+- `NEEDS_USER` after budgets are exhausted, or one that leaves no dispatchable work at all — the same shape as the `FAIL` case below. Every other `NEEDS_USER` is surfaced in the closing output instead of asked mid-run, including a dependency measure the run cannot observe and the summary's `DECISION`/`MERGE_RISK` escalations: those need a person eventually, not now, and the run still has work to do meanwhile;
 - a `FAIL` validation result leaving no safe independent path;
 - a genuine conflict with no documented default, where every available option loses work that cannot be recreated.
 
@@ -143,6 +143,44 @@ Also detect:
 
 Prefer native/runtime capabilities when they implement the required behavior safely, but retain tracker + GitHub remote state as recovery truth.
 
+## Transport precedence
+
+The detection above establishes what exists. This establishes which one to use. For every tracker/forge read and write, in order:
+
+1. a first-class MCP tool for that operation, where one exists;
+2. an authenticated CLI (`gh`, `linear`, equivalent) when running locally under the user's own credential;
+3. raw HTTP against the API, only where neither of the above exposes the operation at all.
+
+Raw HTTP is a last resort, not a default. Reaching for it must be a decision you record — which operation, and why no higher tier exposes it — not an accident of habit because `curl` is familiar and always available.
+
+Precedence lowers the odds of a partial view; it does not remove the need to check for one. A first-class tool or a CLI can run on a directly scoped credential and under-report just as quietly as a relayed one — the hazard is the **scope of the credential**, not the shape of the transport. So treat every relationship read as **provisional until validated below, whichever tier produced it**, and spend the extra scepticism on raw HTTP rather than reserving it for raw HTTP.
+
+## Proving a transport can see the graph
+
+Before a run depends on **relationship data** — dependency edges, hierarchy, cross-repository links, anything a server can legitimately return in part — prove the chosen transport can see it, using a case whose answer is already known: an edge this run just wrote, or one the user confirmed.
+
+A relayed, proxied, scoped, or short-lived credential can return a truthful-looking partial result. The server answers correctly for the credential it was actually given, and entries outside that credential's reach are simply absent: 200, no error, no warning, fewer rows. A credential scoped per repository returns a single repository's worth of a graph that spans several, and nothing in the response says so. This is not specific to any tracker, forge, or hosting arrangement — it follows from scoping a credential, so assume any transport can do it.
+
+**Independence is a property of the credential, not of the transport.** A second endpoint behind the same credential reproduces the same blind spot and reads as confirmation, which is worse than a single read because it manufactures confidence — and two *different* transports do this too whenever they authenticate the same way. `gh` and raw HTTP both reading `GITHUB_TOKEN` are one observation wearing two coats, and the precedence list above makes that the common case rather than the exotic one.
+
+So corroborate in this order:
+
+1. **a known-true case** — an edge this run just wrote, or one the user confirmed. Strongest, because its answer does not depend on any transport being trustworthy;
+2. **a second read** — corroborating at best, never proving. A different identity or token source is worth having, but two credentials can share insufficient scopes, a repository boundary, or a relationship transport, and every distinguishing feature offered so far has turned out able to coincide with a shared blind spot. Agreement between two reads narrows nothing on its own;
+3. **no known-true case available** — that is the finding. Report the boundary as unproven rather than promoting agreement into a proof.
+
+**Enumerating the bounded scope is itself one of these reads.** A manifest or parent issue is expanded through native hierarchy, so a credential that hides children in one repository produces a truncated scope — and the boundary list derived from that scope omits the very repository that was hidden, so nothing ever tests it. A scope obtained from a possibly-partial read cannot bound its own validation. Draw the boundary list from something independent of the enumeration: the issue set the user supplied, the manifest's own prose listing of its children, or a second enumeration. Note the asymmetry, because it is what makes a second enumeration worth running at all: **a differing count is the finding, and a matching count proves nothing** unless one of the two enumerations had proven visibility. Two reads that share a blind spot agree precisely about what they cannot see.
+
+**The control must match the shape of what the run consumes.** A credential scoped per repository reads a known edge inside one repository perfectly well while omitting every relationship that touches another — so a control drawn from a single repository proves visibility for that repository and nothing else. Cover each scope boundary the graph actually crosses, and where the graph spans repositories, at least one control must itself be a cross-repository edge. One passing control on the easy case is how a scoped credential looks validated.
+
+Record validation per **credential, transport and boundary**, not per transport alone. "MCP works" is not a finding; "MCP, as this account, resolves edges from A into B" is. The credential is the part that decides what was visible, so it is the part a later read has to match.
+
+**A cached proof is only as good as the credential it was made with.** Transport, class and boundary do not identify a credential, so the same tuple can later be backed by a narrower one — a short-lived token rotates, a transport reauthenticates mid-run, or a fresh session starts with different grants — and the stale proof reads as applicable. Store a non-secret identity of the credential alongside the proof (the authenticated account and its scopes, an expiry, a fingerprint — never the credential itself), and revalidate whenever that identity changes, whenever a transport reauthenticates, and always after a restart. Treat any authorization error mid-run as invalidating every proof bound to that **credential**, across every transport that uses it — not just the failed call, and not just the transport it arrived on. Grants narrow server-side, so a `gh` call returning 403 says nothing about `gh` and everything about the token; cached raw-HTTP proofs on the same token are equally stale even though nothing has failed there yet. A narrowing is exactly what a silent partial view looks like from one call away.
+
+The conclusion rule: **absence observed through an unvalidated transport is not evidence of absence.** Report it as "not visible via `<transport>`", never as "does not exist". A dependency edge that is invisible rather than missing produces a wrong DAG, dispatches work whose prerequisites are unbuilt, and reads as a clean validation the whole way — the graph is the thing the run schedules against, so a false absence there is not a cosmetic error.
+
+Record which transport was validated for which class of relationship read and across which boundaries, so a later read in the same run, or a restart, does not silently fall back to an unvalidated one.
+
 # Tracker abstraction
 
 Determine tracker from each canonical issue URL.
@@ -207,11 +245,15 @@ Before dispatching any **new** implementation worker, invoke `validate-backlog s
 
 Use the validator's normalized DAG as the scheduling graph. Do not let the execution runtime independently invent a competing decomposition.
 
+That prohibition is about re-planning, not about evidence. A worker reporting a blocker it verified against its own issue is not inventing a decomposition — it is correcting one, from a position the validator did not have (see Outcomes). Accept an edge a worker verified; reject a runtime's attempt to reorder or re-scope the backlog.
+
 Results:
 
 - `PASS` -> proceed;
 - `PASS_WITH_WARNINGS` -> proceed only where warnings do not make ordering unsafe;
 - `FAIL` -> stop affected paths; continue only validator-confirmed independent safe branches.
+
+One warning is never proceedable at any level: **unproven relationship visibility over dispatchable scope.** A current validator returns that as `FAIL`, but treat it as blocking wherever it arrives, including from an older validator or another tool. Every other warning can be weighed because you can see what it is about; this one asks you to weigh what you cannot see, so "it probably does not affect ordering" is not a judgement available to you.
 
 Verify empirically any baseline a ticket tells workers to diff against — "~40 pre-existing type errors", "these tests already fail" — before it goes into a dispatch prompt. Tickets go stale, and a wrong baseline is worse than none: genuinely new failures hide inside an imaginary one.
 
@@ -291,7 +333,11 @@ A cloud worktree is ephemeral. Never claim restart safety for unpushed local cha
 A Dynamic Workflow interrupted by session exit restarts fresh next session rather than resuming — it has no cross-session persistence of its own. Restart recovery therefore always comes from tracker + GitHub remote state, never from workflow-runtime state:
 
 1. re-expand the exact same bounded manifest/scope;
-2. rerun `validate-backlog shallow`;
+2. rerun `validate-backlog shallow`, then reconcile its DAG against blockers a previous run's workers recorded on the issues themselves. What an edge's **absence** from that DAG means is not one thing — it depends on the boundary's proof state and on the edge's provenance, and this step is the main caller of the retirement rule under Outcomes. The validator run you just made supplies that proof state, so read it from there rather than carrying one over: either passing result means every boundary over dispatchable scope was proven, since an unproven dispatchable boundary is a `FAIL` by its contract and never arrives quietly, and the boundaries left unproven are named. Then:
+
+   - **visibility unproven for that boundary** — the validator reads through a transport that may truncate identically to last time, so re-adopt the edge rather than rediscovering it by dispatching into it again;
+   - **proven, and the edge is native by now** — a later run may have made it native via `normalize-github-dependencies`. A proven read that no longer returns it is the retirement case: retire it, dated, rather than re-adopting a dependency someone deliberately removed;
+   - **proven, and the edge lives only in the persisted comment record** — absence still proves nothing, because native metadata was never supposed to show it. Re-adopt, then classify it here: **this step is the run adoption** the retirement rule anchors to, and skipping it is precisely how a retired dependency becomes permanent;
 3. order by normalized DAG + explicit build order;
 4. fetch current tracker statuses, PRs, and remote branches;
 5. skip every proven `DONE` issue;
@@ -376,7 +422,9 @@ Before dispatch:
 4. resolve shared-resource access details (see Shared environment, below);
 5. record canonical issue URL -> tracker -> repo -> worktree -> branch -> base -> worker;
 6. compose the dispatch prompt so it carries every default the worker skills already own;
-7. dispatch Sonnet worker with `implement-issue-core`.
+7. include **the dependency context used to judge this issue READY** — the blockers considered, how each was resolved, which transport and credential produced that view, and **the provenance of each edge**: your own native read, or a blocker a previous worker established that you recorded outside native metadata. The worker compares its native read against yours, and an edge you deliberately kept out of native metadata is one its native read is supposed to lack; unmarked, that comes back as a visibility disagreement against the very corrections you recorded. **Mark the context as your complete READY dependency set**, because it is: unmarked context is treated as a targeted answer whose omissions mean nothing, so an edge you never saw would come back unreported and your frontier would stay wrong;
+8. include **authorization membership**: the bounded authorized set, or a per-blocker flag for whether each is inside it. Only you know this, and the worker's block outcome turns on it — without it, an external-looking prerequisite you did authorize comes back as an out-of-scope wait and you skip the frontier re-derivation it needed. A worker given nothing defaults to the stronger outcome, which is safe but costs you the distinction;
+9. dispatch Sonnet worker with `implement-issue-core`.
 
 A dispatch prompt that enumerates a required process is followed literally: a default left out of that enumeration is a default skipped, and the worker will accurately report that the task never asked for it. Every dispatched prompt must therefore carry the automated review trigger instruction — `create-pr` owns the trigger rules, do not restate them here — unless this run explicitly defers review. Deferral is a conscious choice recorded in run state, naming what review is owed and on which PRs; it is never an omission.
 
@@ -533,7 +581,7 @@ The main parent thread must remain active while mutating workers run or active P
 
 Each cycle performs real work:
 
-1. consume worker completions (including a Dynamic Workflow's returned fan-out results, if one was used);
+1. consume worker completions (including a Dynamic Workflow's returned fan-out results, if one was used), extracting each one's dependency evidence — unmet blockers, source disagreements, **and the resolutions that confirmed your view** — regardless of its outcome;
 2. reconcile tracker + remote branches/PRs;
 3. consume/reconcile CI/review events;
 4. update heads/budgets;
@@ -659,8 +707,84 @@ Do not blindly restack every descendant after every upstream push. Instead:
 
 - `PR_OPEN` — implementation reached durable remote PR state; parent/runtime owns supervision.
 - `BLOCKED` / `BLOCKED_EXTERNAL` — stop affected path; never silently enlarge scope.
+- `BLOCKED_EXTERNAL` **on an unmet dependency** — a known wait, not a graph error, and by the worker's contract it means *every* unmet blocker was external. Work nobody in this run was authorized to do is not evidence that readiness was computed wrongly, so stop that path without re-deriving the frontier or invalidating a visibility proof over it. A worker that found any in-scope blocker alongside an external one returns `BLOCKED` instead, so this outcome never conceals one. A source disagreement reported alongside it is still transport evidence and still handled as such.
+- `BLOCKED` **on an unmet dependency** — authoritative new information about the graph, not a worker failure. It means the readiness computation was wrong, most often because the dependency read behind it was silently partial. Never redispatch the same issue unchanged; nothing about the second attempt would differ. Retry and escalation budgets do not apply, because there is no failure to retry.
+
+**Confirmations are evidence too.** A worker reports how every dependency it checked resolved, not only the ones that disagreed with you — and a resolution that matched your view is a verified edge where you previously had an assumed one. Record those against your graph — but record the right thing, because two claims are bundled in a resolution and they age differently:
+
+- **the edge exists** — structural, and long-lived. Persist it as verified, with the read it came from and when; it stops being an assumption. It does not stop being an observation: a dependency can be retired from the graph after a worker confirms it, and a verified edge with no way to retire blocks or orders work on it for every remaining run;
+- **the dependency was available** — an observation with a timestamp, and nothing more. A force-push, revert or rollback can undo it, as the availability-repair table below already acknowledges.
+
+So a verified availability resolution is historical evidence, never a standing exemption. Every dispatch re-checks the class-specific measure — the worker's dependency precondition runs regardless, and it would be a contradiction to build a record whose purpose was to let a caller skip it. What the record buys is a restart that knows which edges are verified and which are assumed, not a shortcut past the check.
+
+**How a verified edge retires.** By provenance, since provenance decides which read can speak to it:
+
+- **native-sourced** — a later native read with **proven visibility for that boundary** that no longer returns it retires it. An unproven read does not, on the asymmetry stated throughout: absence observed through an unvalidated transport is not evidence of absence. Nothing else is needed here, because your own reads recur;
+- **established by a worker and recorded as an issue comment** — no native read can retire it, since none was ever supposed to show it. Absence therefore proves nothing in this direction either, and the edge cannot simply stand forever on that technicality: from your own native view it is indistinguishable from a prose-only edge, so classify it on the same path — establish whether the relationship still holds, `NEEDS_USER` where the issues cannot settle it. Do that **when a run adopts it**, which is where the permanence would come from: a restart re-reads the comment and inherits the edge. Once per run is enough, and the answer holds for that run; classifying per dispatch attempt would re-ask the same question every cycle an issue stays legitimately blocked.
+
+**Provenance here is where the edge lives now, not where it came from.** An edge recorded as a comment and later made native by `normalize-github-dependencies` is native-sourced from then on, and takes the first row — which is the point of normalizing it, since a native edge is one your own reads can retire. Judging it by its origin instead leaves the edge in the row where absence proves nothing, and it becomes exactly the permanent edge this rule exists to prevent.
+
+An edge a worker found only in prose does not arrive here at all; it is classified first (see below), because persistence is what makes a stale edge permanent. Retirement does not retract what the worker observed — the observation stood when it was made. It records that the relationship no longer holds, dated the same way, so a later read finding the edge again is a change rather than a contradiction.
+
+This adopts findings, never a re-plan; the validated DAG remains the scheduling graph.
+
+**A worker returns two independent things: an outcome, and evidence about the graph.** Act on the evidence regardless of the outcome. A worker that found the prose naming a dependency native metadata did not return, and then proceeded because the work was present in its base, reports that disagreement on a `PR_OPEN` — and that report is the same evidence of a partial dependency view as a `BLOCKED` would have been. Treating only `BLOCKED` as a graph update leaves every sibling scheduled against the view already known to be wrong, choosing bases and dispatch order from it.
+
+**Only a visibility disagreement is transport evidence.** The worker reports two kinds and they warrant very different responses. An **availability** disagreement says your base or completion claim was stale. Two things pick the repair: the direction, and **the dependency class the worker reported** — it names the class precisely so you can route this, so read it rather than assuming a base problem.
+
+| direction | code dependency | non-ancestry dependency |
+|---|---|---|
+| you asserted satisfied, worker observed otherwise | your base no longer holds — recalculate and restack, and check whether it was wrong when calculated or overtaken since, because a revert or force-push that keeps happening is a different problem from one bad calculation | your completion claim no longer holds — recheck it, or keep waiting; ancestry is irrelevant and no restack fixes it |
+| you asserted unmet, worker found it available | your constraint may be obsolete — recheck rather than leaving the issue parked | same: recheck the constraint, do not park indefinitely |
+
+Neither direction, in either class, touches a visibility proof. Invalidating a proof and halting slot-filling for a stale base is an expensive answer to a cheap problem. Everything below applies to **visibility** disagreements, where some other source named an edge the worker's native read did not return.
+
+Two variants can be demonstrations rather than suspicions — but only on conditions you must check, not assume, and the first is that you are comparing like with like.
+
+**Compare native read against native read.** Your context is a union: edges from your own native read, plus blockers a previous worker established that the persistence rule above deliberately records as issue comments rather than native edges. A worker's native read is *supposed* to lack that second kind — you created them outside native metadata on purpose — so their absence demonstrates nothing. Mark the provenance of every edge you supply, and apply what follows only to edges your own native read produced. Without that, this rule fires on the graph corrections you yourself recorded, and each one invalidates a proof and halts dispatch.
+
+Then, for a native-sourced edge: where **you supplied** one the worker's native read lacks, or where **its native read has one your context omitted**, compare the credential identity behind your read against the one behind the worker's. You already record yours per credential; the worker reports the transport and identity it used.
+
+**Distinct identities** — two credentials have disagreed about one graph, which is the cross-credential comparison the corroboration rules ask you to arrange, arriving unasked. It is proof only once you rule out the other explanation: the two reads were taken at different moments, so an edge added or removed in between makes both credentials correct and neither view partial. Rule that out first — re-read the relationship through both identities, or check the edge's own history — and then invalidate. Skipping that step spends a valid proof and halts every dispatch sharing the boundary on what may be an ordinary edit.
+
+Independence and contemporaneity are separate conditions, and a mismatch is proof only with both. Having fixed "different transport" into "different credential" earlier in this design, the same correction applies again along the time axis: two reads that differ may differ because the graph changed.
+
+**The same identity** — and a subagent worker inheriting this session's credential is the common case, not the exception — this proves nothing on its own. One credential cannot corroborate itself, which is the rule this skill states about transports and applies no less to two reads at different moments: the mismatch may be an edge that changed between the reads, or caller context that went stale. Take the ordinary corroboration path and treat it as evidence.
+
+The direction says whose view was partial, and therefore what to fix. Yours missing an edge the worker saw means **your** frontier was computed short — recheck it for every issue that shared that read, not only this one. The worker missing an edge you had means its transport is the partial one, and the recovery below applies as written.
+
+**A visibility disagreement is first evidence about the transport, only second about one edge.** Adding the single dependency a worker happened to find and re-deriving against the same view leaves every other hidden edge hidden — the ones absent from both native metadata and prose are still invisible, and siblings still get dispatched from a frontier built on them. So read the disagreement against that boundary's visibility proof (see Proving a transport can see the graph), because the proof's state determines which of two very different things you are looking at:
+
+**Visibility unproven, or the proof invalidated** — treat this as truncation, not as one missing edge:
+
+1. adopt the named dependencies **provisionally** — real enough to schedule against, not yet established;
+2. invalidate the relationship-visibility proof for that credential, exactly as an authorization error would;
+3. **re-establish the proof** before filling further worker slots — a read with proven visibility for the boundary, established the way the proof is established: against a case whose answer is already known. Not merely another read through another credential; that is the proxy retired below, and it can share the blind spot you are trying to escape. The point is that you do not know what else is missing, and one recovered edge is not a reason to trust the rest;
+4. **re-evaluate every provisional edge against the read you just obtained.** If it proves the boundary and still shows no native edge, that edge has moved into the proven case below and needs its classification before it is kept — a stale prose edge adopted while visibility was unknown must not become permanent merely because it was adopted first. Provisional edges are not eligible for the persistence rule above until they survive this step;
+5. then re-derive readiness for every issue that shared that view, and re-check calculated bases for anything already dispatched against it.
+
+**Visibility proven for that boundary** — native metadata is trustworthy there, so prose naming an edge it does not show is more likely stale text than a hidden edge: a dependency deliberately removed from metadata and left behind in the description. Do not auto-adopt it. Classify it — verify whether the relationship still holds, not merely whether the referenced issue is implemented, which is all the worker checked — and surface it as `NEEDS_USER` where that cannot be settled from the issues themselves. Never persist an unclassified prose edge: persistence is what makes every future restart re-adopt it, so a stale edge written down once blocks the issue indefinitely.
+
+When classifying, use the preflight you already ran. `validate-backlog` emits a warning for exactly this shape — text names a blocker with no structured edge — so check whether it flagged this edge before dispatch. An edge flagged at preflight **and** reported by a worker is two observations from different actors — but be precise about what they corroborate, because they read the *same prose*. Their agreement about the prose is not independent and establishes nothing that was in doubt.
+
+What it does establish is on the other side: two native reads both lacked the edge. That rules out truncation only if at least one of those reads had **proven visibility for this boundary** — the proof this skill already defines. Distinct credential identities are not enough: two credentials can share the same insufficient scopes, the same repository boundary, or the same relationship transport, and then both omit the same real edge and their matching absence proves nothing. With a proven read among them, the expensive response is ruled out and the question narrows to a cheap one — the native edge was never created, or the prose is stale, both classification rather than transport. Without one, take the validated-read path as normal.
+
+Stop reaching for proxies here. Distinct transport, then distinct credential, then distinct moment were each offered as a stand-in for independent visibility and each failed, because a proxy can always coincide with the thing it is standing in for. The property the conclusion needs is visibility, proven; ask for that.
+
+That is the opposite of the reading it invites. Two actors agreeing does not make the prose edge more likely real; it makes a *partial view* less likely, which is a different and more useful conclusion. Correlating still costs nothing, since the warning is in hand.
+
+The reverse also holds: a preflight warning no worker ever confirmed stays outstanding. Do not let it expire quietly because the issue it concerned happened to complete.
+
+Either way, do the graph work **before** filling further worker slots.
+
+One worker's disagreement is the cheapest evidence available that the graph is wrong; discarding it because that worker happened to succeed wastes the only signal the system gets.
+
+**Persist it, or the next session repeats the mistake.** By invariant 1 conversation and run state are caches, so an edge a worker discovered lives only in this run unless it is written down — while restart re-expands the same manifest and reruns the same validator through the same transport that truncated in the first place. It would compute the identical wrong frontier and dispatch straight back into it. Record each **established** blocker — a truncation-case edge that survived re-evaluation against the validated read, or a classified prose edge confirmed to still hold — where the restart path already looks: a comment on the affected issue naming the blocker by canonical full URL and how it was verified, plus the checkpoint output. Persist nothing that is merely unclassified, for the reason above: writing it down is what makes every restart re-adopt it. Where dependency-write capability exists and the edge is high-confidence, `normalize-github-dependencies` is what makes it native — invoked explicitly, never as a side effect of this reconciliation.
 - `FAILED` — retry only inside budgets; at most one reasoning escalation.
 - `NEEDS_USER` — surface full issue/PR URLs, failure/review state, attempts consumed, and recommended action; stop spending tokens on that node while continuing safe independent branches.
+- `NEEDS_USER` **on an unverifiable prerequisite** — not a graph error and not a failure, and you can rely on that rather than re-checking: the worker's precedence returns `BLOCKED` whenever any in-scope blocker was also unmet, so this outcome carries none. the worker could not observe the completion measure that dependency's class requires, typically a release or deploy state outside the repository and tracker. Ask the specific question, and once answered supply it as dependency context on the redispatch — the caller asserting satisfaction is the documented path for a measure the worker cannot check. What asking buys is the **end of the uncertainty**, not the clearing of the blocker. Those come apart on a negative answer: told the release has not happened, the prerequisite becomes a known unmet blocker and the redispatch returns `BLOCKED` or `BLOCKED_EXTERNAL` by its authorization membership. Only an affirmative answer clears it.
+
+And even an affirmative answer clears only this blocker, not the issue: the precedence ranks an unverifiable prerequisite above an external wait, so this outcome can arrive with an out-of-scope blocker still unmet and reported alongside. Read the reported blockers before expecting a redispatch to proceed. Do not invalidate a visibility proof over it; nothing here says the transport is partial.
 
 # Merge behavior
 
@@ -765,5 +889,7 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - issue-linkage/tracker-status inconsistencies;
 - `NEEDS_USER` items;
 - external blockers;
+- dependency edges discovered by workers that the validated DAG did not contain, where each was recorded durably, and any dependency-source disagreement reported on an otherwise successful run;
+- which edges in the scheduling graph are **verified** by a worker's own check versus still **assumed** from the preflight read, and when each was verified. This is history, not an exemption: a restart still runs the proof-and-provenance reconciliation in step 2 of Restart / resume over every edge, verified ones included, because the label records what was true when it was written and a dependency can be retired afterwards. What it buys is knowing which edges were established by observation and which rest on one preflight read — where to be sceptical, and what not to rediscover by dispatching into it;
 - unstarted work and why;
 - whether invoking the same manifest can safely resume.
