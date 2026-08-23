@@ -591,7 +591,11 @@ Do not blindly restack every descendant after every upstream push. Instead:
 | you asserted satisfied, worker observed otherwise | your base is wrong — recalculate and restack | your completion claim is stale — recheck it, or keep waiting; ancestry is irrelevant and no restack fixes it |
 | you asserted unmet, worker found it available | your constraint may be obsolete — recheck rather than leaving the issue parked | same: recheck the constraint, do not park indefinitely |
 
-Neither direction, in either class, touches a visibility proof. Invalidating a proof and halting slot-filling for a stale base is an expensive answer to a cheap problem. Everything below applies to **visibility** disagreements, where the prose named an edge native metadata did not return.
+Neither direction, in either class, touches a visibility proof. Invalidating a proof and halting slot-filling for a stale base is an expensive answer to a cheap problem. Everything below applies to **visibility** disagreements, where some other source named an edge the worker's native read did not return.
+
+Two variants are demonstrations rather than suspicions, and the worker names which by reporting sources-had against sources-lacked. Where **you supplied** an edge the worker's native read lacks, or where **its native read has one your context omitted**, two credentials have disagreed about one graph — the cross-credential comparison the corroboration rules ask you to arrange, arriving unasked. Treat it as a proven partial view rather than evidence of one: invalidate immediately rather than spending a round establishing what you already hold.
+
+The direction says whose view was partial, and therefore what to fix. Yours missing an edge the worker saw means **your** frontier was computed short — recheck it for every issue that shared that read, not only this one. The worker missing an edge you had means its transport is the partial one, and the recovery below applies as written.
 
 **A visibility disagreement is first evidence about the transport, only second about one edge.** Adding the single dependency a worker happened to find and re-deriving against the same view leaves every other hidden edge hidden — the ones absent from both native metadata and prose are still invisible, and siblings still get dispatched from a frontier built on them. So read the disagreement against that boundary's visibility proof (see Proving a transport can see the graph), because the proof's state determines which of two very different things you are looking at:
 
