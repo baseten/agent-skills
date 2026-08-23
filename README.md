@@ -55,11 +55,17 @@ A Claude Code Dynamic Workflow is only used for the bounded implementation fan-o
 Preferred runtime order for the implementation fan-out:
 
 1. Claude Code Dynamic Workflows, when the user opted in for this invocation;
-2. native/background Claude sessions or agent-team primitives (agent teams are experimental/opt-in);
+2. remote Claude Code worker sessions, when the session exposes `create_session` (agent-team primitives may substitute here where that experimental feature is enabled);
 3. ordinary isolated subagents with an explicit parent supervision loop;
 4. serialized execution when safe parallel isolation is unavailable.
 
-None of these replace the orchestrator's validated issue DAG, scope boundary, model policy, worktree isolation, repair budgets, stack topology, or tracker/GitHub recovery semantics.
+The orchestrator picks a tier itself from the tools actually callable in the session, probes a failing tier at most twice before degrading, and never asks the user to choose one. None of these replace the orchestrator's validated issue DAG, scope boundary, model policy, worktree isolation, repair budgets, stack topology, or tracker/GitHub recovery semantics.
+
+## Autonomy after dispatch
+
+`backlog-orchestrator` is meant to run unattended once the validation preflight clears. Anything it has a documented default for — runtime tier, concurrency, the budget cap when scope exceeds it, and a session branch mandate that conflicts with per-issue branches — is resolved by applying the default and reporting it in the checkpoint output. Only a platform-owned approval prompt, `NEEDS_USER` after exhausted budgets, a `FAIL` validation with no safe path, or an undocumented conflict that would lose unrecoverable work may interrupt the run.
+
+Invoking the skill is itself the authorization to dispatch workers, so a session whose standing guidance is "no subagents unless asked" needs no extra confirmation for the fan-out.
 
 ## Recovery model
 

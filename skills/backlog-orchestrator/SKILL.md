@@ -61,6 +61,33 @@ Reusable worker skills:
 11. **Recovery is idempotent.** Never duplicate work, branches, PRs, or repairs after restart.
 12. **No automatic merges.** Merge authority is explicit and separate.
 
+# Autonomy and interactive prompts
+
+Dispatch is the last point at which the user is expected to be present. Once the validation preflight completes, the run proceeds unattended: any decision this skill has a documented default for is resolved by applying that default and reporting it, not by asking.
+
+Never ask the user to:
+
+- choose an execution runtime — detection and the degrade chain decide it;
+- authorize subagents, worktrees, or worker dispatch — invoking this skill *is* that request (see Worker dispatch authority);
+- reconcile a session branch mandate with per-issue branches — the default resolution below decides it;
+- confirm applying a documented budget cap — apply it and report what was deferred;
+- pick a concurrency level — derive it from the cap and the machine.
+
+Only these may interrupt the user mid-run:
+
+- a platform-owned approval prompt this skill does not control (workflow launch, permission mode, a tool the session must approve);
+- `NEEDS_USER` after budgets are exhausted;
+- a `FAIL` validation result leaving no safe independent path;
+- a genuine conflict with no documented default, where every available option loses work that cannot be recreated.
+
+Everything else belongs in the checkpoint output. A run that asks three questions before dispatching a single worker has already failed its main promise.
+
+## Worker dispatch authority
+
+A session may carry standing guidance not to use subagents or the Agent tool unless the user asked for them. Invoking this skill satisfies that guidance: fanning a validated issue set out to isolated one-issue workers is this skill's documented mechanism, so the invocation is the request. Dispatch subagent workers, create worktrees, and start worker sessions without a separate confirmation.
+
+That authority covers worker dispatch only. It is not permission to merge, to widen scope beyond the bounded set, or to work around a platform-owned permission prompt.
+
 # Execution runtime
 
 The orchestration policy must be independent of the mechanism used to run workers.
@@ -79,20 +106,31 @@ A Dynamic Workflow does **not** persist across a Claude Code session exiting —
 
 ## Fallback runtimes
 
-When a Dynamic Workflow was not requested for this invocation, or cannot honor the required DAG/worker constraints, degrade in this order where possible:
+When a Dynamic Workflow was not requested for this invocation, or cannot honor the required DAG/worker constraints, degrade through the remaining tiers of Runtime selection below: remote worker sessions, then ordinary isolated subagents with the explicit parent supervision loop defined here, then serialized execution when safe isolation cannot be provided. Agent-team primitives may substitute for tier 2 where that experimental feature is confirmed enabled.
 
-1. native/background Claude sessions or agent-team primitives (agent teams are an experimental, opt-in Claude Code feature — confirm they are enabled before relying on them);
-2. ordinary isolated subagents with the explicit parent supervision loop defined below;
-3. serialized execution when safe isolation/concurrency cannot be provided.
+Degrade silently and get on with the run. Not requesting a Dynamic Workflow is neither a reason to abandon the orchestration nor a reason to ask the user which tier to use.
 
-Do not abandon the orchestration run merely because no Dynamic Workflow was requested.
+## Runtime selection
 
-## Runtime detection
+Choose the runtime yourself at startup, from what is actually callable in this session. Never present a runtime menu, and never offer a runtime whose tools are absent here.
 
-At startup determine:
+Determine availability in preference order:
 
-- whether this invocation opted into a Dynamic Workflow (see Invocation above — this is not autodetected, it depends on the user's own prompt/effort setting);
-- whether first-class/background agent sessions or agent-team primitives are available;
+1. **Dynamic Workflow** — only if this invocation opted in (see Invocation). Not autodetectable; without the opt-in wording or `ultracode` effort it is unavailable, and that is not a question for the user.
+2. **Remote worker sessions** — available when the session exposes a Claude Code Remote `create_session` tool. A cloud session exposes it whichever surface launched it: `origin` records the launch surface (`desktop_app`, web, mobile), `environment_kind` records where the session actually runs, and neither gates worker creation. Confirm with one cheap read (`list_environments` or `get_session`) rather than a speculative create.
+3. **Subagents** — available when the session exposes the Agent tool. The normal runtime for a local session, and the normal fallback everywhere else.
+4. **Serialized execution in this session** — always available; correct when safe isolation cannot be provided.
+
+Remote-session details worth not rediscovering each run: omit `environment_id` and the worker inherits this session's environment; `outcome_branch` is rejected unless `source_url` accompanies it; passing neither is valid, and the worker's prompt then pins the branch.
+
+### Bounded runtime probing
+
+A runtime that fails to start a worker gets **at most 2 attempts**, with a backoff measured in seconds, and is then unavailable — move down the chain. Varying arguments between attempts does not extend that budget: a service-side error (`temporarily unavailable`, 5xx) is not an argument problem, and a validation error names its own fix in one retry.
+
+Do not spend an orchestration run diagnosing a runtime. Degrading to subagents and reporting the outage in the checkpoint output always beats a ten-minute retry loop before any work has started.
+
+Also detect:
+
 - native worktree isolation;
 - whether Claude Code's own background PR watch/notification behavior is active for this session (see PR promotion and central supervision, below) — and, if so, whether its auto-merge behavior is enabled, since that would conflict with this skill's no-automatic-merge invariant and should be disabled or reported before autonomous work proceeds;
 - local `git`;
@@ -173,6 +211,10 @@ Results:
 - `PASS_WITH_WARNINGS` -> proceed only where warnings do not make ordering unsafe;
 - `FAIL` -> stop affected paths; continue only validator-confirmed independent safe branches.
 
+Verify empirically any baseline a ticket tells workers to diff against — "~40 pre-existing type errors", "these tests already fail" — before it goes into a dispatch prompt. Tickets go stale, and a wrong baseline is worse than none: genuinely new failures hide inside an imaginary one. Measure it once at the parent level, pass the measured number to every worker, and correct the ticket's claim in the checkpoint output.
+
+Run repo-relative checks from the repo root. Ticket paths are repo-relative, so a `cd` partway through a validation sweep silently invalidates them.
+
 Do not automatically mutate dependency metadata. GitHub normalization is handled separately by `normalize-github-dependencies` when requested.
 
 `validate-backlog deep` is optional/user-invoked because it can consume materially more model/code-reading budget.
@@ -191,6 +233,10 @@ Unless explicitly overridden:
 - automatic merges: **disabled**.
 
 Dynamic Workflows do not override these limits. Do not increase concurrency merely because the runtime can fan out more agents.
+
+The concurrency number is a ceiling, not a target. Derive the level you actually run from machine capacity at startup — available CPUs, free disk against the container's fixed allowance, and whether each worker needs its own dependency install or test toolchain — and take the lower of the two. Decide that yourself and report it; do not ask.
+
+When the bounded scope exceeds the 12-new-issue limit, do not ask which issues to drop. Start the first 12 in scheduling order — DAG readiness first, then how much downstream work each unblocks — and defer the rest, naming the deferred issues in the checkpoint output so the next invocation adopts them. A user who wants a different cap says so in the invocation.
 
 When the 12-new-issue limit is reached, allow active workers/repairs to reach durable state, stop starting new issues, reconcile, and return a checkpoint. Restarting does not count already-adopted work as newly started.
 
@@ -260,7 +306,18 @@ Follow repository branch conventions. Where permitted, include the issue key/num
 
 If an orphan remote branch cannot be safely mapped to an issue, inspect commit/diff/tracker development metadata. If still ambiguous -> `NEEDS_USER`.
 
-A session-level mandate that all work land on one fixed branch is incompatible with the per-issue stacked topology below; the two cannot be reconciled silently. Detect the conflict at startup and resolve it with the user before any dispatch.
+## Session branch mandates
+
+A cloud/remote session is usually created with one mandated outcome branch (`claude/<slug>-<suffix>`), injected as session-level instructions to land all work there and push nowhere else. It is chosen by the surface that created the session, applies per session rather than per repo, and cannot be removed from inside the session. Read its current value from the session context (`outcomes[].git_repository.git_info.branches`) rather than inferring it.
+
+It is incompatible with the per-issue stacked topology below. Resolve that by default, without asking:
+
+- **single-issue scope** — use the mandated branch as that issue's branch;
+- **multi-issue scope** — per-issue branches win. One branch cannot carry an n-way fanout or a stack, so the mandate is unsatisfiable as written rather than merely inconvenient. Derive each issue's branch normally, keep the mandated branch as the run's identity for reporting, and record the override in the checkpoint output.
+
+Ask only where the default would lose work: the mandated branch already carries unmerged commits, or an open PR overlapping this scope. A mandated branch holding no commits of its own is not a conflict.
+
+A user who wants the mandate honored strictly says so in the invocation, which reduces the run to a single-branch serialized tranche.
 
 # DAG and PR topology
 
@@ -606,7 +663,8 @@ Resume frontier: <full URL(s)>
 
 Before returning, reconcile tracker + GitHub remote state and report:
 
-- runtime used;
+- runtime used, plus any runtime probed and rejected, with the reason;
+- documented defaults applied without asking — branch-mandate override, issues deferred at the budget cap, concurrency reduced for machine capacity, corrected ticket baselines;
 - validation result/warnings;
 - manifest/scope;
 - resume frontier;
