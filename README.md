@@ -18,9 +18,9 @@ Reusable Claude Code skills for issue implementation, PR workflows, backlog vali
 - `plan-merge-order` — ranks a settled tranche's open PRs by how much downstream work each unblocks, and emits a review order, a merge batching plan, and the hard sequencing constraints as a table. Read-only; it never merges. `backlog-orchestrator` invokes it when a run settles.
 - `merge-stack` — safely merges one PR, part of a stack, or an explicitly authorized whole stack while rebasing/restacking descendants.
 
-## Writing skills (`skills-local/`)
+## Writing skills
 
-These read files from a personal machine (`~/Documents/version-control/ai-alex/...`) at load time, so they cannot work in a cloud container. They live under `skills-local/` and `bootstrap.sh` skips them unless `--include-local` is passed.
+These read files from a personal machine (`~/Documents/version-control/ai-alex/...`) at load time, so their content is empty in a cloud container where those paths do not exist. They install everywhere regardless; use them from a local setup.
 
 - `draft-blog-post` — draft a technical blog post using Alex's writing style and blog template from `ai-alex`.
 - `draft-slack-message` — draft a Slack message using Alex's Slack examples and writing style from `ai-alex`.
@@ -28,8 +28,7 @@ These read files from a personal machine (`~/Documents/version-control/ai-alex/.
 ## Repository layout
 
 ```
-skills/         installed everywhere; every directory with a SKILL.md ships
-skills-local/   needs a personal machine; installed only with --include-local
+skills/           every directory with a SKILL.md ships
 permissions.json
 bootstrap.sh
 ```
@@ -86,4 +85,4 @@ At that point `backlog-orchestrator` invokes `plan-merge-order`, which ranks the
 
 ## Cloud bootstrap
 
-Run `bootstrap.sh` from a checkout of this repository to install the skills into the standard Claude configuration for a cloud/container session. It discovers every directory under `skills/` that contains a `SKILL.md`, so the install list never drifts from the repository. Pass `--include-local` to add `skills-local/` as well, on a machine where those skills' source files exist. The orchestration skills remain environment-agnostic and can also be used from local Claude Code setups.
+Run `bootstrap.sh` from a checkout of this repository to install the skills into the standard Claude configuration for a cloud/container session. It discovers every directory under `skills/` that contains a `SKILL.md`, so the install list never drifts from the repository. The orchestration skills remain environment-agnostic and can also be used from local Claude Code setups.
