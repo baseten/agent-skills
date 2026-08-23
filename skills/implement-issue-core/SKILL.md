@@ -67,9 +67,11 @@ An open blocker does not mean the work is unavailable. A stacked child is dispat
 | hard same-repo code dependency | its implementation is reachable from this checkout's base |
 | execution-only, shared-parent fanout, cross-repo, external prerequisite | its own completion state — merged, released, deployed, or the issue closed as done — independent of this checkout's ancestry |
 
-Some of those measures are not observable from an issue and a repository. A merge or a closed issue is; a deployment usually is not, and a release only where the repository carries the tag. Where the measure a class needs is beyond what you can see, **say so rather than deciding either way**: caller-supplied context is the authority for exactly this case — a caller asserting the prerequisite is satisfied is claiming something it can verify and you cannot — and absent that, report the blocker as unverifiable, naming the measure and why it is out of reach. Treating an unobservable measure as unmet blocks finished work; treating it as met is the failure this whole gate exists to prevent.
+Some of those measures are not observable from an issue and a repository. A merge or a closed issue is; a deployment usually is not, and a release only where the repository carries the tag. Where the measure a class needs is beyond what you can see, caller-supplied context is the authority — a caller asserting the prerequisite is satisfied is claiming something it can verify and you cannot.
 
-Answer by observation, not by claim. Available — proceed. Not available — return `BLOCKED`, or `BLOCKED_EXTERNAL` per the rule below, and what you found determines what to report, which is the useful part:
+Absent that, the answer is neither available nor unavailable, and that third state gets its own outcome: **return `NEEDS_USER`**, naming the blocker, the measure, and why it is out of reach. Not `BLOCKED`, because treating an unobservable measure as unmet blocks finished work and invites a caller to go looking for a dependency gap that may not exist. Not proceeding, because treating it as met is the failure this whole gate exists to prevent. A person can check a deploy dashboard in seconds; the value here is asking them rather than guessing in either direction.
+
+Answer by observation, not by claim, and the answer has three values rather than two. Available — proceed. Not determinable — `NEEDS_USER`, per the observability rule below. Not available — return `BLOCKED`, or `BLOCKED_EXTERNAL` per the rule below that, and what you found determines what to report, which is the useful part:
 
 | why it is not available | report |
 |---|---|
@@ -173,7 +175,11 @@ Return structured state:
 - remote head SHA;
 - issue linkage verified: yes/no;
 - dependencies checked: for each, the canonical full URL, which of the three sources named it, **the class you judged it under**, and how it resolved by that class's measure — for a code dependency: reachable from base / open PR not in base, with that PR's URL / merged but not reachable, with the merge and base; for a non-ancestry dependency: complete by its own measure / incomplete, with the state it is in / **unverifiable, naming the measure that was out of reach**; or unmet entirely — plus any caller assertion the observation contradicted. Naming the class matters because it tells the caller which measure was applied, and therefore whether a block is a base problem, a wait, or a real gap;
-- source disagreements: any dependency the prose named that native metadata did not return, and any mismatch against the caller's supplied dependency context — report these even on a successful run, since they are evidence about the graph rather than about this issue;
+- source disagreements, reported as **two distinct kinds** because they mean different things and warrant different responses:
+  - **visibility** — a dependency the prose named that native metadata did not return. Evidence that the transport may be returning a partial relationship set;
+  - **availability** — a mismatch against the caller's supplied dependency context, where it asserted a blocker satisfied and observation disagreed. Evidence that the caller's base or completion claim was stale, and nothing at all about what the transport can see.
+
+  Report both even on a successful run, since each is evidence about something beyond this issue. Do not collapse them into one label: a caller that cannot tell them apart must treat a stale base as a possible transport failure, which is a far more expensive response than the situation needs;
 - draft state as created, exactly as `create-pr` reported it;
 - checkpoints pushed: count/SHAs when useful;
 - checks run;
