@@ -575,10 +575,22 @@ On first observing uncommitted completed work, instruct that worker to commit an
 
 **Capture without racing the worker.** A live worker owns its index and `HEAD`, and the shared-resource rule above applies to its own checkout as much as to a service — two actors staging into one `.git/index` can capture a half-written tree, or make each other's commits fail. So never run `git add` in a live worker's index. Either:
 
-- **live worker** — snapshot into a private index (`GIT_INDEX_FILE` pointed at a scratch file), commit that tree, and push it to a **recovery ref**, never to the issue branch: something like `refs/checkpoints/<issue-branch>/<sha>`. The work becomes durable off-container, which is the entire point, while the issue branch stays the worker's alone;
+- **live worker** — build the commit **ref-neutrally** and push it to a **recovery ref**, never to the issue branch:
+
+  ```bash
+  GIT_INDEX_FILE=<scratch> git -C <worktree> add -- <issue-owned paths>
+  GIT_INDEX_FILE=<scratch> git -C <worktree> write-tree            # -> <tree>
+  git -C <worktree> commit-tree <tree> -p <worker-head-sha> \
+      -m "wip: parent checkpoint capture"                          # -> <commit>
+  git -C <worktree> push origin <commit>:refs/checkpoints/<issue-branch>/<commit>
+  ```
+
+  `GIT_INDEX_FILE` isolates the index and nothing else — plain `git commit` would still advance whatever ref `HEAD` names, which is the worker's branch, reintroducing exactly the race this avoids. `commit-tree` writes a commit object attached to no ref, so nothing the worker holds moves. The work becomes durable off-container, which is the entire point, while the issue branch stays the worker's alone;
 - **wedged worker** — stop it first, then commit normally onto the issue branch in the now-quiesced worktree. Stopping consumes that issue's lost-worker budget, so it needs the same evidence any redispatch does.
 
-The issue branch has exactly one writer at a time, and while a worker lives that writer is the worker. Advancing the branch underneath it is not a neutral act even when its index and worktree are untouched: its next push becomes a non-fast-forward rejection, and a worker that reacts by force-pushing destroys the snapshot that was protecting it. A recovery ref buys durability without a second writer. Making the worker fetch and reconcile instead would put the fix back in the worker's hands — the same hands that did not commit when told to.
+The issue branch has exactly one writer at a time, and while a worker lives that writer is the worker — locally as well as remotely. Advancing either end underneath it is not a neutral act even when its index and worktree are untouched: its next push becomes a non-fast-forward rejection, and a worker that reacts by force-pushing destroys the snapshot that was protecting it. A recovery ref buys durability without a second writer. Making the worker fetch and reconcile instead would put the fix back in the worker's hands — the same hands that did not commit when told to.
+
+The general rule behind all three cases: **capture must not move any ref the worker holds.** Test a proposed capture against that before running it, because several plausible sequences violate it silently — the index, the branch, and `HEAD` each have to be checked separately.
 
 Once the worker pushes its own commit covering that work, its recovery refs are redundant; drop them when the PR reaches durable state. Lost-worker recovery reads them.
 
