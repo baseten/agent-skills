@@ -508,7 +508,7 @@ The main parent thread must remain active while mutating workers run or active P
 
 Each cycle performs real work:
 
-1. consume worker completions (including a Dynamic Workflow's returned fan-out results, if one was used);
+1. consume worker completions (including a Dynamic Workflow's returned fan-out results, if one was used), extracting each one's dependency evidence — unmet blockers and source disagreements — regardless of its outcome;
 2. reconcile tracker + remote branches/PRs;
 3. consume/reconcile CI/review events;
 4. update heads/budgets;
@@ -574,7 +574,18 @@ Do not blindly restack every descendant after every upstream push. Instead:
 
 - `PR_OPEN` — implementation reached durable remote PR state; parent/runtime owns supervision.
 - `BLOCKED` / `BLOCKED_EXTERNAL` — stop affected path; never silently enlarge scope.
-- `BLOCKED` **on an unmet dependency** — authoritative new information about the graph, not a worker failure. It means the readiness computation was wrong, most often because the dependency read behind it was silently partial. Update the frontier from what the worker returned, treat the named blockers as real edges whether or not native metadata shows them, and re-derive readiness for every issue that shared that view — not just this one. Never redispatch the same issue unchanged; nothing about the second attempt would differ. Retry and escalation budgets do not apply, because there is no failure to retry.
+- `BLOCKED` **on an unmet dependency** — authoritative new information about the graph, not a worker failure. It means the readiness computation was wrong, most often because the dependency read behind it was silently partial. Never redispatch the same issue unchanged; nothing about the second attempt would differ. Retry and escalation budgets do not apply, because there is no failure to retry.
+
+**A worker returns two independent things: an outcome, and evidence about the graph.** Act on the evidence regardless of the outcome. A worker that found the prose naming a dependency native metadata did not return, and then proceeded because the work was present in its base, reports that disagreement on a `PR_OPEN` — and that report is the same evidence of a partial dependency view as a `BLOCKED` would have been. Treating only `BLOCKED` as a graph update leaves every sibling scheduled against the view already known to be wrong, choosing bases and dispatch order from it.
+
+So on **any** reported dependency-source disagreement or unmet blocker, whatever the outcome:
+
+1. treat the named dependencies as real edges, whether or not native metadata shows them;
+2. re-derive readiness for every issue that shared that dependency view — not just the issue that reported it, since a read that truncated once truncated for its siblings too;
+3. re-check calculated bases for anything already dispatched against the old view;
+4. do this **before** filling further worker slots.
+
+One worker's disagreement is the cheapest evidence available that the graph is wrong; discarding it because that worker happened to succeed wastes the only signal the system gets.
 - `FAILED` — retry only inside budgets; at most one reasoning escalation.
 - `NEEDS_USER` — surface full issue/PR URLs, failure/review state, attempts consumed, and recommended action; stop spending tokens on that node while continuing safe independent branches.
 
