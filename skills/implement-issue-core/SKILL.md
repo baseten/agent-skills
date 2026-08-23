@@ -35,7 +35,7 @@ The full issue URL is canonical identity. Never replace it with a short issue ke
 
 Read the issue title/body, relevant comments, tracker-native parent/dependency metadata, repository `CLAUDE.md`/`AGENTS.md`, relevant specs/docs, and existing implementation patterns.
 
-Return `BLOCKED`/`NEEDS_USER` rather than guessing when scope is materially underspecified, required external work is absent, the supplied base is invalid, or a destructive/product decision needs approval.
+Return `BLOCKED`/`NEEDS_USER` rather than guessing when scope is materially underspecified, the supplied base is invalid, or a destructive/product decision needs approval — and `BLOCKED_EXTERNAL` where the absent work is an external prerequisite outside the authorized set, per step 2.
 
 ## 2. Dependency precondition
 
@@ -66,7 +66,7 @@ An open blocker does not mean the work is unavailable. A stacked child is dispat
 | hard same-repo code dependency | its implementation is reachable from this checkout's base |
 | execution-only, shared-parent fanout, cross-repo, external prerequisite | its own completion state — merged, released, deployed, or the issue closed as done — independent of this checkout's ancestry |
 
-Answer by observation, not by claim. Available — proceed. Not available — return `BLOCKED`, and what you found determines what to report, which is the useful part:
+Answer by observation, not by claim. Available — proceed. Not available — return `BLOCKED`, or `BLOCKED_EXTERNAL` per the rule below, and what you found determines what to report, which is the useful part:
 
 | why it is not available | report |
 |---|---|
@@ -83,7 +83,7 @@ Externality changes what the block *means*, not whether a source disagreement is
 
 The class qualifier is load-bearing, not a hedge. Overriding a satisfied assertion because a dependency is not Git-reachable, when that dependency is execution-only, cross-repository or external, blocks a prerequisite that is complete — reachability was never its measure. Unreachability is only contrary evidence for a code dependency.
 
-Never implement against a contract that does not exist yet in order to keep a worker busy. The behavioural catch in step 1 — `BLOCKED` when required external work is absent — only fires when the absence breaks the code. A UI ticket whose backend is missing will render against the parts that do exist, stub the rest, pass its mocked tests, and produce a PR that looks complete and is not.
+Never implement against a contract that does not exist yet in order to keep a worker busy. The behavioural catch in step 1 — blocking when required work is absent — only fires when the absence breaks the code. A UI ticket whose backend is missing will render against the parts that do exist, stub the rest, pass its mocked tests, and produce a PR that looks complete and is not.
 
 ### Report what you found
 
