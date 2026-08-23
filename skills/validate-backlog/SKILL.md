@@ -33,7 +33,7 @@ Structured dependency metadata is authoritative when present, but textual descri
 
 A scoped or relayed credential can return a partial relationship set without error — the entries it cannot reach are absent rather than refused — so an edge that exists but is invisible looks identical to one that was never created. Establish that the transport can see the relationships in scope **before consuming them**, against a case whose answer is known: an edge the caller confirmed, or one visible through an **independently authenticated** path. Independence is a property of the credential, not the transport — a second read behind the same credential reproduces the same blind spot and comes back looking like confirmation, which is more dangerous than a single read, and two different transports do exactly that when they authenticate the same way (`gh` and raw HTTP sharing `GITHUB_TOKEN`). Prefer a known-true case, since its answer does not depend on any transport being trustworthy; a second credential is the fallback, and must be verified as different rather than assumed to be. Cover **every** boundary the graph crosses, not one of them. A control inside a repository proves that repository only, and for a graph spanning A, B and C a visible A→B edge says nothing about C — so a single cross-repository control is enough to make a credential that cannot reach C look proven, while A→C and B→C vanish. One control per boundary in scope.
 
-Bind each proof to the credential that produced it — a non-secret identity such as the authenticated account and its scopes, never the credential itself — and revalidate after a restart and on reauthentication, since a rotated or narrowed credential makes a stale proof read as applicable. An authorization error invalidates **every** proof for that transport, not only the one for the failed call: a narrowed credential surfaces on one call while quietly truncating the others.
+Bind each proof to the credential that produced it — a non-secret identity such as the authenticated account and its scopes, never the credential itself — and revalidate after a restart and on reauthentication, since a rotated or narrowed credential makes a stale proof read as applicable. An authorization error invalidates **every proof bound to that credential, across every transport using it** — not only the failed call, and not only the transport it arrived on. Grants narrow server-side, so a failure through one transport condemns the cached proofs of every other transport sharing the token, even though none of them has failed yet.
 
 **Enumeration is itself a relationship read.** For a parent/root invocation, check 1 discovers the bounded set *through* native hierarchy — so a credential that hides children in one repository yields a truncated scope, and every later step inherits it. The boundary list then comes from the same truncated data, so the missing repository is never tested, never reported, and the result can still be `PASS`. A scope derived from a possibly-partial read cannot bound its own validation.
 
@@ -41,7 +41,9 @@ So the boundary list must not come only from enumerated data. Establish it from 
 
 Do this before reading, not only when something looks wrong. A hidden edge with no prose mirror produces no mismatch to investigate, so a check that validates visibility only on disagreement will omit that edge from the normalized DAG and return `PASS` — the most damaging possible output, because `PASS` is what the caller dispatches against.
 
-So: **an unproven transport cannot produce `PASS`.** Return `PASS_WITH_WARNINGS` naming the transport and the boundaries left unproven, or `FAIL` where the unproven relationships are the ones the execution order depends on. Report the shortfall as `not visible via <transport>`, never as a missing dependency.
+So: **an unproven boundary involving dispatchable scope is a `FAIL`**, not a warning. `PASS_WITH_WARNINGS` is for warnings whose safety a reader can weigh, and this one cannot be weighed by construction — judging whether a hidden edge would change execution order requires seeing the edge. Returning it as a warning asks the caller to assess something neither of you can observe, and the caller's own policy then reads an unassessable warning as proceedable.
+
+`PASS_WITH_WARNINGS` remains available only where the unproven boundary touches nothing dispatchable — external prerequisites read for readiness, or issues outside the authorized set. Either way, name the transport, the credential identity, and every boundary left unproven, and report the shortfall as `not visible via <transport>`, never as a missing dependency.
 
 This is also why prose dependencies are a legitimate **mirror** rather than redundant noise. They live in issue text, so they survive transports that redact structured relationships, and a textual blocker with no visible structured edge is as likely to be evidence of a blind spot as of a missing link. Structured edges stay authoritative wherever both are visible; a mismatch is a finding to report, never a licence to trust one side by default.
 
@@ -114,7 +116,7 @@ Suggested dependency changes (deep mode only):
 
 Also return a normalized DAG using canonical full issue URLs as node identities.
 
-`FAIL` means the orchestrator must not dispatch affected work until corrected. `PASS_WITH_WARNINGS` may proceed if warnings do not make execution order unsafe.
+`FAIL` means the orchestrator must not dispatch affected work until corrected. `PASS_WITH_WARNINGS` may proceed if warnings do not make execution order unsafe — which is why unproven relationship visibility over dispatchable scope is never one of those warnings: its safety is exactly what cannot be established. It is a `FAIL`.
 
 ## Mutation
 
