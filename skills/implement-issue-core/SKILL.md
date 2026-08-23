@@ -92,6 +92,8 @@ Externality changes what the block *means*, not whether a source disagreement is
 
 The class qualifier is load-bearing, not a hedge. Overriding a satisfied assertion because a dependency is not Git-reachable, when that dependency is execution-only, cross-repository or external, blocks a prerequisite that is complete — reachability was never its measure. Unreachability is only contrary evidence for a code dependency.
 
+**The inverse does not flip.** Where the caller asserts a blocker is *unmet* and you observe the work is available, the caller's assertion stands: block, and report the disagreement. That is not inconsistent with the rule above, because the two observations are about different things. Unavailability is a fact that refutes "satisfied". Availability is a fact about presence, and "unmet" may be a claim about soundness — a merge pending revert, a known-bad implementation, a semantic incompatibility the worker cannot see from the code being there. Presence does not refute it. The cost asymmetry agrees: a needless block costs a cycle, while building against something the caller knows is unsound costs a wrong PR and everything stacked on it.
+
 Never implement against a contract that does not exist yet in order to keep a worker busy. The behavioural catch in step 1 — blocking when required work is absent — only fires when the absence breaks the code. A UI ticket whose backend is missing will render against the parts that do exist, stub the rest, pass its mocked tests, and produce a PR that looks complete and is not.
 
 ### Report what you found
