@@ -16,7 +16,7 @@ Accept:
 - dedicated working directory/worktree;
 - issue branch;
 - exact required base branch;
-- optional upstream dependency context, and whether the caller marks it as its **complete** dependency set or a targeted answer — the two are read differently, and unmarked means targeted;
+- optional upstream dependency context, and whether the caller marks it as its **complete** dependency set or a targeted answer — the two are read differently, and unmarked means targeted. Also the **provenance** of each edge in it: produced by the caller's own native read, or recorded outside native metadata from an earlier finding;
 - optional authorization membership — the run's bounded authorized set, or a per-blocker flag saying whether each is inside it;
 - implementation-attempt budget;
 - draft/full PR preference when supplied.
@@ -190,7 +190,7 @@ Return structured state:
 - source disagreements, reported as **two distinct kinds** because they mean different things and warrant different responses:
   - **visibility** — a source disagrees with another about **which edges exist**. Report the edge with the sources that had it and the sources that lacked it, since that pairing says whose read was short. But **only a source that claims to be exhaustive can contribute an absence**, and that asymmetry decides what counts:
     - **native metadata** claims exhaustiveness — it is the structured edge set — so an edge missing from it is a real signal;
-    - **caller context** claims exhaustiveness **only when the caller marks it as its complete READY dependency set.** Marked, an edge missing from it says the caller's own view was short. Unmarked — and it is optional, and is also how a user answers one previously unverifiable prerequisite — it is a targeted answer, so it contributes edges and availability assertions and never an absence. Treating an unmarked answer as exhaustive would report every unrelated native dependency as a visibility disagreement and tell the user their view was partial when they had simply answered a narrow question;
+    - **caller context** contributes an absence only for the edges its own native read produced. An edge marked as recorded outside native metadata — a blocker an earlier worker established, which the caller kept out of native by design — is one your native read is *supposed* to lack, so its absence is not a disagreement about anything. And caller context claims exhaustiveness at all **only when the caller marks it as its complete READY dependency set.** Marked, an edge missing from it says the caller's own view was short. Unmarked — and it is optional, and is also how a user answers one previously unverifiable prerequisite — it is a targeted answer, so it contributes edges and availability assertions and never an absence. Treating an unmarked answer as exhaustive would report every unrelated native dependency as a visibility disagreement and tell the user their view was partial when they had simply answered a narrow question;
     - **prose** claims nothing. It mentions edges; it never purports to list them all. A blocker in native metadata that nobody wrote into the description is the ordinary case, not a finding.
 
     So: prose has it and native lacks it is a disagreement, because prose can only *add* information. Native has it and prose lacks it is **not** — treating that as one would fire on nearly every issue and stop the run for a structured-only dependency, which is exactly what structured metadata is for.
