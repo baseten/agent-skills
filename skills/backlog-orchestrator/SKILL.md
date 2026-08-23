@@ -580,16 +580,22 @@ Do not blindly restack every descendant after every upstream push. Instead:
 
 **A worker returns two independent things: an outcome, and evidence about the graph.** Act on the evidence regardless of the outcome. A worker that found the prose naming a dependency native metadata did not return, and then proceeded because the work was present in its base, reports that disagreement on a `PR_OPEN` — and that report is the same evidence of a partial dependency view as a `BLOCKED` would have been. Treating only `BLOCKED` as a graph update leaves every sibling scheduled against the view already known to be wrong, choosing bases and dispatch order from it.
 
-So on **any** reported dependency-source disagreement or unmet blocker, whatever the outcome:
+**A disagreement is first evidence about the transport, only second about one edge.** Adding the single dependency a worker happened to find and re-deriving against the same view leaves every other hidden edge hidden — the ones absent from both native metadata and prose are still invisible, and siblings still get dispatched from a frontier built on them. So read the disagreement against that boundary's visibility proof (see Proving a transport can see the graph), because the proof's state determines which of two very different things you are looking at:
 
-1. treat the named dependencies as real edges, whether or not native metadata shows them;
-2. re-derive readiness for every issue that shared that dependency view — not just the issue that reported it, since a read that truncated once truncated for its siblings too;
-3. re-check calculated bases for anything already dispatched against the old view;
-4. do this **before** filling further worker slots.
+**Visibility unproven, or the proof invalidated** — treat this as truncation, not as one missing edge:
+
+1. adopt the named dependencies as real edges;
+2. invalidate the relationship-visibility proof for that credential, exactly as an authorization error would;
+3. obtain a validated or independently authenticated read before filling further worker slots — the point is that you do not know what else is missing, and one recovered edge is not a reason to trust the rest;
+4. then re-derive readiness for every issue that shared that view, and re-check calculated bases for anything already dispatched against it.
+
+**Visibility proven for that boundary** — native metadata is trustworthy there, so prose naming an edge it does not show is more likely stale text than a hidden edge: a dependency deliberately removed from metadata and left behind in the description. Do not auto-adopt it. Classify it — verify whether the relationship still holds, not merely whether the referenced issue is implemented, which is all the worker checked — and surface it as `NEEDS_USER` where that cannot be settled from the issues themselves. Never persist an unclassified prose edge: persistence is what makes every future restart re-adopt it, so a stale edge written down once blocks the issue indefinitely.
+
+Either way, do the graph work **before** filling further worker slots.
 
 One worker's disagreement is the cheapest evidence available that the graph is wrong; discarding it because that worker happened to succeed wastes the only signal the system gets.
 
-**Persist it, or the next session repeats the mistake.** By invariant 1 conversation and run state are caches, so an edge a worker discovered lives only in this run unless it is written down — while restart re-expands the same manifest and reruns the same validator through the same transport that truncated in the first place. It would compute the identical wrong frontier and dispatch straight back into it. Record each verified blocker where the restart path already looks: a comment on the affected issue naming the blocker by canonical full URL and how it was verified, plus the checkpoint output. Where dependency-write capability exists and the edge is high-confidence, `normalize-github-dependencies` is what makes it native — invoked explicitly, never as a side effect of this reconciliation.
+**Persist it, or the next session repeats the mistake.** By invariant 1 conversation and run state are caches, so an edge a worker discovered lives only in this run unless it is written down — while restart re-expands the same manifest and reruns the same validator through the same transport that truncated in the first place. It would compute the identical wrong frontier and dispatch straight back into it. Record each **adopted** blocker — one from the truncation case above, or a classified prose edge confirmed to still hold — where the restart path already looks: a comment on the affected issue naming the blocker by canonical full URL and how it was verified, plus the checkpoint output. Persist nothing that is merely unclassified, for the reason above: writing it down is what makes every restart re-adopt it. Where dependency-write capability exists and the edge is high-confidence, `normalize-github-dependencies` is what makes it native — invoked explicitly, never as a side effect of this reconciliation.
 - `FAILED` — retry only inside budgets; at most one reasoning escalation.
 - `NEEDS_USER` — surface full issue/PR URLs, failure/review state, attempts consumed, and recommended action; stop spending tokens on that node while continuing safe independent branches.
 

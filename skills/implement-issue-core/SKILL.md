@@ -45,7 +45,7 @@ Do this even when a caller judged the issue READY. That judgement was computed f
 
 ### Take the union of three sources
 
-- dependencies named in the issue body prose — `Depends on:`, `Blocked by:`, a `Dependencies` section, build-order wording;
+- dependencies named in prose — the issue body **and its relevant comments**: `Depends on:`, `Blocked by:`, a `Dependencies` section, build-order wording. Comments matter as much as the body, since a blocker discovered after filing is usually added as a comment rather than an edit, and step 1 has already read them;
 - tracker-native dependency metadata;
 - dependency context the caller supplied.
 
