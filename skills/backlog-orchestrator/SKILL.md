@@ -205,6 +205,8 @@ Before dispatching any **new** implementation worker, invoke `validate-backlog s
 
 Use the validator's normalized DAG as the scheduling graph. Do not let the execution runtime independently invent a competing decomposition.
 
+That prohibition is about re-planning, not about evidence. A worker reporting a blocker it verified against its own issue is not inventing a decomposition — it is correcting one, from a position the validator did not have (see Outcomes). Accept an edge a worker verified; reject a runtime's attempt to reorder or re-scope the backlog.
+
 Results:
 
 - `PASS` -> proceed;
@@ -281,7 +283,7 @@ A cloud worktree is ephemeral. Never claim restart safety for unpushed local cha
 A Dynamic Workflow interrupted by session exit restarts fresh next session rather than resuming — it has no cross-session persistence of its own. Restart recovery therefore always comes from tracker + GitHub remote state, never from workflow-runtime state:
 
 1. re-expand the exact same bounded manifest/scope;
-2. rerun `validate-backlog shallow`;
+2. rerun `validate-backlog shallow`, then reconcile its DAG against blockers a previous run's workers recorded on the issues themselves (see Outcomes) — the validator reads through a transport that may truncate identically to last time, so a previously discovered edge it still cannot see must be re-adopted rather than rediscovered by dispatching into it again;
 3. order by normalized DAG + explicit build order;
 4. fetch current tracker statuses, PRs, and remote branches;
 5. skip every proven `DONE` issue;
@@ -586,6 +588,8 @@ So on **any** reported dependency-source disagreement or unmet blocker, whatever
 4. do this **before** filling further worker slots.
 
 One worker's disagreement is the cheapest evidence available that the graph is wrong; discarding it because that worker happened to succeed wastes the only signal the system gets.
+
+**Persist it, or the next session repeats the mistake.** By invariant 1 conversation and run state are caches, so an edge a worker discovered lives only in this run unless it is written down — while restart re-expands the same manifest and reruns the same validator through the same transport that truncated in the first place. It would compute the identical wrong frontier and dispatch straight back into it. Record each verified blocker where the restart path already looks: a comment on the affected issue naming the blocker by canonical full URL and how it was verified, plus the checkpoint output. Where dependency-write capability exists and the edge is high-confidence, `normalize-github-dependencies` is what makes it native — invoked explicitly, never as a side effect of this reconciliation.
 - `FAILED` — retry only inside budgets; at most one reasoning escalation.
 - `NEEDS_USER` — surface full issue/PR URLs, failure/review state, attempts consumed, and recommended action; stop spending tokens on that node while continuing safe independent branches.
 
@@ -672,5 +676,6 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - issue-linkage/tracker-status inconsistencies;
 - `NEEDS_USER` items;
 - external blockers;
+- dependency edges discovered by workers that the validated DAG did not contain, where each was recorded durably, and any dependency-source disagreement reported on an otherwise successful run;
 - unstarted work and why;
 - whether invoking the same manifest can safely resume.
