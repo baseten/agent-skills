@@ -127,6 +127,8 @@ A relayed, proxied, scoped, or short-lived credential can return a truthful-look
 
 Record validation per transport **and per boundary**, not per transport alone. "MCP works" is not a finding; "MCP resolves edges from A into B" is.
 
+**A cached proof is only as good as the credential it was made with.** Transport, class and boundary do not identify a credential, so the same tuple can later be backed by a narrower one — a short-lived token rotates, a transport reauthenticates mid-run, or a fresh session starts with different grants — and the stale proof reads as applicable. Store a non-secret identity of the credential alongside the proof (the authenticated account and its scopes, an expiry, a fingerprint — never the credential itself), and revalidate whenever that identity changes, whenever a transport reauthenticates, and always after a restart. Treat any authorization error mid-run as invalidating every proof for that transport, not just the failed call: a narrowing is exactly what a silent partial view looks like from one call away.
+
 The conclusion rule: **absence observed through an unvalidated transport is not evidence of absence.** Report it as "not visible via `<transport>`", never as "does not exist". A dependency edge that is invisible rather than missing produces a wrong DAG, dispatches work whose prerequisites are unbuilt, and reads as a clean validation the whole way — the graph is the thing the run schedules against, so a false absence there is not a cosmetic error.
 
 Record which transport was validated for which class of relationship read and across which boundaries, so a later read in the same run, or a restart, does not silently fall back to an unvalidated one.

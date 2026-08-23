@@ -31,7 +31,9 @@ Structured dependency metadata is authoritative when present, but textual descri
 
 ### Transport visibility
 
-A scoped or relayed credential can return a partial relationship set without error — the entries it cannot reach are absent rather than refused — so an edge that exists but is invisible looks identical to one that was never created. Establish that the transport can see the relationships in scope **before consuming them**, against a case whose answer is known: an edge the caller confirmed, or one visible through a second transport. Where the graph spans repositories, the known case must itself cross a repository boundary; a control inside one repository proves that repository only.
+A scoped or relayed credential can return a partial relationship set without error — the entries it cannot reach are absent rather than refused — so an edge that exists but is invisible looks identical to one that was never created. Establish that the transport can see the relationships in scope **before consuming them**, against a case whose answer is known: an edge the caller confirmed, or one visible through a second transport. Cover **every** boundary the graph crosses, not one of them. A control inside a repository proves that repository only, and for a graph spanning A, B and C a visible A→B edge says nothing about C — so a single cross-repository control is enough to make a credential that cannot reach C look proven, while A→C and B→C vanish. One control per boundary in scope.
+
+Bind each proof to the credential that produced it — a non-secret identity such as the authenticated account and its scopes, never the credential itself — and revalidate after a restart, on reauthentication, and on any authorization error, since a rotated or narrowed credential makes a stale proof read as applicable.
 
 Do this before reading, not only when something looks wrong. A hidden edge with no prose mirror produces no mismatch to investigate, so a check that validates visibility only on disagreement will omit that edge from the normalized DAG and return `PASS` — the most damaging possible output, because `PASS` is what the caller dispatches against.
 
