@@ -155,7 +155,7 @@ Return:
 - canonical issue URL;
 - tracker;
 - repository;
-- outcome: `PR_OPEN` | `BLOCKED` | `FAILED` | `NEEDS_USER`;
+- outcome: `PR_OPEN` | `BLOCKED` | `BLOCKED_EXTERNAL` | `FAILED` | `NEEDS_USER`;
 - branch/base;
 - PR URL/number;
 - remote head SHA;

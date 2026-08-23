@@ -79,7 +79,9 @@ Return `BLOCKED_EXTERNAL` rather than `BLOCKED` where the unmet blocker is an **
 
 Externality changes what the block *means*, not whether a source disagreement is worth reporting. A prerequisite the prose named that native metadata did not return is still evidence about the transport, external or not — report the disagreement either way.
 
-**Observation beats assertion.** Caller-supplied dependency context settles only what you cannot check: where it asserts a blocker is satisfied and you observe that it is not reachable, the observation wins and the disagreement is reported. Deferring to the assertion would disable this reconciliation exactly when it matters — when the caller chose the wrong base — and would trade a restack the caller could act on for an implementation built without its dependency.
+**Observation beats assertion — where you observed the right thing.** Caller-supplied dependency context settles only what you cannot check, so where it asserts a blocker is satisfied and **the availability measure for that dependency's class** says otherwise, the observation wins and the disagreement is reported. Deferring to the assertion would disable this reconciliation exactly when it matters — when the caller chose the wrong base — and would trade a restack the caller could act on for an implementation built without its dependency.
+
+The class qualifier is load-bearing, not a hedge. Overriding a satisfied assertion because a dependency is not Git-reachable, when that dependency is execution-only, cross-repository or external, blocks a prerequisite that is complete — reachability was never its measure. Unreachability is only contrary evidence for a code dependency.
 
 Never implement against a contract that does not exist yet in order to keep a worker busy. The behavioural catch in step 1 — `BLOCKED` when required external work is absent — only fires when the absence breaks the code. A UI ticket whose backend is missing will render against the parts that do exist, stub the rest, pass its mocked tests, and produce a PR that looks complete and is not.
 
@@ -163,7 +165,7 @@ Return structured state:
 - PR URL/number;
 - remote head SHA;
 - issue linkage verified: yes/no;
-- dependencies checked: for each, the canonical full URL, which of the three sources named it, and how it resolved — reachable from base / open PR not in base, with that PR's URL / merged but not reachable, with the merge and base / unmet — plus any caller assertion the observation contradicted;
+- dependencies checked: for each, the canonical full URL, which of the three sources named it, **the class you judged it under**, and how it resolved by that class's measure — for a code dependency: reachable from base / open PR not in base, with that PR's URL / merged but not reachable, with the merge and base; for a non-ancestry dependency: complete by its own measure / incomplete, with the state it is in; or unmet entirely — plus any caller assertion the observation contradicted. Naming the class matters because it tells the caller which measure was applied, and therefore whether a block is a base problem, a wait, or a real gap;
 - source disagreements: any dependency the prose named that native metadata did not return, and any mismatch against the caller's supplied dependency context — report these even on a successful run, since they are evidence about the graph rather than about this issue;
 - draft state as created, exactly as `create-pr` reported it;
 - checkpoints pushed: count/SHAs when useful;
