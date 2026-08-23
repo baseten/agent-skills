@@ -17,6 +17,7 @@ Accept:
 - issue branch;
 - exact required base branch;
 - optional upstream dependency context;
+- optional authorization membership — the run's bounded authorized set, or a per-blocker flag saying whether each is inside it;
 - implementation-attempt budget;
 - draft/full PR preference when supplied.
 
@@ -66,6 +67,8 @@ An open blocker does not mean the work is unavailable. A stacked child is dispat
 | hard same-repo code dependency | its implementation is reachable from this checkout's base |
 | execution-only, shared-parent fanout, cross-repo, external prerequisite | its own completion state — merged, released, deployed, or the issue closed as done — independent of this checkout's ancestry |
 
+Some of those measures are not observable from an issue and a repository. A merge or a closed issue is; a deployment usually is not, and a release only where the repository carries the tag. Where the measure a class needs is beyond what you can see, **say so rather than deciding either way**: caller-supplied context is the authority for exactly this case — a caller asserting the prerequisite is satisfied is claiming something it can verify and you cannot — and absent that, report the blocker as unverifiable, naming the measure and why it is out of reach. Treating an unobservable measure as unmet blocks finished work; treating it as met is the failure this whole gate exists to prevent.
+
 Answer by observation, not by claim. Available — proceed. Not available — return `BLOCKED`, or `BLOCKED_EXTERNAL` per the rule below, and what you found determines what to report, which is the useful part:
 
 | why it is not available | report |
@@ -76,6 +79,8 @@ Answer by observation, not by claim. Available — proceed. Not available — re
 | no implementation anywhere: nothing merged, no open PR, nothing in the base | name each unmet blocker by canonical full URL — a real dependency gap |
 
 Return `BLOCKED_EXTERNAL` rather than `BLOCKED` **only when every unmet blocker is an external prerequisite outside the authorized set.** The caller routes the two differently and only one of them means its readiness computation was wrong: waiting on work nobody in this run was authorized to do is a known state, not a graph error, and reporting it as one sends the caller off re-deriving a frontier that was correct.
+
+"Outside the authorized set" is a fact about the caller's run, not about the issue, so it is only observable if the caller said so. Where authorization membership was supplied, use it. Where it was not — a standalone invocation has no bounded set — **default to `BLOCKED`**: an external-looking prerequisite the root did in fact authorize would otherwise be reported as an out-of-scope wait, and the caller would skip the frontier re-derivation an in-scope blocker requires. Never infer non-membership from the blocker living in another repository or another team's tracker; that is what "external" looks like from here whether or not it is in scope.
 
 **Mixed blockers take the stronger outcome.** One outcome cannot describe two states, so where any unmet blocker is non-external, return `BLOCKED` and report the external waits alongside it. The reverse precedence would let a single external prerequisite mask an in-scope dependency the caller's graph got wrong — the caller would skip the frontier re-derivation, and its siblings would stay scheduled against a graph already known to be incomplete. Choose the outcome that demands the most of the caller; the per-blocker detail carries the rest.
 
@@ -167,7 +172,7 @@ Return structured state:
 - PR URL/number;
 - remote head SHA;
 - issue linkage verified: yes/no;
-- dependencies checked: for each, the canonical full URL, which of the three sources named it, **the class you judged it under**, and how it resolved by that class's measure — for a code dependency: reachable from base / open PR not in base, with that PR's URL / merged but not reachable, with the merge and base; for a non-ancestry dependency: complete by its own measure / incomplete, with the state it is in; or unmet entirely — plus any caller assertion the observation contradicted. Naming the class matters because it tells the caller which measure was applied, and therefore whether a block is a base problem, a wait, or a real gap;
+- dependencies checked: for each, the canonical full URL, which of the three sources named it, **the class you judged it under**, and how it resolved by that class's measure — for a code dependency: reachable from base / open PR not in base, with that PR's URL / merged but not reachable, with the merge and base; for a non-ancestry dependency: complete by its own measure / incomplete, with the state it is in / **unverifiable, naming the measure that was out of reach**; or unmet entirely — plus any caller assertion the observation contradicted. Naming the class matters because it tells the caller which measure was applied, and therefore whether a block is a base problem, a wait, or a real gap;
 - source disagreements: any dependency the prose named that native metadata did not return, and any mismatch against the caller's supplied dependency context — report these even on a successful run, since they are evidence about the graph rather than about this issue;
 - draft state as created, exactly as `create-pr` reported it;
 - checkpoints pushed: count/SHAs when useful;

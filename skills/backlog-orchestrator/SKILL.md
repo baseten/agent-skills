@@ -355,7 +355,8 @@ Before dispatch:
 5. record canonical issue URL -> tracker -> repo -> worktree -> branch -> base -> worker;
 6. compose the dispatch prompt so it carries every default the worker skills already own;
 7. include **the dependency context used to judge this issue READY** — the blockers considered, how each was resolved, and which transport and credential produced that view — so the worker can reconcile your view against what it finds and report a disagreement rather than silently inheriting it;
-8. dispatch Sonnet worker with `implement-issue-core`.
+8. include **authorization membership**: the bounded authorized set, or a per-blocker flag for whether each is inside it. Only you know this, and the worker's block outcome turns on it — without it, an external-looking prerequisite you did authorize comes back as an out-of-scope wait and you skip the frontier re-derivation it needed. A worker given nothing defaults to the stronger outcome, which is safe but costs you the distinction;
+9. dispatch Sonnet worker with `implement-issue-core`.
 
 A dispatch prompt that enumerates a required process is followed literally: a default left out of that enumeration is a default skipped, and the worker will accurately report that the task never asked for it. Every dispatched prompt must therefore carry the automated review trigger instruction — `create-pr` owns the trigger rules, do not restate them here — unless this run explicitly defers review. Deferral is a conscious choice recorded in run state, naming what review is owed and on which PRs; it is never an omission.
 
