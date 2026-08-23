@@ -79,9 +79,24 @@ Classify candidates:
 - `ALREADY_PRESENT` — native dependency already exists;
 - `AMBIGUOUS` — wording does not establish direction strongly enough;
 - `CONFLICT` — contradicts native metadata or would introduce a cycle;
-- `OUT_OF_SCOPE_REFERENCE` — valid endpoint outside the normalized set; may still be added when explicitly declared, but do not traverse it further.
+- `OUT_OF_SCOPE_REFERENCE` — valid endpoint outside the normalized set; may still be added when explicitly declared, but do not traverse it further;
+- `UNVERIFIED` — the edge looks absent, but the read that showed it absent came from a transport whose visibility is unproven (see below).
 
-Do not mutate `AMBIGUOUS` or `CONFLICT` edges automatically.
+Do not mutate `AMBIGUOUS`, `CONFLICT`, or `UNVERIFIED` edges automatically.
+
+## Precondition: the read that showed the edge missing must be trustworthy
+
+**Do not create an edge because a read showed it absent, unless that read came from a validated transport.** This skill decides what to write from what it believes is missing, so a read that under-reports existing relationships converts directly into duplicate writes.
+
+A relayed, proxied, scoped, or short-lived credential can return a partial relationship set with no error and no warning — a credential scoped to one repository returns one repository's worth of a graph spanning several, and the response looks complete. The edge you are about to add may already be live and simply invisible.
+
+So before any mutation:
+
+1. read existing relationships through the highest transport tier available — a first-class tool, else an authenticated CLI, and raw HTTP only where neither exposes dependency fields at all;
+2. where that read came from raw HTTP or any relayed credential, prove it can see the class of edge you intend to write, using a case whose answer is known: an edge already confirmed to exist, ideally one crossing repositories;
+3. a second read through the same transport does not count — it reproduces the same blind spot and reads as confirmation.
+
+If visibility cannot be proven, report the candidate edges as `UNVERIFIED` and write nothing. Absence observed through an unvalidated transport is not evidence of absence, and the cost is asymmetric: not writing a needed edge leaves a report the user can act on, while writing a duplicate of a live edge mutates a graph on the strength of a blind spot.
 
 ## Applying dependencies
 

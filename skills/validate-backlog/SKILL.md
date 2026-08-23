@@ -28,6 +28,16 @@ Checks:
 
 Structured dependency metadata is authoritative when present, but textual descriptions remain a secondary consistency signal. A textual blocker absent from structured metadata should be flagged as a likely missing dependency rather than silently ignored.
 
+#### When text and structured metadata disagree
+
+Before reporting a structured edge as missing, establish whether the transport in use can see structured cross-repository edges **at all**. A relayed or scoped credential can return a partial relationship set without error — the entries it cannot reach are absent rather than refused — so an edge that exists and is merely invisible looks identical to one that was never created. Prove visibility against a case whose answer is known (an edge the caller confirmed, or one visible through a second transport) before concluding anything from an absence.
+
+Skipping that step turns this check into a confident generator of false findings, precisely where it is trusted most: cross-repository edges are both the ones most likely to be redacted by scoping and the ones whose loss most changes execution order.
+
+This is why prose dependencies are a legitimate **mirror** rather than redundant noise. They live in issue text, so they survive transports that redact structured relationships, and a textual blocker with no visible structured edge is as likely to be evidence of a blind spot as of a missing link. Structured edges stay authoritative wherever both are visible; a mismatch is a finding to report, never a licence to trust one side by default.
+
+Report an unproven absence as `not visible via <transport>`, not as a missing dependency.
+
 ### Deep mode
 
 Deep mode performs every shallow check, then attempts to validate whether the **underlying work itself** implies missing or incorrect dependencies.
@@ -58,7 +68,7 @@ Do not invent dependencies merely because two issues touch related areas. Give a
 
 Prefer first-class GitHub sub-issue hierarchy and issue dependency metadata (`blocked by` / `blocking`) when exposed by the available GitHub interface. GitHub supports native issue dependencies and hierarchy; use these instead of relying only on Markdown references.
 
-If the current MCP/tool surface does not expose those relationship fields directly, use authenticated `gh`/GitHub API when available; otherwise inspect issue relationship information available through the environment and explicitly report any metadata that could not be read.
+If the current MCP/tool surface does not expose those relationship fields directly, use authenticated `gh`/GitHub API when available; otherwise inspect issue relationship information available through the environment and explicitly report any metadata that could not be read. Prefer a first-class tool over a CLI and a CLI over raw HTTP, and treat a relationship set read over raw HTTP as provisional until its visibility is proven — dependency fields are exactly the data a scoped credential returns in part.
 
 Still parse issue descriptions/comments for textual blockers and compare them against structured metadata.
 

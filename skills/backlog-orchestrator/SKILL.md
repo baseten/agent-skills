@@ -103,6 +103,28 @@ At startup determine:
 
 Prefer native/runtime capabilities when they implement the required behavior safely, but retain tracker + GitHub remote state as recovery truth.
 
+## Transport precedence
+
+Detection establishes what exists. This establishes which one to use. For every tracker/forge read and write, in order:
+
+1. a first-class MCP tool for that operation, where one exists;
+2. an authenticated CLI (`gh`, `linear`, equivalent) when running locally under the user's own credential;
+3. raw HTTP against the API, only where neither of the above exposes the operation at all.
+
+Raw HTTP is a last resort, not a default. Reaching for it must be a decision you record — which operation, and why no higher tier exposes it — not an accident of habit because `curl` is familiar and always available. Where raw HTTP is the only way to perform an operation, treat its results as **provisional** until validated below.
+
+## Proving a transport can see the graph
+
+Before a run depends on **relationship data** — dependency edges, hierarchy, cross-repository links, anything a server can legitimately return in part — prove the chosen transport can see it, using a case whose answer is already known: an edge this run just wrote, or one the user confirmed.
+
+A relayed, proxied, scoped, or short-lived credential can return a truthful-looking partial result. The server answers correctly for the credential it was actually given, and entries outside that credential's reach are simply absent: 200, no error, no warning, fewer rows. A credential scoped per repository returns a single repository's worth of a graph that spans several, and nothing in the response says so. This is not specific to any tracker, forge, or hosting arrangement — it follows from scoping a credential, so assume any transport can do it.
+
+**Two reads through the same transport are not independent corroboration.** A second endpoint behind the same credential reproduces the same blind spot and reads as confirmation, which is worse than a single read because it manufactures confidence. Cross-check across *transports*, or against a known-true case, or not at all.
+
+The conclusion rule: **absence observed through an unvalidated transport is not evidence of absence.** Report it as "not visible via `<transport>`", never as "does not exist". A dependency edge that is invisible rather than missing produces a wrong DAG, dispatches work whose prerequisites are unbuilt, and reads as a clean validation the whole way — the graph is the thing the run schedules against, so a false absence there is not a cosmetic error.
+
+Record which transport was validated for which class of relationship read, so a later read in the same run, or a restart, does not silently fall back to an unvalidated one.
+
 # Tracker abstraction
 
 Determine tracker from each canonical issue URL.
