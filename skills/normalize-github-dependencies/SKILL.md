@@ -93,8 +93,9 @@ A relayed, proxied, scoped, or short-lived credential can return a partial relat
 So before any mutation:
 
 1. read existing relationships through the highest transport tier available — a first-class tool, else an authenticated CLI, and raw HTTP only where neither exposes dependency fields at all;
-2. where that read came from raw HTTP or any relayed credential, prove it can see the class of edge you intend to write, using a case whose answer is known: an edge already confirmed to exist, ideally one crossing repositories;
-3. a second read through the same transport does not count — it reproduces the same blind spot and reads as confirmation.
+2. prove that read can see the class of edge you intend to write, using a case whose answer is known: an edge already confirmed to exist, crossing a repository boundary where the candidate set crosses one. **Required at every tier.** A first-class tool or a CLI running on a directly scoped credential under-reports exactly as quietly as a relayed one — the hazard is the credential's scope, not the transport's shape, so a higher tier lowers the odds without removing the need to check;
+3. a second read through the same transport does not count — it reproduces the same blind spot and reads as confirmation;
+4. a control inside one repository proves that repository only. Where candidates span repositories, prove each boundary the write set touches.
 
 If visibility cannot be proven, report the candidate edges as `UNVERIFIED` and write nothing. Absence observed through an unvalidated transport is not evidence of absence, and the cost is asymmetric: not writing a needed edge leaves a report the user can act on, while writing a duplicate of a live edge mutates a graph on the strength of a blind spot.
 

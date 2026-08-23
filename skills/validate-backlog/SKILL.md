@@ -18,25 +18,28 @@ Use structured issue metadata plus issue text to verify that the declared graph 
 Checks:
 
 1. enumerate the bounded issue set from the supplied manifest/root/explicit issue set;
-2. read native parent/sub-issue hierarchy where the tracker supports it;
-3. read native `blocked by` / `blocking` dependency relationships where supported;
-4. scan issue bodies/comments for textual dependency phrases and linked issue URLs, including `blocked by`, `depends on`, `after`, `requires`, `prerequisite`, `must land first`, and equivalent wording;
-5. compare structured dependencies against text-described dependencies;
-6. detect cycles, missing issue targets, contradictory ordering, closed/cancelled prerequisite inconsistencies, orphaned children, duplicates, and links outside the authorized scope;
-7. distinguish an external prerequisite from an authorized implementation issue;
-8. report whether the graph is safe to execute without guessing.
+2. **establish that the transport can see the relationships you are about to read**, before consuming them — see Transport visibility below. This gates the whole check, not just the mismatch case;
+3. read native parent/sub-issue hierarchy where the tracker supports it;
+4. read native `blocked by` / `blocking` dependency relationships where supported;
+5. scan issue bodies/comments for textual dependency phrases and linked issue URLs, including `blocked by`, `depends on`, `after`, `requires`, `prerequisite`, `must land first`, and equivalent wording;
+6. compare structured dependencies against text-described dependencies;
+7. detect cycles, missing issue targets, contradictory ordering, closed/cancelled prerequisite inconsistencies, orphaned children, duplicates, and links outside the authorized scope;
+8. distinguish an external prerequisite from an authorized implementation issue;
+9. report whether the graph is safe to execute without guessing.
 
 Structured dependency metadata is authoritative when present, but textual descriptions remain a secondary consistency signal. A textual blocker absent from structured metadata should be flagged as a likely missing dependency rather than silently ignored.
 
-#### When text and structured metadata disagree
+### Transport visibility
 
-Before reporting a structured edge as missing, establish whether the transport in use can see structured cross-repository edges **at all**. A relayed or scoped credential can return a partial relationship set without error — the entries it cannot reach are absent rather than refused — so an edge that exists and is merely invisible looks identical to one that was never created. Prove visibility against a case whose answer is known (an edge the caller confirmed, or one visible through a second transport) before concluding anything from an absence.
+A scoped or relayed credential can return a partial relationship set without error — the entries it cannot reach are absent rather than refused — so an edge that exists but is invisible looks identical to one that was never created. Establish that the transport can see the relationships in scope **before consuming them**, against a case whose answer is known: an edge the caller confirmed, or one visible through a second transport. Where the graph spans repositories, the known case must itself cross a repository boundary; a control inside one repository proves that repository only.
 
-Skipping that step turns this check into a confident generator of false findings, precisely where it is trusted most: cross-repository edges are both the ones most likely to be redacted by scoping and the ones whose loss most changes execution order.
+Do this before reading, not only when something looks wrong. A hidden edge with no prose mirror produces no mismatch to investigate, so a check that validates visibility only on disagreement will omit that edge from the normalized DAG and return `PASS` — the most damaging possible output, because `PASS` is what the caller dispatches against.
 
-This is why prose dependencies are a legitimate **mirror** rather than redundant noise. They live in issue text, so they survive transports that redact structured relationships, and a textual blocker with no visible structured edge is as likely to be evidence of a blind spot as of a missing link. Structured edges stay authoritative wherever both are visible; a mismatch is a finding to report, never a licence to trust one side by default.
+So: **an unproven transport cannot produce `PASS`.** Return `PASS_WITH_WARNINGS` naming the transport and the boundaries left unproven, or `FAIL` where the unproven relationships are the ones the execution order depends on. Report the shortfall as `not visible via <transport>`, never as a missing dependency.
 
-Report an unproven absence as `not visible via <transport>`, not as a missing dependency.
+This is also why prose dependencies are a legitimate **mirror** rather than redundant noise. They live in issue text, so they survive transports that redact structured relationships, and a textual blocker with no visible structured edge is as likely to be evidence of a blind spot as of a missing link. Structured edges stay authoritative wherever both are visible; a mismatch is a finding to report, never a licence to trust one side by default.
+
+Cross-repository edges deserve the most scepticism on both counts: they are the likeliest to be redacted by scoping, and their loss changes execution order the most.
 
 ### Deep mode
 

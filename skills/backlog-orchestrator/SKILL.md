@@ -111,7 +111,9 @@ Detection establishes what exists. This establishes which one to use. For every 
 2. an authenticated CLI (`gh`, `linear`, equivalent) when running locally under the user's own credential;
 3. raw HTTP against the API, only where neither of the above exposes the operation at all.
 
-Raw HTTP is a last resort, not a default. Reaching for it must be a decision you record — which operation, and why no higher tier exposes it — not an accident of habit because `curl` is familiar and always available. Where raw HTTP is the only way to perform an operation, treat its results as **provisional** until validated below.
+Raw HTTP is a last resort, not a default. Reaching for it must be a decision you record — which operation, and why no higher tier exposes it — not an accident of habit because `curl` is familiar and always available.
+
+Precedence lowers the odds of a partial view; it does not remove the need to check for one. A first-class tool or a CLI can run on a directly scoped credential and under-report just as quietly as a relayed one — the hazard is the **scope of the credential**, not the shape of the transport. So treat every relationship read as **provisional until validated below, whichever tier produced it**, and spend the extra scepticism on raw HTTP rather than reserving it for raw HTTP.
 
 ## Proving a transport can see the graph
 
@@ -121,9 +123,13 @@ A relayed, proxied, scoped, or short-lived credential can return a truthful-look
 
 **Two reads through the same transport are not independent corroboration.** A second endpoint behind the same credential reproduces the same blind spot and reads as confirmation, which is worse than a single read because it manufactures confidence. Cross-check across *transports*, or against a known-true case, or not at all.
 
+**The control must match the shape of what the run consumes.** A credential scoped per repository reads a known edge inside one repository perfectly well while omitting every relationship that touches another — so a control drawn from a single repository proves visibility for that repository and nothing else. Cover each scope boundary the graph actually crosses, and where the graph spans repositories, at least one control must itself be a cross-repository edge. One passing control on the easy case is how a scoped credential looks validated.
+
+Record validation per transport **and per boundary**, not per transport alone. "MCP works" is not a finding; "MCP resolves edges from A into B" is.
+
 The conclusion rule: **absence observed through an unvalidated transport is not evidence of absence.** Report it as "not visible via `<transport>`", never as "does not exist". A dependency edge that is invisible rather than missing produces a wrong DAG, dispatches work whose prerequisites are unbuilt, and reads as a clean validation the whole way — the graph is the thing the run schedules against, so a false absence there is not a cosmetic error.
 
-Record which transport was validated for which class of relationship read, so a later read in the same run, or a restart, does not silently fall back to an unvalidated one.
+Record which transport was validated for which class of relationship read and across which boundaries, so a later read in the same run, or a restart, does not silently fall back to an unvalidated one.
 
 # Tracker abstraction
 
