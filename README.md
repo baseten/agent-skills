@@ -15,6 +15,7 @@ Reusable Claude Code skills for issue implementation, PR workflows, backlog vali
 - `validate-backlog` — validates a bounded issue DAG. Shallow mode checks tracker hierarchy/structured dependencies/text consistency; deep mode inspects implementation/spec reality for missing or incorrect dependencies.
 - `normalize-github-dependencies` — converts high-confidence description-based GitHub dependencies into native blocked-by/blocking relationships where GitHub write capabilities are available.
 - `backlog-orchestrator` — policy layer for a bounded build-order/parent issue or issue set. It validates the DAG, fans out isolated Sonnet workers via `implement-issue-core` (onto a Claude Code **Dynamic Workflow** when the user explicitly opts into one for this invocation, otherwise onto native/background sessions or ordinary supervised subagents), consumes platform-surfaced PR events on its own parent-level supervision loop, dispatches bounded `repair-pr` workers, and enforces stack/budget/recovery rules.
+- `summarize-tranche` — writes a short plain-language summary of what a settled tranche actually did, plus the action points a human still has to manage: follow-up issues to open, verified bugs left unfixed, decisions waiting, scope deliberately cut. Read-only by default; it proposes issues rather than opening them. `backlog-orchestrator` invokes it per settled tranche, before ranking.
 - `plan-merge-order` — ranks a settled tranche's open PRs by how much downstream work each unblocks, and emits a review order, a merge batching plan, and the hard sequencing constraints as a table. Read-only; it never merges. `backlog-orchestrator` invokes it when a run settles.
 - `merge-stack` — safely merges one PR, part of a stack, or an explicitly authorized whole stack while rebasing/restacking descendants.
 
@@ -87,7 +88,9 @@ A PR opened as a draft is promoted to ready for review once its first automated 
 
 A run is **settled** when no further implementation can start — every unstarted issue is blocked by implemented-but-unmerged work — and every open PR has had a completed automated review with all findings resolved. The run has produced everything it can; the next move belongs to whoever holds merge authority.
 
-At that point `backlog-orchestrator` invokes `plan-merge-order`, which ranks the open PRs by downstream leverage and returns the review order, merge batches, and forced orderings. Stack ancestry is one input to that ranking, not the whole of it: the highest-leverage PR is often not a stack base, and a PR can unblock nothing on its own while still gating a large subtree behind it.
+At that point `backlog-orchestrator` invokes `summarize-tranche` — a short account of what the tranche did plus the action points needing a human, run per tranche because its findings come from run context the next session will not have, and because a follow-up discovered mid-run needs to exist while later tranches can still pick it up.
+
+Then it invokes `plan-merge-order`, which ranks the open PRs by downstream leverage and returns the review order, merge batches, and forced orderings. Stack ancestry is one input to that ranking, not the whole of it: the highest-leverage PR is often not a stack base, and a PR can unblock nothing on its own while still gating a large subtree behind it.
 
 ## Cloud bootstrap
 

@@ -41,6 +41,7 @@ Reusable worker skills:
 - `repair-pr` — one bounded CI or review repair pass;
 - `create-pr` — issue linkage, stack metadata, PR creation, review trigger;
 - `resolve-pr-comment` — thread-level review fix primitive;
+- `summarize-tranche` — read-only short summary and action points for a settled tranche;
 - `plan-merge-order` — read-only review/merge-order ranking for a settled tranche;
 - `merge-stack` — separately authorized stack merge/restack workflow.
 
@@ -255,7 +256,7 @@ At most one strongest-model implementation escalation is allowed for a reasoning
 
 Implementation workers require `implement-issue-core` and `create-pr`.
 Repair workers require `repair-pr` and, for review fixes, `resolve-pr-comment`.
-The parent layer requires `validate-backlog` at preflight and `plan-merge-order` when the run settles.
+The parent layer requires `validate-backlog` at preflight, and `summarize-tranche` followed by `plan-merge-order` when the run settles.
 
 Workers must inherit/preload the active installed skills. If a required skill is unavailable, return `BLOCKED` rather than improvising a replacement workflow.
 
@@ -655,10 +656,13 @@ Settled is not the same as finished. The run has produced everything it can; the
 
 On reaching settled:
 
-1. reconcile tracker + remote state one final time, so the ranking is computed from durable truth rather than cached run state;
-2. invoke `plan-merge-order` with the manifest/scope and this run's PR set;
-3. surface its table and recommendations to the user as the run's closing output;
-4. stop dispatching work and stop spending tokens re-deriving the same state.
+1. reconcile tracker + remote state one final time, so both the summary and the ranking are computed from durable truth rather than cached run state;
+2. invoke `summarize-tranche` with the manifest/scope, this run's PR set, and the worker/review findings it produced;
+3. invoke `plan-merge-order` with the manifest/scope and this run's PR set;
+4. surface the summary and action points first, then the ranking table, as the run's closing output;
+5. stop dispatching work and stop spending tokens re-deriving the same state.
+
+Summarize before ranking. An action point can change whether something should merge at all, and a ranking the user has already begun acting on is the wrong place to discover that. Run the summary once per settled tranche rather than saving one up for the end of a whole backlog: its findings come from run context that the next session will not have, and follow-ups need to exist while later tranches are still running, so they get picked up instead of rediscovered.
 
 Do not merge, and do not treat the ranking as authorization to merge — invariant 12 still holds.
 
@@ -717,7 +721,7 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - CI/review states + repair budgets consumed;
 - PRs left unreviewed, and whether the review trigger was deferred or unavailable;
 - PRs promoted from draft to ready, and any left in draft with the reason;
-- the `plan-merge-order` table when the run settled;
+- the `summarize-tranche` summary and action points, and the `plan-merge-order` table, when the run settled;
 - issue-linkage/tracker-status inconsistencies;
 - `NEEDS_USER` items;
 - external blockers;
