@@ -811,7 +811,7 @@ On reaching settled:
 1. reconcile tracker + remote state one final time, so both the summary and the ranking are computed from durable truth rather than cached run state;
 2. invoke `summarize-tranche` with the manifest/scope, this run's PR set, and the worker/review findings it produced;
 3. **act on its action points before ranking anything** (below);
-4. invoke `plan-merge-order` with the manifest/scope, this run's PR set, and any `MERGE_RISK`/`DECISION` items the summary produced, so the ranking is computed against those constraints rather than around them;
+4. invoke `plan-merge-order` with the manifest/scope, this run's PR set, and every summary item with an ordering consequence — the `MERGE_RISK` and `DECISION` items, and any other class that also carries one, so the ranking is computed against those constraints rather than around them;
 5. surface the summary and action points first, then the ranking table, as the run's closing output;
 6. stop dispatching work and stop spending tokens re-deriving the same state.
 
@@ -826,7 +826,7 @@ Settlement was computed before the summary existed, so the summary is capable of
 | `IN_FLIGHT_FIX` | the tranche is **not settled** — that PR has actionable work outstanding. Return it to supervision, dispatch the repair within budget, and re-test the settled conditions before ranking |
 | `MERGE_RISK` | still settled, but the ranking must carry it. Pass it to `plan-merge-order`, and raise it as `NEEDS_USER` where it blocks a merge decision outright |
 | `DECISION` | pass to `plan-merge-order` and surface as `NEEDS_USER`; it gates a human, not the run |
-| `NEW_ISSUE` | no effect on settlement or ordering — report it |
+| `NEW_ISSUE` | report it; no effect on settlement. No effect on ordering **unless the item carries an ordering consequence** — a follow-up that must land before one of this tranche's PRs is also a `MERGE_RISK`, and takes that row too. The classes answer different questions, so read the item rather than the label alone |
 
 An `IN_FLIGHT_FIX` reaching the ranking is the same defect the settled conditions already guard against: a table that orders PRs which are not actually finished is a table the user cannot act on. Finding it one step later does not make it acceptable.
 

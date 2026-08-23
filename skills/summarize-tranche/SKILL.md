@@ -64,6 +64,8 @@ Classify each as:
 | `IN_FLIGHT_FIX` | belongs in an open PR from this tranche, not a new one; owned by the orchestrator rather than a person, and never omitted for that reason |
 | `MERGE_RISK` | something the merge decision needs to account for |
 
+The first three classes say **who owns the follow-up**; `MERGE_RISK` says the merge decision has to account for it. Those are different questions, so an item can carry both — a verified defect with no ticket that must land before one of this tranche's PRs is a `NEW_ISSUE` *and* a `MERGE_RISK`, and reporting only the first tells the caller to file a ticket while leaving it free to rank that PR for merge. Where an item has an ordering consequence, say so on the item, whichever class it also carries.
+
 Drop anything that is merely informational. "Worth keeping an eye on" is not an action point, and a list padded with observations trains the reader to skim past the real items.
 
 ## Collapse recurring findings
