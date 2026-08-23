@@ -52,22 +52,22 @@ Do this even when a caller judged the issue READY. That judgement was computed f
 
 Never rely on one alone, because they fail in different directions. Prose goes stale the moment someone edits a ticket without updating it. Native metadata can be truncated by a scoped or relayed credential, which returns a partial list with a success status and no warning — and **a partial list is more dangerous than an empty one**, because it presents as a complete answer. One blocker returned where four exist reads as "nearly ready" and suppresses exactly the doubt that would have sent you looking elsewhere. Individually each source has a failure mode that resembles success; together they are hard to fool.
 
-### What an empty answer is worth
+### Back the completeness of the set, not only its entries
 
-Three sources are hard to fool only while at least one is carrying information. Where prose names nothing and no caller context arrived, the union collapses to a single native read: the sources then agree because two are silent, not because they corroborate. Readiness resting on that rests on one unproven absence — the failure this step exists to catch, arriving in the shape that looks most like success.
+Resolving every blocker you found says nothing about whether you found them all, and it is completeness that readiness depends on.
 
-So establish what backs the absence before treating it as one:
+Three sources are hard to fool only while they carry information. Where prose names nothing and no caller context arrived, the union collapses to a single native read: the sources agree because two are silent, not because they corroborate. And a union with entries in it is not the safe case — **a partial list is more dangerous than an empty one**, exactly as above, so a read that returned one blocker has supplied no evidence that it returned the rest. Finding a blocker is not backing.
 
-- **the caller marked its context complete and reports the read behind it as having proven visibility** for the boundaries this issue's blockers could cross — backed; proceed. An orchestrator has this by its own contract: an unproven boundary over dispatchable scope is a `FAIL` at its preflight, so a dispatch either carries a proven view or should not have happened;
-- **a known-true case is at hand** — an edge the caller confirmed, crossing the same boundary — so the native read is proven for that boundary and its silence means something. Nothing weaker establishes it: not a second read, not another transport or credential, for the reasons the orchestrator's proof rules give at length;
-- **neither** — the absence is unproven, and it does not become readiness by being reported alongside it.
+So establish what backs the set's completeness:
+
+- **the caller marked its context complete and reports the read behind it as having proven visibility** for the boundaries this issue's blockers could cross — backed. An orchestrator normally has this by its own contract: an unproven boundary over dispatchable scope is a `FAIL` at its preflight, so a dispatch either carries a proven view or should not have happened;
+- **a known-true case, read and observed** — an edge the caller confirmed crossing the same boundary, which you query **through the same transport and credential you are reading dependencies with**, and which comes back. Having such an edge available proves nothing; the observation is the proof. If it does not come back you have found the blind spot rather than ruled it out, and that is a finding. Nothing weaker establishes this: not a second read, not another transport or credential, for the reasons the orchestrator's proof rules give at length;
+- **neither** — completeness is unproven, whether the set holds three blockers or none.
 
 In that last case, what to do turns on whether anything upstream computed readiness from a graph:
 
-- **a caller supplied a READY judgement but no proven view** — return `NEEDS_USER`, naming the boundary. Do not implement. Its own rules required a proven view before dispatch, so the mismatch is upstream information it needs more than it needs this PR, and one confirmed edge or a marked-complete context settles it.
-- **nothing upstream judged readiness** — a direct invocation on one issue. Proceed: that invocation is the authority here, and refusing every issue whose dependency view cannot be proven would refuse nearly all of them, which is the same error as gating on issue state. Carry the unproven view into the report, plainly, so the claim the PR makes matches the evidence behind it.
-
-Either way, an issue where some source *did* name a blocker is not this case. Resolve those as below, and let the report carry the proof state.
+- **a caller supplied a READY judgement but no proven view** — return `NEEDS_USER`, naming the boundary, and do not implement. Its own rules required a proven view before dispatch, so the mismatch is upstream information it needs more than it needs this PR, and one confirmed edge or a marked-complete context settles it.
+- **nothing upstream judged readiness** — a direct invocation on one issue. Proceed, resolving whatever the set does contain, and report the completeness as unproven. Refusing every issue whose dependency view cannot be proven would refuse nearly all of them, which is the same error as gating on issue state; the invocation is the authority here. What the report must not do is let the PR make the stronger claim — no blocker was visible, not none exists.
 
 ### Resolve each blocker's real state
 
@@ -104,15 +104,14 @@ Return `BLOCKED_EXTERNAL` rather than `BLOCKED` **only when every unmet blocker 
 
 "Outside the authorized set" is a fact about the caller's run, not about the issue, so it is only observable if the caller said so. Where authorization membership was supplied, use it. Where it was not — a standalone invocation has no bounded set — **default to `BLOCKED`**: an external-looking prerequisite the root did in fact authorize would otherwise be reported as an out-of-scope wait, and the caller would skip the frontier re-derivation an in-scope blocker requires. Never infer non-membership from the blocker living in another repository or another team's tracker; that is what "external" looks like from here whether or not it is in scope.
 
-**Mixed blockers take the stronger outcome**, across all three block-ish outcomes rather than only the two external ones. One outcome cannot describe several states, so rank them by what the caller loses if that outcome is the one it sees:
+**Mixed blockers take the stronger outcome**, across all the block-ish outcomes rather than only the two external ones. One outcome cannot describe several states, so rank them by what the caller loses if that outcome is the one it sees:
 
 1. **any unmet in-scope blocker → `BLOCKED`.** A graph correction is the only response that another outcome would suppress: the caller reads `NEEDS_USER` and `BLOCKED_EXTERNAL` as *not* graph errors and may skip re-deriving its frontier, so choosing either would lose the correction entirely;
-2. **otherwise any unverifiable prerequisite → `NEEDS_USER`.** A question a person answers in seconds, which nothing else in the report will prompt;
-3. **otherwise, every unmet blocker external → `BLOCKED_EXTERNAL`.** A known wait.
+2. **otherwise unproven set completeness, where a caller judged readiness → `NEEDS_USER`, kind: unproven dependency view.** It outranks what follows because it is the only one whose consequence is not confined to this issue: every sibling judged READY through that read shares the blind spot. It also forbids the conclusions below — "just a known external wait" is not available from a set you cannot trust to be complete. On a direct invocation this is a report line rather than an outcome, so it does not enter the ranking at all;
+3. **otherwise any unverifiable prerequisite → `NEEDS_USER`, kind: unverifiable prerequisite.** A question a person answers in seconds, which nothing else in the report will prompt;
+4. **otherwise, every unmet blocker external → `BLOCKED_EXTERNAL`.** A known wait.
 
-This ranking covers the blockers you found. The unproven-view `NEEDS_USER` above is not in it and never competes with it: that case arises only where **no source named anything**, so there is no blocker to rank against. The two are told apart by exactly that — one reports blockers and asks a question about one of them, the other reports none and says the silence was never established.
-
-Report all of them regardless of which outcome won. The ranking exists because a single value cannot carry three states, not because the others stopped mattering — an unverifiable prerequisite reported under a `BLOCKED` still needs its question asked. The reverse precedence would let a single external prerequisite mask an in-scope dependency the caller's graph got wrong — the caller would skip the frontier re-derivation, and its siblings would stay scheduled against a graph already known to be incomplete. Choose the outcome that demands the most of the caller; the per-blocker detail carries the rest.
+Report all of them regardless of which outcome won. The ranking exists because a single value cannot carry three states, not because the others stopped mattering — an unverifiable prerequisite reported under a `BLOCKED` still needs its question asked, and unproven completeness reported under one still invalidates the caller's visibility proof. The reverse precedence would let a single external prerequisite mask an in-scope dependency the caller's graph got wrong — the caller would skip the frontier re-derivation, and its siblings would stay scheduled against a graph already known to be incomplete. Choose the outcome that demands the most of the caller; the per-blocker detail carries the rest.
 
 Externality changes what the block *means*, not whether a source disagreement is worth reporting. A prerequisite some source named that the native read did not return is still evidence about the transport, external or not — report the disagreement either way.
 
@@ -210,7 +209,7 @@ Return structured state:
 - PR URL/number;
 - remote head SHA;
 - issue linkage verified: yes/no;
-- whether the absence of further blockers was **backed** — by a caller's proven complete set, or by a known-true case — or left unproven, and on what boundary. A `PR_OPEN` carrying an unproven absence is making a narrower claim than it looks like it is making, and this line is the only place that distinction survives;
+- whether the **completeness** of the blocker set was backed — by a caller's proven complete set, or by a known-true case read and observed — or left unproven, and on what boundary. A `PR_OPEN` carrying an unproven absence is making a narrower claim than it looks like it is making, and this line is the only place that distinction survives;
 - the transport tier used for relationship reads and a **non-secret identity of the credential behind it** — the authenticated account and its scopes, never the credential itself. A caller comparing this against its own identity is what turns a caller/native mismatch into a cross-credential demonstration rather than a coincidence, and it cannot make that comparison if you do not say;
 - dependencies checked: for each, the canonical full URL, which of the three sources named it, **the class you judged it under**, and how it resolved by that class's measure — for a code dependency: reachable from base / open PR not in base, with that PR's URL / merged but not reachable, with the merge and base; for a non-ancestry dependency: complete by its own measure / incomplete, with the state it is in / **unverifiable, naming the measure that was out of reach**; or unmet entirely — plus any caller assertion the observation contradicted. Naming the class matters because it tells the caller which measure was applied, and therefore whether a block is a base problem, a wait, or a real gap;
 - source disagreements, reported as **two distinct kinds** because they mean different things and warrant different responses:
