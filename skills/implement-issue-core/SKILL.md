@@ -65,7 +65,10 @@ An open blocker does not mean the work is unavailable. A stacked child is dispat
 | dependency class | availability evidence |
 |---|---|
 | hard same-repo code dependency | its implementation is reachable from this checkout's base |
-| execution-only, shared-parent fanout, cross-repo, external prerequisite | its own completion state — merged, released, deployed, or the issue closed as done — independent of this checkout's ancestry |
+| shared-parent fanout, **where the parent contributes code that this issue's base is cut from** | reachable from this base, exactly as a code dependency — the parent being unmerged is the normal state for a stacked child, and waiting for it to merge would defeat the parallel dispatch the topology exists for |
+| shared-parent fanout with a coordination-only parent, execution-only, cross-repo, external prerequisite | its own completion state — merged, released, deployed, or the issue closed as done — independent of this checkout's ancestry |
+
+The split inside shared-parent fanout is the point: what decides the measure is whether the dependency's code is in your base, not what the edge is called. A parent that carries code your base was cut from is a code dependency by any useful definition; a parent that only groups tickets is not a code dependency at all.
 
 Some of those measures are not observable from an issue and a repository. A merge or a closed issue is; a deployment usually is not, and a release only where the repository carries the tag. Where the measure a class needs is beyond what you can see, caller-supplied context is the authority — a caller asserting the prerequisite is satisfied is claiming something it can verify and you cannot.
 
