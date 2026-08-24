@@ -264,7 +264,32 @@ Run repo-relative checks from the repo root. Ticket paths are repo-relative, so 
 
 Do not automatically mutate dependency metadata. GitHub normalization is handled separately by `normalize-github-dependencies` when requested.
 
-`validate-backlog deep` is optional/user-invoked because it can consume materially more model/code-reading budget.
+`validate-backlog deep` is not run by default, because it can consume materially more model/code-reading budget. It remains available on request — and it is entered **automatically**, without asking, under the triggers below.
+
+## Escalating to deep validation
+
+Shallow mode reads declared dependency metadata and issue text. It never reads code, so it can establish that an edge is *satisfied* and nothing about whether the deliverable behind it covers what the consumer needs. Escalate the preflight from shallow to deep **automatically** — this is a documented default applied and reported, not a question for the user — when the bounded scope shows any of:
+
+- **a cross-repository consumer edge** — an in-scope issue in one repository depends on an issue in another. This is the primary trigger. A frontend consuming a backend built in an earlier tranche is the canonical case, and the earlier tranche having merged is precisely what makes shallow mode confident and wrong;
+- **an issue whose text hedges about its inputs** — "may require", "additional providers may be needed", "assuming X exists" — or an acceptance criterion naming a capability no in-scope issue delivers;
+- **a dependency satisfied by an issue that closed in an earlier tranche**, where nothing in this run verified what that issue actually exposes.
+
+Scope the escalation to the affected subgraph rather than the whole DAG. The cost objection to deep mode is about breadth, and this does not have to be all-or-nothing: escalate the triggering node and the dependencies it consumes, and leave unrelated branches shallow.
+
+Escalation changes the **mode** of the preflight, never whether one runs, and it reads more deeply *within* the bounded manifest — it never widens scope. `PASS` / `PASS_WITH_WARNINGS` / `FAIL` are handled exactly as above at either mode, unproven relationship visibility stays unproceedable at either mode, and the deeper read consumes model budget, not the 12-new-issue budget.
+
+### Coverage is not visibility
+
+This is not the unproven-visibility case, and the doctrine that handles that one cannot catch this. There, an edge may exist and your read cannot show it: absence proves nothing, and the repair is a proof re-established against a case whose answer is known. Here nothing failed. The read was complete, the edge is real, the dependency is genuinely satisfied, and every transport proof over that boundary is valid and stays valid.
+
+What is missing is **coverage**: the closed issue's deliverable does not include the part the consumer needs. `CLOSED` and `MERGED` mean the work someone scoped got done — not that it exposes what something downstream was written against. A backend tranche scoped to a service layer can satisfy every declared edge into it and still ship no route for a frontend to call. Only reading the code behind the edge reveals that, which is why the answer is a mode change rather than a proof. Do not invalidate a visibility proof over a coverage finding; there is nothing to invalidate, and doing so halts dispatch across a boundary that is working correctly.
+
+### Reporting
+
+- **Escalation that finds nothing is still reported** — name the trigger, the nodes escalated, and the clean result in the checkpoint output, so the extra cost is visible and attributable rather than invisible overhead.
+- **A single-repository tranche with no hedged inputs does not escalate.** The default stays shallow; escalation answers a trigger and does not become the new baseline.
+- **Escalation on one node does not force deep validation of unrelated branches.** Nodes that no trigger reaches are validated shallow in the same preflight, and the checkpoint says which nodes got which mode.
+- **If deep mode is unavailable** — not installed, failing, or out of model budget — that is a reportable condition, not a silent fallback. Say so, name the nodes that were owed it, and record their readiness as resting on shallow evidence only. Reporting a shallow `PASS` as though it had answered the question deep mode was escalated to answer is the one outcome this rule forbids.
 
 # Default usage safeguards
 
@@ -607,7 +632,7 @@ A merge someone else performed is a **frontier-advancing event**, not a terminal
 1. reconcile tracker + GitHub remote state, so readiness is recomputed from durable truth rather than cached run state;
 2. restack affected descendants exactly as today (see Stack mutation while PRs are open) — this step is unchanged;
 3. recompute the READY frontier over the **same bounded manifest**, crediting merges only (below). A merge never widens scope: an issue the invocation did not adopt does not become in-scope because something it depends on merged;
-4. if new nodes became READY, re-run the `validate-backlog shallow` preflight over the bounded scope before dispatching, then fill free worker slots in scheduling order. The preflight is not optional here: it is mandatory before **any** new implementation worker, and the merge changed the graph the previous run validated;
+4. if new nodes became READY, re-run the preflight over the bounded scope before dispatching — **at the mode the escalation rules select**, not shallow by default (see Escalating to deep validation) — then fill free worker slots in scheduling order. The preflight is not optional here: it is mandatory before **any** new implementation worker, and the merge changed the graph the previous run validated. This is the case that needs the escalation most: nobody is watching the resumed dispatch, and the merge that triggered it is itself the event that makes a stale cross-tranche dependency look satisfied;
 5. if nothing became READY, stay settled and keep supervising.
 
 This requires no new user prompt. While the run still holds budget and in-scope work remains, the merge resumes dispatch inside the same invocation.
@@ -776,6 +801,10 @@ This adopts findings, never a re-plan; the validated DAG remains the scheduling 
 
 **A worker returns two independent things: an outcome, and evidence about the graph.** Act on the evidence regardless of the outcome. A worker that found the prose naming a dependency native metadata did not return, and then proceeded because the work was present in its base, reports that disagreement on a `PR_OPEN` — and that report is the same evidence of a partial dependency view as a `BLOCKED` would have been. Treating only `BLOCKED` as a graph update leaves every sibling scheduled against the view already known to be wrong, choosing bases and dispatch order from it.
 
+**A satisfied dependency whose capability is absent is evidence of the same kind.** The evidence a worker returns is not only about which edges exist. A worker that finds a declared dependency satisfied on paper — closed, merged, correctly linked — but the capability it needed absent from the code has found a **coverage** gap, and it reaches this path as a first-class finding, not as a note in its PR body. Nothing here is a re-plan: the worker is correcting the graph's meaning from a position the validator did not have, exactly as it does for an unmet blocker, so accept it on the same terms.
+
+Require it explicitly rather than hoping for it. A worker that meets this and ships anyway — disabled UI, a stubbed call, an acceptance criterion quietly dropped — has produced a permanently partial deliverable and left the prerequisite invisible, and that, not the missing capability, is the failure mode. So the worker returns the finding whatever its outcome, naming the dependency, the capability it expected, and what it shipped instead; the parent records it durably against both issues like any other established blocker, **files the prerequisite issue**, and holds the affected path behind it. Report it in the checkpoint alongside the dependency edges workers discovered — and treat it as a trigger the preflight should have caught: a coverage finding at worker time means the escalation rules under Escalating to deep validation did not fire on a node that needed them.
+
 **Only a visibility disagreement is transport evidence.** The worker reports two kinds and they warrant very different responses. An **availability** disagreement says your base or completion claim was stale. Two things pick the repair: the direction, and **the dependency class the worker reported** — it names the class precisely so you can route this, so read it rather than assuming a base problem.
 
 | direction | code dependency | non-ancestry dependency |
@@ -884,7 +913,7 @@ If a run reaches all other settled conditions but some PR still has an unresolve
 
 Settled means the run has nothing it can start *right now*, not that the run is over. Reaching it delivers the merge-order ranking; it does not close the invocation.
 
-After the ranking is delivered, supervision continues for merge/close events and for the restack work a merge triggers — and a merge that advances the frontier re-enters the dispatch loop automatically, under Frontier advance on merge, within the same run and with no new user prompt. Automatic continuation is the default; it yields only where this tranche left a genuine ask outstanding that bears on the next wave, and then only for the paths that ask reaches. The run un-settles itself: recompute readiness, re-run the `validate-backlog shallow` preflight, dispatch into free slots, and settle again when the frontier is empty. A tranche can settle, advance, and settle again several times in one invocation.
+After the ranking is delivered, supervision continues for merge/close events and for the restack work a merge triggers — and a merge that advances the frontier re-enters the dispatch loop automatically, under Frontier advance on merge, within the same run and with no new user prompt. Automatic continuation is the default; it yields only where this tranche left a genuine ask outstanding that bears on the next wave, and then only for the paths that ask reaches. The run un-settles itself: recompute readiness, re-run the preflight at the mode the escalation rules select, dispatch into free slots, and settle again when the frontier is empty. A tranche can settle, advance, and settle again several times in one invocation.
 
 Re-run `plan-merge-order` when merges change the graph enough that the previous ordering is stale, and again when a resumed dispatch produces new PRs that the delivered ranking does not cover.
 
@@ -932,7 +961,7 @@ Before returning, reconcile tracker + GitHub remote state and report:
 
 - runtime used, plus any runtime probed and rejected, with the reason;
 - documented defaults applied without asking — branch-mandate override, issues deferred at the budget cap, concurrency reduced for machine capacity, corrected ticket baselines;
-- validation result/warnings;
+- validation result/warnings, the **mode** each part of the scope was validated at, and any deep escalation — its trigger, the nodes escalated, and the result, including a clean one;
 - manifest/scope;
 - resume frontier;
 - PRs + stack topology;
@@ -947,6 +976,7 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - `NEEDS_USER` items;
 - external blockers;
 - dependency edges discovered by workers that the validated DAG did not contain, where each was recorded durably, and any dependency-source disagreement reported on an otherwise successful run;
+- coverage findings — dependencies satisfied on paper whose capability a worker found absent — with the prerequisite issue filed for each, and any deliverable shipped degraded as a result;
 - which edges in the scheduling graph are **verified** by a worker's own check versus still **assumed** from the preflight read, and when each was verified. This is history, not an exemption: a restart still runs the proof-and-provenance reconciliation in step 2 of Restart / resume over every edge, verified ones included, because the label records what was true when it was written and a dependency can be retired afterwards. What it buys is knowing which edges were established by observation and which rest on one preflight read — where to be sceptical, and what not to rediscover by dispatching into it;
 - unstarted work and why, including any frontier that a merge unblocked after the budget was exhausted — report it as the resume frontier rather than dropping it;
 - whether invoking the same manifest can safely resume.
