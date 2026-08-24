@@ -158,6 +158,8 @@ Everything else is substantive. That includes a conflict resolution that had to 
 
 A mechanical push still has to pass the repository's deterministic checks — those, not another review round, are what validate it. If the repository has no check that would catch a bad renumber or a dropped hunk, the push is not mechanical for this purpose and needs review like any other.
 
+For a renumbered or regenerated artifact, "passes the checks" means **verified to apply**, not verified to compile and not a green CI run. A migration whose identity fields went stale in a hand-rename is silently skipped by the migrator: it compiles, CI is green, and the schema change never happens. So regenerate through the repository's own generator rather than editing identity fields by hand, then exercise the artifact's apply path — migrate against a scratch database, install from the lockfile, regenerate and diff — before treating the push as mechanical. Unverified, it is substantive.
+
 This governs what the workflow itself triggers, not what the review provider does on its own. A provider may re-review off its own events — marking a draft ready, for example. That is outside this skill's control, and is neither a reason to suppress a trigger that is due nor to issue one that is not.
 
 # Addressing later review comments

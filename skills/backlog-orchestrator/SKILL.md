@@ -575,6 +575,8 @@ A restack, or a renumber/regeneration of a claimed artifact, moves identity or o
 
 The repository's deterministic checks are what validate it. Where the repository has no check that would catch a bad renumber, treat the push as substantive instead — `create-pr` carries the full test for which is which.
 
+A renumber earns the mechanical label only once its regeneration has been **verified to apply** (see Performing the renumber once a human decides). "Moves identity or ordering rather than behavior" describes what a *correct* renumber does; the hazard is that a botched one is indistinguishable from it in the diff while changing whether the artifact runs at all. So an unverified renumber is not a mechanical push, it is an unvalidated one, and skipping review over it is the shortcut that makes the failure invisible. Verify first, then claim the exemption.
+
 This matters most right after a sibling merges. Descendants restack and claimed artifacts renumber for reasons that have nothing to do with their own diffs, and re-reviewing every one of them spends the review budget on code that did not change.
 
 ## Draft promotion after a clean first review
@@ -745,6 +747,16 @@ After each PR reaches durable state, compare it against sibling branches in the 
 Two chains cut from the same base can each be internally consistent and both pass CI while colliding, because neither can see the other; the conflict only materializes when the second one merges. Dependency edges and stack ancestry do not detect this — the branches are siblings, not ancestors.
 
 Correct resolution depends on merge order, which this skill does not own. Surface the collision as `NEEDS_USER` with both PR URLs and the colliding paths. Never renumber or rewrite the artifact pre-emptively.
+
+### Performing the renumber once a human decides
+
+**Produce it with the repository's own generator. Never hand-edit the artifact's identity fields.** A claimed identity is rarely stored in one place, and the copies that are not the visible filename are usually the ones that decide whether the artifact runs. A Drizzle migration's identity lives in five: the `.sql` filename, the journal's `idx`, `tag` and `when`, and the snapshot's `id`/`prevId` chain. A hand-rename that updates four of them and misses `when` makes the migration **silently skipped** — no error, no log, green CI, and the schema change never applies. Renumbering `0011` to `0014` in `crypto-scanner-api` was exactly this; the repair was regenerating through `pnpm db:generate` and splicing the hand-written backfill back in.
+
+The class generalizes past migrations: any artifact whose identity is **claimed rather than derived and spread across more than one file** — a migration with its journal and snapshot, a lockfile with its manifest, a generated client with its registry entry. Renaming what you can see is precisely the operation that leaves the rest stale.
+
+Then verify the result **applies**, not that it compiles and not that CI is green. A skipped migration passes both, which is why neither is the check. Run the artifact's own apply path — migrate against a scratch database, install from the lockfile, regenerate and diff against the committed copy — and confirm the effect the artifact was supposed to have is actually present. Where the generator cannot reproduce hand-written content the original carried, splice it back and re-verify; a regenerated artifact that silently dropped a backfill is the same failure with the sign flipped.
+
+Until that verification passes, the renumber is not finished, and it is not mechanical (below).
 
 # Lost worker / workflow recovery
 
