@@ -163,7 +163,15 @@ A worker is finished when it has **returned a terminal outcome — any of them, 
 
 And it is finished only once **nothing is stranded in its worktree**, which no outcome label can tell you. A session merely reading `IDLE` asserts neither condition: idle is also what a worker looks like when it finished editing and never committed — the state Checkpoint compliance exists to catch, because workers reliably reach it.
 
-A worker that returned no outcome at all is neither finished nor blocked. It is lost, and Lost worker / workflow recovery owns it.
+**One exception to the outcome condition — and it is the case this section exists for.** A worker blocked on a permission prompt *after* its work reached durable state never returns an outcome, because the prompt is precisely what stops it returning. It is finished regardless: it did the work and then stopped in the cleanup behind it. Release it on the durable state alone, per Blocked workers step 1. Requiring an outcome there would strand exactly the session whose leak prompted this rule — a worker whose PR had already merged, held for six hours by a prompt about a trigger.
+
+So a worker that has not returned an outcome is not automatically lost. It is one of three things, and only the last is:
+
+| state | who owns it |
+|---|---|
+| stopped on a prompt | Blocked workers — released on durable work, cleared, or raised as `NEEDS_USER` |
+| still working | nobody yet — leave it and re-check next cycle |
+| unreachable | Lost worker / workflow recovery |
 
 So the ordering between the two is fixed rather than incidental: the checkpoint-compliance step of the supervision cycle runs first, and a session is archived only once the worktree it holds has no uncommitted work left in it. Archiving first destroys the container and the only copy of that work together, and the check that would have caught it no longer has anything to look at.
 
@@ -810,7 +818,7 @@ A worker waiting on a permission prompt is neither running nor finished. Its ses
 
 Read the blocked state explicitly each cycle, and resolve it in this order:
 
-1. **the work is already durable** — branch pushed, PR open, and the prompt concerns cleanup this run does not need. Release the worker (see Releasing a worker) and record what it was asking for;
+1. **the work is already durable** — branch pushed, PR open, and the prompt concerns cleanup this run does not need. Release the worker and record what it was asking for. It never returned an outcome and never will, since the prompt is what is stopping it; that is the one case where durable work alone releases a session, and Releasing a worker names it as the exception rather than leaving the two rules to disagree;
 2. **the block is the parent's to clear** — a resource detail the worker was dispatched without, an instruction it can be sent, a write the parent can perform itself. Clear it and let the worker continue;
 3. **neither** — `NEEDS_USER`, naming the issue, the session, and **the exact tool being requested**. "A worker needs permission" is not actionable; the tool's name is what lets a user allow it once and unblock every run after this one.
 
