@@ -157,23 +157,28 @@ Prefer native/runtime capabilities when they implement the required behavior saf
 
 The first and third rows are why the second needed writing down. On two of the four tiers release *is* the absence of an action, so a reader generalizing from those reads "release the worker" as a remark about attention rather than an instruction — and on the tier this run most often degrades to, the same words name a real resource that then leaks silently. Nine finished worker sessions still holding containers after a run, found by the user in a session list rather than by the run in its own report, is what that reads like from outside.
 
-**Release on a returned outcome plus durable state, not on quiet.** Two conditions, and each catches what the other misses.
+**The releasable test, stated once and referenced everywhere else that needs it.** Restating it in situ is how three versions of it came to disagree about the same worker.
 
-A worker is finished when it has **returned a terminal outcome — any of them, not only the successful ones.** `implement-issue-core` ends on `BLOCKED`, `BLOCKED_EXTERNAL`, `FAILED` and `NEEDS_USER` exactly as it ends on `PR_OPEN`; `repair-pr` ends on `NO_CODE_CHANGE`, `FAILED` and `NEEDS_USER` exactly as it ends on `REPAIRED`. A repair worker that correctly classified a CI failure as external returns `NO_CODE_CHANGE` with an unchanged head and nothing to push, and it is as done as one that pushed a fix. Releasing only on the two successful outcomes leaks every session whose worker did its job and had nothing to show for it — and a run dispatching into a wrong graph produces those in bulk.
+A worker is releasable when both hold, and not before:
 
-And it is finished only once **nothing is stranded in its worktree**, which no outcome label can tell you. A session merely reading `IDLE` asserts neither condition: idle is also what a worker looks like when it finished editing and never committed — the state Checkpoint compliance exists to catch, because workers reliably reach it.
+1. **it is done** — either of:
+   - it **returned a terminal outcome**, any of them and not only the successful ones. `implement-issue-core` ends on `BLOCKED`, `BLOCKED_EXTERNAL`, `FAILED` and `NEEDS_USER` exactly as it ends on `PR_OPEN`; `repair-pr` ends on `NO_CODE_CHANGE`, `FAILED` and `NEEDS_USER` exactly as it ends on `REPAIRED`. A repair worker that correctly classified a CI failure as external returns `NO_CODE_CHANGE` with an unchanged head and nothing to push, and is as done as one that pushed a fix. Releasing only on the two successful outcomes leaks every session whose worker did its job and had nothing to show for it, which a run dispatching into a wrong graph produces in bulk;
+   - or its **work reached durable remote state and it is now blocked on a prompt**. No outcome arrives in this case because the prompt is what stops it arriving, and waiting for one strands the session forever;
+2. **nothing is stranded in its worktree** — which no outcome label can speak to, and which Checkpoint compliance is what establishes.
 
-**One exception to the outcome condition — and it is the case this section exists for.** A worker blocked on a permission prompt *after* its work reached durable state never returns an outcome, because the prompt is precisely what stops it returning. It is finished regardless: it did the work and then stopped in the cleanup behind it. Release it on the durable state alone, per Blocked workers step 1. Requiring an outcome there would strand exactly the session whose leak prompted this rule — a worker whose PR had already merged, held for six hours by a prompt about a trigger.
+**Durable remote state** means the branch is pushed and a PR exists for it. **The PR's own state is irrelevant** — open, merged, or closed. Merged is the *common* case here rather than an edge one: a wake armed at PR creation outlives the PR that armed it, so by the time anyone notices the blocked session the work has usually landed. The session that prompted all of this had merged hours before it was found. Any test that requires the PR still be open excludes precisely the deadlock this section exists for.
 
-So a worker that has not returned an outcome is not automatically lost. It is one of three things, and only the last is:
+A session merely reading `IDLE` asserts neither condition: idle is also what a worker looks like when it finished editing and never committed — the state Checkpoint compliance exists to catch, because workers reliably reach it.
+
+And a worker that has not returned an outcome is not therefore lost. It is one of three things, and only the last is:
 
 | state | who owns it |
 |---|---|
-| stopped on a prompt | Blocked workers — released on durable work, cleared, or raised as `NEEDS_USER` |
+| stopped on a prompt | Blocked workers — released by the test above, cleared, or raised as `NEEDS_USER` |
 | still working | nobody yet — leave it and re-check next cycle |
 | unreachable | Lost worker / workflow recovery |
 
-So the ordering between the two is fixed rather than incidental: the checkpoint-compliance step of the supervision cycle runs first, and a session is archived only once the worktree it holds has no uncommitted work left in it. Archiving first destroys the container and the only copy of that work together, and the check that would have caught it no longer has anything to look at.
+The ordering between the two conditions is fixed rather than incidental: the checkpoint-compliance step of the supervision cycle runs first, and a session is archived only once the worktree it holds has no uncommitted work left in it. Archiving first destroys the container and the only copy of that work together, and the check that would have caught it no longer has anything to look at.
 
 Two things are never archived. A **`RUNNING`** session — a worker that must be stopped is interrupted first, which consumes that issue's lost-worker budget and needs the same evidence any redispatch does (see Checkpoint compliance), and is archived only after its work is captured. And a session **this run did not create** — the user's own sessions from every other surface share that list, and none of them are this run's to reclaim.
 
@@ -820,7 +825,7 @@ A worker waiting on a permission prompt is neither running nor finished. Its ses
 
 Read the blocked state explicitly each cycle, and resolve it in this order:
 
-1. **the work is already durable** — branch pushed, PR open, and the prompt concerns cleanup this run does not need. Release the worker and record what it was asking for. It never returned an outcome and never will, since the prompt is what is stopping it; that is the one case where durable work alone releases a session, and Releasing a worker names it as the exception rather than leaving the two rules to disagree;
+1. **it is releasable** — apply the test in Releasing a worker rather than judging it here, which is the whole point of that test being written once. Its work reached durable remote state, nothing is stranded in its worktree, and the prompt concerns cleanup this run does not need. Release it and record what it was asking for. Note what the test says about the PR: **its state does not matter**, and merged is the usual case, because the wake outlives the PR that armed it;
 2. **the block is the parent's to clear** — a resource detail the worker was dispatched without, an instruction it can be sent, a write the parent can perform itself. Clear it and let the worker continue;
 3. **neither** — `NEEDS_USER`, naming the issue, the session, and **the exact tool being requested**. "A worker needs permission" is not actionable; the tool's name is what lets a user allow it once and unblock every run after this one. Report the literal string the runtime gave you, server segment included, and never a tidied version of it: an MCP server can be registered under a display name, a slug, or its bare UUID, the allowlist matches the literal name, and a tool already allowlisted under one of those spellings still prompts under another. Normalizing the name to the one you expected is how that reads as an entry that exists and does not work.
 
