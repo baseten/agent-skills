@@ -144,6 +144,46 @@ Also detect:
 
 Prefer native/runtime capabilities when they implement the required behavior safely, but retain tracker + GitHub remote state as recovery truth.
 
+### Releasing a worker
+
+"Release the worker" appears throughout this document — at `PR_OPEN`, after every repair — and it names a different act on every tier, so it is defined here beside the tiers rather than at each call site:
+
+| runtime | what releasing is |
+|---|---|
+| Dynamic Workflow agent | nothing to do — the runtime reclaims the agent when the workflow returns |
+| remote worker session | **archive the session.** A live one holds a container, a session-list entry, and whatever permission prompt it may be sitting on |
+| in-process subagent | stop messaging it; there is no resource to reclaim |
+| serialized execution | nothing to do — there was never a second actor |
+
+The first and third rows are why the second needed writing down. On two of the four tiers release *is* the absence of an action, so a reader generalizing from those reads "release the worker" as a remark about attention rather than an instruction — and on the tier this run most often degrades to, the same words name a real resource that then leaks silently. Nine finished worker sessions still holding containers after a run, found by the user in a session list rather than by the run in its own report, is what that reads like from outside.
+
+**The releasable test, stated once and referenced everywhere else that needs it.** Restating it in situ is how successive versions of it came to disagree about the same worker — every review round this section has had found one such disagreement, each introduced by the fix for the last. A second copy of this test appearing anywhere is the regression to look for.
+
+A worker is releasable when both hold, and not before:
+
+1. **it is done** — either of:
+   - it **returned a terminal outcome**, any of them and not only the successful ones. `implement-issue-core` ends on `BLOCKED`, `BLOCKED_EXTERNAL`, `FAILED` and `NEEDS_USER` exactly as it ends on `PR_OPEN`; `repair-pr` ends on `NO_CODE_CHANGE`, `FAILED` and `NEEDS_USER` exactly as it ends on `REPAIRED`. A repair worker that correctly classified a CI failure as external returns `NO_CODE_CHANGE` with an unchanged head and nothing to push, and is as done as one that pushed a fix. Releasing only on the two successful outcomes leaks every session whose worker did its job and had nothing to show for it, which a run dispatching into a wrong graph produces in bulk;
+   - or its **work reached durable remote state and it is now blocked on a prompt this run does not need answered**. No outcome arrives in this case because the prompt is what stops it arriving, and waiting for one strands the session forever.
+
+     **That last qualifier is load-bearing, not throat-clearing.** A pushed branch, an existing PR and a clean worktree do not by themselves mean the worker is finished: `create-pr` verifies tracker linkage and issues the automated review trigger *after* creating the PR, so a worker blocked on either of those is stopped mid-deliverable rather than tidying up behind one. Archiving it there leaves a PR that is unlinked or never reviewed while the run records the issue as complete — the coverage failure this document spends a section on, arrived at through cleanup. Cleanup the run does not need — disarming a wake the worker should never have armed — releases it. Anything the deliverable still depends on takes the parent's-clear or `NEEDS_USER` branches under Blocked workers instead;
+2. **nothing is stranded in its worktree** — which no outcome label can speak to, and which Checkpoint compliance is what establishes.
+
+**Durable remote state** means the branch is pushed and a PR exists for it. **The PR's own state is irrelevant** — open, merged, or closed. Merged is the *common* case here rather than an edge one: a wake armed at PR creation outlives the PR that armed it, so by the time anyone notices the blocked session the work has usually landed. The session that prompted all of this had merged hours before it was found. Any test that requires the PR still be open excludes precisely the deadlock this section exists for.
+
+A session merely reading `IDLE` asserts neither condition: idle is also what a worker looks like when it finished editing and never committed — the state Checkpoint compliance exists to catch, because workers reliably reach it.
+
+And a worker that has not returned an outcome is not therefore lost. It is one of three things, and only the last is:
+
+| state | who owns it |
+|---|---|
+| stopped on a prompt | Blocked workers — released by the test above, cleared, or raised as `NEEDS_USER` |
+| still working | nobody yet — leave it and re-check next cycle |
+| unreachable | Lost worker / workflow recovery |
+
+The ordering between the two conditions is fixed rather than incidental: the checkpoint-compliance step of the supervision cycle runs first, and a session is archived only once the worktree it holds has no uncommitted work left in it. Archiving first destroys the container and the only copy of that work together, and the check that would have caught it no longer has anything to look at.
+
+Two things are never archived. A **`RUNNING`** session — a worker that must be stopped is interrupted first, which consumes that issue's lost-worker budget and needs the same evidence any redispatch does (see Checkpoint compliance), and is archived only after its work is captured. And a session **this run did not create** — the user's own sessions from every other surface share that list, and none of them are this run's to reclaim.
+
 ## Transport precedence
 
 The detection above establishes what exists. This establishes which one to use. For every tracker/forge read and write, in order:
@@ -454,7 +494,7 @@ Before dispatch:
 8. include **authorization membership**: the bounded authorized set, or a per-blocker flag for whether each is inside it. Only you know this, and the worker's block outcome turns on it — without it, an external-looking prerequisite you did authorize comes back as an out-of-scope wait and you skip the frontier re-derivation it needed. A worker given nothing defaults to the stronger outcome, which is safe but costs you the distinction;
 9. dispatch Sonnet worker with `implement-issue-core`.
 
-A dispatch prompt that enumerates a required process is followed literally: a default left out of that enumeration is a default skipped, and the worker will accurately report that the task never asked for it. Every dispatched prompt must therefore carry the automated review trigger instruction — `create-pr` owns the trigger rules, do not restate them here — unless this run explicitly defers review. Deferral is a conscious choice recorded in run state, naming what review is owed and on which PRs; it is never an omission.
+A dispatch prompt that enumerates a required process is followed literally: a default left out of that enumeration is a default skipped, and the worker will accurately report that the task never asked for it. The same literalism decides what the worker does with instructions this run did not write (see Countermanding the worker's ambient supervision posture, below). Every dispatched prompt must therefore carry the automated review trigger instruction — `create-pr` owns the trigger rules, do not restate them here — unless this run explicitly defers review. Deferral is a conscious choice recorded in run state, naming what review is owed and on which PRs; it is never an omission.
 
 Issuing the trigger is not the end of that step. Confirm it took effect: a review from the repository's automated reviewer materializes within a bounded window, and the reviewer does not instead answer indicating it is not configured or not authorized. Verify per attempt, on every PR — one review arriving elsewhere in the run is not evidence the trigger works. A trigger that silently no-ops is worse than one that fails loudly, because the run then reports PRs as reviewed and clean when nothing reviewed them.
 
@@ -467,6 +507,35 @@ Only once every available path has failed, record it as `NEEDS_USER`: surface on
 This generalizes past review triggers. When the platform offers several ways to perform the same write, prefer its first-class integration tooling over raw transport: attribution, permissions, and downstream automation can all differ between them, and the difference is invisible until a write is made and read back. Where identity matters to a workflow, verify it by inspecting an object the run actually created and reading its author — never by asking the credential who it is, which can answer differently from what its writes carry.
 
 Under Dynamic Workflows, provide these constraints to every workflow worker explicitly. Do not let a worker select another backlog ticket when it finishes.
+
+## Countermanding the worker's ambient supervision posture
+
+Prompt literalism cuts both ways. A prompt that omits a required default gets a worker that skips it; a prompt that omits a required **contradiction** gets a worker that follows whatever its own session already told it to do. A Claude Code Remote worker session inherits a system prompt instructing every session to subscribe to PR activity and to schedule a self check-in roughly an hour out, re-arming it silently until the PR merges. That instruction arrives with the runtime rather than from any skill this run dispatches, and it is correct for the sessions it was written for.
+
+So every dispatched prompt — implementation and repair alike — must state that this run owns PR supervision and the worker does not: do not subscribe to PR activity, do not schedule a check-in, trigger, routine or wake of any kind, and return after pushing and reporting, **even where the worker's own session instructions direct otherwise**. Name the override rather than merely stating the rule.
+
+**But put it where it can actually outrank what it countermands.** A dispatch prompt is a task instruction, and a task instruction is the weaker side of an argument with a session's own system prompt — telling a worker in its task to disregard its session instructions does not, by itself, make it do so. So on a runtime where this run *builds* the worker's session, write the countermand into that session's system prompt: `create_session` takes an `append_system_prompt` for exactly this purpose, and it is the only lever here that sits at the same level as the instruction it is answering. The dispatch prompt then restates it rather than carrying it alone.
+
+The tier decides which lever exists, and only one tier has the problem:
+
+| runtime | where the countermand goes |
+|---|---|
+| remote worker session | `append_system_prompt` at creation, restated in the dispatch prompt |
+| subagent, Dynamic Workflow agent, serialized | the dispatch prompt is the whole of it — none of these inherits a session posture to countermand |
+
+Expect this to reduce the behavior, not to eliminate it. Appending does not delete the instruction already present, some environments ignore the parameter outright, and a worker resolving two same-level instructions may still arm a wake. That residue is why **Blocked workers** is a backstop rather than a redundancy: the run has to be able to notice a worker that armed one anyway and clear it, not merely to have forbidden it.
+
+**And do not read a quiet session list as proof this worked.** Where workers inherit an allowlist that grants the trigger tools, a worker that arms a wake can also disarm it, so it leaves nothing blocked behind — which looks identical from outside to a worker that never armed one. Only the checkpoint output separates them. Report the wake a worker armed wherever you can observe one, and treat an absence of blocked sessions as the absence of a symptom rather than as evidence about the cause.
+
+Do not leave this to the worker skills. `implement-issue-core` and `repair-pr` now forbid delegating a wait as well as performing one, but their earlier wording — bounding duration alone — is what a worker met and satisfied while still leaving a watcher armed, because arming a wake is not entering a loop. That reading is available again to any worker weighing a skill rule against a session instruction, and the skill rule is the weaker of the two on its own. The gap is **delegation, not duration**, and this prompt is the only place in the system that sees both instructions at once.
+
+It is also the only place the problem is visible. The instruction being countermanded appears in none of the worker skills, so searching them for the behavior finds nothing that could be causing it.
+
+The parent arming its own subscription and check-in when a run settles (see Arming the wait when nothing is in flight) is this same ownership stated from the other side, not an exception to it. One watcher, held by the layer that owns supervision.
+
+Two costs, and the second is the one observed. A second watcher duplicates supervision the parent already owns and can act on a PR the parent is mid-repair on. And a worker that arms a wake it is not permitted to disarm — the trigger tools are routinely outside a worker session's allowlist — blocks on a permission prompt with nobody watching, holding a container for hours after its own work merged. The implementation succeeded; the deadlock was entirely in the cleanup.
+
+Scope this to workers **this skill dispatches**. `implement-issue` invoked standalone owns supervision of its one PR by design, and the ambient posture is right there; this countermand does not travel to it.
 
 ## Shared environment
 
@@ -500,7 +569,7 @@ A PR opened by a worker may be surfaced back to the parent/top-level session by 
 
 If Claude Code's background PR behavior has auto-merge enabled, it will merge PRs itself once checks pass — this conflicts directly with this skill's no-automatic-merge invariant. Confirm auto-merge is off (or explicitly authorized by the user for this run) before relying on that background behavior for CI/review surfacing.
 
-Once an implementation worker reaches `PR_OPEN`, release that implementation worker. Long-lived PR supervision belongs to the parent/runtime orchestration layer.
+Once an implementation worker reaches `PR_OPEN`, release that implementation worker — on a remote-session runtime that is an archive call, not merely ceasing to message it (see Releasing a worker). Long-lived PR supervision belongs to the parent/runtime orchestration layer.
 
 For every active PR track:
 
@@ -545,7 +614,7 @@ On an actionable CI failure:
 4. dispatch one Sonnet `repair-pr` worker with `repair type = ci`;
 5. adopt its pushed remote head;
 6. increment the CI repair cycle;
-7. release the repair worker and resume event supervision.
+7. release the repair worker (see Releasing a worker) and resume event supervision.
 
 External/flaky failure with no justified code change does not consume a repair cycle.
 
@@ -557,7 +626,7 @@ On actionable review feedback:
 4. `repair-pr` uses `resolve-pr-comment` where relevant;
 5. adopt the new remote head and increment review cycle;
 6. retrigger/request review when repo convention requires it, unless review is still deferred for this PR or triggering was suppressed for this run;
-7. release worker and resume event supervision.
+7. release the worker (see Releasing a worker) and resume event supervision.
 
 Review feedback may reference a head already superseded by a rebase/restack. Locate each finding by content rather than line number, and confirm it still applies to the current head before repairing.
 
@@ -620,10 +689,11 @@ Each cycle performs real work:
 7. fill available worker slots (optionally via a fresh Dynamic Workflow fan-out if the user re-opts in for the next batch);
 8. inspect stack ancestry changes;
 9. inspect every in-flight worktree for uncommitted work and enforce checkpoints (see Checkpoint compliance — this is a mandatory step, and the parent commits on the worker's behalf when a nudge has already failed);
-10. re-check disk/slot capacity;
-11. check sibling branches for colliding added or modified claimed artifacts;
-12. surface `NEEDS_USER`;
-13. wait using native task/event wait, then repeat.
+10. read every worker's runtime state, not only its work state — release the finished (see Releasing a worker) and act on the blocked (see Blocked workers);
+11. re-check disk/slot capacity;
+12. check sibling branches for colliding added or modified claimed artifacts;
+13. surface `NEEDS_USER`;
+14. wait using native task/event wait, then repeat.
 
 Do not use CPU loops, file-touch loops, detached sleeps, meaningless commits, or other fake activity solely to prevent idling.
 
@@ -750,6 +820,18 @@ So under a Dynamic Workflow, enforcement has to be structural — encoded in the
 That only works where the issue's work decomposes into units the script can name in advance — per-file tranches, per-module conversions, work already sliced by the ticket. Where it does not, the workflow runtime **cannot** satisfy invariant 5 for that issue, and no arrangement of stages changes that.
 
 So the runtime preference is conditional, not absolute. A Dynamic Workflow suits the fan-out shape, but invariant 5 outranks that convenience: prefer a runtime whose workers the parent can reach whenever the implementation cannot be staged into script-visible units. Unreachable-mid-run is a real cost of the workflow runtime, the same one that already disqualifies it for PR supervision — this is the second thing it cannot do, not a footnote on the first.
+
+## Blocked workers
+
+A worker waiting on a permission prompt is neither running nor finished. Its session reports `REQUIRES_ACTION` — or whatever the runtime calls *stopped, awaiting a human* — and a supervision cycle that looks only for `RUNNING` and `IDLE` sorts it under quiet and moves on. Quiet is the one thing it is not: nobody is watching that prompt, so nothing will ever answer it, and the worker holds its container indefinitely. A worker sat blocked for six hours on a prompt to delete a trigger, its PR long since merged, before a human found it in a session list.
+
+Read the blocked state explicitly each cycle, and resolve it in this order:
+
+1. **it passes the releasable test** in Releasing a worker — apply that test, do not restate it here. Every version of this rule that was written out a second time drifted from the first, including the one that required a PR still be open and so excluded the merged-PR case this section is written from. Release it and record what it was asking for;
+2. **the block is the parent's to clear** — a resource detail the worker was dispatched without, an instruction it can be sent, a write the parent can perform itself. Clear it and let the worker continue;
+3. **neither** — `NEEDS_USER`, naming the issue, the session, and **the exact tool being requested**. "A worker needs permission" is not actionable; the tool's name is what lets a user allow it once and unblock every run after this one. Report the literal string the runtime gave you, server segment included, and never a tidied version of it: an MCP server can be registered under a display name, a slug, or its bare UUID, the allowlist matches the literal name, and a tool already allowlisted under one of those spellings still prompts under another. Normalizing the name to the one you expected is how that reads as an entry that exists and does not work.
+
+Never resolve it as "still waiting". A blocked worker holds a slot, so reading it as idle also stalls the frontier: the run keeps scheduling against capacity that is not in use. It must not be possible for a worker to sit blocked across an entire run without appearing anywhere in its output.
 
 ## Capacity during the run
 
@@ -907,7 +989,7 @@ If the user separately authorizes `merge-stack`, that skill owns merge ordering 
 A run is **settled** when no further implementation can start and every open PR is individually finished:
 
 - no in-scope issue is READY — each unstarted issue is blocked by work that is implemented but unmerged;
-- no implementation or repair worker is in flight;
+- no implementation or repair worker is in flight — and a worker blocked on a permission prompt is in flight, not absent (see Blocked workers). It reads as quiet from every angle the other conditions look from, which is exactly how a run declares itself settled while one of its workers is still stopped mid-issue;
 - every open PR from this run has had at least one **completed** automated review round, not merely a trigger issued;
 - every actionable review finding on every open PR is resolved or answered;
 - no open PR is `NEEDS_USER` or waiting on CI.
@@ -981,6 +1063,7 @@ Scope: 18 issues
 Run budget: 9/12 newly started
 Implementation workers: 3
 Repair workers: 1
+Worker sessions: 9 created / 8 archived / 1 blocked
 Active PRs: 7
 Waiting CI/review: 4
 Unreviewed (trigger pending/unavailable): 0
@@ -1002,6 +1085,7 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - PRs + stack topology;
 - remote checkpoint branches without PRs;
 - checkpoint enforcement: workers nudged, and workers whose work the parent committed itself;
+- worker-session lifecycle, where the runtime has sessions to account for: how many this run created, how many it archived, and every one still alive with the reason — naming, for each that was blocked, the exact tool it was waiting on. A run that leaks sessions should be visible in its own report rather than discovered afterwards in a session list, and the tool name is the part a user can act on;
 - disk headroom against the concurrent worker count;
 - CI/review states + repair budgets consumed;
 - PRs left unreviewed, and whether the review trigger was deferred or unavailable;
