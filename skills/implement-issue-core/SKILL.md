@@ -30,7 +30,7 @@ The full issue URL is canonical identity. Never replace it with a short issue ke
 - Preserve the exact supplied base branch.
 - Never broaden scope into dependency/context tickets.
 - Never merge the PR.
-- Never enter a long CI/review monitoring loop. Return after implementation, checks, PR creation, and durable state verification.
+- Never enter a long CI/review monitoring loop, and never delegate one either. A scheduled check-in, a trigger or routine, or a PR-activity subscription is monitoring arranged rather than performed, and it outlives this invocation exactly as a loop would. Return after implementation, checks, PR creation, and durable state verification, leaving nothing armed behind you.
 
 ## 1. Read issue + repository context
 
@@ -194,7 +194,7 @@ After creation verify durable state:
 - canonical issue linkage is correct, and in the form the coverage finding required — closing keyword only where the issue was fully implemented;
 - remote branch head contains the final pushed implementation state.
 
-Do not wait indefinitely for CI or review after this point.
+Do not wait indefinitely for CI or review after this point, and do not arrange for anything else to wait on your behalf — the caller supervises this PR, whether that caller is `implement-issue` or an orchestrator. Bounding your own wait and declining to schedule one are two separate requirements, and only the first is obvious: arming a check-in before returning satisfies "do not wait" on a fair reading while still leaving a watcher the caller did not ask for, and one this worker may lack the permissions to disarm.
 
 ## Output
 

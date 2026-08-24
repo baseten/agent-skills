@@ -24,7 +24,7 @@ Accept:
 
 - Do not implement unrelated backlog scope.
 - Do not merge the PR.
-- Do not wait indefinitely for the next CI/review event.
+- Do not wait indefinitely for the next CI/review event, and do not delegate the wait — no scheduled check-in, trigger, or PR-activity subscription. The caller is already supervising this PR, and a wake armed here outlives the repair pass that armed it.
 - One invocation consumes at most one repair cycle.
 - If the supplied failure/comment requires product or architecture judgment, return `NEEDS_USER` instead of guessing.
 
