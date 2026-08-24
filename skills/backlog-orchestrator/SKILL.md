@@ -404,6 +404,7 @@ A Dynamic Workflow interrupted by session exit restarts fresh next session rathe
 2. rerun `validate-backlog` at the mode the escalation rules select (see Escalating to deep validation) — a restart re-derives readiness from scratch, so those triggers apply here exactly as at the first preflight, and a resumed run is if anything the likelier place to meet one, since its dependencies closed in an earlier tranche by construction — then reconcile its DAG against blockers a previous run's workers recorded on the issues themselves. What an edge's **absence** from that DAG means is not one thing — it depends on the boundary's proof state and on the edge's provenance, and this step is the main caller of the retirement rule under Outcomes. The validator run you just made supplies that proof state, so read it from there rather than carrying one over: either passing result means every boundary over dispatchable scope was proven, since an unproven dispatchable boundary is a `FAIL` by its contract and never arrives quietly, and the boundaries left unproven are named. Then:
 
    - **visibility unproven for that boundary** — the validator reads through a transport that may truncate identically to last time, so re-adopt the edge rather than rediscovering it by dispatching into it again;
+   - a comment that identifies itself as **unclassified worker evidence** (see How a worker's report actually reaches you) is not a blocker record and must not be adopted as one. Read it for what the worker observed, then classify it here as though the worker had just returned it — an unclassified edge does not become established by having survived a session boundary;
    - **proven, and the edge is native by now** — a later run may have made it native via `normalize-github-dependencies`. A proven read that no longer returns it is the retirement case: retire it, dated, rather than re-adopting a dependency someone deliberately removed;
    - **proven, and the edge lives only in the persisted comment record** — absence still proves nothing, because native metadata was never supposed to show it. Re-adopt, then classify it here: **this step is the run adoption** the retirement rule anchors to, and skipping it is precisely how a retired dependency becomes permanent;
 3. order by normalized DAG + explicit build order;
@@ -788,6 +789,19 @@ On any runtime where the return value does not reach this run, the dispatch prom
 - **the PR as well**, when one exists, since that is where a reviewer and a merge decision will look.
 
 Then read both. The requirement is what makes the reading meaningful; without it, "pull the worker's report" is an instruction to search for something that was never written.
+
+**A worker's report is evidence, not a blocker record, and the two must not be written the same way.** Persistence above says never to persist an unclassified prose edge, because restart reads issue comments and a stale edge written down once blocks its issue indefinitely. A worker's report contains exactly such edges — a source disagreement is by definition unclassified when the worker returns it, since classifying it is the parent's job and needs a visibility proof the worker does not hold. Requiring the report on the issue and stopping there would manufacture the permanent blockers that rule exists to prevent, on every run, automatically.
+
+So the two records are distinct in kind and must be distinguishable on sight:
+
+| | written by | says | restart treats it as |
+|---|---|---|---|
+| worker report | the worker, before returning | what I observed | input awaiting classification — never a blocker |
+| blocker record | the parent, after classifying | what was established, and how it was verified | an established blocker |
+
+Require the worker's report to carry a marker naming it as unclassified worker evidence, and to state each edge as *observed in prose / not returned by native metadata* rather than as a dependency of the issue. **Restart adopts blockers only from parent-written records**, per Restart / resume; a worker report is read for what it saw and then classified, exactly as if the worker had just returned it. That the parent may not have got round to classifying one before the session ended is the case this preserves — the finding survives, its status does not get promoted by having survived.
+
+The failure this avoids is quiet and self-reinforcing: an edge the parent would have classified as stale gets written to the issue by the worker, restart reads it as established, the issue is blocked, and no later run has any reason to re-examine it.
 
 This is the same division of labour as the ambient-posture countermand: the worker skills are runtime-agnostic and cannot know whether their return value goes anywhere, so the obligation belongs in the dispatch prompt, which is written by the only layer that knows the runtime.
 
