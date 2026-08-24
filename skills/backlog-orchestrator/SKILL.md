@@ -206,11 +206,13 @@ Also inspect descriptions/comments for explicit dependency language because text
 
 ### GitHub
 
-A correctly linked implementation PR uses a full-URL GitHub closing relationship. Treat issue closed + implementation PR merged as canonical `DONE`. If a correctly linked merged PR failed to auto-close due to unusual stack/base behavior, explicitly close only after verifying that exact PR implemented the issue.
+A correctly linked implementation PR uses a full-URL GitHub closing relationship. Treat issue closed + implementation PR merged as canonical `DONE` — **provided that PR implemented the whole issue.** A PR carrying a coverage finding is linked with `Part of:` rather than a closing keyword precisely so this test cannot be satisfied by it (see `create-pr`), and an issue whose only merged implementation shipped acceptance criteria stubbed, disabled or omitted is not `DONE` however its tracker reads. If a correctly linked merged PR failed to auto-close due to unusual stack/base behavior, explicitly close only after verifying that exact PR implemented the issue — the same verification, and it fails for a partial implementation for the same reason.
+
+Closing state is evidence of completion, not a definition of it. Where the two disagree — an issue closed by a merge that did not finish it — the work decides, and the checkpoint reports the discrepancy rather than adopting the tracker's answer.
 
 ### Linear
 
-A PR must retain the full Linear issue URL and repository/workspace linking convention. Treat configured terminal Linear status + linked merged implementation PR as canonical `DONE`. Do not manually complete Linear issues unless workspace policy explicitly requires that fallback.
+A PR must retain the full Linear issue URL and repository/workspace linking convention. Treat configured terminal Linear status + linked merged implementation PR as canonical `DONE`, subject to the same completeness proviso as above: a coverage finding means the issue is not done, whatever status the workspace automation moved it to. Do not manually complete Linear issues unless workspace policy explicitly requires that fallback.
 
 # Invocation and bounded scope
 
@@ -805,6 +807,10 @@ This adopts findings, never a re-plan; the validated DAG remains the scheduling 
 
 Require it explicitly rather than hoping for it. A worker that meets this and ships anyway — disabled UI, a stubbed call, an acceptance criterion quietly dropped — has produced a permanently partial deliverable and left the prerequisite invisible, and that, not the missing capability, is the failure mode. So the worker returns the finding whatever its outcome, naming the dependency, the capability it expected, and what it shipped instead; the parent records it durably against both issues like any other established blocker, **files the prerequisite issue**, and holds the affected path behind it. Report it in the checkpoint alongside the dependency edges workers discovered — and treat it as a trigger the preflight should have caught: a coverage finding at worker time means the escalation rules under Escalating to deep validation did not fire on a node that needed them.
 
+**A PR shipping against a coverage finding must not close its issue.** Filing the prerequisite is not enough on its own: the degraded PR still carries a closing keyword, so merging it auto-closes the issue it only partly implemented, and the `DONE` test above then reads clean over unfinished work — the prerequisite sits open beside an issue the tracker calls complete, which is exactly the state that gets no further attention. The finding must therefore reach `create-pr`, which links such a PR with `Part of:` and `Blocked by:` rather than `Closes:`; pass it through `implement-issue-core` on dispatch and verify the emitted form on the returned PR, because a default that closes is what silence produces. The issue stays open, linked to its prerequisite, and a human closes it once the gap is filled.
+
+Retrofit an already-open PR the same way when a finding arrives late — edit its body to the non-closing form before it can merge. A merge that has already auto-closed an issue on a coverage finding is reconciled by reopening the issue, not by accepting the close: the tracker recorded a claim the work does not support.
+
 **Only a visibility disagreement is transport evidence.** The worker reports two kinds and they warrant very different responses. An **availability** disagreement says your base or completion claim was stale. Two things pick the repair: the direction, and **the dependency class the worker reported** — it names the class precisely so you can route this, so read it rather than assuming a base problem.
 
 | direction | code dependency | non-ancestry dependency |
@@ -976,7 +982,7 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - `NEEDS_USER` items;
 - external blockers;
 - dependency edges discovered by workers that the validated DAG did not contain, where each was recorded durably, and any dependency-source disagreement reported on an otherwise successful run;
-- coverage findings — dependencies satisfied on paper whose capability a worker found absent — with the prerequisite issue filed for each, and any deliverable shipped degraded as a result;
+- coverage findings — dependencies satisfied on paper whose capability a worker found absent — with the prerequisite issue filed for each; for every deliverable shipped degraded, the acceptance criteria left unmet, the PR's linkage form (it must be `Part of:`, never a closing keyword), and confirmation that its issue is still open;
 - which edges in the scheduling graph are **verified** by a worker's own check versus still **assumed** from the preflight read, and when each was verified. This is history, not an exemption: a restart still runs the proof-and-provenance reconciliation in step 2 of Restart / resume over every edge, verified ones included, because the label records what was true when it was written and a dependency can be retired afterwards. What it buys is knowing which edges were established by observation and which rest on one preflight read — where to be sceptical, and what not to rediscover by dispatching into it;
 - unstarted work and why, including any frontier that a merge unblocked after the budget was exhausted — report it as the resume frontier rather than dropping it;
 - whether invoking the same manifest can safely resume.
