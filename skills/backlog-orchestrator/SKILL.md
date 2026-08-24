@@ -61,6 +61,7 @@ Reusable worker skills:
 10. **Retries and repairs are bounded.** Persistent failure becomes `NEEDS_USER`.
 11. **Recovery is idempotent.** Never duplicate work, branches, PRs, or repairs after restart.
 12. **No automatic merges.** Merge authority is explicit and separate.
+13. **A merge is a scheduling event, not an end state.** The run advances its own frontier off merges someone else performed; it does not wait to be re-invoked.
 
 # Autonomy and interactive prompts
 
@@ -599,6 +600,31 @@ Do not use CPU loops, file-touch loops, detached sleeps, meaningless commits, or
 
 Remote Git checkpoints remain mandatory regardless of runtime, because no platform/runtime persistence substitutes for durable source control.
 
+## Frontier advance on merge
+
+A merge someone else performed is a **frontier-advancing event**, not a terminal one: it is the thing that turns in-scope `BLOCKED` issues into READY work. Steps 6 and 7 of the loop above are how the run consumes it, and they stay reachable after the tranche settles. On every merge/close event:
+
+1. reconcile tracker + GitHub remote state, so readiness is recomputed from durable truth rather than cached run state;
+2. restack affected descendants exactly as today (see Stack mutation while PRs are open) — this step is unchanged;
+3. recompute the READY frontier over the **same bounded manifest**. A merge never widens scope: an issue the invocation did not adopt does not become in-scope because something it depends on merged;
+4. if new nodes became READY, re-run the `validate-backlog shallow` preflight over the bounded scope before dispatching, then fill free worker slots in scheduling order. The preflight is not optional here: it is mandatory before **any** new implementation worker, and the merge changed the graph the previous run validated;
+5. if nothing became READY, stay settled and keep supervising.
+
+This requires no new user prompt. While the run still holds budget and in-scope work remains, the merge resumes dispatch inside the same invocation.
+
+Nothing about the advance relaxes the safeguards it dispatches under:
+
+- **invariant 12 still holds.** The run reacts to merges; it never performs one. Auto-advance is triggered by observing a merge, never by deciding one should happen.
+- **the 12-new-issue budget is consumed like any other dispatch.** If the budget is exhausted, do not dispatch: report the newly-READY frontier in the checkpoint output as the resume frontier, so a resumed invocation adopts it instead of rediscovering it. Silently dropping newly-unblocked work is the failure this step exists to prevent.
+- **`NEEDS_USER` is not cleared by a merge.** A node whose only remaining blocker is a question a human was asked to decide stays blocked, and auto-advance must not resume that path. Only the blockers the merge actually satisfied are retired.
+- 4 concurrent workers, attempt/repair caps, Sonnet workers, one issue per worker, and isolated checkouts apply to resumed dispatch unchanged.
+
+Edge cases:
+
+- **A merge that unblocks nothing in scope** ends at step 3. Reconcile and restack, then return to supervision — do not run a preflight or a dispatch pass for it.
+- **A merge landing while workers are still in flight** advances the frontier without disturbing them. Recompute readiness and dispatch only into free slots; in-flight workers are never cancelled, restarted, or re-scoped because their frontier moved.
+- **A newly-READY node that re-blocks on validation** (the preflight returns `FAIL` on its path, or a warning that makes its ordering unsafe) is not dispatched. Record it and continue with the validator-confirmed safe branches, exactly as at the initial preflight.
+
 ## Verifying worker reports
 
 A worker's reported check results are a claim about its own environment, which may be misconfigured in ways the worker cannot see. Before relaying or acting on reported results, verify them against durable evidence: CI on the pushed head, or a re-run outside that worker's environment. Never escalate a worker-reported mass failure to the user, or block a merge decision on it, unverified.
@@ -804,7 +830,7 @@ A run is **settled** when no further implementation can start and every open PR 
 - every actionable review finding on every open PR is resolved or answered;
 - no open PR is `NEEDS_USER` or waiting on CI.
 
-Settled is not the same as finished. The run has produced everything it can; the remaining move belongs to whoever holds merge authority.
+Settled is not the same as finished. The run has produced everything it can **for now**; the next move belongs to whoever holds merge authority — and when they make it, the run picks the work back up itself (see below).
 
 On reaching settled:
 
@@ -813,7 +839,7 @@ On reaching settled:
 3. **act on its action points before ranking anything** (below);
 4. invoke `plan-merge-order` with the manifest/scope, this run's PR set, and every summary item with an ordering consequence — the `MERGE_RISK` and `DECISION` items, and any other class that also carries one, so the ranking is computed against those constraints rather than around them;
 5. surface the summary and action points first, then the ranking table, as the run's closing output;
-6. stop dispatching work and stop spending tokens re-deriving the same state.
+6. stop dispatching work, and stop spending tokens re-deriving the same state, for as long as the frontier stays empty.
 
 Summarize before ranking. An action point can change whether something should merge at all, and a ranking the user has already begun acting on is the wrong place to discover that. Run the summary once per settled tranche rather than saving one up for the end of a whole backlog: its findings come from run context that the next session will not have, and follow-ups need to exist while later tranches are still running, so they get picked up instead of rediscovered.
 
@@ -834,19 +860,28 @@ Do not merge, and do not treat the ranking as authorization to merge — invaria
 
 If a run reaches all other settled conditions but some PR still has an unresolved finding, an unfired review, or red CI, it is **not** settled. Finish that PR within budget, or surface it as `NEEDS_USER`, before ranking. Ranking PRs that are not actually finished produces a merge order the user cannot act on.
 
-After the ranking is delivered, supervision continues only for merge/close events and for the restack work a merge triggers. Re-run `plan-merge-order` when merges change the graph enough that the previous ordering is stale.
+## Settled is a resting state, not an exit
+
+Settled means the run has nothing it can start *right now*, not that the run is over. Reaching it delivers the merge-order ranking; it does not close the invocation.
+
+After the ranking is delivered, supervision continues for merge/close events and for the restack work a merge triggers — and a merge that advances the frontier re-enters the dispatch loop automatically, under Frontier advance on merge, within the same run and with no new user prompt. The run un-settles itself: recompute readiness, re-run the `validate-backlog shallow` preflight, dispatch into free slots, and settle again when the frontier is empty. A tranche can settle, advance, and settle again several times in one invocation.
+
+Re-run `plan-merge-order` when merges change the graph enough that the previous ordering is stale, and again when a resumed dispatch produces new PRs that the delivered ranking does not cover.
+
+What "stop spending tokens re-deriving the same state" forbids is idle re-derivation while nothing has changed — not the reconciliation a merge event calls for. A merge is new state.
 
 # Stop conditions
 
 Stop starting new implementation work when:
 
-- all in-scope issues reached requested durable state;
-- the run is settled (see above) and the merge-order ranking has been delivered;
-- the 12-new-issue budget is reached;
-- all remaining paths are blocked/`NEEDS_USER`;
+- every in-scope issue reached its requested durable state;
+- the 12-new-issue budget is exhausted;
+- every remaining path is `BLOCKED`/`NEEDS_USER` **and no merge is pending that could clear it**;
 - the user asks to stop;
 - safety approval is required;
 - infrastructure/runtime repeatedly fails.
+
+Being settled is not one of them. A settled run stops starting new work only while the frontier is genuinely empty; with merges outstanding it stays live, because those merges are what refills the frontier (see Frontier advance on merge). Deliver the ranking on reaching settled, then keep supervising.
 
 If only external CI/review remains and the runtime cannot safely stay active, reconcile durable state and return a restartable checkpoint rather than pretending monitoring will continue.
 
@@ -893,5 +928,5 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - external blockers;
 - dependency edges discovered by workers that the validated DAG did not contain, where each was recorded durably, and any dependency-source disagreement reported on an otherwise successful run;
 - which edges in the scheduling graph are **verified** by a worker's own check versus still **assumed** from the preflight read, and when each was verified. This is history, not an exemption: a restart still runs the proof-and-provenance reconciliation in step 2 of Restart / resume over every edge, verified ones included, because the label records what was true when it was written and a dependency can be retired afterwards. What it buys is knowing which edges were established by observation and which rest on one preflight read — where to be sceptical, and what not to rediscover by dispatching into it;
-- unstarted work and why;
+- unstarted work and why, including any frontier that a merge unblocked after the budget was exhausted — report it as the resume frontier rather than dropping it;
 - whether invoking the same manifest can safely resume.
