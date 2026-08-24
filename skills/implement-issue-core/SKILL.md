@@ -182,7 +182,8 @@ Invoke `create-pr` with:
 - canonical full issue URL;
 - exact required base;
 - tracker identity when useful;
-- draft/full preference when supplied.
+- draft/full preference when supplied;
+- **any coverage finding this issue's implementation carried** — a declared dependency satisfied on paper whose capability was absent, and the acceptance criteria left unmet as a result. `create-pr` decides the linkage form from this, and it cannot decide correctly if you do not pass it: the default is a closing keyword, so silence here auto-closes an issue you knowingly did not finish.
 
 `create-pr` owns tracker-specific linkage, stack `Depends on:` metadata, review trigger policy, and PR creation.
 
@@ -190,7 +191,7 @@ After creation verify durable state:
 
 - PR exists;
 - expected head branch/base are correct;
-- canonical issue linkage is correct;
+- canonical issue linkage is correct, and in the form the coverage finding required — closing keyword only where the issue was fully implemented;
 - remote branch head contains the final pushed implementation state.
 
 Do not wait indefinitely for CI or review after this point.
@@ -208,7 +209,7 @@ Return structured state:
 - base branch;
 - PR URL/number;
 - remote head SHA;
-- issue linkage verified: yes/no;
+- issue linkage verified: yes/no, and the linkage form emitted — closing keyword, or non-closing `Part of:` because a coverage finding was reported;
 - whether the **completeness** of the blocker set was backed — by a caller's proven complete set, or by a known-true case read and observed — or left unproven, and on what boundary. A `PR_OPEN` carrying an unproven absence is making a narrower claim than it looks like it is making, and this line is the only place that distinction survives;
 - the transport tier used for relationship reads and a **non-secret identity of the credential behind it** — the authenticated account and its scopes, never the credential itself. A caller comparing this against its own identity is what turns a caller/native mismatch into a cross-credential demonstration rather than a coincidence, and it cannot make that comparison if you do not say;
 - dependencies checked: for each, the canonical full URL, which of the three sources named it, **the class you judged it under**, and how it resolved by that class's measure — for a code dependency: reachable from base / open PR not in base, with that PR's URL / merged but not reachable, with the merge and base; for a non-ancestry dependency: complete by its own measure / incomplete, with the state it is in / **unverifiable, naming the measure that was out of reach**; or unmet entirely — plus any caller assertion the observation contradicted. Naming the class matters because it tells the caller which measure was applied, and therefore whether a block is a base problem, a wait, or a real gap;

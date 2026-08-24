@@ -53,7 +53,7 @@ Use a GitHub-recognized closing keyword with the **full canonical issue URL**, f
 Closes: https://github.com/acme/repo/issues/123
 ```
 
-`Fixes:` or `Resolves:` are acceptable when repo convention requires them. `Part of:` alone is insufficient when the implementation issue should auto-close on merge.
+`Fixes:` or `Resolves:` are acceptable when repo convention requires them. `Part of:` alone is insufficient when the implementation issue should auto-close on merge — and is what you emit instead when it should not, because the implementation carried a coverage finding (below).
 
 ## Linear
 
@@ -66,6 +66,25 @@ Do not invent GitHub `Closes:` semantics for a Linear issue. Linear completion/s
 Follow documented integration semantics. If no reliable linking convention exists, retain the full canonical issue URL and report that automatic status transition cannot be guaranteed.
 
 If an implementation PR cannot be linked to an exact issue, stop rather than creating an orphan PR. Directly-invoked ad-hoc PRs with no tracked issue are the exception only after the user confirms there is no issue.
+
+## A PR shipping against a coverage finding links but does not close
+
+A closing keyword is a claim that merging this PR completes the issue, and GitHub acts on that claim whether or not it is true. So when the caller reports a **coverage finding** — a declared dependency satisfied on paper, closed and merged, whose capability is absent from the code, leaving acceptance criteria shipped stubbed, disabled, or omitted — a closing keyword auto-closes an issue nobody finished. The tracker then reads as complete over work that was never done, and the gap survives only in a PR body nobody re-reads.
+
+For that PR, link without closing:
+
+```text
+Part of: https://github.com/acme/repo/issues/123
+Blocked by: https://github.com/acme/repo/issues/131
+```
+
+`Part of:` instead of `Closes:`/`Fixes:`/`Resolves:`, `Blocked by:` naming the prerequisite issue the finding produced, and a body section stating which acceptance criteria are unmet and why. The issue stays **open** and carries the link to its prerequisite; closing it is a human decision once the gap is filled, not a side effect of this merge. Half-finished work must not reach a terminal state by default.
+
+This is exactly the case the general rule above calls insufficient — "`Part of:` alone is insufficient when the implementation issue should auto-close on merge" — and it is the same test read the other way: this issue **should not** auto-close, because it is not finished. Report which form you emitted, so the caller can reconcile completion against it rather than assuming a close.
+
+On Linear and other trackers the same rule holds through a different mechanism: keep the canonical issue URL, and do not apply the workspace's completion/status automation to a PR carrying a coverage finding. Where you cannot tell whether the integration will transition the issue on merge, say so rather than assuming it will not.
+
+Scope this narrowly. It applies to a PR carrying a **recorded** coverage finding, not to any PR whose author feels uncertain. A PR that implements its issue closes it exactly as above.
 
 # PR description template
 
@@ -110,7 +129,7 @@ When directly invoked by a user, show proposed title/body and confirm before cre
 After creation fetch/read the PR and verify:
 
 1. head/base are correct;
-2. canonical tracker issue linkage is present exactly as intended;
+2. canonical tracker issue linkage is present exactly as intended, **in the intended form** — a closing keyword only where the issue is fully implemented, `Part of:` plus `Blocked by:` where a coverage finding was reported. A PR that links correctly but closes an issue it only partly implements passes a linkage check and still ends the issue's life;
 3. `Depends on:` is correct when stacked and absent when not stacked.
 
 Do not report success before verification.
@@ -138,6 +157,8 @@ A push is mechanical when it changes identity, location or formatting and nothin
 Everything else is substantive. That includes a conflict resolution that had to choose between two behaviors, and a regeneration whose output differs beyond identity or ordering. When you cannot tell which one you are looking at, treat it as substantive.
 
 A mechanical push still has to pass the repository's deterministic checks — those, not another review round, are what validate it. If the repository has no check that would catch a bad renumber or a dropped hunk, the push is not mechanical for this purpose and needs review like any other.
+
+For a renumbered or regenerated artifact, "passes the checks" means **verified to apply**, not verified to compile and not a green CI run. A migration whose identity fields went stale in a hand-rename is silently skipped by the migrator: it compiles, CI is green, and the schema change never happens. So regenerate through the repository's own generator rather than editing identity fields by hand, then exercise the artifact's apply path — migrate against a scratch database, install from the lockfile, regenerate and diff — before treating the push as mechanical. Unverified, it is substantive.
 
 This governs what the workflow itself triggers, not what the review provider does on its own. A provider may re-review off its own events — marking a draft ready, for example. That is outside this skill's control, and is neither a reason to suppress a trigger that is due nor to issue one that is not.
 

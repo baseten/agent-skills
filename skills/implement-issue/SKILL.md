@@ -173,7 +173,7 @@ Return:
 - branch/base;
 - PR URL/number;
 - remote head SHA;
-- issue linkage verified;
+- issue linkage verified, and the linkage form emitted — closing keyword, or non-closing `Part of:` because a coverage finding was reported;
 - implementation attempts used;
 - CI repair cycles used;
 - review-fix cycles used;

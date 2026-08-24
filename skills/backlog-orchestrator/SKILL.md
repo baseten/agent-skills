@@ -61,6 +61,7 @@ Reusable worker skills:
 10. **Retries and repairs are bounded.** Persistent failure becomes `NEEDS_USER`.
 11. **Recovery is idempotent.** Never duplicate work, branches, PRs, or repairs after restart.
 12. **No automatic merges.** Merge authority is explicit and separate.
+13. **A merge is a scheduling event, not an end state.** The run advances its own frontier off merges someone else performed; it does not wait to be re-invoked.
 
 # Autonomy and interactive prompts
 
@@ -205,11 +206,13 @@ Also inspect descriptions/comments for explicit dependency language because text
 
 ### GitHub
 
-A correctly linked implementation PR uses a full-URL GitHub closing relationship. Treat issue closed + implementation PR merged as canonical `DONE`. If a correctly linked merged PR failed to auto-close due to unusual stack/base behavior, explicitly close only after verifying that exact PR implemented the issue.
+A correctly linked implementation PR uses a full-URL GitHub closing relationship. Treat issue closed + implementation PR merged as canonical `DONE` — **provided that PR implemented the whole issue.** A PR carrying a coverage finding is linked with `Part of:` rather than a closing keyword precisely so this test cannot be satisfied by it (see `create-pr`), and an issue whose only merged implementation shipped acceptance criteria stubbed, disabled or omitted is not `DONE` however its tracker reads. If a correctly linked merged PR failed to auto-close due to unusual stack/base behavior, explicitly close only after verifying that exact PR implemented the issue — the same verification, and it fails for a partial implementation for the same reason.
+
+Closing state is evidence of completion, not a definition of it. Where the two disagree — an issue closed by a merge that did not finish it — the work decides, and the checkpoint reports the discrepancy rather than adopting the tracker's answer.
 
 ### Linear
 
-A PR must retain the full Linear issue URL and repository/workspace linking convention. Treat configured terminal Linear status + linked merged implementation PR as canonical `DONE`. Do not manually complete Linear issues unless workspace policy explicitly requires that fallback.
+A PR must retain the full Linear issue URL and repository/workspace linking convention. Treat configured terminal Linear status + linked merged implementation PR as canonical `DONE`, subject to the same completeness proviso as above: a coverage finding means the issue is not done, whatever status the workspace automation moved it to. Do not manually complete Linear issues unless workspace policy explicitly requires that fallback.
 
 # Invocation and bounded scope
 
@@ -241,7 +244,7 @@ Projects are discovery surfaces, not execution graphs. Combine FE/BE/shared proj
 
 # Mandatory validation preflight
 
-Before dispatching any **new** implementation worker, invoke `validate-backlog shallow` on the entire bounded scope.
+Before dispatching any **new** implementation worker, invoke `validate-backlog` on the entire bounded scope — `shallow` by default, deeper over the nodes the escalation rules below reach.
 
 Use the validator's normalized DAG as the scheduling graph. Do not let the execution runtime independently invent a competing decomposition.
 
@@ -263,7 +266,32 @@ Run repo-relative checks from the repo root. Ticket paths are repo-relative, so 
 
 Do not automatically mutate dependency metadata. GitHub normalization is handled separately by `normalize-github-dependencies` when requested.
 
-`validate-backlog deep` is optional/user-invoked because it can consume materially more model/code-reading budget.
+`validate-backlog deep` is not run by default, because it can consume materially more model/code-reading budget. It remains available on request — and it is entered **automatically**, without asking, under the triggers below.
+
+## Escalating to deep validation
+
+Shallow mode reads declared dependency metadata and issue text. It never reads code, so it can establish that an edge is *satisfied* and nothing about whether the deliverable behind it covers what the consumer needs. Escalate the preflight from shallow to deep **automatically** — this is a documented default applied and reported, not a question for the user — when the bounded scope shows any of:
+
+- **a cross-repository consumer edge** — an in-scope issue in one repository depends on an issue in another. This is the primary trigger. A frontend consuming a backend built in an earlier tranche is the canonical case, and the earlier tranche having merged is precisely what makes shallow mode confident and wrong;
+- **an issue whose text hedges about its inputs** — "may require", "additional providers may be needed", "assuming X exists" — or an acceptance criterion naming a capability no in-scope issue delivers;
+- **a dependency satisfied by an issue that closed in an earlier tranche**, where nothing in this run verified what that issue actually exposes.
+
+Scope the escalation to the affected subgraph rather than the whole DAG. The cost objection to deep mode is about breadth, and this does not have to be all-or-nothing: escalate the triggering node and the dependencies it consumes, and leave unrelated branches shallow.
+
+Escalation changes the **mode** of the preflight, never whether one runs, and it reads more deeply *within* the bounded manifest — it never widens scope. `PASS` / `PASS_WITH_WARNINGS` / `FAIL` are handled exactly as above at either mode, unproven relationship visibility stays unproceedable at either mode, and the deeper read consumes model budget, not the 12-new-issue budget.
+
+### Coverage is not visibility
+
+This is not the unproven-visibility case, and the doctrine that handles that one cannot catch this. There, an edge may exist and your read cannot show it: absence proves nothing, and the repair is a proof re-established against a case whose answer is known. Here nothing failed. The read was complete, the edge is real, the dependency is genuinely satisfied, and every transport proof over that boundary is valid and stays valid.
+
+What is missing is **coverage**: the closed issue's deliverable does not include the part the consumer needs. `CLOSED` and `MERGED` mean the work someone scoped got done — not that it exposes what something downstream was written against. A backend tranche scoped to a service layer can satisfy every declared edge into it and still ship no route for a frontend to call. Only reading the code behind the edge reveals that, which is why the answer is a mode change rather than a proof. Do not invalidate a visibility proof over a coverage finding; there is nothing to invalidate, and doing so halts dispatch across a boundary that is working correctly.
+
+### Reporting
+
+- **Escalation that finds nothing is still reported** — name the trigger, the nodes escalated, and the clean result in the checkpoint output, so the extra cost is visible and attributable rather than invisible overhead.
+- **A single-repository tranche with no hedged inputs does not escalate.** The default stays shallow; escalation answers a trigger and does not become the new baseline.
+- **Escalation on one node does not force deep validation of unrelated branches.** Nodes that no trigger reaches are validated shallow in the same preflight, and the checkpoint says which nodes got which mode.
+- **If deep mode is unavailable** — not installed, failing, or out of model budget — the escalated nodes are **not dispatchable**. A trigger fired precisely because shallow evidence cannot answer the question for those nodes, so a shallow `PASS` over them is not a weaker answer, it is no answer: take the escalation's `FAIL` path — stop those paths, raise `NEEDS_USER`, and continue only the branches no trigger reached, which shallow validated on its own terms. Report the condition, the nodes owed the deeper read, and what blocked it. Falling back to shallow and dispatching on its `PASS` recreates exactly the case the escalation exists to catch, with the cost hidden behind a green result.
 
 # Default usage safeguards
 
@@ -333,7 +361,7 @@ A cloud worktree is ephemeral. Never claim restart safety for unpushed local cha
 A Dynamic Workflow interrupted by session exit restarts fresh next session rather than resuming — it has no cross-session persistence of its own. Restart recovery therefore always comes from tracker + GitHub remote state, never from workflow-runtime state:
 
 1. re-expand the exact same bounded manifest/scope;
-2. rerun `validate-backlog shallow`, then reconcile its DAG against blockers a previous run's workers recorded on the issues themselves. What an edge's **absence** from that DAG means is not one thing — it depends on the boundary's proof state and on the edge's provenance, and this step is the main caller of the retirement rule under Outcomes. The validator run you just made supplies that proof state, so read it from there rather than carrying one over: either passing result means every boundary over dispatchable scope was proven, since an unproven dispatchable boundary is a `FAIL` by its contract and never arrives quietly, and the boundaries left unproven are named. Then:
+2. rerun `validate-backlog` at the mode the escalation rules select (see Escalating to deep validation) — a restart re-derives readiness from scratch, so those triggers apply here exactly as at the first preflight, and a resumed run is if anything the likelier place to meet one, since its dependencies closed in an earlier tranche by construction — then reconcile its DAG against blockers a previous run's workers recorded on the issues themselves. What an edge's **absence** from that DAG means is not one thing — it depends on the boundary's proof state and on the edge's provenance, and this step is the main caller of the retirement rule under Outcomes. The validator run you just made supplies that proof state, so read it from there rather than carrying one over: either passing result means every boundary over dispatchable scope was proven, since an unproven dispatchable boundary is a `FAIL` by its contract and never arrives quietly, and the boundaries left unproven are named. Then:
 
    - **visibility unproven for that boundary** — the validator reads through a transport that may truncate identically to last time, so re-adopt the edge rather than rediscovering it by dispatching into it again;
    - **proven, and the edge is native by now** — a later run may have made it native via `normalize-github-dependencies`. A proven read that no longer returns it is the retirement case: retire it, dated, rather than re-adopting a dependency someone deliberately removed;
@@ -547,6 +575,8 @@ A restack, or a renumber/regeneration of a claimed artifact, moves identity or o
 
 The repository's deterministic checks are what validate it. Where the repository has no check that would catch a bad renumber, treat the push as substantive instead — `create-pr` carries the full test for which is which.
 
+A renumber earns the mechanical label only once its regeneration has been **verified to apply** (see Performing the renumber once a human decides). "Moves identity or ordering rather than behavior" describes what a *correct* renumber does; the hazard is that a botched one is indistinguishable from it in the diff while changing whether the artifact runs at all. So an unverified renumber is not a mechanical push, it is an unvalidated one, and skipping review over it is the shortcut that makes the failure invisible. Verify first, then claim the exemption.
+
 This matters most right after a sibling merges. Descendants restack and claimed artifacts renumber for reasons that have nothing to do with their own diffs, and re-reviewing every one of them spends the review budget on code that did not change.
 
 ## Draft promotion after a clean first review
@@ -598,6 +628,66 @@ Each cycle performs real work:
 Do not use CPU loops, file-touch loops, detached sleeps, meaningless commits, or other fake activity solely to prevent idling.
 
 Remote Git checkpoints remain mandatory regardless of runtime, because no platform/runtime persistence substitutes for durable source control.
+
+## Arming the wait when nothing is in flight
+
+Step 13's native task/event wait is sufficient while workers are running: their completions are the events. A **settled** run has none. No worker will finish, no CI will fire, and the merge it is waiting on may be a day away — so a settled run that simply waits has no event source of its own, and "the run advances its own frontier" quietly becomes conditional on something nothing required it to arrange.
+
+Before a settled-and-empty run stops doing work, it arms both of:
+
+1. **a PR-activity subscription over this run's own PR set** — the platform-native watch or an explicit `subscribe_pr_activity` (see Event handling). This is what delivers the merge that advances the frontier;
+2. **a scheduled self check-in, as the backstop**, because that subscription does not cover everything. CI success, new pushes and merge-conflict transitions are the known-unreliable deliveries, and a merge whose event never arrives is a merge the run never acts on. The check-in re-reads durable state — PR states, mergeability, the frontier — and acts on what it finds, instead of treating silence as evidence that nothing happened.
+
+Both, not either. The subscription is the fast path; the check-in is what makes the slow path terminate. Re-arm the check-in each time it fires and finds nothing, and stop once every PR in the set is merged or closed.
+
+This is not a licence to keep a loop warm, and the ban above is unchanged. A durable subscription and a scheduled wake cost nothing between firings, which is exactly what separates them from spinning, touching files, or committing to look busy. The two rules point the same way: fake activity is what a run resorts to when it has no real wake mechanism, so arming one is the fix rather than the exception.
+
+**When neither can be armed** — no subscription available, no scheduler — do not hold the session open reporting supervision that is not happening; the run would sleep through the merge while the user believed it was watching. Reconcile durable state and return a restartable checkpoint naming the resume frontier and the PRs whose merges would advance it, exactly as Stop conditions already requires when the runtime cannot safely stay active. Restart / resume adopts that and re-derives readiness from durable truth, so what is lost is the automation, not the work.
+
+## Frontier advance on merge
+
+A merge someone else performed is a **frontier-advancing event**, not a terminal one: it is the thing that turns in-scope `BLOCKED` issues into READY work. Steps 6 and 7 of the loop above are how the run consumes it, and they stay reachable after the tranche settles. On every merge/close event:
+
+1. reconcile tracker + GitHub remote state, so readiness is recomputed from durable truth rather than cached run state;
+2. restack affected descendants exactly as today (see Stack mutation while PRs are open) — this step is unchanged;
+3. recompute the READY frontier over the **same bounded manifest**, crediting merges only (below). A merge never widens scope: an issue the invocation did not adopt does not become in-scope because something it depends on merged;
+4. if new nodes became READY, re-run the preflight over the bounded scope before dispatching — **at the mode the escalation rules select**, not shallow by default (see Escalating to deep validation) — then fill free worker slots in scheduling order. The preflight is not optional here: it is mandatory before **any** new implementation worker, and the merge changed the graph the previous run validated. This is the case that needs the escalation most: nobody is watching the resumed dispatch, and the merge that triggered it is itself the event that makes a stale cross-tranche dependency look satisfied;
+5. if nothing became READY, stay settled and keep supervising.
+
+This requires no new user prompt. While the run still holds budget and in-scope work remains, the merge resumes dispatch inside the same invocation.
+
+**Only a merge advances the frontier.** A close is worth reconciling but is never an advance, and step 3 must credit merges alone. A PR closed without merging leaves its issue short of `DONE` — completion is a closed issue **plus a merged** implementation PR (see Completion semantics) — so a recompute that treats close like merge sees a dependency-free node and dispatches a fresh worker for the work a human just declined, recreating the PR they closed and spending budget to do it. Nor does an unmerged close unblock anything downstream: a descendant is not released by an ancestor that never landed.
+
+So on an unmerged close, reconcile and stop there. Hold that issue and everything downstream of it, and surface it as `NEEDS_USER` naming the closed PR. Closing unmerged is a decision the run cannot read from the event — abandonment, a rejected approach, and work superseded by something that landed elsewhere are indistinguishable to it, and they call for opposite next moves. Redispatch that path only on an answer, never on the close itself.
+
+### When the advance waits for a human
+
+Continuing is the default, and the advance never manufactures a question the skill has a documented default for (see Autonomy and interactive prompts). What it must not do is dispatch *through* an ask the previous tranche already left outstanding — starting the work is one way of answering it. Hold a path where an outstanding item bears on the work about to start:
+
+- a `DECISION` action point, or a `MERGE_RISK` raised as `NEEDS_USER`, **whose answer would change what or how the newly-READY node gets built**. Dispatching commits the run to one answer before the human gives it;
+- an unverifiable-prerequisite `NEEDS_USER` the merge did not satisfy — a merge retires only the blockers it actually satisfied;
+- an **unproven dependency view** `NEEDS_USER`, which holds the whole advance rather than one path: step 3 recomputes readiness through the same transport whose reach is in doubt, so every node it just called READY shares the blind spot. Re-establish the visibility proof before dispatching anything, exactly as at the preflight.
+
+Everything else continues. A `NEW_ISSUE` follow-up, a question about how the merged PRs themselves are handled, or a `NEEDS_USER` on an unrelated branch does not hold a node it has no bearing on — and holding one path never holds the others: dispatch the unaffected newly-READY nodes in the same pass.
+
+Read the merge itself as evidence. A user asked to choose between two approaches who then merged one has answered; do not hold work on a question their merge settled. What survives is the ask the merge left genuinely open.
+
+Holding is not idling. Name the outstanding item, the node it holds, and what answer releases it — in the checkpoint output and as a live `NEEDS_USER` — and treat the answer as its own resume signal: the held node dispatches on the reply, in the same run, with no re-invocation.
+
+Nothing about the advance relaxes the safeguards it dispatches under:
+
+- **invariant 12 still holds.** The run reacts to merges; it never performs one. Auto-advance is triggered by observing a merge, never by deciding one should happen.
+- **the 12-new-issue budget is consumed like any other dispatch.** If the budget is exhausted, do not dispatch: report the newly-READY frontier in the checkpoint output as the resume frontier, so a resumed invocation adopts it instead of rediscovering it. Silently dropping newly-unblocked work is the failure this step exists to prevent.
+- **`NEEDS_USER` is not cleared by a merge.** A node whose only remaining blocker is a question a human was asked to decide stays blocked, and auto-advance must not resume that path (above). Only the blockers the merge actually satisfied are retired.
+- 4 concurrent workers, attempt/repair caps, Sonnet workers, one issue per worker, and isolated checkouts apply to resumed dispatch unchanged.
+
+Edge cases:
+
+- **A merge that unblocks nothing in scope** ends at step 3. Reconcile and restack, then return to supervision — do not run a preflight or a dispatch pass for it.
+- **A merge landing while workers are still in flight** advances the frontier without disturbing them. Recompute readiness and dispatch only into free slots; in-flight workers are never cancelled, restarted, or re-scoped because their frontier moved.
+- **A newly-READY node that re-blocks on validation** (the preflight returns `FAIL` on its path, or a warning that makes its ordering unsafe) is not dispatched. Record it and continue with the validator-confirmed safe branches, exactly as at the initial preflight.
+- **A tranche that settled with a `DECISION` outstanding** advances every path the decision does not bear on, and holds only the ones it does. A pending question is a reason to hold a node, never a reason to stop the run.
+- **A close event mixed into a batch of merges** — a stack where seven PRs merged and one was closed unmerged — advances on the seven and holds the eighth's issue and its descendants. Do not let the merges in the batch launder the close.
 
 ## Verifying worker reports
 
@@ -673,6 +763,16 @@ Two chains cut from the same base can each be internally consistent and both pas
 
 Correct resolution depends on merge order, which this skill does not own. Surface the collision as `NEEDS_USER` with both PR URLs and the colliding paths. Never renumber or rewrite the artifact pre-emptively.
 
+### Performing the renumber once a human decides
+
+**Produce it with the repository's own generator. Never hand-edit the artifact's identity fields.** A claimed identity is rarely stored in one place, and the copies that are not the visible filename are usually the ones that decide whether the artifact runs. A Drizzle migration's identity lives in five: the `.sql` filename, the journal's `idx`, `tag` and `when`, and the snapshot's `id`/`prevId` chain. A hand-rename that updates four of them and misses `when` makes the migration **silently skipped** — no error, no log, green CI, and the schema change never applies. Renumbering `0011` to `0014` in `crypto-scanner-api` was exactly this; the repair was regenerating through `pnpm db:generate` and splicing the hand-written backfill back in.
+
+The class generalizes past migrations: any artifact whose identity is **claimed rather than derived and spread across more than one file** — a migration with its journal and snapshot, a lockfile with its manifest, a generated client with its registry entry. Renaming what you can see is precisely the operation that leaves the rest stale.
+
+Then verify the result **applies**, not that it compiles and not that CI is green. A skipped migration passes both, which is why neither is the check. Run the artifact's own apply path — migrate against a scratch database, install from the lockfile, regenerate and diff against the committed copy — and confirm the effect the artifact was supposed to have is actually present. Where the generator cannot reproduce hand-written content the original carried, splice it back and re-verify; a regenerated artifact that silently dropped a backfill is the same failure with the sign flipped.
+
+Until that verification passes, the renumber is not finished, and it is not mechanical — see Mechanical pushes do not consume review, which grants the skip-re-review exemption only to a renumber that has cleared this.
+
 # Lost worker / workflow recovery
 
 A worker whose remote branch never advanced is the expensive case; prefer catching it through the checkpoint-compliance check above, before it is lost.
@@ -729,6 +829,14 @@ An edge a worker found only in prose does not arrive here at all; it is classifi
 This adopts findings, never a re-plan; the validated DAG remains the scheduling graph.
 
 **A worker returns two independent things: an outcome, and evidence about the graph.** Act on the evidence regardless of the outcome. A worker that found the prose naming a dependency native metadata did not return, and then proceeded because the work was present in its base, reports that disagreement on a `PR_OPEN` — and that report is the same evidence of a partial dependency view as a `BLOCKED` would have been. Treating only `BLOCKED` as a graph update leaves every sibling scheduled against the view already known to be wrong, choosing bases and dispatch order from it.
+
+**A satisfied dependency whose capability is absent is evidence of the same kind.** The evidence a worker returns is not only about which edges exist. A worker that finds a declared dependency satisfied on paper — closed, merged, correctly linked — but the capability it needed absent from the code has found a **coverage** gap, and it reaches this path as a first-class finding, not as a note in its PR body. Nothing here is a re-plan: the worker is correcting the graph's meaning from a position the validator did not have, exactly as it does for an unmet blocker, so accept it on the same terms.
+
+Require it explicitly rather than hoping for it. A worker that meets this and ships anyway — disabled UI, a stubbed call, an acceptance criterion quietly dropped — has produced a permanently partial deliverable and left the prerequisite invisible, and that, not the missing capability, is the failure mode. So the worker returns the finding whatever its outcome, naming the dependency, the capability it expected, and what it shipped instead; the parent records it durably against both issues like any other established blocker, **files the prerequisite issue**, and holds the affected path behind it. Report it in the checkpoint alongside the dependency edges workers discovered — and treat it as a trigger the preflight should have caught: a coverage finding at worker time means the escalation rules under Escalating to deep validation did not fire on a node that needed them.
+
+**A PR shipping against a coverage finding must not close its issue.** Filing the prerequisite is not enough on its own: the degraded PR still carries a closing keyword, so merging it auto-closes the issue it only partly implemented, and the `DONE` test above then reads clean over unfinished work — the prerequisite sits open beside an issue the tracker calls complete, which is exactly the state that gets no further attention. The finding must therefore reach `create-pr`, which links such a PR with `Part of:` and `Blocked by:` rather than `Closes:`; pass it through `implement-issue-core` on dispatch and verify the emitted form on the returned PR, because a default that closes is what silence produces. The issue stays open, linked to its prerequisite, and a human closes it once the gap is filled.
+
+Retrofit an already-open PR the same way when a finding arrives late — edit its body to the non-closing form before it can merge. A merge that has already auto-closed an issue on a coverage finding is reconciled by reopening the issue, not by accepting the close: the tracker recorded a claim the work does not support.
 
 **Only a visibility disagreement is transport evidence.** The worker reports two kinds and they warrant very different responses. An **availability** disagreement says your base or completion claim was stale. Two things pick the repair: the direction, and **the dependency class the worker reported** — it names the class precisely so you can route this, so read it rather than assuming a base problem.
 
@@ -804,7 +912,7 @@ A run is **settled** when no further implementation can start and every open PR 
 - every actionable review finding on every open PR is resolved or answered;
 - no open PR is `NEEDS_USER` or waiting on CI.
 
-Settled is not the same as finished. The run has produced everything it can; the remaining move belongs to whoever holds merge authority.
+Settled is not the same as finished. The run has produced everything it can **for now**; the next move belongs to whoever holds merge authority — and when they make it, the run picks the work back up itself (see below).
 
 On reaching settled:
 
@@ -813,7 +921,7 @@ On reaching settled:
 3. **act on its action points before ranking anything** (below);
 4. invoke `plan-merge-order` with the manifest/scope, this run's PR set, and every summary item with an ordering consequence — the `MERGE_RISK` and `DECISION` items, and any other class that also carries one, so the ranking is computed against those constraints rather than around them;
 5. surface the summary and action points first, then the ranking table, as the run's closing output;
-6. stop dispatching work and stop spending tokens re-deriving the same state.
+6. stop dispatching work, and stop spending tokens re-deriving the same state, for as long as the frontier stays empty.
 
 Summarize before ranking. An action point can change whether something should merge at all, and a ranking the user has already begun acting on is the wrong place to discover that. Run the summary once per settled tranche rather than saving one up for the end of a whole backlog: its findings come from run context that the next session will not have, and follow-ups need to exist while later tranches are still running, so they get picked up instead of rediscovered.
 
@@ -834,19 +942,30 @@ Do not merge, and do not treat the ranking as authorization to merge — invaria
 
 If a run reaches all other settled conditions but some PR still has an unresolved finding, an unfired review, or red CI, it is **not** settled. Finish that PR within budget, or surface it as `NEEDS_USER`, before ranking. Ranking PRs that are not actually finished produces a merge order the user cannot act on.
 
-After the ranking is delivered, supervision continues only for merge/close events and for the restack work a merge triggers. Re-run `plan-merge-order` when merges change the graph enough that the previous ordering is stale.
+## Settled is a resting state, not an exit
+
+Settled means the run has nothing it can start *right now*, not that the run is over. Reaching it delivers the merge-order ranking; it does not close the invocation.
+
+A settled run has no events of its own, so reaching settled is also the point at which it must arm its wake — a PR-activity subscription plus a scheduled check-in, or an honest restartable checkpoint if it can arm neither (see Arming the wait when nothing is in flight). Everything below assumes that happened; without it the run is not resting, it is asleep.
+
+After the ranking is delivered, supervision continues for merge/close events and for the restack work a merge triggers — and a merge that advances the frontier re-enters the dispatch loop automatically, under Frontier advance on merge, within the same run and with no new user prompt. Automatic continuation is the default; it yields only where this tranche left a genuine ask outstanding that bears on the next wave, and then only for the paths that ask reaches. The run un-settles itself: recompute readiness, re-run the preflight at the mode the escalation rules select, dispatch into free slots, and settle again when the frontier is empty. A tranche can settle, advance, and settle again several times in one invocation.
+
+Re-run `plan-merge-order` when merges change the graph enough that the previous ordering is stale, and again when a resumed dispatch produces new PRs that the delivered ranking does not cover.
+
+What "stop spending tokens re-deriving the same state" forbids is idle re-derivation while nothing has changed — not the reconciliation a merge event calls for. A merge is new state.
 
 # Stop conditions
 
 Stop starting new implementation work when:
 
-- all in-scope issues reached requested durable state;
-- the run is settled (see above) and the merge-order ranking has been delivered;
-- the 12-new-issue budget is reached;
-- all remaining paths are blocked/`NEEDS_USER`;
+- every in-scope issue reached its requested durable state;
+- the 12-new-issue budget is exhausted;
+- every remaining path is `BLOCKED`/`NEEDS_USER` **and no merge is pending that could clear it**;
 - the user asks to stop;
 - safety approval is required;
 - infrastructure/runtime repeatedly fails.
+
+Being settled is not one of them. A settled run stops starting new work only while the frontier is genuinely empty; with merges outstanding it stays live, because those merges are what refills the frontier (see Frontier advance on merge). Deliver the ranking on reaching settled, then keep supervising.
 
 If only external CI/review remains and the runtime cannot safely stay active, reconcile durable state and return a restartable checkpoint rather than pretending monitoring will continue.
 
@@ -877,7 +996,7 @@ Before returning, reconcile tracker + GitHub remote state and report:
 
 - runtime used, plus any runtime probed and rejected, with the reason;
 - documented defaults applied without asking — branch-mandate override, issues deferred at the budget cap, concurrency reduced for machine capacity, corrected ticket baselines;
-- validation result/warnings;
+- validation result/warnings, the **mode** each part of the scope was validated at, and any deep escalation — its trigger, the nodes escalated, and the result, including a clean one;
 - manifest/scope;
 - resume frontier;
 - PRs + stack topology;
@@ -892,6 +1011,7 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - `NEEDS_USER` items;
 - external blockers;
 - dependency edges discovered by workers that the validated DAG did not contain, where each was recorded durably, and any dependency-source disagreement reported on an otherwise successful run;
+- coverage findings — dependencies satisfied on paper whose capability a worker found absent — with the prerequisite issue filed for each; for every deliverable shipped degraded, the acceptance criteria left unmet, the PR's linkage form (it must be `Part of:`, never a closing keyword), and confirmation that its issue is still open;
 - which edges in the scheduling graph are **verified** by a worker's own check versus still **assumed** from the preflight read, and when each was verified. This is history, not an exemption: a restart still runs the proof-and-provenance reconciliation in step 2 of Restart / resume over every edge, verified ones included, because the label records what was true when it was written and a dependency can be retired afterwards. What it buys is knowing which edges were established by observation and which rest on one preflight read — where to be sceptical, and what not to rediscover by dispatching into it;
-- unstarted work and why;
+- unstarted work and why, including any frontier that a merge unblocked after the budget was exhausted — report it as the resume frontier rather than dropping it;
 - whether invoking the same manifest can safely resume.
