@@ -37,6 +37,31 @@ bootstrap.sh
 Adding a skill requires no change to `bootstrap.sh` — create a directory under
 `skills/` with a `SKILL.md` in it and the next bootstrap run installs it.
 
+## Permissions
+
+`permissions.json` is merged into `~/.claude/settings.json` by `bootstrap.sh`, so
+a skill run does not stop on a prompt for a call the skill is expected to make.
+
+Two things about the allowlist are easy to get wrong:
+
+- **The Claude Code Remote MCP server is registered under two different names
+  depending on the surface.** A cloud/web session exposes its tools as
+  `mcp__Claude_Code_Remote__<tool>`; the CLI registers the same server as
+  `claude-code-remote`, giving `mcp__claude-code-remote__<tool>`. Rule matching
+  is on the literal tool name, so an entry under one spelling does not cover the
+  other. Every Claude Code Remote tool is therefore listed under both.
+- **Scheduled wakes have two implementations.** `backlog-orchestrator` arms a
+  check-in when a run settles and disarms it once every PR is merged or closed
+  (see Arming the wait when nothing is in flight). Depending on the session that
+  is either the Claude Code Remote trigger tools (`create_trigger`,
+  `list_triggers`, `delete_trigger`, `send_later`) or the built-in Routines tools
+  (`CronCreate`, `CronList`, `CronDelete`), which are plain tool names with no
+  `mcp__` prefix. Both sets are allowed.
+
+Nothing here grants merge authority: `merge_pull_request` is allowed because
+`merge-stack` is an explicitly invoked skill, and `backlog-orchestrator`'s
+no-automatic-merge invariant is a skill rule, not a permission boundary.
+
 ## Local Codex usage
 
 Codex reads a subset of the skills via symlinks in `~/.codex/skills/`:
