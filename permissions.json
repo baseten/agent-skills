@@ -15,6 +15,7 @@
     "mcp__linear__get_issue",
     "mcp__linear__get_project",
     "mcp__linear__list_comments",
+    "mcp__linear__create_comment",
     "mcp__linear__save_issue",
     "mcp__linear__update_issue",
     "mcp__Claude_Code_Remote__create_session",

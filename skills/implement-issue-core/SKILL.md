@@ -47,6 +47,10 @@ Do this even when a caller judged the issue READY. That judgement was computed f
 ### Take the union of three sources
 
 - dependencies named in prose — the issue body **and its relevant comments**: `Depends on:`, `Blocked by:`, a `Dependencies` section, build-order wording. Comments matter as much as the body, since a blocker discovered after filing is usually added as a comment rather than an edit, and step 1 has already read them;
+
+  **One class of comment is excluded: a comment whose first line is exactly `**Worker report — unclassified evidence, not a dependency record.**`** That is a previous worker's report on this same issue, persisted because its runtime gave its return value nowhere to go. It records what that worker *observed*, before anyone judged whether the relationship was real or stale — so reading it as prose that names a dependency would let an edge the caller already rejected block this issue again, and again on every later dispatch. Nothing is lost by excluding it: an edge it mentions was observed *in the issue's own prose*, which this step reads anyway. What the report adds beyond that — a classification, an established blocker — it is precisely not entitled to add.
+
+  Read it for context if useful. It contributes no edge to the union.
 - tracker-native dependency metadata;
 - dependency context the caller supplied.
 
