@@ -587,9 +587,14 @@ draft state: as-created -> current
 CI repair cycles used/remaining
 review repair cycles used/remaining
 stack parent/children
+event subscription: armed/unavailable
 ```
 
 ## Event handling
+
+**Arm the subscription when the PR enters the tracked set, not when the run settles.** A PR becomes trackable the moment a worker reports it, and every rule below about consuming events assumes something is delivering them. Nothing is, until this run says so: `subscribe_pr_activity` is a call the parent makes per PR, and Claude Code's background PR watch covers only what it already surfaced. Arm it as part of adopting the PR, alongside recording its head and base, and record the result in the per-PR block above — a PR whose subscription is `unavailable` is one this run must poll deliberately rather than assume it will hear about.
+
+Arming later is not equivalent. Between a PR's creation and its subscription the run is blind to exactly the events it most needs: a merge someone performs, a review that lands, a base that moves underneath it. A tranche whose first PRs were subscribed and whose later ones were not looks identical from the inside — events keep arriving, they are simply the wrong ones — and the run reads its own quiet as nothing having happened. The settled-state arming under Arming the wait when nothing is in flight is a backstop for the empty-frontier case, not the primary mechanism, and treating it as the moment subscriptions begin leaves every PR unwatched for the whole of its active life.
 
 Prefer platform-native/promoted PR events (Claude Code's background PR watch behavior, or an explicit subscription such as `subscribe_pr_activity`) for:
 
@@ -705,7 +710,7 @@ Step 13's native task/event wait is sufficient while workers are running: their 
 
 Before a settled-and-empty run stops doing work, it arms both of:
 
-1. **a PR-activity subscription over this run's own PR set** — the platform-native watch or an explicit `subscribe_pr_activity` (see Event handling). This is what delivers the merge that advances the frontier;
+1. **a PR-activity subscription over this run's own PR set** — the platform-native watch or an explicit `subscribe_pr_activity` (see Event handling). This is what delivers the merge that advances the frontier. Normally these are already armed, because Event handling arms each PR when it enters the tracked set; this step confirms the set is complete rather than establishing it, and arms anything missing;
 2. **a scheduled self check-in, as the backstop**, because that subscription does not cover everything. CI success, new pushes and merge-conflict transitions are the known-unreliable deliveries, and a merge whose event never arrives is a merge the run never acts on. The check-in re-reads durable state — PR states, mergeability, the frontier — and acts on what it finds, instead of treating silence as evidence that nothing happened.
 
 Both, not either. The subscription is the fast path; the check-in is what makes the slow path terminate. Re-arm the check-in each time it fires and finds nothing, and stop once every PR in the set is merged or closed.
@@ -758,6 +763,23 @@ Edge cases:
 - **A newly-READY node that re-blocks on validation** (the preflight returns `FAIL` on its path, or a warning that makes its ordering unsafe) is not dispatched. Record it and continue with the validator-confirmed safe branches, exactly as at the initial preflight.
 - **A tranche that settled with a `DECISION` outstanding** advances every path the decision does not bear on, and holds only the ones it does. A pending question is a reason to hold a node, never a reason to stop the run.
 - **A close event mixed into a batch of merges** — a stack where seven PRs merged and one was closed unmerged — advances on the seven and holds the eighth's issue and its descendants. Do not let the merges in the batch launder the close.
+
+## How a worker's report actually reaches you
+
+Everything below about consuming a worker's outcome — its dependency evidence, its coverage findings, its disagreements — assumes the report arrives. Whether it does is a property of the runtime, and it is worth stating beside the tiers for the same reason releasing a worker was: the phrase names a real mechanism on some tiers and nothing at all on others.
+
+| runtime | how the report reaches the parent |
+|---|---|
+| in-process subagent | the return value, delivered to the caller |
+| Dynamic Workflow agent | the fan-out result the workflow returns |
+| serialized execution | directly, in the same context |
+| **remote worker session** | **it does not.** A remote session cannot message its parent. Its structured return lands in its own transcript, which the parent never reads |
+
+On that last tier — the one the degrade chain most often lands on — a worker's report reaches this run only through what it wrote somewhere durable: the PR body, its replies on review threads, the issue comments it left, and the one-line summary the session exposes. All of those are **pulled**, never pushed. A dispatch prompt asking a remote worker to "report back" gets a report; it is simply addressed to nobody.
+
+So on a remote-session runtime, treat the worker's own writing as a required read rather than a courtesy copy, and pull it deliberately: the PR body and thread replies for substance, the session's summary for whether it finished, was blocked, or stopped mid-issue. A run that waits for a report to arrive from a remote worker waits forever, and — worse — reads the silence as nothing having happened.
+
+**This bites hardest on the things no check expresses.** CI reports whether the code passes; it says nothing about a caveat the worker deliberately raised. A worker that narrowed a guarantee, deviated knowingly from an acceptance criterion, or flagged a limitation it chose not to fix writes that in its PR comment and nowhere else. Read it before any merge-order ranking, before surfacing the PR as finished, and before relaying a PR as ready — not afterwards, when the decision it should have informed has already been made. A green PR whose worker flagged a scope caveat is not the same object as a green PR whose worker flagged nothing, and only the report distinguishes them.
 
 ## Verifying worker reports
 
@@ -823,7 +845,9 @@ So the runtime preference is conditional, not absolute. A Dynamic Workflow suits
 
 ## Blocked workers
 
-A worker waiting on a permission prompt is neither running nor finished. Its session reports `REQUIRES_ACTION` — or whatever the runtime calls *stopped, awaiting a human* — and a supervision cycle that looks only for `RUNNING` and `IDLE` sorts it under quiet and moves on. Quiet is the one thing it is not: nobody is watching that prompt, so nothing will ever answer it, and the worker holds its container indefinitely. A worker sat blocked for six hours on a prompt to delete a trigger, its PR long since merged, before a human found it in a session list.
+A worker waiting on a permission prompt is neither running nor finished. Its session reports `REQUIRES_ACTION` — or whatever the runtime calls *stopped, awaiting a human* — and a supervision cycle that looks only for `RUNNING` and `IDLE` sorts it under quiet and moves on.
+
+**Read the field that reflects the blocked state, not the one whose name suggests it.** A runtime may expose several, and they can disagree: an observed session reported a plain `IDLE` in its status field while a separate derived-state field read `BLOCKED`, with the pending tool named only in a third. Checking the obvious field and finding a familiar value is therefore not evidence the worker is fine — it is the reading this failure mode produces. Establish once, per runtime, which field actually changes when a worker stops for a human, and read that one every cycle; where a summary of what the worker was last asking for is exposed, read it too, because that is what turns "blocked" into something a user can act on. Quiet is the one thing it is not: nobody is watching that prompt, so nothing will ever answer it, and the worker holds its container indefinitely. A worker sat blocked for six hours on a prompt to delete a trigger, its PR long since merged, before a human found it in a session list.
 
 Read the blocked state explicitly each cycle, and resolve it in this order:
 
@@ -1085,6 +1109,8 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - PRs + stack topology;
 - remote checkpoint branches without PRs;
 - checkpoint enforcement: workers nudged, and workers whose work the parent committed itself;
+- every PR this run tracked and whether its event subscription was armed, so a PR the run was blind to is visible as such rather than indistinguishable from one where nothing happened;
+- caveats a worker raised in its own report that no check expresses — a narrowed guarantee, a knowing deviation from an acceptance criterion, a limitation left unfixed — against the PR each concerns, because these reach a merge decision only if this run carries them there;
 - worker-session lifecycle, where the runtime has sessions to account for: how many this run created, how many it archived, and every one still alive with the reason — naming, for each that was blocked, the exact tool it was waiting on. A run that leaks sessions should be visible in its own report rather than discovered afterwards in a session list, and the tool name is the part a user can act on;
 - disk headroom against the concurrent worker count;
 - CI/review states + repair budgets consumed;
