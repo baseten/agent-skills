@@ -157,7 +157,13 @@ Prefer native/runtime capabilities when they implement the required behavior saf
 
 The first and third rows are why the second needed writing down. On two of the four tiers release *is* the absence of an action, so a reader generalizing from those reads "release the worker" as a remark about attention rather than an instruction — and on the tier this run most often degrades to, the same words name a real resource that then leaks silently. Nine finished worker sessions still holding containers after a run, found by the user in a session list rather than by the run in its own report, is what that reads like from outside.
 
-**Release on durable state, not on quiet.** A worker is finished when its work exists remotely — branch pushed and PR created, or the repair pushed — which is exactly what `PR_OPEN` and `REPAIRED` assert. A session merely reading `IDLE` asserts nothing of the kind: idle is also what a worker looks like when it finished editing and never committed — the state Checkpoint compliance exists to catch, because workers reliably reach it.
+**Release on a returned outcome plus durable state, not on quiet.** Two conditions, and each catches what the other misses.
+
+A worker is finished when it has **returned a terminal outcome — any of them, not only the successful ones.** `implement-issue-core` ends on `BLOCKED`, `BLOCKED_EXTERNAL`, `FAILED` and `NEEDS_USER` exactly as it ends on `PR_OPEN`; `repair-pr` ends on `NO_CODE_CHANGE`, `FAILED` and `NEEDS_USER` exactly as it ends on `REPAIRED`. A repair worker that correctly classified a CI failure as external returns `NO_CODE_CHANGE` with an unchanged head and nothing to push, and it is as done as one that pushed a fix. Releasing only on the two successful outcomes leaks every session whose worker did its job and had nothing to show for it — and a run dispatching into a wrong graph produces those in bulk.
+
+And it is finished only once **nothing is stranded in its worktree**, which no outcome label can tell you. A session merely reading `IDLE` asserts neither condition: idle is also what a worker looks like when it finished editing and never committed — the state Checkpoint compliance exists to catch, because workers reliably reach it.
+
+A worker that returned no outcome at all is neither finished nor blocked. It is lost, and Lost worker / workflow recovery owns it.
 
 So the ordering between the two is fixed rather than incidental: the checkpoint-compliance step of the supervision cycle runs first, and a session is archived only once the worktree it holds has no uncommitted work left in it. Archiving first destroys the container and the only copy of that work together, and the check that would have caught it no longer has anything to look at.
 
@@ -491,7 +497,18 @@ Under Dynamic Workflows, provide these constraints to every workflow worker expl
 
 Prompt literalism cuts both ways. A prompt that omits a required default gets a worker that skips it; a prompt that omits a required **contradiction** gets a worker that follows whatever its own session already told it to do. A Claude Code Remote worker session inherits a system prompt instructing every session to subscribe to PR activity and to schedule a self check-in roughly an hour out, re-arming it silently until the PR merges. That instruction arrives with the runtime rather than from any skill this run dispatches, and it is correct for the sessions it was written for.
 
-So every dispatched prompt — implementation and repair alike — must state that this run owns PR supervision and the worker does not: do not subscribe to PR activity, do not schedule a check-in, trigger, routine or wake of any kind, and return after pushing and reporting, **even where the worker's own session instructions direct otherwise**. Name the override rather than merely stating the rule. A worker holding a skill instruction against a session instruction resolves it in favor of the session unless the prompt it was dispatched with says which one wins.
+So every dispatched prompt — implementation and repair alike — must state that this run owns PR supervision and the worker does not: do not subscribe to PR activity, do not schedule a check-in, trigger, routine or wake of any kind, and return after pushing and reporting, **even where the worker's own session instructions direct otherwise**. Name the override rather than merely stating the rule.
+
+**But put it where it can actually outrank what it countermands.** A dispatch prompt is a task instruction, and a task instruction is the weaker side of an argument with a session's own system prompt — telling a worker in its task to disregard its session instructions does not, by itself, make it do so. So on a runtime where this run *builds* the worker's session, write the countermand into that session's system prompt: `create_session` takes an `append_system_prompt` for exactly this purpose, and it is the only lever here that sits at the same level as the instruction it is answering. The dispatch prompt then restates it rather than carrying it alone.
+
+The tier decides which lever exists, and only one tier has the problem:
+
+| runtime | where the countermand goes |
+|---|---|
+| remote worker session | `append_system_prompt` at creation, restated in the dispatch prompt |
+| subagent, Dynamic Workflow agent, serialized | the dispatch prompt is the whole of it — none of these inherits a session posture to countermand |
+
+Expect this to reduce the behavior, not to eliminate it. Appending does not delete the instruction already present, some environments ignore the parameter outright, and a worker resolving two same-level instructions may still arm a wake. That residue is why **Blocked workers** is a backstop rather than a redundancy: the run has to be able to notice a worker that armed one anyway and clear it, not merely to have forbidden it.
 
 Do not leave this to the worker skills. `implement-issue-core` and `repair-pr` now forbid delegating a wait as well as performing one, but their earlier wording — bounding duration alone — is what a worker met and satisfied while still leaving a watcher armed, because arming a wake is not entering a loop. That reading is available again to any worker weighing a skill rule against a session instruction, and the skill rule is the weaker of the two on its own. The gap is **delegation, not duration**, and this prompt is the only place in the system that sees both instructions at once.
 
