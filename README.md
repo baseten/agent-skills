@@ -44,12 +44,22 @@ a skill run does not stop on a prompt for a call the skill is expected to make.
 
 Two things about the allowlist are easy to get wrong:
 
-- **The Claude Code Remote MCP server is registered under two different names
+- **The Claude Code Remote MCP server is registered under three different names
   depending on the surface.** A cloud/web session exposes its tools as
   `mcp__Claude_Code_Remote__<tool>`; the CLI registers the same server as
-  `claude-code-remote`, giving `mcp__claude-code-remote__<tool>`. Rule matching
-  is on the literal tool name, so an entry under one spelling does not cover the
-  other. Every Claude Code Remote tool is therefore listed under both.
+  `claude-code-remote`; and a session can register it by its server **UUID**,
+  `bf7c680d-5fdc-5ef4-b4a0-abadb619bf0a`, which is the form a blocked worker was
+  observed waiting on. Rule matching is on the literal tool name, so an entry
+  under one spelling does not cover the others. Every Claude Code Remote tool is
+  therefore listed under all three.
+
+  A wildcard cannot collapse them: an allow rule permits a glob only in the
+  **tool** position, after a literal `mcp__<server>__` prefix, so
+  `mcp__<server>__*` is valid and `mcp__*__delete_trigger` is not. The
+  enumeration is the only option, and it is fragile by construction — a fourth
+  registration would go unnoticed the same way the UUID one did. A prompt for a
+  tool that looks allowlisted is the symptom; check the literal server segment
+  in the pending tool name before assuming the entry is wrong.
 - **Scheduled wakes have two implementations.** `backlog-orchestrator` arms a
   check-in when a run settles and disarms it once every PR is merged or closed
   (see Arming the wait when nothing is in flight). Depending on the session that
@@ -57,6 +67,19 @@ Two things about the allowlist are easy to get wrong:
   `list_triggers`, `delete_trigger`, `send_later`) or the built-in Routines tools
   (`CronCreate`, `CronList`, `CronDelete`), which are plain tool names with no
   `mcp__` prefix. Both sets are allowed.
+
+- **Workers inherit this allowlist** wherever a dispatched session runs
+  `bootstrap.sh`, which merges the same file into that session's settings. So
+  granting the trigger tools fixes the deadlock — a worker that arms a wake can
+  now disarm it — without touching the reason it armed one. The duplicate
+  watcher remains, defended only by the dispatch-time countermand.
+
+  That is the right trade, since a worker deadlocked mid-run is worse than a
+  redundant watcher. But it changes what the evidence afterwards can prove: a
+  clean session list is equally consistent with the countermand working and with
+  workers arming wakes exactly as before and tidying up after themselves. Only
+  the checkpoint output's `Worker sessions:` line and its blocked-worker
+  reporting separate those two, so read them rather than the session list.
 
 Nothing here grants merge authority: `merge_pull_request` is allowed because
 `merge-stack` is an explicitly invoked skill, and `backlog-orchestrator`'s
