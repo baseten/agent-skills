@@ -606,11 +606,15 @@ A merge someone else performed is a **frontier-advancing event**, not a terminal
 
 1. reconcile tracker + GitHub remote state, so readiness is recomputed from durable truth rather than cached run state;
 2. restack affected descendants exactly as today (see Stack mutation while PRs are open) — this step is unchanged;
-3. recompute the READY frontier over the **same bounded manifest**. A merge never widens scope: an issue the invocation did not adopt does not become in-scope because something it depends on merged;
+3. recompute the READY frontier over the **same bounded manifest**, crediting merges only (below). A merge never widens scope: an issue the invocation did not adopt does not become in-scope because something it depends on merged;
 4. if new nodes became READY, re-run the `validate-backlog shallow` preflight over the bounded scope before dispatching, then fill free worker slots in scheduling order. The preflight is not optional here: it is mandatory before **any** new implementation worker, and the merge changed the graph the previous run validated;
 5. if nothing became READY, stay settled and keep supervising.
 
 This requires no new user prompt. While the run still holds budget and in-scope work remains, the merge resumes dispatch inside the same invocation.
+
+**Only a merge advances the frontier.** A close is worth reconciling but is never an advance, and step 3 must credit merges alone. A PR closed without merging leaves its issue short of `DONE` — completion is a closed issue **plus a merged** implementation PR (see Completion semantics) — so a recompute that treats close like merge sees a dependency-free node and dispatches a fresh worker for the work a human just declined, recreating the PR they closed and spending budget to do it. Nor does an unmerged close unblock anything downstream: a descendant is not released by an ancestor that never landed.
+
+So on an unmerged close, reconcile and stop there. Hold that issue and everything downstream of it, and surface it as `NEEDS_USER` naming the closed PR. Closing unmerged is a decision the run cannot read from the event — abandonment, a rejected approach, and work superseded by something that landed elsewhere are indistinguishable to it, and they call for opposite next moves. Redispatch that path only on an answer, never on the close itself.
 
 ### When the advance waits for a human
 
@@ -639,6 +643,7 @@ Edge cases:
 - **A merge landing while workers are still in flight** advances the frontier without disturbing them. Recompute readiness and dispatch only into free slots; in-flight workers are never cancelled, restarted, or re-scoped because their frontier moved.
 - **A newly-READY node that re-blocks on validation** (the preflight returns `FAIL` on its path, or a warning that makes its ordering unsafe) is not dispatched. Record it and continue with the validator-confirmed safe branches, exactly as at the initial preflight.
 - **A tranche that settled with a `DECISION` outstanding** advances every path the decision does not bear on, and holds only the ones it does. A pending question is a reason to hold a node, never a reason to stop the run.
+- **A close event mixed into a batch of merges** — a stack where seven PRs merged and one was closed unmerged — advances on the seven and holds the eighth's issue and its descendants. Do not let the merges in the batch launder the close.
 
 ## Verifying worker reports
 
