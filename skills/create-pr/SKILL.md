@@ -53,7 +53,7 @@ Use a GitHub-recognized closing keyword with the **full canonical issue URL**, f
 Closes: https://github.com/acme/repo/issues/123
 ```
 
-`Fixes:` or `Resolves:` are acceptable when repo convention requires them. `Part of:` alone is insufficient when the implementation issue should auto-close on merge.
+`Fixes:` or `Resolves:` are acceptable when repo convention requires them. `Part of:` alone is insufficient when the implementation issue should auto-close on merge — and is what you emit instead when it should not, because the implementation carried a coverage finding (below).
 
 ## Linear
 
