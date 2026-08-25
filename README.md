@@ -44,14 +44,12 @@ a skill run does not stop on a prompt for a call the skill is expected to make.
 
 Two things about the allowlist are easy to get wrong:
 
-- **The Claude Code Remote MCP server is registered under three different names
+- **The Claude Code Remote MCP server is registered under two different names
   depending on the surface.** A cloud/web session exposes its tools as
   `mcp__Claude_Code_Remote__<tool>`; the CLI registers the same server as
-  `claude-code-remote`; and a session can register it by its server **UUID**,
-  `bf7c680d-5fdc-5ef4-b4a0-abadb619bf0a`, which is the form a blocked worker was
-  observed waiting on. Rule matching is on the literal tool name, so an entry
-  under one spelling does not cover the others. Every Claude Code Remote tool is
-  therefore listed under all three.
+  `claude-code-remote`. Rule matching is on the literal tool name, so an entry
+  under one spelling does not cover the other. Every Claude Code Remote tool is
+  therefore listed under both.
 
   A wildcard cannot collapse them: an allow rule permits a glob only in the
   **tool** position, after a literal `mcp__<server>__` prefix, so
