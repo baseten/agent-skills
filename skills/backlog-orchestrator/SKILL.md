@@ -1056,7 +1056,7 @@ The direction says whose view was partial, and therefore what to fix. Yours miss
 
 **A visibility disagreement is first evidence about the transport, only second about one edge.** Adding the single dependency a worker happened to find and re-deriving against the same view leaves every other hidden edge hidden — the ones absent from both native metadata and prose are still invisible, and siblings still get dispatched from a frontier built on them. So read the disagreement against that boundary's visibility proof (see Proving a transport can see the graph), because the proof's state determines which of two very different things you are looking at:
 
-**Visibility unproven, or the proof invalidated** — treat this as truncation, not as one missing edge:
+**Visibility unproven, or the proof invalidated** — treat this as truncation, not as one missing edge. **This whole branch presupposes a proof existed to lose; it does not apply to a boundary classified `dependency transport unavailable`**, where none was ever obtainable, nothing was truncated, and steps 2 and 3 below would demand re-establishing something that cannot be established:
 
 1. adopt the named dependencies **provisionally** — real enough to schedule against, not yet established;
 2. invalidate the relationship-visibility proof for that credential, exactly as an authorization error would;
