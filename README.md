@@ -42,7 +42,44 @@ Adding a skill requires no change to `bootstrap.sh` — create a directory under
 `permissions.json` is merged into `~/.claude/settings.json` by `bootstrap.sh`, so
 a skill run does not stop on a prompt for a call the skill is expected to make.
 
-Two things about the allowlist are easy to get wrong:
+### What this allowlist is, and is not
+
+**It is a convenience layer. It is not a security boundary, and it cannot be made
+into one.** Do not reason about it as though a hostile or prompt-injected agent
+is contained by it — it isn't, by construction rather than by oversight.
+
+Permission rules are **prefix matches**, so any rule ending in `*` admits
+arbitrary trailing arguments. `git` and `gh` are both full of flags that name a
+command to run or a file to read, and those flags simply ride along after
+whatever prefix is granted. Five rounds of automated review found:
+
+| rule | vector |
+|---|---|
+| `Bash(gh *)` | shell, via `gh alias set --shell` |
+| `Bash(git rebase*)` | shell, via `-x` |
+| `Bash(gh auth status*)` | prints the credential, via `--show-token` |
+| `Bash(git fetch*)` / `Bash(git push*)` | local shell, via `--upload-pack=` / `--receive-pack=` against a `.` remote |
+| `Bash(gh api*)` | reads a local file and publishes it, via `-F key=@<path>` |
+
+Each was removed or replaced with a wildcard-free form. Those were cheap fixes
+for capabilities nothing needed, and they should stay.
+
+The fifth round is the one that settles the question. `Bash(git commit*)` and
+`Bash(git push)` are each safe in isolation — the second takes no arguments at
+all — yet compose into `git commit -F <secret>` followed by a push, which writes
+an arbitrary local file into remote history. **No single rule is wrong there.**
+Closing it means gating every commit or every push, and in an unattended fan-out
+a worker stopped on a permission prompt is a deadlock, not a delay.
+
+So: any rule set broad enough to let an agent commit and push unattended is
+broad enough to exfiltrate a file. Narrowing relocates the hole; it does not
+remove it. The controls that actually hold are elsewhere — container isolation,
+credential scoping, egress policy, and what the token can reach.
+
+Judge additions to this file by "does a skill need this to run without
+prompting", not by "is this safe to grant an adversary".
+
+### Two things that are easy to get wrong
 
 - **The Claude Code Remote MCP server is registered under two different names
   depending on the surface.** A cloud/web session exposes its tools as
