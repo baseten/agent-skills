@@ -12,6 +12,8 @@
     "mcp__github__add_issue_comment",
     "mcp__github__add_reply_to_pull_request_comment",
     "mcp__github__resolve_review_thread",
+    "mcp__github__subscribe_pr_activity",
+    "mcp__github__unsubscribe_pr_activity",
     "mcp__linear__get_issue",
     "mcp__linear__get_project",
     "mcp__linear__list_comments",
