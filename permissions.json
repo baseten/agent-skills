@@ -1,7 +1,7 @@
 {
   "allow": [
     "Bash(gh api*)",
-    "Bash(gh auth status*)",
+    "Bash(gh auth status)",
     "Bash(gh issue comment*)",
     "Bash(gh issue create*)",
     "Bash(gh issue edit*)",
