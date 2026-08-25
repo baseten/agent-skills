@@ -22,6 +22,7 @@ Checks:
 3. read native parent/sub-issue hierarchy where the tracker supports it;
 4. read native `blocked by` / `blocking` dependency relationships where supported;
 5. scan issue bodies/comments for textual dependency phrases and linked issue URLs, including `blocked by`, `depends on`, `after`, `requires`, `prerequisite`, `must land first`, and equivalent wording;
+   - **skip any comment whose first line is exactly `**Worker report — unclassified evidence, not a dependency record.**`.** That is a previous worker's persisted report on that issue, not a statement about the issue's dependencies, and it necessarily contains dependency URLs — so scanning it puts an edge the orchestrator already classified as stale back into the normalized DAG, on every validation from then on, with the report as its source. `implement-issue-core` excludes the same comments from its dependency union; this check runs earlier and would otherwise reintroduce the edge before that exclusion ever applies. Whatever the report observed, it observed in the issue's own prose, which this check reads anyway;
 6. compare structured dependencies against text-described dependencies;
 7. detect cycles, missing issue targets, contradictory ordering, closed/cancelled prerequisite inconsistencies, orphaned children, duplicates, and links outside the authorized scope;
 8. distinguish an external prerequisite from an authorized implementation issue;
