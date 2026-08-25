@@ -236,7 +236,7 @@ Other trackers may be used only when reliable read/status/dependency support and
 Prefer tracker-native structured metadata where available:
 
 - parent/sub-issue hierarchy;
-- `blocked by` / `blocking` relationships — **on GitHub, as counts only and only from the issue's parent**; no call names the issue at the other end of the edge, so prose carries the identity and `total_blocked_by` (not `blocked_by`) carries the count. See `validate-backlog`, *GitHub: dependency edges are counts, not identities*;
+- `blocked by` / `blocking` relationships — **not readable at all on GitHub**, where prose is the only source and every blocker set is therefore unproven. Linear is unaffected. See `validate-backlog`, *GitHub: native dependency edges are unreadable*;
 - status/state;
 - project/priority/build-order fields.
 
@@ -1032,9 +1032,7 @@ Retrofit an already-open PR the same way when a finding arrives late — edit it
 
 Neither direction, in either class, touches a visibility proof. Invalidating a proof and halting slot-filling for a stale base is an expensive answer to a cheap problem. Everything below applies to **visibility** disagreements, where some other source named an edge the worker's native read did not return.
 
-**First, a report may not be edge-shaped at all.** Where the worker's native read returns only a count — GitHub — it reports a **cardinality remainder**: `total_blocked_by` exceeding the number of blocker identities prose yielded, with membership marked not checkable. None of the comparisons below can consume that, because there is no URL to compare, and a report that no branch handles is a report the run silently drops — leaving the DAG one blocker short while scheduling continues against it.
-
-So handle it on its own terms. A positive remainder is **not** a visibility disagreement and must not invalidate a proof: the worker's native read was correct and returned what it could. It is an **incomplete graph** — that many blockers exist on this issue that nobody can name. Hold the affected path and reconcile the remainder: read the count yourself, look for the missing identities in prose the worker may not have read, or put it to the user, who can see the edges in the web UI that no API here returns. Resume that path only once the remainder reaches zero or the user rules on it. A remainder that cannot be reconciled is a `NEEDS_USER` of the unverifiable-prerequisite kind, not a transport failure.
+**First, a worker on GitHub cannot have made this comparison at all.** There is no native dependency read there (see `validate-backlog`, *GitHub: native dependency edges are unreadable*), so a GitHub worker reports native as **unreadable** and its blocker set as unproven — not as an edge set that disagreed with yours. Never process that as a visibility disagreement: nothing was compared, so nothing invalidates a proof, and treating it as one would halt every sibling on the boundary on the strength of a read that never happened. What it obliges you to do instead is carry the unproven completeness forward and decide whether to dispatch knowing an unwritten blocker on that issue is undetectable. Everything below applies where the tracker actually returns edges.
 
 Two variants can be demonstrations rather than suspicions — but only on conditions you must check, not assume, and the first is that you are comparing like with like.
 

@@ -9,6 +9,13 @@ Convert text-described dependencies in a bounded GitHub issue set into first-cla
 
 This skill is GitHub-specific. For tracker-agnostic graph validation use `validate-backlog`.
 
+**Establish first that native dependency reads work here at all, because in some environments they do not.** The GitHub MCP server exposes no blocked-by read — it is behind a feature flag ([github/github-mcp-server#3145](https://github.com/github/github-mcp-server/issues/3145)) — and the `curl` fallback needs credentials a container without `gh` may lack, degrading to a result that **drops cross-repository edges with no error**. Both matter more to this skill than to any other, because it *writes* native edges:
+
+- with no read, `ALREADY_PRESENT` and `CONFLICT` cannot be determined, so normalizing would re-add edges that already exist and could contradict ones it cannot see;
+- with the degraded read, a cross-repo edge reads as absent and gets written again — and an edge written into native metadata is the authoritative answer every later readiness check trusts, which is the most expensive place in the system to be confidently wrong.
+
+So probe the read before applying anything: a known-true edge — one this run just wrote, or one the user confirmed — queried through the transport you will normalize with, **including one that crosses a repository boundary if the set spans repositories**. If it does not come back, stop and report; do not fall back to writing edges you could not check. See `validate-backlog`, *GitHub: native dependency edges are unreadable*.
+
 ## Inputs and scope
 
 Accept one of:

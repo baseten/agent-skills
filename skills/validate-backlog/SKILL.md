@@ -20,7 +20,7 @@ Checks:
 1. enumerate the bounded issue set from the supplied manifest/root/explicit issue set — noting that for a root/parent invocation this enumeration *is* a hierarchy read, so it is subject to check 2 rather than exempt from it;
 2. **establish that the transport can see the relationships you are about to read**, including the ones enumeration just consumed — see Transport visibility below. This gates the whole check, not just the mismatch case, and the enumerated scope is not permitted to define its own boundary list;
 3. read native parent/sub-issue hierarchy where the tracker supports it;
-4. read native `blocked by` / `blocking` dependency relationships where supported — but see **GitHub: dependency edges are counts, not identities** below, because "supported" is doing more work in that sentence than it looks;
+4. read native `blocked by` / `blocking` dependency relationships where supported — **on GitHub they are not readable at all**, see *GitHub: native dependency edges are unreadable* below;
 5. scan issue bodies/comments for textual dependency phrases and linked issue URLs, including `blocked by`, `depends on`, `after`, `requires`, `prerequisite`, `must land first`, and equivalent wording;
    - **skip any comment whose first line is exactly `**Worker report — unclassified evidence, not a dependency record.**`.** That is a previous worker's persisted report on that issue, not a statement about the issue's dependencies, and it necessarily contains dependency URLs — so scanning it puts an edge the orchestrator already classified as stale back into the normalized DAG, on every validation from then on, with the report as its source. `implement-issue-core` excludes the same comments from its dependency union; this check runs earlier and would otherwise reintroduce the edge before that exclusion ever applies. Whatever the report observed, it observed in the issue's own prose, which this check reads anyway;
 6. compare structured dependencies against text-described dependencies;
@@ -30,38 +30,22 @@ Checks:
 
 Structured dependency metadata is authoritative when present, but textual descriptions remain a secondary consistency signal. A textual blocker absent from structured metadata should be flagged as a likely missing dependency rather than silently ignored.
 
-### GitHub: dependency edges are counts, not identities
+### GitHub: native dependency edges are unreadable — prose is the only source
 
-**Verified against the GitHub MCP server on 2026-08-25 — re-test before trusting it, since this is a property of one server version rather than of GitHub.** What was observed:
+**On GitHub, the issue body and its comments are the only reliable source of what blocks an issue.** This is not a preference or a fallback ordering; it is the whole of the available evidence. Three separate limits stack, and each one alone would be enough:
 
-| call | dependency data returned |
-|---|---|
-| `issue_read(method='get')` on the issue itself | **none at all** — hierarchy flags, `parent`, `sub_issues_summary` and `closed_by_pull_requests`, and no blocked-by/blocking anything |
-| `issue_read(method='get_sub_issues')` on its **parent** | `issue_dependencies_summary` per child: `blocked_by`, `blocking`, `total_blocked_by`, `total_blocking` |
+- **The MCP server exposes no dependency read.** Blocked-by / blocking is behind a feature flag that cannot be enabled in this environment. Tracked upstream at [github/github-mcp-server#3145](https://github.com/github/github-mcp-server/issues/3145), which is being worked on — so **re-test before trusting any of this**; the day that ships, native metadata becomes a real second source and most of this section retires.
+- **The `curl` fallback is worse than unavailable, because it answers.** Reading the REST endpoint directly needs credentials that a container without `gh` does not have, and the degraded result **filters cross-repository edges out invisibly** — no error, no warning, just a shorter list. That is the failure mode this skill warns about everywhere else: a partial answer wearing the shape of a complete one. Where a backlog spans repositories, the edges most likely to be dropped are exactly the ones that matter.
+- **The count field is a trap, not a workaround.** `issue_read(method='get_sub_issues')` on a *parent* returns each child's raw REST payload, which happens to carry an `issue_dependencies_summary` (`blocked_by`, `blocking`, `total_blocked_by`, `total_blocking`). This is incidental passthrough of one endpoint's response body, not a dependency capability, and it is written down here **only so the next reader does not rediscover it and build on it**. It names no edge, so it can never identify a blocker; and it inherits the cross-repo filtering above, so it cannot even be trusted as a lower bound on a cross-repo graph. Do not schedule, dispatch, or clear anything on it.
 
-So the edges are visible only as **counts**, only for an issue that has a parent, and only by asking the parent. **No call returns which issues the edges point at.** Three consequences, and the middle one is the trap:
+So on GitHub:
 
-- **The count is a detector, not a proof, and the difference decides what a zero means.** Compare `total_blocked_by` against **the number of distinct blocker identities prose yields**, and report **every positive remainder** as that many unidentified blockers. Prose naming nothing against a count of 1 is the obvious case; prose naming one against a count of 2 is the same finding and the easier to miss, because a DAG with an edge in it looks answered. A positive remainder proves incompleteness on its own, with no judgement about the prose required.
+- **Read prose properly** — body and comments both, since a blocker found after filing is usually a comment. It carries the identity and nothing else does.
+- **Never report "prose has it, native lacks it" as a visibility disagreement.** Native could not have named it. On this transport that comparison would fire for every prose-named blocker on every issue, and each false positive invalidates a visibility proof and halts sibling dispatch.
+- **Record the completeness of every GitHub blocker set as unproven**, and say why: no native source exists to corroborate prose, so an unwritten blocker is undetectable by construction. This is honest rather than paralysing — the skill already carries unproven completeness through to the caller as a judgement rather than a stop.
+- **A visibility proof over a GitHub dependency boundary cannot be established at all.** There is no read to demonstrate. Do not substitute a hierarchy or issue read that happens to succeed: those prove that *some* call works, which was never in doubt, and dressing that up as a relationship proof is how a run convinces itself it can see a graph it cannot.
 
-  **A remainder of zero proves nothing, and must not be read as coverage.** The subtraction assumes each prose edge corresponds to a *different* native edge, and nothing here can establish that: with no identities returned, prose naming a stale blocker A while native's single edge is B gives `1 − 1 = 0` and reads as complete — while B goes unmet and A is normalized into the DAG as though real. Matching cardinality is consistent with total membership disagreement. So the arithmetic bounds the missing edges **from below only**: it finds blockers nobody named, and it can never confirm that the ones named are the ones that exist.
-
-  The honest consequence, which should be stated rather than worked around: **on this transport the completeness of a blocker set is unproven for every issue whose prose names any edge**, because that edge cannot be checked against native. Record it as unproven and let the caller weigh it. Do not let a zero remainder promote it to backed — that would turn the one check available here into a false clearance, which is worse than having no check.
-- **`blocked_by` and `total_blocked_by` are different numbers and disagree.** An observed child returned `blocked_by: 0` alongside `total_blocked_by: 1` — the short field appears to exclude blockers that are already closed. **Reading only `blocked_by` understates the recorded edge set**, and reads as "no blockers" for an issue that has one. Read the `total_` fields.
-- **Identifying the blocker requires prose.** Since no call names the edge, the issue body and its comments are the only source for *which* issue blocks this one. That is not a preference for prose; it is the only identity available, and it makes prose load-bearing on GitHub in a way the three-source union otherwise assumes it is not.
-
-This weakens the "native metadata claims exhaustiveness" premise exactly where it is relied on. Native still claims exhaustiveness **about the count**, so a count of zero on a parented issue is a real absence — but it claims nothing identifiable, so an edge present in prose and absent from native cannot be checked against native at all. Report the remainder as unidentified blockers and say so; never treat the absence of a *named* native edge as evidence that no blocker exists, because no named native edge is ever returned.
-
-**A visibility proof must be count-aware here, and the usual protocol does not survive the translation.** Elsewhere this skill establishes visibility by reading a known-true edge and observing that it comes back. Nothing edge-shaped comes back on this transport, so "the control edge was returned" is not an observation anyone can make — and a non-zero or unchanged count does not stand in for it, because on a control issue with more than one dependency the count can be satisfied entirely by a *different* relationship while the control edge stays invisible. Agreement of that kind is indistinguishable from the blind spot it is supposed to rule out.
-
-So on GitHub a control must be one of:
-
-- a control issue whose **exact** dependency count is known independently, compared against the count returned;
-- an **isolated single-edge** control, where the count cannot be satisfied by anything else;
-- a **before/after delta** across an edge this run just wrote, where the count moving by exactly one is the observation.
-
-Absent one of those, the boundary is unproven and must be reported as such rather than passed as proven — the same conclusion as having no control at all.
-
-An issue with **no parent** gets neither — for those, prose is the whole of the dependency evidence, and the completeness of its blocker set is unproven on this transport by construction.
+**This is GitHub-specific.** Linear exposes real relationship reads, so the three-source union works there as written and none of the above applies.
 
 ### Transport visibility
 
