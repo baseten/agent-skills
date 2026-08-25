@@ -64,13 +64,15 @@ Three sources are hard to fool only while they carry information. Where prose na
 
 So establish what backs the set's completeness:
 
-- **the caller marked its context complete and reports the read behind it as having proven visibility** for the boundaries this issue's blockers could cross — backed. An orchestrator normally has this by its own contract: an unproven boundary over dispatchable scope is a `FAIL` at its preflight, so a dispatch either carries a proven view or should not have happened;
+- **the caller marked its context complete and reports the read behind it as having proven visibility** for the boundaries this issue's blockers could cross — backed. An orchestrator normally has this by its own contract: an unproven boundary over dispatchable scope is a `FAIL` at its preflight, so a dispatch either carries a proven view or should not have happened — **except a boundary reported as `dependency transport unavailable`, which its preflight passes deliberately** and which no worker can improve on;
 - **a known-true case, read and observed** — an edge the caller confirmed crossing the same boundary, which you query **through the same transport and credential you are reading dependencies with**, and which comes back. Having such an edge available proves nothing; the observation is the proof. If it does not come back you have found the blind spot rather than ruled it out, and that is a finding. Nothing weaker establishes this: not a second read, not another transport or credential, for the reasons the orchestrator's proof rules give at length;
 - **neither** — completeness is unproven, whether the set holds three blockers or none.
 
 In that last case, what to do turns on whether anything upstream computed readiness from a graph:
 
 - **a caller supplied a READY judgement but no proven view** — return `NEEDS_USER`, naming the boundary, and do not implement. Its own rules required a proven view before dispatch, so the mismatch is upstream information it needs more than it needs this PR, and one confirmed edge or a marked-complete context settles it.
+
+  **Unless the caller reports the boundary as `dependency transport unavailable`** — no dependency read exists on that tracker, as on GitHub. Then there is no mismatch to report: the caller did not skip a proof it owed, it recorded a proof that cannot be obtained, and returning `NEEDS_USER` would refuse every issue on that tracker forever while telling the caller something it told you. Proceed as for a direct invocation below, and carry the limitation into the report.
 - **nothing upstream judged readiness** — a direct invocation on one issue. Proceed, resolving whatever the set does contain, and report the completeness as unproven. Refusing every issue whose dependency view cannot be proven would refuse nearly all of them, which is the same error as gating on issue state; the invocation is the authority here. What the report must not do is let the PR make the stronger claim — no blocker was visible, not none exists.
 
 ### Resolve each blocker's real state
