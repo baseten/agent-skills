@@ -9,6 +9,15 @@ Convert text-described dependencies in a bounded GitHub issue set into first-cla
 
 This skill is GitHub-specific. For tracker-agnostic graph validation use `validate-backlog`.
 
+**This skill is only useful from an environment with an authenticated `gh` CLI — in practice a local session.** It needs `gh` for *both* halves: reading existing edges to classify `ALREADY_PRESENT`/`CONFLICT`, and writing new ones. A cloud container has neither — the MCP server exposes no dependency read or write, and a raw `curl` read returns same-repo edges only, silently omitting cross-repository ones. Run from a cloud container this does not degrade gracefully: it normalizes against a view that cannot see half the graph, and writes the result into the metadata every later readiness check trusts.
+
+**Establish first that native dependency reads work here at all, because in some environments they do not.** The GitHub MCP server exposes no blocked-by read — it is behind a feature flag ([github/github-mcp-server#3145](https://github.com/github/github-mcp-server/issues/3145)) — and the `curl` fallback needs credentials a container without `gh` may lack, degrading to a result that **drops cross-repository edges with no error**. Both matter more to this skill than to any other, because it *writes* native edges:
+
+- with no read, `ALREADY_PRESENT` and `CONFLICT` cannot be determined, so normalizing would re-add edges that already exist and could contradict ones it cannot see;
+- with the degraded read, a cross-repo edge reads as absent and gets written again — and an edge written into native metadata is the authoritative answer every later readiness check trusts, which is the most expensive place in the system to be confidently wrong.
+
+So probe the read before applying anything: a known-true edge — one this run just wrote, or one the user confirmed — queried through the transport you will normalize with, **including one that crosses a repository boundary if the set spans repositories**. If it does not come back, stop and report; do not fall back to writing edges you could not check. See `validate-backlog`, *GitHub dependency reads depend on where you are running*.
+
 ## Inputs and scope
 
 Accept one of:
@@ -27,7 +36,7 @@ For every in-scope issue:
 
 1. read native GitHub `blocked by` / `blocking` relationships first;
 2. read the issue body;
-3. read comments when they contain scope/order clarification;
+3. read comments when they contain scope/order clarification — but **skip any comment whose first line is exactly `**Worker report — unclassified evidence, not a dependency record.**`**. That is a worker's persisted report on the issue, not a statement about the issue's dependencies. It necessarily contains dependency URLs, and this skill writes native metadata, so an edge taken from it becomes the authoritative answer every later readiness check trusts — including one the orchestrator has already classified as stale, which then blocks its issue with nothing prompting a re-examination. A report never contributes a candidate edge, at any confidence;
 4. identify explicit dependency language, including:
    - `blocked by <issue>`;
    - `depends on <issue>`;
@@ -77,7 +86,7 @@ For each candidate edge:
 
 Classify candidates:
 
-- `SAFE_TO_ADD` — explicit text, unambiguous direction, no conflict/cycle;
+- `SAFE_TO_ADD` — explicit text, unambiguous direction, no conflict/cycle. Text inside a worker-report comment is never explicit text for this purpose: that exclusion happens at the read, above, so such an edge should never reach classification at all;
 - `ALREADY_PRESENT` — native dependency already exists;
 - `AMBIGUOUS` — wording does not establish direction strongly enough;
 - `CONFLICT` — contradicts native metadata or would introduce a cycle;

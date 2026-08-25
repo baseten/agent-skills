@@ -27,7 +27,7 @@ A tranche that produced nothing worth reporting still gets one line saying so. S
 
 ## Sources
 
-Derive the summary from durable evidence — tracker state, PR bodies and diffs, completed review findings, CI results — not from the orchestrator's recollection of its own run. A restarted session summarizing the same tranche should produce substantially the same text. Run context is welcome where it adds something durable state cannot show (why a worker abandoned an approach, what a reviewer and a worker disagreed about), but it never replaces the record.
+Derive the summary from durable evidence — tracker state, PR bodies, diffs and comment threads (a worker's own report comment on its PR is part of that record, and it is where a deliberately raised caveat lives), completed review findings, CI results — not from the orchestrator's recollection of its own run. A restarted session summarizing the same tranche should produce substantially the same text. Run context is welcome where it adds something durable state cannot show (why a worker abandoned an approach, what a reviewer and a worker disagreed about), but it never replaces the record.
 
 # 1. The summary
 
