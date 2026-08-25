@@ -41,11 +41,21 @@ Structured dependency metadata is authoritative when present, but textual descri
 
 So the edges are visible only as **counts**, only for an issue that has a parent, and only by asking the parent. **No call returns which issues the edges point at.** Three consequences, and the middle one is the trap:
 
-- **A non-zero count is real evidence.** `total_blocked_by: 1` says a blocker was recorded. That is worth checking against prose: prose naming nothing while the count is non-zero is a genuine inconsistency, and the only way this transport can surface one.
+- **The count is a cardinality check, and the test is arithmetic rather than presence.** Compare `total_blocked_by` against **the number of distinct blocker identities prose yields**, and report **every positive remainder** as that many unidentified blockers. Prose naming nothing against a count of 1 is the obvious case; prose naming one against a count of 2 is the same finding and the easier one to miss, because a DAG with an edge in it looks answered. The count proves incompleteness on its own — no judgement about the prose is needed to act on it.
 - **`blocked_by` and `total_blocked_by` are different numbers and disagree.** An observed child returned `blocked_by: 0` alongside `total_blocked_by: 1` — the short field appears to exclude blockers that are already closed. **Reading only `blocked_by` understates the recorded edge set**, and reads as "no blockers" for an issue that has one. Read the `total_` fields.
 - **Identifying the blocker requires prose.** Since no call names the edge, the issue body and its comments are the only source for *which* issue blocks this one. That is not a preference for prose; it is the only identity available, and it makes prose load-bearing on GitHub in a way the three-source union otherwise assumes it is not.
 
-This weakens the "native metadata claims exhaustiveness" premise exactly where it is relied on. Native still claims exhaustiveness **about the count**, so a count of zero on a parented issue is a real absence — but it claims nothing identifiable, so an edge present in prose and absent from native cannot be checked against native at all. Treat a non-zero count with no matching prose edge as an unidentified blocker and say so; never treat the absence of a *named* native edge as evidence that no blocker exists, because no named native edge is ever returned.
+This weakens the "native metadata claims exhaustiveness" premise exactly where it is relied on. Native still claims exhaustiveness **about the count**, so a count of zero on a parented issue is a real absence — but it claims nothing identifiable, so an edge present in prose and absent from native cannot be checked against native at all. Report the remainder as unidentified blockers and say so; never treat the absence of a *named* native edge as evidence that no blocker exists, because no named native edge is ever returned.
+
+**A visibility proof must be count-aware here, and the usual protocol does not survive the translation.** Elsewhere this skill establishes visibility by reading a known-true edge and observing that it comes back. Nothing edge-shaped comes back on this transport, so "the control edge was returned" is not an observation anyone can make — and a non-zero or unchanged count does not stand in for it, because on a control issue with more than one dependency the count can be satisfied entirely by a *different* relationship while the control edge stays invisible. Agreement of that kind is indistinguishable from the blind spot it is supposed to rule out.
+
+So on GitHub a control must be one of:
+
+- a control issue whose **exact** dependency count is known independently, compared against the count returned;
+- an **isolated single-edge** control, where the count cannot be satisfied by anything else;
+- a **before/after delta** across an edge this run just wrote, where the count moving by exactly one is the observation.
+
+Absent one of those, the boundary is unproven and must be reported as such rather than passed as proven — the same conclusion as having no control at all.
 
 An issue with **no parent** gets neither — for those, prose is the whole of the dependency evidence, and the completeness of its blocker set is unproven on this transport by construction.
 
