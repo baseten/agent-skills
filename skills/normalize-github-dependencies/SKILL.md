@@ -27,7 +27,7 @@ For every in-scope issue:
 
 1. read native GitHub `blocked by` / `blocking` relationships first;
 2. read the issue body;
-3. read comments when they contain scope/order clarification;
+3. read comments when they contain scope/order clarification — but **skip any comment whose first line is exactly `**Worker report — unclassified evidence, not a dependency record.**`**. That is a worker's persisted report on the issue, not a statement about the issue's dependencies. It necessarily contains dependency URLs, and this skill writes native metadata, so an edge taken from it becomes the authoritative answer every later readiness check trusts — including one the orchestrator has already classified as stale, which then blocks its issue with nothing prompting a re-examination. A report never contributes a candidate edge, at any confidence;
 4. identify explicit dependency language, including:
    - `blocked by <issue>`;
    - `depends on <issue>`;
@@ -77,7 +77,7 @@ For each candidate edge:
 
 Classify candidates:
 
-- `SAFE_TO_ADD` — explicit text, unambiguous direction, no conflict/cycle;
+- `SAFE_TO_ADD` — explicit text, unambiguous direction, no conflict/cycle. Text inside a worker-report comment is never explicit text for this purpose: that exclusion happens at the read, above, so such an edge should never reach classification at all;
 - `ALREADY_PRESENT` — native dependency already exists;
 - `AMBIGUOUS` — wording does not establish direction strongly enough;
 - `CONFLICT` — contradicts native metadata or would introduce a cycle;
