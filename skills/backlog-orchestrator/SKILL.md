@@ -236,7 +236,7 @@ Other trackers may be used only when reliable read/status/dependency support and
 Prefer tracker-native structured metadata where available:
 
 - parent/sub-issue hierarchy;
-- `blocked by` / `blocking` relationships — **not readable at all on GitHub**, where prose is the only source and every blocker set is therefore unproven. Linear is unaffected. See `validate-backlog`, *GitHub: native dependency edges are unreadable*;
+- `blocked by` / `blocking` relationships — **readable or not depending on the probed transport, not on the tracker's name**: no MCP dependency read exists on GitHub, an authenticated `gh` does provide one, and where neither is present prose is the only source and every blocker set is unproven. Carry whichever state the validator probed into every dispatch prompt. Linear is unaffected. See `validate-backlog`, *GitHub: native dependency edges are unreadable*;
 - status/state;
 - project/priority/build-order fields.
 
@@ -1038,7 +1038,7 @@ Retrofit an already-open PR the same way when a finding arrives late — edit it
 
 Neither direction, in either class, touches a visibility proof. Invalidating a proof and halting slot-filling for a stale base is an expensive answer to a cheap problem. Everything below applies to **visibility** disagreements, where some other source named an edge the worker's native read did not return.
 
-**First, a worker on GitHub cannot have made this comparison at all.** There is no native dependency read there (see `validate-backlog`, *GitHub: native dependency edges are unreadable*), so a GitHub worker reports native as **unreadable** and its blocker set as unproven — not as an edge set that disagreed with yours. Never process that as a visibility disagreement: nothing was compared, so nothing invalidates a proof, and treating it as one would halt every sibling on the boundary on the strength of a read that never happened. What it obliges you to do instead is carry the unproven completeness forward and decide whether to dispatch knowing an unwritten blocker on that issue is undetectable. Everything below applies where the tracker actually returns edges.
+**First, a worker may not have been able to make this comparison at all.** Where the probed transport returns no edges — GitHub with no authenticated `gh` (see `validate-backlog`, *GitHub: native dependency edges are unreadable*) — the worker reports native as **unreadable** and its blocker set as unproven, not as an edge set that disagreed with yours. Where a read *was* available, the comparisons below apply normally, GitHub included. Never process that as a visibility disagreement: nothing was compared, so nothing invalidates a proof, and treating it as one would halt every sibling on the boundary on the strength of a read that never happened. What it obliges you to do instead is carry the unproven completeness forward and decide whether to dispatch knowing an unwritten blocker on that issue is undetectable. Everything below applies where the tracker actually returns edges.
 
 Two variants can be demonstrations rather than suspicions — but only on conditions you must check, not assume, and the first is that you are comparing like with like.
 
