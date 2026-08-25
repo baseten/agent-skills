@@ -9,6 +9,8 @@ Convert text-described dependencies in a bounded GitHub issue set into first-cla
 
 This skill is GitHub-specific. For tracker-agnostic graph validation use `validate-backlog`.
 
+**This skill is only useful from an environment with an authenticated `gh` CLI — in practice a local session.** It needs `gh` for *both* halves: reading existing edges to classify `ALREADY_PRESENT`/`CONFLICT`, and writing new ones. A cloud container has neither — the MCP server exposes no dependency read or write, and a raw `curl` read returns same-repo edges only, silently omitting cross-repository ones. Run from a cloud container this does not degrade gracefully: it normalizes against a view that cannot see half the graph, and writes the result into the metadata every later readiness check trusts.
+
 **Establish first that native dependency reads work here at all, because in some environments they do not.** The GitHub MCP server exposes no blocked-by read — it is behind a feature flag ([github/github-mcp-server#3145](https://github.com/github/github-mcp-server/issues/3145)) — and the `curl` fallback needs credentials a container without `gh` may lack, degrading to a result that **drops cross-repository edges with no error**. Both matter more to this skill than to any other, because it *writes* native edges:
 
 - with no read, `ALREADY_PRESENT` and `CONFLICT` cannot be determined, so normalizing would re-add edges that already exist and could contradict ones it cannot see;
