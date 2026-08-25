@@ -236,7 +236,7 @@ Other trackers may be used only when reliable read/status/dependency support and
 Prefer tracker-native structured metadata where available:
 
 - parent/sub-issue hierarchy;
-- `blocked by` / `blocking` relationships;
+- `blocked by` / `blocking` relationships — **on GitHub, as counts only and only from the issue's parent**; no call names the issue at the other end of the edge, so prose carries the identity and `total_blocked_by` (not `blocked_by`) carries the count. See `validate-backlog`, *GitHub: dependency edges are counts, not identities*;
 - status/state;
 - project/priority/build-order fields.
 

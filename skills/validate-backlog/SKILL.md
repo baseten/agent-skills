@@ -20,7 +20,7 @@ Checks:
 1. enumerate the bounded issue set from the supplied manifest/root/explicit issue set — noting that for a root/parent invocation this enumeration *is* a hierarchy read, so it is subject to check 2 rather than exempt from it;
 2. **establish that the transport can see the relationships you are about to read**, including the ones enumeration just consumed — see Transport visibility below. This gates the whole check, not just the mismatch case, and the enumerated scope is not permitted to define its own boundary list;
 3. read native parent/sub-issue hierarchy where the tracker supports it;
-4. read native `blocked by` / `blocking` dependency relationships where supported;
+4. read native `blocked by` / `blocking` dependency relationships where supported — but see **GitHub: dependency edges are counts, not identities** below, because "supported" is doing more work in that sentence than it looks;
 5. scan issue bodies/comments for textual dependency phrases and linked issue URLs, including `blocked by`, `depends on`, `after`, `requires`, `prerequisite`, `must land first`, and equivalent wording;
    - **skip any comment whose first line is exactly `**Worker report — unclassified evidence, not a dependency record.**`.** That is a previous worker's persisted report on that issue, not a statement about the issue's dependencies, and it necessarily contains dependency URLs — so scanning it puts an edge the orchestrator already classified as stale back into the normalized DAG, on every validation from then on, with the report as its source. `implement-issue-core` excludes the same comments from its dependency union; this check runs earlier and would otherwise reintroduce the edge before that exclusion ever applies. Whatever the report observed, it observed in the issue's own prose, which this check reads anyway;
 6. compare structured dependencies against text-described dependencies;
@@ -29,6 +29,25 @@ Checks:
 9. report whether the graph is safe to execute without guessing.
 
 Structured dependency metadata is authoritative when present, but textual descriptions remain a secondary consistency signal. A textual blocker absent from structured metadata should be flagged as a likely missing dependency rather than silently ignored.
+
+### GitHub: dependency edges are counts, not identities
+
+**Verified against the GitHub MCP server on 2026-08-25 — re-test before trusting it, since this is a property of one server version rather than of GitHub.** What was observed:
+
+| call | dependency data returned |
+|---|---|
+| `issue_read(method='get')` on the issue itself | **none at all** — hierarchy flags, `parent`, `sub_issues_summary` and `closed_by_pull_requests`, and no blocked-by/blocking anything |
+| `issue_read(method='get_sub_issues')` on its **parent** | `issue_dependencies_summary` per child: `blocked_by`, `blocking`, `total_blocked_by`, `total_blocking` |
+
+So the edges are visible only as **counts**, only for an issue that has a parent, and only by asking the parent. **No call returns which issues the edges point at.** Three consequences, and the middle one is the trap:
+
+- **A non-zero count is real evidence.** `total_blocked_by: 1` says a blocker was recorded. That is worth checking against prose: prose naming nothing while the count is non-zero is a genuine inconsistency, and the only way this transport can surface one.
+- **`blocked_by` and `total_blocked_by` are different numbers and disagree.** An observed child returned `blocked_by: 0` alongside `total_blocked_by: 1` — the short field appears to exclude blockers that are already closed. **Reading only `blocked_by` understates the recorded edge set**, and reads as "no blockers" for an issue that has one. Read the `total_` fields.
+- **Identifying the blocker requires prose.** Since no call names the edge, the issue body and its comments are the only source for *which* issue blocks this one. That is not a preference for prose; it is the only identity available, and it makes prose load-bearing on GitHub in a way the three-source union otherwise assumes it is not.
+
+This weakens the "native metadata claims exhaustiveness" premise exactly where it is relied on. Native still claims exhaustiveness **about the count**, so a count of zero on a parented issue is a real absence — but it claims nothing identifiable, so an edge present in prose and absent from native cannot be checked against native at all. Treat a non-zero count with no matching prose edge as an unidentified blocker and say so; never treat the absence of a *named* native edge as evidence that no blocker exists, because no named native edge is ever returned.
+
+An issue with **no parent** gets neither — for those, prose is the whole of the dependency evidence, and the completeness of its blocker set is unproven on this transport by construction.
 
 ### Transport visibility
 
