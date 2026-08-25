@@ -140,7 +140,7 @@ Suggested dependency changes (deep mode only):
 
 Also return a normalized DAG using canonical full issue URLs as node identities.
 
-`FAIL` means the orchestrator must not dispatch affected work until corrected. `PASS_WITH_WARNINGS` may proceed if warnings do not make execution order unsafe — which is why unproven relationship visibility over dispatchable scope is never one of those warnings: its safety is exactly what cannot be established. It is a `FAIL`.
+`FAIL` means the orchestrator must not dispatch affected work until corrected. `PASS_WITH_WARNINGS` may proceed if warnings do not make execution order unsafe — which is why unproven relationship visibility over dispatchable scope is never one of those warnings: its safety is exactly what cannot be established. It is a `FAIL`. **The single exception is the named `dependency transport unavailable` class**, where the tracker exposes no dependency read at all: there the limitation is uniform, permanent and precisely known rather than unassessable, so it is `PASS_WITH_WARNINGS` carrying that class. Emitting `FAIL` for it would make this contract unsatisfiable on GitHub.
 
 ## Mutation
 

@@ -300,6 +300,8 @@ Results:
 
 One warning is never proceedable at any level: **unproven relationship visibility over dispatchable scope.** A current validator returns that as `FAIL`, but treat it as blocking wherever it arrives, including from an older validator or another tool. Every other warning can be weighed because you can see what it is about; this one asks you to weigh what you cannot see, so "it probably does not affect ordering" is not a judgement available to you.
 
+**The one exception is `dependency transport unavailable`, above** — and it is an exception because it fails the sentence's own test. That rule bites where a transport *might* be short and you cannot tell by how much. Where the tracker exposes no dependency read at all, you are not being asked to weigh something invisible: you know exactly what you cannot see, uniformly, for every issue, until the capability ships. Blocking on it stops every GitHub backlog forever rather than making one safer. Do not let the general rule swallow it — that is precisely how this correction gets undone by a reader applying the stricter-sounding line.
+
 Verify empirically any baseline a ticket tells workers to diff against — "~40 pre-existing type errors", "these tests already fail" — before it goes into a dispatch prompt. Tickets go stale, and a wrong baseline is worse than none: genuinely new failures hide inside an imaginary one.
 
 Measure it at the parent level, but key it by **repository, base revision, and check** rather than broadcasting one number across the run. Workers in a fanout off a single base share a baseline; workers on stacked bases or in different repos do not, and handing them a number measured somewhere else reintroduces the same defect from the other direction — a real regression hidden inside a borrowed baseline, or a pre-existing failure reported as new. Measure once per distinct base, pass each worker only its own, and correct the ticket's claim in the checkpoint output.
@@ -320,7 +322,7 @@ Shallow mode reads declared dependency metadata and issue text. It never reads c
 
 Scope the escalation to the affected subgraph rather than the whole DAG. The cost objection to deep mode is about breadth, and this does not have to be all-or-nothing: escalate the triggering node and the dependencies it consumes, and leave unrelated branches shallow.
 
-Escalation changes the **mode** of the preflight, never whether one runs, and it reads more deeply *within* the bounded manifest — it never widens scope. `PASS` / `PASS_WITH_WARNINGS` / `FAIL` are handled exactly as above at either mode, unproven relationship visibility stays unproceedable at either mode, and the deeper read consumes model budget, not the 12-new-issue budget.
+Escalation changes the **mode** of the preflight, never whether one runs, and it reads more deeply *within* the bounded manifest — it never widens scope. `PASS` / `PASS_WITH_WARNINGS` / `FAIL` are handled exactly as above at either mode, unproven relationship visibility stays unproceedable at either mode — with the same `dependency transport unavailable` exception, since a deeper read cannot conjure a capability the tracker does not expose — and the deeper read consumes model budget, not the 12-new-issue budget.
 
 ### Coverage is not visibility
 
