@@ -14,7 +14,7 @@ This skill is GitHub-specific. For tracker-agnostic graph validation use `valida
 - with no read, `ALREADY_PRESENT` and `CONFLICT` cannot be determined, so normalizing would re-add edges that already exist and could contradict ones it cannot see;
 - with the degraded read, a cross-repo edge reads as absent and gets written again — and an edge written into native metadata is the authoritative answer every later readiness check trusts, which is the most expensive place in the system to be confidently wrong.
 
-So probe the read before applying anything: a known-true edge — one this run just wrote, or one the user confirmed — queried through the transport you will normalize with, **including one that crosses a repository boundary if the set spans repositories**. If it does not come back, stop and report; do not fall back to writing edges you could not check. See `validate-backlog`, *GitHub: native dependency edges are unreadable*.
+So probe the read before applying anything: a known-true edge — one this run just wrote, or one the user confirmed — queried through the transport you will normalize with, **including one that crosses a repository boundary if the set spans repositories**. If it does not come back, stop and report; do not fall back to writing edges you could not check. See `validate-backlog`, *GitHub dependency reads depend on where you are running*.
 
 ## Inputs and scope
 
