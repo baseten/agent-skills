@@ -57,9 +57,9 @@ Sources:
 - **`summarize-tranche` `DECISION` action points**, plus any `MERGE_RISK` whose remediation is a choice rather than a task;
 - **automated-review findings the run declined** and wants ratified or overturned, with the evidence it declined on;
 - **unresolved review threads asking about intent** — a question no code change can answer;
-- **`NEEDS_USER` items in the run's closing output** that are choices rather than work.
+- **`NEEDS_USER` items in the run's closing output** that are choices rather than work — but carry the **durable origin**, not the report line. Most trace to a worker's report on its PR or to a review thread, and that URL is what the item travels with. One the parent derived and never wrote anywhere has no durable site at all: take it, and mark it, because the unattended decline's promise that the decisions outlive the session does not cover it. A decline naming it as the one item that will not survive is honest; a decline that quietly includes it in "they live at their sites" is the false durability claim again, one source further down.
 
-Then filter through the qualifying bar, segregate the action items, and deduplicate: the same decision reported by a worker's PR record and by the summary is one question carrying both URLs.
+**Deduplicate before filtering, not after.** The same decision reported by a worker's PR record and by the summary is one question carrying both URLs, and the order matters because the already-ruled bar is per-site: filter first and an alias whose site holds the ruling retires while its twin, whose site does not, survives and gets asked again — the idempotency the settled step relies on, defeated by the same decision wearing two names. So merge aliases into one item first, then apply the qualifying bar to it, checking **every** URL it carries for a ruling rather than the first. Then segregate the action items.
 
 ## Ordering
 
