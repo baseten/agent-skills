@@ -140,6 +140,8 @@ By default, implementation workflows (`implement-issue-core`, `implement-issue`,
 
 Use the repo's documented trigger. If none exists, default to `@codex review` where that convention is supported.
 
+The trigger comment is the one post exempted from the posting-identity rule (`backlog-orchestrator`, *Posting identity*, which states the rule once — do not restate it here): it must come from the invoking user's own account, or the convention does not fire. Every other authored write this skill makes — the PR itself, its body, any other comment — follows that rule and its availability test.
+
 A caller may explicitly request **deferred review trigger** (for example an intentionally early WIP draft PR). In that case create/verify the PR but do not trigger review until the caller later requests it.
 
 Do not repeatedly trigger review merely because subsequent CI checks run. Re-trigger after a substantive review-fix round only when repo convention requires it.
@@ -176,4 +178,5 @@ Return:
 - parent PR URL when stacked;
 - issue linkage verified: yes/no;
 - draft state as created: draft/ready, and what decided it (repo docs, caller preference, default);
-- review triggered/deferred and how.
+- review triggered/deferred and how;
+- posting identity used, when it differed from the invoking user (see `backlog-orchestrator`, *Posting identity*).
