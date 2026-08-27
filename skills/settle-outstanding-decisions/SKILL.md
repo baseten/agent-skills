@@ -17,6 +17,8 @@ Attendance is judged by provenance, not hope: the invocation is attended only wh
 
 **Unattended, this skill never prompts. It degrades to the docket:** run discovery, filtering, and ordering exactly as below, emit the result in the Output format with each question's full payload in place of a ruling, and — where the caller supplies a durable anchor such as a manifest issue or tracker thread — record the docket there too. Then return. A caller may therefore invoke this skill unconditionally: the precondition decides the posture, and the unattended result is a documented no-op on prompts, never a deadlock.
 
+**One docket per anchor, updated in place.** Before writing, look for a docket this skill already recorded at that anchor. An unanswered decision stays outstanding by design — the already-ruled bar below retires a decision that has been *ruled*, not one that has merely been *asked* — so nothing else stops a caller invoked on successive scheduled wakes from appending the same docket every cycle, and every such wake is unattended by the provenance test above. That is the ordinary case rather than an edge one: an orchestrator supervising open PRs re-invokes on a timer. Where a docket exists, rewrite it in place with the current set and the time it was refreshed; where it exists and the set has not changed, leave it untouched and say so in the return. Give each docket a stable identifying line when you write it, since what the next invocation must find is its own prior output rather than a ruling.
+
 ## What qualifies as an outstanding decision
 
 The bar is strict because the failure mode is trust: an owner asked to ratify things the run could have decided itself stops reading the questions, and then the one that mattered gets a skimmed answer.
