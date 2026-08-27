@@ -248,6 +248,7 @@ Return structured state:
 
   Report both even on a successful run, since each is evidence about something beyond this issue. Do not collapse them into one label: a caller that cannot tell them apart must treat a stale base as a possible transport failure, which is a far more expensive response than the situation needs;
 - draft state as created, exactly as `create-pr` reported it;
+- the posting identity `create-pr` observed, and the transport it was observed on, carried through unchanged — including an observed **invoking-user** identity and an `unestablished` result. This is an observation about **writes**, distinct from the read-side credential identity above, and it is not a restatement of it: that one is the credential's own account, which the caller's posting rules do not accept as an identity answer. The caller cannot re-derive this either, because your transports are not its transports — an identity observed here is the only evidence it will ever have for them (see `backlog-orchestrator`, *Posting identity*);
 - checkpoints pushed: count/SHAs when useful;
 - checks run;
 - implementation attempts used;

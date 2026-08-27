@@ -179,4 +179,4 @@ Return:
 - issue linkage verified: yes/no;
 - draft state as created: draft/ready, and what decided it (repo docs, caller preference, default);
 - review triggered/deferred and how;
-- posting identity used, when it differed from the invoking user (see `backlog-orchestrator`, *Posting identity*).
+- **the posting identity observed** for this skill's authored writes, and the transport it was observed on — reported whether or not it differed from the invoking user, and as `unestablished` where no authored write was read back. An observed **invoking-user** identity is not the absence of a finding: it is precisely what the caller's review-trigger selection needs (see `backlog-orchestrator`, *Posting identity*), so reporting only identities that differ withholds the one observation that path depends on.
