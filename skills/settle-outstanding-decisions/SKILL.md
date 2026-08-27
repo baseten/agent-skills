@@ -130,7 +130,9 @@ A run with no outstanding decisions still reports `No outstanding decisions.` in
 
 ## Declined to ask
 
-<count>, with one line each: the item and which bar it failed (documented default applied / already ruled / derivable from evidence).
+<count>, with one line each: the item and why it was not asked (documented default applied / already ruled / derivable from evidence / **mooted by <ruling>**).
+
+The last of those is not a bar the decision failed — it is one the walkthrough itself eliminated when an earlier fork was ruled, and it names the ruling that did it. Keep it distinct from the other three: those say the decision was never worth the owner's attention, while this one says it *was*, right up until their own answer retired it. Collapsing them loses the fact that a ruling had a consequence beyond its own question, which is the thing a later reader most needs to reconstruct why a decision they remember raising never got asked.
 
 ## Owner action items
 
