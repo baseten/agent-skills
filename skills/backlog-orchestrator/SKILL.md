@@ -736,7 +736,7 @@ On an actionable CI failure:
 2. decide whether it belongs to this PR;
 3. if repair is justified and budget remains, allocate an isolated checkout of the current PR branch;
 4. dispatch one Sonnet `repair-pr` worker with `repair type = ci`;
-5. adopt its pushed remote head;
+5. adopt its pushed remote head, **and merge every posting-identity entry it returned into the run's transport-keyed map** (see Posting identity) — a repair runs on its own transports, so this is the run's only evidence about them;
 6. increment the CI repair cycle;
 7. release the repair worker (see Releasing a worker) and resume event supervision.
 
@@ -748,8 +748,8 @@ On actionable review feedback — actionable is bounded first by review policy: 
 2. if budget remains, allocate an isolated checkout of the current PR branch;
 3. dispatch one Sonnet `repair-pr` worker with `repair type = review`;
 4. `repair-pr` uses `resolve-pr-comment` where relevant;
-5. adopt the new remote head and increment review cycle;
-6. retrigger/request review when repo convention requires it, unless review is still deferred for this PR or triggering was suppressed for this run;
+5. adopt the new remote head, **merge every posting-identity entry the repair returned into the run's map**, and increment review cycle;
+6. retrigger/request review when repo convention requires it, unless review is still deferred for this PR or triggering was suppressed for this run — **selecting the trigger's author from the map as it stands after step 5**, since a repair can establish the invoking-user path the run lacked, and re-triggering on the pre-repair map is what makes that trigger silently fail;
 7. release the worker (see Releasing a worker) and resume event supervision.
 
 Review feedback may reference a head already superseded by a rebase/restack. Locate each finding by content rather than line number, and confirm it still applies to the current head before repairing.
@@ -786,7 +786,7 @@ The main parent thread must remain active while mutating workers run or active P
 
 Each cycle performs real work:
 
-1. consume worker completions (including a Dynamic Workflow's returned fan-out results, if one was used), extracting each one's dependency evidence — unmet blockers, source disagreements, **and the resolutions that confirmed your view** — regardless of its outcome;
+1. consume worker completions (including a Dynamic Workflow's returned fan-out results, if one was used), extracting each one's dependency evidence — unmet blockers, source disagreements, **and the resolutions that confirmed your view** — and **merging every posting-identity entry it returned into the run's transport-keyed map** (see Posting identity), regardless of its outcome. Do this before releasing the worker: the worker's transports are not this run's, so its observations are the only evidence the run will ever have about them, and a released worker cannot be asked again;
 2. reconcile tracker + remote branches/PRs;
 3. consume/reconcile CI/review events;
 4. update heads/budgets;
