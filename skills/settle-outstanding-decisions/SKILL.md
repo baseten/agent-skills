@@ -7,7 +7,7 @@ description: Walk the run's owner through the decisions only they can make — l
 
 Turn the human-only decisions a run left scattered across its durable state into a sequence of answerable questions, and turn each answer into a ruling recorded where the decision lives.
 
-This skill **collects and records; it does not act**. It never implements a ruling, deletes or closes a PR, merges, or dispatches a worker. Its one write is the ruling itself. `summarize-tranche` and `plan-merge-order` hand the next move back to the caller, and this skill does the same, for the same reason: every action a ruling calls for already has an owner — `repair-pr` for a fix, `merge-stack` for a merge, the orchestrator's frontier logic for a held path — and a walkthrough that mutates PRs between questions makes the owner wait mid-conversation on work they have not reviewed. The output names which owner each ruling now belongs to.
+This skill **collects and records; it does not act**. It never implements a ruling, deletes or closes a PR, merges, or dispatches a worker. Its writes are the ruling itself and, where nobody is present to rule, the docket that stands in for one — see Attendance is the precondition, which governs; this paragraph does not restate it. `summarize-tranche` and `plan-merge-order` hand the next move back to the caller, and this skill does the same, for the same reason: every action a ruling calls for already has an owner — `repair-pr` for a fix, `merge-stack` for a merge, the orchestrator's frontier logic for a held path — and a walkthrough that mutates PRs between questions makes the owner wait mid-conversation on work they have not reviewed. The output names which owner each ruling now belongs to.
 
 ## Attendance is the precondition
 
@@ -95,6 +95,8 @@ Where the run declined a finding or picked a default, lead with the evidence and
 
 An answer given in a chat turn evaporates with the session. Every ruling is written back where the decision lives, **immediately after its chunk is answered, not batched to the end** — an interrupted walkthrough must not lose the answers already given:
 
+**A docket left by an earlier unattended wake is part of what each chunk updates.** Recording per chunk protects the rulings if the human leaves; it does nothing for a docket at the anchor that still lists those same decisions as awaiting one. Refresh or retire it in the same checkpoint as the ruling, never at the end — a walkthrough abandoned halfway is exactly when a stale docket gets read, and it is then the most authoritative-looking wrong answer in the system.
+
 - a decision documented on a PR → a comment on that PR;
 - an intent question in a review thread → a reply on that thread. Resolving the thread stays with the review workflow: a ruling that requires a code change leaves the thread open for the fix;
 - a decision living on a tracker issue → a comment on that issue;
@@ -114,7 +116,7 @@ A run with no outstanding decisions still reports `No outstanding decisions.` in
 # Boundaries
 
 - Never prompts in an unattended session — the docket is the only unattended output.
-- Never acts on a ruling: no implementation, no PR deletion or closure, no thread resolution that stands in for a fix, no dispatch. **The only writes this skill makes are the ruling comment when attended and the docket when not** — the unattended write is not an exception to the read-only posture but the whole of that path's output, and a reading that forbids it returns having persisted nothing, which is the durable handoff the attendance rule promises.
+- Never acts on a ruling: no implementation, no PR deletion or closure, no thread resolution that stands in for a fix, no dispatch. **The only writes this skill makes are the ruling comment and the docket** — the docket created and refreshed where nobody is present, and updated or retired by an attended run whose rulings land against one left by an earlier wake — the unattended write is not an exception to the read-only posture but the whole of that path's output, and a reading that forbids it returns having persisted nothing, which is the durable handoff the attendance rule promises.
 - Never asks a question with a documented default, an existing ruling, or one real option.
 - Never merges, and never treats a ruling as merge authority — a "merge A first" ruling is recorded and handed to whoever invokes `merge-stack`.
 
@@ -138,4 +140,4 @@ A run with no outstanding decisions still reports `No outstanding decisions.` in
 <asked but deferred or session ended — each with the docket entry's durable location>
 ```
 
-Unattended, the docket reuses this structure with one substitution: **`## Decisions settled` becomes `## Decisions outstanding — awaiting a ruling`**, and each entry carries the full question payload where a ruling would go. Never render an unanswered question under a settled heading; a docket is read by people and by later sessions that did not watch it being written, and a question sitting under "settled" reads as a decision already taken. `Declined to ask` and `Owner action items` are unchanged, `Unanswered` keeps its meaning, and the report states where the docket was durably recorded.
+Unattended, the docket reuses this structure with one substitution: **`## Decisions settled` becomes `## Decisions outstanding — awaiting a ruling`**, and each entry carries the full question payload where a ruling would go. Never render an unanswered question under a settled heading; a docket is read by people and by later sessions that did not watch it being written, and a question sitting under "settled" reads as a decision already taken. `Declined to ask` and `Owner action items` are unchanged, `Unanswered` keeps its meaning, and the report states where the docket was durably recorded — or, where the caller supplied no anchor, says `not persisted — no anchor supplied` in that same place. Never leave the location blank or infer one: a docket nobody can find again is the failure the durable handoff exists to prevent, and saying so plainly is what tells the caller to supply an anchor next time.
