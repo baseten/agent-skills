@@ -957,29 +957,40 @@ On first observing uncommitted completed work, instruct that worker to commit an
 - **live worker** — build the commit **ref-neutrally** and push it to a **recovery ref**, never to the issue branch:
 
   ```bash
-  GIT_INDEX_FILE=<scratch> git -C <worktree> read-tree <worker-head-sha>   # seed first
-  GIT_INDEX_FILE=<scratch> git -C <worktree> add -- <issue-owned paths>
-  GIT_INDEX_FILE=<scratch> git -C <worktree> write-tree                    # -> <tree>
-  git -C <worktree> commit-tree <tree> -p <worker-head-sha> \
-      -m "wip: parent checkpoint capture"                                  # -> <commit>
-  # validate BEFORE publishing, and fail closed — diff-tree exits 0 either way
+  set -euo pipefail                      # any failure aborts before the push
+  export GIT_INDEX_FILE=<scratch>
+  git -C <worktree> read-tree <worker-head-sha>            # seed first
+  git -C <worktree> add -- <issue-owned paths>
+  tree=$(git -C <worktree> write-tree)
+  commit=$(git -C <worktree> commit-tree "$tree" -p <worker-head-sha> \
+      -m "wip: parent checkpoint capture")
+
+  # validate BEFORE publishing. grep: 1 = no extra paths (the pass case),
+  # 2 = grep itself failed, which must abort rather than read as empty.
+  set +e
   unexpected=$(git -C <worktree> diff-tree -r --name-only --no-commit-id \
-      <worker-head-sha> <commit> | grep -vxF -f <issue-owned-paths-file>) || true
-  [ -z "$unexpected" ] || { printf 'capture touched unexpected paths:\n%s\n' \
-      "$unexpected" >&2; exit 1; }
-  git -C <worktree> push --force origin \
-      <commit>:refs/checkpoints/<branch-with-slashes-encoded>
+      <worker-head-sha> "$commit" | grep -vxF -f <issue-owned-paths-file>)
+  rc=$?
+  set -e
+  [ "$rc" -le 1 ] || { echo 'path check did not run' >&2; exit 1; }
+  [ -z "$unexpected" ] || { printf 'unexpected paths:\n%s\n' "$unexpected" >&2; exit 1; }
+
+  # encode % before /, so the mapping stays reversible and injective
+  ref=$(printf '%s' <issue-branch> | sed 's/%/%25/g; s|/|%2F|g')
+  git -C <worktree> push --force origin "$commit:refs/checkpoints/$ref"
   ```
 
   Every line is load-bearing. `read-tree` **must** come first: a scratch index starts empty, so `add` on a path list would produce a tree containing only those paths, and a commit parented on the worker's head then records every other file in the repository as a deletion — recovery merging that checkpoint would delete most of the repo. Seed from the worker's head, then overlay the issue-owned paths. `GIT_INDEX_FILE` isolates the index and nothing else, so plain `git commit` would still advance whatever ref `HEAD` names — the worker's branch — reintroducing the race this avoids; `commit-tree` writes a commit attached to no ref, so nothing the worker holds moves.
 
   Verify a capture by diffing it **against its parent**, not by confirming the work is present: `git diff-tree -r --name-status <worker-head-sha> <commit>` must show only the paths you intended. Content being present says nothing about what else the tree dropped, and that is the failure mode this sequence had.
 
+  **This block has been wrong three times, each time in a way only execution revealed** — a check that could not fail, a `grep` status conflated with an empty match, a ref encoding that was not injective, and an unchained `git add` whose failure still reached the push. Every one of them ended in the same place: a force-push replacing a known-good checkpoint with a worthless one. Treat the sequence as a whole: `set -euo pipefail` so no construction step can fail silently into the push, an explicit `rc` check so a failed validator is not read as a passing one, and an encoding that escapes `%` before `/` so two legal branch names cannot map to one ref. **It is not enough to read this and agree with it — it must be executed before it is trusted, which is why it belongs in a tested implementation rather than in prose here** (see the extraction discussion on this PR).
+
   **That verification runs before the push, and must fail closed.** `git diff-tree` exits 0 whether or not it reports changed paths — it displays a diff, it does not assert one — so a bare invocation ahead of the push validates nothing when the block runs as a shell sequence: a malformed tree is printed and then published over the last good snapshot regardless. The check has to be a predicate whose failure prevents the push, which is what comparing the reported paths against the intended list and exiting non-zero on any extra gives you. A verification step that cannot fail is worse than none, because it reads as protection. `commit-tree` writes the commit locally, so the check needs no remote at all — and once the ref below is single and force-updated, publishing first would let a malformed capture destroy the last known-good snapshot, discarding both the current work and the thing this mechanism exists to protect. Validating first costs nothing and removes that window entirely; a temporary ref promoted after validation would achieve the same, and is only worth reaching for where the check genuinely needs the remote, which this one does not.
 
   **One ref per issue branch, replaced on each capture — never one per capture commit.** A ref-neutral capture leaves the worktree untouched, so a worker that stays dirty is captured again on the next supervision cycle, and a commit-keyed ref name would accumulate siblings. Siblings have no safe ender: reconciling the newest does not make an older one an ancestor of the branch head, so an ancestor test never retires it, and merging every sibling invites conflicts wherever a later snapshot supersets an earlier one. Replacement is safe here for a reason specific to how these commits are built — every capture is seeded from the worker's head and overlays the same issue-owned path list, so a later capture carries the earlier one's content except where the worker itself changed it, and preserving a superseded parent snapshot against the worker's own edits is not a service to anyone. Force-update deliberately: the ref is expected to move backwards in content only when the worker moved it.
 
-  The branch name is **encoded into a single ref component** — every `/` replaced, so `feature/foo` becomes `refs/checkpoints/feature%2Ffoo` — rather than embedded as a path. A ref cannot exist where another ref needs a directory, so any scheme that keeps the branch's slashes creates a collision between prefix-related branches: `feature/foo` and `feature/foo/bar` are both valid names, and `refs/checkpoints/feature/foo` blocks the directory the second requires. Git rejects that push outright, so the worker cannot be checkpointed at all — not a subtle mis-capture, no durable path for its work.
+  The branch name is **encoded into a single ref component**, escaping `%` before `/` so the mapping is reversible and injective: `feature/foo` becomes `refs/checkpoints/feature%2Ffoo`, while the equally legal branch `feature%2Ffoo` becomes `feature%252Ffoo` rather than colliding with it. Encoding only `/` would map both to one ref, and the second worker's push would silently replace the first's only snapshot. A ref cannot exist where another ref needs a directory, so any scheme that keeps the branch's slashes creates a collision between prefix-related branches: `feature/foo` and `feature/foo/bar` are both valid names, and `refs/checkpoints/feature/foo` blocks the directory the second requires. Git rejects that push outright, so the worker cannot be checkpointed at all — not a subtle mis-capture, no durable path for its work.
 
   A fixed trailing component does not fix this; it only moves the collision to branches whose names contain that component, which are equally legal (`feature/foo` against `feature/foo/capture/bar`). Encoding removes the nesting entirely, so no branch's ref can occupy a path another needs, and it keeps the ref readable for the person reading these during recovery — which a hash would not;
 - **wedged worker** — stop it first, then commit normally onto the issue branch in the now-quiesced worktree. Stopping consumes that issue's lost-worker budget, so it needs the same evidence any redispatch does.
