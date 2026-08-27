@@ -957,26 +957,23 @@ On first observing uncommitted completed work, instruct that worker to commit an
 - **live worker** — build the commit **ref-neutrally** and push it to a **recovery ref**, never to the issue branch:
 
   ```bash
-  set -euo pipefail                      # any failure aborts before the push
-  export GIT_INDEX_FILE=<scratch>
-  git -C <worktree> read-tree <worker-head-sha>            # seed first
-  git -C <worktree> add -- <issue-owned paths>
-  tree=$(git -C <worktree> write-tree)
+  # Every step is && -chained: no step can fail into the push. Do not rewrite
+  # this as a plain sequence guarded by `set -e` — errexit is not honoured
+  # inside a subshell in every host shell, and this snippet is pasted into
+  # whichever one the run happens to hold. Chaining does not depend on that.
+  IDX=<scratch>; rm -f "$IDX"
+  ref=$(printf %s <issue-branch> | sed 's/%/%25/g; s|/|%2F|g') &&
+  GIT_INDEX_FILE=$IDX git -C <worktree> read-tree <worker-head-sha> &&
+  GIT_INDEX_FILE=$IDX git -C <worktree> add -- <issue-owned paths> &&
+  tree=$(GIT_INDEX_FILE=$IDX git -C <worktree> write-tree) &&
   commit=$(git -C <worktree> commit-tree "$tree" -p <worker-head-sha> \
-      -m "wip: parent checkpoint capture")
-
-  # validate BEFORE publishing. grep: 1 = no extra paths (the pass case),
-  # 2 = grep itself failed, which must abort rather than read as empty.
-  set +e
-  unexpected=$(git -C <worktree> diff-tree -r --name-only --no-commit-id \
-      <worker-head-sha> "$commit" | grep -vxF -f <issue-owned-paths-file>)
-  rc=$?
-  set -e
-  [ "$rc" -le 1 ] || { echo 'path check did not run' >&2; exit 1; }
-  [ -z "$unexpected" ] || { printf 'unexpected paths:\n%s\n' "$unexpected" >&2; exit 1; }
-
-  # encode % before /, so the mapping stays reversible and injective
-  ref=$(printf '%s' <issue-branch> | sed 's/%/%25/g; s|/|%2F|g')
+      -m "wip: parent checkpoint capture") &&
+  # grep: 1 = no unexpected paths (the pass case); 2 = grep itself failed,
+  # which must abort rather than read as empty.
+  { unexpected=$(git -C <worktree> diff-tree -r --name-only --no-commit-id \
+        <worker-head-sha> "$commit" | grep -vxF -f <issue-owned-paths-file>)
+    rc=$?; [ "$rc" -le 1 ]; } &&
+  [ -z "$unexpected" ] &&
   git -C <worktree> push --force origin "$commit:refs/checkpoints/$ref"
   ```
 
@@ -984,7 +981,18 @@ On first observing uncommitted completed work, instruct that worker to commit an
 
   Verify a capture by diffing it **against its parent**, not by confirming the work is present: `git diff-tree -r --name-status <worker-head-sha> <commit>` must show only the paths you intended. Content being present says nothing about what else the tree dropped, and that is the failure mode this sequence had.
 
-  **This block has been wrong three times, each time in a way only execution revealed** — a check that could not fail, a `grep` status conflated with an empty match, a ref encoding that was not injective, and an unchained `git add` whose failure still reached the push. Every one of them ended in the same place: a force-push replacing a known-good checkpoint with a worthless one. Treat the sequence as a whole: `set -euo pipefail` so no construction step can fail silently into the push, an explicit `rc` check so a failed validator is not read as a passing one, and an encoding that escapes `%` before `/` so two legal branch names cannot map to one ref. **It is not enough to read this and agree with it — it must be executed before it is trusted, which is why it belongs in a tested implementation rather than in prose here** (see the extraction discussion on this PR).
+  **This block was wrong three times before it was ever run**, each defect ending in the same place — a force-push replacing a known-good checkpoint with a worthless one. It has since been executed against a scratch repository, and the results are the reason it looks like this:
+
+  | case | expected | observed |
+  |---|---|---|
+  | clean capture | ref written; worker `HEAD` and worktree untouched | ref written, `HEAD` unmoved, worktree still dirty |
+  | `git add` on a stale path | abort before push | exit 128, no push |
+  | unreadable allowlist file | abort before push | exit 1, no push |
+  | capture touching an unlisted path | abort before push | exit 1, no push |
+
+  The chaining is what the first three of those rest on. An earlier version used `set -euo pipefail`, which **passed the same tests in one shell and failed them in another** — a subshell that does not honour errexit ran straight through a failed `git add` to the push. A guard whose correctness depends on the host shell's state is not a guard for a snippet that gets pasted into whatever shell the run holds.
+
+  **The remaining risk is that this is prose, so nothing re-runs those cases when it is edited.** Read agreement is what produced the three original defects — a check that could not fail, a `grep` status conflated with an empty match, a ref encoding that was not injective, and an unchained `git add` whose failure still reached the push. Every one of them ended in the same place: a force-push replacing a known-good checkpoint with a worthless one. Treat the sequence as a whole: `set -euo pipefail` so no construction step can fail silently into the push, an explicit `rc` check so a failed validator is not read as a passing one, and an encoding that escapes `%` before `/` so two legal branch names cannot map to one ref. **It is not enough to read this and agree with it — it must be executed before it is trusted, which is why it belongs in a tested implementation rather than in prose here** (see the extraction discussion on this PR).
 
   **That verification runs before the push, and must fail closed.** `git diff-tree` exits 0 whether or not it reports changed paths — it displays a diff, it does not assert one — so a bare invocation ahead of the push validates nothing when the block runs as a shell sequence: a malformed tree is printed and then published over the last good snapshot regardless. The check has to be a predicate whose failure prevents the push, which is what comparing the reported paths against the intended list and exiting non-zero on any extra gives you. A verification step that cannot fail is worse than none, because it reads as protection. `commit-tree` writes the commit locally, so the check needs no remote at all — and once the ref below is single and force-updated, publishing first would let a malformed capture destroy the last known-good snapshot, discarding both the current work and the thing this mechanism exists to protect. Validating first costs nothing and removes that window entirely; a temporary ref promoted after validation would achieve the same, and is only worth reaching for where the check genuinely needs the remote, which this one does not.
 
