@@ -355,7 +355,7 @@ Unless overridden (below):
 - maximum lost-worker redispatches per issue (`lost-worker-redispatches`): **1**;
 - automatic merges (`auto-merge`): **disabled** — the opt-in invariant 12's gate requires;
 - draft promotion once review is clean (`promote-drafts`): **enabled** — Draft promotion after a clean first review owns the conditions;
-- reviewers whose comments may be auto-fixed (`trusted-automated-reviewers`): **unset** — no reviewer filter; the judgment rules under CI/review repair still apply;
+- reviewers whose comments may be auto-fixed (`auto-fix-reviewers`): **`true`** — every reviewer's comments are eligible; the judgment rules under CI/review repair still apply;
 - requesting the `settle-outstanding-decisions` walkthrough at settle (`auto-request-settle`): **enabled**. The option gates only whether this run makes the request; whether the walkthrough may actually ask stays with that skill's attendance precondition (see Settled tranche).
 
 These are the built-in defaults. Two mechanisms override them, and the precedence is stated here and nowhere else: **an explicit invocation argument beats repo config, which beats the built-in defaults.**
@@ -386,11 +386,11 @@ Personal and work repositories legitimately want opposite behavior from the same
   "auto-request-settle": true,
   "promote-drafts": true,
   "auto-merge": false,
-  "trusted-automated-reviewers": ["codex"]
+  "auto-fix-reviewers": ["codex"]
 }
 ```
 
-Every key is optional, and the values shown are the built-in defaults — except `trusted-automated-reviewers`, whose default is **unset**, which is not the same as empty (below). One file carries every option the defaults list above names as well as the three review/merge policies, deliberately: a second option surface is exactly how two mechanisms drift apart. If an option of this skill's is configurable at all, it is configurable here.
+Every key is optional, and the values shown are the built-in defaults — except `auto-fix-reviewers`, shown here in its list form to illustrate it; its default is **`true`** (below). One file carries every option the defaults list above names as well as the three review/merge policies, deliberately: a second option surface is exactly how two mechanisms drift apart. If an option of this skill's is configurable at all, it is configurable here.
 
 **It is policy that can authorize merges, so it is a config file and not prose.** A `CLAUDE.md` paragraph gets interpreted, and interpretation must not decide whether a run may merge. A project-level skill override is not the mechanism either: `bootstrap.sh` installs these skills to `~/.claude/skills`, and a personal skill shadows a project skill of the same name, so a project copy would silently never load.
 
@@ -402,7 +402,7 @@ Keys scope to different objects, and each resolves from the repository that owns
 
 | keys | scope | resolved from |
 | --- | --- | --- |
-| `ci-repair-cycles`, `review-repair-cycles`, `promote-drafts`, `auto-merge`, `trusted-automated-reviewers` | per PR | the PR's repository |
+| `ci-repair-cycles`, `review-repair-cycles`, `promote-drafts`, `auto-merge`, `auto-fix-reviewers` | per PR | the PR's repository |
 | `implementation-attempts`, `model-escalations`, `lost-worker-redispatches` | per issue | the issue's repository |
 | `concurrent-workers`, `new-issue-budget`, `auto-request-settle` | per run | the manifest's repository; an explicit issue set contained in one repository uses that repository; a multi-repo set with no manifest uses the built-ins |
 
@@ -410,17 +410,23 @@ Read the file at the validation preflight, once per repository in the bounded sc
 
 A file that is absent means the built-in defaults, unchanged — the file is opt-in and absence is the common case. A file that is present but unparseable **fails closed**: use the built-in defaults for that repository and report the file as unreadable in the checkpoint output, rather than guessing at intent. An unrecognized key, or a value of the wrong type, fails closed the same way at key granularity — defaulted and reported, because a misspelled `auto-merge` must produce no merges, not a guess.
 
+One combination of individually well-formed keys is rejected by the same mechanism: **`auto-merge: true` together with `promote-drafts: false` is contradictory** — one key holds every PR in draft for the owner's manual review, the other merges them, and a merge never happens on a draft (see Merge behavior). Detect it at the preflight read and fail **both keys** closed to their built-ins — `auto-merge: false`, `promote-drafts: true` — leaving the file's other keys standing, and report it in the checkpoint output as a config error naming both keys. The owner set both deliberately, so quietly letting either win would override a choice they made without saying so — the exact failure fail-closed exists to prevent. This is the key-granularity rule applied to a pair rather than a parallel mechanism: two values that are each valid and jointly impossible are as unreadable as one of the wrong type, and the safety-relevant key lands safe — a rejected pair produces no merges.
+
 Report the resolved policy per PR in the checkpoint output, with its source — invocation argument, repo config, or built-ins — so an auto-merge or a held draft is visible in the record before it is a surprise.
 
 ### The three review/merge policies
 
-**`promote-drafts`** — whether a draft PR is promoted to ready once its review is clean. `true` keeps today's behavior; Draft promotion after a clean first review owns the conditions. `false` holds every PR of that repository in draft and surfaces it for the owner's manual review — the owner fixes it via a review round or promotes it themselves — with each held PR named in the checkpoint output. This key is the machine-readable form of the "repository convention to keep PRs in draft" that section already honors; its other rules are unchanged.
+**`promote-drafts`** — whether a draft PR is promoted to ready once its review is clean. `true` keeps today's behavior; Draft promotion after a clean first review owns the conditions. `false` holds every PR of that repository in draft and surfaces it for the owner's manual review — the owner fixes it via a review round or promotes it themselves — with each held PR named in the checkpoint output, and cannot be combined with `auto-merge: true` (the pair is rejected at preflight; see the failure rules above). This key is the machine-readable form of the "repository convention to keep PRs in draft" that section already honors; its other rules are unchanged.
 
-**`auto-merge`** — whether invariant 12's gate can open for this repository's PRs at all. `false` is today's behavior: the run never merges. `true` permits a merge only through the gate invariant 12 defines — the key is the opt-in the gate requires, never a bypass of its other conditions. Execution mechanics live in Merge behavior.
+**`auto-merge`** — whether invariant 12's gate can open for this repository's PRs at all. `false` is today's behavior: the run never merges. `true` permits a merge only through the gate invariant 12 defines — the key is the opt-in the gate requires, never a bypass of its other conditions — and is rejected at preflight when paired with `promote-drafts: false` (see the failure rules above). Execution mechanics, including the publish-before-merge step, live in Merge behavior.
 
-**`trusted-automated-reviewers`** — which reviewers' comments the run may auto-fix and resolve. Unset, today's behavior stands: actionable review feedback is repairable whoever wrote it, subject to the judgment rules that already govern repair. Set, the list is exhaustive: a review comment is eligible for repair and thread resolution only when its author is automated **by both tests** — the forge's API reports the author as a bot (on GitHub, author type `Bot`; compare list entries against the reported login with any `[bot]` suffix disregarded) **and** that login is in the list. Both, because each alone proves nothing: a name can be worn by any account, and a bot off the list is an automation the owner never vetted. It is a list rather than a boolean or hardcoded names because the reviewers vary per repo. An **empty list** is valid and meaningful: no reviewer is trusted, and the run auto-fixes nothing.
+**`auto-fix-reviewers`** — which reviewers' comments the run may auto-fix and resolve. A boolean or a list. The default is **`true`**: every reviewer's comments are eligible, which is today's behavior, subject to the judgment rules that already govern repair. `false`: no reviewer's comments are eligible — the run auto-fixes nothing, whoever wrote it. A list is exhaustive: a review comment is eligible for repair and thread resolution only when its author is automated **by both tests** — the forge's API reports the author as a bot (on GitHub, author type `Bot`; compare list entries against the reported login with any `[bot]` suffix disregarded) **and** that login is in the list. Both, because each alone proves nothing: a name can be worn by any account, and a bot off the list is an automation the owner never vetted. The booleans cover the ends; the list exists because the vetted reviewers vary per repo.
 
-A thread that fails the test is **reserved for the owner**: never auto-fixed, never resolved, reported in the checkpoint output as awaiting them. A reserved thread does not block settlement — the run cannot be required to resolve what policy forbids it touching — but it is an unresolved actionable finding everywhere else that concept is consumed: it blocks that PR's draft promotion and fails invariant 12's clean-review condition. This sits upstream of the distinction the repair path already draws rather than competing with it: this list decides *whose* comments are eligible at all; the existing judgment rule (product/architecture judgment -> `NEEDS_USER`, see CI/review repair and `repair-pr`) still decides *which* eligible comments are repairable. A comment can pass the reviewer test and still be `NEEDS_USER` on judgment; one that fails the reviewer test never reaches the judgment rule. Nor does the list replace the repository's review *trigger* convention, which `create-pr` owns: the reviewer a repo triggers will normally appear in its list, but only the list authorizes acting on the findings.
+**The invoking user is implicitly a member of any list**, without listing themselves, and without the bot test — that test vets third-party automation, not the person directing the run. The invoking user's review comment is an instruction to the run rather than third-party feedback, so a list naming the repo's vetted bots does not thereby reserve the run director's own comments for the owner. Implicit membership covers the invoking user alone: a colleague's comment in a work repo is still reserved for the owner. A list entry of the form `"!<login>"` excludes that login, overriding implicit membership — how a list explicitly excludes the invoking user where even their comments should be held. An empty list therefore means the invoking user only; `false` is the stronger statement that nobody's comments, the run director's included, are auto-fixed.
+
+**Comments this run authored are never reviewer feedback, whatever the policy resolves to.** This carve-out is load-bearing, not obvious: the orchestrator posts as the invoking user's own account, so its comments and replies carry that login and `author_association: OWNER`, and "a review comment authored by the invoking user" and "this run's own output" are **indistinguishable by author**. The bot test does not separate them either — the run posts as a human account, not a bot. Without the carve-out, implicit trust for the invoking user would let the run treat its own worker reports, repair replies, and trigger comments as fresh reviewer feedback to act on — a feedback loop wearing review's name. Discriminate by provenance, never by author: the run's record of its own writes names the comments it posted, and a restarted run — whose predecessor's record is cache, by invariant 1 — treats a comment in one of this skill's own report or reply forms as orchestration output rather than feedback, the same reading the worker-report marker already prescribes for its readers.
+
+A thread that fails the resolved policy's test is **reserved for the owner**: never auto-fixed, never resolved, reported in the checkpoint output as awaiting them. A reserved thread does not block settlement — the run cannot be required to resolve what policy forbids it touching — but it is an unresolved actionable finding everywhere else that concept is consumed: it blocks that PR's draft promotion and fails invariant 12's clean-review condition. This sits upstream of the distinction the repair path already draws rather than competing with it: this policy decides *whose* comments are eligible at all; the existing judgment rule (product/architecture judgment -> `NEEDS_USER`, see CI/review repair and `repair-pr`) still decides *which* eligible comments are repairable. A comment can pass the reviewer test and still be `NEEDS_USER` on judgment; one that fails the reviewer test never reaches the judgment rule. Nor does the policy replace the repository's review *trigger* convention, which `create-pr` owns: the reviewer a repo triggers will normally appear in its list, but only the policy authorizes acting on the findings.
 
 # Model and skill policy
 
@@ -708,7 +714,7 @@ On an actionable CI failure:
 
 External/flaky failure with no justified code change does not consume a repair cycle.
 
-On actionable review feedback — where the PR's resolved policy sets `trusted-automated-reviewers`, actionable is bounded by it first: only threads whose author passes that test are actionable here, and the rest are reserved for the owner (see Per-repository policy configuration), never dispatched, whatever their size:
+On actionable review feedback — actionable is bounded first by the PR's resolved `auto-fix-reviewers` policy: only threads whose author passes it are actionable here, a comment this run authored is never actionable whatever the policy resolves to, and the rest are reserved for the owner (see Per-repository policy configuration), never dispatched, whatever their size:
 
 1. group the coherent current review round;
 2. if budget remains, allocate an isolated checkout of the current PR branch;
@@ -759,7 +765,7 @@ Rules:
 - Never promote a PR this run did not open.
 - A repository whose policy resolves `promote-drafts: false` (see Per-repository policy configuration) gets no promotion: the PR stays in draft, surfaced for the owner's manual review. Prose repository convention, an explicit user instruction, or a caller passing a draft preference through `implement-issue-core` override promotion the same way.
 - Later review rounds do not re-trigger promotion; the PR is already ready.
-- Promotion is not merge authorization and does not interact with invariant 12. It changes the PR's review-readiness signal and nothing else.
+- Promotion is not merge authorization. It changes the PR's review-readiness signal and nothing else. The coupling runs only the other way: invariant 12's merge path publishes a still-draft PR before merging it (see Merge behavior) — the gate consumes promotion; promotion never opens the gate. That merge-path publish is the one promotion this section's conditions do not govern, and it still honors the human-returned rule above.
 
 A repair worker never promotes. `repair-pr` reports how many actionable threads remain unresolved; this parent layer owns the decision.
 
@@ -1177,6 +1183,8 @@ By default orchestration never merges. Invariant 12 defines the one gate under w
 
 Where the gate is reachable, evaluate it at the settled step, after the summary, the walkthrough, and the ranking — the gate's `DECISION` and `MERGE_RISK` inputs do not exist before `summarize-tranche` produces them, so an earlier evaluation is a guess wearing the gate's name. Merge the PRs it passes in the ranking's order, bottom-up within a stack, restacking descendants exactly as any merge requires; each merge is then an ordinary frontier-advancing event (see Frontier advance on merge). A PR in a repository that did not opt in is untouched whatever its siblings did — the gate resolves per PR, from that PR's repository.
 
+**A merge never happens on a draft.** For each PR the gate passes, the merge path **promotes it to ready first, then merges** — promotion is part of the merge path, not a precondition that might already hold, so a PR still in draft when its gate opens is published by the act of merging it, never skipped for being a draft. The one PR this never covers is one a human returned to draft: Draft promotion after a clean first review forbids re-promoting it, the merge path inherits that rule rather than overriding it, and such a PR is not merged — report it as reserved for the owner. No conflict with a hold-drafts repository can arise here, because `auto-merge: true` with `promote-drafts: false` is rejected at preflight (see Per-repository policy configuration).
+
 If the user separately authorizes `merge-stack`, that skill owns merge ordering and descendant rebasing/restacking. Reconcile tracker completion after every merge, gate-authorized ones included.
 
 # Settled tranche
@@ -1268,7 +1276,7 @@ Unresolved review findings: 0
 Review threads reserved for the owner: 1
 Drafts promoted to ready: 2
 Drafts held by repo policy: 1
-Repo policy: acme/api: config (auto-merge on, drafts promoted, reviewers: codex); acme/site: defaults
+Repo policy: acme/api: config (auto-merge on, drafts promoted, auto-fix-reviewers: codex); acme/site: defaults
 Auto-merged (invariant 12 gate): 0
 Ready: 3
 Blocked: 2
@@ -1293,7 +1301,7 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - CI/review states + repair budgets consumed;
 - PRs left unreviewed, and whether the review trigger was deferred or unavailable;
 - PRs promoted from draft to ready, and any left in draft with the reason;
-- the policy each PR resolved to and its source — invocation argument, repo config, or built-in defaults — plus any policy file that was unreadable or carried invalid keys, every merge invariant 12's gate authorized with the conditions it passed on, and every review thread reserved for the owner;
+- the policy each PR resolved to and its source — invocation argument, repo config, or built-in defaults — plus any policy file that was unreadable, carried invalid keys, or carried the rejected `auto-merge`/`promote-drafts` combination — the config error names both keys — every merge invariant 12's gate authorized with the conditions it passed on, including any PR it published from draft on the way to merging, and every review thread reserved for the owner;
 - the `summarize-tranche` summary and action points, the `settle-outstanding-decisions` report — rulings recorded, or its one-line decline, or that `auto-request-settle` was off — and the `plan-merge-order` table, when the run settled;
 - issue-linkage/tracker-status inconsistencies;
 - `NEEDS_USER` items;
