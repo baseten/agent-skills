@@ -111,7 +111,7 @@ A recorded ruling contains:
 - an explicit marker that this is an **owner ruling, given interactively and dated** — not an agent's inference or an applied default. The distinction is the whole value of the record: a default is overturnable in review, a ruling is the review;
 - what the ruling confirms or overturns, so the follow-up work is derivable from the comment alone.
 
-The ruling comment follows the posting-identity rule stated once in `backlog-orchestrator` (*Posting identity*). The marker, not the posting account, is what carries the owner's authority: posted under a distinct agent identity the record reads as what it is, a transcription; posted as the invoking user, on that rule's degraded path, the marker is all that separates the owner's ruling from the owner appearing to comment on their own question — one more reason it is mandatory.
+The ruling comment follows the posting-identity rule stated once in `backlog-orchestrator` (*Posting identity*), selecting from the map the caller passes with the seed; invoked standalone with no map, every transport is `unestablished` and the rule's degraded path applies. The marker, not the posting account, is what carries the owner's authority: posted under a distinct agent identity the record reads as what it is, a transcription; posted as the invoking user, on that rule's degraded path, the marker is all that separates the owner's ruling from the owner appearing to comment on their own question — one more reason it is mandatory.
 
 ## The zero case
 
