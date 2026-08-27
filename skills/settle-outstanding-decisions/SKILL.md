@@ -126,6 +126,8 @@ A run with no outstanding decisions still reports `No outstanding decisions.` in
 
 # Output
 
+Alongside the report below, return **the posting identity observed for the first ruling comment written this pass, and the transport it was observed on** — or `unestablished` where no ruling was written. A ruling can be the first authored write through a transport the caller has not used, so it is evidence the caller cannot derive: it updates the posting-identity checkpoint and can re-open a provisionally unavailable review trigger (see `backlog-orchestrator`, *Posting identity*). Read it back from the written comment rather than assuming the caller's answer.
+
 ```text
 ## Decisions settled
 

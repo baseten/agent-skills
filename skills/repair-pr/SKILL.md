@@ -26,7 +26,7 @@ Accept:
 - Do not merge the PR.
 - Do not wait indefinitely for the next CI/review event, and do not delegate the wait — no scheduled check-in, trigger, or PR-activity subscription. The caller is already supervising this PR, and a wake armed here outlives the repair pass that armed it.
 - One invocation consumes at most one repair cycle.
-- Any authored forge write this pass makes, directly or through `resolve-pr-comment`, follows the posting-identity rule stated in `backlog-orchestrator` (*Posting identity*); the caller's resolved identity, not this skill, decides the author.
+- Any authored forge write this pass makes, directly or through `resolve-pr-comment`, follows the posting-identity rule stated in `backlog-orchestrator` (*Posting identity*). The author is decided by **this pass's own selected transport and its observed authorship**, not by the caller's resolved identity — the caller's transports may not be this pass's, which is the same reason the Output contract has you read your own first write back rather than inherit. Pass that selection into `resolve-pr-comment` rather than leaving it to resolve one of its own.
 - If the supplied failure/comment requires product or architecture judgment, return `NEEDS_USER` instead of guessing.
 
 ## CI repair

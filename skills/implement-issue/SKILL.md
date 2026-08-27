@@ -74,6 +74,7 @@ If core returns `PR_OPEN`, record:
 - remote head SHA;
 - tracker linkage verification;
 - draft state as created;
+- the posting identity core observed and the transport it was observed on;
 - implementation attempts used.
 
 At this point the code is already durable remotely even if the current container disappears.
@@ -181,6 +182,7 @@ Return:
 - review-fix cycles used;
 - final CI/review state;
 - draft state as created, and whether it was promoted to ready (or why not);
+- the posting identity observed across this run and the transport each observation came from — core's, and each repair pass's, since a repair can run on transports core never used. Carry both rather than the latest: an invoking-user path observed in any of them is what this skill's own review re-triggering needs, and there is no orchestrator here to hold that evidence instead. Report `unestablished` where no authored write was read back (see `backlog-orchestrator`, *Posting identity*);
 - whether the completeness of the blocker set was backed or left unproven, and on what boundary;
 - dependencies checked, and any source disagreements, exactly as core reported them — including on `PR_OPEN`. A run that succeeded while its transport returned a partial dependency view is the case where this evidence is easiest to drop and most worth keeping: nothing else in a standalone run will surface it, and dropping it here means neither the user nor a surrounding workflow ever learns the view was partial;
 - blocker/failure details, including the dependency class each block was judged under;
