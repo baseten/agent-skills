@@ -114,7 +114,7 @@ A run with no outstanding decisions still reports `No outstanding decisions.` in
 # Boundaries
 
 - Never prompts in an unattended session — the docket is the only unattended output.
-- Never acts on a ruling: no implementation, no PR deletion or closure, no thread resolution that stands in for a fix, no dispatch. The one write is the ruling comment.
+- Never acts on a ruling: no implementation, no PR deletion or closure, no thread resolution that stands in for a fix, no dispatch. **The only writes this skill makes are the ruling comment when attended and the docket when not** — the unattended write is not an exception to the read-only posture but the whole of that path's output, and a reading that forbids it returns having persisted nothing, which is the durable handoff the attendance rule promises.
 - Never asks a question with a documented default, an existing ruling, or one real option.
 - Never merges, and never treats a ruling as merge authority — a "merge A first" ruling is recorded and handed to whoever invokes `merge-stack`.
 
@@ -138,4 +138,4 @@ A run with no outstanding decisions still reports `No outstanding decisions.` in
 <asked but deferred or session ended — each with the docket entry's durable location>
 ```
 
-Unattended, the same structure is the docket: each entry carries the full question payload in place of a ruling, and the report states where the docket was durably recorded.
+Unattended, the docket reuses this structure with one substitution: **`## Decisions settled` becomes `## Decisions outstanding — awaiting a ruling`**, and each entry carries the full question payload where a ruling would go. Never render an unanswered question under a settled heading; a docket is read by people and by later sessions that did not watch it being written, and a question sitting under "settled" reads as a decision already taken. `Declined to ask` and `Owner action items` are unchanged, `Unanswered` keeps its meaning, and the report states where the docket was durably recorded.
