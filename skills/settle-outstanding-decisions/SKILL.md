@@ -71,6 +71,8 @@ Ask in the order that minimizes wasted rework and wasted answers:
 
 Chunk boundaries preserve this order, so an owner who walks away after the first call has answered the questions that mattered most.
 
+**A fork and anything it can moot never share a call.** Preserving the order is not enough on its own: `AskUserQuestion` returns a chunk's answers together, so a fork and its dependent question asked in the same call are answered simultaneously, and there is no moment in between at which the dependent one can be retired or reformulated. The owner rules on a choice that the first ruling has already eliminated, and the walkthrough records it as though it stood. **Close the chunk after the last decision that can moot another, however much room is left in it**, then re-run the qualifying bar over what remains before composing the next — a mooted decision fails *the answer changes what happens next* and drops out, and a survivor whose options the ruling narrowed is reformulated rather than asked as written.
+
 ## The question
 
 The test for every question: **can the owner answer it without opening another tab or scrolling back through the run?** The parts that pass it:
@@ -86,7 +88,7 @@ Where the run declined a finding or picked a default, lead with the evidence and
 
 ### `AskUserQuestion`'s constraints shape the mechanics
 
-- **At most 4 questions per call.** More decisions than that are chunked into successive calls, highest-stakes chunk first, ordering preserved across the boundary.
+- **At most 4 questions per call, and fewer where an answer dependency falls inside one.** More decisions than that are chunked into successive calls, highest-stakes chunk first, ordering preserved across the boundary. The cap is a ceiling, not a target: a chunk closes early wherever Ordering's fork rule requires it.
 - **2–4 options per question, genuinely mutually exclusive** (`multiSelect` stays off — a ruling picks one). Each option is a real alternative with its consequence stated in its description — "keep PR A's fetch shape; PR B and its optimistic-update code are deleted" — never yes / no / maybe.
 - Where the run has an evidence-backed lean, that option goes first and says so. A run with no lean offers no fake one.
 - **`header` is at most 12 characters** — a label for the decision, not a summary of it.
