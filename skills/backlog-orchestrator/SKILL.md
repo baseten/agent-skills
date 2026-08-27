@@ -42,6 +42,7 @@ Reusable worker skills:
 - `create-pr` — issue linkage, stack metadata, PR creation, review trigger;
 - `resolve-pr-comment` — thread-level review fix primitive;
 - `summarize-tranche` — read-only short summary and action points for a settled tranche;
+- `settle-outstanding-decisions` — attended walkthrough of a settled tranche's human-only decisions, requested between summary and ranking when `auto-request-settle` is on;
 - `plan-merge-order` — read-only review/merge-order ranking for a settled tranche;
 - `merge-stack` — separately authorized stack merge/restack workflow.
 
@@ -78,7 +79,7 @@ Never ask the user to:
 Only these may interrupt the user mid-run:
 
 - a platform-owned approval prompt this skill does not control (workflow launch, permission mode, a tool the session must approve);
-- `NEEDS_USER` after budgets are exhausted, or one that leaves no dispatchable work at all — the same shape as the `FAIL` case below. Every other `NEEDS_USER` is surfaced in the closing output instead of asked mid-run, including a dependency measure the run cannot observe and the summary's `DECISION`/`MERGE_RISK` escalations: those need a person eventually, not now, and the run still has work to do meanwhile. The owner may then run `settle-outstanding-decisions` themselves to work through the surfaced items one at a time — that skill is invoked by a person and never by this one, so nothing here calls it;
+- `NEEDS_USER` after budgets are exhausted, or one that leaves no dispatchable work at all — the same shape as the `FAIL` case below. Every other `NEEDS_USER` is surfaced in the closing output instead of asked mid-run, including a dependency measure the run cannot observe: those need a person eventually, not now, and the run still has work to do meanwhile. The decision-shaped items get one sanctioned exception, at the one point where the run has nothing left to do meanwhile — the settled step requests `settle-outstanding-decisions` over them when `auto-request-settle` is on (see Settled tranche), and that skill's own attendance precondition, not this list, decides whether anything is actually asked;
 - a `FAIL` validation result leaving no safe independent path;
 - a genuine conflict with no documented default, where every available option loses work that cannot be recreated.
 
@@ -350,7 +351,8 @@ Unless explicitly overridden:
 - maximum CI repair cycles per PR: **2**;
 - maximum review-fix cycles per PR: **2**;
 - maximum lost-worker redispatches per issue: **1**;
-- automatic merges: **disabled**.
+- automatic merges: **disabled**;
+- requesting the `settle-outstanding-decisions` walkthrough at settle (`auto-request-settle`): **enabled**. The option gates only whether this run makes the request; whether the walkthrough may actually ask stays with that skill's attendance precondition (see Settled tranche).
 
 Dynamic Workflows do not override these limits. Do not increase concurrency merely because the runtime can fan out more agents.
 
@@ -372,7 +374,7 @@ At most one strongest-model implementation escalation is allowed for a reasoning
 
 Implementation workers require `implement-issue-core` and `create-pr`.
 Repair workers require `repair-pr` and, for review fixes, `resolve-pr-comment`.
-The parent layer requires `validate-backlog` at preflight, and `summarize-tranche` followed by `plan-merge-order` when the run settles.
+The parent layer requires `validate-backlog` at preflight, and `summarize-tranche`, `settle-outstanding-decisions` and `plan-merge-order`, in that order, when the run settles — the middle one only while `auto-request-settle` is on (see Settled tranche).
 
 Workers must inherit/preload the active installed skills. If a required skill is unavailable, return `BLOCKED` rather than improvising a replacement workflow.
 
@@ -1127,9 +1129,10 @@ On reaching settled:
 1. reconcile tracker + remote state one final time, so both the summary and the ranking are computed from durable truth rather than cached run state;
 2. invoke `summarize-tranche` with the manifest/scope, this run's PR set, and the worker/review findings it produced;
 3. **act on its action points before ranking anything** (below);
-4. invoke `plan-merge-order` with the manifest/scope, this run's PR set, and every summary item with an ordering consequence — the `MERGE_RISK` and `DECISION` items, and any other class that also carries one, so the ranking is computed against those constraints rather than around them;
-5. surface the summary and action points first, then the ranking table, as the run's closing output, and name the `DECISION` and decision-shaped `NEEDS_USER` items as the set `settle-outstanding-decisions` covers — **without invoking it**. That skill is run by a person, after reading this output, and never by this run: a settled run is usually reached on a scheduled wake with nobody watching, and a decision walkthrough fired at an empty room produces a transcript rather than a decision;
-6. stop dispatching work, and stop spending tokens re-deriving the same state, for as long as the frontier stays empty.
+4. request `settle-outstanding-decisions`, passing the summary as its seed — unless `auto-request-settle` was turned off for this invocation. The gate covers only the request; whether the walkthrough may actually ask is that skill's call, not this run's — its *Attendance is the precondition* section governs, and a run settling on a scheduled wake gets a one-line decline while the decisions stay, already durable, in the summary's `DECISION` action points. It sits between summary and ranking because a ruling changes what the ranking is computed from: it can retire a `DECISION` constraint, reshape a `MERGE_RISK`, or reverse which of two PRs should merge, and a ranking produced first would be stale the moment the owner answered;
+5. invoke `plan-merge-order` with the manifest/scope, this run's PR set, and every summary item with an ordering consequence — the `MERGE_RISK` and `DECISION` items as the walkthrough left them, a recorded ruling standing in for each decision it settled, and any other class that also carries one — so the ranking is computed against answers where answers exist and against the open constraint where they do not;
+6. surface the summary and action points first, then the walkthrough's report where one was requested — rulings recorded, or its one-line decline — then the ranking table, as the run's closing output, and name the still-unruled `DECISION` and decision-shaped `NEEDS_USER` items as the set the owner can settle by running `settle-outstanding-decisions` themselves: it is idempotent, so running it after a declined or interrupted walkthrough re-asks nothing already ruled;
+7. stop dispatching work, and stop spending tokens re-deriving the same state, for as long as the frontier stays empty.
 
 Summarize before ranking. An action point can change whether something should merge at all, and a ranking the user has already begun acting on is the wrong place to discover that. Run the summary once per settled tranche rather than saving one up for the end of a whole backlog: its findings come from run context that the next session will not have, and follow-ups need to exist while later tranches are still running, so they get picked up instead of rediscovered.
 
@@ -1141,7 +1144,7 @@ Settlement was computed before the summary existed, so the summary is capable of
 |---|---|
 | `IN_FLIGHT_FIX` | the tranche is **not settled** — that PR has actionable work outstanding. Return it to supervision, dispatch the repair within budget, and re-test the settled conditions before ranking |
 | `MERGE_RISK` | still settled, but the ranking must carry it. Pass it to `plan-merge-order`, and raise it as `NEEDS_USER` where it blocks a merge decision outright |
-| `DECISION` | pass to `plan-merge-order` and surface as `NEEDS_USER`; it gates a human, not the run |
+| `DECISION` | the settled step's walkthrough request (step 4 above) is where it gets ruled when someone is present; unruled, pass to `plan-merge-order` and surface as `NEEDS_USER` — it gates a human, not the run |
 | `NEW_ISSUE` | report it; no effect on settlement. No effect on ordering **unless the item carries an ordering consequence** — a follow-up that must land before one of this tranche's PRs is also a `MERGE_RISK`, and takes that row too. The classes answer different questions, so read the item rather than the label alone |
 
 An `IN_FLIGHT_FIX` reaching the ranking is the same defect the settled conditions already guard against: a table that orders PRs which are not actually finished is a table the user cannot act on. Finding it one step later does not make it acceptable.
@@ -1218,7 +1221,7 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - CI/review states + repair budgets consumed;
 - PRs left unreviewed, and whether the review trigger was deferred or unavailable;
 - PRs promoted from draft to ready, and any left in draft with the reason;
-- the `summarize-tranche` summary and action points, and the `plan-merge-order` table, when the run settled;
+- the `summarize-tranche` summary and action points, the `settle-outstanding-decisions` report — rulings recorded, or its one-line decline, or that `auto-request-settle` was off — and the `plan-merge-order` table, when the run settled;
 - issue-linkage/tracker-status inconsistencies;
 - `NEEDS_USER` items;
 - external blockers;
