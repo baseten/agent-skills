@@ -464,6 +464,8 @@ Prefer durable evidence in this order:
 
 A cloud worktree is ephemeral. Never claim restart safety for unpushed local changes.
 
+**An outstanding recovery ref overrides all of it, completion evidence included.** Enumerate the recovery refs matching an issue's branch (see Checkpoint compliance) **before** classifying it, not after: a merged PR with terminal tracker state is the strongest evidence in the list and is exactly what an issue carrying rescued, unlanded work looks like from the outside. So an issue with a ref outstanding against it is never `DONE`, whatever items 1–5 say. This is the durable half of that rule — the `NEEDS_USER` a run raises for it lives in run state, which invariant 1 classifies as a cache, so without the check here a restart re-derives `DONE` from the merge and drops the only copy of that work while reporting the issue complete.
+
 ## Restart / resume
 
 A Dynamic Workflow interrupted by session exit restarts fresh next session rather than resuming — it has no cross-session persistence of its own. Restart recovery therefore always comes from tracker + GitHub remote state, never from workflow-runtime state:
@@ -477,7 +479,7 @@ A Dynamic Workflow interrupted by session exit restarts fresh next session rathe
    - **proven, and the edge lives only in the persisted comment record** — absence still proves nothing, because native metadata was never supposed to show it. Re-adopt, then classify it here: **this step is the run adoption** the retirement rule anchors to, and skipping it is precisely how a retired dependency becomes permanent;
 3. order by normalized DAG + explicit build order;
 4. fetch current tracker statuses, PRs, and remote branches;
-5. skip every proven `DONE` issue;
+5. skip every proven `DONE` issue — after the recovery-ref enumeration above, which is what makes `DONE` provable here: this step precedes both PR and checkpoint adoption, so an issue skipped on merge evidence is never reached by anything that would have found its ref;
 6. adopt existing open PRs;
 7. adopt matching remote issue branches/checkpoints even when no PR exists yet;
 8. identify the earliest still-unfinished executable frontier;
@@ -1044,7 +1046,7 @@ If a worker disappears:
 1. inspect remote branch/PR first;
 2. inspect any recovery refs the parent pushed for that issue (see Checkpoint compliance) — work captured from a live worker lives there, not on the issue branch;
 3. inspect local worktree only if the container still exists;
-4. adopt pushed checkpoints/PR, merging a recovery ref into the issue branch where it holds work the branch does not;
+4. adopt pushed checkpoints/PR, merging a recovery ref into the issue branch where it holds work the branch does not — then verify the ref's commit is an ancestor of the branch head and delete it, exactly as the release-time reconciliation does (see Checkpoint compliance). This consumer needs saying separately: the worker that lost its container can never return to push, so neither the redundancy rule nor the release-time branch will ever end a ref consumed here, and it would stay outstanding — rediscovered by every later pass, and blocking invariant 12's gate over work that has already landed;
 5. redispatch at most once from latest durable remote checkpoint;
 6. repeated loss -> `NEEDS_USER`/infrastructure failure.
 
