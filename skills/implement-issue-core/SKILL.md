@@ -19,7 +19,8 @@ Accept:
 - optional upstream dependency context, and whether the caller marks it as its **complete** dependency set or a targeted answer — the two are read differently, and unmarked means targeted. Also the **provenance** of each edge in it: produced by the caller's own native read, or recorded outside native metadata from an earlier finding. And whether the read behind a complete set had **proven relationship visibility** for the boundaries in play: a complete set from an unproven read claims to list every edge the caller could see, which is a different claim from listing every edge there is;
 - optional authorization membership — the run's bounded authorized set, or a per-blocker flag saying whether each is inside it;
 - implementation-attempt budget;
-- draft/full PR preference when supplied.
+- draft/full PR preference when supplied;
+- the caller's posting-identity map when one exists — every `(transport, credential)` entry with its per-kind observations, never a pair the caller selected (see `backlog-orchestrator`, *Posting identity*). Invoked standalone with no map, every transport starts `unestablished` and that rule's degraded path applies.
 
 The full issue URL is canonical identity. Never replace it with a short issue key in durable state or PR-linking context.
 
@@ -203,7 +204,8 @@ Invoke `create-pr` with:
 - exact required base;
 - tracker identity when useful;
 - draft/full preference when supplied;
-- **any coverage finding this issue's implementation carried** — a declared dependency satisfied on paper whose capability was absent, and the acceptance criteria left unmet as a result. `create-pr` decides the linkage form from this, and it cannot decide correctly if you do not pass it: the default is a closing keyword, so silence here auto-closes an issue you knowingly did not finish.
+- **any coverage finding this issue's implementation carried** — a declared dependency satisfied on paper whose capability was absent, and the acceptance criteria left unmet as a result. `create-pr` decides the linkage form from this, and it cannot decide correctly if you do not pass it: the default is a closing keyword, so silence here auto-closes an issue you knowingly did not finish;
+- **the posting-identity map as this skill holds it** — every `(transport, credential)` entry with its per-kind observations, as received from the caller or `unestablished` where nothing was. An invocation is read literally, exactly as a dispatch prompt is (`backlog-orchestrator`, *Implementation worker contract*): a map left out of it is a map `create-pr` does not have, whatever the caller sent here. And `create-pr`'s writes need different entries from it — an agent-authored entry for the PR itself, an invoking-user entry for the author-sensitive review trigger — so omitting it degrades PR creation and marks an otherwise valid trigger path unavailable, and `create-pr` cannot recover what it was not passed.
 
 `create-pr` owns tracker-specific linkage, stack `Depends on:` metadata, review trigger policy, and PR creation.
 
