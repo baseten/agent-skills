@@ -1341,7 +1341,7 @@ Unresolved review findings: 0
 Review threads reserved for the owner: 1
 Drafts explicitly held: 1
 Repo policy: acme/api: config (auto-merge on, auto-fix-reviewers: codex); acme/site: defaults
-Posting identity: github-mcp/baseten -> baseten (invoking user); linear-cli -> unestablished
+Posting identity: (github-mcp, tok-a1b2) -> baseten (invoking user); (linear-cli, tok-c3d4) -> unestablished
 Auto-merged (invariant 12 gate): 0
 Ready: 3
 Blocked: 2
@@ -1366,7 +1366,7 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - CI/review states + repair budgets consumed;
 - PRs left unreviewed, and whether the review trigger was deferred or unavailable;
 - PRs left in draft, naming each explicitly held one and what holds it (see Draft state);
-- the posting identity observed **per transport the run wrote through**, each entry naming the transport, its credential identity, and the author observed there — a distinct account, the invoking user, or `unestablished` where that transport has no read-back write yet. Report the map, never a single run-wide identity: transports with different observed authors are the ordinary case, none of them is wrong, and collapsing them hides whichever entry the provisional review-trigger decision needs. Name separately any distinct identity **observed** on a tier precedence selected elsewhere but not for these writes, as present but unusable — never an inference about a tier the run never wrote through (see Posting identity);
+- the posting identity observed **per `(transport, credential)` pair the run wrote through**, each entry naming the transport, the credential identity that is half its key, and the author observed there — a distinct account, the invoking user, or `unestablished` where that transport has no read-back write yet. Report the map, never a single run-wide identity: transports with different observed authors are the ordinary case, none of them is wrong, and collapsing them hides whichever entry the provisional review-trigger decision needs. Name separately any distinct identity **observed** on a tier precedence selected elsewhere but not for these writes, as present but unusable — never an inference about a tier the run never wrote through (see Posting identity);
 - the policy each PR resolved to and its source — invocation argument, repo config, or built-in defaults — plus any policy file that was unreadable or carried invalid keys, every merge invariant 12's gate authorized with the conditions it passed on, including any PR it published from draft on the way to merging, and every review thread reserved for the owner;
 - the `summarize-tranche` summary and action points, the `settle-outstanding-decisions` report — rulings recorded, or its one-line decline, or that `auto-request-settle` was off — and the `plan-merge-order` table, when the run settled;
 - issue-linkage/tracker-status inconsistencies;

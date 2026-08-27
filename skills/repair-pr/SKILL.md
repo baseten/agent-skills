@@ -81,7 +81,7 @@ Return:
 - repair cycle consumed: yes/no;
 - checks run;
 - review threads resolved/replied when relevant;
-- **every posting-identity entry observed** for this pass's authored writes — its own and any made through `resolve-pr-comment` — keyed by the transport each was observed on, reported whether or not it differed from the invoking user, and as `unestablished` where no authored write was read back. Read it back from the first such write rather than inheriting the caller's resolved identity: a repair pass can run on transports the caller never used, so its `gh` reply can establish an invoking-user path where the caller had only observed an agent-authored one. That observation is the caller's only evidence about this worker's write path, and it is what re-opens a provisionally unavailable review trigger (see `backlog-orchestrator`, *Posting identity*);
+- **every posting-identity entry observed** for this pass's authored writes — its own and any made through `resolve-pr-comment` — under the `(transport, credential)` key each was observed on, reported whether or not it differed from the invoking user, and as `unestablished` where no authored write was read back. Read it back from the first such write rather than inheriting the caller's resolved identity: a repair pass can run on transports the caller never used, so its `gh` reply can establish an invoking-user path where the caller had only observed an agent-authored one. That observation is the caller's only evidence about this worker's write path, and it is what re-opens a provisionally unavailable review trigger (see `backlog-orchestrator`, *Posting identity*);
 - actionable review threads still unresolved on the PR: count;
 - failure/judgment details;
 - recommended next action.

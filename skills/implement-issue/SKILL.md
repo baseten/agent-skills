@@ -74,7 +74,7 @@ If core returns `PR_OPEN`, record:
 - remote head SHA;
 - tracker linkage verification;
 - draft state as created;
-- **every** posting-identity entry core returned, keyed by transport — not one pair. `create-pr` writes the PR and the review trigger through transports the exception may deliberately make different, so core returns a map and collapsing it here discards one path before the re-triggers and the final result consume it (see `backlog-orchestrator`, *Posting identity*);
+- **every** posting-identity entry core returned, under its `(transport, credential)` key — not one pair. `create-pr` writes the PR and the review trigger through transports the exception may deliberately make different, so core returns a map and collapsing it here discards one path before the re-triggers and the final result consume it (see `backlog-orchestrator`, *Posting identity*);
 - implementation attempts used.
 
 At this point the code is already durable remotely even if the current container disappears.
@@ -182,7 +182,7 @@ Return:
 - review-fix cycles used;
 - final CI/review state;
 - draft state as created, and whether it was promoted to ready (or why not);
-- the run's full posting-identity map — every entry observed by core and by each repair pass, keyed by transport, since a repair can run on transports core never used and the entries are answers about different write paths rather than versions of one. Carry both rather than the latest: an invoking-user path observed in any of them is what this skill's own review re-triggering needs, and there is no orchestrator here to hold that evidence instead. Report `unestablished` where no authored write was read back (see `backlog-orchestrator`, *Posting identity*);
+- the run's full posting-identity map — every entry observed by core and by each repair pass, under its `(transport, credential)` key, since a repair can run on transports core never used and the entries are answers about different write paths rather than versions of one. Carry both rather than the latest: an invoking-user path observed in any of them is what this skill's own review re-triggering needs, and there is no orchestrator here to hold that evidence instead. Report `unestablished` where no authored write was read back (see `backlog-orchestrator`, *Posting identity*);
 - whether the completeness of the blocker set was backed or left unproven, and on what boundary;
 - dependencies checked, and any source disagreements, exactly as core reported them — including on `PR_OPEN`. A run that succeeded while its transport returned a partial dependency view is the case where this evidence is easiest to drop and most worth keeping: nothing else in a standalone run will surface it, and dropping it here means neither the user nor a surrounding workflow ever learns the view was partial;
 - blocker/failure details, including the dependency class each block was judged under;
