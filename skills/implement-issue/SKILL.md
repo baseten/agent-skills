@@ -116,7 +116,7 @@ When CI fails:
 1. inspect enough check/log context to identify the relevant failure;
 2. if the failure is attributable to this PR and the CI budget remains, invoke `repair-pr` once with `repair type = ci`;
 3. pass the exact failure context and remaining budget;
-4. adopt the returned remote head SHA;
+4. adopt the returned remote head SHA **and the pass's observed posting identity and transport** — record it alongside core's rather than replacing it, since a repair can establish a path core never used, and it is what the re-trigger in the review branch and the final result both read;
 5. wait for the next CI result using first-class/event-driven state where available;
 6. after the budget is exhausted, return `NEEDS_USER` rather than trying again.
 
@@ -128,8 +128,8 @@ When actionable review feedback arrives:
 
 1. group one coherent review round;
 2. if review budget remains, invoke `repair-pr` once with `repair type = review` and the relevant threads/comments;
-3. adopt the returned remote head;
-4. retrigger/request review when repository convention requires it;
+3. adopt the returned remote head **and the pass's observed posting identity and transport**, recorded alongside core's;
+4. retrigger/request review when repository convention requires it — selecting the trigger's author from the identities observed so far, this pass's included: a repair can establish the invoking-user path core lacked, and re-triggering before adopting its observation is what makes that trigger silently fail;
 5. wait for the next review state using first-class/event-driven state where available;
 6. after the budget is exhausted, return `NEEDS_USER`.
 
