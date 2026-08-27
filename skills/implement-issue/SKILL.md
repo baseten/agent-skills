@@ -74,7 +74,7 @@ If core returns `PR_OPEN`, record:
 - remote head SHA;
 - tracker linkage verification;
 - draft state as created;
-- the posting identity core observed and the transport it was observed on;
+- **every** posting-identity entry core returned, keyed by transport — not one pair. `create-pr` writes the PR and the review trigger through transports the exception may deliberately make different, so core returns a map and collapsing it here discards one path before the re-triggers and the final result consume it (see `backlog-orchestrator`, *Posting identity*);
 - implementation attempts used.
 
 At this point the code is already durable remotely even if the current container disappears.
@@ -116,7 +116,7 @@ When CI fails:
 1. inspect enough check/log context to identify the relevant failure;
 2. if the failure is attributable to this PR and the CI budget remains, invoke `repair-pr` once with `repair type = ci`;
 3. pass the exact failure context and remaining budget;
-4. adopt the returned remote head SHA **and the pass's observed posting identity and transport** — record it alongside core's rather than replacing it, since a repair can establish a path core never used, and it is what the re-trigger in the review branch and the final result both read;
+4. adopt the returned remote head SHA **and every posting-identity entry the pass observed**, merging them into the run's transport-keyed map rather than replacing it — a repair can establish a path core never used, and the re-trigger in the review branch and the final result both read that map;
 5. wait for the next CI result using first-class/event-driven state where available;
 6. after the budget is exhausted, return `NEEDS_USER` rather than trying again.
 
@@ -128,7 +128,7 @@ When actionable review feedback arrives:
 
 1. group one coherent review round;
 2. if review budget remains, invoke `repair-pr` once with `repair type = review` and the relevant threads/comments;
-3. adopt the returned remote head **and the pass's observed posting identity and transport**, recorded alongside core's;
+3. adopt the returned remote head **and every posting-identity entry the pass observed**, merged into the run's transport-keyed map;
 4. retrigger/request review when repository convention requires it — selecting the trigger's author from the identities observed so far, this pass's included: a repair can establish the invoking-user path core lacked, and re-triggering before adopting its observation is what makes that trigger silently fail;
 5. wait for the next review state using first-class/event-driven state where available;
 6. after the budget is exhausted, return `NEEDS_USER`.
@@ -182,7 +182,7 @@ Return:
 - review-fix cycles used;
 - final CI/review state;
 - draft state as created, and whether it was promoted to ready (or why not);
-- the posting identity observed across this run and the transport each observation came from — core's, and each repair pass's, since a repair can run on transports core never used. Carry both rather than the latest: an invoking-user path observed in any of them is what this skill's own review re-triggering needs, and there is no orchestrator here to hold that evidence instead. Report `unestablished` where no authored write was read back (see `backlog-orchestrator`, *Posting identity*);
+- the run's full posting-identity map — every entry observed by core and by each repair pass, keyed by transport, since a repair can run on transports core never used and the entries are answers about different write paths rather than versions of one. Carry both rather than the latest: an invoking-user path observed in any of them is what this skill's own review re-triggering needs, and there is no orchestrator here to hold that evidence instead. Report `unestablished` where no authored write was read back (see `backlog-orchestrator`, *Posting identity*);
 - whether the completeness of the blocker set was backed or left unproven, and on what boundary;
 - dependencies checked, and any source disagreements, exactly as core reported them — including on `PR_OPEN`. A run that succeeded while its transport returned a partial dependency view is the case where this evidence is easiest to drop and most worth keeping: nothing else in a standalone run will surface it, and dropping it here means neither the user nor a surrounding workflow ever learns the view was partial;
 - blocker/failure details, including the dependency class each block was judged under;
