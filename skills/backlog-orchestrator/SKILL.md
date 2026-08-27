@@ -61,7 +61,7 @@ Reusable worker skills:
 9. **The parent/orchestration layer owns long-lived PR state.** Implementation and repair workers are bounded and short-lived.
 10. **Retries and repairs are bounded.** Persistent failure becomes `NEEDS_USER`.
 11. **Recovery is idempotent.** Never duplicate work, branches, PRs, or repairs after restart.
-12. **No automatic merges.** Merge authority is explicit and separate.
+12. **Merges are opt-in per repository, and gated even then.** By default the run performs no merge. It may merge a PR only when that PR's own repository opted in via `auto-merge` in its policy config (see Per-repository policy configuration) **and** the gate holds: the tranche has no `DECISION`, `MERGE_RISK`, or `NEEDS_USER` item outstanding — anywhere in the tranche, not only on that PR, and a `DECISION` that settled without being ruled on is outstanding: unruled is not clean — **and** CI is green on the PR's current head, **and** it has no merge conflict, **and** its review is clean (a completed automated review round, every actionable finding resolved or answered, no thread reserved for the owner). This is the gate's only definition; every other site defers to it. Everything outside the gate stays where it was: the user's separate `merge-stack` authorization.
 13. **A merge is a scheduling event, not an end state.** The run advances its own frontier off merges someone else performed; it does not wait to be re-invoked.
 
 # Autonomy and interactive prompts
@@ -136,7 +136,7 @@ Do not spend an orchestration run diagnosing a runtime. Degrading to subagents a
 Also detect:
 
 - native worktree isolation;
-- whether Claude Code's own background PR watch/notification behavior is active for this session (see PR promotion and central supervision, below) — and, if so, whether its auto-merge behavior is enabled, since that would conflict with this skill's no-automatic-merge invariant and should be disabled or reported before autonomous work proceeds;
+- whether Claude Code's own background PR watch/notification behavior is active for this session (see PR promotion and central supervision, below) — and, if so, whether its auto-merge behavior is enabled, since a platform merging on green merges outside invariant 12's gate and should be disabled or reported before autonomous work proceeds;
 - local `git`;
 - authenticated `gh`;
 - GitHub MCP;
@@ -289,6 +289,8 @@ Projects are discovery surfaces, not execution graphs. Combine FE/BE/shared proj
 
 Before dispatching any **new** implementation worker, invoke `validate-backlog` on the entire bounded scope — `shallow` by default, deeper over the nodes the escalation rules below reach.
 
+The preflight is also where per-repository policy is read — each in-scope repository's `.claude/backlog-orchestrator.json`, per Per-repository policy configuration, which owns the schema, resolution, and failure rules.
+
 Use the validator's normalized DAG as the scheduling graph. Do not let the execution runtime independently invent a competing decomposition.
 
 That prohibition is about re-planning, not about evidence. A worker reporting a blocker it verified against its own issue is not inventing a decomposition — it is correcting one, from a position the validator did not have (see Outcomes). Accept an edge a worker verified; reject a runtime's attempt to reorder or re-scope the backlog.
@@ -342,17 +344,21 @@ What is missing is **coverage**: the closed issue's deliverable does not include
 
 # Default usage safeguards
 
-Unless explicitly overridden:
+Unless overridden (below):
 
-- maximum concurrent implementation workers: **4**;
-- maximum newly started issues per invocation: **12**;
-- maximum implementation attempts per issue: **2 total**;
-- maximum strongest-model escalation per issue: **1**;
-- maximum CI repair cycles per PR: **2**;
-- maximum review-fix cycles per PR: **2**;
-- maximum lost-worker redispatches per issue: **1**;
-- automatic merges: **disabled**;
+- maximum concurrent implementation workers (`concurrent-workers`): **4**;
+- maximum newly started issues per invocation (`new-issue-budget`): **12**;
+- maximum implementation attempts per issue (`implementation-attempts`): **2 total**;
+- maximum strongest-model escalation per issue (`model-escalations`): **1**;
+- maximum CI repair cycles per PR (`ci-repair-cycles`): **2**;
+- maximum review-fix cycles per PR (`review-repair-cycles`): **2**;
+- maximum lost-worker redispatches per issue (`lost-worker-redispatches`): **1**;
+- automatic merges (`auto-merge`): **disabled** — the opt-in invariant 12's gate requires;
+- draft promotion once review is clean (`promote-drafts`): **enabled** — Draft promotion after a clean first review owns the conditions;
+- reviewers whose comments may be auto-fixed (`trusted-automated-reviewers`): **unset** — no reviewer filter; the judgment rules under CI/review repair still apply;
 - requesting the `settle-outstanding-decisions` walkthrough at settle (`auto-request-settle`): **enabled**. The option gates only whether this run makes the request; whether the walkthrough may actually ask stays with that skill's attendance precondition (see Settled tranche).
+
+These are the built-in defaults. Two mechanisms override them, and the precedence is stated here and nowhere else: **an explicit invocation argument beats repo config, which beats the built-in defaults.**
 
 Dynamic Workflows do not override these limits. Do not increase concurrency merely because the runtime can fan out more agents.
 
@@ -363,6 +369,58 @@ When the bounded scope exceeds the 12-new-issue limit, do not ask which issues t
 When the 12-new-issue limit is reached, allow active workers/repairs to reach durable state, stop starting new issues, reconcile, and return a checkpoint. Restarting does not count already-adopted work as newly started.
 
 Budget exhaustion on a node -> `NEEDS_USER`, not another speculative attempt. Continue unrelated DAG branches safely.
+
+## Per-repository policy configuration
+
+Personal and work repositories legitimately want opposite behavior from the same run — merge on settle versus hold drafts for the owner's review, fix every reviewer's comments versus only the automated ones — so this policy belongs to the repository it governs, not to the run. A repository declares it in `.claude/backlog-orchestrator.json`:
+
+```json
+{
+  "concurrent-workers": 4,
+  "new-issue-budget": 12,
+  "implementation-attempts": 2,
+  "model-escalations": 1,
+  "ci-repair-cycles": 2,
+  "review-repair-cycles": 2,
+  "lost-worker-redispatches": 1,
+  "auto-request-settle": true,
+  "promote-drafts": true,
+  "auto-merge": false,
+  "trusted-automated-reviewers": ["codex"]
+}
+```
+
+Every key is optional, and the values shown are the built-in defaults — except `trusted-automated-reviewers`, whose default is **unset**, which is not the same as empty (below). One file carries every option the defaults list above names as well as the three review/merge policies, deliberately: a second option surface is exactly how two mechanisms drift apart. If an option of this skill's is configurable at all, it is configurable here.
+
+**It is policy that can authorize merges, so it is a config file and not prose.** A `CLAUDE.md` paragraph gets interpreted, and interpretation must not decide whether a run may merge. A project-level skill override is not the mechanism either: `bootstrap.sh` installs these skills to `~/.claude/skills`, and a personal skill shadows a project skill of the same name, so a project copy would silently never load.
+
+### Resolution
+
+**Policy resolves per PR, from the repository that PR lives in.** A run can span repositories — the manifest in one, PRs landing in several — and per-repo difference is the entire point, so there is no run-wide policy read once from the manifest's repo. In a tranche where one repository carries a config and another does not, the first repository's PRs follow its file and the second's follow the built-in defaults, in the same run, at the same settle. One config, resolved once and applied run-wide, would do the opposite of what the file is for: work-repo rules on a personal repo's PRs, or the reverse.
+
+Keys scope to different objects, and each resolves from the repository that owns its object:
+
+| keys | scope | resolved from |
+| --- | --- | --- |
+| `ci-repair-cycles`, `review-repair-cycles`, `promote-drafts`, `auto-merge`, `trusted-automated-reviewers` | per PR | the PR's repository |
+| `implementation-attempts`, `model-escalations`, `lost-worker-redispatches` | per issue | the issue's repository |
+| `concurrent-workers`, `new-issue-budget`, `auto-request-settle` | per run | the manifest's repository; an explicit issue set contained in one repository uses that repository; a multi-repo set with no manifest uses the built-ins |
+
+Read the file at the validation preflight, once per repository in the bounded scope, from the head of that repository's default branch as the run finds it at start — and never again during the run. **This file can authorize merges, so it is owner-authored configuration, and a run must never honour a version written by one of its own workers**: not from a worker's branch, not from a PR, not re-read after a mid-run merge moves the default branch. The policy governing a run is the one in the repository state it started from; a config change takes effect at the next run's preflight. A restart's preflight is a fresh read — that is the restart re-deriving from durable truth, not a worker write leaking in.
+
+A file that is absent means the built-in defaults, unchanged — the file is opt-in and absence is the common case. A file that is present but unparseable **fails closed**: use the built-in defaults for that repository and report the file as unreadable in the checkpoint output, rather than guessing at intent. An unrecognized key, or a value of the wrong type, fails closed the same way at key granularity — defaulted and reported, because a misspelled `auto-merge` must produce no merges, not a guess.
+
+Report the resolved policy per PR in the checkpoint output, with its source — invocation argument, repo config, or built-ins — so an auto-merge or a held draft is visible in the record before it is a surprise.
+
+### The three review/merge policies
+
+**`promote-drafts`** — whether a draft PR is promoted to ready once its review is clean. `true` keeps today's behavior; Draft promotion after a clean first review owns the conditions. `false` holds every PR of that repository in draft and surfaces it for the owner's manual review — the owner fixes it via a review round or promotes it themselves — with each held PR named in the checkpoint output. This key is the machine-readable form of the "repository convention to keep PRs in draft" that section already honors; its other rules are unchanged.
+
+**`auto-merge`** — whether invariant 12's gate can open for this repository's PRs at all. `false` is today's behavior: the run never merges. `true` permits a merge only through the gate invariant 12 defines — the key is the opt-in the gate requires, never a bypass of its other conditions. Execution mechanics live in Merge behavior.
+
+**`trusted-automated-reviewers`** — which reviewers' comments the run may auto-fix and resolve. Unset, today's behavior stands: actionable review feedback is repairable whoever wrote it, subject to the judgment rules that already govern repair. Set, the list is exhaustive: a review comment is eligible for repair and thread resolution only when its author is automated **by both tests** — the forge's API reports the author as a bot (on GitHub, author type `Bot`; compare list entries against the reported login with any `[bot]` suffix disregarded) **and** that login is in the list. Both, because each alone proves nothing: a name can be worn by any account, and a bot off the list is an automation the owner never vetted. It is a list rather than a boolean or hardcoded names because the reviewers vary per repo. An **empty list** is valid and meaningful: no reviewer is trusted, and the run auto-fixes nothing.
+
+A thread that fails the test is **reserved for the owner**: never auto-fixed, never resolved, reported in the checkpoint output as awaiting them. A reserved thread does not block settlement — the run cannot be required to resolve what policy forbids it touching — but it is an unresolved actionable finding everywhere else that concept is consumed: it blocks that PR's draft promotion and fails invariant 12's clean-review condition. This sits upstream of the distinction the repair path already draws rather than competing with it: this list decides *whose* comments are eligible at all; the existing judgment rule (product/architecture judgment -> `NEEDS_USER`, see CI/review repair and `repair-pr`) still decides *which* eligible comments are repairable. A comment can pass the reviewer test and still be `NEEDS_USER` on judgment; one that fails the reviewer test never reaches the judgment rule. Nor does the list replace the repository's review *trigger* convention, which `create-pr` owns: the reviewer a repo triggers will normally appear in its list, but only the list authorizes acting on the findings.
 
 # Model and skill policy
 
@@ -592,7 +650,7 @@ Treat all five as best-effort on the worker's part. They belong in every dispatc
 
 A PR opened by a worker may be surfaced back to the parent/top-level session by Claude Code's own background PR watch/notification behavior (a session-level feature, distinct from Dynamic Workflows — a Dynamic Workflow run does not itself persist or surface PR/CI/review events once it returns its fan-out results) or by an explicit event subscription such as `subscribe_pr_activity`. **Use that platform PR state when available.** Do not create a duplicate monitor merely because the PR originated in a child worker.
 
-If Claude Code's background PR behavior has auto-merge enabled, it will merge PRs itself once checks pass — this conflicts directly with this skill's no-automatic-merge invariant. Confirm auto-merge is off (or explicitly authorized by the user for this run) before relying on that background behavior for CI/review surfacing.
+If Claude Code's background PR behavior has auto-merge enabled, it will merge PRs itself once checks pass — a merge decided outside invariant 12's gate, whatever the repository's policy config says. Confirm auto-merge is off (or explicitly authorized by the user for this run) before relying on that background behavior for CI/review surfacing.
 
 Once an implementation worker reaches `PR_OPEN`, release that implementation worker — on a remote-session runtime that is an archive call, not merely ceasing to message it (see Releasing a worker). Long-lived PR supervision belongs to the parent/runtime orchestration layer.
 
@@ -650,7 +708,7 @@ On an actionable CI failure:
 
 External/flaky failure with no justified code change does not consume a repair cycle.
 
-On actionable review feedback:
+On actionable review feedback — where the PR's resolved policy sets `trusted-automated-reviewers`, actionable is bounded by it first: only threads whose author passes that test are actionable here, and the rest are reserved for the owner (see Per-repository policy configuration), never dispatched, whatever their size:
 
 1. group the coherent current review round;
 2. if budget remains, allocate an isolated checkout of the current PR branch;
@@ -690,6 +748,7 @@ Promote when all of these hold:
 - the automated review trigger was issued and a review round actually came back — a review that was deferred, suppressed, or never fired is not a completed round;
 - no actionable finding from that round is unresolved, whether it was fixed, or answered with a reply explaining why no change is warranted;
 - CI is green on the current remote head;
+- no thread on the PR is reserved for the owner by its repository's review policy (see Per-repository policy configuration) — a comment the run may not touch is still an open finding, and promoting over it signals a readiness nobody established;
 - the PR is not `NEEDS_USER` and has no unanswered product/architecture question.
 
 Then mark the PR ready for review once, and record the transition in the per-PR state.
@@ -698,7 +757,7 @@ Rules:
 
 - Promote at most once per PR. Never flip a PR back to draft, and never re-promote one a human returned to draft.
 - Never promote a PR this run did not open.
-- Repository convention or an explicit user instruction to keep PRs in draft overrides this, as does a caller passing an explicit draft preference through `implement-issue-core`.
+- A repository whose policy resolves `promote-drafts: false` (see Per-repository policy configuration) gets no promotion: the PR stays in draft, surfaced for the owner's manual review. Prose repository convention, an explicit user instruction, or a caller passing a draft preference through `implement-issue-core` override promotion the same way.
 - Later review rounds do not re-trigger promotion; the PR is already ready.
 - Promotion is not merge authorization and does not interact with invariant 12. It changes the PR's review-readiness signal and nothing else.
 
@@ -778,7 +837,7 @@ Holding is not idling. Name the outstanding item, the node it holds, and what an
 
 Nothing about the advance relaxes the safeguards it dispatches under:
 
-- **invariant 12 still holds.** The run reacts to merges; it never performs one. Auto-advance is triggered by observing a merge, never by deciding one should happen.
+- **invariant 12 still holds.** Auto-advance is triggered by observing a merge — whoever performed it, a merge invariant 12's gate authorized included — never by deciding one should happen. The advance itself merges nothing.
 - **the 12-new-issue budget is consumed like any other dispatch.** If the budget is exhausted, do not dispatch: report the newly-READY frontier in the checkpoint output as the resume frontier, so a resumed invocation adopts it instead of rediscovering it. Silently dropping newly-unblocked work is the failure this step exists to prevent.
 - **`NEEDS_USER` is not cleared by a merge.** A node whose only remaining blocker is a question a human was asked to decide stays blocked, and auto-advance must not resume that path (above). Only the blockers the merge actually satisfied are retired.
 - 4 concurrent workers, attempt/repair caps, Sonnet workers, one issue per worker, and isolated checkouts apply to resumed dispatch unchanged.
@@ -1114,9 +1173,11 @@ And even an affirmative answer clears only this blocker, not the issue: the prec
 
 # Merge behavior
 
-Normal orchestration never merges automatically.
+By default orchestration never merges. Invariant 12 defines the one gate under which it may, and a repository's `auto-merge` key (see Per-repository policy configuration) is what makes that gate reachable for its PRs.
 
-If the user separately authorizes `merge-stack`, that skill owns merge ordering and descendant rebasing/restacking. Reconcile tracker completion after every merge.
+Where the gate is reachable, evaluate it at the settled step, after the summary, the walkthrough, and the ranking — the gate's `DECISION` and `MERGE_RISK` inputs do not exist before `summarize-tranche` produces them, so an earlier evaluation is a guess wearing the gate's name. Merge the PRs it passes in the ranking's order, bottom-up within a stack, restacking descendants exactly as any merge requires; each merge is then an ordinary frontier-advancing event (see Frontier advance on merge). A PR in a repository that did not opt in is untouched whatever its siblings did — the gate resolves per PR, from that PR's repository.
+
+If the user separately authorizes `merge-stack`, that skill owns merge ordering and descendant rebasing/restacking. Reconcile tracker completion after every merge, gate-authorized ones included.
 
 # Settled tranche
 
@@ -1125,10 +1186,10 @@ A run is **settled** when no further implementation can start and every open PR 
 - no in-scope issue is READY — each unstarted issue is blocked by work that is implemented but unmerged;
 - no implementation or repair worker is in flight — and a worker blocked on a permission prompt is in flight, not absent (see Blocked workers). It reads as quiet from every angle the other conditions look from, which is exactly how a run declares itself settled while one of its workers is still stopped mid-issue;
 - every open PR from this run has had at least one **completed** automated review round, not merely a trigger issued;
-- every actionable review finding on every open PR is resolved or answered;
+- every actionable review finding on every open PR is resolved or answered — a thread the PR's repository policy reserves for the owner (see Per-repository policy configuration) counts here as surfaced, not outstanding: it blocks that PR's promotion and merge, never settlement;
 - no open PR is `NEEDS_USER` or waiting on CI.
 
-Settled is not the same as finished. The run has produced everything it can **for now**; the next move belongs to whoever holds merge authority — and when they make it, the run picks the work back up itself (see below).
+Settled is not the same as finished. The run has produced everything it can **for now**; the next move belongs to whoever holds merge authority — the owner, or invariant 12's gate where a repository granted it — and when it is made, the run picks the work back up itself (see below).
 
 On reaching settled:
 
@@ -1137,8 +1198,9 @@ On reaching settled:
 3. **act on its action points before ranking anything** (below);
 4. request `settle-outstanding-decisions`, passing the summary as its seed — unless `auto-request-settle` was turned off for this invocation. The gate covers only the request; whether the walkthrough may actually ask is that skill's call, not this run's — its *Attendance is the precondition* section governs, and a run settling on a scheduled wake gets a one-line decline. **What that decline relies on is the decisions being durable at their own sites, not in the summary.** The summary is derived output and this run's closing report is cached run state by invariant 1, so neither survives session loss; the worker records, review threads and tracker comments the summary read them *from* do survive, and are exactly what the walkthrough's own discovery reads when the owner runs it later. What is lost is the aggregation and the run-context enrichment around it — a real cost, accepted deliberately: a second durable record written to close that gap is the decision docket this skill already carried and removed, which needed an in-place rewrite `permissions.json` cannot perform and stopped an unattended session on the prompt step 8 forbids. Re-deriving a lost aggregate costs one summary; the record that would have prevented it cost four review findings and could not run. It sits between summary and ranking because a ruling changes what the ranking is computed from: it can retire a `DECISION` constraint, reshape a `MERGE_RISK`, or reverse which of two PRs should merge, and a ranking produced first would be stale the moment the owner answered;
 5. invoke `plan-merge-order` with the manifest/scope, this run's PR set, and every summary item with an ordering consequence — the `MERGE_RISK` and `DECISION` items as the walkthrough left them, and any other class that also carries one. **Translate each ruling back into an action point before invoking**, because `plan-merge-order` accepts summary action points and nothing else — a ruling handed over raw has no defined handling there, and the likely readings are both wrong: keep ranking a PR the owner just rejected, or hold a merge behind a gate they just opened. A settled decision either stops being a constraint and drops out, or becomes the constraint its answer implies — a `MERGE_RISK` carrying the consequence, an ordering requirement stated on the item. **A ruling that requires code to change is none of those: it is an `IN_FLIGHT_FIX`, and the tranche is no longer settled.** Choosing the other side of a decision a worker already implemented creates actionable work after step 3 processed the action points, so translating it into a ranking constraint would leave an orchestrator-owned fix undispatched and rank a PR that is not finished — the exact defect the `IN_FLIGHT_FIX` row guards against, arriving one step later. Take that row: return it to supervision, dispatch the repair within budget, and re-test the settled conditions before ranking anything — so the ranking is computed against answers where answers exist and against the open constraint where they do not;
-6. surface the summary and action points first, then the walkthrough's report where one was requested — rulings recorded, or its one-line decline — then the ranking table, as the run's closing output, and name the still-unruled `DECISION` and decision-shaped `NEEDS_USER` items as the set the owner can settle by running `settle-outstanding-decisions` themselves: it is idempotent, so running it after a declined or interrupted walkthrough re-asks nothing already ruled;
-7. stop dispatching work, and stop spending tokens re-deriving the same state, for as long as the frontier stays empty.
+6. evaluate invariant 12's gate for each open PR whose repository opted into `auto-merge`, and merge the PRs it passes (see Merge behavior). This step exists here and not earlier because the walkthrough's rulings and the ranking are its inputs; each merge it performs is consumed as a frontier-advancing event like any other;
+7. surface the summary and action points first, then the walkthrough's report where one was requested — rulings recorded, or its one-line decline — then the ranking table, as the run's closing output, with every gate-authorized merge and every policy-held draft named beside it, and name the still-unruled `DECISION` and decision-shaped `NEEDS_USER` items as the set the owner can settle by running `settle-outstanding-decisions` themselves: it is idempotent, so running it after a declined or interrupted walkthrough re-asks nothing already ruled;
+8. stop dispatching work, and stop spending tokens re-deriving the same state, for as long as the frontier stays empty.
 
 Summarize before ranking. An action point can change whether something should merge at all, and a ranking the user has already begun acting on is the wrong place to discover that. Run the summary once per settled tranche rather than saving one up for the end of a whole backlog: its findings come from run context that the next session will not have, and follow-ups need to exist while later tranches are still running, so they get picked up instead of rediscovered.
 
@@ -1155,7 +1217,7 @@ Settlement was computed before the summary existed, so the summary is capable of
 
 An `IN_FLIGHT_FIX` reaching the ranking is the same defect the settled conditions already guard against: a table that orders PRs which are not actually finished is a table the user cannot act on. Finding it one step later does not make it acceptable.
 
-Do not merge, and do not treat the ranking as authorization to merge — invariant 12 still holds.
+The ranking is never authorization to merge — invariant 12's gate is the only thing that is, it is evaluated after the ranking (see Merge behavior), and a repository that did not opt in gets no merge from this run at all.
 
 If a run reaches all other settled conditions but some PR still has an unresolved finding, an unfired review, or red CI, it is **not** settled. Finish that PR within budget, or surface it as `NEEDS_USER`, before ranking. Ranking PRs that are not actually finished produces a merge order the user cannot act on.
 
@@ -1203,7 +1265,11 @@ Active PRs: 7
 Waiting CI/review: 4
 Unreviewed (trigger pending/unavailable): 0
 Unresolved review findings: 0
+Review threads reserved for the owner: 1
 Drafts promoted to ready: 2
+Drafts held by repo policy: 1
+Repo policy: acme/api: config (auto-merge on, drafts promoted, reviewers: codex); acme/site: defaults
+Auto-merged (invariant 12 gate): 0
 Ready: 3
 Blocked: 2
 Needs user: 1
@@ -1227,6 +1293,7 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - CI/review states + repair budgets consumed;
 - PRs left unreviewed, and whether the review trigger was deferred or unavailable;
 - PRs promoted from draft to ready, and any left in draft with the reason;
+- the policy each PR resolved to and its source — invocation argument, repo config, or built-in defaults — plus any policy file that was unreadable or carried invalid keys, every merge invariant 12's gate authorized with the conditions it passed on, and every review thread reserved for the owner;
 - the `summarize-tranche` summary and action points, the `settle-outstanding-decisions` report — rulings recorded, or its one-line decline, or that `auto-request-settle` was off — and the `plan-merge-order` table, when the run settled;
 - issue-linkage/tracker-status inconsistencies;
 - `NEEDS_USER` items;
