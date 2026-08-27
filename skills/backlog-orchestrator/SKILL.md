@@ -78,7 +78,7 @@ Never ask the user to:
 Only these may interrupt the user mid-run:
 
 - a platform-owned approval prompt this skill does not control (workflow launch, permission mode, a tool the session must approve);
-- `NEEDS_USER` after budgets are exhausted, or one that leaves no dispatchable work at all — the same shape as the `FAIL` case below. Every other `NEEDS_USER` is surfaced in the closing output instead of asked mid-run, including a dependency measure the run cannot observe and the summary's `DECISION`/`MERGE_RISK` escalations: those need a person eventually, not now, and the run still has work to do meanwhile;
+- `NEEDS_USER` after budgets are exhausted, or one that leaves no dispatchable work at all — the same shape as the `FAIL` case below. Every other `NEEDS_USER` is surfaced in the closing output instead of asked mid-run, including a dependency measure the run cannot observe and the summary's `DECISION`/`MERGE_RISK` escalations: those need a person eventually, not now, and the run still has work to do meanwhile. `settle-outstanding-decisions` is the walkthrough that later puts the surfaced items to a present human one at a time; its own attendance precondition decides whether it may prompt, so invoked from an unattended context it yields a durable docket, never a question;
 - a `FAIL` validation result leaving no safe independent path;
 - a genuine conflict with no documented default, where every available option loses work that cannot be recreated.
 
@@ -1128,7 +1128,7 @@ On reaching settled:
 2. invoke `summarize-tranche` with the manifest/scope, this run's PR set, and the worker/review findings it produced;
 3. **act on its action points before ranking anything** (below);
 4. invoke `plan-merge-order` with the manifest/scope, this run's PR set, and every summary item with an ordering consequence — the `MERGE_RISK` and `DECISION` items, and any other class that also carries one, so the ranking is computed against those constraints rather than around them;
-5. surface the summary and action points first, then the ranking table, as the run's closing output;
+5. surface the summary and action points first, then the ranking table, as the run's closing output — and where that output is being delivered to a present human rather than into an unattended checkpoint, `settle-outstanding-decisions` may then walk the `DECISION` and decision-shaped `NEEDS_USER` items with them; its attendance precondition governs, so invoking it unattended produces a docket, never a prompt;
 6. stop dispatching work, and stop spending tokens re-deriving the same state, for as long as the frontier stays empty.
 
 Summarize before ranking. An action point can change whether something should merge at all, and a ranking the user has already begun acting on is the wrong place to discover that. Run the summary once per settled tranche rather than saving one up for the end of a whole backlog: its findings come from run context that the next session will not have, and follow-ups need to exist while later tranches are still running, so they get picked up instead of rediscovered.
