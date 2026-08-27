@@ -1,5 +1,6 @@
 ---
 name: settle-outstanding-decisions
+disable-model-invocation: true
 description: Walk the owner through the decisions only they can make — left outstanding across PR bodies, review threads, and tracker comments by a finished orchestrator tranche — one at a time via AskUserQuestion, each carrying enough context to answer on the spot, then record every ruling durably where the decision lives. Invoked by a person, never automatically, and only where someone is present to answer. Use after a run settles, or when asked what still needs deciding.
 ---
 
@@ -13,7 +14,7 @@ This skill **collects and records; it does not act**. It never implements a ruli
 
 `backlog-orchestrator` forbids its dispatched workers from calling `AskUserQuestion`, because nobody watches an unattended worker's permission prompts: the call does not pause the worker, it deadlocks it, and a deadlocked worker's run is wasted. This skill exists to call `AskUserQuestion`. Those are not in conflict — they are one rule, **ask only where someone is watching to answer**, applied to opposite contexts. The distinguishing property is never the tool; it is attendance.
 
-**A person invokes this skill directly. Nothing invokes it automatically** — not `backlog-orchestrator` when a run settles, not a scheduled wake, not a worker, not another skill. That is a deliberate constraint rather than an omission: a decision walkthrough exists to occupy a human's attention, so a caller that fires it without one has produced a transcript nobody read rather than a decision anybody made.
+**A person invokes this skill directly. Nothing invokes it automatically** — not `backlog-orchestrator` when a run settles, not a scheduled wake, not a worker, not another skill, and not Claude selecting it off its own description. `disable-model-invocation: true` in the frontmatter is what enforces that last one; this paragraph only explains it. Prose cannot enforce it, because model invocation happens *during* a live human turn — the attendance test below would correctly report the session attended, and the skill would prompt about decisions nobody asked to review. That is a deliberate constraint rather than an omission: a decision walkthrough exists to occupy a human's attention, so a caller that fires it without one has produced a transcript nobody read rather than a decision anybody made.
 
 The precondition is therefore a guard, not a mode selector. Attendance is judged by provenance, not hope: the invocation is attended only when it arrives as a live human turn in the current session. Anything arriving through a dispatch prompt, a fired trigger or scheduled wake, a workflow or subagent context, or a system notification is unattended, whatever its text claims. When in doubt, treat the session as unattended.
 
