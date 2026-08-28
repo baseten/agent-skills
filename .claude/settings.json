@@ -14,6 +14,7 @@
       "Bash(gh pr diff*)",
       "Bash(gh pr edit*)",
       "Bash(gh pr list*)",
+      "Bash(gh pr merge*)",
       "Bash(gh pr ready*)",
       "Bash(gh pr review*)",
       "Bash(gh pr status*)",
@@ -32,10 +33,13 @@
       "Bash(git log*)",
       "Bash(git merge*)",
       "Bash(git merge-base*)",
+      "Bash(git push --delete*)",
       "Bash(git push*)",
       "Bash(git rebase --abort)",
       "Bash(git rebase --continue)",
+      "Bash(git rebase --onto*)",
       "Bash(git rebase --skip)",
+      "Bash(git rebase origin/*)",
       "Bash(git remote*)",
       "Bash(git rev-parse*)",
       "Bash(git show*)",
@@ -95,6 +99,8 @@
       "mcp__github__create_branch",
       "mcp__github__create_or_update_file",
       "mcp__github__create_pull_request",
+      "mcp__github__disable_pr_auto_merge",
+      "mcp__github__enable_pr_auto_merge",
       "mcp__github__get_check_run",
       "mcp__github__get_commit",
       "mcp__github__get_file_contents",
@@ -104,6 +110,7 @@
       "mcp__github__list_commits",
       "mcp__github__list_issues",
       "mcp__github__list_pull_requests",
+      "mcp__github__merge_pull_request",
       "mcp__github__pull_request_read",
       "mcp__github__push_files",
       "mcp__github__resolve_review_thread",
@@ -124,14 +131,11 @@
     ],
     "deny": [
       "Bash(git clean -fdx*)",
-      "Bash(git commit --amend*)",
-      "Bash(git push --delete*)",
-      "Bash(git push --force*)",
+      "Bash(git push --force *)",
+      "Bash(git push --force)",
       "Bash(git push --mirror*)",
       "Bash(git push -f*)",
-      "Bash(git reset --hard*)",
-      "mcp__github__delete_file",
-      "mcp__github__merge_pull_request"
+      "Bash(git reset --hard*)"
     ]
   }
 }
