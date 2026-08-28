@@ -138,7 +138,7 @@ git reset --hard origin/<C_HEAD_BRANCH>
 git merge-base --is-ancestor <P_HEAD_OLD> <C_HEAD_BRANCH> || echo NOT_ANCESTOR
 ```
 
-**Before rebasing, verify `P_HEAD_OLD` is actually an ancestor of C's current head.** If the check fails, `P_HEAD_BRANCH` was force-rewritten after C forked: stop and report the path as blocked instead of rebasing; restacking must resume from a proven old-parent boundary — the last commit both P's pre-merge history and C's current history actually share — never from the recorded `P_HEAD_OLD` (NOTES: what rebasing anyway force-pushes into C's PR).
+**Before rebasing, verify `P_HEAD_OLD` is actually an ancestor of C's current head.** If the check fails, `P_HEAD_BRANCH` was force-rewritten after C forked: stop and report the path as blocked instead of rebasing; restacking must resume from a proven old-parent boundary — the tip of the parent lineage C actually forked from, separating parent-owned commits from C's own, established from **independent evidence** (the parent head recorded when C was created, the parent PR's own timeline, commit-by-commit ownership) and confirmed by the same ancestor test — never from the recorded `P_HEAD_OLD`, and never from a mere merge-base with the rewritten parent, which can resolve to the integration-branch ancestor and replay the abandoned parent commits still in C's history as C's own (NOTES: what rebasing from a wrong boundary force-pushes into C's PR).
 
 Only once ancestry is confirmed, proceed:
 
@@ -220,8 +220,8 @@ main
 B and C are independently rebased with:
 
 ```text
---onto main <old-A-head> B
---onto main <old-A-head> C
+--onto origin/main <old-A-head> B
+--onto origin/main <old-A-head> C
 ```
 
 Both PR bases become `main` and both lose `Depends on: A`.
