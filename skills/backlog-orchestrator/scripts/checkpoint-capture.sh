@@ -66,7 +66,11 @@ GIT_INDEX_FILE=$IDX git -C "$WORKTREE" read-tree "$WORKER_HEAD" || fail
 # Overlay only the issue-owned paths — every add runs under the scratch index
 # and never touches the worker's own. A path that fails to add (stale, gone)
 # aborts before anything is pushed.
-while IFS= read -r p; do
+# `|| [ -n "$p" ]` keeps a final line with no trailing newline: read returns
+# non-zero at EOF even when it filled $p, and dropping that entry would stage
+# nothing for a single-path file — a no-op checkpoint pushed successfully,
+# licensing an archive that destroys the only copy of the work.
+while IFS= read -r p || [ -n "$p" ]; do
   [ -n "$p" ] || continue
   GIT_INDEX_FILE=$IDX git -C "$WORKTREE" --literal-pathspecs add -- "$p" || fail
 done < "$PATHS_FILE"

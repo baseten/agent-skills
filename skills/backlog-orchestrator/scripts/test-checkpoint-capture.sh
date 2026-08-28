@@ -100,6 +100,17 @@ if "$SCRIPT" "$d/wt" feature/foo "$HEAD_SHA" "$d/paths" >/dev/null 2>&1; then
 fi
 report "prefix-related branches: both refs coexist (no directory collision)" $ok
 
+# --- case 7b (runs first): allowlist without trailing newline still stages ----
+setup case7b feat/noeol; ok=1
+printf 'owned.txt' > "$d/paths"   # deliberately no trailing newline
+if "$SCRIPT" "$d/wt" feat/noeol "$HEAD_SHA" "$d/paths" >/dev/null 2>&1; then
+  cap=$(git -C "$d/remote.git" rev-parse "refs/checkpoints/$(enc feat/noeol)" 2>/dev/null)
+  files=$(git -C "$d/wt" diff-tree -r --name-only --no-commit-id "$HEAD_SHA" "$cap" 2>/dev/null)
+  # the capture must actually contain the edit, not be a no-op commit
+  [ -n "$cap" ] && [ "$files" = "owned.txt" ] && ok=0
+fi
+report "unterminated final allowlist line: entry staged, capture not a no-op" $ok
+
 # --- case 7: non-ASCII pathname captures (raw vs C-quoted comparison) ---------
 setup case7 feat/seven; ok=1
 printf 'body\n' > "$d/wt/café.txt"
