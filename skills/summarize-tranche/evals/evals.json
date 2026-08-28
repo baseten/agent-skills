@@ -50,7 +50,7 @@
       "id": 4,
       "name": "empty-tranche-one-line",
       "prompt": "You are executing the summarize-tranche skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a one-issue tranche (implement-issue invoked you) completed cleanly: one PR, clean review, nothing surprising, no caveats, no follow-ups observed anywhere in the durable record. Question: what does your complete output look like, and do you pad it with useful-sounding observations or improvement suggestions?",
-      "expected_output": "A one-paragraph (or shorter) summary of what the PR did, and 'No action points.' explicitly \u2014 nothing else. No padding: speculative improvements and code-quality opinions are not action points, and an empty list is legitimate and common. A one-issue run is a tranche of one; nothing reads differently at that size.",
+      "expected_output": "A one-paragraph (or shorter) summary of what the PR did, and 'No action points.' explicitly \u2014 the two-section report itself carries nothing else, though the mandatory return fields alongside it (tranche scope, PRs covered, zero action-point counts by class, issues created, anything unverifiable) still appear and are not padding. No padding inside the report: speculative improvements and code-quality opinions are not action points, and an empty list is legitimate and common. A one-issue run is a tranche of one; nothing reads differently at that size.",
       "assertions": [
         "The output is the short summary plus an explicit 'No action points.' line \u2014 the empty case is stated, never silent",
         "No speculative improvements, refactors, or watch-list observations are added as padding",
