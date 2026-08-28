@@ -38,10 +38,10 @@
     {
       "id": 3,
       "name": "batching-mechanical-vs-complex",
-      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md from the skill directory you were given). Scenario: four comments are targeted \u2014 three are one-word typo fixes in doc strings, the fourth asks for a real fix to an off-by-one in pagination logic. The user gave no batching instruction. Question: how many commits do you make, what do the commit messages look like (give an example for the pagination one), and do you explain the batching before editing?",
-      "expected_output": "Two commits: the three mechanical typo fixes rolled into one, the complex pagination fix separate. Messages describe the fix ('Fix off-by-one in pagination'), never 'Address PR comment'. The batching decision is explained before touching files.",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md from the skill directory you were given). Scenario: four comments are targeted \u2014 three are one-word typo fixes in the doc strings of the same module (one concern), the fourth asks for a real fix to an off-by-one in pagination logic. The user gave no batching instruction. Question: how many commits do you make, what do the commit messages look like (give an example for the pagination one), and do you explain the batching before editing?",
+      "expected_output": "Two commits: the three related typo fixes (one concern) rolled into one, the complex pagination fix separate. Messages describe the fix ('Fix off-by-one in pagination'), never 'Address PR comment'. The batching decision is explained before touching files.",
       "assertions": [
-        "The answer batches the three mechanical fixes into one commit and gives the complex fix its own commit",
+        "The answer keeps the pagination fix in its own commit and groups the three related typo fixes together (any per-concern grouping that separates the complex fix is acceptable; here the typos are stated to be one concern, so one combined commit)",
         "The answer's example commit message describes the fix itself (e.g. 'Fix off-by-one in pagination') and rejects 'Address PR comment'-style messages",
         "The answer explains the batching decision before touching any files"
       ]
