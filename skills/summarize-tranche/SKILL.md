@@ -15,7 +15,7 @@ This skill is read-only over the tranche's durable state. It ranks nothing, merg
 
 **Per settled tranche, not once at the end of a whole backlog.** A tranche's findings are perishable: the worker reports, review findings, and diffs that produced them are in the current session's context, and a later session reconstructing them from PR bodies gets a thinner and less accurate account. Follow-ups also need to exist while the remaining backlog is still running, so the next tranche can pick them up instead of rediscovering the same defect.
 
-Run it **before `plan-merge-order`**. The summary can change what should merge, or whether something should merge at all — a bug found mid-run, a follow-up that ought to land first. Ranking first and summarizing after buries that under a table the user has already started acting on. Ordering in the caller's closing output is therefore: reconcile state, summarize, then rank.
+Run it **before `plan-merge-order`**. The summary can change what should merge, or whether something should merge at all — a bug found mid-run, a follow-up that ought to land first. Ranking first and summarizing after buries that under a table the user has already started acting on. Ordering in the caller's closing output is therefore: reconcile state, summarize, then rank. Where the caller ranks nothing — `implement-issue` settles one PR, which has no ordering to produce — the constraint is satisfied trivially: what it forbids is a ranking computed before the summary, not a caller without one. A one-issue run is a tranche of one, and nothing else here reads differently at that size.
 
 A tranche that produced nothing worth reporting still gets one line saying so. Silence is indistinguishable from a skipped step.
 
