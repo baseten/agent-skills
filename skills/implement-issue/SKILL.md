@@ -12,7 +12,11 @@ This skill is intentionally a **one-issue orchestrator**. It composes reusable p
 - `implement-issue-core` — issue reading, implementation, durable checkpoints, local checks, PR creation;
 - `repair-pr` — one bounded CI or review repair pass;
 - `create-pr` — tracker linkage, stack metadata, PR creation, review trigger;
-- `resolve-pr-comment` — review-thread fix/reply/resolve mechanics used by `repair-pr`.
+- `resolve-pr-comment` — review-thread fix/reply/resolve mechanics used by `repair-pr`;
+- `summarize-tranche` — what the run did and what a person still has to manage, at settle;
+- `settle-outstanding-decisions` — the attended walkthrough of the decisions only the owner can make, at settle while `auto-request-settle` is on.
+
+Those are required, not optional: `implement-issue-core` and `create-pr` for implementation, `repair-pr` — and `resolve-pr-comment` for review fixes — for repair, and `summarize-tranche` then `settle-outstanding-decisions`, in that order, when the run settles, the second only while `auto-request-settle` resolves on. If a required skill is unavailable, return `BLOCKED` rather than improvising a replacement workflow. `plan-merge-order` is deliberately absent from that list and never invoked (see Settle).
 
 It does not schedule other backlog issues, and it merges only where the PR's own repository opted in (see Authority) or the user separately invokes an authorized merge workflow.
 
@@ -30,7 +34,7 @@ When a caller supplies repository, worktree, branch, required base, dependency c
 
 Budgets and review/merge policy come from `.claude/backlog-orchestrator.json`, the per-repository policy config `backlog-orchestrator` defines. **That document owns the contract** — the key list, the resolution scoping, the fail-closed rules, and `auto-fix-reviewers`' both-tests matching rule (see *Per-repository policy configuration* there). None of it is restated here: a second copy is how the two consumers would drift into meaning different things by the same key, which is the reason the config is one file rather than one per skill. The file's name predates its second reader; it is the same file, read the same way.
 
-Of its keys this skill consumes `implementation-attempts`, `ci-repair-cycles`, `review-repair-cycles`, `repair-model-escalations`, `auto-fix-reviewers` and `auto-merge`. The run-level keys — concurrency, the new-issue budget, `auto-request-settle` — describe a tranche and have no meaning for one issue; ignore them rather than inventing a single-issue reading. Read the file once, at the start of the run, from the head of the repository's default branch as the run finds it — never from the worktree this run is about to write, which is the same repository at a revision this run controls, and never again afterwards.
+Of its keys this skill consumes `implementation-attempts`, `ci-repair-cycles`, `review-repair-cycles`, `repair-model-escalations`, `auto-fix-reviewers`, `auto-merge` and `auto-request-settle` — the last resolving from the one repository the run is in, which is the explicit-issue-set case the resolution table already covers. Only `concurrent-workers` and `new-issue-budget` have no single-issue meaning; ignore those two rather than inventing one for them. Read the file once, at the start of the run, from the head of the repository's default branch as the run finds it — never from the worktree this run is about to write, which is the same repository at a revision this run controls, and never again afterwards.
 
 **A caller's resolved policy wins outright, and suppresses that read entirely.** A caller supplying budgets or policy has already resolved them against the same file at its own preflight, so a read here would be a second read of a file whose whole rule is that it is read once from the state the run started in — the child would then be free to override its parent with a later timestamp. So under such a caller the file is not opened: supplied keys are used exactly as given, and keys the caller omitted take the built-in defaults, except `auto-merge` and `auto-fix-reviewers`, which take `false` — a caller that resolved a policy and left a permission out of it did not grant that permission. Standalone, with no caller-resolved policy, this skill does the read itself.
 
@@ -42,6 +46,7 @@ Defaults when the file is absent — the common case, and identical to the built
 - strongest-model repair rounds: **1**;
 - `auto-fix-reviewers`: **`true`**;
 - `auto-merge`: **disabled**;
+- `auto-request-settle`: **enabled**;
 - monitoring cap: **8 hours** where persistent/event-driven monitoring is actually supported. This one is not a policy key and has no config equivalent: it bounds how long this skill sits watching, which is a property of the invocation rather than of the repository's PRs.
 
 Do not broaden scope into another issue.
@@ -175,9 +180,27 @@ Rules:
 - Later review rounds do not re-trigger promotion; the PR is already ready.
 - Promotion is not merge authorization: it is not what opens the merge gate, and where the repository never opted in there is no gate to open (see Authority).
 
+# Settle
+
+A single-issue run **settles** when its one issue reaches a terminal state: the PR individually finished — a completed review round, every actionable finding resolved, answered, or reserved for the owner, CI green, no repair this skill should still attempt — or `BLOCKED`, `BLOCKED_EXTERNAL`, `FAILED`, `NEEDS_USER`. That is `backlog-orchestrator`'s settled test collapsed onto one node: nothing further this run can start, and no worker of its own in flight. Then, in this order:
+
+1. reconcile tracker and remote state, so everything after it is computed from durable truth rather than this session's cache;
+2. invoke `summarize-tranche` with the canonical issue URL, this run's PR, and the worker and review findings it produced — and act on its action points before anything below;
+3. request `settle-outstanding-decisions`, seeded with that summary and passed the run's posting-identity map, unless `auto-request-settle` resolved off. The gate covers the request only: whether the walkthrough may actually ask is that skill's attendance precondition, so a run settling on a scheduled wake, or inside a dispatched worker, gets its one-line decline and the decisions stay at their own durable sites;
+4. evaluate the merge gate where the repository opted in (see Merge);
+5. return, surfacing the summary and its action points first, then the walkthrough's rulings or its decline.
+
+**Every terminal outcome settles, not only the healthy one — including one Phase 1 returned before supervision ever began.** The two outputs are an account of what the run did and the action points a person still has to manage, and the runs that end `NEEDS_USER`, `BLOCKED` or `BLOCKED_EXTERNAL` carry the most of both: an unverifiable prerequisite somebody has to confirm, a prose-only edge to retire or keep, a product question a worker was right to refuse to guess at. Those are precisely the decision-shaped items the walkthrough exists for, and they are perishable in the same way a tranche's are — the run context that produced them dies with the session while the sites survive. A run with nothing worth reporting gets the one line `summarize-tranche` already gives the empty case, which is cheaper than a rule about when to skip the step and safer than a rule that skips it exactly where a person was needed most.
+
+**`plan-merge-order` is deliberately not invoked, and its absence is not an asymmetry to fix.** It ranks a settled tranche's open PRs by downstream leverage and emits a review order, merge batches, and forced sequencing. One PR has no ordering to rank, nothing to batch it with, and no descendant to restack; the table would be a single row restating the PR this skill just reported. Where a single-issue run's PR is stacked under work this run cannot see, the ordering belongs to whoever holds the whole stack — a run that can see one node of it is the wrong place to compute one.
+
+**A one-issue run is a tranche of one.** `summarize-tranche` takes its scope as a manifest or an explicit issue set, and one issue is the smallest legitimate set rather than a special case: the durable sourcing, the length ceiling, and the action-point classes all read unchanged at that size.
+
+**The summary can un-settle this run too.** An `IN_FLIGHT_FIX` means the PR is not finished after all: return it to supervision, repair it within the remaining budget, and settle again — the branch table under `backlog-orchestrator`'s *The summary can un-settle the run* governs, minus its ranking consequences. Where the repair budget is already spent, return `NEEDS_USER` carrying the finding rather than proceeding to a gate over a PR the summary just called unfinished.
+
 ## Merge
 
-Where the repository opted in through `auto-merge`, evaluate invariant 12's gate over this PR. `backlog-orchestrator` defines that gate and every condition in it; this skill does not carry a copy, so read it there and apply it as written. Two of its clauses are phrased for a tranche and need reading for one issue: the requirement that no `DECISION`, `MERGE_RISK` or `NEEDS_USER` item is outstanding anywhere in the tranche resolves to this issue's own, there being no sibling whose unruled decision could hold this merge; and the ordering that defers the gate to the settled step, after a summary and a ranking, has no analogue where there is neither — so the gate is evaluated when this skill's own Completion test would otherwise return the PR healthy.
+Where the repository opted in through `auto-merge`, evaluate invariant 12's gate over this PR. `backlog-orchestrator` defines that gate and every condition in it; this skill does not carry a copy, so read it there and apply it as written. Two of its clauses are phrased for a tranche and need reading for one issue: the requirement that no `DECISION`, `MERGE_RISK` or `NEEDS_USER` item is outstanding anywhere in the tranche resolves to this issue's own, there being no sibling whose unruled decision could hold this merge; and the ordering that defers the gate to the settled step, after the summary, the walkthrough and the ranking, lands here as step 4 of Settle — after the first two, with no ranking in between. That reason survives the collapse intact: a gate evaluated before `summarize-tranche` has run has no `DECISION` or `MERGE_RISK` inputs to test, and is a guess wearing the gate's name.
 
 A draft that reaches an open gate is published first and merged only on evidence gathered **after** that publish (see `backlog-orchestrator`, *Merge behavior*): marking a PR ready is an event review providers act on, so the clean-review evidence the gate just accepted describes the PR one moment before it changed. Usually the promotion above has already happened by then, and a draft this skill did not promote is normally one a repository convention or a caller preference holds — which the gate excludes outright, neither published nor merged, reported as held.
 
@@ -185,7 +208,7 @@ A merge ends supervision for this PR: reconcile tracker completion, then return 
 
 # Completion
 
-Return `PR_OPEN`/healthy when the PR is implemented, linked correctly, and has no currently known CI/review item requiring autonomous repair — after evaluating the merge gate where the repository opted in (see Merge), since healthy is the point at which it would open. Return `MERGED` where it opened and the merge completed. When persistent monitoring is supported, continue until healthy, merge/close, user stop, budget exhaustion, or monitoring cap.
+Return `PR_OPEN`/healthy when the PR is implemented, linked correctly, and has no currently known CI/review item requiring autonomous repair — after the settle step (see Settle), which is where the merge gate is evaluated and whose summary and walkthrough are the gate's own inputs. Return `MERGED` where it opened and the merge completed. When persistent monitoring is supported, continue until healthy, merge/close, user stop, budget exhaustion, or monitoring cap.
 
 If the runtime cannot remain active while waiting only on external events, return a durable checkpoint rather than pretending background monitoring will continue.
 
@@ -210,6 +233,7 @@ Return:
 - the resolved policy actually applied — budgets, `auto-fix-reviewers`, `auto-merge` — each with its source: caller, repo config, or built-in default, plus a policy file that was present and could not be honoured, since that is what silently narrowed `auto-fix-reviewers` to `false`. An owner should see the authority a run had before they see what it did with it;
 - review threads reserved for the owner: count and URLs;
 - the merge, where one happened: the gate conditions it passed on, whether the PR was published from draft on the way, and the tracker reconciliation;
+- the `summarize-tranche` summary and action points, and the `settle-outstanding-decisions` report — rulings recorded, its one-line decline, or that `auto-request-settle` was off;
 - final CI/review state;
 - draft state as created, and whether it was promoted to ready (or why not);
 - the run's full posting-identity map — every entry observed by core and by each repair pass, under its `(transport, credential)` key, since a repair can run on transports core never used and the entries are answers about different write paths rather than versions of one. Carry both rather than the latest: an invoking-user path observed in any of them is what this skill's own review re-triggering needs, and there is no orchestrator here to hold that evidence instead. Report `unestablished` where no authored write was read back (see `backlog-orchestrator`, *Posting identity*);
