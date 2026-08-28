@@ -100,6 +100,23 @@ if "$SCRIPT" "$d/wt" feature/foo "$HEAD_SHA" "$d/paths" >/dev/null 2>&1; then
 fi
 report "prefix-related branches: both refs coexist (no directory collision)" $ok
 
+# --- case 9: no-op capture refused (empty allowlist / no staged difference) ---
+setup case9 feat/nine; ok=1
+: > "$d/paths"   # empty allowlist
+"$SCRIPT" "$d/wt" feat/nine "$HEAD_SHA" "$d/paths" >/dev/null 2>&1
+rc=$?
+noref=1; git -C "$d/remote.git" rev-parse "refs/checkpoints/$(enc feat/nine)" >/dev/null 2>&1 && noref=0
+if [ "$rc" -eq 3 ] && [ "$noref" -eq 1 ]; then
+  # also: a listed path with no staged difference must refuse the same way
+  printf 'owned.txt\n' > "$d/paths"
+  git -C "$d/wt" checkout -q -- owned.txt   # discard the dirty edit
+  "$SCRIPT" "$d/wt" feat/nine "$HEAD_SHA" "$d/paths" >/dev/null 2>&1
+  rc2=$?
+  noref2=1; git -C "$d/remote.git" rev-parse "refs/checkpoints/$(enc feat/nine)" >/dev/null 2>&1 && noref2=0
+  [ "$rc2" -eq 3 ] && [ "$noref2" -eq 1 ] && ok=0
+fi
+report "no-op capture refused: exit 3, nothing pushed (empty allowlist and no-diff path)" $ok
+
 # --- case 7b (runs first): allowlist without trailing newline still stages ----
 setup case7b feat/noeol; ok=1
 printf 'owned.txt' > "$d/paths"   # deliberately no trailing newline

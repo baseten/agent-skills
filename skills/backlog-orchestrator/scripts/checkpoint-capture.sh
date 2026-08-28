@@ -30,8 +30,12 @@
 #     so the mapping is injective and no branch's ref can occupy a path
 #     another branch's ref needs.
 #
-# Exit status: 0 = capture pushed; non-zero = nothing pushed, existing ref
-# untouched. Deliberately &&-chained rather than relying on `set -e`:
+# Exit status: 0 = capture pushed and contains at least one changed path;
+# 3 = nothing to capture (empty allowlist or no staged difference — nothing
+# pushed; the caller must re-check what it thought needed capturing rather
+# than treat the work as secured); any other non-zero = a step failed,
+# nothing pushed, existing ref untouched. Deliberately &&-chained rather
+# than relying on `set -e`:
 # errexit is not honoured inside a subshell in every host shell, and this
 # logic must not depend on the host shell's state.
 
@@ -102,6 +106,17 @@ unexpected=$(printf %s "$changed" | grep -vxF -f "$PATHS_FILE")
 rc=$?
 [ "$rc" -le 1 ] || fail
 [ -z "$unexpected" ] || { echo "checkpoint-capture: capture touches unlisted paths:" >&2; printf '%s\n' "$unexpected" >&2; fail; }
+
+# A capture that changed nothing must not read as a successful checkpoint:
+# an empty allowlist, or listed paths with no staged difference, would push a
+# no-op commit and exit 0 — and a caller reading that as "work secured" may
+# archive the worker while its dirty files remain only in the destroyed
+# worktree. Exit 3 (distinct from validation failure) so the caller re-checks
+# what it thought needed capturing instead of proceeding.
+[ -n "$changed" ] || {
+  echo "checkpoint-capture: no changes captured (empty allowlist, or no staged difference on the listed paths); nothing pushed" >&2
+  rm -f "$IDX"; exit 3
+}
 
 git -C "$WORKTREE" push --force "$REMOTE" "$commit:refs/checkpoints/$ref"
 status=$?
