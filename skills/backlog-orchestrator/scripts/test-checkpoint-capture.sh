@@ -100,6 +100,21 @@ if "$SCRIPT" "$d/wt" feature/foo "$HEAD_SHA" "$d/paths" >/dev/null 2>&1; then
 fi
 report "prefix-related branches: both refs coexist (no directory collision)" $ok
 
+# --- case 7: non-ASCII pathname captures (raw vs C-quoted comparison) ---------
+setup case7 feat/seven; ok=1
+printf 'body\n' > "$d/wt/café.txt"
+git -C "$d/wt" add café.txt
+git -C "$d/wt" -c user.email=t@t -c user.name=t commit -q -m utf8
+git -C "$d/wt" push -q origin feat/seven
+HEAD_SHA=$(git -C "$d/wt" rev-parse HEAD)
+printf 'more\n' >> "$d/wt/café.txt"
+printf 'café.txt\n' > "$d/paths"
+if "$SCRIPT" "$d/wt" feat/seven "$HEAD_SHA" "$d/paths" >/dev/null 2>&1; then
+  cap=$(git -C "$d/remote.git" rev-parse "refs/checkpoints/$(enc feat/seven)" 2>/dev/null)
+  [ -n "$cap" ] && ok=0
+fi
+report "non-ASCII pathname: capture succeeds (raw comparison, not C-quoted)" $ok
+
 echo
 if [ "$FAILED" -eq 0 ]; then echo "ALL PASS ($PASS cases)"; exit 0
 else echo "$FAILED FAILED, $PASS passed"; exit 1; fi

@@ -22,6 +22,8 @@
 #     closed: no construction or validation step can fail into the push;
 #   - diff-tree runs alone (never piped), and grep's exit status is checked
 #     explicitly, so a failed validator never reads as an empty match;
+#   - pathnames are compared in raw form (diff-tree -z), never the C-quoted
+#     line form, so non-ASCII/backslash names match the literal allowlist;
 #   - pushes to exactly one ref per issue branch (refs/checkpoints/<encoded>),
 #     force-replaced on each capture;
 #   - encodes the branch name into a single ref component, escaping % before /,
@@ -78,8 +80,17 @@ commit=$(git -C "$WORKTREE" commit-tree "$tree" -p "$WORKER_HEAD" \
 # Validate BEFORE pushing, and fail closed.
 # diff-tree runs alone, never piped: in a pipeline only the last command's
 # status survives, and a failed diff-tree would read as an empty match.
-changed=$(git -C "$WORKTREE" diff-tree -r --name-only --no-commit-id \
-    "$WORKER_HEAD" "$commit") || fail
+# -z (NUL-terminated) emits raw pathnames: the default line mode C-quotes
+# non-ASCII/backslash names ("caf\303\251.txt"), which would never match the
+# literal allowlist and abort every capture containing such a file. The
+# output goes to a file, not a pipe, so diff-tree's own status still gates
+# the push; tr then converts NUL to newline in a separate, status-checked step
+# (a pathname containing a newline is unrepresentable in the line-based
+# allowlist anyway, and the unexpected-path check fails closed on it).
+git -C "$WORKTREE" diff-tree -r -z --name-only --no-commit-id \
+    "$WORKER_HEAD" "$commit" > "$IDX.paths" || { rm -f "$IDX.paths"; fail; }
+changed=$(tr '\0' '\n' < "$IDX.paths") || { rm -f "$IDX.paths"; fail; }
+rm -f "$IDX.paths"
 
 # grep: 1 = no unexpected paths (the pass case); 2 = grep itself failed,
 # which must abort rather than read as empty.
