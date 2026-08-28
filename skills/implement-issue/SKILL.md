@@ -124,7 +124,7 @@ Subjective product/architecture judgment → `NEEDS_USER` immediately; burn no c
 
 ## Draft state
 
-- **This run never changes draft state**, in either direction: never mark ready outside the merge path, never flip a PR back to draft. `backlog-orchestrator`, *Draft state*, owns the contract; promotion survives at exactly two sites — the owner themselves, and the merge path publishing as a step of merging (see Merge). There is deliberately no policy knob for this (NOTES: why promote-on-clean-review was deleted, not made configurable).
+- **Outside the merge path, this run never changes draft state, in either direction**: never mark a PR ready, never flip one back to draft. The merge path's publish — a step of merging an open-gate PR (see Merge) — and the owner acting themselves are the only two promotion sites; `backlog-orchestrator`, *Draft state*, owns the contract. There is deliberately no policy knob for this (NOTES: why promote-on-clean-review was deleted, not made configurable).
 - **Explicitly held draft discriminator**: currently a draft AND ever ready = held. Read the transition from the forge's own timeline immediately before the gate — never from this run's state block, which is a cache (NOTES).
 
 # Settle
