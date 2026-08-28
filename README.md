@@ -43,6 +43,64 @@ Adding a skill requires no change to `bootstrap.sh` — create a directory under
 `permissions.json` is merged into `~/.claude/settings.json` by `bootstrap.sh`, so
 a skill run does not stop on a prompt for a call the skill is expected to make.
 
+### Install it in your repositories too, not only via bootstrap
+
+**Do both.** They fix different halves of the problem and neither covers the
+other.
+
+1. **Per repository — the durable half.** Copy this file into the repo's own
+   `.claude/settings.json`, wrapped in a `permissions` key:
+
+   ```json
+   { "permissions": { "allow": [ ... ], "deny": [ ... ] } }
+   ```
+
+   Add that repo's own check commands (its test, lint, format and typecheck
+   entrypoints) to `allow` while you are there — those are repo-specific and
+   cannot ship from here. Commit it. It is version-controlled, reviewable in a
+   diff, and applies to every session in that repo whether or not `bootstrap.sh`
+   ever ran.
+
+2. **Per container — the convenience half.** `bootstrap.sh` writes
+   `~/.claude/settings.json`, which is a live settings scope and genuinely does
+   apply. But `~/.claude` is per-container and disappears with it, so it only
+   helps sessions where bootstrap actually ran.
+
+The two scopes merge, and `deny` wins over `allow` in either.
+
+### `permissions.json` is a managed set
+
+`bootstrap.sh` records what it installed in `~/.claude/.agent-skills-permissions.json`
+and subtracts that record on the next run before adding the current file. So:
+
+| Entry | On the next bootstrap |
+| --- | --- |
+| Still shipped here | kept |
+| **Retired from here** | **removed** |
+| You added it to `settings.json` by hand | kept |
+
+This matters because the merge used to be a plain `(existing + new | unique)`
+union, which can only ever grow. A container that had once installed a wrong
+entry kept it forever, and re-running bootstrap could not correct it — a wrong
+entry is invisible, since a rule that matches nothing looks exactly like one
+that works until an agent stops on it. Two such entries shipped from here for
+months: `Bash(git push)` as an exact match, which covers neither
+`git push -u origin <branch>` nor `git push --force-with-lease origin <branch>`,
+and the Linear names `create_comment` / `update_issue`, which do not exist —
+the real ones are `save_comment` / `save_issue`.
+
+**Containers bootstrapped before the sidecar existed cannot be corrected in
+place.** With no install record, every entry already in `settings.json` is
+indistinguishable from a deliberate hand edit, so bootstrap keeps all of them
+and prints a note saying so. To get a clean copy:
+
+```bash
+rm ~/.claude/settings.json && bash bootstrap.sh
+```
+
+Anything you had added by hand goes with it, so check the file first if that
+matters.
+
 ### What this allowlist is, and is not
 
 **It is a convenience layer. It is not a security boundary, and it cannot be made
