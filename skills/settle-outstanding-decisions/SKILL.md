@@ -7,72 +7,82 @@ description: Walk the owner through the decisions only they can make — left ou
 
 Turn the human-only decisions a run left scattered across its durable state into a sequence of answerable questions, and turn each answer into a ruling recorded where the decision lives.
 
-This skill **collects and records; it does not act**. It never implements a ruling, deletes or closes a PR, merges, or dispatches a worker. Its one write is the ruling itself. `summarize-tranche` and `plan-merge-order` hand the next move back to the caller, and this skill does the same, for the same reason: every action a ruling calls for already has an owner — `repair-pr` for a fix, `merge-stack` for a merge, the orchestrator's frontier logic for a held path — and a walkthrough that mutates PRs between questions makes the owner wait mid-conversation on work they have not reviewed. The output names which owner each ruling now belongs to.
+This file is the contract; the reasoning behind its rules lives in `NOTES.md` beside it, keyed by section. NOTES explains; it never overrides.
+
+This skill **collects and records; it does not act**. It never implements a ruling, deletes or closes a PR, merges, or dispatches a worker. **Its one write is the ruling itself.** Every action a ruling calls for already has an owner — `repair-pr` for a fix, `merge-stack` for a merge, the orchestrator's frontier logic for a held path — and the output names which owner each ruling now belongs to (NOTES).
 
 ## Attendance is the precondition
 
-`backlog-orchestrator` forbids its dispatched workers from calling `AskUserQuestion`, because nobody watches an unattended worker's permission prompts: the call does not pause the worker, it deadlocks it, and a deadlocked worker's run is wasted. This skill exists to call `AskUserQuestion`. Those are not in conflict — they are one rule, **ask only where someone is watching to answer**, applied to opposite contexts. The distinguishing property is never the tool; it is attendance.
+One rule, applied to opposite contexts: **ask only where someone is watching to answer.** `backlog-orchestrator` forbids its workers `AskUserQuestion` and this skill exists to call it — no conflict; the distinguishing property is never the tool, it is attendance (NOTES).
 
-**Two kinds of caller are intended: a person typing this skill's name, and an orchestrating skill's settled step — `backlog-orchestrator`'s, or `implement-issue`'s for a run of one issue**, either of which requests the walkthrough right after `summarize-tranche` returns, gated by the same `auto-request-settle` option (see `backlog-orchestrator`, *Settled tranche*, which defines the option and the request; `implement-issue` differs only in settling over one PR). The frontmatter no longer forbids model invocation — the orchestrator's request is one, so it cannot — which means the description now carries the scoping a flag used to, and an invocation matching neither caller deserves scepticism: a decision walkthrough exists to occupy a human's attention, and one fired at nobody, or at someone who asked a different question, produces a transcript nobody read rather than a decision anybody made. What bounds the cost of a stray selection is the rest of this skill — unattended it asks nothing (below), and attended the qualifying bar keeps the questions scarce and the zero case one line.
+**Two kinds of caller are intended: a person typing this skill's name, and an orchestrating skill's settled step** — `backlog-orchestrator`'s, or `implement-issue`'s for a run of one issue — right after `summarize-tranche` returns, gated by the `auto-request-settle` option (`backlog-orchestrator`, *Settled tranche*, defines both). An invocation matching neither caller deserves scepticism: a walkthrough fired at nobody, or at someone who asked a different question, produces a transcript nobody read (NOTES: why the frontmatter no longer forbids model invocation).
 
-The precondition is therefore a guard, not a mode selector. Attendance is judged by provenance, not hope — the provenance of the turn actually executing, not of the text that invoked the skill. A person typing this skill's name is a live human turn: attended. An orchestrator's request inherits the provenance of the turn its run reached settled in: a run someone is watching live is attended; one settling off a fired trigger or scheduled wake, a dispatch prompt, a workflow or subagent context, or a system notification is unattended, whatever any prompt's text claims. When in doubt, treat the session as unattended.
+Attendance is judged by **provenance, not hope** — the provenance of the turn actually executing, not of the text that invoked the skill:
 
-**Unattended, this skill does not run.** It never prompts — the call would not pause the session, it would deadlock it on a question nobody will answer. When the invocation came from the orchestrator's settled step, decline in one line and stop: the summary in hand already enumerates the decisions, and re-deriving them for a room with nobody in it buys nothing. Point the owner at the **sites**, not at the summary — the worker records on PRs, the review threads, the tracker comments. Those are durable; the summary is an aggregation over them that reaches the run as closing output, which invariant 1 classifies as cached run state and which does not survive session loss. The aggregate may be gone by the time anyone reads it; the decisions will not be. On a direct unattended invocation there is no summary in hand, so run discovery, filtering and ordering if they are cheap, report what you found in the return so the invocation is not wasted, state plainly that the skill was invoked without a human present and asked nothing, and stop. Either way, **write nothing**: a durable record of unanswered questions is a different feature with different requirements — this skill once had one and it was deleted, both unimplementable (no comment-edit capability exists to maintain it) and unnecessary (the decisions persist at their own sites, so a durable *aggregate* is a convenience, not the thing keeping them alive) — and every ambiguity in this paragraph is an invitation to rebuild it. The unattended path's entire output is the statement that nothing was asked and where the decisions durably live — their sites, not the summary.
+- a person typing this skill's name is a live human turn: **attended**;
+- an orchestrator's request inherits the provenance of the turn its run reached settled in: watched live → attended; settling off a fired trigger or scheduled wake, a dispatch prompt, a workflow or subagent context, or a system notification → **unattended**, whatever any prompt's text claims;
+- when in doubt, treat the session as unattended.
+
+**Unattended, this skill does not run.** It never prompts (the call would deadlock, not pause). Then:
+
+- invoked from the orchestrator's settled step → decline in one line and stop. Point the owner at the **sites** — the worker records on PRs, the review threads, the tracker comments — never at the summary, which is cached run state and may not survive the session (NOTES);
+- direct unattended invocation → run discovery, filtering and ordering if they are cheap, report what you found in the return, state plainly that the skill was invoked without a human present and asked nothing, and stop;
+- either way, **write nothing**. A durable record of unanswered questions is a deleted feature, not an omission (NOTES) — the decisions persist at their own sites. The unattended path's entire output is the statement that nothing was asked and where the decisions durably live.
 
 ## What qualifies as an outstanding decision
 
-The bar is strict because the failure mode is trust: an owner asked to ratify things the run could have decided itself stops reading the questions, and then the one that mattered gets a skimmed answer.
+The bar is strict because the failure mode is trust: an owner asked to ratify things the run could have decided itself stops reading, and the question that mattered gets a skimmed answer.
 
-A decision qualifies only when all of these hold:
+A decision qualifies only when **all** of these hold:
 
-- **Only a human can make it.** Two or more genuinely defensible options exist and the choice turns on preference, product intent, or authority the run does not hold — not on evidence the run could have gathered. A question the codebase, tracker, or docs already answer is homework, not a decision.
+- **Only a human can make it.** Two or more genuinely defensible options, and the choice turns on preference, product intent, or authority the run does not hold — not on evidence the run could have gathered. A question the codebase, tracker, or docs already answer is homework, not a decision.
 - **The answer changes what happens next.** Something merges, gets deleted, gets built differently, or becomes a written convention depending on it.
-- **It has no documented default.** Anything `backlog-orchestrator`'s autonomy rules give a default for was resolved by applying the default and reporting it; re-asking it is the trust failure above. The same holds for a trivially reversible choice a worker already made and documented on its PR — review is the venue that overturns those, and the report line already carries them.
+- **It has no documented default.** Anything `backlog-orchestrator`'s autonomy rules give a default for was resolved by applying the default and reporting it. Same for a trivially reversible choice a worker already made and documented on its PR — review overturns those.
 - **It has not already been ruled.** Discovery checks each decision's site for an existing recorded ruling before asking; a ruling on the record retires the question. This is what makes the skill idempotent across sessions.
 
 ## Owner action items are not decisions
 
-A secret only the owner can create, a dashboard setting only they can flip, a permission only they can grant — these have one real action and no alternatives, and putting a non-choice through a question prompt ("create the token / don't") teaches the owner the prompt is padding. Segregate them during discovery into the output's **Owner action items** checklist — what, where, and why only the owner can — and never spend a question on one.
+A secret only the owner can create, a dashboard setting only they can flip, a permission only they can grant — one real action, no alternatives. Segregate them during discovery into the output's **Owner action items** checklist (what, where, why only the owner can) and never spend a question on one (NOTES).
 
 ## Calibration
 
-Drawn from the run that motivated this skill:
+Precedents from the run that motivated this skill:
 
-- *Cross-repo schema sync could be pull-based or push-based* — architectural, affects both repositories, no defensible default: **ask**.
-- *Two PRs each built a working editing surface for the same data; one must be deleted* — both work, the choice turns on which data-fetch shape the owner prefers to keep: **ask**, and it gates a merge, so it goes early.
-- *An automated reviewer asked for memoization; the run checked the codebase, found 6+ components doing it inline and 0 of 19 hooks memoizing, and declined on that evidence* — **ask** for ratification as a written convention, in the evidence-first shape below. The run did the work first; the owner rules on a finding, not a cold question.
-- *Exit 0 or exit 1 when a required secret is missing* — a quiet failure and a loud one are both defensible and the run cannot know which the owner operates by: **ask**.
-- *A journal renders oldest-first; newest-first is arguably better; one-line change either way* — the worker picked one and documented it; trivially reversible, nothing built on it, review overturns it for free: **do not ask**.
-- *A cross-repo dispatch needs a token the owner must create by hand* — not a choice at all: **owner action item**, listed, never asked.
+- *Cross-repo schema sync, pull-based or push-based* — architectural, no defensible default: **ask**.
+- *Two PRs each built a working editing surface for the same data; one must be deleted* — the choice is which data-fetch shape to keep: **ask**, and it gates a merge, so it goes early.
+- *An automated reviewer asked for memoization; the run checked the codebase (6+ components inline, 0 of 19 hooks memoizing) and declined on that evidence* — **ask** for ratification as a written convention, evidence-first.
+- *Exit 0 or exit 1 on a missing required secret* — both defensible, the run cannot know which the owner operates by: **ask**.
+- *A journal renders oldest-first; newest-first arguably better; one-line change* — worker picked and documented; trivially reversible: **do not ask**.
+- *A cross-repo dispatch needs a token the owner must create by hand* — not a choice: **owner action item**.
 
 ## Discovery
 
-Derive the decision set from durable state — the same sourcing discipline `summarize-tranche` uses — never from the invoking session's recollection of its run. A restarted session must surface substantially the same set.
+Derive the decision set from **durable state** — the same sourcing discipline as `summarize-tranche` — never from the invoking session's recollection. A restarted session must surface substantially the same set.
 
-**When the invocation follows a just-produced `summarize-tranche` report** — the orchestrator's settled step, or a person running the two back to back — that report's `DECISION` action points, plus any choice-shaped `MERGE_RISK`, are the **seed**, not one source among five. Two skills independently scanning the same PRs against different bars will disagree about what is outstanding; seeding removes that, and turns the remaining sources into enrichment — what a question needs and a summary action point does not carry, chiefly the 2–4 mutually exclusive options and their consequences. The bars differ deliberately: the summary marks anything blocked on a human choice rather than on effort, while the qualifying bar above is stricter, so some seeded items will be declined — report each under *Declined to ask* rather than dropping it silently, because an owner who saw it in the summary will otherwise go looking for its question. The other sources can still add a decision the summary did not carry — an unresolved intent thread is review state, not an action point — and an addition passes the same bar as everything else. Without a summary in hand, the sources below are read in parallel as before.
+**When the invocation follows a just-produced `summarize-tranche` report**, that report's `DECISION` action points, plus any choice-shaped `MERGE_RISK`, are the **seed**, not one source among five; the other sources become enrichment — chiefly the 2–4 options and consequences a summary action point does not carry (NOTES: why seeding). The bars differ deliberately: the summary marks anything blocked on a human choice, the qualifying bar is stricter — so some seeded items are declined. Report each under *Declined to ask*, never dropped silently. The other sources can still add a decision the summary did not carry (an unresolved intent thread is review state, not an action point); additions pass the same bar. Without a summary in hand, read the sources in parallel.
 
 Sources:
 
-- **document-and-proceed records on PRs** — a worker forbidden to ask picked the most defensible option and recorded the question, its choice, and its reasoning on the PR; each such record is a ruling waiting to be confirmed or overturned;
+- **document-and-proceed records on PRs** — a worker forbidden to ask picked the most defensible option and recorded the question, choice, and reasoning; each is a ruling waiting to be confirmed or overturned;
 - **`summarize-tranche` `DECISION` action points**, plus any `MERGE_RISK` whose remediation is a choice rather than a task;
-- **automated-review findings the run declined** and wants ratified or overturned, with the evidence it declined on;
+- **automated-review findings the run declined** and wants ratified or overturned, with the evidence;
 - **unresolved review threads asking about intent** — a question no code change can answer;
-- **`NEEDS_USER` items in the run's closing output** that are choices rather than work — but carry the **durable origin**, not the report line. Most trace to a worker's report on its PR or to a review thread, and that URL is what the item travels with. One the parent derived and never wrote anywhere has no durable site at all: take it, and mark it, because the unattended decline's promise that the decisions outlive the session does not cover it. A decline naming it as the one item that will not survive is honest; a decline that quietly includes it in "they live at their sites" is the false durability claim again, one source further down.
+- **`NEEDS_USER` items in the run's closing output** that are choices rather than work — carrying the **durable origin** (a worker's PR report, a review thread), not the report line. One the parent derived and never wrote anywhere has no durable site: take it, and **mark it** — an unattended decline must name it as the one item that will not survive, never fold it into "they live at their sites" (NOTES).
 
-**Deduplicate before filtering, not after.** The same decision reported by a worker's PR record and by the summary is one question carrying both URLs, and the order matters because the already-ruled bar is per-site: filter first and an alias whose site holds the ruling retires while its twin, whose site does not, survives and gets asked again — the idempotency the settled step relies on, defeated by the same decision wearing two names. So merge aliases into one item first, then apply the qualifying bar to it, checking **every** URL it carries for a ruling rather than the first. Then segregate the action items.
+**Deduplicate before filtering, not after.** Merge aliases (the same decision reported by a PR record and by the summary is one question carrying both URLs) into one item first, then apply the qualifying bar, checking **every** URL the item carries for a ruling rather than the first (NOTES: the alias-retires-while-twin-survives failure). Then segregate the action items.
 
 ## Ordering
 
 Ask in the order that minimizes wasted rework and wasted answers:
 
 1. **decisions whose answer can moot other questions** — rule on the fork before its branches;
-2. **merge-gating decisions** — anything holding a merge, a held frontier path, or a delete-one-of-two choice; answered late these force rework of whatever merged around them;
-3. **rework-cost decisions** — the run built on an assumption and more work accretes onto it while the question waits;
+2. **merge-gating decisions** — anything holding a merge, a held frontier path, or a delete-one-of-two choice;
+3. **rework-cost decisions** — the run built on an assumption and work accretes onto it while the question waits;
 4. **convention ratifications and everything else** — they shape future work but block nothing today.
 
 Chunk boundaries preserve this order, so an owner who walks away after the first call has answered the questions that mattered most.
 
-**A fork and anything it can moot never share a call.** Preserving the order is not enough on its own: `AskUserQuestion` returns a chunk's answers together, so a fork and its dependent question asked in the same call are answered simultaneously, and there is no moment in between at which the dependent one can be retired or reformulated. The owner rules on a choice that the first ruling has already eliminated, and the walkthrough records it as though it stood. **Close the chunk after the last decision that can moot another, however much room is left in it**, then re-run the qualifying bar over what remains before composing the next — a mooted decision fails *the answer changes what happens next* and drops out, and a survivor whose options the ruling narrowed is reformulated rather than asked as written.
+**A fork and anything it can moot never share a call** — a chunk's answers return together, so there is no moment between them to retire or reformulate the dependent question (NOTES). **Close the chunk after the last decision that can moot another, however much room is left in it**, then re-run the qualifying bar over what remains before composing the next: a mooted decision fails *the answer changes what happens next* and drops out; a survivor whose options the ruling narrowed is reformulated, never asked as written.
 
 ## The question
 
@@ -85,19 +95,19 @@ The test for every question: **can the owner answer it without opening another t
 - where it lives — the canonical URL;
 - the cost of leaving it unanswered.
 
-Where the run declined a finding or picked a default, lead with the evidence and the choice already made. The strongest shape is work-first — "the run checked X, found Y, and did Z; ratify or overturn" — never a cold "what do you want?".
+Where the run declined a finding or picked a default, lead with the evidence and the choice already made: "the run checked X, found Y, and did Z; ratify or overturn" — never a cold "what do you want?".
 
 ### `AskUserQuestion`'s constraints shape the mechanics
 
-- **At most 4 questions per call, and fewer where an answer dependency falls inside one.** More decisions than that are chunked into successive calls, highest-stakes chunk first, ordering preserved across the boundary. The cap is a ceiling, not a target: a chunk closes early wherever Ordering's fork rule requires it.
-- **2–4 options per question, genuinely mutually exclusive** (`multiSelect` stays off — a ruling picks one). Each option is a real alternative with its consequence stated in its description — "keep PR A's fetch shape; PR B and its optimistic-update code are deleted" — never yes / no / maybe.
-- Where the run has an evidence-backed lean, that option goes first and says so. A run with no lean offers no fake one.
-- **`header` is at most 12 characters** — a label for the decision, not a summary of it.
-- **"Other" is always available, and a free-text answer is a ruling, not a formatting error.** Record it verbatim. If it answers a different question than the one asked — new scope, a third option whose consequences the owner has not seen — re-ask once, reformulated to incorporate it, so the recorded ruling is unambiguous. Never loop past that once, and never round a free-text answer to the nearest offered option.
+- **At most 4 questions per call, and fewer where an answer dependency falls inside one.** Chunk the rest into successive calls, highest-stakes first, ordering preserved. The cap is a ceiling, not a target — a chunk closes early wherever Ordering's fork rule requires.
+- **2–4 options per question, genuinely mutually exclusive** (`multiSelect` off — a ruling picks one). Each option states its consequence in its description — "keep PR A's fetch shape; PR B and its optimistic-update code are deleted" — never yes / no / maybe.
+- An evidence-backed lean goes first and says so. A run with no lean offers no fake one.
+- **`header` is at most 12 characters** — a label, not a summary.
+- **"Other" is always available, and a free-text answer is a ruling, not a formatting error.** Record it verbatim. If it answers a different question than asked — new scope, a third option whose consequences the owner has not seen — re-ask once, reformulated to incorporate it. Never loop past that once, and never round a free-text answer to the nearest offered option.
 
 ## Recording the ruling
 
-An answer given in a chat turn evaporates with the session. Every ruling is written back where the decision lives, **immediately after its chunk is answered, not batched to the end** — an interrupted walkthrough must not lose the answers already given:
+An answer given in a chat turn evaporates with the session. Every ruling is written back where the decision lives, **immediately after its chunk is answered, never batched to the end** — an interrupted walkthrough must not lose the answers already given:
 
 - a decision documented on a PR → a comment on that PR;
 - an intent question in a review thread → a reply on that thread. Resolving the thread stays with the review workflow: a ruling that requires a code change leaves the thread open for the fix;
@@ -108,25 +118,25 @@ A recorded ruling contains:
 
 - the question **as asked**, options included — the next reader judges the answer against what was actually offered;
 - the option chosen, and any free text the owner added, verbatim;
-- an explicit marker that this is an **owner ruling, given interactively and dated** — not an agent's inference or an applied default. The distinction is the whole value of the record: a default is overturnable in review, a ruling is the review;
+- an explicit marker that this is an **owner ruling, given interactively and dated** — never an agent's inference or an applied default. A default is overturnable in review; a ruling is the review (NOTES: the marker, not the posting account, carries the owner's authority);
 - what the ruling confirms or overturns, so the follow-up work is derivable from the comment alone.
 
-The ruling comment follows the posting-identity rule stated once in `backlog-orchestrator` (*Posting identity*), selecting from the map the caller passes with the seed; invoked standalone with no map, every transport is `unestablished` and the rule's degraded path applies. The marker, not the posting account, is what carries the owner's authority: posted under a distinct agent identity the record reads as what it is, a transcription; posted as the invoking user, on that rule's degraded path, the marker is all that separates the owner's ruling from the owner appearing to comment on their own question — one more reason it is mandatory.
+The ruling comment follows the posting-identity rule stated once in `backlog-orchestrator` (*Posting identity*), selecting from the map the caller passes with the seed; invoked standalone with no map, every transport is `unestablished` and the rule's degraded path applies.
 
 ## The zero case
 
-A run with no outstanding decisions still reports `No outstanding decisions.` in one line, plus the action-item checklist even when it is empty too. Silence is indistinguishable from a skipped step — `summarize-tranche` makes the same point, and this skill keeps the convention.
+A run with no outstanding decisions still reports `No outstanding decisions.` in one line, plus the action-item checklist even when it is empty too — silence is indistinguishable from a skipped step.
 
 # Boundaries
 
-- Never prompts where nobody is present — see Attendance is the precondition, which governs. The automatic callers are the settled steps of `backlog-orchestrator` and `implement-issue`, and both are subject to that section like any other invocation.
+- Never prompts where nobody is present — *Attendance is the precondition* governs, the automatic callers included.
 - Never acts on a ruling: no implementation, no PR deletion or closure, no thread resolution that stands in for a fix, no dispatch. **The one write is the ruling comment.**
 - Never asks a question with a documented default, an existing ruling, or one real option.
 - Never merges, and never treats a ruling as merge authority — a "merge A first" ruling is recorded and handed to whoever invokes `merge-stack`.
 
 # Output
 
-Alongside the report below, return **the posting identity observed for the first ruling of each write kind written through each `(transport, credential)` pair this pass used** — one entry per pair, carrying every kind observed through it; not one per pass, and not one ruling per pair. A single walkthrough can record rulings at sites needing different transports: a GitHub PR thread through MCP, a Linear issue through its CLI. And one pair alone can carry rulings of distinct write kinds — a PR timeline comment for a decision documented on the PR, a review-thread reply for an intent question — which the platform may author differently, and an observation answers only for its own kind (see `backlog-orchestrator`, *Posting identity*). Returning only a pair's first ruling drops whatever the later ones established — a later transport's entry, or a later kind through the same pair — and either loss is exactly the invoking-user path a later trigger may need, or the evidence a later review reply degrades without. Report `unestablished` for a transport, or a kind, with no read-back write, and return nothing where no ruling was written at all. A ruling can be the first authored write through a transport the caller has not used — or the first write of its kind through a pair the caller has — so it is evidence the caller cannot derive: it updates the posting-identity checkpoint and can re-open a provisionally unavailable review trigger (see `backlog-orchestrator`, *Posting identity*). Read it back from the written comment rather than assuming the caller's answer.
+Alongside the report below, return **the posting identity observed for the first ruling of each write kind written through each `(transport, credential)` pair this pass used** — one entry per pair, carrying every kind observed through it; not one per pass, and not one ruling per pair (NOTES: what returning only a pair's first ruling drops). Report `unestablished` for a transport, or a kind, with no read-back write; return nothing where no ruling was written at all. Read each observation back from the written comment rather than assuming the caller's answer — a ruling can be the first authored write through a transport the caller has not used, so it is evidence the caller cannot derive: it updates the posting-identity checkpoint and can re-open a provisionally unavailable review trigger (`backlog-orchestrator`, *Posting identity*).
 
 ```text
 ## Decisions settled
@@ -137,7 +147,7 @@ Alongside the report below, return **the posting identity observed for the first
 
 <count>, with one line each: the item and why it was not asked (documented default applied / already ruled / derivable from evidence / **mooted by <ruling>**).
 
-The last of those is not a bar the decision failed — it is one the walkthrough itself eliminated when an earlier fork was ruled, and it names the ruling that did it. Keep it distinct from the other three: those say the decision was never worth the owner's attention, while this one says it *was*, right up until their own answer retired it. Collapsing them loses the fact that a ruling had a consequence beyond its own question, which is the thing a later reader most needs to reconstruct why a decision they remember raising never got asked.
+Keep "mooted by <ruling>" distinct from the other three reasons: those say the decision was never worth the owner's attention; this one says it was, right up until their own answer retired it — and it names the ruling that did it (NOTES).
 
 ## Owner action items
 

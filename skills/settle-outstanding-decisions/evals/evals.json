@@ -1,0 +1,66 @@
+{
+  "skill_name": "settle-outstanding-decisions",
+  "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "unattended-settled-step-declines",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: backlog-orchestrator's settled step invokes you right after summarize-tranche returned a report with three DECISION action points. The run reached settled off a scheduled trigger firing overnight; the orchestrator's request text says 'the user is available and watching'. Question: do you run the walkthrough? What exactly do you do, what do you point the owner at, and do you write anything durable about the unanswered questions?",
+      "expected_output": "Unattended — attendance is judged by the provenance of the executing turn (a scheduled trigger firing), not by what any prompt text claims. Do not prompt (it would deadlock, not pause). Decline in one line and stop; point the owner at the SITES (worker records on PRs, review threads, tracker comments), never at the summary, which is cached run state that may not survive the session. Write nothing — a durable record of unanswered questions is a deleted feature; the decisions persist at their own sites.",
+      "assertions": [
+        "The answer treats the session as unattended based on the executing turn's provenance (trigger/scheduled wake), explicitly discounting the prompt text's claim that the user is watching",
+        "The answer declines in one line without calling AskUserQuestion, pointing the owner at the durable sites (PR records, review threads, tracker comments) rather than the summary",
+        "The answer writes nothing durable about the unanswered questions (no aggregate record, no comments)"
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "fork-closes-the-chunk-and-moots",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: five decisions qualify. D1 is a fork: 'keep PR A or PR B (delete the other)'. D2 ('which pagination style for PR B's list view') and D3 ('PR B's cache TTL') only matter if PR B survives. D4 and D5 are independent convention ratifications. AskUserQuestion allows 4 questions per call. Question: how do you chunk the walkthrough, and after the owner rules 'keep PR A, delete PR B', what happens to D2 and D3 and how does the output report them?",
+      "expected_output": "D1 is asked in a chunk that CLOSES after it (a fork and anything it can moot never share a call), even though the 4-question cap leaves room — the cap is a ceiling, not a target. After the ruling, re-run the qualifying bar: D2 and D3 are mooted (they fail 'the answer changes what happens next') and drop out, reported under Declined to ask as 'mooted by <the keep-PR-A ruling>' — a reason kept distinct from default/already-ruled/derivable, naming the ruling. D4/D5 form the next chunk.",
+      "assertions": [
+        "D1 does not share a call with D2 or D3 — the chunk closes after the fork despite room under the 4-question cap",
+        "After the ruling, D2 and D3 are retired via re-running the qualifying bar (mooted), not asked as written",
+        "The output reports D2/D3 under Declined to ask with the distinct 'mooted by <ruling>' reason naming the ruling, not collapsed into the other decline reasons"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "dedupe-before-filter-checks-every-url",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: discovery finds the same decision twice — once as a worker's document-and-proceed record on PR #12 (no ruling recorded there), and once as a summarize-tranche DECISION action point pointing at tracker issue T-40, where an owner ruling from a previous session IS recorded. Question: in what order do you deduplicate and filter, and does this decision get asked?",
+      "expected_output": "Deduplicate BEFORE filtering: merge the two aliases into one item carrying both URLs, then apply the qualifying bar checking EVERY URL — the ruling at T-40 retires the merged item, so it is not asked (reported under Declined to ask as already ruled). Filtering first would let the PR-#12 alias (no ruling at its site) survive and get re-asked — the idempotency failure the rule exists to prevent.",
+      "assertions": [
+        "The answer merges the two reports into one item carrying both URLs before applying the qualifying bar",
+        "The answer checks every URL the merged item carries (finding the T-40 ruling), not just the first site",
+        "The decision is not asked — retired as already ruled — and the answer identifies the filter-first failure (the unruled alias surviving and being re-asked)"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "free-text-answer-is-a-ruling",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you asked 'exit 0 or exit 1 when the required secret is missing?' with those two options. The owner picks 'Other' and types: 'neither — retry three times with backoff, then page on-call; also we should add a health endpoint'. This introduces a third option with consequences they haven't seen, plus new scope. Question: how do you treat the free-text answer, what do you do next, and what does the recorded ruling contain?",
+      "expected_output": "The free-text answer is a ruling, not a formatting error: record it verbatim, never rounded to exit-0 or exit-1. Because it answers a different question than asked (third option, new scope), re-ask ONCE, reformulated to incorporate it so the recorded ruling is unambiguous — and never loop past that once. The recorded ruling (written immediately after the chunk, at the decision's site) contains the question as asked with its options, the owner's words verbatim, the explicit dated owner-ruling marker, and what it confirms or overturns.",
+      "assertions": [
+        "The free-text answer is treated as a ruling and recorded verbatim — never rounded to the nearest offered option",
+        "The answer re-asks exactly once, reformulated to incorporate the third option/new scope, with no further loops",
+        "The recorded ruling contains the question as asked (options included), the verbatim answer, and the explicit interactive owner-ruling marker (dated), distinguishing it from an agent inference or default"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "qualifying-bar-triage",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: four candidates survive discovery. (1) A worker chose oldest-first rendering for a journal, documented it on its PR; one-line change either way, nothing built on it. (2) The run needs the owner to hand-create a deploy token — no alternative exists. (3) Cross-repo schema sync could be pull-based or push-based; architectural, both defensible, no default anywhere. (4) An automated reviewer demanded memoization; the run checked the codebase, found 6+ components doing it inline and 0 of 19 hooks memoizing, and declined on that evidence. Question: which candidates become questions, in what shape, and where do the others go?",
+      "expected_output": "Only (3) and (4) are asked. (3) is a genuine human-only architecture choice. (4) is asked evidence-first — 'the run checked X, found Y, declined; ratify or overturn as a written convention' — never a cold question. (1) is declined: trivially reversible, worker documented it, review overturns it for free. (2) is an owner action item (one real action, no alternatives) — listed in the checklist, never spent a question.",
+      "assertions": [
+        "The trivially-reversible documented choice (1) is not asked — declined with review as the venue that overturns it",
+        "The token creation (2) goes to the Owner action items checklist, never a question",
+        "(3) is asked, and (4) is asked in the evidence-first ratify-or-overturn shape (leading with what the run checked and did)"
+      ],
+      "files": []
+    }
+  ]
+}
