@@ -46,7 +46,7 @@
       "assertions": [
         "The answer does not treat I-12 as unblocked from the empty native list; the prose blocker is honored",
         "The answer records the edge as inferred (text-stated, not native) — the two confidence levels are not interchangeable",
-        "The answer lists this edge in the inferred-edges output (and/or marks the dependent row) explicitly so the user can overrule it"
+        "The answer both lists this edge in the inferred-edges output section and marks the dependent row, so the user can overrule it"
       ],
       "files": []
     },
