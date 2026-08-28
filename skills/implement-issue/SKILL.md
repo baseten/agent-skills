@@ -128,7 +128,7 @@ First review round: pending | complete-with-findings | clean
 Threads reserved for the owner: <count>
 Draft state: <as-created> -> <current>
 Policy: budgets <source>; auto-fix-reviewers <resolved> (<source>); auto-merge <on|off> (<source>)
-State: waiting | repairing-ci | repairing-review | healthy | needs-user
+State: waiting | repairing-ci | repairing-review | repairing-finding | healthy | needs-user
 ```
 
 ## CI failure
