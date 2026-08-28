@@ -1,0 +1,66 @@
+{
+  "skill_name": "create-pr",
+  "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "coverage-finding-linkage-form",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: an implementation workflow invokes you for a GitHub issue, and the caller reports a recorded coverage finding — a dependency issue closed and merged on paper, but the capability absent, one acceptance criterion shipped stubbed; the finding produced prerequisite issue #131. Question: which linkage line(s) does the PR body get, what happens to the tracked issue when this PR merges, and what must your output report about the linkage?",
+      "expected_output": "Part of: <full issue URL> plus Blocked by: <prerequisite URL>, never a closing keyword; a body section naming the unmet criteria. The issue stays open — closing is a human decision. The output reports the form emitted so the caller reconciles completion against it.",
+      "assertions": [
+        "The answer links with Part of: (plus Blocked by: naming the prerequisite) and explicitly rejects Closes:/Fixes:/Resolves: for this PR",
+        "The answer states the issue stays open on merge and closing it is a human decision once the gap is filled",
+        "The answer reports the emitted linkage form back to the caller (and verifies the form post-creation, not just that a link exists)"
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "ambiguous-stack-parent-stops",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the caller supplied a required base branch 'feat/api-layer', which exists and is not the repository default. The caller supplied NO parent PR URL. Searching open PRs, you find TWO open PRs whose head branch is exactly 'feat/api-layer' (a duplicate someone opened). Question: what do you do about stack metadata — pick the older PR as parent, treat the base as an integration branch, or something else?",
+      "expected_output": "Stop. The parent detection is ambiguous (more than one candidate), and the rule is to stop rather than write incorrect metadata — neither guessing a parent nor silently downgrading to integration-base treatment.",
+      "assertions": [
+        "The answer stops rather than proceeding, on the explicit ambiguity rule",
+        "The answer does not pick one of the two PRs as the parent by heuristic (age, author, etc.)",
+        "The answer does not silently treat the base as an ordinary integration branch (which the no-candidate rule covers, not the ambiguous case)"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "trigger-authorship-and-identity-reporting",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you created and verified the PR through a transport whose writes have been observed authored as a distinct agent account ('acme-bot'). The workflow now expects the repository's automated review trigger ('@codex review'). Question: (a) may the trigger comment be posted through that agent-authored path? (b) after posting the PR and the trigger, your output must report posting identities — how many entries/answers, and may the PR's and the trigger's observations be merged into one since they could share a (transport, credential) pair?",
+      "expected_output": "(a) No — the trigger must come from the invoking user's own account or the convention silently does not fire; it is the one post exempted from the posting-identity rule. (b) The PR creation and the trigger comment are reported separately, per write kind, even under a shared pair — a merged single answer overwrites one observation with the other.",
+      "assertions": [
+        "The answer refuses to post the trigger through the agent-authored path and requires the invoking user's account, citing that the convention otherwise fails (silently)",
+        "The answer reports the PR-creation observation and the trigger-comment observation as separate entries/kinds, never merged into one",
+        "The answer notes the trigger comment's entry is the comment-kind evidence the caller's later trigger selection uses (or equivalently that invoking-user entries must be reported too)"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "unverified-renumber-is-substantive",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: after a sibling merged, the PR branch was rebased and a numbered database migration was renumbered from 0011 to 0014 by hand-editing the filename and the index entry. Nobody has run the migration against anything since. The repository has CI that compiles and runs unit tests, but no check that applies migrations. Question: does this push qualify as mechanical (no review re-trigger), and what would it take for it to qualify?",
+      "expected_output": "Not mechanical, twice over: the renumber is unverified (hand-edited identity fields, never exercised through the apply path), and the repository has no deterministic check that would catch a bad renumber — either alone disqualifies it. To qualify: regenerate through the repo's own generator and verify it applies (scratch-database migrate), and the repo must have a check standing behind it. Until then, treat as substantive and re-trigger review per convention.",
+      "assertions": [
+        "The answer classifies the push as substantive (review re-trigger due), not mechanical",
+        "The answer names the verified-to-apply requirement — regenerate via the repo's generator, exercise the apply path — and rejects hand-edited identity fields (compiling/green unit CI is not enough)",
+        "The answer notes that with no deterministic check that would catch a bad renumber, the mechanical exemption is unavailable regardless"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "missing-base-and-missing-issue-stop",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two sub-scenarios. (A) An orchestrator supplied required base branch 'feat/parent-work', but it does not exist in the repository. (B) A workflow (not a direct user) invokes you for an implementation PR but can supply no issue URL at all — the work has no tracked issue. Question: for each, do you create the PR, and if not, what do you do instead?",
+      "expected_output": "(A) Stop — a supplied base that does not exist is never silently replaced with the default branch. (B) Stop — an implementation PR that cannot be linked to an exact issue is not created; the ad-hoc exception exists only for directly-invoked PRs after the USER confirms there is no issue, which a workflow invocation is not.",
+      "assertions": [
+        "For (A) the answer stops and does not fall back to the default branch",
+        "For (B) the answer does not create an orphan implementation PR from a workflow invocation",
+        "The answer scopes the no-issue exception to direct user invocation with explicit user confirmation, which does not apply here"
+      ],
+      "files": []
+    }
+  ]
+}
