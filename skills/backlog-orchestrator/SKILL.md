@@ -384,7 +384,7 @@ Unless overridden (below):
 - maximum review-fix cycles per PR (`review-repair-cycles`): **2**;
 - maximum strongest-model repair rounds per PR (`repair-model-escalations`): **1**;
 - maximum lost-worker redispatches per issue (`lost-worker-redispatches`): **1**;
-- automatic merges (`auto-merge`): **disabled** — the opt-in invariant 12's gate requires;
+- automatic merges (`auto-merge`): **disabled**, for every consumer — the opt-in invariant 12's gate requires, granted per consumer rather than per file;
 - reviewers whose comments may be auto-fixed (`auto-fix-reviewers`): **`true`** — every reviewer's comments are eligible; the judgment rules under CI/review repair still apply;
 - requesting the `settle-outstanding-decisions` walkthrough at settle (`auto-request-settle`): **enabled**. The option gates only whether this run makes the request; whether the walkthrough may actually ask stays with that skill's attendance precondition (see Settled tranche).
 
@@ -415,12 +415,12 @@ Personal and work repositories legitimately want opposite behavior from the same
   "repair-model-escalations": 1,
   "lost-worker-redispatches": 1,
   "auto-request-settle": true,
-  "auto-merge": false,
+  "auto-merge": { "backlog-orchestrator": false, "implement-issue": false },
   "auto-fix-reviewers": ["chatgpt-codex-connector"]
 }
 ```
 
-Every key is optional, and the values shown are the built-in defaults — except `auto-fix-reviewers`, shown here in its list form to illustrate it; its default is **`true`** (below). One file carries every option the defaults list above names as well as the two review/merge policies, deliberately: a second option surface is exactly how two mechanisms drift apart. If an option of this skill's is configurable at all, it is configurable here.
+Every key is optional, and the values shown are the built-in defaults — except `auto-fix-reviewers`, shown here in its list form to illustrate it; its default is **`true`** (below). `auto-merge` is shown in the per-consumer object form a grant has to take; the values in it are its defaults. One file carries every option the defaults list above names as well as the two review/merge policies, deliberately: a second option surface is exactly how two mechanisms drift apart. If an option of this skill's is configurable at all, it is configurable here.
 
 **It is policy that can authorize merges, so it is a config file and not prose.** A `CLAUDE.md` paragraph gets interpreted, and interpretation must not decide whether a run may merge. A project-level skill override is not the mechanism either: `bootstrap.sh` installs these skills to `~/.claude/skills`, and a personal skill shadows a project skill of the same name, so a project copy would silently never load.
 
@@ -444,7 +444,16 @@ Report the resolved policy per PR in the checkpoint output, with its source — 
 
 ### The two review/merge policies
 
-**`auto-merge`** — whether invariant 12's gate can open for this repository's PRs at all. `false` is today's behavior: the run never merges. `true` permits a merge only through the gate invariant 12 defines — the key is the opt-in the gate requires, never a bypass of its other conditions. This file is the only place `true` can come from: the precedence rule under Default usage safeguards exempts `auto-merge` from invocation override, so an invocation argument can narrow the gate, never open it. Execution mechanics, including the publish-before-merge step, live in Merge behavior.
+**`auto-merge`** — whether invariant 12's gate can open for this repository's PRs at all, **and for which consumer**. A merge is permitted only through the gate invariant 12 defines; the key is the opt-in that gate requires, never a bypass of its other conditions. Two forms:
+
+- a **boolean** — `false`, the default, means no run of any consumer merges. `true` opts in **`backlog-orchestrator` and nothing else**, which is exactly what a file written before a second consumer existed meant on the day its owner wrote it;
+- an **object naming consumers** — `{"backlog-orchestrator": true, "implement-issue": true}`. A consumer's gate can open only where the object names that consumer `true`. One it does not name gets `false`.
+
+This file is the only place a `true` can come from: the precedence rule under Default usage safeguards exempts `auto-merge` from invocation override, and the exemption applies per consumer — an invocation argument can switch a named consumer's grant off, never on. Execution mechanics, including the publish-before-merge step, live in Merge behavior.
+
+**The grant is per consumer because a skill upgrade is not the owner's decision.** These skills are installed from one repository and updated by re-running its bootstrap, so a consumer added here reaches every machine without anything changing in the repositories whose configs it would then read. If a bare `true` widened to each new reader, the owner's committed edit — the act that makes repo opt-in the authenticated route at all, because it takes write access and deliberate intent — would be silently re-scoped by somebody else's release. An owner who granted a tranche orchestrator its merge accepted *that* workflow's gate, its settled step and the evidence behind it; they did not accept a workflow that had not shipped yet. So a file written before this rule keeps its exact meaning — `true` still grants `backlog-orchestrator` everything it granted yesterday, and grants a later consumer nothing until the owner rewrites it in object form — and **silence is `false` for every consumer, including every consumer added after this sentence.** Whoever wires the next reader into this file gives it its own name here, defaulted closed; letting it read the boolean instead is the same silent inheritance one release further on.
+
+A consumer name is a value inside this key, not a top-level key, so an unrecognized one does not trip the unrecognized-key guard under Resolution — it is reported like any other unusable fragment and grants nothing, since a name this reader does not answer to can only be about some other consumer. A value that is neither a boolean nor an object of booleans is unusable and resolves to `false` for every consumer, which is where that guard already puts it.
 
 **`auto-fix-reviewers`** — which reviewers' comments the run may auto-fix and resolve. A boolean or a list. The default is **`true`**: every reviewer's comments are eligible, which is today's behavior, subject to the judgment rules that already govern repair. `false`: no reviewer's comments are eligible, whoever wrote them — what `false` cannot switch off is the invoking user's instruction channel, which is not reviewer feedback at all (below). A list is exhaustive: a review comment is eligible for repair and thread resolution only when its author is automated **by both tests** — the forge's API reports the author as a bot (on GitHub, author type `Bot`; compare list entries against the reported login with any `[bot]` suffix disregarded) **and** that login is in the list. Both, because each alone proves nothing: a name can be worn by any account, and a bot off the list is an automation the owner never vetted. **A list entry is the reviewer's login** — not its display name, not the product's name, and not the mention a repository triggers it by: Codex reviews as `chatgpt-codex-connector[bot]`, so the entry is `chatgpt-codex-connector` and `codex` matches nothing, though `@codex review` is exactly what `create-pr` posts to summon it. Take each entry from the author of a real review comment on a PR rather than from what the bot is called, because a login that matches nothing fails in the quiet direction — every reviewer reserved for the owner, nothing auto-fixed, and no error anywhere to say so. The booleans cover the ends; the list exists because the vetted reviewers vary per repo.
 
