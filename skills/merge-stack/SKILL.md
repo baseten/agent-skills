@@ -291,6 +291,8 @@ If state is ambiguous, stop rather than rewriting a branch twice.
 
 ## Output
 
+Every authored forge write this skill makes — the merges themselves, and the retargeting and body edits on descendant PRs — follows the posting-identity rule stated once in `backlog-orchestrator` (*Posting identity*), using the map the caller passes rather than resolving an identity of its own. Read back the **first write of each kind** through each (transport, credential) pair — a merge, a base retarget, a body edit are distinct write kinds a platform may author differently, and one stack operation routinely performs several through the same pair — and report every observation alongside the result below, one entry per pair carrying each kind observed there; `unestablished` for a kind with no read-back write. Reading back only a pair's first write would return the merge author while silently losing the retarget or body-edit author, and later operations would then consume the wrong kind's evidence.
+
 Report:
 
 - requested merge mode;
@@ -298,6 +300,7 @@ Report:
 - merge method used;
 - branches rebased / force-with-lease pushed;
 - PRs retargeted;
+- posting identities observed, keyed by (transport, credential), per write kind observed through each pair;
 - `Depends on:` metadata changed;
 - remaining stack topology;
 - CI/review blockers or rebase conflicts;

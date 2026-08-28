@@ -12,6 +12,13 @@ commit SHA, and resolving each conversation thread.
 Determine `owner/repo` from the current git remote (`git remote get-url
 origin`) rather than assuming a fixed repo.
 
+Replies and thread resolutions are authored writes, so they follow the
+posting-identity rule stated once in `backlog-orchestrator` (*Posting
+identity*): post as the distinct agent identity where the calling workflow
+has established one, and as the invoking user where it has not — the common
+case, and what the local `gh` path below always does, since it runs on the
+user's own credential.
+
 ## Task
 
 Resolve PR comment(s): $ARGUMENTS

@@ -111,6 +111,8 @@ A recorded ruling contains:
 - an explicit marker that this is an **owner ruling, given interactively and dated** — not an agent's inference or an applied default. The distinction is the whole value of the record: a default is overturnable in review, a ruling is the review;
 - what the ruling confirms or overturns, so the follow-up work is derivable from the comment alone.
 
+The ruling comment follows the posting-identity rule stated once in `backlog-orchestrator` (*Posting identity*), selecting from the map the caller passes with the seed; invoked standalone with no map, every transport is `unestablished` and the rule's degraded path applies. The marker, not the posting account, is what carries the owner's authority: posted under a distinct agent identity the record reads as what it is, a transcription; posted as the invoking user, on that rule's degraded path, the marker is all that separates the owner's ruling from the owner appearing to comment on their own question — one more reason it is mandatory.
+
 ## The zero case
 
 A run with no outstanding decisions still reports `No outstanding decisions.` in one line, plus the action-item checklist even when it is empty too. Silence is indistinguishable from a skipped step — `summarize-tranche` makes the same point, and this skill keeps the convention.
@@ -123,6 +125,8 @@ A run with no outstanding decisions still reports `No outstanding decisions.` in
 - Never merges, and never treats a ruling as merge authority — a "merge A first" ruling is recorded and handed to whoever invokes `merge-stack`.
 
 # Output
+
+Alongside the report below, return **the posting identity observed for the first ruling of each write kind written through each `(transport, credential)` pair this pass used** — one entry per pair, carrying every kind observed through it; not one per pass, and not one ruling per pair. A single walkthrough can record rulings at sites needing different transports: a GitHub PR thread through MCP, a Linear issue through its CLI. And one pair alone can carry rulings of distinct write kinds — a PR timeline comment for a decision documented on the PR, a review-thread reply for an intent question — which the platform may author differently, and an observation answers only for its own kind (see `backlog-orchestrator`, *Posting identity*). Returning only a pair's first ruling drops whatever the later ones established — a later transport's entry, or a later kind through the same pair — and either loss is exactly the invoking-user path a later trigger may need, or the evidence a later review reply degrades without. Report `unestablished` for a transport, or a kind, with no read-back write, and return nothing where no ruling was written at all. A ruling can be the first authored write through a transport the caller has not used — or the first write of its kind through a pair the caller has — so it is evidence the caller cannot derive: it updates the posting-identity checkpoint and can re-open a provisionally unavailable review trigger (see `backlog-orchestrator`, *Posting identity*). Read it back from the written comment rather than assuming the caller's answer.
 
 ```text
 ## Decisions settled

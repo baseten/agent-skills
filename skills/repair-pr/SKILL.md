@@ -26,6 +26,7 @@ Accept:
 - Do not merge the PR.
 - Do not wait indefinitely for the next CI/review event, and do not delegate the wait — no scheduled check-in, trigger, or PR-activity subscription. The caller is already supervising this PR, and a wake armed here outlives the repair pass that armed it.
 - One invocation consumes at most one repair cycle.
+- Any authored forge write this pass makes, directly or through `resolve-pr-comment`, follows the posting-identity rule stated in `backlog-orchestrator` (*Posting identity*). The author is decided by the entry for **this pass's own selected `(transport, credential)` pair** — taken from the map the caller passed where it carries that pair, `unestablished` (the degraded path) where it does not — never by an entry for a pair this pass is not writing under: the caller's transports may not be this pass's. A matching caller entry answers selection only; the read-back the Output contract requires still happens, and is what the caller merges. Pass that selection into `resolve-pr-comment` rather than leaving it to resolve one of its own.
 - If the supplied failure/comment requires product or architecture judgment, return `NEEDS_USER` instead of guessing.
 
 ## CI repair
@@ -80,6 +81,7 @@ Return:
 - repair cycle consumed: yes/no;
 - checks run;
 - review threads resolved/replied when relevant;
+- **every posting-identity entry observed** for this pass's authored writes — its own and any made through `resolve-pr-comment` — under the `(transport, credential)` key each was observed on, reported whether or not it differed from the invoking user, and as `unestablished` where no authored write was read back. Read it back from the first such write rather than echoing entries from the caller's map: a repair pass can run on transports the caller never used, so its `gh` reply can establish an invoking-user path where the caller had only observed an agent-authored one. That observation is the caller's only evidence about this worker's write path, and it is what re-opens a provisionally unavailable review trigger (see `backlog-orchestrator`, *Posting identity*);
 - actionable review threads still unresolved on the PR: count;
 - failure/judgment details;
 - recommended next action.

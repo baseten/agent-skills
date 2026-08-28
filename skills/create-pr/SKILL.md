@@ -140,6 +140,8 @@ By default, implementation workflows (`implement-issue-core`, `implement-issue`,
 
 Use the repo's documented trigger. If none exists, default to `@codex review` where that convention is supported.
 
+The trigger comment is the one post exempted from the posting-identity rule (`backlog-orchestrator`, *Posting identity*, which states the rule once — do not restate it here): it must come from the invoking user's own account, or the convention does not fire. Every other authored write this skill makes — the PR itself, its body, any other comment — follows that rule and its availability test.
+
 A caller may explicitly request **deferred review trigger** (for example an intentionally early WIP draft PR). In that case create/verify the PR but do not trigger review until the caller later requests it.
 
 Do not repeatedly trigger review merely because subsequent CI checks run. Re-trigger after a substantive review-fix round only when repo convention requires it.
@@ -176,4 +178,5 @@ Return:
 - parent PR URL when stacked;
 - issue linkage verified: yes/no;
 - draft state as created: draft/ready, and what decided it (repo docs, caller preference, default);
-- review triggered/deferred and how.
+- review triggered/deferred and how;
+- **the posting identities observed** for this skill's authored writes, **one entry per `(transport, credential)` pair written through** — the PR itself and, separately, the review-trigger comment, which the exception routes to an invoking-user transport that may not be the one the PR used. Each entry **carries** both halves of its key — the transport and the credential identity it wrote under — plus **the write kind observed** (the PR's creation; the trigger's comment), as well as whether the author was the invoking user or a distinct account, and `unestablished` where a write was not read back. The two stay separately reported even where they share a `(transport, credential)` pair: a platform can author the two kinds differently under one pair, and a merged single answer would overwrite one observation with the other — the trigger comment's entry is the only comment-kind evidence the caller's next trigger selection can use. Filed under a composite key but reporting only the transport, an entry cannot be merged into the caller's map at all. Report the invoking-user entries too: they are what the caller's trigger selection needs, and a single-valued output would force the caller to lose either the distinct path for later writes or the invoking-user path for later triggers (see `backlog-orchestrator`, *Posting identity*).
