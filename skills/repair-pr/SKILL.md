@@ -28,6 +28,7 @@ Accept:
 - One invocation consumes at most one repair cycle.
 - Any authored forge write this pass makes, directly or through `resolve-pr-comment`, follows the posting-identity rule stated in `backlog-orchestrator` (*Posting identity*). The author is decided by the entry for **this pass's own selected `(transport, credential)` pair** — taken from the map the caller passed where it carries that pair, `unestablished` (the degraded path) where it does not — never by an entry for a pair this pass is not writing under: the caller's transports may not be this pass's. A matching caller entry answers selection only; the read-back the Output contract requires still happens, and is what the caller merges. Pass that selection into `resolve-pr-comment` rather than leaving it to resolve one of its own.
 - If the supplied failure/comment requires product or architecture judgment, return `NEEDS_USER` instead of guessing.
+- Do not select or escalate your own model. The caller chose this pass's model from the PR's own repair history (see `backlog-orchestrator`, *Model and skill policy*); a pass that judges itself under-powered reports the locus evidence below and returns, exactly as `implement-issue-core` returns a reasoning-heavy failure rather than escalating one.
 
 ## CI repair
 
@@ -83,5 +84,6 @@ Return:
 - review threads resolved/replied when relevant;
 - **every posting-identity entry observed** for this pass's authored writes — its own and any made through `resolve-pr-comment` — under the `(transport, credential)` key each was observed on, reported whether or not it differed from the invoking user, and as `unestablished` where no authored write was read back. Read it back from the first such write rather than echoing entries from the caller's map: a repair pass can run on transports the caller never used, so its `gh` reply can establish an invoking-user path where the caller had only observed an agent-authored one. That observation is the caller's only evidence about this worker's write path, and it is what re-opens a provisionally unavailable review trigger (see `backlog-orchestrator`, *Posting identity*);
 - actionable review threads still unresolved on the PR: count;
+- **whether any finding supplied to this pass sits on a locus an earlier repair of this PR wrote** — a reshaped version of something an earlier round addressed, or a new finding inside text a previous repair authored — naming the file and region and the earlier commit. This pass has the branch history open in front of it while it works, and the caller uses the answer to decide the next round's model (see `backlog-orchestrator`, *Model and skill policy*); the caller can read the same signal from the PR's commit history, so this is corroboration rather than the only copy;
 - failure/judgment details;
 - recommended next action.

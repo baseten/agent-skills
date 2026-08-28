@@ -1,6 +1,6 @@
 ---
 name: implement-issue
-description: Single-issue orchestrator for one tracked issue from its canonical full URL. Composes implement-issue-core for issue→code→checks→durable PR, then supervises bounded CI/review activity and dispatches repair-pr as needed until the PR is healthy, blocked, or needs user input. Useful standalone and as a one-issue workflow.
+description: Single-issue orchestrator for one tracked issue from its canonical full URL. Composes implement-issue-core for issue→code→checks→durable PR, then supervises bounded CI/review activity and dispatches repair-pr as needed until the PR is healthy, merged where its repository opted into auto-merge, blocked, or needs user input. Budgets and review/merge policy come from the repository's .claude/backlog-orchestrator.json. Useful standalone and as a one-issue workflow.
 ---
 
 # Implement Issue
@@ -14,11 +14,13 @@ This skill is intentionally a **one-issue orchestrator**. It composes reusable p
 - `create-pr` — tracker linkage, stack metadata, PR creation, review trigger;
 - `resolve-pr-comment` — review-thread fix/reply/resolve mechanics used by `repair-pr`.
 
-It does not schedule other backlog issues and never merges unless the user separately invokes an authorized merge workflow.
+It does not schedule other backlog issues, and it merges only where the PR's own repository opted in (see Authority) or the user separately invokes an authorized merge workflow.
 
 ## Authority
 
-Invoking this skill authorizes implementation and PR creation for the supplied issue unless the user explicitly says otherwise. It does **not** authorize merging.
+Invoking this skill authorizes implementation and PR creation for the supplied issue unless the user explicitly says otherwise.
+
+**It authorizes a merge only where the PR's own repository opted in**, through `auto-merge` in the per-repository policy config (see Inputs / constraints). That opt-in is the only route: an invocation argument or a caller can switch `auto-merge` off for a run, narrowing the gate, never on — the rule is invariant 12's in `backlog-orchestrator`, and it holds here for the same reason it holds there, that a committed file in the repository is the only place an owner can grant merge authority once and have it mean the same thing to an unattended run they are not watching. Absent that opt-in — the common case, since most repositories carry no config file at all — this skill merges nothing, and everything outside the gate remains the user's separate `merge-stack` authorization.
 
 The issue's **full URL is canonical identity** throughout the workflow. Short keys/numbers may be shown for readability but never replace the full URL in durable state.
 
@@ -26,12 +28,21 @@ The issue's **full URL is canonical identity** throughout the workflow. Short ke
 
 When a caller supplies repository, worktree, branch, required base, dependency context, tracker, and budgets, preserve them exactly.
 
-Defaults when standalone:
+Budgets and review/merge policy come from `.claude/backlog-orchestrator.json`, the per-repository policy config `backlog-orchestrator` defines. **That document owns the contract** — the key list, the resolution scoping, the fail-closed rules, and `auto-fix-reviewers`' both-tests matching rule (see *Per-repository policy configuration* there). None of it is restated here: a second copy is how the two consumers would drift into meaning different things by the same key, which is the reason the config is one file rather than one per skill. The file's name predates its second reader; it is the same file, read the same way.
+
+Of its keys this skill consumes `implementation-attempts`, `ci-repair-cycles`, `review-repair-cycles`, `repair-model-escalations`, `auto-fix-reviewers` and `auto-merge`. The run-level keys — concurrency, the new-issue budget, `auto-request-settle` — describe a tranche and have no meaning for one issue; ignore them rather than inventing a single-issue reading. Read the file once, at the start of the run, from the head of the repository's default branch as the run finds it — never from the worktree this run is about to write, which is the same repository at a revision this run controls, and never again afterwards.
+
+**A caller's resolved policy wins outright, and suppresses that read entirely.** A caller supplying budgets or policy has already resolved them against the same file at its own preflight, so a read here would be a second read of a file whose whole rule is that it is read once from the state the run started in — the child would then be free to override its parent with a later timestamp. So under such a caller the file is not opened: supplied keys are used exactly as given, and keys the caller omitted take the built-in defaults, except `auto-merge` and `auto-fix-reviewers`, which take `false` — a caller that resolved a policy and left a permission out of it did not grant that permission. Standalone, with no caller-resolved policy, this skill does the read itself.
+
+Defaults when the file is absent — the common case, and identical to the built-in defaults `backlog-orchestrator` lists, so an absent file leaves this skill behaving exactly as it always has:
 
 - implementation attempts: **2 total**;
 - CI repair cycles: **2**;
 - review-fix cycles: **2**;
-- monitoring cap: **8 hours** where persistent/event-driven monitoring is actually supported.
+- strongest-model repair rounds: **1**;
+- `auto-fix-reviewers`: **`true`**;
+- `auto-merge`: **disabled**;
+- monitoring cap: **8 hours** where persistent/event-driven monitoring is actually supported. This one is not a policy key and has no config equivalent: it bounds how long this skill sits watching, which is a property of the invocation rather than of the repository's PRs.
 
 Do not broaden scope into another issue.
 
@@ -41,7 +52,7 @@ Invoke `implement-issue-core` with the canonical issue URL and all supplied exec
 
 Do not hand-roll implementation logic here.
 
-If core returns `BLOCKED`, `BLOCKED_EXTERNAL`, `FAILED`, or `NEEDS_USER`, surface that result. Preserve the distinction between the two block outcomes rather than flattening them: `BLOCKED_EXTERNAL` means the issue waits on work outside the authorized set, so it needs no *frontier* reasoning — only the blocker, its state, and who owns it. It still needs the relationship classification below. Whether an edge is real is a separate question from whether the work behind it is external, and a stale prose edge pointing at an unfinished external prerequisite would otherwise wait forever. If a standalone user clearly requested strongest-model retry, that can be handled by the surrounding Claude session; this skill itself should not create an unbounded model-escalation loop.
+If core returns `BLOCKED`, `BLOCKED_EXTERNAL`, `FAILED`, or `NEEDS_USER`, surface that result. Preserve the distinction between the two block outcomes rather than flattening them: `BLOCKED_EXTERNAL` means the issue waits on work outside the authorized set, so it needs no *frontier* reasoning — only the blocker, its state, and who owns it. It still needs the relationship classification below. Whether an edge is real is a separate question from whether the work behind it is external, and a stale prose edge pointing at an unfinished external prerequisite would otherwise wait forever. If a standalone user clearly requested strongest-model retry, that can be handled by the surrounding Claude session; this skill itself should not create an unbounded model-escalation loop. The bounded repair escalation under Review feedback is a different mechanism on a different object, capped on its own.
 
 A `PR_OPEN` can also arrive with its **dependency view unproven** — the worker could not establish that its blocker list was complete, whether it found blockers or none. That is the normal standalone case rather than a defect: this skill supplies no graph judgement, so the worker proceeds on the invocation's authority and says the absence was never proven. Pass that on in one line rather than dropping it. The PR is making a narrower claim than it appears to — that no blocker was visible, not that none exists — and a user who wants the stronger one can supply a confirmed edge as dependency context on a re-invocation, which turns the next run's silence into evidence.
 
@@ -85,7 +96,7 @@ After PR creation, this skill owns supervision **only because it is the standalo
 
 That qualifier is a boundary, not a caveat, and it is worth stating in both directions. Here there is no parent to defer to, so watching this PR — including arming a subscription or a scheduled check-in to do it — is this skill's job and the surrounding session's ambient posture agrees with it. Under `backlog-orchestrator` nothing dispatched supervises its own PR: that parent fans out `implement-issue-core` directly and countermands the ambient posture in its dispatch prompt, so a second watcher never arms itself. Read a rule against self-monitoring in the worker skills as scoped to that case; it does not reach Phase 2.
 
-If Claude Code's own background PR watch/notification behavior promotes the worker-created PR into the top-level session or provides first-class PR/CI/review events, use those directly. Do not create a duplicate monitoring mechanism merely because `implement-issue-core` created the PR in a child worker. If that background behavior has auto-merge enabled, it will merge the PR itself once checks pass — since this skill never authorizes merging (see Authority above), confirm auto-merge is off, or treat an auto-merge as outside this skill's control rather than an outcome it produced.
+If Claude Code's own background PR watch/notification behavior promotes the worker-created PR into the top-level session or provides first-class PR/CI/review events, use those directly. Do not create a duplicate monitoring mechanism merely because `implement-issue-core` created the PR in a child worker. If that background behavior has GitHub's own auto-merge enabled, it will merge the PR itself once checks pass. That is a forge setting and not the `auto-merge` policy key, and it merges outside the gate whatever this run's policy resolved to — so confirm it is off, or treat a merge it performs as outside this skill's control rather than an outcome this skill produced.
 
 Prefer, in order:
 
@@ -103,9 +114,12 @@ Maintain explicit state:
 PR: <URL>
 CI repair cycles: <used>/<limit>
 Review repair cycles: <used>/<limit>
+Strongest-model repair rounds: <used>/<limit>
 Current remote head: <SHA>
 First review round: pending | complete-with-findings | clean
+Threads reserved for the owner: <count>
 Draft state: <as-created> -> <current>
+Policy: budgets <source>; auto-fix-reviewers <resolved> (<source>); auto-merge <on|off> (<source>)
 State: waiting | repairing-ci | repairing-review | healthy | needs-user
 ```
 
@@ -114,7 +128,7 @@ State: waiting | repairing-ci | repairing-review | healthy | needs-user
 When CI fails:
 
 1. inspect enough check/log context to identify the relevant failure;
-2. if the failure is attributable to this PR and the CI budget remains, invoke `repair-pr` once with `repair type = ci`;
+2. if the failure is attributable to this PR and the CI budget remains, invoke `repair-pr` once with `repair type = ci`, on Sonnet or — where the non-convergence trigger has fired and an escalation remains — the strongest available model (see `backlog-orchestrator`, *Model and skill policy*, which owns the trigger and the caps; an escalated round still consumes its repair cycle);
 3. pass the exact failure context, remaining budget, and the run's posting-identity map as it stands — `repair-pr` selects its authorship from the caller's entry for its own pair (see `backlog-orchestrator`, *Posting identity*);
 4. adopt the returned remote head SHA **and every posting-identity entry the pass observed**, merging them into the run's `(transport, credential)`-keyed map rather than replacing it — a repair can establish a path core never used, and the re-trigger in the review branch and the final result both read that map;
 5. wait for the next CI result using first-class/event-driven state where available;
@@ -124,10 +138,14 @@ If CI is clearly unrelated/external/flaky and no code repair is justified, repor
 
 ## Review feedback
 
+Actionable is bounded first by the resolved `auto-fix-reviewers`: a thread the **invoking user** rooted is always actionable whatever the policy resolved to, since it is their run and their instruction; any other thread only when its author passes the policy's test; a comment this run authored never is. `backlog-orchestrator` owns all three rules and the matching test itself — read them there rather than from a copy here. What follows from them for a single PR is that this skill **never roots a review thread on the PR it is supervising**: it replies inside existing threads and posts timeline comments, and on the degraded posting-identity path its own root comment would carry the invoking user's login and become indistinguishable from an instruction to itself.
+
+A thread failing the test is **reserved for the owner** — never repaired, never resolved, reported as awaiting them. It does not stop this skill returning, since it cannot be required to resolve what policy forbids it touching, but it is an unresolved actionable finding wherever that concept is consumed here: the round it belongs to is not clean, so it blocks draft promotion below and keeps the merge gate shut.
+
 When actionable review feedback arrives:
 
 1. group one coherent review round;
-2. if review budget remains, invoke `repair-pr` once with `repair type = review`, the relevant threads/comments, and the run's posting-identity map as it stands;
+2. if review budget remains, invoke `repair-pr` once with `repair type = review`, the relevant threads/comments, and the run's posting-identity map as it stands, on the same model rule as the CI branch above;
 3. adopt the returned remote head **and every posting-identity entry the pass observed**, merged into the run's `(transport, credential)`-keyed map;
 4. retrigger/request review when repository convention requires it — selecting the trigger's author from the identities observed so far, this pass's included: a repair can establish the invoking-user path core lacked, and re-triggering before adopting its observation is what makes that trigger silently fail;
 5. wait for the next review state using first-class/event-driven state where available;
@@ -155,11 +173,19 @@ Rules:
 - Never promote a PR this run did not open.
 - Repository convention or an explicit user/caller draft preference overrides this.
 - Later review rounds do not re-trigger promotion; the PR is already ready.
-- Promotion is not merge authorization — this skill still never merges (see Authority above).
+- Promotion is not merge authorization: it is not what opens the merge gate, and where the repository never opted in there is no gate to open (see Authority).
+
+## Merge
+
+Where the repository opted in through `auto-merge`, evaluate invariant 12's gate over this PR. `backlog-orchestrator` defines that gate and every condition in it; this skill does not carry a copy, so read it there and apply it as written. Two of its clauses are phrased for a tranche and need reading for one issue: the requirement that no `DECISION`, `MERGE_RISK` or `NEEDS_USER` item is outstanding anywhere in the tranche resolves to this issue's own, there being no sibling whose unruled decision could hold this merge; and the ordering that defers the gate to the settled step, after a summary and a ranking, has no analogue where there is neither — so the gate is evaluated when this skill's own Completion test would otherwise return the PR healthy.
+
+A draft that reaches an open gate is published first and merged only on evidence gathered **after** that publish (see `backlog-orchestrator`, *Merge behavior*): marking a PR ready is an event review providers act on, so the clean-review evidence the gate just accepted describes the PR one moment before it changed. Usually the promotion above has already happened by then, and a draft this skill did not promote is normally one a repository convention or a caller preference holds — which the gate excludes outright, neither published nor merged, reported as held.
+
+A merge ends supervision for this PR: reconcile tracker completion, then return the merge with the gate conditions it passed on.
 
 # Completion
 
-Return `PR_OPEN`/healthy when the PR is implemented, linked correctly, and has no currently known CI/review item requiring autonomous repair. When persistent monitoring is supported, continue until healthy, merge/close, user stop, budget exhaustion, or monitoring cap.
+Return `PR_OPEN`/healthy when the PR is implemented, linked correctly, and has no currently known CI/review item requiring autonomous repair — after evaluating the merge gate where the repository opted in (see Merge), since healthy is the point at which it would open. Return `MERGED` where it opened and the merge completed. When persistent monitoring is supported, continue until healthy, merge/close, user stop, budget exhaustion, or monitoring cap.
 
 If the runtime cannot remain active while waiting only on external events, return a durable checkpoint rather than pretending background monitoring will continue.
 
@@ -172,7 +198,7 @@ Return:
 - canonical issue URL;
 - tracker;
 - repository;
-- outcome: `PR_OPEN` | `BLOCKED` | `BLOCKED_EXTERNAL` | `FAILED` | `NEEDS_USER`;
+- outcome: `PR_OPEN` | `MERGED` | `BLOCKED` | `BLOCKED_EXTERNAL` | `FAILED` | `NEEDS_USER`;
 - branch/base;
 - PR URL/number;
 - remote head SHA;
@@ -180,6 +206,10 @@ Return:
 - implementation attempts used;
 - CI repair cycles used;
 - review-fix cycles used;
+- strongest-model repair rounds used against the limit, and the locus evidence that triggered each;
+- the resolved policy actually applied — budgets, `auto-fix-reviewers`, `auto-merge` — each with its source: caller, repo config, or built-in default, plus a policy file that was present and could not be honoured, since that is what silently narrowed `auto-fix-reviewers` to `false`. An owner should see the authority a run had before they see what it did with it;
+- review threads reserved for the owner: count and URLs;
+- the merge, where one happened: the gate conditions it passed on, whether the PR was published from draft on the way, and the tracker reconciliation;
 - final CI/review state;
 - draft state as created, and whether it was promoted to ready (or why not);
 - the run's full posting-identity map — every entry observed by core and by each repair pass, under its `(transport, credential)` key, since a repair can run on transports core never used and the entries are answers about different write paths rather than versions of one. Carry both rather than the latest: an invoking-user path observed in any of them is what this skill's own review re-triggering needs, and there is no orchestrator here to hold that evidence instead. Report `unestablished` where no authored write was read back (see `backlog-orchestrator`, *Posting identity*);

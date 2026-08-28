@@ -379,9 +379,10 @@ Unless overridden (below):
 - maximum concurrent implementation workers (`concurrent-workers`): **4**;
 - maximum newly started issues per invocation (`new-issue-budget`): **12**;
 - maximum implementation attempts per issue (`implementation-attempts`): **2 total**;
-- maximum strongest-model escalation per issue (`model-escalations`): **1**;
+- maximum strongest-model *implementation* escalations per issue (`model-escalations`): **1**;
 - maximum CI repair cycles per PR (`ci-repair-cycles`): **2**;
 - maximum review-fix cycles per PR (`review-repair-cycles`): **2**;
+- maximum strongest-model repair rounds per PR (`repair-model-escalations`): **1**;
 - maximum lost-worker redispatches per issue (`lost-worker-redispatches`): **1**;
 - automatic merges (`auto-merge`): **disabled** — the opt-in invariant 12's gate requires;
 - reviewers whose comments may be auto-fixed (`auto-fix-reviewers`): **`true`** — every reviewer's comments are eligible; the judgment rules under CI/review repair still apply;
@@ -411,10 +412,11 @@ Personal and work repositories legitimately want opposite behavior from the same
   "model-escalations": 1,
   "ci-repair-cycles": 2,
   "review-repair-cycles": 2,
+  "repair-model-escalations": 1,
   "lost-worker-redispatches": 1,
   "auto-request-settle": true,
   "auto-merge": false,
-  "auto-fix-reviewers": ["codex"]
+  "auto-fix-reviewers": ["chatgpt-codex-connector"]
 }
 ```
 
@@ -430,7 +432,7 @@ Keys scope to different objects, and each resolves from the repository that owns
 
 | keys | scope | resolved from |
 | --- | --- | --- |
-| `ci-repair-cycles`, `review-repair-cycles`, `auto-merge`, `auto-fix-reviewers` | per PR | the PR's repository |
+| `ci-repair-cycles`, `review-repair-cycles`, `repair-model-escalations`, `auto-merge`, `auto-fix-reviewers` | per PR | the PR's repository |
 | `implementation-attempts`, `model-escalations`, `lost-worker-redispatches` | per issue | the issue's repository |
 | `concurrent-workers`, `new-issue-budget`, `auto-request-settle` | per run | the manifest's repository; an explicit issue set contained in one repository uses that repository; a multi-repo set with no manifest uses the built-ins |
 
@@ -444,7 +446,7 @@ Report the resolved policy per PR in the checkpoint output, with its source — 
 
 **`auto-merge`** — whether invariant 12's gate can open for this repository's PRs at all. `false` is today's behavior: the run never merges. `true` permits a merge only through the gate invariant 12 defines — the key is the opt-in the gate requires, never a bypass of its other conditions. This file is the only place `true` can come from: the precedence rule under Default usage safeguards exempts `auto-merge` from invocation override, so an invocation argument can narrow the gate, never open it. Execution mechanics, including the publish-before-merge step, live in Merge behavior.
 
-**`auto-fix-reviewers`** — which reviewers' comments the run may auto-fix and resolve. A boolean or a list. The default is **`true`**: every reviewer's comments are eligible, which is today's behavior, subject to the judgment rules that already govern repair. `false`: no reviewer's comments are eligible, whoever wrote them — what `false` cannot switch off is the invoking user's instruction channel, which is not reviewer feedback at all (below). A list is exhaustive: a review comment is eligible for repair and thread resolution only when its author is automated **by both tests** — the forge's API reports the author as a bot (on GitHub, author type `Bot`; compare list entries against the reported login with any `[bot]` suffix disregarded) **and** that login is in the list. Both, because each alone proves nothing: a name can be worn by any account, and a bot off the list is an automation the owner never vetted. The booleans cover the ends; the list exists because the vetted reviewers vary per repo.
+**`auto-fix-reviewers`** — which reviewers' comments the run may auto-fix and resolve. A boolean or a list. The default is **`true`**: every reviewer's comments are eligible, which is today's behavior, subject to the judgment rules that already govern repair. `false`: no reviewer's comments are eligible, whoever wrote them — what `false` cannot switch off is the invoking user's instruction channel, which is not reviewer feedback at all (below). A list is exhaustive: a review comment is eligible for repair and thread resolution only when its author is automated **by both tests** — the forge's API reports the author as a bot (on GitHub, author type `Bot`; compare list entries against the reported login with any `[bot]` suffix disregarded) **and** that login is in the list. Both, because each alone proves nothing: a name can be worn by any account, and a bot off the list is an automation the owner never vetted. **A list entry is the reviewer's login** — not its display name, not the product's name, and not the mention a repository triggers it by: Codex reviews as `chatgpt-codex-connector[bot]`, so the entry is `chatgpt-codex-connector` and `codex` matches nothing, though `@codex review` is exactly what `create-pr` posts to summon it. Take each entry from the author of a real review comment on a PR rather than from what the bot is called, because a login that matches nothing fails in the quiet direction — every reviewer reserved for the owner, nothing auto-fixed, and no error anywhere to say so. The booleans cover the ends; the list exists because the vetted reviewers vary per repo.
 
 **The invoking user's feedback is always actionable when it roots a review thread — unconditionally, whatever `auto-fix-reviewers` resolves to.** It is their run and their instruction, so the rule is pinned to the invoking user, never to "the PR author", even where the two coincide. The discriminator is the kind of comment, not its author: a review thread whose **root comment** the invoking user wrote is their feedback on the diff, and the run acts on it; a comment on the PR's conversation timeline (a GitHub issue comment) is conversation, not feedback to act on. And the test is thread-rootness, not "is it a review comment" — a reply inside a thread is also a review comment, and the run posts replies into threads constantly, so the weaker test would qualify the run's own replies. This channel covers the invoking user alone: a colleague's thread in a work repo still resolves through `auto-fix-reviewers`, and reserved threads stay reserved.
 
@@ -460,7 +462,15 @@ The orchestration/lead context may use the strongest available reasoning model.
 
 Normal implementation and repair workers must use **Sonnet explicitly** when the runtime supports per-worker model selection. Do not accidentally inherit the lead's stronger model.
 
-At most one strongest-model implementation escalation is allowed for a reasoning-heavy repeated failure.
+At most one strongest-model implementation escalation is allowed per issue for a reasoning-heavy repeated failure (`model-escalations`).
+
+**Repair escalates on evidence, not on exhaustion** (`repair-model-escalations`, per PR). Dispatch a repair round on the strongest available model when the round about to be dispatched carries a finding on a **locus an earlier repair on this PR already wrote** — a reshaped version of a finding an earlier round addressed, or a new finding in text an earlier repair authored. That is the signal that the previous repair was shallow and the root was never understood, and it is the one place in the repair path where model strength is the binding constraint. Everything else about the round is unchanged, and Sonnet remains the default for all the others.
+
+The trigger is that evidence and nothing else, so it fires on the earliest round where the evidence can exist rather than after the cheaper rounds have been spent, and it never fires merely because the budget is nearly gone. Exhaustion and non-convergence are different failure modes wearing the same counter: a round that fixes real findings while genuinely new ones keep surfacing is breadth, and a stronger model buys nothing there; a round whose fix draws a reshaped finding back onto the same locus is a reasoning failure. A count-based ladder — two rounds Sonnet, then one Opus — cannot tell them apart, and pays for depth on exactly the run that needed breadth. Observed on one spec PR: three automated review passes returned two findings, then three, then one. The first two rounds were all-new territory and Sonnet was the right tool for both; the third's single finding was a gap in a paragraph the second round had itself written, and the strongest-model repair that answered it also caught a second, unreported defect of the same kind beside it.
+
+**The round cap is a separate mechanism, and an escalated round still consumes its repair cycle.** `ci-repair-cycles`/`review-repair-cycles` bound unattended churn, which is model-independent; a round that skipped the counter because it escalated would make "escalate" a way to buy extra rounds. At the round cap the PR goes to the owner whatever model ran. `repair-model-escalations` bounds only how many of a PR's rounds may be escalated, so exhausting it does not end the repairs — it returns them to Sonnet.
+
+**The dispatching layer owns the decision.** `repair-pr` never selects or escalates its own model, exactly as `implement-issue-core` returns a reasoning-heavy repeated failure instead of escalating one. The evidence is readable here from durable state — the PR's own commit history against where each finding sits — so a restart evaluates the same trigger its predecessor would have; the repair worker reports what it saw as corroboration, not as the record.
 
 Implementation workers require `implement-issue-core` and `create-pr`.
 Repair workers require `repair-pr` and, for review fixes, `resolve-pr-comment`.
@@ -739,7 +749,7 @@ On an actionable CI failure:
 1. retrieve the smallest useful failure context;
 2. decide whether it belongs to this PR;
 3. if repair is justified and budget remains, allocate an isolated checkout of the current PR branch;
-4. dispatch one Sonnet `repair-pr` worker with `repair type = ci`;
+4. dispatch one `repair-pr` worker with `repair type = ci` — Sonnet, or the strongest available model where the non-convergence trigger has fired and an escalation remains (see Model and skill policy);
 5. adopt its pushed remote head, **and merge every posting-identity entry it returned into the run's transport-and-credential-keyed map** (see Posting identity) — a repair runs on its own transports, so this is the run's only evidence about them;
 6. increment the CI repair cycle;
 7. release the repair worker (see Releasing a worker) and resume event supervision.
@@ -750,7 +760,7 @@ On actionable review feedback — actionable is bounded first by review policy: 
 
 1. group the coherent current review round;
 2. if budget remains, allocate an isolated checkout of the current PR branch;
-3. dispatch one Sonnet `repair-pr` worker with `repair type = review`;
+3. dispatch one `repair-pr` worker with `repair type = review`, on the same model rule as the CI branch above;
 4. `repair-pr` uses `resolve-pr-comment` where relevant;
 5. adopt the new remote head, **merge every posting-identity entry the repair returned into the run's map**, and increment review cycle;
 6. retrigger/request review when repo convention requires it, unless review is still deferred for this PR or triggering was suppressed for this run — **selecting the trigger's author from the map as it stands after step 5**, since a repair can establish the invoking-user path the run lacked, and re-triggering on the pre-repair map is what makes that trigger silently fail;
@@ -1344,7 +1354,7 @@ Unreviewed (trigger pending/unavailable): 0
 Unresolved review findings: 0
 Review threads reserved for the owner: 1
 Drafts explicitly held: 1
-Repo policy: acme/api: config (auto-merge on, auto-fix-reviewers: codex); acme/site: defaults
+Repo policy: acme/api: config (auto-merge on, auto-fix-reviewers: chatgpt-codex-connector); acme/site: defaults
 Posting identity: (github-mcp, tok-a1b2) -> baseten (invoking user); (linear-cli, tok-c3d4) -> unestablished
 Auto-merged (invariant 12 gate): 0
 Ready: 3
@@ -1367,7 +1377,7 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - caveats a worker raised in its own report that no check expresses — a narrowed guarantee, a knowing deviation from an acceptance criterion, a limitation left unfixed — against the PR each concerns, because these reach a merge decision only if this run carries them there;
 - worker-session lifecycle, where the runtime has sessions to account for: how many this run created, how many it archived, and every one still alive with the reason — naming, for each that was blocked, the exact tool it was waiting on. A run that leaks sessions should be visible in its own report rather than discovered afterwards in a session list, and the tool name is the part a user can act on;
 - disk headroom against the concurrent worker count;
-- CI/review states + repair budgets consumed;
+- CI/review states + repair budgets consumed, naming any round that ran on the strongest model and the locus evidence that triggered it;
 - PRs left unreviewed, and whether the review trigger was deferred or unavailable;
 - PRs left in draft, naming each explicitly held one and what holds it (see Draft state);
 - the posting identity observed **per `(transport, credential)` pair the run wrote through**, each entry naming the transport, the credential identity that is half its key, and the author observed there — per write kind where the kinds observed differ — a distinct account, the invoking user, or `unestablished` where that transport has no read-back write yet. Report the map, never a single run-wide identity: transports with different observed authors are the ordinary case, none of them is wrong, and collapsing them hides whichever entry the provisional review-trigger decision needs. Name separately any distinct identity **observed** on a tier precedence selected elsewhere but not for these writes, as present but unusable — never an inference about a tier the run never wrote through (see Posting identity);

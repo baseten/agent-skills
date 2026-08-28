@@ -118,10 +118,10 @@ prompting", not by "is this safe to grant an adversary".
   reporting separate those two, so read them rather than the session list.
 
 Nothing here grants merge authority: `merge_pull_request` is allowed because
-`merge-stack` is an explicitly invoked skill, and `backlog-orchestrator` merges
-only through its invariant 12 gate — off by default, opt-in per repository via
-`.claude/backlog-orchestrator.json` — which is a skill rule, not a permission
-boundary.
+`merge-stack` is an explicitly invoked skill, and `backlog-orchestrator` and
+`implement-issue` merge only through the invariant 12 gate — off by default,
+opt-in per repository via `.claude/backlog-orchestrator.json` — which is a skill
+rule, not a permission boundary.
 
 ## Local Codex usage
 
@@ -158,17 +158,19 @@ Invoking the skill is itself the authorization to dispatch workers, so a session
 
 A repository can tune `backlog-orchestrator` for its own PRs with `.claude/backlog-orchestrator.json` — the same defaults the skill documents (concurrency, budgets, repair cycles, `auto-request-settle`) plus two review/merge policies: `auto-merge`, whether the invariant 12 merge gate may open at all (a gate-authorized merge publishes a still-draft PR as a step of merging it — a merge never happens on a draft — and never touches an explicitly held draft), and `auto-fix-reviewers`, bounding whose review comments the run may auto-fix and resolve — `true` (the default) for every reviewer, `false` for none, or a list of vetted logins where the author must be both a bot per the GitHub API and on the list. The invoking user's feedback is always actionable when it roots a review thread, whatever `auto-fix-reviewers` resolves to — their comment directs the run — while timeline comments are conversation, and the run never opens review threads on a PR it drives, so its own output can never qualify as feedback. Policy resolves **per PR, from the repository that PR lives in**, so a run spanning a personal and a work repository applies each repo's own rules within the same tranche. The file is owner-authored configuration: it is read at preflight from the repository state the run started from, never from anything a worker wrote mid-run, and a malformed file fails closed, reported rather than guessed at — to the built-in defaults, except `auto-fix-reviewers`, which a present-but-unusable file or a wrong-typed value resolves to `false` rather than to its permissive default. An invocation argument overrides any key except `auto-merge`, which it can switch off but never on — the repository's opt-in is the only route to a merge. The resolved policy is reported per PR in the checkpoint output.
 
+`implement-issue` reads the same file for the one PR it supervises — the budgets, `auto-fix-reviewers` and `auto-merge`, on the semantics `backlog-orchestrator` defines and does not duplicate — so a repository's policy governs a single-issue run as much as a tranche. Its run-level keys have no single-issue meaning and are ignored. A caller that already resolved policy passes it down and suppresses the child's own read, so the parent's preflight read stays the run's policy rather than being re-derived later against a file that may have moved. The file keeps its `backlog-orchestrator` name now that two skills read it.
+
 ## Recovery model
 
 Local/cloud worktrees are isolation, not durable storage. `implement-issue-core` pushes the issue branch early and pushes coherent implementation checkpoints — but the orchestrator treats that as best-effort rather than done. Workers reliably hold completed work uncommitted even when told not to, so the parent inspects every in-flight worktree each supervision cycle and, where a nudge has already failed, commits the work itself. Enforcement lives in the loop, not in the dispatch prompt. If a cloud container or a Dynamic Workflow's session disappears, backlog orchestration resumes from tracker + remote branch/PR state rather than relying on the lost worktree or runtime state — a Dynamic Workflow does not persist across a session exit, so this recovery path is required, not just a fallback.
 
 ## PR supervision
 
-Implementation workers return after durable PR creation. When Claude Code's own background PR watch/notification behavior (a session-level feature, separate from Dynamic Workflows) surfaces worker-created PRs to the parent session, the orchestrator consumes that PR/CI/review state directly. The **platform may observe the event; the orchestrator remains the policy owner** deciding whether repair budgets allow another Sonnet `repair-pr` worker. If that background behavior has auto-merge enabled, disable it or treat any resulting merge as outside the orchestrator's control — it merges outside the invariant 12 gate.
+Implementation workers return after durable PR creation. When Claude Code's own background PR watch/notification behavior (a session-level feature, separate from Dynamic Workflows) surfaces worker-created PRs to the parent session, the orchestrator consumes that PR/CI/review state directly. The **platform may observe the event; the orchestrator remains the policy owner** deciding whether repair budgets allow another `repair-pr` worker, and on which model. If that background behavior has auto-merge enabled, disable it or treat any resulting merge as outside the orchestrator's control — it merges outside the invariant 12 gate.
 
 When first-class PR events are unavailable, the parent falls back to other subscriptions or bounded polling. It does not keep one idle Sonnet agent alive per PR.
 
-`implement-issue` keeps the same behavior on a single ticket: it remains a useful one-issue orchestrator that composes the same primitives and supervises just that PR.
+`implement-issue` keeps the same behavior on a single ticket: it remains a useful one-issue orchestrator that composes the same primitives and supervises just that PR, under the same per-repository policy.
 
 A **mechanical** push — a restack, or a renumber/regeneration of a claimed artifact such as a migration number or a lockfile — moves identity or ordering rather than behavior. It consumes no review cycle, re-triggers no review, and does not reset a PR's reviewed state; the repository's deterministic checks validate it instead. This matters right after a sibling merges, when descendants restack for reasons unrelated to their own diffs. Where no such check exists, the push is substantive like any other.
 
