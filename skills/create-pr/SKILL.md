@@ -120,7 +120,7 @@ Description...
 
 Draft/full behavior follows repo docs; otherwise work repos default to draft and personal repos to full. Explicit caller/user preference wins.
 
-Report the as-created draft state in the output. A supervising workflow uses it to decide later whether the PR is eligible to be promoted to ready once its first review round comes back clean; it cannot tell a PR this run drafted from one a human drafted unless this skill says so. This skill itself never promotes — it ends at creation.
+Report the as-created draft state in the output. No supervising workflow promotes a draft — `backlog-orchestrator`'s *Draft state* owns that rule — but each tracks as-created beside current state, and its held-draft and publish-as-step-of-merging rules need the distinction this field carries: a workflow cannot tell a PR this run drafted from one a human drafted unless this skill says so. This skill itself never changes draft state — it ends at creation.
 
 Use GitHub MCP in remote/web environments and `gh pr create --base <pr-base>` locally when available.
 
