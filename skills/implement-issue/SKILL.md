@@ -146,7 +146,7 @@ If CI is clearly unrelated/external/flaky and no code repair is justified, repor
 
 Actionable is bounded first by the resolved `auto-fix-reviewers`: a thread the **invoking user** rooted is always actionable whatever the policy resolved to, since it is their run and their instruction; any other thread only when its author passes the policy's test; a comment this run authored never is. `backlog-orchestrator` owns all three rules and the matching test itself — read them there rather than from a copy here. What follows from them for a single PR is that this skill **never roots a review thread on the PR it is supervising**: it replies inside existing threads and posts timeline comments, and on the degraded posting-identity path its own root comment would carry the invoking user's login and become indistinguishable from an instruction to itself.
 
-A thread failing the test is **reserved for the owner** — never repaired, never resolved, reported as awaiting them. It does not stop this skill returning, since it cannot be required to resolve what policy forbids it touching, but it is an unresolved actionable finding wherever that concept is consumed here: the round it belongs to is not clean, so it blocks draft promotion below and keeps the merge gate shut.
+A thread failing the test is **reserved for the owner** — never repaired, never resolved, reported as awaiting them. It does not stop this skill returning, since it cannot be required to resolve what policy forbids it touching, but it is an unresolved actionable finding wherever that concept is consumed here: the round it belongs to is not clean, so it keeps the merge gate shut.
 
 When actionable review feedback arrives:
 
