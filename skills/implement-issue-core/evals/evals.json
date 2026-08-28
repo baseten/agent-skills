@@ -1,0 +1,78 @@
+{
+  "skill_name": "implement-issue-core",
+  "description": "Decision-scenario regression evals. Each prompt describes a worker's situation and asks what the skill requires; assertions check the decision, not the wording. Run against any rewrite of SKILL.md before merging it.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "stacked-child-proceeds-on-unmerged-parent",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: your issue has one blocker, a hard same-repo code dependency on its parent issue. The parent's implementation PR is still OPEN (unmerged), but the caller cut your supplied base branch from the parent's head, and the parent's commits are reachable from your base. The parent issue itself is still open in the tracker. The caller's dependency context asserts this blocker is satisfied. Question: do you proceed with implementation, or block because the parent issue is open and its PR unmerged? State exactly what the skill requires and why.",
+      "expected_output": "Proceed. Availability is gated by the class's measure, not issue state: for a code dependency the measure is reachability from the base, which holds. A stacked child dispatched against an unmerged parent is the normal case.",
+      "assertions": [
+        "The answer proceeds with implementation rather than returning BLOCKED",
+        "The answer applies the code-dependency availability measure (reachability from the supplied base) rather than the blocker issue's open/closed state or its PR's merged state",
+        "The answer recognizes the stacked-child-on-unmerged-parent situation as the normal, intended case"
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "mixed-blockers-take-blocked",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: dependency checking found two unmet blockers. Blocker A is a same-repo code dependency whose implementation exists nowhere (no PR, nothing in the base); the caller's authorization membership marks A INSIDE the authorized set. Blocker B is an external prerequisite in another team's repository, marked OUTSIDE the authorized set, also unmet. Completeness of the blocker set is backed by the caller's proven complete context. Question: which single outcome do you return, and what must the report carry about the blocker you did not choose the outcome for?",
+      "expected_output": "Return BLOCKED (the in-scope unmet blocker outranks everything — it is the graph correction other outcomes would suppress). The report still carries blocker B and every other finding; the ranking picks the outcome value, not what gets reported.",
+      "assertions": [
+        "The answer returns BLOCKED, not BLOCKED_EXTERNAL and not NEEDS_USER",
+        "The answer justifies the ranking by what the caller would lose (an in-scope blocker is a graph correction that other outcomes would suppress / cause the caller to skip frontier re-derivation)",
+        "The answer states that blocker B (the external one) is still reported alongside, since the ranking chooses the outcome value but everything found is reported"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "unobservable-deploy-measure-is-needs-user",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: your issue's only blocker is an external prerequisite whose class-appropriate completion measure is a production deployment state. You can see the repository and the tracker, but no deploy dashboard or release tag — the measure is not observable from where you are. The caller supplied no dependency context asserting anything about it. The blocker sits inside the authorized set per the caller's membership data. Question: do you treat the prerequisite as met, as unmet (BLOCKED), or something else? State the outcome and exactly what it must name.",
+      "expected_output": "Neither met nor unmet: return NEEDS_USER, kind unverifiable prerequisite, naming the blocker, the measure (deploy state), and why it was out of reach. Treating it unmet blocks possibly-finished work; treating it met is the failure the gate exists to prevent; a person can check in seconds.",
+      "assertions": [
+        "The answer returns NEEDS_USER (not BLOCKED, not proceeding as if the prerequisite were met)",
+        "The answer identifies the kind as an unverifiable prerequisite and names the blocker, the specific measure that was out of reach, and why",
+        "The answer explains the third-state reasoning: unmet would block possibly-finished work, met would risk building without the prerequisite, and a person can verify the measure cheaply"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "ready-without-proof-vs-transport-unavailable",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two sub-scenarios; answer both. In each, the caller passed a READY judgement with dependency context NOT marked as its complete set, and no known-true control edge is available. (A) Your own transport probe FOUND a working dependency read (an authenticated gh), but you have no way to prove its visibility across the cross-repository boundary this issue's blockers could cross; prose names no blockers and the read returns none. (B) Same situation, but your probe found NO dependency read at all (GitHub MCP only, no gh) — the same condition the caller reported as 'dependency transport unavailable'. Question: for each sub-scenario, do you implement or return, and with what outcome/kind?",
+      "expected_output": "(A) Return NEEDS_USER, kind unproven dependency view — a caller passed READY through without a proven view, and your read, though present, has unproven visibility; the caller's blindness does not exempt a read you actually have. (B) Proceed as for a direct invocation and carry the limitation into the report — the carve-out keys on YOUR failed probe: no proof is obtainable by anyone, and refusing would deadlock every issue on the tracker.",
+      "assertions": [
+        "For sub-scenario A the answer returns NEEDS_USER with kind 'unproven dependency view' and does not implement",
+        "For sub-scenario B the answer proceeds with implementation (does not return NEEDS_USER), carrying the unproven-completeness limitation in its report",
+        "The answer keys the distinction on the worker's OWN probe result (a found-but-unproven read gets no exemption; only the worker's own failed probe triggers the carve-out)"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "commit-before-the-long-check",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you have just finished a coherent chunk of implementation — eight files edited, nothing committed yet. The next step is the repository's full test suite, which takes about ten minutes, and you are running in an ephemeral cloud container. The code might not pass; you have not verified it. Question: what do you do immediately before starting the test run, and does the possibility that the tests fail change it?",
+      "expected_output": "Commit and push the work to the issue branch BEFORE running the suite. Test failure does not change it: a commit is a save, not a correctness claim — green is not a precondition, an imperfect checkpoint beats a perfect one never made, and the check's minutes are exactly when the container is most likely to disappear.",
+      "assertions": [
+        "The answer commits AND pushes the completed edits before starting the long test run",
+        "The answer states that possible test failure does not defer the commit (a commit is a save, not a claim of correctness; green is not a precondition)",
+        "The answer grounds the rule in bounded loss on an ephemeral container (the long check is when the container is most likely to disappear)"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "coverage-finding-reaches-create-pr",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: your issue declared a dependency on a backend issue that is closed with a merged, correctly linked PR — satisfied on paper. Implementing, you found the specific API capability your issue needs is absent from that merged code, so you shipped your UI with that call stubbed and one acceptance criterion unmet, documenting it. You are now at step 6, invoking create-pr. Question: what exactly must you pass to create-pr about this situation, why can it not be left out, and what linkage form should the PR end up with? Also: after the PR exists, may you subscribe to its CI events before returning, to be helpful?",
+      "expected_output": "Pass the coverage finding explicitly (the dependency satisfied on paper, the absent capability, the unmet criteria). Silence auto-closes the issue: create-pr's default is a closing keyword, so the PR must come out linked Part of: (plus Blocked by: the prerequisite), never Closes:. And no — never subscribe/arm anything; the caller supervises, and you return leaving nothing armed.",
+      "assertions": [
+        "The answer passes the coverage finding to create-pr explicitly and explains that silence produces a closing keyword that auto-closes an unfinished issue",
+        "The answer expects the non-closing linkage form (Part of:, with the prerequisite referenced) rather than Closes:/Fixes:/Resolves:",
+        "The answer refuses to subscribe to PR events or arm any watcher before returning — monitoring is neither performed nor delegated; the caller supervises"
+      ],
+      "files": []
+    }
+  ]
+}
