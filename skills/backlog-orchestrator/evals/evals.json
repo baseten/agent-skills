@@ -1,0 +1,66 @@
+{
+  "skill_name": "backlog-orchestrator",
+  "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "gate-opt-in-and-outstanding-items",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a settled tranche spans repos R1 and R2. R1's .claude/backlog-orchestrator.json sets auto-merge: true; R2 has no config file. The invocation argument says 'auto-merge everything'. PR-A (in R1) is green, conflict-free, review clean, published-ready, no recovery ref — but the tranche has one DECISION action point that settled without being ruled on (it concerns PR-B's scope, not PR-A). PR-C (in R2) is equally clean. Question: which PRs may this run merge, and why?",
+      "expected_output": "None merge. PR-C never merges: R2 never opted in, and an invocation argument can switch auto-merge off but never on — the repository's opt-in is the only route. PR-A's repo opted in, but invariant 12's gate requires no DECISION/MERGE_RISK/NEEDS_USER outstanding ANYWHERE in the tranche, not only on that PR — and an unruled settled DECISION is outstanding (unruled is not clean). The gate stays shut for PR-A until the decision is ruled.",
+      "assertions": [
+        "PR-C is not merged: the invocation argument cannot open auto-merge for a repository that did not opt in via its own config",
+        "PR-A is not merged either: the unruled DECISION is outstanding tranche-wide, and the gate's outstanding-item test is tranche-scoped, not per-PR",
+        "The answer treats 'settled without being ruled on' as outstanding (unruled is not clean), not as cleared by settling"
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "release-order-and-merged-pr-deadlock",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a supervision cycle finds a remote worker session stopped on a permission prompt to delete a trigger it armed. Its PR merged hours ago; its branch is pushed. Its worktree still shows two modified issue-owned files nobody committed. Two other sessions appear in the list: one reads RUNNING mid-implementation, and one is a session the user started themselves from another surface. Question: in what order do you handle the blocked worker (and under which rule is it releasable given its PR is merged), and what happens to the other two sessions?",
+      "expected_output": "Checkpoint compliance runs FIRST: capture the two uncommitted files to a recovery ref (ref-neutral, via the tested capture script), verify the capture, and only then archive — archiving first destroys the container and the only copy together. The worker is releasable under the second arm of the releasable test: work reached durable remote state (branch pushed, PR exists — the PR's own state is irrelevant, merged is the common case) and it is blocked on a prompt this run does not need answered (disarming its own wake is cleanup the run does not need). The RUNNING session is never archived without interrupting and capturing first (consumes lost-worker budget); the user's own session is never touched — this run did not create it.",
+      "assertions": [
+        "The answer captures the uncommitted worktree work to a recovery ref BEFORE archiving (checkpoint compliance precedes release, with the archive-first data-loss reason)",
+        "The answer releases despite the merged PR, citing the durable-state-plus-unneeded-prompt arm (PR state irrelevant; a wake the worker armed is cleanup the run does not need)",
+        "The RUNNING session is not archived (interrupt-and-capture with lost-worker budget would be required first) and the user's own session is never reclaimed"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "policy-file-fails-closed",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a repository's .claude/backlog-orchestrator.json parses as JSON and contains exactly: {\"auto-fix-reviewer\": false, \"auto_merge\": true, \"ci-repair-cycles\": 2}. Note the two misspelled keys ('auto-fix-reviewer' missing the s, 'auto_merge' with an underscore); there is no correctly spelled auto-fix-reviewers or auto-merge key. Question: what do auto-fix-reviewers, auto-merge, and ci-repair-cycles resolve to for this repository's PRs, and what does the checkpoint output say?",
+      "expected_output": "auto-fix-reviewers resolves to FALSE: a present policy file containing any unrecognized key resolves auto-fix-reviewers to false unless that key itself parsed successfully — the owner's 'auto-fix-reviewer: false' intent must not yield wider auto-fixing from its own typo. auto-merge resolves to its built-in false (its default is already its closed end — no merges from a misspelling). ci-repair-cycles parsed and stands at 2. The unrecognized keys are reported in the checkpoint output, but the report is the diagnosis, not the safeguard.",
+      "assertions": [
+        "auto-fix-reviewers resolves to false because unrecognized keys are present and no valid auto-fix-reviewers key parsed",
+        "auto-merge resolves to false (built-in default = closed end); the misspelled auto_merge grants nothing",
+        "The valid ci-repair-cycles key stands as written, and the unrecognized keys are reported in the checkpoint output"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "close-is-not-a-merge",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: while settled, one event batch arrives: seven stacked PRs from this run were merged by the owner, and one PR (for issue I-9) was closed WITHOUT merging. Budget remains and in-scope issues depend on all eight. Question: how does the frontier recompute treat the seven merges versus the close, what happens to I-9 and its downstream issues, and do you redispatch I-9's work?",
+      "expected_output": "Advance on the seven merges: reconcile durable state, restack descendants, recompute READY over the same bounded manifest crediting merges only, re-run the preflight at the escalation-selected mode, dispatch into free slots. The close is never an advance: I-9 stays short of DONE, its descendants stay blocked (an ancestor that never landed unblocks nothing), and the path is held as NEEDS_USER naming the closed PR — abandonment, rejection, and supersession are indistinguishable from the event. No redispatch on the close itself; only an answer redispatches. The merges in the batch must not launder the close.",
+      "assertions": [
+        "The seven merges advance the frontier (with reconcile, restack, preflight before new dispatch); scope never widens",
+        "The close credits nothing: I-9 and everything downstream are held, surfaced as NEEDS_USER naming the closed PR",
+        "No worker is redispatched for I-9 on the close event itself — redispatch waits on the human's answer"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "checkpoint-capture-constraints",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a live subagent worker has eight finished files uncommitted; a nudge last cycle did not land. A teammate proposes: 'run git add + git commit in its worktree and push the issue branch — fastest path'. Question: (a) is the teammate's approach acceptable, and what do you do instead? (b) name the constraints any capture must satisfy before its push happens, and where the tested implementation lives. (c) the capture succeeds and the worker later returns PR_OPEN and pushes its own commits covering the work — what happens to the recovery ref?",
+      "expected_output": "(a) No: never run git add in a live worker's index (two actors staging into one .git/index can capture a half-written tree), and never advance the issue branch under a live worker (its next push becomes a non-fast-forward rejection, and a worker that force-pushes destroys the snapshot). Capture ref-neutrally to a recovery ref via scripts/checkpoint-capture.sh. (b) Constraints: moves nothing the worker holds (scratch index, commit-tree attaches no ref); seeds the scratch index from the worker's head before overlaying issue-owned paths; validates against the parent before pushing and fails closed (diff-tree unpiped, grep status checked, &&-gated, no reliance on set -e); one force-replaced ref per issue branch; branch name encoded escaping % before /; test suite re-run after any edit. (c) Once the worker's own pushed commits cover the work, the ref is redundant — drop it when the PR reaches durable state.",
+      "assertions": [
+        "The answer rejects git add/commit in the live worker's index and any advance of the issue branch, capturing to a recovery ref via the tested script instead",
+        "The answer names the core capture constraints: seed-from-head-first, ref-neutral (nothing the worker holds moves), fail-closed validation before the push, one force-replaced ref per branch, injective %-before-/ encoding",
+        "The answer drops the ref as redundant once the worker's own push covers the work and the PR reaches durable state"
+      ],
+      "files": []
+    }
+  ]
+}
