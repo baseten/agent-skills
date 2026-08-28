@@ -1,0 +1,66 @@
+{
+  "skill_name": "validate-backlog",
+  "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "unavailable-by-construction-is-not-fail",
+      "prompt": "You are executing the validate-backlog skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: shallow mode, a GitHub backlog of 9 issues in one repository, running in a cloud container. The probe finds: GitHub MCP present (reads sub-issues fine, exposes no blocked-by read), no gh CLI. Issue prose names several blockers; native metadata names none (it cannot). Hierarchy enumeration was proven against the manifest's own prose listing of children. Question: (a) what result do you return and under what classification? (b) is 'prose names blocker X but native metadata lacks it' reported as a visibility disagreement? (c) where must the classification travel?",
+      "expected_output": "(a) PASS_WITH_WARNINGS under the named class 'dependency transport unavailable' — not FAIL (the limitation is uniform, permanent, precisely known; FAIL would stop every GitHub backlog permanently). Prose is the declared source; blocker-set completeness is recorded as unproven. (b) No — native could not have named it; that comparison would fire for every prose blocker and each false positive invalidates a visibility proof. (c) On the run's state, in every dispatch prompt, and in the report — never silent — naming transport, credential identity, and the boundaries left unproven as 'not visible via <transport>'.",
+      "assertions": [
+        "The answer returns PASS_WITH_WARNINGS with the named 'dependency transport unavailable' class, explicitly not FAIL, with the uniform/permanent/precisely-known reasoning",
+        "The answer refuses to report prose-vs-native as a visibility disagreement in this classification, and records blocker-set completeness as unproven",
+        "The answer requires the classification to travel on run state, every dispatch prompt, and the report (never silent)"
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "hierarchy-exception-never-borrowed",
+      "prompt": "You are executing the validate-backlog skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the dependency probe found no blocked-by read (cloud container), so the blocker-edge boundary is classified 'dependency transport unavailable'. Enumeration of the root manifest's children ran through the only available credential; the manifest body contains no list of its children, the caller supplied no issue set, and no second source exists — the scope over dispatchable issues rests on that one unproven hierarchy read. A colleague argues the transport-unavailable classification should cover this too, since 'the transport is the problem in both cases'. Question: does the dependency classification excuse the unproven hierarchy boundary, and what result do you return?",
+      "expected_output": "No — the exception covers blocker edges and nothing else. Hierarchy is a different transport with a different answer (MCP reads sub-issues fine), and a failed dependency probe says nothing about enumeration completeness. A truncated hierarchy read silently shortens the authorized set itself — invisible issues are not blocked, they are missing, and nothing downstream notices. Unproven hierarchy over dispatchable scope is a FAIL; the scope-derivable-only-from-one-unproven-transport case is itself the finding and cannot return PASS.",
+      "assertions": [
+        "The answer refuses to extend the dependency-transport-unavailable classification to the hierarchy boundary",
+        "The answer explains the danger: a truncated enumeration silently shortens the authorized set, and missing issues are invisible rather than blocked",
+        "The answer returns FAIL (not PASS or PASS_WITH_WARNINGS) for the unproven hierarchy boundary over dispatchable scope"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "curl-is-worse-than-absence-across-repos",
+      "prompt": "You are executing the validate-backlog skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: cloud container, no gh CLI, MCP exposes no blocked-by read. The authorized scope spans TWO repositories. A raw curl against the REST API returns blocked-by edges for every issue, with no errors. Question: do you build the dependency graph from the curl read? What is wrong with it, and what do you do instead? Would your answer change if the whole scope lived in one repository?",
+      "expected_output": "No. From a cloud container curl returns only same-repository edges, silently dropping cross-repository ones — a partial answer wearing the shape of a complete one, on exactly the edges a multi-repo backlog turns on; its visibility proof can never pass. Prefer the honest absence: classify 'dependency transport unavailable' and use prose as the declared source. In a single-repository scope curl is usable, but only with that limit recorded.",
+      "assertions": [
+        "The answer refuses to use the multi-repo curl read despite it returning a complete-looking, error-free edge set",
+        "The answer identifies the silent cross-repository edge loss and prefers the honest 'dependency transport unavailable' classification over the partial read",
+        "The answer allows curl only for single-repository scope, with the limitation recorded"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "agreement-is-not-proof",
+      "prompt": "You are executing the validate-backlog skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a local session with authenticated gh; the graph spans repositories A, B, and C. No caller-confirmed edge and no just-written edge exists anywhere (no known-true case). You read the relationships twice — once via gh and once via raw HTTP, both authenticating with the same GITHUB_TOKEN — and the two edge sets agree exactly. You also hold one proven control: a visible A->B edge confirmed earlier by the caller. Question: (a) does the agreement between the two reads prove visibility? (b) what does the A->B control prove about edges into repository C? (c) what do you do about the C boundaries, and what does that mean for the result if C contains dispatchable issues?",
+      "expected_output": "(a) No — two transports authenticating the same way reproduce the same blind spot; agreement corroborates, only a known-true case proves. (b) Nothing — one control per boundary; a visible A->B edge says nothing about A->C or B->C. (c) The C boundaries are unproven; say so rather than promoting agreement into proof. With dispatchable issues in C, an unproven boundary over dispatchable scope is a FAIL, reported as 'not visible via <transport>' naming the credential identity and boundaries.",
+      "assertions": [
+        "The answer denies that the gh/raw-HTTP agreement proves visibility (same token, same blind spot; agreement corroborates at best)",
+        "The answer scopes the A->B control to that boundary only — it proves nothing about edges into C (one control per boundary)",
+        "The answer marks the C boundaries unproven and returns FAIL given dispatchable scope in C, rather than PASS or a weighable warning"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "worker-report-comment-is-skipped",
+      "prompt": "You are executing the validate-backlog skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: during the prose scan (check 6), issue I-7's comments include one whose first line is exactly '**Worker report — unclassified evidence, not a dependency record.**'; its body says 'observed blocked by <URL-X> at dispatch time' — and URL-X is an edge the orchestrator previously classified as stale. I-7's own body also says 'depends on <URL-Y>'. Question: which of URL-X and URL-Y enter the textual dependency set, and why is the skipped one skipped?",
+      "expected_output": "URL-Y enters (issue body prose). URL-X does not: the comment is a previous worker's persisted report, not a statement about the issue's dependencies, and scanning it would put the stale edge back into the normalized DAG on every validation from then on — before implement-issue-core's identical exclusion could ever apply. Nothing is lost: whatever the report observed, it observed in the issue's own prose, which the scan reads anyway.",
+      "assertions": [
+        "URL-Y (from the issue body) enters the textual dependency set",
+        "URL-X (from the worker-report comment) is excluded — the comment matching the exact first-line marker is skipped",
+        "The answer explains the stale-edge reintroduction this prevents (the report would resurrect an edge the orchestrator already classified as stale, on every future validation)"
+      ],
+      "files": []
+    }
+  ]
+}
