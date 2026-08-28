@@ -21,7 +21,7 @@
       "assertions": [
         "The answer refuses to resolve the threads without an applied code fix",
         "The answer cites/uses the rule that a reply alone is not enough to resolve",
-        "The answer offers the legitimate paths instead (apply the fix, or leave resolution to the user) rather than silently complying"
+        "The answer offers the legitimate paths instead (apply the requested fixes, or decline and explain) rather than silently complying \u2014 it does not suggest resolving the still-unaddressed threads"
       ]
     },
     {
