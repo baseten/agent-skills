@@ -1,6 +1,6 @@
 ---
 name: repair-pr
-description: Performs one bounded repair pass on an existing pull request for either CI failure or actionable review feedback, using the PR's existing branch/worktree and returning immediately after pushing the repair. Use under implement-issue or backlog-orchestrator; it does not own long-lived monitoring.
+description: Performs one bounded repair pass on an existing pull request for a CI failure, actionable review feedback, or a settle-time finding, using the PR's existing branch/worktree and returning immediately after pushing the repair. Use under implement-issue or backlog-orchestrator; it does not own long-lived monitoring.
 ---
 
 # Repair PR
@@ -15,8 +15,8 @@ Accept:
 - canonical issue URL;
 - repository;
 - dedicated checkout/worktree for the PR branch;
-- repair type: `ci` or `review`;
-- exact failure logs/check summaries or review thread(s);
+- repair type: `ci`, `review` or `finding`;
+- the evidence matching the type: exact failure logs/check summaries for `ci`; review thread(s) for `review`; for `finding`, the settle-time finding verbatim — a `summarize-tranche` `IN_FLIGHT_FIX` action point, or a recorded walkthrough ruling that requires this PR's code to change — with the durable site it lives at;
 - remaining repair-cycle budget;
 - expected branch/base when supplied.
 
@@ -61,6 +61,22 @@ When `repair type = review`:
 Do not spend cycles arguing with subjective feedback or inventing product intent.
 
 Never change the PR's draft state. Promoting a draft PR to ready once its first review round is fully resolved is a supervisor decision that needs the whole-PR picture — which review rounds have completed, what the PR's as-created draft state was, whether CI is green. Report the remaining-thread count and let the caller decide.
+
+## Finding repair
+
+When `repair type = finding`:
+
+The evidence is a settle-time finding — an `IN_FLIGHT_FIX` action point from `summarize-tranche`, or a recorded `settle-outstanding-decisions` ruling that requires this PR's code to change — supplied verbatim, the way `ci` supplies logs and `review` supplies threads. It names actionable work on this PR that no failing check and no review thread carries, so neither of the other two types has a compliant invocation for it. The caller's budget for this type is its own counter (`finding-repair-cycles` — `backlog-orchestrator` owns the key and the argument for it being separate).
+
+1. read the supplied finding and its durable site;
+2. verify it still holds against the current head — a later push may already have fixed or mooted it. Where it no longer applies, return `NO_CODE_CHANGE` with the reason rather than changing code, and no cycle is consumed;
+3. make one coherent targeted repair scoped to the finding — for a ruling, the change the owner's answer implies, never a reopening of the question they already ruled on;
+4. run the smallest relevant local verification;
+5. commit only issue-owned changes;
+6. push the repair branch;
+7. return immediately with the new head SHA and checks run.
+
+Do not widen into other action points or findings the caller did not supply, and do not resolve or reply to review threads here — a finding is not a thread, and where a thread carries the same work the caller dispatches `review` instead.
 
 ## Recovery / checkpointing
 

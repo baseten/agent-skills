@@ -5,7 +5,7 @@ Reusable Claude Code skills for issue implementation, PR workflows, backlog vali
 ## Core workflow skills
 
 - `implement-issue-core` — implements exactly one tracked issue to a durable remote PR state, including remote branch/checkpoint pushes for restart recovery. It does not own long-lived CI/review monitoring.
-- `repair-pr` — performs one bounded CI or review repair pass on an existing PR and pushes the repair.
+- `repair-pr` — performs one bounded repair pass on an existing PR — a CI failure, a review round, or a settle-time finding (an `IN_FLIGHT_FIX` action point or a code-changing walkthrough ruling) — and pushes the repair.
 - `implement-issue` — convenient standalone single-issue orchestrator. It composes `implement-issue-core`, supervises that one PR's CI/review lifecycle, and invokes `repair-pr` for bounded fixes.
 - `create-pr` — creates correctly linked PRs, preserves explicit stack bases, adds `Depends on:` for direct stack parents, verifies tracker linkage, and triggers repository review automation unless explicitly deferred.
 - `resolve-pr-comment` — addresses one PR review thread using the repository's review workflow.
@@ -244,7 +244,7 @@ Between the summary and the ranking — when `auto-request-settle` is on, the de
 
 Then it invokes `plan-merge-order`, which ranks the open PRs by downstream leverage and returns the review order, merge batches, and forced orderings. Stack ancestry is one input to that ranking, not the whole of it: the highest-leverage PR is often not a stack base, and a PR can unblock nothing on its own while still gating a large subtree behind it.
 
-Where a repository opted into auto-merge, the invariant 12 gate is evaluated only after the summary, walkthrough, and ranking — its decision/merge-risk inputs do not exist earlier — and any merge it performs is reported with the gate evidence.
+Where a repository opted into auto-merge, the invariant 12 gate is evaluated only after the summary, walkthrough, and ranking — its decision/merge-risk inputs do not exist earlier — and any merge it performs is reported with the gate evidence. A summary `IN_FLIGHT_FIX`, or a walkthrough ruling that requires code to change, un-settles the run instead: it dispatches one `repair-pr` pass with `repair type = finding`, bounded by its own `finding-repair-cycles` budget, then settles again from a fresh summary. And a PR whose dependency view was never proven complete — a run whose transport cannot read the dependency graph, accepted for dispatch — holds the gate for that PR: proceedable is not mergeable, and its merge stays the owner's.
 
 ## Cloud bootstrap
 
