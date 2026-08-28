@@ -118,8 +118,10 @@ prompting", not by "is this safe to grant an adversary".
   reporting separate those two, so read them rather than the session list.
 
 Nothing here grants merge authority: `merge_pull_request` is allowed because
-`merge-stack` is an explicitly invoked skill, and `backlog-orchestrator`'s
-no-automatic-merge invariant is a skill rule, not a permission boundary.
+`merge-stack` is an explicitly invoked skill, and `backlog-orchestrator` merges
+only through its invariant 12 gate — off by default, opt-in per repository via
+`.claude/backlog-orchestrator.json` — which is a skill rule, not a permission
+boundary.
 
 ## Local Codex usage
 
@@ -152,13 +154,17 @@ The orchestrator picks a tier itself from the tools actually callable in the ses
 
 Invoking the skill is itself the authorization to dispatch workers, so a session whose standing guidance is "no subagents unless asked" needs no extra confirmation for the fan-out.
 
+## Per-repository policy
+
+A repository can tune `backlog-orchestrator` for its own PRs with `.claude/backlog-orchestrator.json` — the same defaults the skill documents (concurrency, budgets, repair cycles, `auto-request-settle`) plus two review/merge policies: `auto-merge`, whether the invariant 12 merge gate may open at all (a gate-authorized merge publishes a still-draft PR as a step of merging it — a merge never happens on a draft — and never touches an explicitly held draft), and `auto-fix-reviewers`, bounding whose review comments the run may auto-fix and resolve — `true` (the default) for every reviewer, `false` for none, or a list of vetted logins where the author must be both a bot per the GitHub API and on the list. The invoking user's feedback is always actionable when it roots a review thread, whatever `auto-fix-reviewers` resolves to — their comment directs the run — while timeline comments are conversation, and the run never opens review threads on a PR it drives, so its own output can never qualify as feedback. Policy resolves **per PR, from the repository that PR lives in**, so a run spanning a personal and a work repository applies each repo's own rules within the same tranche. The file is owner-authored configuration: it is read at preflight from the repository state the run started from, never from anything a worker wrote mid-run, and a malformed file fails closed, reported rather than guessed at — to the built-in defaults, except `auto-fix-reviewers`, which a present-but-unusable file or a wrong-typed value resolves to `false` rather than to its permissive default. An invocation argument overrides any key except `auto-merge`, which it can switch off but never on — the repository's opt-in is the only route to a merge. The resolved policy is reported per PR in the checkpoint output.
+
 ## Recovery model
 
 Local/cloud worktrees are isolation, not durable storage. `implement-issue-core` pushes the issue branch early and pushes coherent implementation checkpoints — but the orchestrator treats that as best-effort rather than done. Workers reliably hold completed work uncommitted even when told not to, so the parent inspects every in-flight worktree each supervision cycle and, where a nudge has already failed, commits the work itself. Enforcement lives in the loop, not in the dispatch prompt. If a cloud container or a Dynamic Workflow's session disappears, backlog orchestration resumes from tracker + remote branch/PR state rather than relying on the lost worktree or runtime state — a Dynamic Workflow does not persist across a session exit, so this recovery path is required, not just a fallback.
 
 ## PR supervision
 
-Implementation workers return after durable PR creation. When Claude Code's own background PR watch/notification behavior (a session-level feature, separate from Dynamic Workflows) surfaces worker-created PRs to the parent session, the orchestrator consumes that PR/CI/review state directly. The **platform may observe the event; the orchestrator remains the policy owner** deciding whether repair budgets allow another Sonnet `repair-pr` worker. If that background behavior has auto-merge enabled, disable it or treat any resulting merge as outside the orchestrator's control — it conflicts with the no-automatic-merge invariant.
+Implementation workers return after durable PR creation. When Claude Code's own background PR watch/notification behavior (a session-level feature, separate from Dynamic Workflows) surfaces worker-created PRs to the parent session, the orchestrator consumes that PR/CI/review state directly. The **platform may observe the event; the orchestrator remains the policy owner** deciding whether repair budgets allow another Sonnet `repair-pr` worker. If that background behavior has auto-merge enabled, disable it or treat any resulting merge as outside the orchestrator's control — it merges outside the invariant 12 gate.
 
 When first-class PR events are unavailable, the parent falls back to other subscriptions or bounded polling. It does not keep one idle Sonnet agent alive per PR.
 
@@ -166,7 +172,7 @@ When first-class PR events are unavailable, the parent falls back to other subsc
 
 A **mechanical** push — a restack, or a renumber/regeneration of a claimed artifact such as a migration number or a lockfile — moves identity or ordering rather than behavior. It consumes no review cycle, re-triggers no review, and does not reset a PR's reviewed state; the repository's deterministic checks validate it instead. This matters right after a sibling merges, when descendants restack for reasons unrelated to their own diffs. Where no such check exists, the push is substantive like any other.
 
-A PR opened as a draft is promoted to ready for review once its first automated review round has completed and every finding from it is resolved, CI is green, and nothing is waiting on the user. The supervisor owns that decision — `repair-pr` reports how many actionable threads remain but never changes draft state itself. Promotion is a review-readiness signal only; it never implies merge authority.
+The orchestrator does not promote drafts: marking a PR ready is how you ask a person to review — a social act, never an autonomous decision. A draft is published in exactly two ways: the owner does it themselves, or the invariant 12 merge path publishes it as a step of merging it. A draft held by an explicit instruction, a repository convention, or a caller's draft preference is excluded from the gate entirely — neither published nor merged, reported as held. `repair-pr` reports how many actionable threads remain but never changes draft state.
 
 ## Settled tranches
 
@@ -177,6 +183,8 @@ At that point `backlog-orchestrator` invokes `summarize-tranche` — a short acc
 Between the summary and the ranking — when `auto-request-settle` is on, the default — it requests `settle-outstanding-decisions` over the summary's decision items, seeded from the summary so the two skills cannot disagree about what is outstanding. The walkthrough asks only where someone is present; unattended it declines in one line and the decisions stay in the summary's action points. It runs before the ranking because a ruling can change what should merge.
 
 Then it invokes `plan-merge-order`, which ranks the open PRs by downstream leverage and returns the review order, merge batches, and forced orderings. Stack ancestry is one input to that ranking, not the whole of it: the highest-leverage PR is often not a stack base, and a PR can unblock nothing on its own while still gating a large subtree behind it.
+
+Where a repository opted into auto-merge, the invariant 12 gate is evaluated only after the summary, walkthrough, and ranking — its decision/merge-risk inputs do not exist earlier — and any merge it performs is reported with the gate evidence.
 
 ## Cloud bootstrap
 

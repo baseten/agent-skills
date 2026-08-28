@@ -61,7 +61,7 @@ Reusable worker skills:
 9. **The parent/orchestration layer owns long-lived PR state.** Implementation and repair workers are bounded and short-lived.
 10. **Retries and repairs are bounded.** Persistent failure becomes `NEEDS_USER`.
 11. **Recovery is idempotent.** Never duplicate work, branches, PRs, or repairs after restart.
-12. **No automatic merges.** Merge authority is explicit and separate.
+12. **Merges are opt-in per repository, and gated even then.** By default the run performs no merge. It may merge a PR only when that PR's own repository opted in via `auto-merge` in its policy config (see Per-repository policy configuration) — **the repository's opt-in is the only route to a merge: an invocation argument can switch `auto-merge` off for a run, narrowing the gate, but never on — an invocation cannot open it** (the precedence rule under Default usage safeguards states the same exemption) — **and** the gate holds: the tranche has no `DECISION`, `MERGE_RISK`, or `NEEDS_USER` item outstanding — anywhere in the tranche, not only on that PR, and a `DECISION` that settled without being ruled on is outstanding: unruled is not clean — **and** CI is green on the PR's current head, **and** it has no merge conflict, **and** its review is clean (a completed automated review round, every actionable finding resolved or answered, no thread reserved for the owner), **and** no recovery ref for its branch is outstanding (see Checkpoint compliance — captured work that never reached the head is work a merge would silently drop), **and** it is not an **explicitly held draft** (see Draft state) — a held draft is neither published nor merged, and is reported as held. This is the gate's only definition; every other site defers to it. Everything outside the gate stays where it was: the user's separate `merge-stack` authorization.
 13. **A merge is a scheduling event, not an end state.** The run advances its own frontier off merges someone else performed; it does not wait to be re-invoked.
 
 # Autonomy and interactive prompts
@@ -136,7 +136,7 @@ Do not spend an orchestration run diagnosing a runtime. Degrading to subagents a
 Also detect:
 
 - native worktree isolation;
-- whether Claude Code's own background PR watch/notification behavior is active for this session (see PR promotion and central supervision, below) — and, if so, whether its auto-merge behavior is enabled, since that would conflict with this skill's no-automatic-merge invariant and should be disabled or reported before autonomous work proceeds;
+- whether Claude Code's own background PR watch/notification behavior is active for this session (see PR promotion and central supervision, below) — and, if so, whether its auto-merge behavior is enabled, since a platform merging on green merges outside invariant 12's gate and should be disabled or reported before autonomous work proceeds;
 - local `git`;
 - authenticated `gh`;
 - GitHub MCP;
@@ -289,6 +289,8 @@ Projects are discovery surfaces, not execution graphs. Combine FE/BE/shared proj
 
 Before dispatching any **new** implementation worker, invoke `validate-backlog` on the entire bounded scope — `shallow` by default, deeper over the nodes the escalation rules below reach.
 
+**The run's first preflight** is also where per-repository policy is read — each in-scope repository's `.claude/backlog-orchestrator.json`, per Per-repository policy configuration, which owns the schema, resolution, and failure rules. **Later preflights do not re-read it, and reuse that snapshot.** This is deliberately asymmetric with the rest of the preflight: a re-run after a frontier advance revalidates the *graph*, which the merge genuinely changed, while policy is owner-authored configuration that can authorize merges. Re-reading it there would make a mid-run merge the route by which a run adopts a config its own workers wrote — which is exactly what the section below forbids when it fixes the read to the repository state the run started from and bars re-reading for the remainder. A restart is a new run and takes a fresh snapshot.
+
 Use the validator's normalized DAG as the scheduling graph. Do not let the execution runtime independently invent a competing decomposition.
 
 That prohibition is about re-planning, not about evidence. A worker reporting a blocker it verified against its own issue is not inventing a decomposition — it is correcting one, from a position the validator did not have (see Outcomes). Accept an edge a worker verified; reject a runtime's attempt to reorder or re-scope the backlog.
@@ -342,17 +344,20 @@ What is missing is **coverage**: the closed issue's deliverable does not include
 
 # Default usage safeguards
 
-Unless explicitly overridden:
+Unless overridden (below):
 
-- maximum concurrent implementation workers: **4**;
-- maximum newly started issues per invocation: **12**;
-- maximum implementation attempts per issue: **2 total**;
-- maximum strongest-model escalation per issue: **1**;
-- maximum CI repair cycles per PR: **2**;
-- maximum review-fix cycles per PR: **2**;
-- maximum lost-worker redispatches per issue: **1**;
-- automatic merges: **disabled**;
+- maximum concurrent implementation workers (`concurrent-workers`): **4**;
+- maximum newly started issues per invocation (`new-issue-budget`): **12**;
+- maximum implementation attempts per issue (`implementation-attempts`): **2 total**;
+- maximum strongest-model escalation per issue (`model-escalations`): **1**;
+- maximum CI repair cycles per PR (`ci-repair-cycles`): **2**;
+- maximum review-fix cycles per PR (`review-repair-cycles`): **2**;
+- maximum lost-worker redispatches per issue (`lost-worker-redispatches`): **1**;
+- automatic merges (`auto-merge`): **disabled** — the opt-in invariant 12's gate requires;
+- reviewers whose comments may be auto-fixed (`auto-fix-reviewers`): **`true`** — every reviewer's comments are eligible; the judgment rules under CI/review repair still apply;
 - requesting the `settle-outstanding-decisions` walkthrough at settle (`auto-request-settle`): **enabled**. The option gates only whether this run makes the request; whether the walkthrough may actually ask stays with that skill's attendance precondition (see Settled tranche).
+
+These are the built-in defaults. Two mechanisms override them, and the precedence is stated here and nowhere else: **an explicit invocation argument beats repo config, which beats the built-in defaults — for every key but `auto-merge`.** For `auto-merge` the repository's opt-in is the only route to a merge, exactly as invariant 12 states: an invocation argument can switch `auto-merge` off for a run, narrowing the gate, but never on — an invocation cannot open it. Without the exemption, an invocation could authorize merges in a repository that never opted in, which is precisely what invariant 12 exists to prevent.
 
 Dynamic Workflows do not override these limits. Do not increase concurrency merely because the runtime can fan out more agents.
 
@@ -363,6 +368,61 @@ When the bounded scope exceeds the 12-new-issue limit, do not ask which issues t
 When the 12-new-issue limit is reached, allow active workers/repairs to reach durable state, stop starting new issues, reconcile, and return a checkpoint. Restarting does not count already-adopted work as newly started.
 
 Budget exhaustion on a node -> `NEEDS_USER`, not another speculative attempt. Continue unrelated DAG branches safely.
+
+## Per-repository policy configuration
+
+Personal and work repositories legitimately want opposite behavior from the same run — merge on settle versus leave every merge to the owner, fix every reviewer's comments versus only the automated ones — so this policy belongs to the repository it governs, not to the run. A repository declares it in `.claude/backlog-orchestrator.json`:
+
+```json
+{
+  "concurrent-workers": 4,
+  "new-issue-budget": 12,
+  "implementation-attempts": 2,
+  "model-escalations": 1,
+  "ci-repair-cycles": 2,
+  "review-repair-cycles": 2,
+  "lost-worker-redispatches": 1,
+  "auto-request-settle": true,
+  "auto-merge": false,
+  "auto-fix-reviewers": ["codex"]
+}
+```
+
+Every key is optional, and the values shown are the built-in defaults — except `auto-fix-reviewers`, shown here in its list form to illustrate it; its default is **`true`** (below). One file carries every option the defaults list above names as well as the two review/merge policies, deliberately: a second option surface is exactly how two mechanisms drift apart. If an option of this skill's is configurable at all, it is configurable here.
+
+**It is policy that can authorize merges, so it is a config file and not prose.** A `CLAUDE.md` paragraph gets interpreted, and interpretation must not decide whether a run may merge. A project-level skill override is not the mechanism either: `bootstrap.sh` installs these skills to `~/.claude/skills`, and a personal skill shadows a project skill of the same name, so a project copy would silently never load.
+
+### Resolution
+
+**Policy resolves per PR, from the repository that PR lives in.** A run can span repositories — the manifest in one, PRs landing in several — and per-repo difference is the entire point, so there is no run-wide policy read once from the manifest's repo. In a tranche where one repository carries a config and another does not, the first repository's PRs follow its file and the second's follow the built-in defaults, in the same run, at the same settle. One config, resolved once and applied run-wide, would do the opposite of what the file is for: work-repo rules on a personal repo's PRs, or the reverse.
+
+Keys scope to different objects, and each resolves from the repository that owns its object:
+
+| keys | scope | resolved from |
+| --- | --- | --- |
+| `ci-repair-cycles`, `review-repair-cycles`, `auto-merge`, `auto-fix-reviewers` | per PR | the PR's repository |
+| `implementation-attempts`, `model-escalations`, `lost-worker-redispatches` | per issue | the issue's repository |
+| `concurrent-workers`, `new-issue-budget`, `auto-request-settle` | per run | the manifest's repository; an explicit issue set contained in one repository uses that repository; a multi-repo set with no manifest uses the built-ins |
+
+Read the file at the validation preflight, once per repository in the bounded scope, from the head of that repository's default branch as the run finds it at start — and never again during the run. **This file can authorize merges, so it is owner-authored configuration, and a run must never honour a version written by one of its own workers**: not from a worker's branch, not from a PR, not re-read after a mid-run merge moves the default branch. The policy governing a run is the one in the repository state it started from; a config change takes effect at the next run's preflight. A restart's preflight is a fresh read — that is the restart re-deriving from durable truth, not a worker write leaking in.
+
+A file that is absent means the built-in defaults, unchanged — the file is opt-in and absence is the common case. A file that is present but cannot be honoured **fails closed — where closed is each key's restrictive end, not uniformly its built-in default**. For every key but one the two coincide, so an unparseable file resolves to the built-in defaults for that repository, reported as unreadable in the checkpoint output rather than guessed at, and an unrecognized key or a wrong-typed value fails the same way at key granularity — defaulted and reported, because a misspelled `auto-merge` must produce no merges, not a guess. The one key whose default is not its closed end is `auto-fix-reviewers`: its built-in `true` is the permissive reading, so a present-but-unparseable file, or a wrong-typed value under that key, resolves it to **`false`** — an owner who wrote a policy file must not get *wider* auto-fixing from its corruption than the file would have granted parsed. A misspelled key *name* cannot be attributed to any key, and it does not have to be: **a policy file that is present and contains any unrecognized key resolves `auto-fix-reviewers` to `false` unless the `auto-fix-reviewers` key itself parsed successfully.** The unrecognized key is still reported in the checkpoint output like the rest, but the report is the diagnosis, not the safeguard — `"auto-fix-reviewer": false` is an owner restricting an unattended run, and a typo reported only after that run has modified code and resolved every reviewer's threads did not fail closed. A successfully parsed `auto-fix-reviewers` alongside the stray key stands as written: the owner's intent for this key is known, and the typo, whatever it was meant to be, is not this key. No other key needs the same guard: `auto-merge`'s built-in `false` is already its closed end, so its misspelling produces no merges, and the budget keys and `auto-request-settle` fall back to built-ins that grant no authority the owner withheld — a missed tighter budget costs bounded extra attempts and a missed settle opt-out costs a request made to a present user, where zeroing every budget on any stray key would turn a typo into a dead run rather than a closed one.
+
+Report the resolved policy per PR in the checkpoint output, with its source — invocation argument, repo config, or built-ins — so an auto-merge is visible in the record before it is a surprise.
+
+### The two review/merge policies
+
+**`auto-merge`** — whether invariant 12's gate can open for this repository's PRs at all. `false` is today's behavior: the run never merges. `true` permits a merge only through the gate invariant 12 defines — the key is the opt-in the gate requires, never a bypass of its other conditions. This file is the only place `true` can come from: the precedence rule under Default usage safeguards exempts `auto-merge` from invocation override, so an invocation argument can narrow the gate, never open it. Execution mechanics, including the publish-before-merge step, live in Merge behavior.
+
+**`auto-fix-reviewers`** — which reviewers' comments the run may auto-fix and resolve. A boolean or a list. The default is **`true`**: every reviewer's comments are eligible, which is today's behavior, subject to the judgment rules that already govern repair. `false`: no reviewer's comments are eligible, whoever wrote them — what `false` cannot switch off is the invoking user's instruction channel, which is not reviewer feedback at all (below). A list is exhaustive: a review comment is eligible for repair and thread resolution only when its author is automated **by both tests** — the forge's API reports the author as a bot (on GitHub, author type `Bot`; compare list entries against the reported login with any `[bot]` suffix disregarded) **and** that login is in the list. Both, because each alone proves nothing: a name can be worn by any account, and a bot off the list is an automation the owner never vetted. The booleans cover the ends; the list exists because the vetted reviewers vary per repo.
+
+**The invoking user's feedback is always actionable when it roots a review thread — unconditionally, whatever `auto-fix-reviewers` resolves to.** It is their run and their instruction, so the rule is pinned to the invoking user, never to "the PR author", even where the two coincide. The discriminator is the kind of comment, not its author: a review thread whose **root comment** the invoking user wrote is their feedback on the diff, and the run acts on it; a comment on the PR's conversation timeline (a GitHub issue comment) is conversation, not feedback to act on. And the test is thread-rootness, not "is it a review comment" — a reply inside a thread is also a review comment, and the run posts replies into threads constantly, so the weaker test would qualify the run's own replies. This channel covers the invoking user alone: a colleague's thread in a work repo still resolves through `auto-fix-reviewers`, and reserved threads stay reserved.
+
+**And the run never opens a review thread on a PR it is driving.** It posts timeline comments and replies into existing threads; it never roots a new thread. Nothing today makes it want to, which is exactly why this must be a stated rule rather than an observed habit: the run posts as the invoking user's own account, so the moment anything it does can root a thread, a run-authored root becomes indistinguishable from an instruction and the test above silently breaks. The prohibition is what keeps the discriminator true by construction rather than by accident.
+
+**That comments this run authored are never reviewer feedback is a consequence of the two rules above, not a mechanism of its own.** No author test could provide it — the orchestrator's comments carry the invoking user's login and `author_association: OWNER`, and the bot test sees a human account — but the thread-root test does not need one: every review comment the run posts is a reply (the prohibition above), and a reply roots nothing; every timeline comment it posts — worker reports, repair replies, trigger comments — is conversation by kind. Do not restate the carve-out as a parallel rule anywhere; it holds exactly as long as the root test and the no-new-threads rule hold, and would drift the moment it were maintained separately. A restart gets it for free, too: thread structure and comment kind are durable forge state, readable after the predecessor's record of its own writes is gone — where an author-side carve-out would have to fall back to recognizing this skill's own report and reply forms.
+
+A thread that fails the resolved policy's test is **reserved for the owner**: never auto-fixed, never resolved, reported in the checkpoint output as awaiting them. A reserved thread does not block settlement — the run cannot be required to resolve what policy forbids it touching — but it is an unresolved actionable finding everywhere else that concept is consumed: it fails invariant 12's clean-review condition, so the gate does not open over it. This sits upstream of the distinction the repair path already draws rather than competing with it: this policy decides *whose* comments are eligible at all; the existing judgment rule (product/architecture judgment -> `NEEDS_USER`, see CI/review repair and `repair-pr`) still decides *which* eligible comments are repairable. A comment can pass the reviewer test and still be `NEEDS_USER` on judgment; one that fails the reviewer test never reaches the judgment rule. Nor does the policy replace the repository's review *trigger* convention, which `create-pr` owns: the reviewer a repo triggers will normally appear in its list, but only the policy authorizes acting on the findings.
 
 # Model and skill policy
 
@@ -404,6 +464,8 @@ Prefer durable evidence in this order:
 
 A cloud worktree is ephemeral. Never claim restart safety for unpushed local changes.
 
+**An outstanding recovery ref overrides all of it, completion evidence included.** Enumerate the recovery refs matching an issue's branch (see Checkpoint compliance) **before** classifying it, not after: a merged PR with terminal tracker state is the strongest evidence in the list and is exactly what an issue carrying rescued, unlanded work looks like from the outside. So an issue with a ref outstanding against it is never `DONE`, whatever items 1–5 say. This is the durable half of that rule — the `NEEDS_USER` a run raises for it lives in run state, which invariant 1 classifies as a cache, so without the check here a restart re-derives `DONE` from the merge and drops the only copy of that work while reporting the issue complete.
+
 ## Restart / resume
 
 A Dynamic Workflow interrupted by session exit restarts fresh next session rather than resuming — it has no cross-session persistence of its own. Restart recovery therefore always comes from tracker + GitHub remote state, never from workflow-runtime state:
@@ -417,7 +479,7 @@ A Dynamic Workflow interrupted by session exit restarts fresh next session rathe
    - **proven, and the edge lives only in the persisted comment record** — absence still proves nothing, because native metadata was never supposed to show it. Re-adopt, then classify it here: **this step is the run adoption** the retirement rule anchors to, and skipping it is precisely how a retired dependency becomes permanent;
 3. order by normalized DAG + explicit build order;
 4. fetch current tracker statuses, PRs, and remote branches;
-5. skip every proven `DONE` issue;
+5. skip every proven `DONE` issue — after the recovery-ref enumeration above, which is what makes `DONE` provable here: this step precedes both PR and checkpoint adoption, so an issue skipped on merge evidence is never reached by anything that would have found its ref;
 6. adopt existing open PRs;
 7. adopt matching remote issue branches/checkpoints even when no PR exists yet;
 8. identify the earliest still-unfinished executable frontier;
@@ -592,7 +654,9 @@ Treat all five as best-effort on the worker's part. They belong in every dispatc
 
 A PR opened by a worker may be surfaced back to the parent/top-level session by Claude Code's own background PR watch/notification behavior (a session-level feature, distinct from Dynamic Workflows — a Dynamic Workflow run does not itself persist or surface PR/CI/review events once it returns its fan-out results) or by an explicit event subscription such as `subscribe_pr_activity`. **Use that platform PR state when available.** Do not create a duplicate monitor merely because the PR originated in a child worker.
 
-If Claude Code's background PR behavior has auto-merge enabled, it will merge PRs itself once checks pass — this conflicts directly with this skill's no-automatic-merge invariant. Confirm auto-merge is off (or explicitly authorized by the user for this run) before relying on that background behavior for CI/review surfacing.
+If Claude Code's background PR behavior has auto-merge enabled, it will merge PRs itself once checks pass — a merge decided outside invariant 12's gate, on CI state alone, whatever the repository's policy config says. **Confirm it is off before relying on that background behavior for CI/review surfacing.** There is no user carve-out here, because **surfacing and merging are separate grants**: authorizing the run to use the platform's event stream is not authorizing merges that skip every gate condition but one. A watcher that merges on green cannot see an unclean review, a tranche-level `DECISION` or `MERGE_RISK`, an explicitly held draft, or a repository that never opted in — so a session-level authorization to use the surface would silently authorize merges no one evaluated.
+
+A user who wants merges to happen without them has a designed path for it: the repository's `auto-merge` key and invariant 12's gate, which apply those conditions. Point them there rather than at the platform toggle — the watcher is a strictly weaker duplicate of a mechanism that now exists. Where the platform's auto-merge cannot be turned off, do not rely on that surface: subscribe explicitly instead (`subscribe_pr_activity`), and report any merge it performs as a platform merge outside the gate, never as gate-approved.
 
 Once an implementation worker reaches `PR_OPEN`, release that implementation worker — on a remote-session runtime that is an archive call, not merely ceasing to message it (see Releasing a worker). Long-lived PR supervision belongs to the parent/runtime orchestration layer.
 
@@ -650,7 +714,7 @@ On an actionable CI failure:
 
 External/flaky failure with no justified code change does not consume a repair cycle.
 
-On actionable review feedback:
+On actionable review feedback — actionable is bounded first by review policy: a thread the invoking user rooted is always actionable, any other thread only when its author passes the PR's resolved `auto-fix-reviewers`, a comment this run authored never is (a consequence of the thread-root test — Per-repository policy configuration owns all three rules), and the rest are reserved for the owner, never dispatched, whatever their size:
 
 1. group the coherent current review round;
 2. if budget remains, allocate an isolated checkout of the current PR branch;
@@ -672,7 +736,7 @@ A restack, or a renumber/regeneration of a claimed artifact, moves identity or o
 
 - does not consume a review repair cycle;
 - does not re-trigger automated review;
-- does not reset the PR's reviewed state or its eligibility for draft promotion.
+- does not reset the PR's reviewed state.
 
 The repository's deterministic checks are what validate it. Where the repository has no check that would catch a bad renumber, treat the push as substantive instead — `create-pr` carries the full test for which is which.
 
@@ -680,29 +744,11 @@ A renumber earns the mechanical label only once its regeneration has been **veri
 
 This matters most right after a sibling merges. Descendants restack and claimed artifacts renumber for reasons that have nothing to do with their own diffs, and re-reviewing every one of them spends the review budget on code that did not change.
 
-## Draft promotion after a clean first review
+## Draft state
 
-A PR opened as a draft is signalling "not finished yet". Once its **first** automated review round has completed and every actionable finding from it is resolved, that signal is stale and the PR should be marked ready for review.
+**The run does not promote drafts.** Promoting a draft PR to ready is a social act — it is how you ask another person to review — so it is never an autonomous orchestrator decision. It is not a policy knob with two settings; it is a thing the orchestrator does not do. Promotion survives in exactly two places: the owner promotes a PR themselves, whenever they choose; and the merge path, where publishing is a step of merging (see Merge behavior). Nothing else changes a PR's draft state in either direction — never mark ready, never flip a PR back to draft. A repair worker never touches draft state either: `repair-pr` reports how many actionable threads remain unresolved, and what happens to the PR stays with this parent layer.
 
-Promote when all of these hold:
-
-- the PR was created as a draft by this run (`create-pr` reports its as-created draft state);
-- the automated review trigger was issued and a review round actually came back — a review that was deferred, suppressed, or never fired is not a completed round;
-- no actionable finding from that round is unresolved, whether it was fixed, or answered with a reply explaining why no change is warranted;
-- CI is green on the current remote head;
-- the PR is not `NEEDS_USER` and has no unanswered product/architecture question.
-
-Then mark the PR ready for review once, and record the transition in the per-PR state.
-
-Rules:
-
-- Promote at most once per PR. Never flip a PR back to draft, and never re-promote one a human returned to draft.
-- Never promote a PR this run did not open.
-- Repository convention or an explicit user instruction to keep PRs in draft overrides this, as does a caller passing an explicit draft preference through `implement-issue-core`.
-- Later review rounds do not re-trigger promotion; the PR is already ready.
-- Promotion is not merge authorization and does not interact with invariant 12. It changes the PR's review-readiness signal and nothing else.
-
-A repair worker never promotes. `repair-pr` reports how many actionable threads remain unresolved; this parent layer owns the decision.
+**An explicitly held draft** is a PR that a decision outside this run keeps in draft: an explicit user instruction to hold it, a repository's prose convention about draft state, a draft preference a caller passed through `implement-issue-core`, or a human returning the PR to draft after it was ready. This is the term's only definition; invariant 12's gate and the checkpoint output consume it. An explicitly held draft is reserved from the merge path — excluded from the gate, neither published nor merged, however clean its review and CI — and reported in the checkpoint output as held, awaiting the owner. **A PR that is currently a draft and has ever been ready is held**, and that is the discriminator to use — not as-created versus current, which cannot see it. Created-as-draft, marked ready by a human, returned to draft by them leaves both values reading `draft`, identical to a PR nobody ever touched, so a run that consults only those two publishes and merges exactly the PR a person deliberately withdrew. The stronger reading is available because of the rule above: the run never marks a PR ready except by merging it, and never flips one back to draft, so **every** ready-to-draft transition on a PR of this run's is someone's decision. Track as-created and current draft state in the per-PR block (`create-pr` reports the as-created state) for reporting, but read the transition from the forge's own timeline before applying the gate: the per-PR block is run state, which invariant 1 classifies as a cache, and a restart or a missed event leaves it unable to answer the one question that matters here.
 
 # Parent supervision loop
 
@@ -778,7 +824,7 @@ Holding is not idling. Name the outstanding item, the node it holds, and what an
 
 Nothing about the advance relaxes the safeguards it dispatches under:
 
-- **invariant 12 still holds.** The run reacts to merges; it never performs one. Auto-advance is triggered by observing a merge, never by deciding one should happen.
+- **invariant 12 still holds.** Auto-advance is triggered by observing a merge — whoever performed it, a merge invariant 12's gate authorized included — never by deciding one should happen. The advance itself merges nothing.
 - **the 12-new-issue budget is consumed like any other dispatch.** If the budget is exhausted, do not dispatch: report the newly-READY frontier in the checkpoint output as the resume frontier, so a resumed invocation adopts it instead of rediscovering it. Silently dropping newly-unblocked work is the failure this step exists to prevent.
 - **`NEEDS_USER` is not cleared by a merge.** A node whose only remaining blocker is a question a human was asked to decide stays blocked, and auto-advance must not resume that path (above). Only the blockers the merge actually satisfied are retired.
 - 4 concurrent workers, attempt/repair caps, Sonnet workers, one issue per worker, and isolated checkouts apply to resumed dispatch unchanged.
@@ -911,17 +957,54 @@ On first observing uncommitted completed work, instruct that worker to commit an
 - **live worker** — build the commit **ref-neutrally** and push it to a **recovery ref**, never to the issue branch:
 
   ```bash
-  GIT_INDEX_FILE=<scratch> git -C <worktree> read-tree <worker-head-sha>   # seed first
-  GIT_INDEX_FILE=<scratch> git -C <worktree> add -- <issue-owned paths>
-  GIT_INDEX_FILE=<scratch> git -C <worktree> write-tree                    # -> <tree>
-  git -C <worktree> commit-tree <tree> -p <worker-head-sha> \
-      -m "wip: parent checkpoint capture"                                  # -> <commit>
-  git -C <worktree> push origin <commit>:refs/checkpoints/<issue-branch>/<commit>
+  # Every step is && -chained: no step can fail into the push. Do not rewrite
+  # this as a plain sequence guarded by `set -e` — errexit is not honoured
+  # inside a subshell in every host shell, and this snippet is pasted into
+  # whichever one the run happens to hold. Chaining does not depend on that.
+  IDX=<scratch>; rm -f "$IDX"
+  ref=$(printf %s <issue-branch> | sed 's/%/%25/g; s|/|%2F|g') &&
+  GIT_INDEX_FILE=$IDX git -C <worktree> read-tree <worker-head-sha> &&
+  GIT_INDEX_FILE=$IDX git -C <worktree> add -- <issue-owned paths> &&
+  tree=$(GIT_INDEX_FILE=$IDX git -C <worktree> write-tree) &&
+  commit=$(git -C <worktree> commit-tree "$tree" -p <worker-head-sha> \
+      -m "wip: parent checkpoint capture") &&
+  # diff-tree runs alone, never piped into the grep below: in a pipeline only
+  # grep's status survives, and a failed diff-tree reads as an empty match.
+  changed=$(git -C <worktree> diff-tree -r --name-only --no-commit-id \
+      <worker-head-sha> "$commit") &&
+  # grep: 1 = no unexpected paths (the pass case); 2 = grep itself failed,
+  # which must abort rather than read as empty.
+  { unexpected=$(printf %s "$changed" | grep -vxF -f <issue-owned-paths-file>)
+    rc=$?; [ "$rc" -le 1 ]; } &&
+  [ -z "$unexpected" ] &&
+  git -C <worktree> push --force origin "$commit:refs/checkpoints/$ref"
   ```
 
   Every line is load-bearing. `read-tree` **must** come first: a scratch index starts empty, so `add` on a path list would produce a tree containing only those paths, and a commit parented on the worker's head then records every other file in the repository as a deletion — recovery merging that checkpoint would delete most of the repo. Seed from the worker's head, then overlay the issue-owned paths. `GIT_INDEX_FILE` isolates the index and nothing else, so plain `git commit` would still advance whatever ref `HEAD` names — the worker's branch — reintroducing the race this avoids; `commit-tree` writes a commit attached to no ref, so nothing the worker holds moves.
 
-  Verify a capture by diffing it **against its parent**, not by confirming the work is present: `git diff-tree -r --name-status <worker-head-sha> <commit>` must show only the paths you intended. Content being present says nothing about what else the tree dropped, and that is the failure mode this sequence had;
+  Verify a capture by diffing it **against its parent**, not by confirming the work is present: `git diff-tree -r --name-status <worker-head-sha> <commit>` must show only the paths you intended. Content being present says nothing about what else the tree dropped, and that is the failure mode this sequence had.
+
+  **Every defect this block has had was found by executing it, and none by reading it** — six so far, each ending in the same place: a force-push replacing a known-good checkpoint with a worthless one, or worse — the sixth let a masked validator failure reach the push unvalidated, and in the executed demonstration (a zeroed `$commit`) the force-push did not update the remote ref but **deleted** it. It is executed against a scratch repository after every edit, and the results are the reason it looks like this:
+
+  | case | expected | observed |
+  |---|---|---|
+  | clean capture | ref written; worker `HEAD` and worktree untouched | ref written, `HEAD` unmoved, worktree still dirty |
+  | `git add` on a stale path | abort before push | exit 128, no push |
+  | unreadable allowlist file | abort before push | exit 1, no push |
+  | capture touching an unlisted path | abort before push | exit 1, no push |
+  | validator's own `diff-tree` fails | abort before push | exit 128, no push, existing ref untouched |
+
+  All four failure cases rest on the chaining, not on the host shell: each aborts because the next step is `&&`-gated, and none of them relies on `errexit` being honoured. An earlier version used `set -euo pipefail`, which **passed the same tests in one shell and failed them in another** — a subshell that does not honour errexit ran straight through a failed `git add` to the push. A guard whose correctness depends on the host shell's state is not a guard for a snippet that gets pasted into whatever shell the run holds.
+
+  **The remaining risk is that this is prose, so nothing re-runs those cases when it is edited.** Read agreement is what produced the defects — a check that could not fail, a `grep` status conflated with an empty match, a ref encoding that was not injective, an unchained `git add` whose failure still reached the push, an errexit guard one host shell honoured and another did not, and a `diff-tree` piped into `grep` so that only grep's status survived a failed validator and the push ran on an empty match. Treat the sequence as a whole: the `&&` chain so no construction step can fail into the push, `diff-tree` run on its own so its failure carries its own status rather than grep's, an explicit `rc` check so a failed grep is not read as a passing one, and an encoding that escapes `%` before `/` so two legal branch names cannot map to one ref. **It is not enough to read this and agree with it — re-run the five cases above after any edit, which is the argument for it living in a tested implementation rather than in prose here** (see the extraction discussion on this PR).
+
+  **That verification runs before the push, and must fail closed.** `git diff-tree` exits 0 whether or not it reports changed paths — it displays a diff, it does not assert one — so a bare invocation ahead of the push validates nothing when the block runs as a shell sequence: a malformed tree is printed and then published over the last good snapshot regardless. The check has to be a predicate whose failure prevents the push, which is what comparing the reported paths against the intended list and exiting non-zero on any extra gives you. A verification step that cannot fail is worse than none, because it reads as protection. `commit-tree` writes the commit locally, so the check needs no remote at all — and once the ref below is single and force-updated, publishing first would let a malformed capture destroy the last known-good snapshot, discarding both the current work and the thing this mechanism exists to protect. Validating first costs nothing and removes that window entirely; a temporary ref promoted after validation would achieve the same, and is only worth reaching for where the check genuinely needs the remote, which this one does not.
+
+  **One ref per issue branch, replaced on each capture — never one per capture commit.** A ref-neutral capture leaves the worktree untouched, so a worker that stays dirty is captured again on the next supervision cycle, and a commit-keyed ref name would accumulate siblings. Siblings have no safe ender: reconciling the newest does not make an older one an ancestor of the branch head, so an ancestor test never retires it, and merging every sibling invites conflicts wherever a later snapshot supersets an earlier one. Replacement is safe here for a reason specific to how these commits are built — every capture is seeded from the worker's head and overlays the same issue-owned path list, so a later capture carries the earlier one's content except where the worker itself changed it, and preserving a superseded parent snapshot against the worker's own edits is not a service to anyone. Force-update deliberately: the ref is expected to move backwards in content only when the worker moved it.
+
+  The branch name is **encoded into a single ref component**, escaping `%` before `/` so the mapping is reversible and injective: `feature/foo` becomes `refs/checkpoints/feature%2Ffoo`, while the equally legal branch `feature%2Ffoo` becomes `feature%252Ffoo` rather than colliding with it. Encoding only `/` would map both to one ref, and the second worker's push would silently replace the first's only snapshot. A ref cannot exist where another ref needs a directory, so any scheme that keeps the branch's slashes creates a collision between prefix-related branches: `feature/foo` and `feature/foo/bar` are both valid names, and `refs/checkpoints/feature/foo` blocks the directory the second requires. Git rejects that push outright, so the worker cannot be checkpointed at all — not a subtle mis-capture, no durable path for its work.
+
+  A fixed trailing component does not fix this; it only moves the collision to branches whose names contain that component, which are equally legal (`feature/foo` against `feature/foo/capture/bar`). Encoding removes the nesting entirely, so no branch's ref can occupy a path another needs, and it keeps the ref readable for the person reading these during recovery — which a hash would not;
 - **wedged worker** — stop it first, then commit normally onto the issue branch in the now-quiesced worktree. Stopping consumes that issue's lost-worker budget, so it needs the same evidence any redispatch does.
 
 The issue branch has exactly one writer at a time, and while a worker lives that writer is the worker — locally as well as remotely. Advancing either end underneath it is not a neutral act even when its index and worktree are untouched: its next push becomes a non-fast-forward rejection, and a worker that reacts by force-pushing destroys the snapshot that was protecting it. A recovery ref buys durability without a second writer. Making the worker fetch and reconcile instead would put the fix back in the worker's hands — the same hands that did not commit when told to.
@@ -929,6 +1012,17 @@ The issue branch has exactly one writer at a time, and while a worker lives that
 The general rule behind all three cases: **capture must not move any ref the worker holds.** Test a proposed capture against that before running it, because several plausible sequences violate it silently — the index, the branch, and `HEAD` each have to be checked separately.
 
 Once the worker pushes its own commit covering that work, its recovery refs are redundant; drop them when the PR reaches durable state. Lost-worker recovery reads them.
+
+**But a recovery ref outlives the worker it was captured from, and redundancy is not the only way it ends.** That rule assumes the worker comes back and pushes. A **released** worker that has not already done so never will — and this must key on the release, not on the outcome, because the releasable test has two cases and only one of them produces an outcome at all. The second releases a worker whose work reached durable remote state and which is blocked on a prompt this run does not need answered; it returns nothing, and it is archived deliberately, so lost-worker recovery never runs for it either. Keyed on terminal outcomes, this rule would leave that case with no ender whatsoever, and invariant 12 would then reject an otherwise mergeable PR permanently. The capture that made the worker releasable is, in either case, the only copy of that work. Such a ref is **outstanding**, not redundant, and the parent owns reconciling it into the issue branch — and can, because releasing the worker removed the second writer the one-writer rule above exists to protect against. Do it at release rather than deferring it: the only other consumers of these refs — lost-worker recovery, and the blocked-worker archive under Blocked workers — never run for a worker that returned an outcome, so a deferred reconciliation has nobody left to perform it.
+
+**The principle behind every case below: a recovery ref is dropped only once a durable carrier the run will actually read holds its contents.** The four PR states differ solely in whether such a carrier exists, and enumerating them explicitly is deliberate — this rule was built one case at a time and each missing case left a ref with no ender, which invariant 12 then converts into a PR that can never merge.
+
+- **PR open.** Reconciling advances the branch, so the PR's CI and review evidence now describes a head that no longer exists — the same staleness publishing produces, and handled the same way: that PR re-enters ordinary supervision and is re-evaluated on a later pass. Until the reconciliation lands the PR carries an outstanding recovery ref, which the gate excludes; merging there would drop work the run itself decided was worth rescuing. Once it is on the branch, **verify the capture's commit is an ancestor of the branch head, then delete the ref.**
+- **No PR yet** — a worker that returned `BLOCKED` or `FAILED` before creating one. Releasing a worker says PR state is irrelevant to release, so this worker is as released as any other. Reconcile into the issue branch, or push the capture *as* that branch where none exists; then verify and delete exactly as above. The branch is a carrier the run reads — it is item 3 of the durable-evidence order — so a redispatch picks the work up, and no issue is at risk of being called complete, since nothing here looks like completion.
+- **PR closed without merging.** Same handling as no-PR: the branch is still the carrier, nothing merged, the issue is not complete. Reconcile, verify, delete — and **report it**, because a closed PR usually means a person decided against that line of work and a capture landing on its branch is worth their knowing about. Do not treat the closure as authority to discard the capture; that decision is theirs and this path does not ask them for it.
+- **PR already merged.** Here **branch reconciliation is not a fix and must not be performed as though it were.** Releasing a worker treats a merged PR as eligible and *common* — a wake armed at PR creation outlives the PR that armed it, so the work has usually landed by the time anyone finds the session. The merge commit is already in the base; pushing the capture to the issue branch afterwards moves nothing that matters, no CI or review round runs on a merged PR, and the gate has nothing left to withhold. Every mechanism the open case relies on is absent, and so is the carrier: the branch of a merged PR is not read again.
+
+  So this case is `NEEDS_USER`, and it carries a second correction: **that issue is not complete**, whatever the merged PR implies, and must not be reconciled to complete while the ref is outstanding. Surface the issue, the merged PR, and the ref name. Do not open a follow-up PR automatically — the capture is a WIP snapshot of unknown completeness by the paragraph below, and landing it under the authority of a review that never saw it is the one outcome worse than reporting it. **Delete nothing** until the owner decides; here the ref is the only copy, and this is the branch where dropping it would be irreversible.
 
 A snapshot that caught a file mid-write is still worth having: it is a WIP checkpoint, never the PR's final state, and a partial save beats an empty branch. Prefer the worker doing its own commit precisely because it has no such hazard — parent capture is the fallback, not the mechanism.
 
@@ -956,7 +1050,7 @@ Read the blocked state explicitly each cycle, and resolve it in this order:
 
 1. **it passes the releasable test** in Releasing a worker — apply that test, do not restate it here. Every version of this rule that was written out a second time drifted from the first, including the one that required a PR still be open and so excluded the merged-PR case this section is written from. Release it and record what it was asking for;
 2. **the block is the parent's to clear** — a resource detail the worker was dispatched without, an instruction it can be sent, a write the parent can perform itself. Clear it and let the worker continue;
-3. **neither, and the prompt is one nothing can answer** — an `AskUserQuestion` or equivalent, where the worker is asking for a decision rather than for permission. No lever reaches it: interrupting the session leaves the prompt pending, and on a remote runtime no message channel reaches a worker mid-prompt. Do not resolve this one as `NEEDS_USER` and leave it — that keeps the container and the slot held for however long the human takes, which is the outcome the last rule in this section forbids. Recover the slot instead — but archiving destroys the container, and with it the local worktree lost-worker recovery would otherwise read, so uncommitted work must reach a **remote** ref before the archive rather than merely a local commit. Capture it with the ref-neutral sequence under Checkpoint compliance, which pushes to a recovery ref and moves nothing the worker holds, and verify that capture the way that section requires; do not substitute a plain `git commit`, whose result the archive then discards. Only once the capture is on the remote — or you have established there was nothing uncommitted to capture — archive the session and redispatch **the same work unit** from the latest durable remote state, with the step 8 countermand in place. The same work unit, not the same issue: this section covers every worker, and a blocked `repair-pr` worker redispatched as "the issue" becomes a fresh implementation attempt under `implement-issue-core`'s contract instead of the bounded repair it was. Preserve the archived worker's role, its repair type where it had one, and the budget it had left rather than issuing a new one. This is the only recovery observed to work, and a redispatch costs one worker where a session left blocked costs a slot for the rest of the run. Record the question it stopped on either way: a worker reaching for this tool is a finding about the dispatch prompt that produced it, not just an incident;
+3. **neither, and the prompt is one nothing can answer** — an `AskUserQuestion` or equivalent, where the worker is asking for a decision rather than for permission. No lever reaches it: interrupting the session leaves the prompt pending, and on a remote runtime no message channel reaches a worker mid-prompt. Do not resolve this one as `NEEDS_USER` and leave it — that keeps the container and the slot held for however long the human takes, which is the outcome the last rule in this section forbids. Recover the slot instead — but archiving destroys the container, and with it the local worktree lost-worker recovery would otherwise read, so uncommitted work must reach a **remote** ref before the archive rather than merely a local commit. Capture it with the ref-neutral sequence under Checkpoint compliance, which pushes to a recovery ref and moves nothing the worker holds, and verify that capture the way that section requires; do not substitute a plain `git commit`, whose result the archive then discards. Only once the capture is on the remote — or you have established there was nothing uncommitted to capture — archive the session, then — where a capture was pushed — end its ref by **the four-state rule under Checkpoint compliance — apply it, do not restate it here.** This archive is not a release by the releasable test — case 1 above took every worker that passes it — and the worker is not lost, so neither of that rule's other trigger sites will ever fire for this ref; unconsumed here, it stays outstanding forever, blocking invariant 12's gate over the very work it rescued, while the redispatch below starts from a head the capture never reached and redoes the work. Then redispatch **the same work unit** from the latest durable remote state — which the reconciliation has just made include the capture — with the step 8 countermand in place; where the four-state rule's merged-PR ender raised `NEEDS_USER` instead, that is the outcome: do not redispatch work whose PR has already merged — the owner now holds the decision. The same work unit, not the same issue: this section covers every worker, and a blocked `repair-pr` worker redispatched as "the issue" becomes a fresh implementation attempt under `implement-issue-core`'s contract instead of the bounded repair it was. Preserve the archived worker's role, its repair type where it had one, and the budget it had left rather than issuing a new one. This is the only recovery observed to work, and a redispatch costs one worker where a session left blocked costs a slot for the rest of the run. Record the question it stopped on either way: a worker reaching for this tool is a finding about the dispatch prompt that produced it, not just an incident;
 4. **neither, and the prompt is a permission request** — `NEEDS_USER`, naming the issue, the session, and **the exact tool being requested**. "A worker needs permission" is not actionable; the tool's name is what lets a user allow it once and unblock every run after this one. Report the literal string the runtime gave you, server segment included, and never a tidied version of it: an MCP server can be registered under a display name, a slug, or its bare UUID, the allowlist matches the literal name, and a tool already allowlisted under one of those spellings still prompts under another. Normalizing the name to the one you expected is how that reads as an entry that exists and does not work.
 
 Never resolve it as "still waiting". A blocked worker holds a slot, so reading it as idle also stalls the frontier: the run keeps scheduling against capacity that is not in use. It must not be possible for a worker to sit blocked across an entire run without appearing anywhere in its output.
@@ -992,7 +1086,7 @@ If a worker disappears:
 1. inspect remote branch/PR first;
 2. inspect any recovery refs the parent pushed for that issue (see Checkpoint compliance) — work captured from a live worker lives there, not on the issue branch;
 3. inspect local worktree only if the container still exists;
-4. adopt pushed checkpoints/PR, merging a recovery ref into the issue branch where it holds work the branch does not;
+4. adopt pushed checkpoints/PR, then end the recovery ref by **the four-state rule under Checkpoint compliance — apply it, do not restate it here.** All four states reach this consumer: a worker can disappear before opening a PR, after its PR was closed unmerged, while it is open, or after it merged, and each has a different ender. A two-state copy of that rule lived here and covered only open and merged, so a lost worker with no PR or a closed one had its capture merged into the branch and its ref neither verified nor deleted — leaving a consumed checkpoint that a later redispatch's PR would find outstanding, and invariant 12's gate would then block permanently. This consumer needs saying separately: the worker that lost its container can never return to push, so neither the redundancy rule nor the release-time branch will ever end a ref consumed here, and it would stay outstanding — rediscovered by every later pass, and blocking invariant 12's gate over work that has already landed;
 5. redispatch at most once from latest durable remote checkpoint;
 6. repeated loss -> `NEEDS_USER`/infrastructure failure.
 
@@ -1114,9 +1208,19 @@ And even an affirmative answer clears only this blocker, not the issue: the prec
 
 # Merge behavior
 
-Normal orchestration never merges automatically.
+By default orchestration never merges. Invariant 12 defines the one gate under which it may, and a repository's `auto-merge` key (see Per-repository policy configuration) is what makes that gate reachable for its PRs.
 
-If the user separately authorizes `merge-stack`, that skill owns merge ordering and descendant rebasing/restacking. Reconcile tracker completion after every merge.
+Where the gate is reachable, evaluate it at the settled step, after the summary, the walkthrough, and the ranking — the gate's `DECISION` and `MERGE_RISK` inputs do not exist before `summarize-tranche` produces them, so an earlier evaluation is a guess wearing the gate's name. Merge the PRs it passes in the ranking's order, bottom-up within a stack, restacking descendants exactly as any merge requires; each merge is then an ordinary frontier-advancing event (see Frontier advance on merge). A PR in a repository that did not opt in is untouched whatever its siblings did — the gate resolves per PR, from that PR's repository.
+
+**A merge never happens on a draft.** For each PR the gate passes, the merge path **publishes it to ready first, then merges** — publishing is part of the merge path, not a precondition that might already hold, so a PR still in draft when its gate opens is published by the act of merging it, never skipped for being a draft. This is one of the two surviving forms of promotion (see Draft state; the other is the owner doing it themselves), and it never reaches an **explicitly held draft**: the gate already excludes those, so the merge path neither publishes nor merges one — report each as held, awaiting the owner.
+
+**Publishing is not inert, so the gate is evaluated again after it.** Marking a draft ready is an event review providers and CI act on — `create-pr` says so explicitly, naming a provider that re-reviews when a draft is marked ready — so the clean-review and green-CI evidence the gate just accepted describes the PR as it was one moment before it changed. Merging on it is merging on a reading that publishing invalidated. **So publishing un-settles the tranche for that PR, and the merge waits for a later pass — it is not awaited inline.** Do not hold the settled step open waiting for the review to appear: a wait with no observable completion condition either re-reads the same stale evidence a moment later and merges anyway, or blocks the run indefinitely, and Arming the wait when nothing is in flight already forbids the second outright — do not hold the session open reporting supervision that is not happening.
+
+Publishing therefore returns the PR to ordinary supervision, exactly as a code-changing ruling does. The gate is re-evaluated when fresh post-publish evidence arrives through the machinery that already exists for it — the PR's own subscription and the settled-state check-in — and the merge happens on that later pass, which the run reaches by the same settle-advance-settle path it already uses several times per invocation. Where neither a subscription nor a scheduler can be armed, the restartable checkpoint under that section applies unchanged, naming the PR as published and awaiting re-evaluation. **Never merge on evidence gathered before the publish**, whichever path delivers the next pass: that is the whole of the rule, and the mechanism is the ordinary one rather than a new wait invented here.
+
+A re-review that finds something is the system working: that PR is no longer clean, it does not merge, and it returns to the ordinary repair path — now as a ready PR, since publishing is not undone.
+
+**Invariant 12's gate is itself the authorization `merge-stack` needs, for exactly the PRs it passed.** The stack rules require that skill for any merge or restack, and a gate-approved merge must restack its descendants like any other, so without this a repository that opted in would have no compliant way to perform the merge its own policy authorized. The grant is scoped to the gate-approved set and nothing wider: it does not extend to a sibling the gate excluded, to a repository that did not opt in, or to any stack operation outside that merge. Where the user separately authorizes `merge-stack`, that authorization is the ordinary one and is unaffected by this. Reconcile tracker completion after every merge, gate-authorized ones included.
 
 # Settled tranche
 
@@ -1125,10 +1229,10 @@ A run is **settled** when no further implementation can start and every open PR 
 - no in-scope issue is READY — each unstarted issue is blocked by work that is implemented but unmerged;
 - no implementation or repair worker is in flight — and a worker blocked on a permission prompt is in flight, not absent (see Blocked workers). It reads as quiet from every angle the other conditions look from, which is exactly how a run declares itself settled while one of its workers is still stopped mid-issue;
 - every open PR from this run has had at least one **completed** automated review round, not merely a trigger issued;
-- every actionable review finding on every open PR is resolved or answered;
+- every actionable review finding on every open PR is resolved or answered — a thread the PR's repository policy reserves for the owner (see Per-repository policy configuration) counts here as surfaced, not outstanding: it blocks that PR's merge, never settlement;
 - no open PR is `NEEDS_USER` or waiting on CI.
 
-Settled is not the same as finished. The run has produced everything it can **for now**; the next move belongs to whoever holds merge authority — and when they make it, the run picks the work back up itself (see below).
+Settled is not the same as finished. The run has produced everything it can **for now**; the next move belongs to whoever holds merge authority — the owner, or invariant 12's gate where a repository granted it — and when it is made, the run picks the work back up itself (see below).
 
 On reaching settled:
 
@@ -1137,8 +1241,9 @@ On reaching settled:
 3. **act on its action points before ranking anything** (below);
 4. request `settle-outstanding-decisions`, passing the summary as its seed — unless `auto-request-settle` was turned off for this invocation. The gate covers only the request; whether the walkthrough may actually ask is that skill's call, not this run's — its *Attendance is the precondition* section governs, and a run settling on a scheduled wake gets a one-line decline. **What that decline relies on is the decisions being durable at their own sites, not in the summary.** The summary is derived output and this run's closing report is cached run state by invariant 1, so neither survives session loss; the worker records, review threads and tracker comments the summary read them *from* do survive, and are exactly what the walkthrough's own discovery reads when the owner runs it later. What is lost is the aggregation and the run-context enrichment around it — a real cost, accepted deliberately: a second durable record written to close that gap is the decision docket this skill already carried and removed, which needed an in-place rewrite `permissions.json` cannot perform and stopped an unattended session on the prompt step 8 forbids. Re-deriving a lost aggregate costs one summary; the record that would have prevented it cost four review findings and could not run. It sits between summary and ranking because a ruling changes what the ranking is computed from: it can retire a `DECISION` constraint, reshape a `MERGE_RISK`, or reverse which of two PRs should merge, and a ranking produced first would be stale the moment the owner answered;
 5. invoke `plan-merge-order` with the manifest/scope, this run's PR set, and every summary item with an ordering consequence — the `MERGE_RISK` and `DECISION` items as the walkthrough left them, and any other class that also carries one. **Translate each ruling back into an action point before invoking**, because `plan-merge-order` accepts summary action points and nothing else — a ruling handed over raw has no defined handling there, and the likely readings are both wrong: keep ranking a PR the owner just rejected, or hold a merge behind a gate they just opened. A settled decision either stops being a constraint and drops out, or becomes the constraint its answer implies — a `MERGE_RISK` carrying the consequence, an ordering requirement stated on the item. **A ruling that requires code to change is none of those: it is an `IN_FLIGHT_FIX`, and the tranche is no longer settled.** Choosing the other side of a decision a worker already implemented creates actionable work after step 3 processed the action points, so translating it into a ranking constraint would leave an orchestrator-owned fix undispatched and rank a PR that is not finished — the exact defect the `IN_FLIGHT_FIX` row guards against, arriving one step later. Take that row: return it to supervision, dispatch the repair within budget, and re-test the settled conditions before ranking anything — so the ranking is computed against answers where answers exist and against the open constraint where they do not;
-6. surface the summary and action points first, then the walkthrough's report where one was requested — rulings recorded, or its one-line decline — then the ranking table, as the run's closing output, and name the still-unruled `DECISION` and decision-shaped `NEEDS_USER` items as the set the owner can settle by running `settle-outstanding-decisions` themselves: it is idempotent, so running it after a declined or interrupted walkthrough re-asks nothing already ruled;
-7. stop dispatching work, and stop spending tokens re-deriving the same state, for as long as the frontier stays empty.
+6. evaluate invariant 12's gate for each open PR whose repository opted into `auto-merge`, and merge the PRs it passes (see Merge behavior). This step exists here and not earlier because the walkthrough's rulings and the ranking are its inputs; each merge it performs is consumed as a frontier-advancing event like any other;
+7. surface the summary and action points first, then the walkthrough's report where one was requested — rulings recorded, or its one-line decline — then the ranking table, as the run's closing output, with every gate-authorized merge and every explicitly held draft named beside it, and name the still-unruled `DECISION` and decision-shaped `NEEDS_USER` items as the set the owner can settle by running `settle-outstanding-decisions` themselves: it is idempotent, so running it after a declined or interrupted walkthrough re-asks nothing already ruled;
+8. stop dispatching work, and stop spending tokens re-deriving the same state, for as long as the frontier stays empty.
 
 Summarize before ranking. An action point can change whether something should merge at all, and a ranking the user has already begun acting on is the wrong place to discover that. Run the summary once per settled tranche rather than saving one up for the end of a whole backlog: its findings come from run context that the next session will not have, and follow-ups need to exist while later tranches are still running, so they get picked up instead of rediscovered.
 
@@ -1155,9 +1260,9 @@ Settlement was computed before the summary existed, so the summary is capable of
 
 An `IN_FLIGHT_FIX` reaching the ranking is the same defect the settled conditions already guard against: a table that orders PRs which are not actually finished is a table the user cannot act on. Finding it one step later does not make it acceptable.
 
-Do not merge, and do not treat the ranking as authorization to merge — invariant 12 still holds.
+The ranking is never authorization to merge — invariant 12's gate is the only thing that is, it is evaluated after the ranking (see Merge behavior), and a repository that did not opt in gets no merge from this run at all.
 
-If a run reaches all other settled conditions but some PR still has an unresolved finding, an unfired review, or red CI, it is **not** settled. Finish that PR within budget, or surface it as `NEEDS_USER`, before ranking. Ranking PRs that are not actually finished produces a merge order the user cannot act on.
+If a run reaches all other settled conditions but some PR still has an unresolved finding, an unfired review, or red CI, it is **not** settled — with the one exception the settled conditions above already state: a thread reserved for the owner is surfaced, not unresolved, and holds that PR's merge rather than the tranche's settlement. A repository whose only open threads are reserved still reaches the summary — policy that forbids the run to repair a thread cannot also forbid it to finish. Everything else: finish that PR within budget, or surface it as `NEEDS_USER`, before ranking. Ranking PRs that are not actually finished produces a merge order the user cannot act on.
 
 ## Settled is a resting state, not an exit
 
@@ -1203,7 +1308,10 @@ Active PRs: 7
 Waiting CI/review: 4
 Unreviewed (trigger pending/unavailable): 0
 Unresolved review findings: 0
-Drafts promoted to ready: 2
+Review threads reserved for the owner: 1
+Drafts explicitly held: 1
+Repo policy: acme/api: config (auto-merge on, auto-fix-reviewers: codex); acme/site: defaults
+Auto-merged (invariant 12 gate): 0
 Ready: 3
 Blocked: 2
 Needs user: 1
@@ -1226,7 +1334,8 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - disk headroom against the concurrent worker count;
 - CI/review states + repair budgets consumed;
 - PRs left unreviewed, and whether the review trigger was deferred or unavailable;
-- PRs promoted from draft to ready, and any left in draft with the reason;
+- PRs left in draft, naming each explicitly held one and what holds it (see Draft state);
+- the policy each PR resolved to and its source — invocation argument, repo config, or built-in defaults — plus any policy file that was unreadable or carried invalid keys, every merge invariant 12's gate authorized with the conditions it passed on, including any PR it published from draft on the way to merging, and every review thread reserved for the owner;
 - the `summarize-tranche` summary and action points, the `settle-outstanding-decisions` report — rulings recorded, or its one-line decline, or that `auto-request-settle` was off — and the `plan-merge-order` table, when the run settled;
 - issue-linkage/tracker-status inconsistencies;
 - `NEEDS_USER` items;
