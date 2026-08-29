@@ -1,0 +1,88 @@
+# backlog-orchestrator — design notes
+
+Companion to `SKILL.md`. That file is the contract; this one holds the reasoning and the incident history behind its rules, keyed by section. Read a section's note before changing its rules or when applying them to a case the contract doesn't obviously cover. Nothing here overrides the contract.
+
+## Releasing a worker
+
+**Why the remote-session row needed writing down:** on two of the four tiers release *is* the absence of an action, so a reader generalizing from those reads "release the worker" as a remark about attention rather than an instruction — and on the tier a degraded run most often lands on, the same words name a real resource that then leaks silently. Nine finished worker sessions still holding containers after a run, found by the user in a session list rather than by the run in its own report, is what that reads like from outside.
+
+**Why the releasable test is stated once:** restating it in situ is how successive versions of it came to disagree about the same worker — every review round the section has had found one such disagreement, each introduced by the fix for the last. That includes the copy that required a PR still be open, which excluded precisely the merged-PR deadlock the test exists for.
+
+**The incident behind "merged is the common case":** a wake armed at PR creation outlives the PR that armed it, so by the time anyone notices the blocked session the work has usually landed. The session that prompted the whole rule had merged hours before it was found.
+
+## Posting identity
+
+**The attribution-honesty argument:** a run posting under the invoking user's login produces conversations that read as though the owner wrote them — status reports in their voice, replies arguing with their own automated reviewer — and `author_association: OWNER` lends every one the owner's authority. A distinct identity also removes an identity collision at its source: run-authored and owner-authored comments become distinguishable by author instead of only by the structural tests under *The two review/merge policies*.
+
+**The observed false claim behind "never established by a claim":** in one verified environment the MCP surface and the ambient token both resolved to the invoking user's own account, and no distinct identity existed anywhere — while ambient text asserted the surface "posts as a bot".
+
+## Per-repository policy configuration
+
+**Why a config file and not prose or a skill override:** a `CLAUDE.md` paragraph gets interpreted, and interpretation must not decide whether a run may merge. A project-level skill override is not the mechanism either: `bootstrap.sh` installs these skills to `~/.claude/skills`, and a personal skill shadows a project skill of the same name, so a project copy would silently never load.
+
+**Why `auto-merge` is one grant rather than per-consumer keys:** splitting the key per consumer would gate which skill happened to open the PR, which is not a security property, and would leave the real boundary — the gate — unchanged.
+
+## Model and skill policy
+
+**The observed case behind the evidence-based escalation trigger:** on one spec PR, three automated review passes returned two findings, then three, then one. The first two rounds were all-new territory and Sonnet was the right tool for both; the third's single finding was a gap in a paragraph the second round had itself written, and the strongest-model repair that answered it also caught a second, unreported defect of the same kind beside it. A count-based ladder (two rounds Sonnet, then one Opus) would have paid for depth on exactly the run that needed breadth.
+
+## Implementation worker contract
+
+**The incident behind branch protection (step 7):** a worker dispatched with its `outcome_branch` correctly set pushed four commits of unreviewed implementation straight to the repository's default branch, noticed, and self-reverted — the tree was recovered exactly, the default branch's history permanently carries the five extra commits, and a sibling worker briefly cut its PR from the polluted base. The branch assignment does not imply the prohibition; it has to be stated.
+
+**The incident behind the question countermand (step 8):** a worker dispatched for one issue called `AskUserQuestion` four minutes in and held its container some twenty minutes until a check-in caught it, with nothing durable pushed, so the whole run was wasted.
+
+**Why the report requirement is a subtraction (step 11):** four review rounds against an enumerated list each found a different item missing from it, and every one of them was something a **clean** run still has to say. An enumeration written by someone thinking about failures keeps quietly scoping itself to exceptions, and the omissions are invisible precisely when nothing went wrong. The four that were lost this way, kept as the shape to watch for rather than as the list:
+
+- **every dependency checked, with its class and how it resolved** — the matches too, not only the misses. Outcomes requires the run to record verified edges and has no other source for them, so a fully-checked set otherwise reads identically to one nobody checked;
+- **whether the completeness of the blocker set was backed** — by a caller's proven complete set, or by a known-true case read and observed — or left unproven, and on what boundary. A `PR_OPEN` with an empty blocker list and a proof behind it, and one with an empty blocker list because nothing was visible, are different claims that look the same;
+- **the transport tier and a non-secret credential identity** — account and scopes, never the credential. Outcomes branches on whether the worker's identity differs from the run's, because a mismatch under a *different* credential shows one of the two views is partial while the same mismatch under the *same* credential merely repeats a read already made;
+- the criteria it could not satisfy, the guarantees it narrowed, the sources that disagreed.
+
+## Countermanding the worker's ambient supervision posture
+
+**The blocked-worker incident in full:** the worker that stopped on `AskUserQuestion` was unreachable in every direction. The runtime's own fields disagreed about its state — `session_status` read `SESSION_STATUS_REQUIRES_ACTION` while `status_bucket` read `SESSION_STATUS_BUCKET_BLOCKED`, with the pending tool named only in a third field — a second sighting of the disagreement *Blocked workers* instructs on. It could not be steered out: interrupting the session left the prompt pending, and no message channel reaches a remote worker session mid-prompt, so the only recovery was archive and redispatch — which is why that is a branch of *Blocked workers* in its own right. What made the redispatch succeed was the substitute, not the prohibition: told what to do instead of asking, the replacement worker returned four documented assumptions — one flagged as the thing it most wanted confirmed — which were worth more than the blocked session they replaced. A documented assumption is recoverable; a deadlocked worker is not.
+
+**Why the worker skills cannot carry this alone:** `implement-issue-core` and `repair-pr` forbid delegating a wait as well as performing one, but their earlier wording — bounding duration alone — is what a worker met and satisfied while still leaving a watcher armed, because arming a wake is not entering a loop. That reading is available again to any worker weighing a skill rule against a session instruction, and the skill rule is the weaker of the two on its own.
+
+**The two costs of a worker-armed watcher, and the one observed:** a second watcher duplicates supervision the parent already owns and can act on a PR the parent is mid-repair on. And a worker that arms a wake it is not permitted to disarm — the trigger tools are routinely outside a worker session's allowlist — blocks on a permission prompt with nobody watching, holding a container for hours after its own work merged. The implementation succeeded; the deadlock was entirely in the cleanup.
+
+## Event handling
+
+**The incident behind the no-change preflight:** a run tracked three PRs with check-ins alone, the `event subscription` field never recorded, an hourly poll, and a "nothing changed" report at 18:20Z. The owner merged at 18:46Z; the next poll was due 19:16Z. From the inside that run was indistinguishable from a healthy one, because "no events because nothing happened" and "no events because nothing was listening" produce the same quiet — and it was the owner who noticed, not the run.
+
+## A settle finding is the third repair shape
+
+**Why `finding-repair-cycles` is its own counter (the argued choice):** the case for sharing `review-repair-cycles` is real — an `IN_FLIGHT_FIX` is review-shaped in substance, and a third knob is more config surface for the same "how many repair passes" question. It loses on two counts. The two budgets bound different loops: review cycles bound convergence with an external reviewer who answers each push with a possible next round, while finding cycles bound the settle-repair-resettle loop this skill drives itself, and one counter over both lets either loop starve the other — a summary that emits several findings drains the cycles reserved for answering the reviewer's next round, and a chatty reviewer that already spent both cycles leaves a verified settle finding with no compliant dispatch, forcing `NEEDS_USER` on work the run holds both the evidence and the mechanism to fix. And the config-surface objection cuts thinner than it looks: the resolution table already scopes every repair key per PR, so the third key lands in an existing row rather than a new mechanism.
+
+## How a worker's report actually reaches you
+
+**Why the parent writes the record (the inversion argument):** *record each established blocker, naming how it was verified* — and establishing is the parent's job, needing a visibility proof the worker does not hold. A worker writing unclassified findings onto an issue was always the parent's duty performed by the wrong party. Every failure that followed from it — the next dispatch re-adopting a rejected edge, validation's preflight reintroducing it, dependency normalization promoting it into native metadata where nothing later re-examines it — followed from that inversion, not from any detail of how the writing was labelled.
+
+**What the routing costs, stated plainly:** on any terminal outcome without a PR the worker's verbatim reasoning compresses to a line, and the rest goes with its transcript. That is a real loss. It is the right trade because the parent cannot adopt that reasoning unclassified in any case — it has to re-establish the finding before recording it — and a line saying *where to look* is what it actually needs in order to start.
+
+**How the three issue-comment readers were found:** one at a time, each after the previous fix looked complete — which is why the table in the contract enumerates them and why the marker is a property, not a patch in three files.
+
+## Checkpoint compliance
+
+**The defect history of the capture sequence (why it lives in `scripts/checkpoint-capture.sh` with a test, not in prose):** every defect the sequence has had was found by executing it, and none by reading it — six before extraction, each ending in a force-push replacing a known-good checkpoint with a worthless one, or worse. The six: a check that could not fail; a `grep` status conflated with an empty match; a ref encoding that was not injective; an unchained `git add` whose failure still reached the push; an errexit guard (`set -euo pipefail`) that **passed the same tests in one shell and failed them in another** — a subshell that does not honour errexit ran straight through a failed `git add` to the push; and a `diff-tree` piped into `grep` so that only grep's status survived a failed validator and the push ran on an empty match. In the executed demonstration of the sixth (a zeroed `$commit`), the force-push did not update the remote ref but **deleted** it. Read agreement produced every one of these; the test suite is the fix for that class, which is why editing the script without running `test-checkpoint-capture.sh` re-opens it.
+
+**Why validation precedes the push:** `commit-tree` writes the commit locally, so the check needs no remote at all — and once the ref is single and force-updated, publishing first would let a malformed capture destroy the last known-good snapshot, discarding both the current work and the thing the mechanism exists to protect. Validating first costs nothing and removes that window entirely; a temporary ref promoted after validation would achieve the same and is only worth reaching for where a check genuinely needs the remote, which this one does not.
+
+**Why one ref per branch, force-replaced:** a ref-neutral capture leaves the worktree untouched, so a worker that stays dirty is captured again on the next supervision cycle, and a commit-keyed ref name would accumulate siblings. Siblings have no safe ender: reconciling the newest does not make an older one an ancestor of the branch head, so an ancestor test never retires it, and merging every sibling invites conflicts wherever a later snapshot supersets an earlier one. Replacement is safe for a reason specific to how these commits are built — every capture is seeded from the worker's head and overlays the same issue-owned path list, so a later capture carries the earlier one's content except where the worker itself changed it.
+
+**Why the branch name is encoded rather than nested or suffixed:** a ref cannot exist where another ref needs a directory, so any scheme that keeps the branch's slashes creates a collision between prefix-related branches (`feature/foo` blocks the directory `feature/foo/bar` needs — git rejects the push outright, so the worker cannot be checkpointed at all). A fixed trailing component only moves the collision to branches whose names contain that component. Encoding `%` before `/` keeps the mapping injective — `feature/foo` → `feature%2Ffoo` while the equally legal branch `feature%2Ffoo` → `feature%252Ffoo` — and keeps the ref readable for the person reading these during recovery, which a hash would not.
+
+**Why the four-state ref-ender rule is enumerated:** the rule was built one case at a time and each missing case left a ref with no ender, which invariant 12 then converts into a PR that can never merge. A two-state copy that lived in Lost worker recovery covered only open and merged, so a lost worker with no PR or a closed one had its capture merged into the branch and its ref neither verified nor deleted.
+
+## Blocked workers
+
+**The observed incident:** a worker sat blocked for six hours on a prompt to delete a trigger, its PR long since merged, before a human found it in a session list. Its status field read a plain `IDLE` while a separate derived-state field read `BLOCKED`, with the pending tool named only in a third — the disagreement the read-the-right-field rule exists for.
+
+## Performing the renumber once a human decides
+
+**The worked example behind the generator rule:** a Drizzle migration's identity lives in five places — the `.sql` filename, the journal's `idx`, `tag` and `when`, and the snapshot's `id`/`prevId` chain. A hand-rename that updates four and misses `when` makes the migration **silently skipped**: no error, no log, green CI, and the schema change never applies. Renumbering `0011` to `0014` in `crypto-scanner-api` was exactly this; the repair was regenerating through `pnpm db:generate` and splicing the hand-written backfill back in. A regenerated artifact that silently drops hand-written content is the same failure with the sign flipped, hence splice-and-re-verify.
+
+## Settled tranche
+
+**The removed decision docket (why the unattended decline's aggregation loss is accepted):** a second durable record written to close that gap is the decision docket this skill already carried and removed — it needed an in-place rewrite `permissions.json` cannot perform and stopped an unattended session on the prompt step 8 forbids. Re-deriving a lost aggregate costs one summary; the record that would have prevented it cost four review findings and could not run.
