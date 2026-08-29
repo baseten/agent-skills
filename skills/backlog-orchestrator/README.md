@@ -16,7 +16,7 @@ Most of `SKILL.md`'s size is rules for the ways steps 1–4 have gone wrong in p
 ## The moving parts
 
 - **Workers** are disposable single-issue sessions. They report what happened as a comment on their own PR — never on the issue, because three skills scan issue comments for "blocked by X" statements and would mistake a status note for a real dependency, permanently.
-- **The pre-flight validator** (`validate-backlog`) gates every dispatch. Its hardest job is *transport visibility*: proving a credential can see the whole dependency graph, which can only be done against a link whose existence is already known some other way.
+- **The pre-flight validator** (`validate-backlog`) gates every new implementation dispatch (repair workers don't re-run it — their PR already exists). Its hardest job is *transport visibility*: proving a credential can see the whole dependency graph, which can only be done against a link whose existence is already known some other way.
 - **Checkpoint rescue**: when a worker gets stuck with uncommitted files, the orchestrator saves them by committing to a hidden git ref (`refs/checkpoints/...`) via a tested script (`scripts/checkpoint-capture.sh`) — never by touching the worker's own branch or index.
 - **Session hygiene**: every cycle the orchestrator compares the sessions the runtime says are alive against what it thinks it launched, because a leaked worker session keeps a container and can keep waking itself hourly at real cost. A run cannot call itself finished while a session it created is still alive.
 - **Posting identity**: when the orchestrator writes comments, it posts through whatever connection it would use anyway and reports *who* the comment appeared to come from (you, or a bot identity). The one exception is the comment that triggers automated review, which only works when it comes from you.
@@ -37,13 +37,13 @@ Terms `SKILL.md` coins, in plain words. Section names in parentheses point to wh
 | **worker** | A disposable sub-session implementing exactly one issue (or one repair). |
 | **dispatch** | Launching a worker, with a prompt that carries everything it needs. |
 | **releasing a worker** (*Releasing a worker*) | Shutting a finished worker down. On remote sessions this means archiving the session — a live one holds a container and can keep waking itself. |
-| **the releasable test** | The two conditions for shutdown: the worker is genuinely done, and nothing unsaved is left in its checkout. |
+| **the releasable test** | The two conditions for shutdown: the worker is genuinely done, and none of its work is stranded — everything is pushed, or rescued to a recovery ref (a dirty checkout whose files were rescued still passes). |
 | **recovery ref / checkpoint capture** (*Checkpoint compliance*) | The hidden git ref where a stuck worker's unsaved files are rescued, via the tested script. |
 | **durable remote state** | Work that survives the run dying: a pushed branch with a PR. |
 | **invariant 1** | The run's own memory and notes are a cache; only the tracker, git remote, and runtime are the truth. |
 | **invariant 12** | The merge gate. A merge needs all of: the repo's config opted in, nothing decision-shaped outstanding anywhere in the batch, green CI on the PR's current head, no merge conflict, a clean review, no unreconciled rescue ref, not a deliberately held draft, and a dependency view that was proven or explicitly answered for. |
 | **invariant 13** | A merge is a scheduling event (it can start new work), never an end state. |
-| **settled** (*Settled tranche*) | Nothing more can start and every PR is individually finished-for-now. Settled ≠ finished: the next move is a human's. |
+| **settled** (*Settled tranche*) | Nothing more can start and every PR is individually finished-for-now. Settled ≠ finished: the next move is usually a human's, though where a repository opted into auto-merge the settled step's own gated merge can be that move — and it can restart work. |
 | **transport** (*Transport precedence*) | Any way of reading/writing the tracker or forge: an MCP tool, a CLI, raw HTTP. Ordered by preference. |
 | **transport visibility / visibility proof** (*Proving a transport can see the graph*; canonical in `validate-backlog`) | Evidence that a credential can see all the dependency links in scope, established against a link already known to exist ("known-true case"). A restricted credential returns a partial graph with no error, so absence through an unproven transport proves nothing. |
 | **`dependency transport unavailable`** | The tracker offers no dependency read at all here (e.g. GitHub without `gh`). A known, uniform limitation accepted up front — different in kind from an unproven view. |
@@ -57,7 +57,7 @@ Terms `SKILL.md` coins, in plain words. Section names in parentheses point to wh
 | **review trigger / bootstrap** | The "@codex review"-style comment that starts automated review. It only works posted as you, and the first one in a run is sent on prediction and verified by read-back. |
 | **coverage finding** (*Outcomes*) | A dependency satisfied on paper (issue closed, PR merged) whose actual capability is missing from the code. Such a PR must not auto-close its issue. |
 | **deep vs shallow validation / escalation** | Shallow checks declared links; deep reads the code behind them. Certain shapes (cross-repo edges into earlier merges) force deep mode. |
-| **explicitly held draft** | A draft PR a human deliberately keeps in draft (it was ready once and was returned) — excluded from merging entirely. |
+| **explicitly held draft** | A draft PR a decision outside the run keeps in draft — an explicit instruction, a repository convention, a caller-passed preference, or a human returning it to draft after it was ready — excluded from merging entirely. |
 | **per-PR block** | The record the run keeps per PR: heads, budgets, subscription state, worker session id, draft state. |
 | **event subscription / no-change preflight** (*Event handling*) | The per-PR watch that delivers CI/review events, and the rule that a "nothing changed" claim must first prove something was listening. |
 | **arming the wait / no-op budget** (*Arming the wait when nothing is in flight*) | The subscription + scheduled check-in a settled run sets up, and the cost cap on it: 8 fruitless wakes with growing gaps (~21 hours), then it stops and says so. |
