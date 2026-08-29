@@ -1,0 +1,66 @@
+{
+  "skill_name": "plan-merge-order",
+  "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "integration-base-is-not-a-stack-edge",
+      "prompt": "You are executing the plan-merge-order skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: candidate PR #71 targets base branch 'release/2.4', a long-lived release branch. No other candidate PR's head branch is 'release/2.4'. PR #71's body also carries a line 'Depends on: #68', and #68 is another candidate whose head branch is 'feat/auth-core' — which is not #71's base. Question: in your stack topology, is #71 a stack child, and of what? What role does the 'Depends on:' line play?",
+      "expected_output": "#71 is standalone in the stack topology: an edge exists only when the child's base equals another candidate's head branch, and a non-default base alone is not a stack edge. The Depends on: line locates candidates and cross-checks — it is never the edge itself — so #68 is not #71's stack parent (though the stated dependency may surface as a graph edge/constraint, it is not stack ancestry).",
+      "assertions": [
+        "The answer does not make #71 a stack child of #68 (or of anything) — branch topology defines the edge, and no candidate's head matches #71's base",
+        "The answer does not treat the non-default base 'release/2.4' alone as evidence of a stack edge",
+        "The answer uses the 'Depends on:' line only to locate/cross-check, explicitly not as the stack edge itself"
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "zero-unblocks-still-gates-a-subtree",
+      "prompt": "You are executing the plan-merge-order skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: candidate PR #80 completes issue I-8. Every issue downstream of I-8 also waits on at least one other in-flight PR, so nothing becomes startable the moment #80 merges — but a nine-issue subtree transitively cannot start until I-8 merges. A colleague suggests dropping #80 from the table since it 'unblocks nothing'. Question: what numbers do you report for #80, and does it stay in the output?",
+      "expected_output": "Report both numbers: Unblocks now = 0 and Gated behind = 9 (the transitive closure). The PR stays in the output — candidates are never silently dropped, and a zero is a legitimate, useful answer. The two numbers diverging is exactly the case the pair exists for: #80 is necessary but not sufficient for the subtree.",
+      "assertions": [
+        "The answer reports two distinct numbers — unblocks-now of zero AND a gated-behind of nine (the transitive subtree) — not a single score",
+        "The answer keeps #80 in the table/output, refusing the suggestion to drop it",
+        "The answer explains the divergence: the subtree waits on other in-flight PRs too, so #80 is necessary but not sufficient (it still gates the nine issues)"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "all-or-nothing-set-scoped-to-its-group",
+      "prompt": "You are executing the plan-merge-order skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: unstarted issue X is blocked by in-flight issues A and B (both have open candidate PRs). Unstarted issue Y is blocked only by A. There are no other blockers. A reviewer asks: 'X needs both, so merging A alone buys nothing, right?' Question: what all-or-nothing set do you report, and is the reviewer's claim correct?",
+      "expected_output": "{A, B} is an all-or-nothing set for X (X starts only when both merge). But the claim is scoped to that group: merging A alone starts Y, so A's row reports unblocks-now of 1 (Y). The reviewer's 'buys nothing' is wrong — before describing a partial merge as buying nothing, check the rest of the graph and report the leverage it does have.",
+      "assertions": [
+        "The answer states {A, B} as an all-or-nothing set for X specifically (X startable only when both merge)",
+        "The answer rejects 'merging A buys nothing': merging A starts Y, and A's leverage (unblocks-now includes Y) is reported",
+        "The answer scopes the all-or-nothing claim to the group rather than generalizing it to the whole tranche"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "empty-native-blockers-prove-nothing",
+      "prompt": "You are executing the plan-merge-order skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: unstarted issue I-12 has ZERO native tracker dependency relationships. Its description, however, says 'Blocked by: acme/other-repo#12', which matches an in-scope issue another candidate PR completes. The ranking of that PR materially depends on whether I-12 counts as gated behind it. Question: is I-12 unblocked? How does the edge enter your graph, and what must the output do about it?",
+      "expected_output": "Not unblocked: an empty native blocker list is not evidence of an unblocked issue — the text check is mandatory, and cross-repo edges in particular often live only in prose. The edge enters the graph marked 'inferred' (stated-in-text confidence), and because the ranking depends on it, the output lists it in the inferred-edges section (and marks the affected row) so the user can overrule it.",
+      "assertions": [
+        "The answer does not treat I-12 as unblocked from the empty native list; the prose blocker is honored",
+        "The answer records the edge as inferred (text-stated, not native) — the two confidence levels are not interchangeable",
+        "The answer both lists this edge in the inferred-edges output section and marks the dependent row, so the user can overrule it"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "hard-constraints-outrank-leverage-no-go-ahead",
+      "prompt": "You are executing the plan-merge-order skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: candidate PR #90 has the highest leverage in the tranche (unblocks 4 issues now). summarize-tranche supplied a DECISION action point gating #90 — the owner has not yet chosen between two retention policies it implements one of. Separately, #91 and #92 each add a database migration numbered 0012 (both currently apply cleanly on their own branches). Question: (a) may #90 lead the merge batches, and how does its row read? (b) what do you report about #91/#92? (c) the user replies 'great, so #90 is approved to merge once I decide' — is the ranking an approval?",
+      "expected_output": "(a) No — a supplied DECISION is a hard constraint: #90 is not batched ahead of the decision it waits on, and its row states the gate; hard constraints outrank every leverage number. (b) #91/#92 are a claimed-artifact collision: they collide only on the second merge, so report it as a hard sequencing constraint naming the colliding migration paths, both PR URLs, and the renumber/regenerate work the second-merged branch needs. (c) No — the output is an ordering, not a go-ahead; a ranking is never approval and never implies the top PR is safe to merge.",
+      "assertions": [
+        "For (a) the DECISION gate keeps #90 out of merge batches ahead of the decision despite the highest leverage, with the constraint stated on its row",
+        "For (b) the duplicate migration number is reported as a hard sequencing constraint (second-merge collision) naming both PRs/paths and the rework the losing branch needs",
+        "For (c) the answer refuses to equate the ranking with approval or merge-readiness"
+      ],
+      "files": []
+    }
+  ]
+}
