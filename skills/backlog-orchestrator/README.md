@@ -21,7 +21,7 @@ Most of `SKILL.md`'s size is rules for the ways steps 1–4 have gone wrong in p
 - **Session hygiene**: every cycle the orchestrator compares the sessions the runtime says are alive against what it thinks it launched, because a leaked worker session keeps a container and can keep waking itself hourly at real cost. A run cannot call itself finished while a session it created is still alive.
 - **Posting identity**: when the orchestrator writes comments, it posts through whatever connection it would use anyway and reports *who* the comment appeared to come from (you, or a bot identity). The one exception is the comment that triggers automated review, which only works when it comes from you.
 - **The merge gate**: it never merges on its own judgment. A repository must opt in via `.claude/backlog-orchestrator.json` (`auto-merge: true`), and even then a merge waits until nothing in the batch has an unanswered decision.
-- **Budgets everywhere**: new issues per run, concurrent workers, repair rounds per PR, one model escalation, and a no-op budget with backoff on every recurring check-in, so nothing loops forever at your expense.
+- **Budgets everywhere**: new issues per run, concurrent workers, repair rounds per PR, model escalations (one by default), and a no-op budget with backoff on every recurring check-in, so nothing loops forever at your expense.
 
 ## Glossary
 
@@ -39,8 +39,8 @@ Terms `SKILL.md` coins, in plain words. Section names in parentheses point to wh
 | **releasing a worker** (*Releasing a worker*) | Shutting a finished worker down. On remote sessions this means archiving the session — a live one holds a container and can keep waking itself. |
 | **the releasable test** | The two conditions for shutdown: the worker is genuinely done, and none of its work is stranded — everything is pushed, or rescued to a recovery ref (a dirty checkout whose files were rescued still passes). |
 | **recovery ref / checkpoint capture** (*Checkpoint compliance*) | The hidden git ref where a stuck worker's unsaved files are rescued, via the tested script. |
-| **durable remote state** | Work that survives the run dying: a pushed branch with a PR. |
-| **invariant 1** | The run's own memory and notes are a cache; only the tracker, git remote, and runtime are the truth. |
+| **durable remote state** | Work that survives the run dying: a pushed branch with a PR — or, before a PR exists, pushed commits or a pushed recovery ref; recovery resumes pre-PR work from those. |
+| **invariant 1** | The run's own memory and notes are a cache; the tracker and the git remote are the truth. The runtime's session list is authoritative only for which sessions are alive right now — restart recovery never reads runtime state. |
 | **invariant 12** | The merge gate. A merge needs all of: the repo's config opted in, nothing decision-shaped outstanding anywhere in the batch, green CI on the PR's current head, no merge conflict, a clean review, no unreconciled rescue ref, not a deliberately held draft, and a dependency view that was proven or explicitly answered for. |
 | **invariant 13** | A merge is a scheduling event (it can start new work), never an end state. |
 | **settled** (*Settled tranche*) | Nothing more can start and every PR is individually finished-for-now. Settled ≠ finished: the next move is usually a human's, though where a repository opted into auto-merge the settled step's own gated merge can be that move — and it can restart work. |
@@ -53,7 +53,7 @@ Terms `SKILL.md` coins, in plain words. Section names in parentheses point to wh
 | **worker report vs blocker record** (*How a worker's report actually reaches you*) | A report is what the worker observed (goes on its PR); a record is what the orchestrator verified and wrote down (goes on the issue). Only records count as dependencies. |
 | **the worker-report marker** | The exact first line (`**Worker report — unclassified evidence, not a dependency record.**`) that makes dependency-scanning skills skip a report that ended up on an issue anyway. |
 | **one-line summary / `needs_action`** | The single line of free text a remote worker's runtime keeps about its last turn — a pointer to go look, never a complete list. |
-| **posting identity** (*Posting identity*) | The map of who comments actually appear to come from, per connection and credential and kind of write, learned only by reading a posted comment back. |
+| **posting identity** (*Posting identity*) | The map of who comments actually appear to come from, per connection and credential and kind of write, learned only by reading a posted write back — and a read-back proves only the kind of write it was: a comment observation says nothing about PR creation or review replies, which each need their own. |
 | **review trigger / bootstrap** | The "@codex review"-style comment that starts automated review. It only works posted as you, and the first one in a run is sent on prediction and verified by read-back. |
 | **coverage finding** (*Outcomes*) | A dependency satisfied on paper (issue closed, PR merged) whose actual capability is missing from the code. Such a PR must not auto-close its issue. |
 | **deep vs shallow validation / escalation** | Shallow checks declared links; deep reads the code behind them. Certain shapes (cross-repo edges into earlier merges) force deep mode. |
@@ -65,7 +65,7 @@ Terms `SKILL.md` coins, in plain words. Section names in parentheses point to wh
 | **release reconciliation / provenance key** (*Parent supervision loop*, step 11) | The every-cycle comparison of the runtime's live sessions (filtered by `parent_session_id`) against the run's records — mine-and-alive gets handled now; another run's are reported, never touched. |
 | **state block** (*Progress / checkpoint output*) | The short status snapshot (budgets, workers, sessions created/archived/alive, PRs, check-in state) emitted every supervision cycle. |
 | **stacked PRs / restack / `Depends on:`** | PRs based on each other's branches; after a parent merges, children are rebased so its commits don't leak into their diffs. The `Depends on:` body line records the parent. |
-| **repair cycles / model escalation / locus evidence** (*Model and skill policy*) | Bounded repair rounds per PR; one round may run on the strongest model, triggered only when a new finding lands in text an earlier repair wrote. |
+| **repair cycles / model escalation / locus evidence** (*Model and skill policy*) | Bounded repair rounds per PR; by default one round may run on the strongest model (the cap is a config key, like the round caps), triggered only when a new finding lands in text an earlier repair wrote. |
 | **rulings / `DECISION` / `MERGE_RISK` / `NEW_ISSUE` / `IN_FLIGHT_FIX`** (*Settled tranche*) | Action-point kinds the summary raises; a ruling is your recorded answer. A ruling that requires code changes re-opens the run. |
 | **resume frontier** | The READY-but-not-started issues named in the closing report so the next run adopts them instead of rediscovering them. |
 | **lost worker recovery** | What happens when a worker becomes unreachable: rescue its work from durable state, then redispatch within budget. |
