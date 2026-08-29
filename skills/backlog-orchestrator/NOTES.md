@@ -73,6 +73,12 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 **Why `finding-repair-cycles` is its own counter (the argued choice):** the case for sharing `review-repair-cycles` is real — an `IN_FLIGHT_FIX` is review-shaped in substance, and a third knob is more config surface for the same "how many repair passes" question. It loses on two counts. The two budgets bound different loops: review cycles bound convergence with an external reviewer who answers each push with a possible next round, while finding cycles bound the settle-repair-resettle loop this skill drives itself, and one counter over both lets either loop starve the other — a summary that emits several findings drains the cycles reserved for answering the reviewer's next round, and a chatty reviewer that already spent both cycles leaves a verified settle finding with no compliant dispatch, forcing `NEEDS_USER` on work the run holds both the evidence and the mechanism to fix. And the config-surface objection cuts thinner than it looks: the resolution table already scopes every repair key per PR, so the third key lands in an existing row rather than a new mechanism.
 
+## Frontier advance on merge
+
+**Why the resumed dispatch needs the escalation most:** nobody is watching it — the run resumed on an event, not on a human's attention — and the merge that triggered it is itself the event that makes a stale cross-tranche dependency look satisfied. The preflight at the selected mode is the only check between that illusion and a dispatched worker.
+
+**What crediting a close would do:** a recompute that treats close like merge sees a dependency-free node and dispatches a fresh worker for the work a human just declined — recreating the PR they closed and spending budget to do it.
+
 ## How a worker's report actually reaches you
 
 **Where the gap is worst:** a terminal outcome short of `PR_OPEN` usually arrives **before any PR exists** — no PR body, no review thread, no commit message — so the dependency correction that stopped the worker exists only in a transcript nobody will open. A parent pulling the usual sources finds nothing unusual and concludes the worker had nothing to say. Successful runs leak less but still leak: graph corrections and caveats that are not coverage findings have no place they are guaranteed to be written.
@@ -109,6 +115,24 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 **The worked example behind the generator rule:** a Drizzle migration's identity lives in five places — the `.sql` filename, the journal's `idx`, `tag` and `when`, and the snapshot's `id`/`prevId` chain. A hand-rename that updates four and misses `when` makes the migration **silently skipped**: no error, no log, green CI, and the schema change never applies. Renumbering `0011` to `0014` in `crypto-scanner-api` was exactly this; the repair was regenerating through `pnpm db:generate` and splicing the hand-written backfill back in. A regenerated artifact that silently drops hand-written content is the same failure with the sign flipped, hence splice-and-re-verify.
 
+## Outcomes
+
+**Why the verified-availability record must never become a skip:** the worker's dependency precondition runs on every dispatch regardless, and it would be a contradiction to build a record whose purpose was to let a caller skip the very check that produced it. The record informs restarts; it exempts nothing.
+
+**Why shipping silently against a coverage gap is the failure mode:** a worker that finds the capability absent and ships anyway — disabled UI, a stubbed call, an acceptance criterion quietly dropped — has produced a permanently partial deliverable and left the prerequisite invisible. The missing capability is recoverable; the invisibility is what is not.
+
+**Why a closed-over coverage finding gets no further attention:** the prerequisite sits open beside an issue the tracker calls complete — nothing routine ever re-examines a `DONE` issue, so the gap persists exactly as long as nobody happens to look.
+
+**Why the mixed-case asymmetry must not pass as a difference in reporting detail:** a PR from a worker that could re-read carries a check yours did not; a PR from a worker that could not carries your preflight and nothing since. Accepting both on the same terms is how a blocker added mid-run reaches `main`, and it is invisible from either side alone — which is why `implement-issue-core` has the worker say so explicitly, and why the answering duty sits with the parent.
+
+**Why the dispatch gate and the outcome duty must not be confused:** they read almost identically and permit opposite things. Carrying unproven completeness forward is the rule at the *dispatch* gate, where knowing an unwritten blocker is undetectable is the thing you weigh; by the time an outcome is in front of you it is a PR to reconcile against a fresh read or hold, and re-deciding dispatch there would let the PR through on the stale preflight the decision was taken from.
+
+**The time axis as the second proxy correction:** having fixed "different transport" into "different credential" earlier in this design, the same correction applies along the time axis — two reads that differ may differ because the graph changed in between. Independence and contemporaneity are separate conditions.
+
+**The proxy ladder, and what corroboration actually establishes:** distinct transport, then distinct credential, then distinct moment were each offered as a stand-in for independent visibility and each failed, because a proxy can always coincide with the thing it is standing in for — ask for the property the conclusion needs, visibility, proven. And when a preflight warning and a worker report coincide, the reading it invites is backwards: two actors agreeing does not make the prose edge more likely real (they read the same prose); it makes a *partial view* less likely — a different and more useful conclusion. Correlating costs nothing, since the warning is already in hand.
+
 ## Settled tranche
 
 **The removed decision docket (why the unattended decline's aggregation loss is accepted):** a second durable record written to close that gap is the decision docket this skill already carried and removed — it needed an in-place rewrite `permissions.json` cannot perform and stopped an unattended session on the prompt step 8 forbids. Re-deriving a lost aggregate costs one summary; the record that would have prevented it cost four review findings and could not run.
+
+**Why a code-changing ruling must not become a ranking constraint (the step-3 defect one step later):** choosing the other side of a decision a worker already implemented creates actionable work *after* step 3 processed the action points. Translating it into a ranking constraint would leave an orchestrator-owned fix undispatched and rank a PR that is not finished — the exact defect the `IN_FLIGHT_FIX` row guards against, arriving one step later.
