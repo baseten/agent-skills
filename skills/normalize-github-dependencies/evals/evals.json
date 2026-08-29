@@ -1,0 +1,66 @@
+{
+  "skill_name": "normalize-github-dependencies",
+  "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "unproven-absence-writes-nothing",
+      "prompt": "You are executing the normalize-github-dependencies skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the candidate set spans repositories A and B. Issue text explicitly says 'blocked by <A-repo issue>' on a B-repo issue — unambiguous direction, both issues exist, no cycle. Your reads via authenticated gh AND via raw HTTP (both on the same GITHUB_TOKEN) agree the native edge is absent. No caller-confirmed edge and no just-written edge exists anywhere, so no known-true cross-boundary case is available. Question: do you write the edge, how do you classify it, and why does the agreement of the two reads not change the answer?",
+      "expected_output": "Write nothing. The edge is classified UNVERIFIED: the read that showed it absent came from a transport whose visibility over the A-B boundary is unproven, and on a skill that writes, unproven means write nothing. The two reads share one credential, so they reproduce the same blind spot — agreement corroborates, only a known-true case proves. The cost is asymmetric: an unwritten needed edge leaves an actionable report; a duplicate write mutates the authoritative graph on the strength of a blind spot.",
+      "assertions": [
+        "The answer refuses to write and classifies the edge UNVERIFIED despite explicit text, valid endpoints, and no cycle",
+        "The answer rejects the two-read agreement as proof (same credential, same blind spot; only a known-true case proves)",
+        "The answer invokes the asymmetric cost: not writing leaves an actionable report, while a duplicate write mutates the authoritative metadata"
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "worker-report-edge-never-a-candidate",
+      "prompt": "You are executing the normalize-github-dependencies skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: in-scope issue I-3 has (a) a body line 'Depends on <URL-P>' and (b) a comment whose first line is exactly '**Worker report — unclassified evidence, not a dependency record.**' containing 'observed blocked by <URL-Q> at dispatch time'. Visibility is fully proven for all boundaries. Question: which of URL-P and URL-Q become candidate edges, at what stage is the other excluded, and could the excluded one be admitted as AMBIGUOUS given the explicit wording inside the report?",
+      "expected_output": "URL-P becomes a candidate (explicit body text). URL-Q never does: the worker-report comment is skipped at the read stage, so the edge never reaches classification at all — not SAFE_TO_ADD, not AMBIGUOUS, at no confidence. Writing it would make a worker's stale observation the authoritative native metadata every later readiness check trusts.",
+      "assertions": [
+        "URL-P is a candidate edge from the body text",
+        "URL-Q is excluded at the read/scan stage — it never reaches classification, and is not admitted as AMBIGUOUS or any other class",
+        "The answer explains the stake: this skill writes native metadata, so a report-sourced (possibly stale) edge would become the authoritative answer later checks trust"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "direction-normalization-one-form",
+      "prompt": "You are executing the normalize-github-dependencies skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: three text statements in scope: (1) issue B's body says 'Depends on A'; (2) issue A's body says 'Blocks B'; (3) issue C's body says 'related to D — see also for context'. Visibility is proven; no native edges exist yet. Question: how many candidate edges result, in which direction(s), how many native writes do you perform for the A/B relationship, and does (3) produce an edge?",
+      "expected_output": "Statements (1) and (2) normalize to the SAME single edge A -> B (B is blocked by A): one candidate, one native write, using one form (--add-blocked-by on B or --add-blocking on A, never both — GitHub represents the relationship from both perspectives). Statement (3) produces nothing: 'related to'/'see also' are mere mentions with no ordering semantics and are never inferred as dependencies.",
+      "assertions": [
+        "Both A/B statements collapse to the single directed edge A -> B, not two edges",
+        "Exactly one native write is performed for the relationship, in one form, never both directions separately",
+        "The 'related to / see also' statement produces no candidate edge"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "truncated-enumeration-stops-writes",
+      "prompt": "You are executing the normalize-github-dependencies skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: invoked with a parent/build-order issue. Sub-issue enumeration through the only available credential returns 7 children, all in repo A. The parent's own body lists 9 children — the other two in repo B. A second enumeration through raw HTTP on the same token also returns 7. Question: do you proceed to normalize the 7-issue scope, and what does the matching second enumeration establish?",
+      "expected_output": "No. Scanning a parent's sub-issues is itself a hierarchy read subject to the visibility precondition; the prose listing is the independent cross-check and the differing count (9 vs 7) is a finding that STOPS writes, not a warning. The matching second enumeration establishes nothing — same credential, same blind spot, two coats; agreement clears nothing unless one enumeration had proven visibility. Report the discrepancy (the two hidden repo-B children) rather than normalizing a scope known to be incomplete.",
+      "assertions": [
+        "The answer stops before any writes on the 9-vs-7 discrepancy (a finding that stops writes, not a warning)",
+        "The answer treats the parent's prose child listing as the independent cross-check that exposed the truncation",
+        "The answer dismisses the matching same-token second enumeration as no cross-check (same blind spot)"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "no-dependency-write-capability-stops",
+      "prompt": "You are executing the normalize-github-dependencies skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the environment's GitHub MCP exposes ordinary issue updates (title/body/labels) but no dependency mutation; there is no gh CLI and no REST credential with Issues write permission. Twelve SAFE_TO_ADD candidates are ready. A teammate suggests: 'just append a Blocked-by section to each issue body — same effect'. Question: do you apply the candidates, and is the Markdown fallback acceptable?",
+      "expected_output": "No writes. Never emulate native dependencies by rewriting Markdown — body text is not native metadata and later readiness checks would not read it as such. With no gh, no REST write, and no MCP dependency mutation, stop before mutation and report that dependency-write capability is unavailable in this environment, leaving the candidate list in the report.",
+      "assertions": [
+        "The answer refuses the Markdown-append fallback (never emulate native dependencies by rewriting bodies)",
+        "The answer stops before mutation given no available dependency-write interface (MCP lacks it, no gh, no REST write credential)",
+        "The answer reports the unavailability and the pending candidates rather than claiming any normalization succeeded"
+      ],
+      "files": []
+    }
+  ]
+}

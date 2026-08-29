@@ -7,16 +7,13 @@ description: Convert dependency relationships described in GitHub issue/sub-issu
 
 Convert text-described dependencies in a bounded GitHub issue set into first-class GitHub `blocked by` / `blocking` relationships.
 
+This file is the contract; the reasoning behind its rules lives in `NOTES.md` beside it, keyed by section. NOTES explains; it never overrides.
+
 This skill is GitHub-specific. For tracker-agnostic graph validation use `validate-backlog`.
 
-**This skill is only useful from an environment with an authenticated `gh` CLI — in practice a local session.** It needs `gh` for *both* halves: reading existing edges to classify `ALREADY_PRESENT`/`CONFLICT`, and writing new ones. A cloud container has neither — the MCP server exposes no dependency read or write, and a raw `curl` read returns same-repo edges only, silently omitting cross-repository ones. Run from a cloud container this does not degrade gracefully: it normalizes against a view that cannot see half the graph, and writes the result into the metadata every later readiness check trusts.
+**This skill is only useful from an environment with an authenticated `gh` CLI — in practice a local session.** It needs `gh` for *both* halves: reading existing edges to classify `ALREADY_PRESENT`/`CONFLICT`, and writing new ones. A cloud container has neither — the MCP server exposes no dependency read or write, and a raw `curl` read returns same-repo edges only, silently omitting cross-repository ones. Run from a cloud container this does not degrade gracefully (NOTES).
 
-**Establish first that native dependency reads work here at all, because in some environments they do not.** The GitHub MCP server exposes no blocked-by read — it is behind a feature flag ([github/github-mcp-server#3145](https://github.com/github/github-mcp-server/issues/3145)) — and the `curl` fallback needs credentials a container without `gh` may lack, degrading to a result that **drops cross-repository edges with no error**. Both matter more to this skill than to any other, because it *writes* native edges:
-
-- with no read, `ALREADY_PRESENT` and `CONFLICT` cannot be determined, so normalizing would re-add edges that already exist and could contradict ones it cannot see;
-- with the degraded read, a cross-repo edge reads as absent and gets written again — and an edge written into native metadata is the authoritative answer every later readiness check trusts, which is the most expensive place in the system to be confidently wrong.
-
-So probe the read before applying anything: a known-true edge — one this run just wrote, or one the user confirmed — queried through the transport you will normalize with, **including one that crosses a repository boundary if the set spans repositories**. If it does not come back, stop and report; do not fall back to writing edges you could not check. See `validate-backlog`, *GitHub dependency reads depend on where you are running*.
+**Establish first that native dependency reads work here at all.** The GitHub MCP server exposes no blocked-by read (feature-flagged; [github/github-mcp-server#3145](https://github.com/github/github-mcp-server/issues/3145)), and the `curl` fallback drops cross-repository edges with no error. Both matter more to this skill than to any other, because it *writes* native edges (NOTES: what each failure converts into). So probe the read before applying anything: a known-true edge — one this run just wrote, or one the user confirmed — queried through the transport you will normalize with, **crossing a repository boundary if the set spans repositories**. If it does not come back, stop and report; never fall back to writing edges you could not check. See `validate-backlog`, *GitHub dependency reads depend on where you are running*.
 
 ## Inputs and scope
 
@@ -26,9 +23,9 @@ Accept one of:
 - an explicit set of GitHub issue URLs;
 - an explicitly bounded GitHub Project issue set when the user asks for it.
 
-Preserve canonical full GitHub issue URLs in all reporting. Do not expand beyond the supplied tree/set merely because an issue references unrelated work. Out-of-scope referenced issues may be used as dependency endpoints when the text clearly declares them, but do not recursively normalize their other relationships.
+Preserve canonical full GitHub issue URLs in all reporting. Never expand beyond the supplied tree/set merely because an issue references unrelated work. Out-of-scope referenced issues may serve as dependency endpoints when the text clearly declares them, but never recursively normalize their other relationships.
 
-**Scanning a parent's sub-issues is itself a hierarchy read**, so the first input form is subject to the visibility precondition below rather than exempt from it. A credential that hides children in one repository yields a truncated candidate set, and a scope derived from a possibly-partial read cannot bound its own validation: the hidden repository never appears, so no control ever tests it, and every edge written afterwards rests on a view known to be incomplete. Cross-check the enumerated child set against the parent's own prose listing, an explicitly supplied issue set, or a second enumeration before treating it as the scope — a differing count is the finding, and here it is a finding that stops writes rather than merely warning. A matching count is not the converse: two enumerations sharing a blind spot agree exactly about what neither can see, so agreement clears nothing unless one of them had proven visibility. A second transport sharing the credential (`gh` and raw HTTP both on `GITHUB_TOKEN`) is not a cross-check: same scope, same blind spot, two coats.
+**Scanning a parent's sub-issues is itself a hierarchy read**, so the first input form is subject to the visibility precondition below, not exempt from it (NOTES: how a truncated candidate set defeats its own validation). Cross-check the enumerated child set against the parent's own prose listing, an explicitly supplied issue set, or a second enumeration before treating it as the scope — **a differing count is a finding that stops writes**; a matching count clears nothing unless one of the enumerations had proven visibility. A second transport sharing the credential (`gh` and raw HTTP both on `GITHUB_TOKEN`) is not a cross-check: same scope, same blind spot, two coats.
 
 ## Dependency sources
 
@@ -36,7 +33,7 @@ For every in-scope issue:
 
 1. read native GitHub `blocked by` / `blocking` relationships first;
 2. read the issue body;
-3. read comments when they contain scope/order clarification — but **skip any comment whose first line is exactly `**Worker report — unclassified evidence, not a dependency record.**`**. That is a worker's persisted report on the issue, not a statement about the issue's dependencies. It necessarily contains dependency URLs, and this skill writes native metadata, so an edge taken from it becomes the authoritative answer every later readiness check trusts — including one the orchestrator has already classified as stale, which then blocks its issue with nothing prompting a re-examination. A report never contributes a candidate edge, at any confidence;
+3. read comments when they contain scope/order clarification — but **skip any comment whose first line is exactly `**Worker report — unclassified evidence, not a dependency record.**`**. A report never contributes a candidate edge, at any confidence (NOTES: why an edge from a report is the most expensive to be wrong about);
 4. identify explicit dependency language, including:
    - `blocked by <issue>`;
    - `depends on <issue>`;
@@ -47,7 +44,7 @@ For every in-scope issue:
    - structured sections such as `Dependencies`, `Blocked by`, `Prerequisites`, or build-order lists;
 5. resolve every dependency endpoint to a canonical GitHub issue URL and GitHub issue ID before mutation.
 
-Do not infer dependencies from mere mentions such as `related to`, `see also`, `context`, or links with no ordering semantics.
+Never infer dependencies from mere mentions such as `related to`, `see also`, `context`, or links with no ordering semantics.
 
 ## Direction normalization
 
@@ -90,26 +87,24 @@ Classify candidates:
 - `ALREADY_PRESENT` — native dependency already exists;
 - `AMBIGUOUS` — wording does not establish direction strongly enough;
 - `CONFLICT` — contradicts native metadata or would introduce a cycle;
-- `OUT_OF_SCOPE_REFERENCE` — valid endpoint outside the normalized set; may still be added when explicitly declared, but do not traverse it further;
+- `OUT_OF_SCOPE_REFERENCE` — valid endpoint outside the normalized set; may still be added when explicitly declared, but never traversed further;
 - `UNVERIFIED` — the edge looks absent, but the read that showed it absent came from a transport whose visibility is unproven (see below).
 
-Do not mutate `AMBIGUOUS`, `CONFLICT`, or `UNVERIFIED` edges automatically.
+Never mutate `AMBIGUOUS`, `CONFLICT`, or `UNVERIFIED` edges automatically.
 
 ## Precondition: the read that showed the edge missing must be trustworthy
 
-**Do not create an edge because a read showed it absent, unless that read came from a validated transport.** This skill decides what to write from what it believes is missing, so a read that under-reports existing relationships converts directly into duplicate writes.
+**Never create an edge because a read showed it absent, unless that read came from a validated transport.** This skill decides what to write from what it believes is missing, so a read that under-reports existing relationships converts directly into duplicate writes (NOTES: how a scoped credential's partial answer looks complete).
 
-A relayed, proxied, scoped, or short-lived credential can return a partial relationship set with no error and no warning — a credential scoped to one repository returns one repository's worth of a graph spanning several, and the response looks complete. The edge you are about to add may already be live and simply invisible.
-
-So before any mutation:
+Before any mutation:
 
 1. read existing relationships through the highest transport tier available — a first-class tool, else an authenticated CLI, and raw HTTP only where neither exposes dependency fields at all;
-2. prove that read can see the class of edge you intend to write, using a case whose answer is known: an edge already confirmed to exist, crossing the same repository boundaries the candidate set crosses (see 4). **Required at every tier.** A first-class tool or a CLI running on a directly scoped credential under-reports exactly as quietly as a relayed one — the hazard is the credential's scope, not the transport's shape, so a higher tier lowers the odds without removing the need to check;
-3. a second read behind the same **credential** does not count — it reproduces the same blind spot and reads as confirmation. That includes a second read through a different transport authenticating the same way, which is the usual case rather than the exotic one. Only a known-true case proves visibility. A second read corroborates at best, however it differs — different credentials can still share insufficient scopes, a repository boundary, or a relationship transport, so their agreement clears nothing. Absent a known-true case the boundary is unproven, and on a skill that writes, unproven means write nothing;
+2. prove that read can see the class of edge you intend to write, using a case whose answer is known: an edge already confirmed to exist, crossing the same repository boundaries the candidate set crosses (see 4). **Required at every tier** — the hazard is the credential's scope, not the transport's shape, so a higher tier lowers the odds without removing the need to check;
+3. a second read behind the same **credential** does not count — it reproduces the same blind spot and reads as confirmation, including a second read through a different transport authenticating the same way. Only a known-true case proves visibility; a second read corroborates at best, however it differs (NOTES). Absent a known-true case the boundary is unproven, and on a skill that writes, **unproven means write nothing**;
 4. a control inside one repository proves that repository only. Where candidates span repositories, prove **every** boundary the write set touches — one visible A→B edge says nothing about C;
-5. a proof is bound to the credential that produced it. Revalidate after a restart and on reauthentication, since a rotated or narrowed credential leaves a stale proof looking applicable. An authorization error invalidates **every proof bound to that credential, across every transport using it** — not only the failed call, and not only the transport it arrived on. Grants narrow server-side, so a 403 through `gh` condemns cached raw-HTTP proofs on the same token; revalidating just the failed boundary, or just the failed transport, keeps writing against stale controls elsewhere.
+5. a proof is bound to the credential that produced it. Revalidate after a restart and on reauthentication. **An authorization error invalidates every proof bound to that credential, across every transport using it** — a 403 through `gh` condemns cached raw-HTTP proofs on the same token; revalidating just the failed boundary, or just the failed transport, keeps writing against stale controls elsewhere.
 
-If visibility cannot be proven, report the candidate edges as `UNVERIFIED` and write nothing. Absence observed through an unvalidated transport is not evidence of absence, and the cost is asymmetric: not writing a needed edge leaves a report the user can act on, while writing a duplicate of a live edge mutates a graph on the strength of a blind spot.
+If visibility cannot be proven, report the candidate edges as `UNVERIFIED` and write nothing. Absence observed through an unvalidated transport is not evidence of absence, and the cost is asymmetric: not writing a needed edge leaves a report the user can act on; writing a duplicate of a live edge mutates a graph on the strength of a blind spot.
 
 ## Applying dependencies
 
@@ -149,15 +144,15 @@ Use the current documented GitHub API version supported by the environment. The 
 
 ### With MCP
 
-If the available GitHub MCP exposes first-class issue dependency mutation, use it. If it only exposes ordinary issue updates and does **not** expose dependency mutation, do not emulate native dependencies by rewriting Markdown. Fall back to authenticated `gh`/REST if available; otherwise stop before mutation and report that dependency-write capability is unavailable in this environment.
+If the available GitHub MCP exposes first-class issue dependency mutation, use it. If it only exposes ordinary issue updates and does **not** expose dependency mutation, never emulate native dependencies by rewriting Markdown. Fall back to authenticated `gh`/REST if available; otherwise stop before mutation and report that dependency-write capability is unavailable in this environment.
 
 ## Confirmation and mutation policy
 
-When invoked directly for conversion, first produce the proposed changes and then apply them if the user's request already clearly authorizes conversion/mutation. Do not require a second confirmation merely for the mechanical addition of high-confidence relationships.
+When invoked directly for conversion, first produce the proposed changes and then apply them if the user's request already clearly authorizes conversion/mutation. Never require a second confirmation merely for the mechanical addition of high-confidence relationships.
 
 Never remove existing native dependencies unless the user explicitly asks for cleanup/removal.
 
-By default, **leave the original description text intact** after adding native dependencies. The prose may contain useful context and removing it is a separate editorial mutation. If the user asks to clean descriptions afterward, remove only redundant dependency boilerplate while preserving explanatory text.
+By default, **leave the original description text intact** after adding native dependencies (NOTES). If the user asks to clean descriptions afterward, remove only redundant dependency boilerplate while preserving explanatory text.
 
 ## Post-write verification
 
@@ -189,4 +184,4 @@ Needs review:
 - <issue URL>: "after X" may describe rollout rather than code dependency
 ```
 
-Do not claim normalization succeeded unless post-write verification confirms the native dependency relationships.
+Never claim normalization succeeded unless post-write verification confirms the native dependency relationships.
