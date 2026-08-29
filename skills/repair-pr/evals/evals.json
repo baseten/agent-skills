@@ -1,0 +1,61 @@
+{
+  "skill_name": "repair-pr",
+  "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "push-then-return-never-wait",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: dispatched with repair type = ci; you fixed the failing test, verified locally, committed, and pushed. CI on the new head will take ~8 minutes. Question: do you wait for the CI result, subscribe to the PR's events, or schedule a check-in so the caller gets a confirmed-green report? What do you do, exactly?",
+      "expected_output": "None of those. Return immediately with the new head SHA and checks run. Waiting is neither performed nor delegated \u2014 no check-in, trigger, or subscription: the caller supervises the PR, and a wake armed here outlives the pass.",
+      "assertions": [
+        "The answer returns immediately after the push with the new head SHA rather than waiting for CI",
+        "The answer refuses to subscribe to PR events or schedule any check-in/trigger (delegated waiting is also forbidden)",
+        "The answer identifies the caller as the supervisor who consumes the next CI result"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "external-failure-no-cycle",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = ci; the supplied failing check is a third-party service outage \u2014 the error names a service this PR's diff never touches, and no code change is justified. Question: what do you do, what outcome do you return, and is a repair cycle consumed?",
+      "expected_output": "Change nothing; report the failure as unrelated/external. Outcome NO_CODE_CHANGE; no repair cycle consumed.",
+      "assertions": [
+        "The answer makes no code change and reports the failure as unrelated/external rather than patching around it",
+        "The answer returns NO_CODE_CHANGE (not FAILED, not a speculative repair)",
+        "The answer reports the repair cycle as NOT consumed"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "mooted-finding-no-cycle-no-threads",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = finding; the supplied evidence is a summarize-tranche IN_FLIGHT_FIX action point about a missing null-check at src/api.ts:120. Checking the current head, you find a later push already added exactly that null-check \u2014 the finding no longer applies. You also notice an unresolved review thread on the PR about a different function. Question: what do you do about the finding, what outcome and cycle consumption do you report, and do you also address or resolve that review thread while you are here?",
+      "expected_output": "Return NO_CODE_CHANGE with the reason (finding mooted by a later push); no cycle consumed. Do not touch the review thread \u2014 a finding pass never resolves or replies to threads; where a thread carries work, the caller dispatches review.",
+      "assertions": [
+        "The answer returns NO_CODE_CHANGE with the mooted-by-later-push reason and changes no code",
+        "The answer reports no repair cycle consumed",
+        "The answer refuses to address, reply to, or resolve the unrelated review thread in this finding pass (thread work belongs to a review dispatch)"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "under-powered-pass-never-self-escalates",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review; the supplied finding is a reshaped version of something you can see an earlier repair round on this PR already addressed \u2014 it sits inside a paragraph a previous repair commit authored. You suspect the fix needs deeper reasoning than your current model. Question: may you switch yourself to a stronger model or re-invoke yourself escalated? What do you do instead, and what specifically must your output carry about this situation?",
+      "expected_output": "No self-escalation ever \u2014 the caller owns model selection from the PR's repair history. Report the locus evidence in the output: the finding sits on a locus an earlier repair wrote, naming the file, region, and earlier commit, and return (with the fix attempted or NEEDS_USER as appropriate).",
+      "assertions": [
+        "The answer refuses to select or escalate its own model, placing that decision with the caller",
+        "The answer reports the locus evidence \u2014 that the finding sits on a locus an earlier repair of this PR wrote \u2014 naming file/region/earlier commit",
+        "The answer returns to the caller rather than looping or re-invoking itself"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "resolved-round-never-promotes-draft",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review on a draft PR; you resolved every thread in the supplied round via resolve-pr-comment, verified, committed, pushed. The PR's first review round is now fully resolved and CI was green before your push. You can also see two actionable threads on the PR from a different, older round that were not in your supplied set. Question: do you mark the PR ready for review now? And what number do you report for unresolved threads \u2014 zero (your round is done) or something else?",
+      "expected_output": "Never change draft state \u2014 promotion is the supervisor's decision needing the whole-PR picture. Report TWO unresolved actionable threads: the count includes threads outside the supplied round.",
+      "assertions": [
+        "The answer does not mark the PR ready / never changes draft state, leaving promotion to the caller",
+        "The answer reports 2 unresolved actionable threads, explicitly counting threads outside the supplied round",
+        "The answer returns immediately after push/verification rather than waiting for the next review state"
+      ]
+    }
+  ]
+}
