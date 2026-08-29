@@ -94,7 +94,7 @@ Never mutate `AMBIGUOUS`, `CONFLICT`, or `UNVERIFIED` edges automatically.
 
 ## Precondition: the read that showed the edge missing must be trustworthy
 
-**Never create an edge because a read showed it absent, unless that read came from a validated transport.** This skill decides what to write from what it believes is missing, so a read that under-reports existing relationships converts directly into duplicate writes (NOTES: how a scoped credential's partial answer looks complete).
+**Never create an edge because a read showed it absent, unless that read came from a validated transport.** This skill decides what to write from what it believes is missing, so a read that under-reports existing relationships converts directly into duplicate writes (NOTES: how a scoped credential's partial answer looks complete). The shared visibility model is stated canonically in `validate-backlog` (*Transport visibility*); the steps below are its write-gate form.
 
 Before any mutation:
 
