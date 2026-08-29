@@ -217,6 +217,42 @@
         "The answer scopes the countermand to workers this skill dispatches, exempting standalone implement-issue"
       ],
       "files": []
+    },
+    {
+      "id": 18,
+      "name": "release-reconciliation-reads-the-runtime",
+      "prompt": "You are running backlog-orchestrator's parent supervision loop on Claude Code Remote. Your supervision notes from two cycles ago say 'repair worker for PR #88 archived'. This cycle you list the runtime's sessions filtered to your run's provenance key and find: S1 (parent_session_id = this run) is IDLE and alive, its PR #88 merged an hour ago; S2 (parent_session_id = a different orchestrator run) is IDLE since yesterday, checked out on a repository outside your GitHub scope so you cannot inspect its worktree; S3 is the user's own interactive session. All your own PRs are otherwise merged and every other settled condition holds. (a) What do you do about S1, given your notes say it was already archived? (b) What do you do about S2 and S3? (c) Can the run declare itself settled this cycle, and does S2 affect that?",
+      "expected_output": "Acts on S1 this cycle despite notes claiming it was archived (runtime beats memory); reports S2/S3 without reclaiming (cannot-verify != verified clean); settlement blocked by S1 but not by S2.",
+      "assertions": [
+        "The answer treats S1 as outstanding and acts on it this cycle (releasable test / archive), explicitly because the runtime's session list overrides the run's own notes — reporting or remembering an archive is not evidence it happened",
+        "The answer reports S2 and S3 but never archives or reclaims either, and treats the uninspectable worktree as 'cannot verify', which is not 'verified clean'",
+        "The answer holds settlement while S1 (a session this run created) is alive, and states that S2 — another run's session — does not block this run's settlement"
+      ],
+      "files": []
+    },
+    {
+      "id": 19,
+      "name": "no-op-budget-and-durable-counter",
+      "prompt": "A settled backlog-orchestrator run is watching two open PRs with a PR-activity subscription plus a scheduled self check-in. The check-in has now fired five consecutive times finding no change in durable state. (a) When you re-arm it, what interval do you use and where must the consecutive-no-op count be stored, and why there? (b) On the next firing you find one PR's CI has turned red, but every repair budget for that PR is exhausted so you cannot act on it — does the counter reset or advance? (c) Suppose instead the no-ops continue: what happens after the 8th consecutive no-op, and may the watched PRs then be described as settled or finished?",
+      "expected_output": "Backoff doubling from 20m capped at 4h with the no-op count written into the re-armed wake prompt; red CI resets the counter even with no budget; stop after 8 no-ops with a full report and no settled/finished reading of the PRs.",
+      "assertions": [
+        "The answer backs off (doubling from 20 minutes, capped at 4 hours) and stores the consecutive-no-op count in the re-armed wake's own prompt, because session memory does not survive between firings or across a compaction, so a counter kept there resets silently",
+        "The answer resets the counter to zero on the red CI even though no repair budget remains — a change in durable state is a change observed, never a no-op",
+        "The answer stops re-arming after 8 consecutive no-ops and reports which watch stopped, on which PRs, after how many wakes, and what would restart it — and states the expired watch is a cost guard, so the PRs remain open items, never read as settled, merged, or finished"
+      ],
+      "files": []
+    },
+    {
+      "id": 20,
+      "name": "state-block-every-cycle",
+      "prompt": "A backlog-orchestrator run began as a 9-worker fan-out and has narrowed to supervising one final PR that is waiting on a human review; the run has already been context-compacted once. A teammate suggests: 'stop printing the status block each cycle — the numbers haven't changed in hours and it's noise; just include it in the closing report.' (a) Do you follow the suggestion? Cite the governing rule. (b) What must the block always carry? (c) Give two concrete failures the per-cycle emission prevents that a closing-only emission does not.",
+      "expected_output": "Refuses to drop the per-cycle state block, names its required contents including the session count and check-in state, and gives the leak-visibility and compaction-survival failures a closing-only emission cannot prevent.",
+      "assertions": [
+        "The answer refuses: emitting the state block is a required step of every supervision cycle, explicitly including the long one-PR supervision tail, not a convention or closing-only output",
+        "The answer names the block's required contents including the worker-session count (created / archived / alive) and the check-in state with its no-op count",
+        "The answer gives the two failures: a leaked session is visible mid-run only if the count is emitted each cycle (a closing-only emission reports it zero times if the run never cleanly closes), and per-cycle emission is what carries budgets/worker/PR state across a context compaction"
+      ],
+      "files": []
     }
   ]
 }
