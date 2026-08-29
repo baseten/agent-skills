@@ -154,11 +154,13 @@ Prefer native/runtime capabilities when they implement the required behavior saf
 | runtime | what releasing is |
 |---|---|
 | Dynamic Workflow agent | nothing to do — the runtime reclaims the agent when the workflow returns |
-| remote worker session | **archive the session.** A live one holds a container, a session-list entry, and whatever permission prompt it may be sitting on |
+| remote worker session | **archive the session.** A live one holds a container, a session-list entry, whatever permission prompt it may be sitting on — and any wake it armed, which is the recurring cost: a live session keeps waking on schedule and spending tokens for as long as it lives |
 | in-process subagent | stop messaging it; there is no resource to reclaim |
 | serialized execution | nothing to do — there was never a second actor |
 
-On two of the four tiers release *is* the absence of an action; on the remote-session tier the same words name a real resource that leaks silently (NOTES: the nine leaked containers).
+On two of the four tiers release *is* the absence of an action; on the remote-session tier the same words name a real resource that leaks silently (NOTES: the nine leaked containers, and the two later runs that leaked 15 and 1).
+
+**Archiving the session is the only thing that stops a wake the worker armed itself.** The session is what arms the wake, so deleting the scheduled trigger does not work: a leaked session whose trigger was deleted armed a replacement one minute later (NOTES). Archive the session; do not fight its triggers.
 
 **The releasable test, stated once and referenced everywhere else that needs it.** A second copy of this test appearing anywhere is the regression to look for (NOTES: how in-situ restatements drifted).
 
@@ -646,7 +648,7 @@ The tier decides which lever exists, and only one tier has the problem:
 
 Expect this to reduce the behavior, not to eliminate it. Appending does not delete the instruction already present, some environments ignore the parameter outright, and a worker resolving two same-level instructions may still arm a wake or stop to ask. That residue is why **Blocked workers** is a backstop rather than a redundancy: the run has to be able to notice a worker that did either anyway and clear it, not merely to have forbidden it.
 
-**And do not read a quiet session list as proof this worked.** Where workers inherit an allowlist that grants the trigger tools, a worker that arms a wake can also disarm it, so it leaves nothing blocked behind — which looks identical from outside to a worker that never armed one. Only the checkpoint output separates them. Report the wake a worker armed wherever you can observe one, and treat an absence of blocked sessions as the absence of a symptom rather than as evidence about the cause.
+**And do not read a quiet session list as proof this worked — the quiet case is the expensive one.** Where workers inherit an allowlist that grants the trigger tools, a worker that arms a wake can also disarm and re-arm it, so it never blocks on anything: Blocked workers never sees it, the session list shows nothing stuck, and the worker wakes every hour to re-read a merged PR, find nothing, and re-arm — for as long as the account will pay (NOTES: the $33.45 and $59.60 sessions). A worker that arms a wake it *cannot* disarm at least blocks visibly on the permission prompt, where Blocked workers finds it. So an absence of blocked sessions is the signature of the costlier branch, not evidence the countermand held. What catches both branches is the release reconciliation step of the parent supervision loop — reading the runtime's session list, not the run's memory — and the state block, which reports every wake a worker was observed to arm.
 
 Do not leave this to the worker skills (NOTES: how a worker satisfied the duration-only wording while leaving a watcher armed). The gap is **delegation, not duration**, and this prompt is the only place in the system that sees both instructions at once.
 
@@ -712,7 +714,10 @@ review repair cycles used/remaining
 finding repair cycles used/remaining
 stack parent/children
 event subscription: armed/unavailable
+worker session: <session id, or none on tiers without one> — archived: yes/no
 ```
+
+The worker-session line is what makes the loop's release reconciliation a lookup instead of guesswork: without a session id on the record, matching sessions to PRs means fuzzy-matching session titles, which is what an actual recovery had to script its way through (NOTES).
 
 ## Event handling
 
@@ -820,10 +825,12 @@ Each cycle performs real work:
 8. inspect stack ancestry changes;
 9. inspect every in-flight worktree for uncommitted work and enforce checkpoints (see Checkpoint compliance — this is a mandatory step, and the parent commits on the worker's behalf when a nudge has already failed);
 10. read every worker's runtime state, not only its work state — release the finished (see Releasing a worker) and act on the blocked (see Blocked workers);
-11. re-check disk/slot capacity;
-12. check sibling branches for colliding added or modified claimed artifacts;
-13. surface `NEEDS_USER`;
-14. wait using native task/event wait, then repeat.
+11. **reconcile released-vs-alive against the runtime, never against the run's memory.** On a runtime with a session list, list the sessions whose provenance marks them as created by this run (`parent_session_id` on Claude Code Remote — never "sessions that look like workers"), and compare against the per-PR records. Three outcomes, and only three: **mine and archived** — done; **mine and still alive** — act on it this cycle: the releasable test, a Blocked workers branch, or `NEEDS_USER`; **not mine** — report it and never reclaim it, and treat a session whose worktree cannot be inspected from here (a repository outside this session's scope) the same way, because *cannot verify* is not *verified clean*. The comparison must read the runtime because the run's own record of releasing is not evidence: of the two runs that leaked sessions, one never reached step 10, and the other wrote "archived" into its notes and never called the tool. Reporting an action is not performing it (NOTES: the two mechanisms);
+12. **emit the state block** (see Progress / checkpoint output) — every cycle, including the long one-PR supervision tail, not only in closing output;
+13. re-check disk/slot capacity;
+14. check sibling branches for colliding added or modified claimed artifacts;
+15. surface `NEEDS_USER`;
+16. wait using native task/event wait, then repeat.
 
 Do not use CPU loops, file-touch loops, detached sleeps, meaningless commits, or other fake activity solely to prevent idling.
 
@@ -831,14 +838,21 @@ Remote Git checkpoints remain mandatory regardless of runtime, because no platfo
 
 ## Arming the wait when nothing is in flight
 
-Step 14's native task/event wait is sufficient while workers are running: their completions are the events. A **settled** run has none. No worker will finish, no CI will fire, and the merge it is waiting on may be a day away — so a settled run that simply waits has no event source of its own, and "the run advances its own frontier" quietly becomes conditional on something nothing required it to arrange.
+Step 16's native task/event wait is sufficient while workers are running: their completions are the events. A **settled** run has none. No worker will finish, no CI will fire, and the merge it is waiting on may be a day away — so a settled run that simply waits has no event source of its own, and "the run advances its own frontier" quietly becomes conditional on something nothing required it to arrange.
 
 Before a settled-and-empty run stops doing work, it arms both of:
 
 1. **a PR-activity subscription over this run's own PR set** — the platform-native watch or an explicit `subscribe_pr_activity` (see Event handling). This is what delivers the merge that advances the frontier. Normally these are already armed, because Event handling arms each PR when it enters the tracked set; this step confirms the set is complete rather than establishing it, and arms anything missing;
 2. **a scheduled self check-in, as the backstop**, because that subscription does not cover everything. CI success, new pushes and merge-conflict transitions are the known-unreliable deliveries, and a merge whose event never arrives is a merge the run never acts on. The check-in re-reads durable state — PR states, mergeability, the frontier — and acts on what it finds, instead of treating silence as evidence that nothing happened.
 
-Both, not either. The subscription is the fast path; the check-in is what makes the slow path terminate. Re-arm the check-in each time it fires and finds nothing, and stop once every PR in the set is merged or closed.
+Both, not either. The subscription is the fast path; the check-in is what makes the slow path terminate — and the check-in itself is bounded, because "re-arm forever until the merge comes" is the same unbounded loop this skill forbids workers to run, written from the parent's side (NOTES: what two of these cost). Stop once every PR in the set is merged or closed; until then, **every recurring check-in this skill's runs arm — parent-side or worker-side — carries a no-op budget and a backoff**:
+
+- **budget: 8 consecutive no-op wakes**, then stop re-arming;
+- **backoff: start at 20 minutes, double on each no-op, cap at 4 hours.** Eight no-ops at that shape spans roughly 14 hours — long enough to wait out a night for a human reviewer, short enough that a forgotten watch dies in single-digit dollars;
+- **"nothing changed" means durable state only** — PR head, CI conclusions, the review-thread set and each thread's resolved state, mergeability, tracker status. Any delta resets the count to zero, including a delta the run has no budget left to act on: a red CI it cannot fix is a change observed, never a no-op;
+- **write the count into the wake's own prompt.** The session's context does not survive between firings, and a compaction can drop it mid-run; a counter kept in memory resets silently and the budget never binds. Each re-armed prompt carries the consecutive-no-op count and the durable state the next firing compares against;
+- **stopping is reported, never silent**: which watch stopped, on which PRs, after how many no-op wakes, and what would restart it — a new event, a fresh invocation, or the owner acting on the PR;
+- **this is a cost guard, not a verdict on the PR.** An expired watch says nothing about the work: the PR it watched is still an open item in the closing report, and its expiry must never be read as settled, merged, or finished.
 
 This is not a licence to keep a loop warm, and the ban above is unchanged. A durable subscription and a scheduled wake cost nothing between firings, which is exactly what separates them from spinning, touching files, or committing to look busy. The two rules point the same way: fake activity is what a run resorts to when it has no real wake mechanism, so arming one is the fix rather than the exception.
 
@@ -1214,7 +1228,8 @@ A run is **settled** when no further implementation can start and every open PR 
 - no implementation or repair worker is in flight — and a worker blocked on a permission prompt is in flight, not absent (see Blocked workers): it reads as quiet from every angle the other conditions look from, which is how a run declares itself settled over a worker stopped mid-issue;
 - every open PR from this run has had at least one **completed** automated review round, not merely a trigger issued;
 - every actionable review finding on every open PR is resolved or answered — a thread the PR's repository policy reserves for the owner (see Per-repository policy configuration) counts here as surfaced, not outstanding: it blocks that PR's merge, never settlement;
-- no open PR is `NEEDS_USER` or waiting on CI.
+- no open PR is `NEEDS_USER` or waiting on CI;
+- **no worker session this run created is still alive** — verified against the runtime's session list by the reconciliation step of the supervision loop, never against the run's memory of having archived. A run holding a live session it created is not settled, cannot emit a clean settled report, and does not reach invariant 12's gate; this is what makes a skipped or merely-reported release detectable rather than forbidden. Sessions that are not this run's, and sessions whose worktrees cannot be verified from here, are reported — never reclaimed, and never counted against this condition, so another run's leak cannot wedge this run's settlement.
 
 Settled is not the same as finished. The run has produced everything it can **for now**; the next move belongs to whoever holds merge authority — the owner, or invariant 12's gate where a repository granted it — and when it is made, the run picks the work back up itself (see below).
 
@@ -1277,7 +1292,9 @@ If only external CI/review remains and the runtime cannot safely stay active, re
 
 # Progress / checkpoint output
 
-Keep concise state, for example:
+**Emit the state block at the end of every supervision cycle.** It is a required step of the parent supervision loop with a named actor and moment — this run, each cycle — not a convention that holds while the numbers are interesting. The observed failure is exactly that convention lapsing: runs printed the block mid-fan-out and stopped once they narrowed to a one-PR supervision tail, which is the long part of a run and the part a context compaction lands in — so both runs that leaked sessions reported their session count zero times (NOTES). Emitting each cycle is also what carries budgets, worker state and PR state across a compaction: a count that re-enters the transcript survives; one held in run memory does not.
+
+The block always carries: run budget, workers in flight by kind, worker sessions created / archived / alive, active PRs with CI and review state, repair budgets consumed, and the check-in state with its no-op count. For example:
 
 ```text
 Runtime: Dynamic Workflow
@@ -1287,8 +1304,9 @@ Scope: 18 issues
 Run budget: 9/12 newly started
 Implementation workers: 3
 Repair workers: 1
-Worker sessions: 9 created / 8 archived / 1 blocked
+Worker sessions: 9 created / 8 archived / 1 alive (blocked on a prompt — see below)
 Active PRs: 7
+Check-in: armed (no-op 2/8, next in 80m)
 Waiting CI/review: 4
 Unreviewed (trigger pending/unavailable): 0
 Unresolved review findings: 0
@@ -1314,6 +1332,8 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - remote checkpoint branches without PRs;
 - checkpoint enforcement: workers nudged, workers whose work the parent committed itself, and any worker that pushed outside its assigned branch — what landed where, and how it was undone;
 - every PR this run tracked and whether its event subscription was armed, so a PR the run was blind to is visible as such rather than indistinguishable from one where nothing happened;
+- every watch that expired on its no-op budget — which check-in stopped, on which PRs, after how many no-op wakes, and what would restart it. An expired watch is a cost decision, not an outcome: the PR it watched is still open work;
+- the release reconciliation's findings: sessions this run created and archived, any it found alive and what it did about each, and every session it reported but did not reclaim — another run's, or one whose worktree could not be verified from here;
 - caveats a worker raised in its own report that no check expresses — a narrowed guarantee, a knowing deviation from an acceptance criterion, a limitation left unfixed — against the PR each concerns, because these reach a merge decision only if this run carries them there;
 - worker-session lifecycle, where the runtime has sessions to account for: how many this run created, how many it archived, and every one still alive with the reason — naming, for each that was blocked, the exact tool it was waiting on. A run that leaks sessions should be visible in its own report rather than discovered afterwards in a session list, and the tool name is the part a user can act on;
 - disk headroom against the concurrent worker count;
