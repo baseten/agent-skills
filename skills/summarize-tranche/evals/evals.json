@@ -1,0 +1,61 @@
+{
+  "skill_name": "summarize-tranche",
+  "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "in-flight-fix-never-filtered-out",
+      "prompt": "You are executing the summarize-tranche skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: composing the action points, you have three candidates: (a) a DECISION only the owner can make, (b) an IN_FLIGHT_FIX \u2014 a verified missing null-check in an open PR from this tranche, which the orchestrator (not a person) will dispatch \u2014 and (c) an observation that a module 'might benefit from a refactor someday', traced to nothing observed. Question: which of the three appear in the action points, and why does the orchestrator-owned one not get filtered to keep the list human-only?",
+      "expected_output": "(a) and (b) appear; (c) is dropped (merely informational/speculative). The IN_FLIGHT_FIX stays despite being orchestrator-owned: the caller relies on that class to discover a PR is not finished, and filtering to human-only items would hide exactly the finding that stops an unfinished PR being ranked as ready.",
+      "assertions": [
+        "The DECISION and the IN_FLIGHT_FIX both appear in the action points",
+        "The speculative refactor observation is dropped (not an action point \u2014 traces to nothing observed)",
+        "The answer explains the IN_FLIGHT_FIX is kept because the caller uses that class to detect an unfinished PR (human-only filtering would hide it)"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "recurring-finding-collapses-to-one-class",
+      "prompt": "You are executing the summarize-tranche skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: four workers in this tranche each independently patched around the same wrong shared test fixture, each in its own PR, each documenting it. The defect claim checks out when you verify the fixture in the repository. Question: how many action points does this produce, what must the item state, and were the workers wrong to patch locally instead of fixing the fixture centrally?",
+      "expected_output": "One action point, as a class, with the four instances listed under it \u2014 never four items. It states the class, the shared root cause, every known instance, and that each worker was RIGHT to patch locally (an unscoped shared-file edit does not belong in their PRs); the central fix being nobody's job is what the action point corrects. Verification against the repository precedes reporting.",
+      "assertions": [
+        "Exactly one class-level action point with the four instances listed under it, not four separate items",
+        "The item states the shared root cause and that the workers were right to patch locally rather than fix centrally",
+        "The defect was verified against the repository before being reported as an action point"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "read-only-unless-authorized",
+      "prompt": "You are executing the summarize-tranche skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two sub-scenarios. (A) The invocation grants no creation authority; the summary proposes two NEW_ISSUE items. Do you open the tickets? (B) A later invocation explicitly authorizes creation; of three proposed NEW_ISSUEs, deduplication matched one to an existing ticket opened by an earlier tranche of this same run. Which issues do you open, and what happens to the matched one?",
+      "expected_output": "(A) No \u2014 read-only by default: propose, never open. (B) Open only the two unmatched proposals, linked to their originating PR/issue, reporting created URLs; the matched one is reported by its existing URL and never opened \u2014 deduplicated items are never created even under authorization.",
+      "assertions": [
+        "(A) proposes without opening any ticket \u2014 creation is a separate, explicit authority",
+        "(B) opens only the two unmatched proposals (linked and reported by URL)",
+        "(B) never opens the deduplication-matched issue; it is reported by the existing ticket's URL"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "dual-class-item-carries-both",
+      "prompt": "You are executing the summarize-tranche skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you verified a defect a worker found: a schema migration bug with no tracker ticket, and it must land BEFORE one of this tranche's open PRs merges or that PR corrupts data. Question: what class or classes does this action point carry, and what would reporting it as NEW_ISSUE alone get wrong?",
+      "expected_output": "Both NEW_ISSUE and MERGE_RISK, with the ordering consequence stated on the item. NEW_ISSUE alone tells the caller to file a ticket while leaving it free to rank the endangered PR for merge \u2014 the classes answer different questions (ownership vs what the merge decision must account for).",
+      "assertions": [
+        "The item carries both NEW_ISSUE and MERGE_RISK (not one of them)",
+        "The ordering consequence (must land before the named PR merges) is stated on the item",
+        "The answer explains what NEW_ISSUE-alone gets wrong: the PR could still be ranked/merged because only ownership was communicated"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "empty-tranche-one-line",
+      "prompt": "You are executing the summarize-tranche skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a one-issue tranche (implement-issue invoked you) completed cleanly: one PR, clean review, nothing surprising, no caveats, no follow-ups observed anywhere in the durable record. Question: what does your complete output look like, and do you pad it with useful-sounding observations or improvement suggestions?",
+      "expected_output": "A one-paragraph (or shorter) summary of what the PR did, and 'No action points.' explicitly \u2014 the two-section report itself carries nothing else, though the mandatory return fields alongside it (tranche scope, PRs covered, zero action-point counts by class, issues created, anything unverifiable) still appear and are not padding. No padding inside the report: speculative improvements and code-quality opinions are not action points, and an empty list is legitimate and common. A one-issue run is a tranche of one; nothing reads differently at that size.",
+      "assertions": [
+        "The output is the short summary plus an explicit 'No action points.' line \u2014 the empty case is stated, never silent",
+        "No speculative improvements, refactors, or watch-list observations are added as padding",
+        "The answer treats the one-issue run as a legitimate tranche of one rather than a special case"
+      ]
+    }
+  ]
+}
