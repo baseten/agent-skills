@@ -7,23 +7,25 @@ description: Safely merge one PR, a prefix of a stacked PR chain, or an entire s
 
 Safely merge stacked pull requests while preserving clean child diffs.
 
+This file is the contract; the reasoning behind its rules lives in `NOTES.md` beside it, keyed by section. NOTES explains; it never overrides.
+
 A stacked PR is represented durably by ordinary GitHub PR base/head relationships. A child PR may also include this machine-readable line near the top of its body:
 
 ```text
 Depends on: https://github.com/<owner>/<repo>/pull/<n>
 ```
 
-The base/head relationship is authoritative. `Depends on:` is human-visible metadata and a discovery aid; never trust it when it contradicts the actual PR base.
+The base/head relationship is authoritative. `Depends on:` is human-visible metadata and a discovery aid; never trust it when it contradicts the actual PR base (NOTES).
 
 ## Authority and default scope
 
-Invoking this skill authorizes the merges required by the requested mode and the force-with-lease pushes / PR-base updates required to restack affected descendants. Do not ask again for each mechanical step.
+Invoking this skill authorizes the merges required by the requested mode and the force-with-lease pushes / PR-base updates required to restack affected descendants. Never ask again for each mechanical step.
 
-Do **not** merge more PRs than the requested mode permits.
+Never merge more PRs than the requested mode permits.
 
 Supported modes:
 
-1. **Merge this PR** — default when given only one PR URL. Merge exactly that PR, then restack all open descendants above it. Do not merge descendants.
+1. **Merge this PR** — default when given only one PR URL. Merge exactly that PR, then restack all open descendants above it. Never merge descendants.
 2. **Merge through PR X** — merge the unmerged ancestor chain from the stack root through X, in dependency order, restacking after each merge. Leave descendants above X open and correctly rebased.
 3. **Merge entire stack** — only when the user explicitly asks for the whole stack. Merge every reachable PR in dependency/topological order.
 
@@ -79,15 +81,13 @@ Fanout is valid: one parent may have multiple direct children.
 
 Never merge a child PR while its parent PR is still open.
 
-For `merge through` or `merge entire stack`, always process the graph in parent-before-child topological order. A child can be considered for merge only after its parent has merged and the child has been successfully restacked onto the parent's former base.
-
-This avoids merging a child into a feature branch rather than into the intended integration branch.
+For `merge through` or `merge entire stack`, always process the graph in parent-before-child topological order. A child can be considered for merge only after its parent has merged and the child has been successfully restacked onto the parent's former base (NOTES: what merging out of order does).
 
 ## Readiness before each merge
 
 Immediately before merging a PR, refresh its GitHub state.
 
-Do not bypass repository protection. Stop that PR if it is:
+Never bypass repository protection. Stop that PR if it is:
 
 - draft;
 - closed;
@@ -99,7 +99,7 @@ Do not bypass repository protection. Stop that PR if it is:
 
 A blocked node stops only descendants that depend on it. In an entire-stack fanout, independent sibling paths may continue when safe.
 
-Use the repository/user's requested merge method. If none is specified, follow repository conventions/settings; do not invent a different method merely to simplify restacking.
+Use the repository/user's requested merge method. If none is specified, follow repository conventions/settings; never invent a different method merely to simplify restacking.
 
 ## Core operation: merge one node and restack descendants
 
@@ -138,7 +138,7 @@ git reset --hard origin/<C_HEAD_BRANCH>
 git merge-base --is-ancestor <P_HEAD_OLD> <C_HEAD_BRANCH> || echo NOT_ANCESTOR
 ```
 
-Before rebasing, verify `P_HEAD_OLD` is actually an ancestor of C's current head. If the `merge-base --is-ancestor` check fails, `P_BASE_BRANCH` was force-rewritten after C forked (e.g. an amended or rebased parent): `rebase --onto` would then treat obsolete parent commits reachable only from C as C-owned, and force-push them into C's PR. Stop and report the path as blocked instead of rebasing; restacking must resume from a proven old-parent boundary (the last commit both P's pre-merge history and C's current history actually share), not from the recorded `P_HEAD_OLD`.
+**Before rebasing, verify `P_HEAD_OLD` is actually an ancestor of C's current head.** If the check fails, `P_HEAD_BRANCH` was force-rewritten after C forked: stop and report the path as blocked instead of rebasing; restacking must resume from a proven old-parent boundary — the tip of the parent lineage C actually forked from, separating parent-owned commits from C's own, established from **independent evidence** (the parent head recorded when C was created, the parent PR's own timeline, commit-by-commit ownership) and confirmed by the same ancestor test — never from the recorded `P_HEAD_OLD`, and never from a mere merge-base with the rewritten parent, which can resolve to the integration-branch ancestor and replay the abandoned parent commits still in C's history as C's own (NOTES: what rebasing from a wrong boundary force-pushes into C's PR).
 
 Only once ancestry is confirmed, proceed:
 
@@ -148,15 +148,15 @@ git rebase --onto origin/<P_BASE_BRANCH> <P_HEAD_OLD> <C_HEAD_BRANCH>
 
 Equivalent isolated-worktree commands are preferred when other work is present.
 
-Why this form matters: after a squash merge, `main` contains a new squash commit rather than P's original commit IDs. A plain retarget would therefore make P's original commits appear in C. `rebase --onto new-base old-parent-head child` selects only commits after the old parent head and replays them onto the merged base.
+This exact `rebase --onto new-base old-parent-head child` form is required (NOTES: why a plain retarget leaks P's commits into C after a squash merge).
 
 If rebase conflicts:
 
-- do not guess through semantic conflicts;
+- never guess through semantic conflicts;
 - abort the rebase;
 - leave the remote branch untouched;
 - report the affected path as blocked;
-- do not merge any descendant of that child.
+- never merge any descendant of that child.
 
 After a clean rebase:
 
@@ -187,7 +187,7 @@ git reset --hard origin/<D_HEAD_BRANCH>
 git merge-base --is-ancestor <C_HEAD_OLD> <D_HEAD_BRANCH> || echo NOT_ANCESTOR
 ```
 
-As with the direct-child rebase above, confirm `C_HEAD_OLD` is actually an ancestor of D's current head before rebasing. If it is not, stop and treat that path as blocked rather than rebasing from an unproven boundary.
+As with the direct-child rebase, confirm `C_HEAD_OLD` is actually an ancestor of D's current head before rebasing. If it is not, stop and treat that path as blocked rather than rebasing from an unproven boundary.
 
 ```bash
 git rebase --onto <C_HEAD_NEW> <C_HEAD_OLD> <D_HEAD_BRANCH>
@@ -196,7 +196,7 @@ git push --force-with-lease origin <D_HEAD_BRANCH>
 
 Its `Depends on:` URL remains C's PR URL because the logical parent PR has not changed.
 
-Continue recursively through every descendant path. This recursive old-head -> new-head propagation is essential; restacking only the direct child leaves grandchildren containing obsolete ancestor commits.
+Continue recursively through every descendant path — restacking only the direct child leaves grandchildren containing obsolete ancestor commits.
 
 ## Fanout example
 
@@ -220,8 +220,8 @@ main
 B and C are independently rebased with:
 
 ```text
---onto main <old-A-head> B
---onto main <old-A-head> C
+--onto origin/main <old-A-head> B
+--onto origin/main <old-A-head> C
 ```
 
 Both PR bases become `main` and both lose `Depends on: A`.
@@ -256,11 +256,11 @@ For `merge entire stack`:
 6. refresh checks/mergeability for any PR that may be merged next;
 7. continue until all requested nodes are merged or a blocker is reached.
 
-A rebase can invalidate approvals or rerun CI. Do not immediately merge the next PR based on stale pre-rebase status. Refresh GitHub status after every rewrite and obey repository requirements.
+A rebase can invalidate approvals or rerun CI. **Never merge the next PR on stale pre-rebase status** — refresh GitHub status after every rewrite and obey repository requirements.
 
 ## Partial-stack mode
 
-For default `merge this PR`, first verify all stack ancestors are already merged / absent. If the supplied PR still targets an open parent PR, stop and explain that parent must be merged first; do not silently expand scope.
+For default `merge this PR`, first verify all stack ancestors are already merged / absent. If the supplied PR still targets an open parent PR, stop and explain that parent must be merged first; never silently expand scope.
 
 For `merge through X`, ancestor merges are part of the explicit request. Merge only the ancestor chain through X. Restack everything above X but leave those descendants open.
 
@@ -291,7 +291,7 @@ If state is ambiguous, stop rather than rewriting a branch twice.
 
 ## Output
 
-Every authored forge write this skill makes — the merges themselves, and the retargeting and body edits on descendant PRs — follows the posting-identity rule stated once in `backlog-orchestrator` (*Posting identity*), using the map the caller passes rather than resolving an identity of its own. Read back the **first write of each kind** through each (transport, credential) pair — a merge, a base retarget, a body edit are distinct write kinds a platform may author differently, and one stack operation routinely performs several through the same pair — and report every observation alongside the result below, one entry per pair carrying each kind observed there; `unestablished` for a kind with no read-back write. Reading back only a pair's first write would return the merge author while silently losing the retarget or body-edit author, and later operations would then consume the wrong kind's evidence.
+Every authored forge write this skill makes — the merges themselves, and the retargeting and body edits on descendant PRs — follows the posting-identity rule stated once in `backlog-orchestrator` (*Posting identity*), using the map the caller passes rather than resolving an identity of its own. Read back the **first write of each kind** through each (transport, credential) pair — a merge, a base retarget, a body edit are distinct write kinds a platform may author differently, and one stack operation routinely performs several through the same pair — and report every observation alongside the result below, one entry per pair carrying each kind observed there; `unestablished` for a kind with no read-back write (NOTES: what reading back only a pair's first write loses).
 
 Report:
 

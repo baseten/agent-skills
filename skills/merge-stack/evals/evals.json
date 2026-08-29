@@ -1,0 +1,66 @@
+{
+  "skill_name": "merge-stack",
+  "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "ambiguous-defaults-to-one-and-open-parent-stops",
+      "prompt": "You are executing the merge-stack skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two sub-scenarios. (A) The user says 'merge this' with a single PR URL for PR B, which has two open descendants; it is unclear whether they mean just B or B plus everything above it. B's ancestors are all merged. What do you merge, and what happens to the descendants? (B) Separately: 'merge this' with a URL for PR C, but C's base branch is the head branch of PR P, which is still OPEN. What do you do?",
+      "expected_output": "(A) Ambiguity resolves to mode 1: merge exactly B, then restack all open descendants — never merge them. (B) Stop: the default mode requires all ancestors merged/absent; explain that P must merge first and do not silently expand scope to include P (parent-before-child: merging C now would land it in P's feature branch).",
+      "assertions": [
+        "For (A) the answer merges only B (mode 1) and restacks — but does not merge — the descendants",
+        "For (B) the answer stops and requires the open parent P to merge first, without silently expanding scope to merge P itself",
+        "The answer grounds (B) in the parent-before-child rule (a child merged under an open parent lands in the feature branch, not the integration branch)"
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "failed-ancestry-check-blocks-the-path",
+      "prompt": "You are executing the merge-stack skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you merged parent P (snapshotted P_HEAD_OLD before merging). Preparing to rebase direct child C, `git merge-base --is-ancestor <P_HEAD_OLD> <C_HEAD_BRANCH>` reports NOT_ANCESTOR — P's branch was force-rewritten after C forked. C has its own descendant D awaiting restack, and time pressure argues for just running the rebase --onto anyway. Question: do you run the rebase from P_HEAD_OLD? What happens if you do, what boundary would a resumed restack need, and what happens to D?",
+      "expected_output": "Do not rebase. From the recorded P_HEAD_OLD, rebase --onto would treat obsolete parent commits reachable only from C as C's own work and force-push them into C's PR. Stop and report the path as blocked; restacking must resume from a proven old-parent boundary — the tip of the parent lineage C actually forked from, separating parent-owned commits from C's own, established from independent evidence (the parent head recorded at C's creation, the parent PR's timeline, commit ownership) and confirmed by the ancestor test — never the recorded P_HEAD_OLD, and never a mere merge-base with the rewritten parent, which can resolve to the integration-branch ancestor and replay the abandoned parent commits as C's own. D (a descendant of the blocked child) is not restacked or merged; the block propagates down that path.",
+      "assertions": [
+        "The answer refuses to rebase from the recorded P_HEAD_OLD when the ancestry check fails, and reports the path blocked",
+        "The answer explains the failure mode: obsolete parent commits reachable only from C would be replayed as C's own work and force-pushed into C's PR",
+        "The answer requires an independently established old-parent tip (the parent-owned vs C-owned boundary, confirmed by the ancestor test) rather than a mere shared/merge-base commit with the rewritten parent, and holds D — nothing below the blocked child proceeds"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "depends-on-never-overrides-base",
+      "prompt": "You are executing the merge-stack skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: during discovery, PR K's body says 'Depends on: <PR J's URL>', but K's actual base branch is 'main' — J's head branch is 'feat/j', which is not K's base. The user asked to 'merge through J'. Question: is K part of J's stack for this operation? Do you treat J as K's parent, and what do you do about the contradiction?",
+      "expected_output": "K is not J's stack child: the edge is defined by base/head (K's base is main, not J's head), and the Depends on: line is a discovery aid never trusted when it contradicts the actual base. Discovery detects 'Depends on: pointing to a PR whose head is not the child's base' and stops on the affected path / reports the contradiction rather than following the line — K is not merged or restacked as part of J's chain, and the stale line is surfaced as a finding.",
+      "assertions": [
+        "The answer excludes K from J's stack — base/head relationships are authoritative over the Depends on: line",
+        "The answer does not treat J as K's parent for merge ordering or restacking",
+        "The answer surfaces the contradiction (stop on the affected path / report the stale metadata) rather than silently ignoring or silently following it"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "squash-fanout-restack-shape",
+      "prompt": "You are executing the merge-stack skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR A (head 'feat/a', base 'main') was squash-merged; you snapshotted old-A-head first. A had two direct children B and C (fanout), and B has a child D. Ancestry checks pass everywhere. Question: give the exact rebase form for B, C, and D (what goes in --onto, what boundary), what each PR's base and Depends on: line become, and why a plain retarget of B onto main (without the old-parent boundary) is wrong after a squash merge.",
+      "expected_output": "B and C: git rebase --onto origin/main <old-A-head> <branch>, independently — onto the fetched remote base per the core operation, since a local main can be absent or stale; both PR bases become main; both lose their Depends on: A line. D: rebased from B's OLD head onto B's NEW head (--onto <B_HEAD_NEW> <B_HEAD_OLD> <D branch>), keeping base = B's branch and Depends on: B. A plain retarget is wrong because the squash created a new commit — A's original commit IDs are not on main — so without excluding the old parent range, A's commits would reappear in B's diff. Force-with-lease pushes, never bare --force.",
+      "assertions": [
+        "B and C are each rebased with --onto origin/main <old-A-head> (the fetched remote base, not a possibly stale local main), retargeted to main, and their Depends on: A lines removed",
+        "D is rebased from B's old head onto B's new head, keeping its base branch and Depends on: B (the logical parent is unchanged)",
+        "The answer explains the squash-merge reason: main lacks A's original commit IDs, so a plain retarget would leak A's commits into B's diff"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "stale-status-and-ambiguous-recovery",
+      "prompt": "You are executing the merge-stack skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two sub-scenarios in entire-stack mode. (A) Before its restack, PR B showed green CI and an approval. You have just force-pushed B's rebased branch. May you merge B now on that recorded status? (B) A previous session died mid-operation on this stack. Rerunning now, your notes say 'B was rebased and pushed', but the remote shows B's PR base already retargeted while B's head SHA does not match what the notes predict. What do you do about B's branch?",
+      "expected_output": "(A) No — a rebase can invalidate approvals or rerun CI; refresh B's GitHub status after the rewrite and merge only on current status meeting repository requirements. (B) Rediscover actual PR bases and remote head SHAs rather than trusting the notes; with the observed state ambiguous (partially applied, unexplained head), stop rather than rewriting the branch twice — never replay the same rebase against a branch that may already have been force-pushed.",
+      "assertions": [
+        "For (A) the answer refuses to merge on pre-rebase status and requires a post-rewrite refresh of checks/review state",
+        "For (B) the answer rediscovers remote state first instead of assuming the previous step completed",
+        "For (B) the answer stops on the ambiguous state rather than replaying the rebase / rewriting the branch twice"
+      ],
+      "files": []
+    }
+  ]
+}
