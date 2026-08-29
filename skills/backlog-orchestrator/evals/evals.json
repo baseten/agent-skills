@@ -61,6 +61,162 @@
         "The answer drops the ref as redundant once the worker's own push covers the work and the PR reaches durable state"
       ],
       "files": []
+    },
+    {
+      "id": 5,
+      "name": "identity-availability-is-per-write-kind",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the run's posting-identity map holds one entry — (github-mcp, tok-A): PR creation observed authored as 'acme-agent[bot]'; no comment-kind write has been read back through that pair. The run is about to post an ordinary worker-report timeline comment, and github-mcp is the transport precedence selects for it. Question: (a) is a distinct identity 'available' for this comment? (b) may the run reroute the comment to a lower-tier transport whose credential predicts a nicer author, or delay/withhold it? (c) after posting as whatever results, what does the map record for the pair's comment kind if the read-back shows the invoking user — and does 'unestablished' get resolved to 'invoking user' anywhere it was not observed?",
+      "expected_output": "(a) No — availability is per write kind: the pair's comment-kind authorship is unestablished (a PR-creation observation answers only for its own kind), so the run degrades and posts as whatever the pair produces. (b) Never — no post is withheld, delayed, or rerouted to a lower tier for want of a better author, and reordering precedence for attribution is forbidden. (c) The read-back establishes the pair's comment-kind entry as the invoking user (a real observation); but 'unestablished' elsewhere is preserved as its own state, never collapsed into 'invoking user' by inference.",
+      "assertions": [
+        "The answer treats the pair's comment-kind authorship as unestablished despite the PR-creation observation (availability is per write kind), and posts on the degraded path",
+        "The answer refuses to reroute, delay, or withhold the comment for attribution, and refuses to reorder transport precedence",
+        "The answer records the comment-kind observation from the read-back and preserves 'unestablished' as a distinct state elsewhere, never resolving it to 'invoking user' by inference"
+      ],
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "first-trigger-bootstrap",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a fresh run's first PR was just created; the only read-back write anywhere is that PR creation (authored as the invoking user through pair P1 = (github-mcp, tok-A)). No pair has any comment-kind observation. The repository's review convention is an '@codex review' comment. A second available pair P2 = (tracker-cli, tok-B) has a credential that identifies as a distinct agent account. Question: (a) can the trigger wait until some pair has comment-kind evidence? (b) through which pair does the first trigger go, and what is mandatory immediately after posting it? (c) the read-back shows the comment authored as an agent account, not the invoking user — what happens next?",
+      "expected_output": "(a) No — the first trigger cannot be gated on comment-kind evidence, because only a comment can produce it; the first trigger attempt is its own establishing write. (b) Through the highest-precedence transport whose current credential PREDICTS the invoking user — P1 (P2's credential predicts an agent, so an attempt through it would be known-wrong before it was made) — and the comment must be read back at once. (c) The trigger did not fire: record the observation as real wrong-author evidence barring that pair from further trigger attempts, repeat the bootstrap through the next credential predicting the invoking user, and exhaust candidates into 'unavailable for now' (NEEDS_USER once per repository) — never a run-long suppression, and never a re-issue through a pair observed to author comments wrongly.",
+      "assertions": [
+        "The answer refuses to gate the first trigger on comment-kind evidence (deadlock) and treats the first attempt as its own establishing write with a mandatory immediate read-back",
+        "The answer selects the highest-precedence transport whose credential predicts the invoking user and excludes the pair predicting a distinct agent as known-wrong",
+        "On a wrong-author read-back the answer records the evidence, bars that pair for triggers, continues the bootstrap through remaining candidates, and lands on unavailable-for-now (NEEDS_USER once per repository) rather than a run-long suppression"
+      ],
+      "files": []
+    },
+    {
+      "id": 7,
+      "name": "trigger-unavailable-for-now-not-forever",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: on PR-1, the only transport precedence selects for comments has its current pair's comment-kind authorship OBSERVED as a distinct agent account (a real read-back, not a prediction), and no remaining credential predicts the invoking user. The repo's review convention requires the trigger comment from the invoking user. Later in the same run, PR-2 opens in the same repository, and later still a settle walkthrough records a ruling through a new transport whose read-back shows the invoking user authoring a comment. Question: (a) what happens to PR-1's trigger now, and how is it reported? (b) is the trigger suppressed for PR-2 for the rest of the run? (c) what does the walkthrough's observation change?",
+      "expected_output": "(a) The trigger is unavailable FOR NOW: report NEEDS_USER once for the repository, never issue the trigger through the wrong-authoring pair. (b) No run-long suppression — that treatment belongs to an explicit reviewer refusal (repository-scoped and stable); this is evidence about what the run has observed so far, so PR-2 re-evaluates against the map as it stands. (c) The ruling's read-back establishes an invoking-user comment-kind entry on a new pair — trigger selection re-evaluates on that change, and the provisionally unavailable trigger re-opens; the earlier escalation was recorded as provisional and identity-based, not as the repository refusing.",
+      "assertions": [
+        "The answer marks the trigger unavailable-for-now with NEEDS_USER once per repository and never issues it through a pair observed to author comments wrongly",
+        "The answer refuses to carry the suppression for the rest of the run (distinguishing identity evidence from a reviewer refusal), so later PRs re-evaluate",
+        "The answer re-opens the trigger when the walkthrough's read-back establishes an invoking-user comment-kind entry, because the escalation was recorded as provisional and identity-based"
+      ],
+      "files": []
+    },
+    {
+      "id": 8,
+      "name": "report-routes-on-pr-existence",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: two workers on a remote-session runtime finish badly. Worker A returns FAILED — but its PR already exists: create-pr's linkage verification failed after creation. Worker B returns BLOCKED before any PR exists, with a one-line needs_action naming one blocker URL. Question: (a) where does worker A's report go? (b) what does worker B write, and who writes the durable record of B's blocker? (c) may either report land as an issue comment, and what happens if one does anyway?",
+      "expected_output": "(a) A comment on A's PR — routing is on whether a PR actually exists, never on the outcome label; suppressing the report on FAILED would throw away the judgment while the sink sits right there. (b) B writes nothing durable; its needs_action line tells the parent where to look, and the PARENT investigates and writes the blocker record itself, after classifying — a worker's report is evidence, a blocker record is a conclusion. (c) Never to the issue — three skills read issue comments for dependency data and would manufacture permanent blockers; as a backstop, a report landing on an issue anyway must open with the exact worker-report marker line, which every reader skips.",
+      "assertions": [
+        "Worker A's report goes to its existing PR despite the FAILED label (route on PR existence, not outcome)",
+        "Worker B writes nothing; the parent investigates and writes the blocker record after classifying (report = evidence, record = conclusion)",
+        "The answer forbids issue-comment reports (naming the readers that would adopt the edge) and cites the exact first-line marker as the backstop, not the mechanism"
+      ],
+      "files": []
+    },
+    {
+      "id": 9,
+      "name": "one-line-summary-is-a-pointer",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a remote worker with a credential that reaches cross-repo edges (the parent's cannot) returns BLOCKED with no PR; its one-line needs_action names exactly one blocker URL — an edge already present in the parent's dependency set. A teammate proposes: 'the edge is already in our set — reconcile its state and move on (step 2 of the ordered decision)'. Question: do you take step 2's reconcile-and-stop, and why or why not? What is the correct step, and what happens to siblings dispatched through the same read?",
+      "expected_output": "No. Step 2's reconcile-and-stop is available only when both sides read the same transport — the credential identity test comes first, and here the worker's credential reached edges the parent's cannot, so stop and go to step 4 whatever the membership answer: a one-line summary had room for one blocker and its silence about others is not evidence there are none. Step 4: the boundary is unproven — establish visibility against a known-true case, else hold the issue as the unproven-dependency-view NEEDS_USER, which holds every sibling dispatched through the same read.",
+      "assertions": [
+        "The answer refuses step 2's reconcile-and-stop because the transports/credentials differ, even though the named edge is already in the parent's set",
+        "The answer treats the one-line summary as a pointer whose silence about further blockers proves nothing",
+        "The answer takes step 4: boundary unproven, known-true-case proof or the unproven-dependency-view NEEDS_USER that holds every sibling sharing that read"
+      ],
+      "files": []
+    },
+    {
+      "id": 10,
+      "name": "unavailable-boundary-never-held-again",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the preflight classified the run's dependency boundary 'dependency transport unavailable' (GitHub, no authenticated gh), recorded on run state and carried in every dispatch prompt. A worker later returns NEEDS_USER claiming an 'unproven dependency view' against that same boundary, having blocked on a blocker it read in the issue's prose. Question: (a) do you invalidate a visibility proof and hold every sibling? (b) what do you actually do with the worker's block? (c) when the blocker cannot be identified from the issue's text, what escalates — the boundary or the issue?",
+      "expected_output": "(a) No — a worker cannot raise the unproven-view hold against a boundary classified transport-unavailable: there is no proof to re-establish (none was ever obtainable), and holding would stop the run permanently on a condition accepted at the preflight. Read it as a report, not a hold. (b) Reconcile the blocker from the issue's own prose — the only source either side has. (c) Escalate THIS ISSUE as an unverifiable prerequisite, never the boundary, which was never provable and is not evidence of anything new.",
+      "assertions": [
+        "The answer refuses to invalidate a proof or hold siblings on the transport-unavailable boundary (no proof ever existed to lose)",
+        "The answer reconciles the worker's blocker from the issue's prose, treating the block as a report",
+        "When the text cannot identify the blocker, the answer escalates the issue as an unverifiable prerequisite, never the boundary"
+      ],
+      "files": []
+    },
+    {
+      "id": 11,
+      "name": "recovery-ref-overrides-done",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: on restart, issue I-4 shows the strongest completion evidence: a merged, correctly linked implementation PR and terminal tracker state. But refs/checkpoints/ carries a recovery ref for I-4's branch, pushed by the previous run's parent capture and never reconciled. Question: (a) is I-4 classified DONE and skipped? (b) what is the required enumeration order that makes this answer possible? (c) what does the merged-PR ender of the four-state rule do with the ref and the issue?",
+      "expected_output": "(a) No — an outstanding recovery ref overrides all completion evidence, merged PR included: I-4 is never DONE while the ref is outstanding. (b) Recovery refs are enumerated BEFORE classifying (before PR and checkpoint adoption), because a merged PR with terminal tracker state is exactly what an issue carrying rescued unlanded work looks like from outside. (c) The merged-PR ender: branch reconciliation is not a fix (the branch of a merged PR is never read again); raise NEEDS_USER naming the issue, the merged PR, and the ref; the issue is not complete; no follow-up PR is opened automatically; DELETE NOTHING until the owner decides — the ref is the only copy.",
+      "assertions": [
+        "The answer refuses DONE while the recovery ref is outstanding, whatever the merge and tracker evidence say",
+        "The answer enumerates recovery refs before classification (before PR/checkpoint adoption), citing why the merged case is exactly the dangerous one",
+        "The answer applies the merged-PR ender: NEEDS_USER naming issue/PR/ref, no automatic follow-up PR, no branch reconciliation as a fix, and nothing deleted until the owner decides"
+      ],
+      "files": []
+    },
+    {
+      "id": 12,
+      "name": "mid-deliverable-block-is-not-releasable",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a remote worker session is stopped on a permission prompt. Its branch is pushed, its PR exists, its worktree is clean. But the session record shows it stopped INSIDE create-pr: the PR was created, and the worker was blocked before verifying tracker linkage and before issuing the automated review trigger. Question: (a) does it pass the releasable test's durable-state arm? (b) what happens if you archive it here anyway? (c) which resolution branches apply instead?",
+      "expected_output": "(a) No — the arm requires the prompt be one this run does not need answered, and this worker is stopped mid-deliverable: create-pr verifies linkage and issues the review trigger AFTER creation, so the deliverable still depends on what is blocked. A pushed branch, existing PR, and clean worktree do not by themselves mean finished. (b) Archiving leaves a PR that is unlinked or never reviewed while the run records the issue complete — the coverage failure arrived at through cleanup. (c) Blocked workers' other branches: the parent clears the block where it can (perform the write itself, send the instruction), or the prompt nothing can answer is captured-archived-redispatched as the same work unit, or a permission request becomes NEEDS_USER naming the exact literal tool string.",
+      "assertions": [
+        "The answer refuses release: pushed branch + existing PR + clean worktree is not enough when the worker is blocked mid-deliverable (linkage verification and review trigger still pending)",
+        "The answer names the consequence of archiving anyway: an unlinked or never-reviewed PR recorded as complete",
+        "The answer routes to the other Blocked-workers branches (parent clears it, or capture-archive-redispatch of the same work unit, or NEEDS_USER with the literal tool name)"
+      ],
+      "files": []
+    },
+    {
+      "id": 13,
+      "name": "frontier-holds-are-per-path",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the owner merges three PRs. The recompute makes nodes X, Y, Z READY. Outstanding items: a DECISION whose answer changes how X gets built; a NEW_ISSUE follow-up with no ordering consequence; and the 12-new-issue budget has room for Y and Z but the run also notices the owner's merge chose between the two approaches an earlier DECISION had asked about. Question: (a) which nodes dispatch and which hold? (b) what does the merge itself settle? (c) mid-scenario variant — if the budget were exhausted instead, what happens to the newly READY nodes?",
+      "expected_output": "(a) X holds (the DECISION bears on what/how X gets built — dispatching commits the run to an answer); Y and Z dispatch in the same pass — holding one path never holds the others, and the NEW_ISSUE holds nothing it has no bearing on. (b) The merge is evidence: a user asked to choose between two approaches who merged one has answered — that question no longer holds work. (c) With budget exhausted, do not dispatch: report the newly READY frontier as the resume frontier so a resumed invocation adopts it — silently dropping newly unblocked work is the failure the step exists to prevent.",
+      "assertions": [
+        "The answer holds only X (the node the DECISION bears on) and dispatches Y and Z in the same pass",
+        "The answer reads the owner's merge as answering the earlier two-approaches DECISION (merge as evidence)",
+        "Under budget exhaustion the answer reports the newly READY nodes as the resume frontier rather than dispatching or silently dropping them"
+      ],
+      "files": []
+    },
+    {
+      "id": 14,
+      "name": "repair-escalation-fires-on-locus-evidence",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR-7's review history: round 1 fixed two findings (all-new territory); round 2 fixed three more (also new). The incoming round 3 carries one finding — a gap inside a paragraph that round 2's repair itself wrote. review-repair-cycles has 1 left; repair-model-escalations has 1 left. Question: (a) what model runs round 3 and why? (b) does the escalated round consume the review cycle? (c) variant — if repair-model-escalations were exhausted, does repair stop?",
+      "expected_output": "(a) The strongest available model: the finding sits on a locus an earlier repair on this PR wrote — the evidence trigger, which fires on the earliest round where the evidence can exist, never on exhaustion; rounds 1–2 were breadth and Sonnet was right for them. (b) Yes — an escalated round still consumes its repair cycle; skipping the counter would make escalation a way to buy extra rounds, and at the cap the PR goes to the owner whatever model ran. (c) No — exhausting repair-model-escalations returns repairs to Sonnet; it does not end them.",
+      "assertions": [
+        "The answer escalates round 3 to the strongest model on the locus evidence (finding in text an earlier repair wrote), explicitly not on budget exhaustion",
+        "The escalated round still consumes the review repair cycle (escalation never buys extra rounds)",
+        "Exhausted escalations return repairs to Sonnet rather than stopping them"
+      ],
+      "files": []
+    },
+    {
+      "id": 15,
+      "name": "deep-mode-unavailable-blocks-escalated-nodes",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the preflight's escalation rules fire on two nodes — a cross-repository consumer edge (a frontend consuming a backend that merged in an earlier tranche). Deep validation turns out unavailable (out of model budget). Shallow validation over those two nodes returns PASS; the rest of the scope has no triggers and shallow-passes. Question: (a) are the two escalated nodes dispatchable on their shallow PASS? (b) what path do they take, and what continues? (c) why is the shallow PASS 'no answer' rather than a weaker answer here?",
+      "expected_output": "(a) No — where deep mode is unavailable, escalated nodes are NOT dispatchable. (b) Take the escalation's FAIL path: stop those paths, raise NEEDS_USER reporting the condition, the nodes owed the deeper read, and what blocked it; continue only the branches no trigger reached, which shallow validated on its own terms. (c) The trigger fired precisely because shallow evidence cannot answer the question for those nodes — an earlier tranche having merged is exactly what makes shallow confident and wrong (coverage, not visibility) — so dispatching on the shallow PASS recreates the case the escalation exists to catch, with the cost hidden behind a green result.",
+      "assertions": [
+        "The answer refuses to dispatch the escalated nodes on their shallow PASS when deep mode is unavailable",
+        "The answer takes the FAIL path for those nodes (stop, NEEDS_USER naming the blocked deeper read) while untriggered branches continue on shallow",
+        "The answer explains that shallow PASS is no answer for a fired trigger (the merged earlier tranche makes shallow confident and wrong), not a weaker one"
+      ],
+      "files": []
+    },
+    {
+      "id": 16,
+      "name": "publish-then-merge-re-evaluates",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: at the settled step, invariant 12's gate passes for PR-9, which is still a draft that was never marked ready by anyone (created as draft, untouched since). The repo opted into auto-merge. A teammate says 'the gate passed — publish and merge it in this pass; the review was clean a moment ago'. Question: (a) is PR-9 skipped for being a draft? (b) may the merge happen in this pass on the evidence the gate just accepted? (c) what would change if a human had marked it ready earlier and someone returned it to draft?",
+      "expected_output": "(a) No — publishing is part of the merge path: a PR still in draft when its gate opens is published by the act of merging, never skipped for being a draft. (b) No — publishing is not inert (providers re-review, CI can re-run), so the clean evidence describes the PR one moment before it changed: publishing un-settles the tranche for that PR, it returns to ordinary supervision, and the merge happens on a later pass on fresh post-publish evidence — never on evidence gathered before the publish, and never held open inline waiting. (c) A ready-then-returned-to-draft PR is an explicitly held draft — every ready-to-draft transition on this run's PRs is someone's decision (read from the forge timeline, not the per-PR cache) — excluded from the gate entirely: neither published nor merged, reported as held.",
+      "assertions": [
+        "The answer publishes as part of the merge path rather than skipping the draft, and refuses to merge in the same pass on pre-publish evidence (publish un-settles; merge on a later pass)",
+        "The answer refuses an inline wait for the re-review (returns the PR to ordinary supervision/subscription instead)",
+        "The answer treats the ready-then-re-drafted variant as an explicitly held draft read from the forge timeline — excluded from publish and merge, reported as held"
+      ],
+      "files": []
+    },
+    {
+      "id": 17,
+      "name": "countermand-placement-by-tier",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the run dispatches (a) remote worker sessions and (b) in-process subagents. Remote sessions inherit a system prompt telling every session to subscribe to PR activity and schedule hourly self check-ins. Question: (a) for each tier, where do the supervision countermand, branch protection, and the question posture go? (b) after the run, the session list shows no blocked workers — is that proof the countermand worked? (c) does this countermand apply to a standalone implement-issue invocation?",
+      "expected_output": "(a) Remote sessions: into append_system_prompt at creation — a task instruction is the weaker side of an argument with a session's own system prompt — and restated in the dispatch prompt; subagents/workflow agents/serialized: the dispatch prompt is the whole of it (no session posture to countermand). (b) No — a worker that arms a wake and can disarm it leaves nothing blocked behind, indistinguishable from one that never armed one; only the checkpoint output separates them, so a quiet list is absence of a symptom, not evidence about the cause. (c) No — the countermand scopes to workers this skill dispatches; standalone implement-issue owns supervision of its one PR by design and the ambient posture is right there.",
+      "assertions": [
+        "The answer puts the countermands in append_system_prompt for remote sessions (restated in the dispatch prompt) and in the dispatch prompt alone for the other tiers",
+        "The answer rejects a quiet session list as proof (a self-disarming worker looks identical to one that never armed a wake)",
+        "The answer scopes the countermand to workers this skill dispatches, exempting standalone implement-issue"
+      ],
+      "files": []
     }
   ]
 }
