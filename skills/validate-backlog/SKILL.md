@@ -71,6 +71,8 @@ Everything above is a statement about a probed transport, never about a tracker.
 
 ### Transport visibility
 
+This section is the canonical statement of the transport-visibility model; `backlog-orchestrator` (*Proving a transport can see the graph*) and `normalize-github-dependencies` (its write precondition) defer here rather than restating it — a change to the model belongs here first.
+
 A scoped or relayed credential can return a partial relationship set without error — an edge that exists but is invisible looks identical to one never created. So:
 
 - **Establish that the transport can see the relationships in scope *before* consuming them, against a case whose answer is already known** — an edge the caller confirmed, or one this run just wrote. Only a known-true case proves, because its answer does not depend on any transport being trustworthy.
