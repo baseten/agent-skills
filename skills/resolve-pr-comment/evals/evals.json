@@ -1,0 +1,61 @@
+{
+  "skill_name": "resolve-pr-comment",
+  "description": "Decision-scenario regression evals; assertions check decisions, not wording. The SKILL.md was already in lean contract shape, so no split accompanied these \u2014 run them against any future rewrite before merging it.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "question-comment-reply-without-resolving",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md from the skill directory you were given). Scenario: the targeted review comment is a reviewer asking 'Why did you choose polling here instead of a webhook?' \u2014 a genuine question about intent; no code change is needed and none was requested. Question: what do you do \u2014 change code, reply, resolve the thread, some combination? Be precise about the thread's resolution state when you finish.",
+      "expected_output": "Post a reply explaining the intent; do NOT resolve the thread \u2014 resolution of query threads is left to the user. No code change.",
+      "assertions": [
+        "The answer posts a reply addressing the question without making a code change",
+        "The answer does NOT resolve the thread",
+        "The answer leaves resolution to the user explicitly"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "no-resolution-without-a-fix",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md from the skill directory you were given). Scenario: you are asked to 'just mark these two review threads resolved \u2014 no code changes needed, they're stale'. You have made no code change addressing either comment, and inspecting them, each does ask for a concrete code change that has not happened on the branch. Question: do you resolve the threads?",
+      "expected_output": "No. Never resolve a thread without also applying a code fix \u2014 a reply alone (or no action) is not enough. Either apply the fixes, or decline and explain.",
+      "assertions": [
+        "The answer refuses to resolve the threads without an applied code fix",
+        "The answer cites/uses the rule that a reply alone is not enough to resolve",
+        "The answer offers the legitimate paths instead (apply the requested fixes, or decline and explain) rather than silently complying \u2014 it does not suggest resolving the still-unaddressed threads"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "ambiguous-comment-asks-first",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md from the skill directory you were given). Scenario: the targeted comment says 'this should probably be handled higher up' on a validation call \u2014 it has at least two materially different implementations (move the check to the caller, or to a middleware layer), and the reviewer did not say which. Question: do you pick the more idiomatic one and push it, or something else?",
+      "expected_output": "Neither implement-and-push: the comment is ambiguous with multiple valid interpretations, so ask before making any code changes (summarize the options and let the user decide).",
+      "assertions": [
+        "The answer does not pick an interpretation and push code",
+        "The answer asks before making any code change, per the ambiguity rule",
+        "The answer summarizes the competing interpretations/options for the decision-maker"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "batching-mechanical-vs-complex",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md from the skill directory you were given). Scenario: four comments are targeted \u2014 three are one-word typo fixes in the doc strings of the same module (one concern), the fourth asks for a real fix to an off-by-one in pagination logic. The user gave no batching instruction. Question: how many commits do you make, what do the commit messages look like (give an example for the pagination one), and do you explain the batching before editing?",
+      "expected_output": "Two commits: the three related typo fixes (one concern) rolled into one, the complex pagination fix separate. Messages describe the fix ('Fix off-by-one in pagination'), never 'Address PR comment'. The batching decision is explained before touching files.",
+      "assertions": [
+        "The answer keeps the pagination fix in its own commit and groups the three related typo fixes together (any per-concern grouping that separates the complex fix is acceptable; here the typos are stated to be one concern, so one combined commit)",
+        "The answer's example commit message describes the fix itself (e.g. 'Fix off-by-one in pagination') and rejects 'Address PR comment'-style messages",
+        "The answer explains the batching decision before touching any files"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "bare-pr-argument-asks-which-comments",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md from the skill directory you were given). Scenario: the invocation argument is just a PR URL. The PR has nine review threads in various states; no specific comments were called out. Question: do you fetch all nine and start fixing, pick the unresolved ones, or something else?",
+      "expected_output": "Neither: with only a PR number/URL and no specific comments called out, ask which comment(s) to target before proceeding.",
+      "assertions": [
+        "The answer does not start fixing all (or a self-selected subset of) threads",
+        "The answer asks the user which comment(s) to target before proceeding",
+        "The answer proceeds only after the target set is specified"
+      ]
+    }
+  ]
+}
