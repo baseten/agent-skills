@@ -1,0 +1,78 @@
+{
+  "skill_name": "implement-issue",
+  "description": "Decision-scenario regression evals. Each prompt describes a run state and asks what the skill requires next; assertions check the decision, not the wording. Run them against any rewrite of SKILL.md before merging it: the rewrite passes only if every scenario still resolves the same way.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "gate-holds-on-unproven-dependency-view",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the repository's .claude/backlog-orchestrator.json contains {\"auto-merge\": true}. The run reached settle: the PR has a completed automated review round with every finding resolved, CI is green on the current head, no merge conflict, the PR was created ready (never a draft), no walkthrough decisions are outstanding, and no MERGE_RISK or NEEDS_USER items exist. However, implement-issue-core reported that the completeness of the blocker set was left unproven, because no dependency read was available in this container. Question: does the run merge this PR? State exactly what the skill requires, and if the merge is withheld, state what would discharge the hold.",
+      "expected_output": "No merge. The unproven dependency view holds the gate like a MERGE_RISK. Discharge: a re-run whose transport can read the graph and prove the boundary, or the owner explicitly answering for the whole view; a single confirmed edge is not sufficient.",
+      "assertions": [
+        "The answer concludes the PR must NOT be merged in this pass",
+        "The answer names the unproven dependency view / unproven blocker-set completeness as what withholds the merge",
+        "The answer names at least one valid discharge (a run with a working dependency transport, or the owner explicitly answering for the whole view) and does not claim that supplying one confirmed edge alone discharges the hold"
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "adverse-disposition-ruling-not-merged-not-performed",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: at settle, the settle-outstanding-decisions walkthrough ran with the owner present and recorded this ruling on the PR: 'Close this PR; I want to redo this feature myself next week.' Everything else is green: completed clean review round, green CI, no conflict, ready PR, dependency view proven complete, and the repository's policy file has auto-merge: true. Question: what does the run do with this ruling — does it merge the PR, close the PR, or something else? State exactly what the skill requires.",
+      "expected_output": "The ruling is translated into a gate consequence: it changes the PR's disposition, so it holds the gate like a MERGE_RISK. The run neither merges nor performs the close itself; it returns with the gate held, carrying the ruling and its next owner in the structured result.",
+      "assertions": [
+        "The answer concludes the PR must NOT be merged",
+        "The answer states the run does NOT itself close (or delete) the PR — the disposition belongs to another owner",
+        "The answer describes holding the gate on the ruling (treating it like a MERGE_RISK or equivalent constraint) and returning with the ruling surfaced in the result"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "clean-draft-is-never-promoted",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the PR was created as a draft (repository convention for work repos). Its first automated review round completed with zero findings and CI is green on the current head. The repository has NO .claude/backlog-orchestrator.json file. Question: does the run mark the PR ready for review now that it looks done? What happens to the PR, and how is it reported?",
+      "expected_output": "No. The run never promotes drafts. With no policy file, auto-merge is off, so the merge path cannot publish it either. The PR stays a draft until the owner marks it ready; the run reports it as a draft (healthy) and returns.",
+      "assertions": [
+        "The answer concludes the run does NOT mark the PR ready / does not promote the draft",
+        "The answer does not merge the PR and recognizes auto-merge is off because no policy file exists",
+        "The answer identifies who can promote it (the owner, or the merge path as a step of merging where a repo opted in) and that the run reports the PR still in draft"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "caller-resolved-policy-omitted-permissions-are-false",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: backlog-orchestrator invoked this skill as a child, passing a complete resolved policy: {implementation-attempts: 2, ci-repair-cycles: 1, review-repair-cycles: 1, finding-repair-cycles: 1, repair-model-escalations: 0, auto-request-settle: false}. Note auto-merge and auto-fix-reviewers are absent from what the caller passed. The repository's own .claude/backlog-orchestrator.json on disk says {\"auto-merge\": true, \"auto-fix-reviewers\": true}. Question: (a) does this run read the repository's policy file? (b) what do auto-merge and auto-fix-reviewers resolve to for this run? (c) may the run merge the PR if everything else is green?",
+      "expected_output": "(a) No — a caller's complete resolved policy suppresses the read. (b) Both resolve to false: omitted permission keys under a resolved policy take false, not the file's values or the permissive defaults. (c) No merge — auto-merge resolved false for this run.",
+      "assertions": [
+        "The answer states the repository policy file is NOT read (the caller's complete resolved policy suppresses the read)",
+        "The answer resolves auto-merge to false (off) for this run, not to the file's true",
+        "The answer resolves auto-fix-reviewers to false for this run, and concludes no merge may happen"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "settle-phase-outcome-returns-directly",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the PR finished healthy and the run entered the settle sequence. Step 1 (reconcile) completed. At step 2 the run discovers the summarize-tranche skill is not installed in this environment. Question: what outcome does the run return, and — critically — after producing that outcome, does the settle sequence run again over it? Explain what the returned outcome must carry.",
+      "expected_output": "Return BLOCKED naming summarize-tranche and the step it stopped at. This is a settle-phase outcome, so it returns directly under the provenance exemption — it does not re-enter settle (which would invoke the missing skill again in a loop). It carries what the completed steps produced and points at the durable sites. No improvised summary substitutes for the missing skill.",
+      "assertions": [
+        "The answer returns BLOCKED (a required skill is unavailable) naming summarize-tranche rather than improvising a replacement summary",
+        "The answer states the settle sequence is NOT re-entered for this outcome (an outcome the settle phase itself produced returns directly)",
+        "The answer says the return names the step it stopped at and carries what the completed steps produced (and/or points at the durable sites)"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "code-changing-ruling-unsettles-via-finding-repair",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: at settle, the walkthrough recorded an owner ruling that requires this PR's code to change ('use the other serialization format — the one the worker documented deciding against'). The finding repair budget has 2 cycles remaining; review and CI budgets are fully spent. The repository opted into auto-merge and everything else currently reads green. Question: what does the run do next, in order? Does it merge on the current green state? Which repair type and budget are used, and what happens after the repair pushes?",
+      "expected_output": "The run un-settles: it does not merge on the pre-repair evidence. It dispatches repair-pr once with repair type = finding, passing the recorded ruling verbatim with its site URL and the posting-identity map; a pushed repair consumes one finding-repair-cycles cycle and retriggers review per convention; then the run settles again from step 1 (fresh reconcile and summary) before the gate can be evaluated.",
+      "assertions": [
+        "The answer does NOT merge on the current (pre-repair) green state",
+        "The answer dispatches repair-pr with repair type 'finding' (the settle-finding repair), consuming the finding-repair-cycles budget — not the review or CI budget",
+        "The answer settles again from step 1 (recomputing the summary / re-running the settle sequence) after the repair, so the gate is evaluated on post-repair evidence"
+      ],
+      "files": []
+    }
+  ]
+}
