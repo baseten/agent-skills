@@ -25,7 +25,7 @@ Most of `SKILL.md`'s size is rules for the ways steps 1–4 have gone wrong in p
 
 ## Glossary
 
-Terms `SKILL.md` coins, in plain words. Section names in parentheses point to where each is defined.
+Terms `SKILL.md` coins, in plain words. Section names in parentheses point to where each is defined. These are orientations, not restatements: each row compresses a rule that carries qualifiers and edge cases only its `SKILL.md` section states in full — when a row and the contract read differently, the contract wins.
 
 | Term | Meaning |
 |---|---|
@@ -34,7 +34,7 @@ Terms `SKILL.md` coins, in plain words. Section names in parentheses point to wh
 | **bounded scope** | The fixed set of issues the run may work on. Nothing outside it is ever started, even if a merge unblocks it. |
 | **READY / frontier** | An issue whose prerequisites are all met is READY; the frontier is the current set of READY issues. A merge "advances the frontier" by making more issues READY. |
 | **validated DAG** | The dependency graph after the pre-flight checks; the only graph scheduling trusts. |
-| **worker** | A disposable sub-session implementing exactly one issue (or one repair). |
+| **worker** | A bounded execution unit implementing exactly one issue (or one repair) — its own session on the remote runtime, but possibly a workflow agent, an in-process subagent, or a serialized pass inside the orchestrator itself. |
 | **dispatch** | Launching a worker, with a prompt that carries everything it needs. |
 | **releasing a worker** (*Releasing a worker*) | Shutting a finished worker down. On remote sessions this means archiving the session — a live one holds a container and can keep waking itself. |
 | **the releasable test** | The two conditions for shutdown: the worker is genuinely done, and none of its work is stranded — everything is pushed, or rescued to a recovery ref (a dirty checkout whose files were rescued still passes). |
@@ -45,7 +45,7 @@ Terms `SKILL.md` coins, in plain words. Section names in parentheses point to wh
 | **invariant 13** | A merge is a scheduling event (it can start new work), never an end state. |
 | **settled** (*Settled tranche*) | Nothing more can start and every PR is individually finished-for-now. Settled ≠ finished: the next move is usually a human's, though where a repository opted into auto-merge the settled step's own gated merge can be that move — and it can restart work. |
 | **transport** (*Transport precedence*) | Any way of reading/writing the tracker or forge: an MCP tool, a CLI, raw HTTP. Ordered by preference. |
-| **transport visibility / visibility proof** (*Proving a transport can see the graph*; canonical in `validate-backlog`) | Evidence that a credential can see all the dependency links in scope, established against a link already known to exist ("known-true case"). A restricted credential returns a partial graph with no error, so absence through an unproven transport proves nothing. |
+| **transport visibility / visibility proof** (*Proving a transport can see the graph*; canonical in `validate-backlog`) | Evidence that a credential can see the dependency links in scope, established against a link already known to exist ("known-true case") — one such control per boundary the graph crosses, so a set spanning repositories needs a cross-repository control, not one easy same-repo link. A restricted credential returns a partial graph with no error, so absence through an unproven transport proves nothing. |
 | **`dependency transport unavailable`** | The tracker offers no dependency read at all here (e.g. GitHub without `gh`). A known, uniform limitation accepted up front — different in kind from an unproven view. |
 | **unproven dependency view** | A worker couldn't establish that its blocker list was complete. The most serious `NEEDS_USER`: it holds every sibling scheduled through the same read. |
 | **unverifiable prerequisite** | A dependency whose completion can't be observed from the repo/tracker (e.g. "the release happened") — a question for a person. |
@@ -54,7 +54,7 @@ Terms `SKILL.md` coins, in plain words. Section names in parentheses point to wh
 | **the worker-report marker** | The exact first line (`**Worker report — unclassified evidence, not a dependency record.**`) that makes dependency-scanning skills skip a report that ended up on an issue anyway. |
 | **one-line summary / `needs_action`** | The single line of free text a remote worker's runtime keeps about its last turn — a pointer to go look, never a complete list. |
 | **posting identity** (*Posting identity*) | The map of who comments actually appear to come from, per connection and credential and kind of write, learned only by reading a posted write back — and a read-back proves only the kind of write it was: a comment observation says nothing about PR creation or review replies, which each need their own. |
-| **review trigger / bootstrap** | The "@codex review"-style comment that starts automated review. It only works posted as you, and the first one in a run is sent on prediction and verified by read-back. |
+| **review trigger / bootstrap** | The "@codex review"-style comment that starts automated review. It only works posted as you. Where the run has already observed who its comments post as, it selects from that evidence (and never uses a connection known to post them wrong); only with no comment-kind evidence at all is the first trigger sent on prediction and verified by read-back. |
 | **coverage finding** (*Outcomes*) | A dependency satisfied on paper (issue closed, PR merged) whose actual capability is missing from the code. Such a PR must not auto-close its issue. |
 | **deep vs shallow validation / escalation** | Shallow checks declared links; deep reads the code behind them. Certain shapes (cross-repo edges into earlier merges) force deep mode. |
 | **explicitly held draft** | A draft PR a decision outside the run keeps in draft — an explicit instruction, a repository convention, a caller-passed preference, or a human returning it to draft after it was ready — excluded from merging entirely. |
