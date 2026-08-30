@@ -16,6 +16,10 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 **The seven unreclaimable sessions:** doing the reconciliation by hand found seven `IDLE` sessions belonging to a *different* orchestrator run, checked out on repositories outside the recovering session's GitHub scope — so whether their branches were ever pushed was unreadable from there. Those are report-never-reclaim on ownership alone. Without that branch, a forcing function on live sessions either wedges a clean run behind someone else's leak or teaches runs to archive sessions the safety rules protect. **"Cannot verify" splits by ownership, though** (a review correction to #50's original framing): an unverifiable session belonging to *another* run is excluded from settlement like any other not-mine session, but an unverifiable session *this run created* still blocks settlement as `NEEDS_USER` — it is this run's cost and possibly this run's armed wake, and settling over it would recreate the leak with a documented excuse. Safety still forbids archiving it unverified; the human resolves the standoff.
 
+## Transport precedence
+
+**Why an incremental gap counts as "no higher tier exposes it":** precedence buys attribution and permission handling, not efficiency, so a first-class tool with no `since` bound and no conditional-request support is not the cheaper choice merely by being first-class. Without that carve-out written down the two rules disagree in silence — precedence says stay on the tool, the budget rules say ask incrementally, and a run splitting the difference re-fetches everything through the preferred tier every cycle and calls it compliance.
+
 ## Posting identity
 
 **The attribution-honesty argument:** a run posting under the invoking user's login produces conversations that read as though the owner wrote them — status reports in their voice, replies arguing with their own automated reviewer — and `author_association: OWNER` lends every one the owner's authority. A distinct identity also removes an identity collision at its source: run-authored and owner-authored comments become distinguishable by author instead of only by the structural tests under *The two review/merge policies*.
@@ -67,6 +71,10 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 **The blocked-worker incident in full:** the worker that stopped on `AskUserQuestion` was unreachable in every direction. The runtime's own fields disagreed about its state — `session_status` read `SESSION_STATUS_REQUIRES_ACTION` while `status_bucket` read `SESSION_STATUS_BUCKET_BLOCKED`, with the pending tool named only in a third field — a second sighting of the disagreement *Blocked workers* instructs on. It could not be steered out: interrupting the session left the prompt pending, and no message channel reaches a remote worker session mid-prompt, so the only recovery was archive and redispatch — which is why that is a branch of *Blocked workers* in its own right. What made the redispatch succeed was the substitute, not the prohibition: told what to do instead of asking, the replacement worker returned four documented assumptions — one flagged as the thing it most wanted confirmed — which were worth more than the blocked session they replaced. A documented assumption is recoverable; a deadlocked worker is not.
 
+**Why the ban reaches inline polling and not only armed wakes:** a worker that sits waiting for checks to go green is running the same duplicate supervision as one that arms a wake — the parent is already watching that PR — and it is billed to the API allowance rather than to the clock, which is why it survived a rule written only about wakes and triggers.
+
+**What cutting the verification reads would cost:** the worker skills' read-backs are what establish posting identity, and this run consumes the result. A write that went unread comes back `unestablished`, and an unestablished comment-kind entry is a later review trigger this run has no observed author for — so a ban written broadly enough to catch those reads breaks the trigger rule two sections away, silently. The first draft of the ban was written that broadly; review caught it against the worker contracts, which require exactly those reads.
+
 **Why the worker skills cannot carry this alone:** `implement-issue-core` and `repair-pr` forbid delegating a wait as well as performing one, but their earlier wording — bounding duration alone — is what a worker met and satisfied while still leaving a watcher armed, because arming a wake is not entering a loop. That reading is available again to any worker weighing a skill rule against a session instruction, and the skill rule is the weaker of the two on its own.
 
 **The two costs of a worker-armed watcher, and the one observed:** a second watcher duplicates supervision the parent already owns and can act on a PR the parent is mid-repair on. And a worker that arms a wake it is not permitted to disarm — the trigger tools are routinely outside a worker session's allowlist — blocks on a permission prompt with nobody watching, holding a container for hours after its own work merged. The implementation succeeded; the deadlock was entirely in the cleanup.
@@ -77,6 +85,8 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 **What two unbounded check-ins cost:** the previous rule — "re-arm each time it fires and finds nothing, stop when everything is merged or closed" — terminates only on an event that may never come. Two sessions running exactly that loop against already-merged PRs billed $33.45 and $59.60 doing nothing but waking hourly, reading no change, and re-arming. The budget-and-backoff shape (8 no-ops, 20 minutes doubling to a 4-hour cap, ~21 hours total) is sized so a watch survives a night and a working day waiting on a human reviewer but a forgotten one dies in single-digit dollars. (#50's own text estimated ~14 hours; the arithmetic was corrected in review — 20+40+80+160+240×4 = 1,260 minutes.)
 
+**Why "costs nothing between firings" had to go:** the earlier text asserted that a durable subscription and a scheduled wake are free, and nothing available here documents that. What can be relied on is weaker and enough: whatever a subscription costs is paid at arming rather than per check, so it does not scale with how long the run waits. Treating it as zero is how a run justifies arming several, and hedging it with polling of the run's own invention spends exactly what the subscription was armed to avoid — while the bounded check-in, which looks like the same hedge, is the backstop the section requires and must not be cut with it.
+
 **Why the counter lives in the wake's prompt:** the run that leaked one session was compacted twice mid-run. A counter held in session memory does not survive a compaction or the gap between firings, so it resets silently and the budget never binds. The re-armed prompt is the only storage that provably reaches the next firing.
 
 ## Progress / checkpoint output
@@ -85,9 +95,15 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 **Why the per-PR record carries the session id:** the recovery that cleaned up the leaks had to match sessions to PRs by fuzzy-matching session titles with a script over a truncated tool result. A session id and archived flag on the record the run already keeps makes the reconciliation a lookup.
 
+## PR promotion and central supervision
+
+**What the second monitoring loop costs:** the duplicate pass spends API budget on every cycle and decides nothing the first pass did not — it re-reads the same PR to reach the same conclusion, and where it does not, the two loops disagree about a PR one of them is mid-repair on. Writing the lifecycle out as a sequence exists because the failure is never a decision to run two loops; it is a worker that never stopped reading, or a supervision step that reads on its own rather than consuming the parent's pass.
+
 ## Event handling
 
 **The incident behind the no-change preflight:** a run tracked three PRs with check-ins alone, the `event subscription` field never recorded, an hourly poll, and a "nothing changed" report at 18:20Z. The owner merged at 18:46Z; the next poll was due 19:16Z. From the inside that run was indistinguishable from a healthy one, because "no events because nothing happened" and "no events because nothing was listening" produce the same quiet — and it was the owner who noticed, not the run.
+
+**Why the polling fallback names where its bound comes from:** "bounded parent polling" left the bound to the reader, and a supervision loop reads an unspecified bound as every cycle, everything — which is the shape the overrun below was made of. The fallback is still polling; what changed is that its bound is the read-discipline rules rather than the run's own judgment.
 
 ## API budget and read discipline
 
@@ -101,6 +117,18 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 **Why shape is only the prior, and observation the authority:** the first draft of that rule attributed a read to a bucket by shape alone, which review correctly called a heuristic dressed as a fact. Shape misses in both directions — REST paginates collections, and a graph query can return one record — and the cost of misattributing is not a wasted call but the two failures the whole section exists to prevent: hammering an exhausted bucket, or idling a healthy one. Two things fix it without going back to names. Where the run chooses the endpoint (`gh api graphql` versus `gh api /path`, or a direct call) the bucket is *known*, so nothing is inferred. Where a first-class tool hides it, the run gets ground truth for free the first time a limit bites: this session watched `get_review_comments` refused while `pull_request_read: get` and comment writes went through on the same PR in the same minute, which attributes all three with certainty. Recording that per tool converts a guess into evidence, and it accumulates the same way transport-visibility proofs do.
 
+**Why the scheduled check-in is on the re-read list:** catching what the subscription missed is the entire reason the check-in exists — CI success, new pushes and merge-conflict transitions are the known-unreliable deliveries — so a re-read rule that fires only on delivered events makes the backstop cycle read nothing and fold cached state into a confident no-op. The version of the list that omitted it would have let a PR waiting on CI sit unread until a human noticed, which is the 18:20Z failure again with a budget rule as the excuse.
+
+**Why one read per PR, and never one nested read of everything:** CI, then reviews, then threads, then comments, then merge state is the same PR fetched five times for one decision. The opposite error is as expensive: pulling nested thread and check collections across the whole tracked set to discover that nothing changed is the single most costly way to learn nothing, and it is what "one consolidated pass" invites if the pass is not also bounded to what the cycle needs.
+
+**Why the incremental bound is the earliest `last read` in the batch:** one endpoint takes one bound and tracked PRs will not share a timestamp, so a later bound drops what arrived for the PR read longest ago — which is the PR most likely to have something waiting. Over-fetching and filtering per PR costs one request; under-fetching loses an event silently.
+
+**Why no agent is dispatched to make a query the run could make itself:** a worker spawned to re-ask a refused question is a retry loop wearing a different hat. It draws on the same credential's buckets, so it neither spreads the cost nor waits out the reset, and it hides the retry from the deferral rule that would otherwise have stopped it.
+
+**Why deferral is scoped to the exhausted resource, and the wake armed at the reset:** the incident's own numbers are the argument — a credential-wide stop would have abandoned a REST budget at 7/5000 because GraphQL was gone. Retrying into an exhausted allowance is what turns a throttled hour into a dead one, and a 20-minute wake against an allowance that resets in 50 fires early and spends a call to be refused again, which is why the reset (or a supplied `Retry-After`) wins over the ordinary backoff step.
+
+**Why the throttled wake needed a bound of its own:** exempting throttled wakes from the no-op budget removed the only termination guarantee the check-in had — a run against a permanently contended credential would re-arm forever, reading nothing, which is the leaked billable watcher rebuilt out of an exemption. Four is small deliberately: a wake that keeps finding the allowance gone is reporting contention the owner has to resolve, and more attempts do not resolve it.
+
 **Why the no-change preflight outranks all of it:** the cheapest possible supervision loop is one that reads nothing and reports quiet, which is exactly the 18:20Z failure above. Every rule here had to be written so that it cuts reads that were finding nothing, and never a read that establishes something is still being watched.
 
 ## A settle finding is the third repair shape
@@ -110,6 +138,10 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 ## Frontier advance on merge
 
 **Why the resumed dispatch needs the escalation most:** nobody is watching it — the run resumed on an event, not on a human's attention — and the merge that triggered it is itself the event that makes a stale cross-tranche dependency look satisfied. The preflight at the selected mode is the only check between that illusion and a dispatched worker.
+
+**Why reconciliation is per batch of merge events:** a landing stack delivers one event per PR, and reconciling on each re-reads the same graph as many times as the stack is deep. Draining first and reconciling once is the whole saving; there is deliberately no debounce timer, because delaying the frontier advance to batch better trades correctness for cost in the direction this skill does not accept. Events genuinely minutes apart each get their own pass, and that is correct — the burst is the case this was written for.
+
+**Why the validator is handed the prior graph:** re-enumerating hierarchy, project structure and every dependency edge is among the most expensive reads the run makes, and re-running it per advance is how a landing stack pays for the same graph repeatedly. The correctness rule is untouched — the preflight still runs, at the escalated mode — what changes is that it verifies a delta it was given rather than rebuilding state the run already holds validated.
 
 **What crediting a close would do:** a recompute that treats close like merge sees a dependency-free node and dispatches a fresh worker for the work a human just declined — recreating the PR they closed and spending budget to do it.
 
