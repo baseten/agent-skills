@@ -139,7 +139,7 @@ Every one of those is a clearing or trigger condition drifting from the rule it 
 
 What deliberately does **not** collapse is the resource dimension: deferral stays per resource, because it decides which reads may be attempted, while the budget decides whether waking is worth doing at all. Those are different questions and conflating them produced the middle two defects above.
 
-**Why this was two counters and is now one:** the split came from a true observation and the wrong conclusion. A throttled wake genuinely cannot claim "nothing changed" — it read nothing, so it does not know — so exempting it from the no-op budget was right. But the exemption removed the check-in's only termination guarantee, and rather than questioning the split, a second budget was bolted on beside the first.
+**Why this was two counters and is now one:** the split came from a true observation and the wrong conclusion. A throttled wake genuinely cannot claim "nothing changed" — it read nothing, so it does not know — so exempting it from the budget as it then was — no-ops only — was right. But the exemption removed the check-in's only termination guarantee, and rather than questioning the split, a second budget was bolted on beside the first.
 
 That seam produced four review findings in a row, each a real unbounded-watcher path and each fixed narrowly enough to leave the next one open: clearing on any successful read, then on the previously blocked resource, then on a condition restated instead of referenced. The final design is sound but baroque, and every defect lived in the interaction between two counters rather than in either one.
 
