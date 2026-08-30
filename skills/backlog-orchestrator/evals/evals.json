@@ -232,9 +232,9 @@
     },
     {
       "id": 19,
-      "name": "no-op-budget-and-durable-counter",
+      "name": "unproductive-wake-budget-and-durable-counter",
       "prompt": "A settled backlog-orchestrator run is watching two open PRs with a PR-activity subscription plus a scheduled self check-in. The check-in has now fired five consecutive times finding no change in durable state. (a) When you re-arm it, what interval do you use and where must the consecutive-unproductive-wake count be stored, and why there? (b) On the next firing you find one PR's CI has turned red, but every repair budget for that PR is exhausted so you cannot act on it — does the counter reset or advance? (c) Suppose instead that the next two firings cannot read at all, because another run sharing the credential has exhausted the API allowance — do those wakes count toward the same budget, may they clear it, and when do you wake for them? (d) Suppose the unproductive wakes continue: what happens after the 8th, and may the watched PRs then be described as settled or finished?",
-      "expected_output": "Backoff doubling from 20m capped at 4h with the no-op count written into the re-armed wake prompt; red CI resets the counter even with no budget; stop after 8 no-ops with a full report and no settled/finished reading of the PRs.",
+      "expected_output": "Backoff doubling from 20m capped at 4h with the consecutive-unproductive-wake count written into the re-armed wake prompt; red CI resets the counter even with no repair budget; the two unreadable wakes count against the same single budget and cannot clear it, and are armed no earlier than the allowance reset or Retry-After; stop after 8 unproductive wakes with a full report naming their kind and no settled/finished reading of the PRs.",
       "assertions": [
         "The answer backs off (doubling from 20 minutes, capped at 4 hours) and stores the consecutive-unproductive-wake count in the re-armed wake's own prompt, because session memory does not survive between firings or across a compaction, so a counter kept there resets silently",
         "The answer resets the counter to zero on the red CI even though no repair budget remains — a change in durable state is a change observed, never a no-op",
