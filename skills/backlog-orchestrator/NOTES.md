@@ -97,6 +97,8 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 **Why transport is not mandated either way:** the obvious fix — "use REST" — optimizes the label rather than the cost, and would replace one cheap graph query with five round trips often enough to lose. What is mandated is the minimum total, with the targeted-vs-broad call decided per question.
 
+**Why the flat/graph split is written on read shape rather than on tool names:** a skill cannot see which transport a first-class tool uses underneath, and precedence tells it to prefer that tool anyway — so "use the REST one" is not expressible here and would be wrong the moment an implementation changed. What is observable from inside is what the read asks for: a cursor, or collections nested in collections, means the scarce allowance whoever serves it. That property held across every tool inspected and survives the tool being reimplemented, which a name does not. The split is uneven in the loop's favour: the transition checks that nearly every cycle needs are flat, and only thread resolution — genuinely lacking a flat equivalent — is not.
+
 **Why the no-change preflight outranks all of it:** the cheapest possible supervision loop is one that reads nothing and reports quiet, which is exactly the 18:20Z failure above. Every rule here had to be written so that it cuts reads that were finding nothing, and never a read that establishes something is still being watched.
 
 ## A settle finding is the third repair shape
