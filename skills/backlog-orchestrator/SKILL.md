@@ -199,6 +199,8 @@ The detection above establishes what exists. This establishes which one to use. 
 
 Raw HTTP is a last resort, not a default. Reaching for it must be a decision you record — which operation, and why no higher tier exposes it — not an accident of habit because `curl` is familiar and always available.
 
+One further reason counts as "no higher tier exposes it": **a higher tier that cannot ask incrementally where a lower one can** — no `since` bound and no conditional request, where a lower tier offers one (see API budget and read discipline). Descending for that reason is recorded like any other (NOTES).
+
 One operation is carved out of tier 3 entirely: a GitHub dependency-edge read over raw HTTP returns same-repository edges only, dropping cross-repository ones with no error, so where the scope spans repositories it is not the fallback for a missing higher tier — the honest result is the validator's `dependency transport unavailable` classification, with prose as the only source (see `validate-backlog`, *GitHub dependency reads depend on where you are running*). Falling back anyway trades that named, proceedable warning for an unproven boundary no proof can ever clear.
 
 Precedence lowers the odds of a partial view; it does not remove the need to check for one. A first-class tool or a CLI can run on a directly scoped credential and under-report just as quietly as a relayed one — the hazard is the **scope of the credential**, not the shape of the transport. So treat every relationship read as **provisional until validated below, whichever tier produced it**, and spend the extra scepticism on raw HTTP rather than reserving it for raw HTTP.
@@ -631,7 +633,9 @@ Under Dynamic Workflows, provide these constraints to every workflow worker expl
 
 Prompt literalism cuts both ways. A prompt that omits a required default gets a worker that skips it; a prompt that omits a required **contradiction** gets a worker that follows whatever its own session already told it to do. A Claude Code Remote worker session inherits a system prompt instructing every session to subscribe to PR activity and to schedule a self check-in roughly an hour out, re-arming it silently until the PR merges. That instruction arrives with the runtime rather than from any skill this run dispatches, and it is correct for the sessions it was written for.
 
-So every dispatched prompt — implementation and repair alike — must state that this run owns PR supervision and the worker does not: do not subscribe to PR activity, do not schedule a check-in, trigger, routine or wake of any kind, and return after pushing and reporting, **even where the worker's own session instructions direct otherwise**. Name the override rather than merely stating the rule.
+So every dispatched prompt — implementation and repair alike — must state that this run owns PR supervision and the worker does not: do not subscribe to PR activity, do not schedule a check-in, trigger, routine or wake of any kind, **and do not watch GitHub for state that changes after its own work is done** — no polling for CI, review, comment, thread, issue or merge state — and return after pushing and reporting, **even where the worker's own session instructions direct otherwise**. Name the override rather than merely stating the rule.
+
+**That ban does not reach a worker verifying its own writes, and must not be written so it does.** The worker skills' contracts require exactly such reads, and this run consumes their results: `create-pr` reads its PR back for linkage and its trigger comment back for comment-kind identity, and `repair-pr` confirms the replies and resolutions it was asked to make and counts the threads still unresolved (see Posting identity, and the read-back the worker contract already mandates). The line is **watching versus verifying**: reading back what this worker just wrote, once, is verification and stays; reading again later to learn whether anything has changed since is supervision, and belongs to this run (NOTES: what cutting those reads costs this run).
 
 **But put it where it can actually outrank what it countermands.** A dispatch prompt is a task instruction, and a task instruction is the weaker side of an argument with a session's own system prompt — telling a worker in its task to disregard its session instructions does not, by itself, make it do so. So on a runtime where this run *builds* the worker's session, write the countermand into that session's system prompt: `create_session` takes an `append_system_prompt` for exactly this purpose, and it is the only lever here that sits at the same level as the instruction it is answering. The dispatch prompt then restates it rather than carrying it alone.
 
@@ -696,6 +700,18 @@ A user who wants merges to happen without them has a designed path for it: the r
 
 Once an implementation worker reaches `PR_OPEN`, release that implementation worker — on a remote-session runtime that is an archive call, not merely ceasing to message it (see Releasing a worker). Long-lived PR supervision belongs to the parent/runtime orchestration layer.
 
+**One PR, one supervisor, and it is this run.** The lifecycle is:
+
+```text
+parent  -> dispatch implementation workers (a Dynamic Workflow only for this fan-out, only on the user's opt-in)
+worker  -> implement -> open PR -> report it back -> stop reading GitHub -> released
+parent  -> adopt the PR, arm its subscription, and own it from there:
+           react to delivered events, check in occasionally and consolidated,
+           and resume only the specific worker a change actually needs
+```
+
+A worker never supervises its own PR, and a Dynamic Workflow never supervises anything: it returns its fan-out results and supervision is the parent's from that moment (see Parent supervision loop). No PR is ever supervised by two parties at once (NOTES). That is about who watches, not how many mechanisms they hold: one owner arming both a subscription and a bounded check-in over the same PR is what Arming the wait when nothing is in flight requires, and is not a second loop.
+
 For every active PR track:
 
 ```text
@@ -714,6 +730,7 @@ review repair cycles used/remaining
 finding repair cycles used/remaining
 stack parent/children
 event subscription: armed/unavailable
+last read: <time> — event / poll / mutation by this run
 worker session: <session id, or none on tiers without one> — archived: yes/no
 ```
 
@@ -734,11 +751,41 @@ Prefer platform-native/promoted PR events (Claude Code's background PR watch beh
 - branch/head changes;
 - merge/close events.
 
-If those are unavailable, fall back to other event subscriptions, then bounded parent polling.
+If those are unavailable, fall back to other event subscriptions, then parent polling — bounded as the discipline below defines, never as the reader's own reading of "bounded" (NOTES).
 
 The parent remains the **policy owner** even when the platform performs the observation. The platform may surface that CI failed or review feedback arrived; this skill decides whether budgets allow repair and what worker to dispatch.
 
 Do not keep one Sonnet worker alive per PR merely to wait.
+
+### API budget and read discipline
+
+The forge meters REST and GraphQL as two allowances, exhausted independently, and each belongs to the **credential rather than to this run**: every run, session and worker authenticating as the same identity draws on the same buckets (NOTES: the incident and its arithmetic).
+
+**Attribute a read to a bucket by evidence.** Where this run selects the endpoint, the bucket is known and nothing is inferred. Where a first-class tool hides it, the request's shape is a **fallible prior** — never sufficient alone to keep calling an exhausted bucket or to suppress a healthy one. **Observation settles it**: a rate-limit response names the resource it refused, and a tool refused beside one that succeeded under a known-exhausted bucket attributes both. Record that per tool, as transport visibility is recorded per credential, and let it override the prior (NOTES).
+
+**Treat remaining allowance as shared and falling.** Leave headroom rather than spending down to the guard. Where the remaining figure drops by more than this run's own reads account for, read that as another run on the same credential and back off harder rather than proportionally — and report the sharing, which is the owner's to remedy rather than this run's.
+
+**Read on a change signal, not on a schedule.** Re-read a PR only when: an event named it; this run just mutated it; its poll is due under the `unavailable` fallback; **a scheduled check-in has fired and this PR is in its set**, subscribed or not; or a decision this cycle turns on a field the per-PR block does not carry. Otherwise the block **is** the answer, and `last read` is what distinguishes the two (NOTES: why the check-in belongs on this list, and what a PR waiting on CI costs without it).
+
+**One read per PR, not one per concern — and not one nested read of everything.** Take what the cycle needs from a PR in a single request, take the PRs that are due together, and let later loop steps consume that pass rather than issuing reads of their own.
+
+**Cheapest read that settles the question.** Expand into review threads, comment bodies or check logs only for a PR that actually moved. Optimize total API work for the decision, not GraphQL usage as such (NOTES).
+
+**Ask only for what changed, where the transport offers a way to:**
+
+- prefer a `since`-bounded read that answers what moved across a repository in one request to one request per PR. One endpoint takes one bound: **use the earliest `last read` in the batch and filter the returned records per PR** (NOTES);
+- send a validator — an ETag or `If-Modified-Since` — where the transport supports one, stored alongside `last read`;
+- thread state has no incremental form, so its saving is not asking until a detector fires, and then only for the PRs that detector named;
+- where the preferred tool offers neither and a lower tier does, descend for that read, recorded as Transport precedence requires of any deliberate descent.
+
+**Fan out implementation, never supervision.** The parent makes the supervision reads, once, for all active PRs together. No worker reads overlapping metadata for the same repositories, and **no agent is dispatched for the purpose of making a read this run could make itself** — least of all to re-ask a question this run was just refused (NOTES). That is about dispatching *as a way of reading*, and does not reach the skills this run is required to invoke: `validate-backlog` at preflight and the settle skills read as part of doing their own analysis, and are mandatory where they are mandated, budget or no.
+
+**On a rate-limit response, a secondary-limit response, or an allowance too low to finish the cycle**, defer **every read drawing on that resource** until it resets — a read that resource cannot serve has no essential case, and "this one is needed" is how a cycle spends its way through a refused bucket. A secondary or abuse limit is tied to no resource and stops both. Finish writes already in flight, report the deferral, and **never arm the resuming wake before the reset — or a supplied `Retry-After`, whichever is later**. That is a floor, not a target: how it composes with the check-in's backoff is stated once, under Arming the wait when nothing is in flight, and not restated here (NOTES). **A response that supplies neither bound sets no floor at all** — a secondary or abuse limit, tied to no resource as above, has no reset of its own, and it can arrive without `Retry-After` — and the deferral then contributes nothing to that composition: the backoff's own next step stands, and its 20-minute first step already outwaits the pause such limits ask for. No floor never means no wake — a watch forbidden to wake before a time nothing names would be neither re-armable nor able to spend its budget, and later PR changes would go unobserved forever (NOTES).
+
+**A wake that defers under that rule draws on the single check-in budget in Arming the wait when nothing is in flight** and carries no budget of its own. Whether it counts or clears is that rule's to state and is not restated here — it turns on what the wake observed, so a wake that saw a delta before being refused is not made unproductive by the refusal. On exhausting the budget this way, stop re-arming and report it as blocked on the allowance, naming the contention — never as settled or quiet (NOTES: why this was a second counter, and what the seam between the two cost).
+
+**None of this outranks the no-change preflight.** A PR nothing is listening to is a blind spot whether or not the budget is tight; a due poll skipped to save calls reports as unread, never as quiet; a deferred cycle reports as known-stale.
+
 
 # CI/review repair
 
@@ -816,8 +863,8 @@ The main parent thread must remain active while mutating workers run or active P
 Each cycle performs real work:
 
 1. consume worker completions (including a Dynamic Workflow's returned fan-out results, if one was used), extracting each one's dependency evidence — unmet blockers, source disagreements, **and the resolutions that confirmed your view** — and **merging every posting-identity entry it returned into the run's transport-and-credential-keyed map** (see Posting identity), regardless of its outcome. Do this before releasing the worker: the worker's transports are not this run's, so its observations are the only evidence the run will ever have about them, and a released worker cannot be asked again;
-2. reconcile tracker + remote branches/PRs;
-3. consume/reconcile CI/review events;
+2. consume the events already delivered, then reconcile tracker + remote branches/PRs **only where this cycle has a reason to**, in one consolidated pass rather than a sweep of the tracked set. **The reasons are the ones under API budget and read discipline and are not restated here** (NOTES);
+3. fold that pass into the per-PR blocks, stamping `last read`; a PR no event named and no poll was due for keeps the state it already had, and is neither re-fetched nor treated as unknown;
 4. update heads/budgets;
 5. dispatch repairs;
 6. recompute READY frontier;
@@ -845,16 +892,16 @@ Before a settled-and-empty run stops doing work, it arms both of:
 1. **a PR-activity subscription over this run's own PR set** — the platform-native watch or an explicit `subscribe_pr_activity` (see Event handling). This is what delivers the merge that advances the frontier. Normally these are already armed, because Event handling arms each PR when it enters the tracked set; this step confirms the set is complete rather than establishing it, and arms anything missing;
 2. **a scheduled self check-in, as the backstop**, because that subscription does not cover everything. CI success, new pushes and merge-conflict transitions are the known-unreliable deliveries, and a merge whose event never arrives is a merge the run never acts on. The check-in re-reads durable state — PR states, mergeability, the frontier — and acts on what it finds, instead of treating silence as evidence that nothing happened.
 
-Both, not either. The subscription is the fast path; the check-in is what makes the slow path terminate — and the check-in itself is bounded, because "re-arm forever until the merge comes" is the same unbounded loop this skill forbids workers to run, written from the parent's side (NOTES: what two of these cost). Stop once every PR in the set is merged or closed; until then, **every recurring check-in this skill's runs arm — parent-side or worker-side — carries a no-op budget and a backoff**:
+Both, not either. The subscription is the fast path; the check-in is what makes the slow path terminate — and the check-in itself is bounded, because "re-arm forever until the merge comes" is the same unbounded loop this skill forbids workers to run, written from the parent's side (NOTES: what two of these cost). Stop once every PR in the set is merged or closed; until then, **every recurring check-in this skill's runs arm — parent-side or worker-side — carries one unproductive-wake budget and a backoff**:
 
-- **budget: 8 consecutive no-op wakes**, then stop re-arming;
-- **backoff: start at 20 minutes, double on each no-op, cap at 4 hours.** Eight no-ops at that shape (20m, 40m, 80m, 160m, then 4h × 4) spans roughly 21 hours — long enough to wait out a night and a working day for a human reviewer, short enough that a forgotten watch dies in single-digit dollars;
-- **"nothing changed" means durable state only** — PR head, CI conclusions, the review-thread set and each thread's resolved state, mergeability, tracker status. Any delta resets the count to zero, including a delta the run has no budget left to act on: a red CI it cannot fix is a change observed, never a no-op;
-- **write the count into the wake's own prompt.** The session's context does not survive between firings, and a compaction can drop it mid-run; a counter kept in memory resets silently and the budget never binds. Each re-armed prompt carries the consecutive-no-op count and the durable state the next firing compares against;
-- **stopping is reported, never silent**: which watch stopped, on which PRs, after how many no-op wakes, and what would restart it — a new event, a fresh invocation, or the owner acting on the PR;
+- **budget: 8 consecutive unproductive wakes**, then stop re-arming. **A wake is unproductive whether it read and found nothing or could not read at all** — one counter over both, because both spend money to learn nothing and a watch that alternates between them is as pointless as one that does either (NOTES: why this was two counters and is now one);
+- **backoff: start at 20 minutes, double on each unproductive wake, cap at 4 hours.** Eight at that shape (20m, 40m, 80m, 160m, then 4h × 4) spans roughly 21 hours — long enough to wait out a night and a working day for a human reviewer, short enough that a forgotten watch dies in single-digit dollars. **Where the wake was deferred under API budget and read discipline, it goes at whichever is later: the backoff's next step, or that rule's reset/`Retry-After` floor, where the deferral has one** (that rule also defines when it has none) — waking before the reset is refused again, and waking before the backoff would have is the frequency the backoff exists to cut. The budget is one; the schedule is still per cause;
+- **only an observed delta clears the count, and "nothing changed" means durable state only** — PR head, CI conclusions, the review-thread set and each thread's resolved state, mergeability, tracker status. Any delta resets it to zero, including a delta the run has no budget left to act on: a red CI it cannot fix is a change observed, never a no-op. **The test is what the wake observed, not how it ended** — a wake that saw a delta on one PR and was then refused reading another has observed a delta and clears the count, while a wake that observed none counts against the budget whether it read and found nothing or could not read at all;
+- **write the count into the wake's own prompt.** The session's context does not survive between firings, and a compaction can drop it mid-run; a counter kept in memory resets silently and the budget never binds. Each re-armed prompt carries the consecutive-unproductive count and the durable state the next firing compares against;
+- **stopping is reported, never silent**: which watch stopped, on which PRs, after how many unproductive wakes, **which kind they were**, and what would restart it — a new event, a fresh invocation, or the owner acting on the PR. A watch that expired against a contended allowance and one that expired on a quiet PR call for different remedies, so the report must not collapse them;
 - **this is a cost guard, not a verdict on the PR.** An expired watch says nothing about the work: the PR it watched is still an open item in the closing report, and its expiry must never be read as settled, merged, or finished.
 
-This is not a licence to keep a loop warm, and the ban above is unchanged. A durable subscription and a scheduled wake cost nothing between firings, which is exactly what separates them from spinning, touching files, or committing to look busy. The two rules point the same way: fake activity is what a run resorts to when it has no real wake mechanism, so arming one is the fix rather than the exception.
+This is not a licence to keep a loop warm, and the ban above is unchanged. A subscription and a scheduled wake do not require this run to keep asking, which is what separates them from spinning, touching files, or committing to look busy. **Do not assume a subscription is free.** Absent documentation saying it is webhook-backed, treat its cost as unknown rather than zero — and do not hedge it with polling of this run's own invention. **The bounded scheduled check-in is not such a hedge and is not optional**: it is the backstop item 2 above requires alongside every subscription. What is banned is inventing a second, unbounded watch on top of both (NOTES). The two rules point the same way: fake activity is what a run resorts to when it has no real wake mechanism, so arming one is the fix rather than the exception.
 
 **When neither can be armed** — no subscription available, no scheduler — do not hold the session open reporting supervision that is not happening; the run would sleep through the merge while the user believed it was watching. Reconcile durable state and return a restartable checkpoint naming the resume frontier and the PRs whose merges would advance it, exactly as Stop conditions already requires when the runtime cannot safely stay active. Restart / resume adopts that and re-derives readiness from durable truth, so what is lost is the automation, not the work.
 
@@ -862,10 +909,10 @@ This is not a licence to keep a loop warm, and the ban above is unchanged. A dur
 
 A merge someone else performed is a **frontier-advancing event**, not a terminal one: it is the thing that turns in-scope `BLOCKED` issues into READY work. Steps 6 and 7 of the loop above are how the run consumes it, and they stay reachable after the tranche settles. On every merge/close event:
 
-1. reconcile tracker + GitHub remote state, so readiness is recomputed from durable truth rather than cached run state;
+1. reconcile tracker + GitHub remote state, so readiness is recomputed from durable truth rather than cached run state — **once per batch of merge/close events, not once per event**. **The batch is every such event already delivered when this step is reached**: drain the queue first, then reconcile once over all of them, and fold an event arriving mid-reconciliation into the next pass rather than starting a fresh one. A later event whose reconciliation would repeat one this cycle already performed over the same graph is consumed by it rather than repeating it. Where events genuinely arrive minutes apart each still gets its own reconciliation (NOTES);
 2. restack affected descendants exactly as today (see Stack mutation while PRs are open) — this step is unchanged;
 3. recompute the READY frontier over the **same bounded manifest**, crediting merges only (below). A merge never widens scope: an issue the invocation did not adopt does not become in-scope because something it depends on merged;
-4. if new nodes became READY, re-run the preflight over the bounded scope before dispatching — **at the mode the escalation rules select**, not shallow by default (see Escalating to deep validation) — then fill free worker slots in scheduling order. The preflight is not optional here: it is mandatory before **any** new implementation worker, the merge changed the graph the previous run validated, and this is the case that needs the escalation most (NOTES);
+4. if new nodes became READY, re-run the preflight over the bounded scope before dispatching — **at the mode the escalation rules select**, not shallow by default (see Escalating to deep validation) — then fill free worker slots in scheduling order. The preflight is not optional here: it is mandatory before **any** new implementation worker, the merge changed the graph the previous run validated, and this is the case that needs the escalation most (NOTES). **What is optional is rebuilding what you already hold.** This run has a validated DAG and knows exactly what the merge changed; hand the validator that prior graph and the change, so it verifies the delta rather than re-enumerating hierarchy, project structure and every dependency edge from scratch (NOTES). Where the validator cannot accept prior state, the full re-derivation stands: the correctness rule is not negotiable and the cost is a tooling limitation to report, not a reason to skip it;
 5. if nothing became READY, stay settled and keep supervising.
 
 This requires no new user prompt. While the run still holds budget and in-scope work remains, the merge resumes dispatch inside the same invocation.
@@ -1294,7 +1341,7 @@ If only external CI/review remains and the runtime cannot safely stay active, re
 
 **Emit the state block at the end of every supervision cycle.** It is a required step of the parent supervision loop with a named actor and moment — this run, each cycle — not a convention that holds while the numbers are interesting. The observed failure is exactly that convention lapsing: runs printed the block mid-fan-out and stopped once they narrowed to a one-PR supervision tail, which is the long part of a run and the part a context compaction lands in — so both runs that leaked sessions reported their session count zero times (NOTES). Emitting each cycle is also what carries budgets, worker state and PR state across a compaction: a count that re-enters the transcript survives; one held in run memory does not.
 
-The block always carries: run budget, workers in flight by kind, worker sessions created / archived / alive, active PRs with CI and review state, repair budgets consumed, and the check-in state with its no-op count. For example:
+The block always carries: run budget, workers in flight by kind, worker sessions created / archived / alive, active PRs with CI and review state, repair budgets consumed, and the check-in state with its unproductive-wake count split by kind — plus, whenever reads were deferred under API budget and read discipline, which PRs went unread this cycle and when the allowance resets. For example:
 
 ```text
 Runtime: Dynamic Workflow
@@ -1306,7 +1353,8 @@ Implementation workers: 3
 Repair workers: 1
 Worker sessions: 9 created / 8 archived / 1 alive (blocked on a prompt — see below)
 Active PRs: 7
-Check-in: armed (no-op 2/8, next in 80m)
+Check-in: armed (unproductive 2/8 — 2 no-op, 0 deferred; next in 80m)
+API budget: ok (reads deferred: none)
 Waiting CI/review: 4
 Unreviewed (trigger pending/unavailable): 0
 Unresolved review findings: 0
@@ -1332,7 +1380,7 @@ Before returning, reconcile tracker + GitHub remote state and report:
 - remote checkpoint branches without PRs;
 - checkpoint enforcement: workers nudged, workers whose work the parent committed itself, and any worker that pushed outside its assigned branch — what landed where, and how it was undone;
 - every PR this run tracked and whether its event subscription was armed, so a PR the run was blind to is visible as such rather than indistinguishable from one where nothing happened;
-- every watch that expired on its no-op budget — which check-in stopped, on which PRs, after how many no-op wakes, and what would restart it. An expired watch is a cost decision, not an outcome: the PR it watched is still open work;
+- every watch that expired on its unproductive-wake budget — which check-in stopped, on which PRs, after how many wakes and of which kind, and what would restart it. A watch that ran out against a contended allowance names the contention; one that ran out on a quiet PR does not, and the two call for different remedies. An expired watch is a cost decision, not an outcome: the PR it watched is still open work;
 - the release reconciliation's findings: sessions this run created and archived, any it found alive and what it did about each, and every session it reported but did not reclaim — another run's, or one whose worktree could not be verified from here;
 - caveats a worker raised in its own report that no check expresses — a narrowed guarantee, a knowing deviation from an acceptance criterion, a limitation left unfixed — against the PR each concerns, because these reach a merge decision only if this run carries them there;
 - worker-session lifecycle, where the runtime has sessions to account for: how many this run created, how many it archived, and every one still alive with the reason — naming, for each that was blocked, the exact tool it was waiting on. A run that leaks sessions should be visible in its own report rather than discovered afterwards in a session list, and the tool name is the part a user can act on;

@@ -2,6 +2,8 @@
 
 This file is for people. The model that runs the skill never reads it — it reads `SKILL.md`, which is written as a dense rule contract and is hard going for a human. This page explains what the orchestrator does in normal words, names the moving parts, and defines the vocabulary `SKILL.md` uses. If you change or add a coined term in `SKILL.md`, update the glossary here in the same PR.
 
+Glossary rows name a term and point at the section that owns it. Where a term's rule has cases or exceptions, the row says so and stops rather than restating them: a summary that drops a carve-out reads as a contradiction of the contract, which has happened here more than once.
+
 ## What it does, end to end
 
 You point it at a set of tracked issues that depend on each other — for example a GitHub parent issue with sub-issues, some blocked by others. It then:
@@ -21,7 +23,7 @@ Most of `SKILL.md`'s size is rules for the ways steps 1–4 have gone wrong in p
 - **Session hygiene**: every cycle the orchestrator compares the sessions the runtime says are alive against what it thinks it launched, because a leaked worker session keeps a container and can keep waking itself hourly at real cost. A run cannot call itself finished while a session it created is still alive.
 - **Posting identity**: when the orchestrator writes comments, it posts through whatever connection it would use anyway and reports *who* the comment appeared to come from (you, or a bot identity). The one exception is the comment that triggers automated review, which only works when it comes from you.
 - **The merge gate**: it never merges on its own judgment. A repository must opt in via `.claude/backlog-orchestrator.json` (`auto-merge: true`), and even then a merge waits until nothing in the batch has an unanswered decision.
-- **Budgets everywhere**: new issues per run, concurrent workers, repair rounds per PR, model escalations (one by default), and a no-op budget with backoff on every recurring check-in, so nothing loops forever at your expense.
+- **Budgets everywhere**: new issues per run, concurrent workers, repair rounds per PR, model escalations (one by default), and an unproductive-wake budget with backoff on every recurring check-in — a wake counts against it whether it read and found nothing or could not read at all — so nothing loops forever at your expense.
 
 ## Glossary
 
@@ -58,9 +60,10 @@ Terms `SKILL.md` coins, in plain words. Section names in parentheses point to wh
 | **coverage finding** (*Outcomes*) | A dependency satisfied on paper (issue closed, PR merged) whose actual capability is missing from the code. Such a PR must not auto-close its issue. |
 | **deep vs shallow validation / escalation** | Shallow checks declared links; deep reads the code behind them. Certain shapes (cross-repo edges into earlier merges) force deep mode. |
 | **explicitly held draft** | A draft PR a decision outside the run keeps in draft — an explicit instruction, a repository convention, a caller-passed preference, or a human returning it to draft after it was ready — excluded from merging entirely. |
-| **per-PR block** | The record the run keeps per PR: heads, budgets, subscription state, worker session id, draft state. |
+| **per-PR block** (*PR promotion and central supervision*; when it is re-read, *API budget and read discipline*) | The record the run keeps per PR: heads, budgets, subscription state, worker session id, draft state, and a `last read` stamp. Between reads the block *is* the run's answer about that PR; which signals send it back to the forge is a rule with several cases, and the contract states them. |
 | **event subscription / no-change preflight** (*Event handling*) | The per-PR watch that delivers CI/review events, and the rule that a "nothing changed" claim must first prove something was listening. |
-| **arming the wait / no-op budget** (*Arming the wait when nothing is in flight*) | The subscription + scheduled check-in a settled run sets up, and the cost cap on it: 8 fruitless wakes with growing gaps (~21 hours), then it stops and says so. |
+| **arming the wait / unproductive-wake budget** (*Arming the wait when nothing is in flight*) | The subscription plus scheduled check-in a settled run arms so it notices a merge, and the single cost cap over both — roughly 8 fruitless wakes across ~21 hours, then it stops and says which watch stopped and what would restart it. What makes a wake count against that budget, and what clears it, are the contract's. |
+| **API allowances / deferral** (*API budget and read discipline*) | The forge's REST and GraphQL rate budgets — metered separately, and belonging to the credential rather than to the run, so concurrent runs on one identity draw down the same allowance. What a refusal stops, and when the run tries again, are the contract's; the shapes differ enough between an exhausted bucket and a secondary limit that summarising them here has twice gone wrong. |
 | **countermand / ambient posture** (*Countermanding the worker's ambient supervision posture*) | Remote worker sessions inherit a default habit of watching their own PRs and scheduling their own check-ins; the orchestrator overrides it because it is the single supervisor. |
 | **release reconciliation / provenance key** (*Parent supervision loop*, step 11) | The every-cycle comparison of the runtime's live sessions (filtered by `parent_session_id`) against the run's records — mine-and-alive gets handled now; another run's are reported, never touched. |
 | **state block** (*Progress / checkpoint output*) | The short status snapshot (budgets, workers, sessions created/archived/alive, PRs, check-in state) emitted every supervision cycle. |

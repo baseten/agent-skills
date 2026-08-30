@@ -232,13 +232,16 @@
     },
     {
       "id": 19,
-      "name": "no-op-budget-and-durable-counter",
-      "prompt": "A settled backlog-orchestrator run is watching two open PRs with a PR-activity subscription plus a scheduled self check-in. The check-in has now fired five consecutive times finding no change in durable state. (a) When you re-arm it, what interval do you use and where must the consecutive-no-op count be stored, and why there? (b) On the next firing you find one PR's CI has turned red, but every repair budget for that PR is exhausted so you cannot act on it — does the counter reset or advance? (c) Suppose instead the no-ops continue: what happens after the 8th consecutive no-op, and may the watched PRs then be described as settled or finished?",
-      "expected_output": "Backoff doubling from 20m capped at 4h with the no-op count written into the re-armed wake prompt; red CI resets the counter even with no budget; stop after 8 no-ops with a full report and no settled/finished reading of the PRs.",
+      "name": "unproductive-wake-budget-and-durable-counter",
+      "prompt": "A settled backlog-orchestrator run is watching two open PRs with a PR-activity subscription plus a scheduled self check-in. The check-in has now fired five consecutive times finding no change in durable state. (a) When you re-arm it, what interval do you use and where must the consecutive-unproductive-wake count be stored, and why there? (b) On the next firing you find one PR's CI has turned red, but every repair budget for that PR is exhausted so you cannot act on it — does the counter reset or advance? (c) Suppose instead that the next two firings cannot read at all, because another run sharing the credential has exhausted the API allowance — do those wakes count toward the same budget, may they clear it, and when do you wake for them? And if one refusal were instead a secondary limit whose response names no resource and supplies no Retry-After, when would you arm that wake? (d) Suppose the unproductive wakes continue: what happens after the 8th, and may the watched PRs then be described as settled or finished?",
+      "expected_output": "Backoff doubling from 20m capped at 4h with the consecutive-unproductive-wake count written into the re-armed wake prompt; red CI resets the counter even with no repair budget; the two unreadable wakes count against the same single budget and cannot clear it, and are armed no earlier than the allowance reset or Retry-After — while a secondary-limit refusal supplying neither bound sets no floor, so that wake goes at the backoff's next step alone and still counts; stop after 8 unproductive wakes with a full report naming their kind and no settled/finished reading of the PRs.",
       "assertions": [
-        "The answer backs off (doubling from 20 minutes, capped at 4 hours) and stores the consecutive-no-op count in the re-armed wake's own prompt, because session memory does not survive between firings or across a compaction, so a counter kept there resets silently",
+        "The answer backs off (doubling from 20 minutes, capped at 4 hours) and stores the consecutive-unproductive-wake count in the re-armed wake's own prompt, because session memory does not survive between firings or across a compaction, so a counter kept there resets silently",
         "The answer resets the counter to zero on the red CI even though no repair budget remains — a change in durable state is a change observed, never a no-op",
-        "The answer stops re-arming after 8 consecutive no-ops and reports which watch stopped, on which PRs, after how many wakes, and what would restart it — and states the expired watch is a cost guard, so the PRs remain open items, never read as settled, merged, or finished"
+        "The answer counts the two unreadable wakes toward the same single budget as the no-ops rather than a separate throttle budget, and states they cannot clear it because a wake that read nothing observed no delta",
+        "The answer arms the wake for the throttled firings at or after the allowance reset (or a supplied Retry-After), taking that over the doubling backoff where it falls later",
+        "For the secondary-limit refusal that supplies neither a reset nor a Retry-After, the answer arms the wake at the backoff's next step alone — the deferral sets no floor — rather than leaving the wake unarmed, treating the watch as stopped, or inventing a separate wait",
+        "The answer stops re-arming after 8 consecutive unproductive wakes and reports which watch stopped, on which PRs, after how many wakes and of which kind, and what would restart it — and states the expired watch is a cost guard, so the PRs remain open items, never read as settled, merged, or finished"
       ],
       "files": []
     },
@@ -249,7 +252,7 @@
       "expected_output": "Refuses to drop the per-cycle state block, names its required contents including the session count and check-in state, and gives the leak-visibility and compaction-survival failures a closing-only emission cannot prevent.",
       "assertions": [
         "The answer refuses: emitting the state block is a required step of every supervision cycle, explicitly including the long one-PR supervision tail, not a convention or closing-only output",
-        "The answer names the block's required contents including the worker-session count (created / archived / alive) and the check-in state with its no-op count",
+        "The answer names the block's required contents including the worker-session count (created / archived / alive) and the check-in state with its unproductive-wake count",
         "The answer gives the two failures: a leaked session is visible mid-run only if the count is emitted each cycle (a closing-only emission reports it zero times if the run never cleanly closes), and per-cycle emission is what carries budgets/worker/PR state across a context compaction"
       ],
       "files": []
