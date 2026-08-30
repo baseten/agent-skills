@@ -631,7 +631,7 @@ Under Dynamic Workflows, provide these constraints to every workflow worker expl
 
 Prompt literalism cuts both ways. A prompt that omits a required default gets a worker that skips it; a prompt that omits a required **contradiction** gets a worker that follows whatever its own session already told it to do. A Claude Code Remote worker session inherits a system prompt instructing every session to subscribe to PR activity and to schedule a self check-in roughly an hour out, re-arming it silently until the PR merges. That instruction arrives with the runtime rather than from any skill this run dispatches, and it is correct for the sessions it was written for.
 
-So every dispatched prompt — implementation and repair alike — must state that this run owns PR supervision and the worker does not: do not subscribe to PR activity, do not schedule a check-in, trigger, routine or wake of any kind, and return after pushing and reporting, **even where the worker's own session instructions direct otherwise**. Name the override rather than merely stating the rule.
+So every dispatched prompt — implementation and repair alike — must state that this run owns PR supervision and the worker does not: do not subscribe to PR activity, do not schedule a check-in, trigger, routine or wake of any kind, **and do not read GitHub for CI, review, comment, thread, issue or merge state once its own write is done** — `create-pr`'s linkage verification is the last read a worker owes, and waiting inline for checks to go green is the same duplicate supervision as arming a wake, billed to the API allowance instead of the clock — and return after pushing and reporting, **even where the worker's own session instructions direct otherwise**. Name the override rather than merely stating the rule.
 
 **But put it where it can actually outrank what it countermands.** A dispatch prompt is a task instruction, and a task instruction is the weaker side of an argument with a session's own system prompt — telling a worker in its task to disregard its session instructions does not, by itself, make it do so. So on a runtime where this run *builds* the worker's session, write the countermand into that session's system prompt: `create_session` takes an `append_system_prompt` for exactly this purpose, and it is the only lever here that sits at the same level as the instruction it is answering. The dispatch prompt then restates it rather than carrying it alone.
 
@@ -696,6 +696,18 @@ A user who wants merges to happen without them has a designed path for it: the r
 
 Once an implementation worker reaches `PR_OPEN`, release that implementation worker — on a remote-session runtime that is an archive call, not merely ceasing to message it (see Releasing a worker). Long-lived PR supervision belongs to the parent/runtime orchestration layer.
 
+**One PR, one supervisor, and it is this run.** The lifecycle is:
+
+```text
+parent  -> dispatch implementation workers (a Dynamic Workflow only for this fan-out, only on the user's opt-in)
+worker  -> implement -> open PR -> report it back -> stop reading GitHub -> released
+parent  -> adopt the PR, arm its subscription, and own it from there:
+           react to delivered events, check in occasionally and consolidated,
+           and resume only the specific worker a change actually needs
+```
+
+A worker never supervises its own PR, and a Dynamic Workflow never supervises anything: it returns its fan-out results and supervision is the parent's from that moment (see Parent supervision loop). Never run two monitoring loops over one PR — the duplicate costs API budget on every pass and decides nothing the first pass did not.
+
 For every active PR track:
 
 ```text
@@ -714,6 +726,7 @@ review repair cycles used/remaining
 finding repair cycles used/remaining
 stack parent/children
 event subscription: armed/unavailable
+last read: <time> — event / poll / mutation by this run
 worker session: <session id, or none on tiers without one> — archived: yes/no
 ```
 
@@ -734,11 +747,30 @@ Prefer platform-native/promoted PR events (Claude Code's background PR watch beh
 - branch/head changes;
 - merge/close events.
 
-If those are unavailable, fall back to other event subscriptions, then bounded parent polling.
+If those are unavailable, fall back to other event subscriptions, then parent polling — bounded as the discipline below defines, since an undefined "bounded" is what a supervision loop reads as "every cycle, everything".
 
 The parent remains the **policy owner** even when the platform performs the observation. The platform may surface that CI failed or review feedback arrived; this skill decides whether budgets allow repair and what worker to dispatch.
 
 Do not keep one Sonnet worker alive per PR merely to wait.
+
+### API budget and read discipline
+
+The forge's API allowance is a run budget like worker slots or repair cycles, and the supervision loop is what exhausts it. It is also two budgets, not one: an observed run sat at **7/5000 REST and 10,447/5000 GraphQL** in the same hour — every graph-shaped read (PR state, checks, reviews, threads, comments) draws on the scarcer allowance, and the entire overrun was re-reading state the run already held. Nothing was learned by any of it.
+
+**Read on a change signal, not on a schedule.** An event already says what changed; re-reading to learn the same thing is the cost with no finding attached. Re-read a PR only when one of these holds: an event named it, this run just mutated it, its poll is due under the `unavailable` fallback, or a decision this cycle turns on a field the per-PR block does not carry. Otherwise the block **is** the answer — supervising is not re-deriving, and `last read` is what lets the next cycle tell the two apart. A PR waiting on CI or on an external reviewer is the ordinary case: once it is subscribed and waiting, it is read again when an event arrives or its check-in fires, and not before — that wait is where a loop with nothing else to do spends an allowance fastest.
+
+**One consolidated pass, not one per concern.** Where reads are due for several PRs, take them together, and take everything a cycle needs from a PR in one read rather than one read per question: CI, then reviews, then threads, then comments, then merge state is the same PR fetched five times, and it scales with the tranche. Later steps of the loop consume that pass's result rather than issuing reads of their own.
+
+**Cheapest read that settles the question.** A cycle is usually deciding one transition — did the head move, did checks conclude, did a thread appear. Fetch the small state that answers it, and expand into review threads, comment bodies or check logs only for the PR that actually moved. Pulling nested thread and check collections across the tracked set to discover that nothing changed is the single most expensive way to learn nothing.
+
+**Optimize total cost, not transport labels.** Where a targeted REST read and a broad GraphQL query answer the same question, take the targeted one; where one GraphQL query replaces five round trips, take the query. Transport precedence still decides which tier is allowed; this decides how much to ask of it.
+
+**A rate-limit signal stops nonessential reads until the reset.** On a rate-limit or secondary-limit response, or a remaining allowance too low to finish the cycle, stop nonessential reads and defer rather than retry — retrying into an exhausted allowance is what turns a throttled hour into a dead one, and it delays the reset it is waiting for. Finish writes already in flight, report the deferral, and let the next check-in resume.
+
+**Backoff is the same mechanism as the wake budget, not a second one.** A cycle that finds nothing is a signal to check less often, and *Arming the wait when nothing is in flight* already states the shape — consecutive no-ops, doubling interval, hard stop. Nothing here re-implements it; what this adds is that a cycle firing early and finding nothing still costs its reads, so the backoff is a budget guard as much as a cost one.
+
+**None of this may cost an actionable event.** The no-change preflight above is unchanged and outranks every rule here: a PR nothing is listening to is a blind spot whether or not the budget is tight, a due poll skipped to save calls is reported as unread rather than quiet, and a deferred cycle reports as known-stale. Fewer redundant reads, never less reliable supervision — the reads this cuts are the ones that were finding nothing.
+
 
 # CI/review repair
 
@@ -816,8 +848,8 @@ The main parent thread must remain active while mutating workers run or active P
 Each cycle performs real work:
 
 1. consume worker completions (including a Dynamic Workflow's returned fan-out results, if one was used), extracting each one's dependency evidence — unmet blockers, source disagreements, **and the resolutions that confirmed your view** — and **merging every posting-identity entry it returned into the run's transport-and-credential-keyed map** (see Posting identity), regardless of its outcome. Do this before releasing the worker: the worker's transports are not this run's, so its observations are the only evidence the run will ever have about them, and a released worker cannot be asked again;
-2. reconcile tracker + remote branches/PRs;
-3. consume/reconcile CI/review events;
+2. consume the events already delivered, then reconcile tracker + remote branches/PRs **only where this cycle has a reason to** — a PR an event named, a PR this run just mutated, a PR whose subscription is `unavailable` and whose deliberate poll is due — in one consolidated pass rather than a sweep of the tracked set (see API budget and read discipline);
+3. fold that pass into the per-PR blocks, stamping `last read`; a PR no event named and no poll was due for keeps the state it already had, and is neither re-fetched nor treated as unknown;
 4. update heads/budgets;
 5. dispatch repairs;
 6. recompute READY frontier;
@@ -862,7 +894,7 @@ This is not a licence to keep a loop warm, and the ban above is unchanged. A dur
 
 A merge someone else performed is a **frontier-advancing event**, not a terminal one: it is the thing that turns in-scope `BLOCKED` issues into READY work. Steps 6 and 7 of the loop above are how the run consumes it, and they stay reachable after the tranche settles. On every merge/close event:
 
-1. reconcile tracker + GitHub remote state, so readiness is recomputed from durable truth rather than cached run state;
+1. reconcile tracker + GitHub remote state, so readiness is recomputed from durable truth rather than cached run state — **once per batch of merge/close events, not once per event**, since a landing stack delivers one event per PR and reconciling on each re-reads the same graph as many times as the stack is deep;
 2. restack affected descendants exactly as today (see Stack mutation while PRs are open) — this step is unchanged;
 3. recompute the READY frontier over the **same bounded manifest**, crediting merges only (below). A merge never widens scope: an issue the invocation did not adopt does not become in-scope because something it depends on merged;
 4. if new nodes became READY, re-run the preflight over the bounded scope before dispatching — **at the mode the escalation rules select**, not shallow by default (see Escalating to deep validation) — then fill free worker slots in scheduling order. The preflight is not optional here: it is mandatory before **any** new implementation worker, the merge changed the graph the previous run validated, and this is the case that needs the escalation most (NOTES);
@@ -1294,7 +1326,7 @@ If only external CI/review remains and the runtime cannot safely stay active, re
 
 **Emit the state block at the end of every supervision cycle.** It is a required step of the parent supervision loop with a named actor and moment — this run, each cycle — not a convention that holds while the numbers are interesting. The observed failure is exactly that convention lapsing: runs printed the block mid-fan-out and stopped once they narrowed to a one-PR supervision tail, which is the long part of a run and the part a context compaction lands in — so both runs that leaked sessions reported their session count zero times (NOTES). Emitting each cycle is also what carries budgets, worker state and PR state across a compaction: a count that re-enters the transcript survives; one held in run memory does not.
 
-The block always carries: run budget, workers in flight by kind, worker sessions created / archived / alive, active PRs with CI and review state, repair budgets consumed, and the check-in state with its no-op count. For example:
+The block always carries: run budget, workers in flight by kind, worker sessions created / archived / alive, active PRs with CI and review state, repair budgets consumed, and the check-in state with its no-op count — plus, whenever reads were deferred under API budget and read discipline, which PRs went unread this cycle and when the allowance resets. For example:
 
 ```text
 Runtime: Dynamic Workflow
@@ -1307,6 +1339,7 @@ Repair workers: 1
 Worker sessions: 9 created / 8 archived / 1 alive (blocked on a prompt — see below)
 Active PRs: 7
 Check-in: armed (no-op 2/8, next in 80m)
+API budget: ok (reads deferred: none)
 Waiting CI/review: 4
 Unreviewed (trigger pending/unavailable): 0
 Unresolved review findings: 0
