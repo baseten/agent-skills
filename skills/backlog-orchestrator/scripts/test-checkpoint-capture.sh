@@ -177,6 +177,12 @@ setup case_ident feat/ident; ok=1
 mkdir -p "$d/nohome_ident"
 git -C "$d/wt" config user.name "Real Name"
 git -C "$d/wt" config --unset user.email 2>/dev/null || :
+# Without this git may invent user@hostname and succeed, so whether the
+# fallback fires at all would depend on whether the host's name resolves —
+# which is why this case passed locally and failed on a CI runner.
+# useConfigOnly forbids the guess, making the missing-email condition the same
+# everywhere.
+git -C "$d/wt" config user.useConfigOnly true
 if env -u GIT_AUTHOR_NAME -u GIT_AUTHOR_EMAIL \
        -u GIT_COMMITTER_NAME -u GIT_COMMITTER_EMAIL \
        HOME="$d/nohome_ident" XDG_CONFIG_HOME="$d/nohome_ident" \
