@@ -155,6 +155,45 @@ if "$SCRIPT" "$d/wt" feat/seven "$HEAD_SHA" "$d/paths" >/dev/null 2>&1; then
 fi
 report "non-ASCII pathname: capture succeeds (raw comparison, not C-quoted)" $ok
 
+# --- case 8: no ambient git identity (the container-with-unconfigured-git case)
+# The exports at the top of this file are stripped for this one invocation, and
+# HOME is pointed at an empty directory so no global config is found either.
+setup case8 feat/eight; ok=1
+mkdir -p "$d/nohome"
+if env -u GIT_AUTHOR_NAME -u GIT_AUTHOR_EMAIL \
+       -u GIT_COMMITTER_NAME -u GIT_COMMITTER_EMAIL \
+       HOME="$d/nohome" XDG_CONFIG_HOME="$d/nohome" \
+       "$SCRIPT" "$d/wt" feat/eight "$HEAD_SHA" "$d/paths" >/dev/null 2>&1; then
+  cap=$(git -C "$d/remote.git" rev-parse "refs/checkpoints/$(enc feat/eight)" 2>/dev/null)
+  files=$(git -C "$d/wt" diff-tree -r --name-only --no-commit-id "$HEAD_SHA" "$cap")
+  # capture still lands, and still only the owned path
+  [ -n "$cap" ] && [ "$files" = "owned.txt" ] && ok=0
+fi
+report "no ambient git identity: capture still lands (fallback committer)" $ok
+
+# --- case 10: partial identity — a configured name, no email ------------------
+# The real name must survive; only the missing address is synthesised.
+setup case_ident feat/ident; ok=1
+mkdir -p "$d/nohome_ident"
+git -C "$d/wt" config user.name "Real Name"
+git -C "$d/wt" config --unset user.email 2>/dev/null || :
+# Without this git may invent user@hostname and succeed, so whether the
+# fallback fires at all would depend on whether the host's name resolves —
+# which is why this case passed locally and failed on a CI runner.
+# useConfigOnly forbids the guess, making the missing-email condition the same
+# everywhere.
+git -C "$d/wt" config user.useConfigOnly true
+if env -u GIT_AUTHOR_NAME -u GIT_AUTHOR_EMAIL \
+       -u GIT_COMMITTER_NAME -u GIT_COMMITTER_EMAIL \
+       HOME="$d/nohome_ident" XDG_CONFIG_HOME="$d/nohome_ident" \
+       "$SCRIPT" "$d/wt" feat/ident "$HEAD_SHA" "$d/paths" >/dev/null 2>&1; then
+  cap=$(git -C "$d/remote.git" rev-parse "refs/checkpoints/$(enc feat/ident)" 2>/dev/null)
+  who=$(git -C "$d/remote.git" show -s --format='%cn|%ce' "$cap" 2>/dev/null)
+  # capture lands, configured name kept, only the address falls back
+  [ -n "$cap" ] && [ "$who" = "Real Name|backlog-orchestrator@invalid" ] && ok=0
+fi
+report "partial identity: configured name kept, missing email filled" $ok
+
 echo
 if [ "$FAILED" -eq 0 ]; then echo "ALL PASS ($PASS cases)"; exit 0
 else echo "$FAILED FAILED, $PASS passed"; exit 1; fi
