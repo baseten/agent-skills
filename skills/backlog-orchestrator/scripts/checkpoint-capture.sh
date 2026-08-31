@@ -86,16 +86,25 @@ tree=$(GIT_INDEX_FILE=$IDX git -C "$WORKTREE" write-tree) || fail
 # therefore lose the capture at exactly the moment work needs rescuing, so
 # supply a fallback rather than failing — never overriding an identity that is
 # already set, since a real one is more useful on the ref than a synthetic one.
-if ! git -C "$WORKTREE" var GIT_COMMITTER_IDENT >/dev/null 2>&1; then
-  GIT_COMMITTER_NAME=${GIT_COMMITTER_NAME:-backlog-orchestrator}
-  GIT_COMMITTER_EMAIL=${GIT_COMMITTER_EMAIL:-backlog-orchestrator@invalid}
-  export GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL
-fi
-if ! git -C "$WORKTREE" var GIT_AUTHOR_IDENT >/dev/null 2>&1; then
-  GIT_AUTHOR_NAME=${GIT_AUTHOR_NAME:-backlog-orchestrator}
-  GIT_AUTHOR_EMAIL=${GIT_AUTHOR_EMAIL:-backlog-orchestrator@invalid}
-  export GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL
-fi
+# Fill in only the components git cannot resolve. `git var` fails when the
+# identity is incomplete, so a config with user.name but no user.email would
+# otherwise have its real name replaced along with the missing address.
+fill_ident() { # $1 = AUTHOR|COMMITTER
+  eval "have_name=\${GIT_${1}_NAME:-}"
+  eval "have_email=\${GIT_${1}_EMAIL:-}"
+  if [ -z "$have_name" ]; then
+    have_name=$(git -C "$WORKTREE" config --get user.name 2>/dev/null) || have_name=
+    [ -n "$have_name" ] || have_name=backlog-orchestrator
+  fi
+  if [ -z "$have_email" ]; then
+    have_email=$(git -C "$WORKTREE" config --get user.email 2>/dev/null) || have_email=
+    [ -n "$have_email" ] || have_email=backlog-orchestrator@invalid
+  fi
+  eval "GIT_${1}_NAME=\$have_name; export GIT_${1}_NAME"
+  eval "GIT_${1}_EMAIL=\$have_email; export GIT_${1}_EMAIL"
+}
+git -C "$WORKTREE" var GIT_COMMITTER_IDENT >/dev/null 2>&1 || fill_ident COMMITTER
+git -C "$WORKTREE" var GIT_AUTHOR_IDENT >/dev/null 2>&1 || fill_ident AUTHOR
 
 commit=$(git -C "$WORKTREE" commit-tree "$tree" -p "$WORKER_HEAD" \
     -m "wip: parent checkpoint capture") || fail

@@ -171,6 +171,23 @@ if env -u GIT_AUTHOR_NAME -u GIT_AUTHOR_EMAIL \
 fi
 report "no ambient git identity: capture still lands (fallback committer)" $ok
 
+# --- case 10: partial identity — a configured name, no email ------------------
+# The real name must survive; only the missing address is synthesised.
+setup case_ident feat/ident; ok=1
+mkdir -p "$d/nohome_ident"
+git -C "$d/wt" config user.name "Real Name"
+git -C "$d/wt" config --unset user.email 2>/dev/null || :
+if env -u GIT_AUTHOR_NAME -u GIT_AUTHOR_EMAIL \
+       -u GIT_COMMITTER_NAME -u GIT_COMMITTER_EMAIL \
+       HOME="$d/nohome_ident" XDG_CONFIG_HOME="$d/nohome_ident" \
+       "$SCRIPT" "$d/wt" feat/ident "$HEAD_SHA" "$d/paths" >/dev/null 2>&1; then
+  cap=$(git -C "$d/remote.git" rev-parse "refs/checkpoints/$(enc feat/ident)" 2>/dev/null)
+  who=$(git -C "$d/remote.git" show -s --format='%cn|%ce' "$cap" 2>/dev/null)
+  # capture lands, configured name kept, only the address falls back
+  [ -n "$cap" ] && [ "$who" = "Real Name|backlog-orchestrator@invalid" ] && ok=0
+fi
+report "partial identity: configured name kept, missing email filled" $ok
+
 echo
 if [ "$FAILED" -eq 0 ]; then echo "ALL PASS ($PASS cases)"; exit 0
 else echo "$FAILED FAILED, $PASS passed"; exit 1; fi
