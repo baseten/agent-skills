@@ -180,9 +180,12 @@ def main() -> int:
     ap.add_argument("--strict", action="store_true", help="treat warnings as failures")
     args = ap.parse_args()
 
+    if not SKILLS.is_dir():
+        print(f"no skills/ directory beside this script ({ROOT})", file=sys.stderr)
+        return 2
     dirs = sorted(d for d in SKILLS.iterdir() if (d / "SKILL.md").exists())
     if not dirs:
-        print("no skills found — is this the repository root?", file=sys.stderr)
+        print("skills/ holds no directory with a SKILL.md", file=sys.stderr)
         return 2
 
     # Headings from every skill first: cross-references need the whole set.
