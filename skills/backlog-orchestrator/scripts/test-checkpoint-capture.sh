@@ -5,6 +5,18 @@
 # executing it). Exits 0 with "ALL PASS" only when every case passes.
 
 set -u
+
+# The harness passes an identity per command for its own commits, but
+# checkpoint-capture.sh builds its commit with `git commit-tree`, which reads
+# the ambient identity and fails without one. Export it here so the suite is
+# hermetic: without this it passes on any developer machine with a configured
+# git and fails 6 of 9 on a clean one — which is how CI found this.
+GIT_AUTHOR_NAME=checkpoint-test
+GIT_AUTHOR_EMAIL=checkpoint-test@invalid
+GIT_COMMITTER_NAME=checkpoint-test
+GIT_COMMITTER_EMAIL=checkpoint-test@invalid
+export GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL
+
 SCRIPT=$(cd "$(dirname "$0")" && pwd)/checkpoint-capture.sh
 TMP=$(mktemp -d) || exit 1
 trap 'rm -rf "$TMP"' EXIT

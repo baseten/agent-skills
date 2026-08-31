@@ -37,10 +37,51 @@ These read files from a personal machine (`~/Documents/version-control/ai-alex/.
 skills/           every directory with a SKILL.md ships
 permissions.json
 bootstrap.sh
+scripts/          repo-level checks (run in CI, runnable locally)
+.github/workflows/
 ```
 
 Adding a skill requires no change to `bootstrap.sh` — create a directory under
 `skills/` with a `SKILL.md` in it and the next bootstrap run installs it.
+
+## Checks
+
+`.github/workflows/checks.yml` runs on every pull request. Everything in it is
+deterministic — no model calls, no API key, no cost — and every check is
+runnable locally:
+
+```bash
+python3 scripts/check_skills.py                       # structure, schema, cross-references
+bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
+shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
+bash scripts/eval_reminder.sh origin/main             # advisory, never fails
+```
+
+`check_skills.py` catches what is decidable from the text: frontmatter that
+disagrees with its directory, an `evals.json` that no longer parses or has
+duplicate ids, and — the one worth having in a document this cross-referenced —
+a `(see Some Section)` or `` `other-skill`, *Some Section* `` pointer that
+resolves to no heading. A section can be cited by the first clause of a longer
+heading; anything else is an error, including a cross-reference naming a skill
+that does not exist.
+
+Contract and NOTES heading sets are kept separate, which matters more than it
+sounds: `NOTES.md` is keyed by the section names of `SKILL.md` by design —
+`backlog-orchestrator` shares 20 of its 21 — so a merged set would give almost
+every contract section a shadow heading, and renaming one in `SKILL.md` alone
+would leave its references resolving happily against `NOTES.md`. References
+inside `NOTES.md` resolve against both, since a note legitimately cites a
+contract section or one of its own.
+
+`eval_reminder.sh` names a skill whose `SKILL.md`/`NOTES.md` changed while its
+`evals/evals.json` did not. It is a warning and never a failure: it cannot know
+whether a change needs a scenario, only that nobody added one.
+
+**The eval scenarios themselves are deliberately not in CI.** They are
+model-graded, cost money per run, and are non-deterministic, so a required
+check built on them goes red on sampling noise and teaches everyone to override
+it. Run them on demand instead, per `skill-creator`, comparing against the
+previous text rather than against a fixed threshold.
 
 ## Permissions
 
