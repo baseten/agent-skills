@@ -81,6 +81,22 @@ done < "$PATHS_FILE"
 
 tree=$(GIT_INDEX_FILE=$IDX git -C "$WORKTREE" write-tree) || fail
 [ -n "$tree" ] || fail
+# commit-tree reads the author/committer identity from the environment and
+# config, and fails without one. A container with git unconfigured would
+# therefore lose the capture at exactly the moment work needs rescuing, so
+# supply a fallback rather than failing — never overriding an identity that is
+# already set, since a real one is more useful on the ref than a synthetic one.
+if ! git -C "$WORKTREE" var GIT_COMMITTER_IDENT >/dev/null 2>&1; then
+  GIT_COMMITTER_NAME=${GIT_COMMITTER_NAME:-backlog-orchestrator}
+  GIT_COMMITTER_EMAIL=${GIT_COMMITTER_EMAIL:-backlog-orchestrator@invalid}
+  export GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL
+fi
+if ! git -C "$WORKTREE" var GIT_AUTHOR_IDENT >/dev/null 2>&1; then
+  GIT_AUTHOR_NAME=${GIT_AUTHOR_NAME:-backlog-orchestrator}
+  GIT_AUTHOR_EMAIL=${GIT_AUTHOR_EMAIL:-backlog-orchestrator@invalid}
+  export GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL
+fi
+
 commit=$(git -C "$WORKTREE" commit-tree "$tree" -p "$WORKER_HEAD" \
     -m "wip: parent checkpoint capture") || fail
 [ -n "$commit" ] || fail
