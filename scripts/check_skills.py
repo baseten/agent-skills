@@ -105,8 +105,30 @@ def normalize(name: str) -> str:
     return name.strip().rstrip(".").strip()
 
 
-def check_references(skill: str, path: Path, text: str, all_headings: dict[str, set[str]]) -> None:
-    own = all_headings[skill]
+def check_references(
+    skill: str,
+    path: Path,
+    text: str,
+    contract: dict[str, set[str]],
+    notes: dict[str, set[str]],
+) -> None:
+    """Check every reference in one document.
+
+    Heading sets are kept per document rather than merged per skill. NOTES.md
+    is keyed by the section names of SKILL.md by design — backlog-orchestrator
+    shares 20 of its 21 NOTES headings — so a merged set gives almost every
+    contract section a shadow heading, and renaming one in SKILL.md alone would
+    leave its references resolving against NOTES. That is the drift this check
+    exists to catch.
+
+    A reference inside NOTES.md may legitimately name a contract section or one
+    of NOTES' own, so those resolve against both; everything else resolves
+    against the contract alone.
+    """
+    own = contract[skill]
+    if path.name == "NOTES.md":
+        own = own | notes.get(skill, set())
+
     for m in SEE_REF.finditer(text):
         target = normalize(m.group(1))
         if not target or (" " not in target and target.islower()):
@@ -118,12 +140,21 @@ def check_references(skill: str, path: Path, text: str, all_headings: dict[str, 
     for m in CROSS_REF.finditer(text):
         other, section = m.group(1), normalize(m.group(2))
         line = text[: m.start()].count("\n") + 1
-        if other == skill or other not in all_headings:
-            continue  # not a skill in this repo: a package name, a tool, a file
-        if not resolves(section, all_headings[other]):
+        if other == skill:
+            continue
+        if other not in contract:
+            # No legitimate non-skill reference of this shape exists in the
+            # repo, so silently skipping unknown names only hid misspelled,
+            # renamed and deleted targets.
             error(
                 f"{rel(path)}:{line}",
-                f'cross-reference `{other}`, *{section}* matches no heading in that skill',
+                f'cross-reference `{other}`, *{section}* names no skill in this repository',
+            )
+            continue
+        if not resolves(section, contract[other]):
+            error(
+                f"{rel(path)}:{line}",
+                f"cross-reference `{other}`, *{section}* matches no heading in that skill's SKILL.md",
             )
 
     if NOTES_REF.search(text) and not (path.parent / "NOTES.md").exists():
@@ -133,7 +164,9 @@ def check_references(skill: str, path: Path, text: str, all_headings: dict[str, 
 # --- per-skill checks -------------------------------------------------------
 
 
-def check_skill(d: Path, all_headings: dict[str, set[str]]) -> None:
+def check_skill(
+    d: Path, contract: dict[str, set[str]], notes: dict[str, set[str]]
+) -> None:
     name = d.name
     skill_md = d / "SKILL.md"
     text = skill_md.read_text(encoding="utf-8")
@@ -169,10 +202,12 @@ def check_skill(d: Path, all_headings: dict[str, set[str]]) -> None:
                         if not c.get(field):
                             error(rel(evals), f'eval "{label}" has no {field}')
 
-    check_references(name, skill_md, text, all_headings)
-    notes = d / "NOTES.md"
-    if notes.exists():
-        check_references(name, notes, notes.read_text(encoding="utf-8"), all_headings)
+    check_references(name, skill_md, text, contract, notes)
+    notes_md = d / "NOTES.md"
+    if notes_md.exists():
+        check_references(
+            name, notes_md, notes_md.read_text(encoding="utf-8"), contract, notes
+        )
 
 
 def main() -> int:
@@ -188,18 +223,18 @@ def main() -> int:
         print("skills/ holds no directory with a SKILL.md", file=sys.stderr)
         return 2
 
-    # Headings from every skill first: cross-references need the whole set.
-    all_headings: dict[str, set[str]] = {}
+    # Collect every skill's headings first: cross-references need them all.
+    # Contract and NOTES stay separate — see check_references.
+    contract: dict[str, set[str]] = {}
+    notes: dict[str, set[str]] = {}
     for d in dirs:
-        text = (d / "SKILL.md").read_text(encoding="utf-8")
-        hs = headings(text)
-        notes = d / "NOTES.md"
-        if notes.exists():
-            hs |= headings(notes.read_text(encoding="utf-8"))
-        all_headings[d.name] = hs
+        contract[d.name] = headings((d / "SKILL.md").read_text(encoding="utf-8"))
+        notes_md = d / "NOTES.md"
+        if notes_md.exists():
+            notes[d.name] = headings(notes_md.read_text(encoding="utf-8"))
 
     for d in dirs:
-        check_skill(d, all_headings)
+        check_skill(d, contract, notes)
 
     perms = ROOT / "permissions.json"
     if perms.exists():

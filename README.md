@@ -62,7 +62,16 @@ disagrees with its directory, an `evals.json` that no longer parses or has
 duplicate ids, and — the one worth having in a document this cross-referenced —
 a `(see Some Section)` or `` `other-skill`, *Some Section* `` pointer that
 resolves to no heading. A section can be cited by the first clause of a longer
-heading; anything else is an error.
+heading; anything else is an error, including a cross-reference naming a skill
+that does not exist.
+
+Contract and NOTES heading sets are kept separate, which matters more than it
+sounds: `NOTES.md` is keyed by the section names of `SKILL.md` by design —
+`backlog-orchestrator` shares 20 of its 21 — so a merged set would give almost
+every contract section a shadow heading, and renaming one in `SKILL.md` alone
+would leave its references resolving happily against `NOTES.md`. References
+inside `NOTES.md` resolve against both, since a note legitimately cites a
+contract section or one of its own.
 
 `eval_reminder.sh` names a skill whose `SKILL.md`/`NOTES.md` changed while its
 `evals/evals.json` did not. It is a warning and never a failure: it cannot know
