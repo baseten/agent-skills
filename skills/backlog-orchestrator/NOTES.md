@@ -2,6 +2,16 @@
 
 Companion to `SKILL.md`. That file is the contract; this one holds the reasoning and the incident history behind its rules, keyed by section. Read a section's note before changing its rules or when applying them to a case the contract doesn't obviously cover. Nothing here overrides the contract.
 
+## Remote worker session arguments
+
+**The incident behind passing the source explicitly (2026-08-30):** a run dispatched four workers through `create_session` with no `source_url`, relying on environment inheritance for the checkout as the section then advised. Three inherited one. The fourth had no `sources` key in its session record at all and no repository on disk — same environment, same call shape, same run. Passing `source_url` and `source_revision` fixed it immediately on redispatch. The defect is intermittent, which is why the wording survived long enough to be trusted: three-for-four looks like a working mechanism from inside a single run, and the fourth case looks like something the worker did.
+
+**Why the rule is dispatch-time verification rather than better supervision:** every signal after the create call reads identically with and without a checkout — success, `RUNNING`, a `task_summary` describing work. The worker sorts under *still working* — the one row of *Releasing a worker*'s three-state table handed to nobody — so no supervision cycle is wrong to leave it there. It was found at ~50 minutes, by a permission prompt for `find / -name "simulator.ts"` — the worker had been hunting the filesystem for the file its own dispatch prompt named. Nothing was pushed; the round was lost. The response signature is written into the contract because `sources` in the create response is the only place the two cases differ.
+
+**Why the permission-request branch of *Blocked workers* names this case:** read as a permission problem, it resolves to `NEEDS_USER` naming `find` — and allowlisting `find` buys the next worker a faster search of an empty container. The tool being requested is a symptom two steps downstream of the cause, and it is the only shape in which this failure ever announces itself.
+
+**And the guidance defect is not the runtime defect.** *Environment inheritance intermittently fails to populate `sources`, silently* is a runtime bug worth reporting upstream on its own. The contract change does not wait on it: passing the source explicitly is correct whether or not inheritance is ever fixed, and it is also what makes per-worker `outcome_branch` legal.
+
 ## Releasing a worker
 
 **Why the remote-session row needed writing down:** on two of the four tiers release *is* the absence of an action, so a reader generalizing from those reads "release the worker" as a remark about attention rather than an instruction — and on the tier a degraded run most often lands on, the same words name a real resource that then leaks silently. Nine finished worker sessions still holding containers after a run, found by the user in a session list rather than by the run in its own report, is what that reads like from outside.
@@ -194,6 +204,8 @@ One consequence is worth stating: a wake that could not read never clears the co
 ## Blocked workers
 
 **The observed incident:** a worker sat blocked for six hours on a prompt to delete a trigger, its PR long since merged, before a human found it in a session list. Its status field read a plain `IDLE` while a separate derived-state field read `BLOCKED`, with the pending tool named only in a third — the disagreement the read-the-right-field rule exists for.
+
+**Why the missing message channel is stated at tier level and not only inside the `AskUserQuestion` branch:** it was first written down as a property of being mid-prompt, which is where it was observed — and read that way it leaves step 2 looking available on the remote tier, so a parent holding a block it could genuinely clear with an instruction composes one and then finds there is nowhere to send it. `SendMessage` does not address remote CCR worker sessions in any state. `interrupt_session` does reach them, which is what makes the limitation easy to miss: something works, it just does not answer the question the worker stopped on. Every recovery on that tier is therefore archive-and-redispatch rather than redirect, and knowing that before a worker blocks is worth a cycle.
 
 ## Performing the renumber once a human decides
 
