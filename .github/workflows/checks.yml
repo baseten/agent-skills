@@ -1,0 +1,39 @@
+# Deterministic checks only: no model calls, no API key, no network beyond the
+# checkout. Everything here is decidable from the text or by running a test.
+#
+# What is deliberately NOT here: the eval scenarios under skills/*/evals/.
+# Those are model-graded and cost money per run, so they are non-deterministic
+# and unsuited to a required check — a gate that goes red on sampling noise
+# teaches people to override it. Run them on demand instead.
+name: checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Skill structure and cross-references
+        run: python3 scripts/check_skills.py
+
+      - name: Checkpoint capture tests
+        run: bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
+
+      - name: Shell scripts
+        run: shellcheck bootstrap.sh skills/*/scripts/*.sh
+
+      - name: Eval coverage reminder
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --quiet origin "${{ github.base_ref }}"
+          bash scripts/eval_reminder.sh "origin/${{ github.base_ref }}"
