@@ -29,8 +29,14 @@ jobs:
       - name: Checkpoint capture tests
         run: bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
 
+      # Warning-and-above deliberately. Info/style findings vary by shellcheck
+      # build — SC2015 is reported by 0.9.0 and 0.10.0 and not by 0.11.0 — so
+      # gating on them makes redness depend on whichever version the runner
+      # ships rather than on the change. The one info finding here
+      # (checkpoint-capture.sh's `A && B && C || { usage; }`) is intentional:
+      # any missing argument must reach the usage block.
       - name: Shell scripts
-        run: shellcheck bootstrap.sh skills/*/scripts/*.sh
+        run: shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
 
       - name: Eval coverage reminder
         if: github.event_name == 'pull_request'

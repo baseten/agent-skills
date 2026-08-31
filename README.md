@@ -53,7 +53,7 @@ runnable locally:
 ```bash
 python3 scripts/check_skills.py                       # structure, schema, cross-references
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
-shellcheck bootstrap.sh skills/*/scripts/*.sh
+shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
 bash scripts/eval_reminder.sh origin/main             # advisory, never fails
 ```
 
