@@ -119,6 +119,20 @@
         "the un-regenerable case is asked rather than declined",
         "names the deadlock: a reserved thread holding the merge gate with the walkthrough unable to clear it"
       ]
+    },
+    {
+      "id": 9,
+      "name": "regeneration-consults-the-rejected-draft-record",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: an owner invokes you. Discovery finds an unresolved review thread asking \"does the retry path handle a 429 differently from a 503?\" with no draft attached — and on that thread, a record from an earlier walkthrough marked as a **rejected draft**: the owner was offered the answer \"yes, 429 backs off on Retry-After and 503 uses the fixed ladder\" and discarded it without supplying a replacement. Questions: (a) is the question retired? (b) do you regenerate a draft, and what do you do with the record? (c) what if regeneration produces the same answer that was rejected? (d) what if you find new evidence that changes it? (e) does the item stay outstanding?",
+      "expected_output": "(a) No. A rejected draft is deliberately not a ruling — the already-ruled test turns on a record that supplies the answer or the choice, and a rejection supplies neither — so the question is still outstanding and the merge gate stays shut. (b) Read the thread's site for a rejected-draft record before regenerating, then regenerate. The record is what makes regeneration safe: without reading it, regeneration recreates the text the owner already discarded and offers it again on every run, forever, which is precisely what the record exists to prevent. (c) Do not offer it again. Put the question to the owner as still open, with no draft, naming the rejection. (d) Then it is materially different material and is offered as that — a different answer, or evidence that changes the one refused. (e) Yes, on either path.",
+      "assertions": [
+        "the question is not retired by the rejected-draft record",
+        "the rejected-draft record is read before regenerating",
+        "an identical regenerated answer is not offered again",
+        "the still-open question is surfaced without a draft when there is nothing new to say",
+        "materially different material is offered as such",
+        "the item stays outstanding on both paths"
+      ]
     }
   ]
 }

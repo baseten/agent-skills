@@ -185,11 +185,21 @@ def main() -> int:
         ("settle: a missing draft is not the homework test",
          "A missing draft is not that test" in st),
         ("settle regenerates a lost draft rather than declining it",
-         "regenerate the draft before applying" in st),
+         "then regenerate before applying this bullet" in flat(st)),
         ("bo names the draft as the enrichment a later walkthrough regenerates",
          "the draft reply attached to a reserved thread is exactly that"
          in bo.lower()),
         # Settle's two writes, and what retires a question.
+        # A rejected-draft record that nothing reads prevents nothing: draft
+        # regeneration is the one path that could recreate the discarded text.
+        ("settle reads the rejected-draft record before regenerating",
+         "read the thread's site for a rejected-draft record first" in flat(st)),
+        ("settle never re-offers a rejected draft",
+         "the same answer is not offered again" in flat(st)),
+        ("settle names regeneration as the consumer of the rejection record",
+         "Draft regeneration is what consumes this record" in flat(st)),
+        ("bo's regeneration pointer names the record too",
+         "reading any rejected-draft record there first" in flat(bo)),
         ("settle requires the approved answer text", "the approved or edited answer text itself" in st),
         ("settle zero-output keys on authored writes", "no authored write of any kind" in st),
     ]
