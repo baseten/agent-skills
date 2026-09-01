@@ -164,6 +164,7 @@ nothing. Return every supplied thread as its classification and nothing else:
 | Wants a code change | The thread with the change it asks for — **not applied**. The caller reports it as a deferred repair |
 | Wants an answer | A `NEEDS_USER` item with its draft reply, exactly as unattended |
 | Wants nothing | A no-action entry, exactly as unattended |
+| Wants both (*A comment can want both*) | Both entries for the one thread — the change unapplied as a deferred repair, and the question as a `NEEDS_USER` item with its draft. The thread is handled only once the caller has recorded both |
 
 **The mode has to be explicit, because this skill's default workflow pushes.**
 A caller that wants classification without repair and does not say so gets the
@@ -229,6 +230,30 @@ clarification, rationale, or intent, or acknowledging something — post a reply
 with an appropriate response but do **not** resolve the thread. Leave
 resolution to the user.
 
+### A comment can want both
+
+One comment can ask for a diff **and** for prose — *"add the null guard, and say
+why the shared helper is unsuitable here."* It is not a third thing to classify;
+it is both classifications at once, and it gets both treatments: **repair the
+change it asks for, and return the question as a `NEEDS_USER` item with its
+draft.** The thread is reserved, so it is **not resolved**, whatever was pushed
+for it.
+
+Forcing it into one classification fails in a different way each direction, and
+the repairable direction fails silently:
+
+| Read as | What happens |
+| --- | --- |
+| Repairable only | The fix lands and the thread is resolved with the rationale unanswered — and a resolved thread is not a reserved one, so the merge gate reads the review as clean over a question nobody answered. This is the outcome the reserved-thread rule exists to prevent, reached through the fix rather than around it |
+| `NEEDS_USER` only | A fix the pass could have made and verified is left undone, waiting on a person who was only ever asked for prose |
+
+So the resolution rule is unchanged and is what makes this safe: a thread is
+never resolved without an applied fix, **and a reserved thread is never resolved
+at all.** A mixed thread meets the first and fails the second, so the fix is
+pushed and the thread stays open for the owner. Reply reporting what changed if
+the mode permits a reply at all — that is a statement about work done, not an
+answer, and it must not be written as though it were one.
+
 **Judge that by what the comment asks for, not by whether it is phrased as a
 question.** "Could you add a null check here?" is a change request wearing a
 question mark: it is repairable, and routing it here on its punctuation would
@@ -253,7 +278,9 @@ answerable-from-work question nor a choice only the owner can make, so
 `settle-outstanding-decisions` cannot qualify it under its bar — the item is
 declined, the thread stays reserved, and it holds the merge gate with nothing
 able to clear it. A three-way split is what avoids that: **a diff, an answer, or
-nothing at all.**
+nothing at all** — three things a comment can want, not three boxes it must
+choose between. One comment can want the first two together (*A comment can want
+both*); what none of them can be is silently dropped.
 
 **Return no-action threads to the caller explicitly, one entry each.** Silence
 is not the same as no-action: an unattended caller's predicate re-groups any

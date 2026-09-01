@@ -41,6 +41,11 @@ def clause(text: str, anchor: str, span: int = 700) -> str:
     return "" if i < 0 else text[i : i + span].split("\n")[0]
 
 
+def flat(text: str) -> str:
+    """Whitespace-collapsed, for a phrase that may wrap across lines."""
+    return " ".join(text.split())
+
+
 def near(text: str, anchor: str, span: int = 300) -> str:
     """The window just after `anchor` — for a rule that must sit under a heading."""
     i = text.find(anchor)
@@ -88,6 +93,22 @@ def main() -> int:
         ("chain 3/4: repair-pr forwards no-action entries", "every thread classified no-action" in rp),
         ("chain 4/4: both orchestrators record no-action threads",
          "no-action thread it returned" in bo and "no-action thread it returned" in ii),
+        # A comment can want a diff and an answer at once. Repairable-only
+        # resolves the thread with the question unanswered, and the gate then
+        # reads the review as clean over it.
+        ("resolve-pr-comment handles a comment wanting both", "### A comment can want both" in rc),
+        ("the three-way split does not claim exclusivity",
+         "not three boxes it must choose between" in flat(rc)),
+        ("a mixed thread is repaired and still not resolved",
+         "a reserved thread is never resolved at all" in flat(rc)),
+        ("repair-pr excludes a mixed thread from NO_CODE_CHANGE",
+         "A mixed thread is not such a thread" in rp),
+        ("repair-pr Output keeps a mixed thread's NEEDS_USER entry",
+         "including a mixed thread this pass also pushed a fix for" in rp),
+        ("bo scopes never-auto-fixed to the part wanting an answer",
+         "for the part that wants an answer" in bo),
+        ("ii scopes never-repaired to the part wanting an answer",
+         "in the part that wants an answer" in ii),
         # A budget-deferred repair is not a question, so it carries no draft:
         # a draft is defined only for the two question shapes.
         ("repair-pr: budget-deferred item is a distinct kind with no draft",

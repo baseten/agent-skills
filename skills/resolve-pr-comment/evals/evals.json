@@ -114,6 +114,20 @@
         "states that the caller skipping its own steps does not constrain this skill",
         "names the explicit classify-only mode as what prevents the callee pushing and exceeding the caller's repair cap"
       ]
+    },
+    {
+      "id": 9,
+      "name": "a-comment-wanting-both-is-repaired-and-reserved",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invoked you unattended with one thread whose single comment reads \"add the null guard here, and explain why the shared helper is unsuitable for this path.\" The null guard is a two-line change you can make and verify. Questions: (a) which classification does it get? (b) do you apply and push the guard? (c) do you resolve the thread? (d) may you reply at all, and what may the reply say? (e) what goes wrong if you classify it repairable only, and what goes wrong if you classify it NEEDS_USER only?",
+      "expected_output": "(a) Both. A comment can want a diff and prose at once; that is not a third classification but both at once, and it gets both treatments. (b) Yes \u2014 apply, verify and push the null guard; it is work the pass can do and there is no reason to defer it. (c) No. The thread is reserved, and a reserved thread is never resolved, whatever was pushed for it. The resolution rule has two halves and a mixed thread meets the first (never resolve without an applied fix) and fails the second. (d) A reply reporting what changed is a statement about work done, not an answer, so it is permitted where the mode permits any reply \u2014 but it must not be written as though it answered the rationale question. The question comes back as a NEEDS_USER item with its draft, unposted. (e) Repairable only: the fix lands, the thread is resolved, the rationale is unanswered, and because a resolved thread is not a reserved one the merge gate reads the review as clean over a question nobody answered \u2014 the failure the reserved-thread rule exists to prevent, reached through the fix rather than around it. NEEDS_USER only: a fix the pass could have made and verified is left undone, waiting on a person who was only ever asked for prose.",
+      "assertions": [
+        "the comment is classified as both repairable and NEEDS_USER, not forced into one",
+        "the null guard is applied and pushed",
+        "the thread is not resolved",
+        "the rationale question comes back as a NEEDS_USER item with a draft that is not posted",
+        "names the silent failure of the repairable-only reading: the gate reads the review as clean over an unanswered question",
+        "names the cost of the NEEDS_USER-only reading: a verifiable fix left undone"
+      ]
     }
   ]
 }
