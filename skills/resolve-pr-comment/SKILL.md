@@ -234,20 +234,26 @@ resolution to the user.
 
 One comment can ask for a diff **and** for prose — *"add the null guard, and say
 why the shared helper is unsuitable here."* It is not a third thing to classify;
-it is both classifications at once, and it gets both treatments. The change is
-repaired either way; **what differs is the prose half, and it differs exactly as
-it does for a question standing alone** — this section adds a case to the
-classification, not an exception to the mode rules:
+it is both classifications at once, and it gets both treatments. **This section
+adds a case to the classification and no exception to any mode rule** — each half
+is handled exactly as that half is handled on its own, which is what keeps this
+from contradicting the modes above:
+
+- the **change** is repaired wherever a change request is repaired, and is
+  therefore *not* repaired under a classify-only invocation, where it comes back
+  as a deferred repair instead (*Classify-only invocations*);
+- the **prose** follows the attended/unattended split:
 
 | Mode | The prose half |
 | --- | --- |
+| Classify-only | Not answered and not drafted-and-posted: a question item with its draft, returned alongside the deferred repair as the second of two entries for the one thread |
 | Attended | Post the substantive answer in the thread, as the rule above gives for any query. The person is present and asked for it; withholding it here because the same comment also asked for a diff answers nobody |
 | Unattended (*Unattended callers*) | Do not answer it. Return the question as a `NEEDS_USER` item with its draft, and reply only to report what changed if the mode permits a reply at all — a statement about work done, never written as though it answered the question |
 
-**Neither mode resolves the thread.** Attended, resolution of a query thread is
-the user's; unattended, the thread is reserved and a reserved thread is never
-resolved. So a mixed comment never closes on a pushed fix, whichever mode
-handled it.
+**No mode resolves the thread.** Attended, resolution of a query thread is the
+user's; unattended, the thread is reserved and a reserved thread is never
+resolved; classify-only resolves nothing at all. So a mixed comment never closes
+on a pushed fix, whichever mode handled it.
 
 Forcing it into one classification fails in a different way each direction, and
 the repairable direction fails silently:

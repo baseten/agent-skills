@@ -116,11 +116,15 @@ def main() -> int:
         # The mixed rule adds a classification case, not an exception to the
         # attended/unattended split: attended still answers in the thread.
         ("mixed comments follow the mode split for the prose half",
-         "not an exception to the mode rules" in flat(rc)),
+         "no exception to any mode rule" in flat(rc)),
         ("attended posts the substantive answer on a mixed comment",
          "Post the substantive answer in the thread" in rc),
-        ("neither mode resolves a mixed thread",
-         "Neither mode resolves the thread" in flat(rc)),
+        ("no mode resolves a mixed thread",
+         "No mode resolves the thread" in flat(rc)),
+        ("the mixed rule's repair half is scoped away from classify-only",
+         "not* repaired under a classify-only invocation" in flat(rc)),
+        ("repair-pr's mixed-round outcome is scoped by budget",
+         "what follows from that depends on the budget" in flat(rp)),
         ("bo scopes never-auto-fixed to the part wanting an answer",
          "for the part that wants an answer" in bo),
         ("ii scopes never-repaired to the part wanting an answer",
