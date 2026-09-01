@@ -1405,7 +1405,7 @@ API budget: ok (reads deferred: none)
 Waiting CI/review: 4
 Unreviewed (trigger pending/unavailable): 0
 Unresolved review findings: 0
-Review threads reserved for the owner: 1
+Review threads reserved for the owner: 1 (acme/api#41 thread r90210: "drop or dead-letter failed webhooks?" — decision-only draft attached)
 Drafts explicitly held: 1
 Repo policy: acme/api: config (auto-merge on); acme/site: defaults
 Posting identity: (github-mcp, tok-a1b2) -> baseten (invoking user); (linear-cli, tok-c3d4) -> unestablished
