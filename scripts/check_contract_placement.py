@@ -92,6 +92,10 @@ def main() -> int:
         # a draft is defined only for the two question shapes.
         ("repair-pr: budget-deferred item is a distinct kind with no draft",
          "deferred-repair item" in rp and "no draft" in rp),
+        # repair-pr's own Output is a consumer site too: the caller only ever
+        # sees what this bullet says to return.
+        ("repair-pr Output splits NEEDS_USER entries by item kind",
+         "no draft" in clause(rp, "- **every thread classified `NEEDS_USER`**", 3000)),
         ("bo records deferred-repair items without a draft", "deferred-repair item" in bo),
         ("ii records deferred-repair items without a draft", "deferred-repair item" in ii),
         # The callee's own workflow pushes, so a caller skipping its own
@@ -179,6 +183,9 @@ def main() -> int:
                    "**The `allow` list holds tool-name rules only" in readme))
     checks.append(("deny depth ceiling is where the README says it is",
                    not denied("git push -vvvvvvvvvf origin main")))
+    checks.append(("README states what dropping the shell rules costs outside auto mode",
+                   "### What dropping the shell rules costs outside auto mode" in readme
+                   and "loses them on its next" in readme))
     checks.append(("README documents all three deny residuals",
                    "Three residuals are left in on purpose" in readme
                    and "git push -unvvvvvvvvvf" in readme

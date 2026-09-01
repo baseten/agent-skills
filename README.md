@@ -125,11 +125,40 @@ never did anything there:
 | Removed | Why |
 | --- | --- |
 | `Agent` | Auto mode drops `Agent` allow rules on entry |
-| All `Bash(...)` entries | Wildcarded interpreters and package-manager run commands are dropped; the rest duplicate what auto mode already allows |
+| All `Bash(...)` entries | Wildcarded interpreters and package-manager run commands are dropped; the rest duplicate what auto mode already allows — **in auto mode**, which is the qualifier the next section is about |
 
 Dropping the shell rules also retires the injection surface documented below:
 a tool-name rule admits no trailing arguments, so there is nothing for a flag to
 ride in on.
+
+### What dropping the shell rules costs outside auto mode
+
+In **Manual** and `acceptEdits` no classifier reviews anything, so there the
+shell rules were not redundant — they were the entire grant. Removing them means
+a local session in one of those modes now prompts for routine `git`/`gh` work it
+used to run straight through, and **an existing install loses them on its next
+`bootstrap.sh` run**, because the sidecar subtracts retired entries by design
+(*`permissions.json` is a managed set*). An unattended run in one of those modes
+stops at the first prompt.
+
+That cost is accepted rather than overlooked, and the asymmetry with the deny
+list — kept *because* Manual mode exists, while allow is dropped *despite* it —
+is the deliberate part: **a deny rule cannot be exploited by an argument riding a
+prefix, and an allow rule can.** A `Bash(...)` allow rule ending in `*` admits
+arbitrary trailing flags, and `git` and `gh` are full of flags that name a
+command to run or a file to read (*What this allowlist is, and is not*, which
+lists what five review rounds found). So deny buys a guard in every mode at no
+exposure, while allow bought a saved classifier round-trip in the one mode these
+skills actually run in and carried that surface into every other.
+
+If you do run them locally in Manual or `acceptEdits`, there are three
+non-interactive paths and none of them is this file:
+
+| Option | Note |
+| --- | --- |
+| Run in auto mode | What cloud containers do, and where the classifier already permits this work |
+| Add the shell rules to your own `~/.claude/settings.json` by hand | Bootstrap **keeps** hand-added entries — with no install record they are indistinguishable from a deliberate edit, so they are never subtracted |
+| Managed settings | Route (2) below, if an organization wants them for everyone |
 
 ### Where to install it
 
