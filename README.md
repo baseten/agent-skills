@@ -144,6 +144,56 @@ ride in on.
    across every scope rather than overriding, so a repo copy adds nothing that
    the union does not already contain.
 
+### Verifying the rules are live in a container
+
+`/permissions` does not exist in a cloud session, which is the one place this
+question matters. Use a behavioural probe instead: call **`CronCreate`** with a
+harmless one-shot job, then `CronDelete` it.
+
+```
+CronCreate  cron: "43 3 24 12 *"  prompt: "probe"  recurring: false
+CronDelete  id: <returned id>
+```
+
+`CronCreate` is the right probe because it refuses to approve itself under auto
+mode — its own hook returns `passthrough`, which the pipeline converts to `ask`.
+So if the job is scheduled with no prompt, a whole-tool allow rule matched, and
+the only file in a bootstrapped container that supplies one is
+`~/.claude/settings.json`. If instead a permission prompt appears, the rules are
+not reaching the session.
+
+Confirmed working this way on Claude Code v2.1.252 in a cloud container: the
+session's diagnostics log (`$CLAUDE_CODE_DIAGNOSTICS_FILE`) reports
+`settings_load_completed` with `source_count: 4, error_count: 0`, and the probe
+schedules without prompting.
+
+**The documentation is easy to misread here.** *Settings in cloud sessions* lists
+user settings (`~/.claude/settings.json`) as "not read". That is about *your
+machine's* copy not being uploaded — the same table says the same of
+`~/.claude/skills/`, which bootstrap populates and which demonstrably loads. A
+file written inside the container is a live scope.
+
+### Do we still need the deny list?
+
+Yes, and it is the one part of this file not to cut. Auto mode's classifier
+already blocks most of what it names — force push, `git reset --hard`,
+`git clean -fd`, amending a pushed commit — but it blocks them *in auto mode*.
+A `deny` rule binds in **every** mode, which is what makes it worth keeping for
+local runs in Manual or `acceptEdits`, where no classifier reviews anything.
+
+The entries are also anchored as substrings rather than prefixes, which closes
+gaps a prefix-anchored form leaves open — `git push origin master --force`,
+`git push origin master -f` and `git push origin +HEAD:master` all evade a rule
+anchored at `git push --force`. Each is spaced so it cannot swallow
+`--force-with-lease`, which the stacked-PR restack needs.
+
+Two things deliberately **not** denied:
+
+| Not denied | Why |
+| --- | --- |
+| `git push --delete` / `git push origin :branch` | Branch deletion is something these skills legitimately do; it was an `allow` entry here before. It now reaches the classifier, which is the right treatment |
+| `git commit --amend` | Auto mode's handling is more precise than a blanket deny: it permits a message-only reword of a commit created in this session and blocks amending anything pushed |
+
 One admin key to know about: `allowManagedPermissionRulesOnly: true` makes
 Claude Code ignore every non-managed permission rule, including everything
 `bootstrap.sh` installs. If an organization sets it, route (2) is the only one
@@ -305,9 +355,13 @@ Invoking the skill is itself the authorization to dispatch workers, so a session
 
 ## Per-repository policy
 
-A repository can tune `backlog-orchestrator` for its own PRs with `.claude/backlog-orchestrator.json` — the same defaults the skill documents (concurrency, budgets, repair cycles, `auto-request-settle`) plus two review/merge policies: `auto-merge`, whether the invariant 12 merge gate may open at all (a gate-authorized merge publishes a still-draft PR as a step of merging it — a merge never happens on a draft — and never touches an explicitly held draft), and `auto-fix-reviewers`, bounding whose review comments the run may auto-fix and resolve — `true` (the default) for every reviewer, `false` for none, or a list of vetted logins where the author must be both a bot per the GitHub API and on the list. The invoking user's feedback is always actionable when it roots a review thread, whatever `auto-fix-reviewers` resolves to — their comment directs the run — while timeline comments are conversation, and the run never opens review threads on a PR it drives, so its own output can never qualify as feedback. Policy resolves **per PR, from the repository that PR lives in**, so a run spanning a personal and a work repository applies each repo's own rules within the same tranche. The file is owner-authored configuration: it is read at preflight from the repository state the run started from, never from anything a worker wrote mid-run, and a malformed file fails closed, reported rather than guessed at — to the built-in defaults, except `auto-fix-reviewers`, which a present-but-unusable file or a wrong-typed value resolves to `false` rather than to its permissive default. An invocation argument overrides any key except `auto-merge`, which it can switch off but never on — the repository's opt-in is the only route to a merge. That one grant covers every consumer of the key, `implement-issue` included, so a file committed before a consumer could merge authorizes it once the skills are reinstalled: the permission is scoped to the invariant 12 gate rather than to the skill evaluating it, every consumer defers to that gate for all of its conditions, and splitting the key per consumer would gate which skill opened the PR rather than any difference in risk. `auto-merge: false` is how an owner declines autonomous merging outright. The resolved policy is reported per PR in the checkpoint output.
+A repository can tune `backlog-orchestrator` for its own PRs with `.claude/backlog-orchestrator.json` — the same defaults the skill documents (concurrency, budgets, repair cycles, `auto-request-settle`) plus one permission: `auto-merge`, whether the invariant 12 merge gate may open at all (a gate-authorized merge publishes a still-draft PR as a step of merging it — a merge never happens on a draft — and never touches an explicitly held draft). The file is entirely optional and absence is the common case.
 
-`implement-issue` runs the same settle sequence over its single PR — summary, then the decision walkthrough while `auto-request-settle` is on, then the merge gate, with `plan-merge-order` deliberately skipped because one PR has no ordering to rank — and reads the same file for the one PR it supervises — the budgets, `auto-fix-reviewers` and `auto-merge`, on the semantics `backlog-orchestrator` defines and does not duplicate — so a repository's policy governs a single-issue run as much as a tranche. Its run-level keys have no single-issue meaning and are ignored. A caller that already resolved policy passes it down and suppresses the child's own read, so the parent's preflight read stays the run's policy rather than being re-derived later against a file that may have moved. The file keeps its `backlog-orchestrator` name now that two skills read it.
+**There is no reviewer-identity option, and a repository needs no file to get safe review behaviour.** What the run may auto-fix is decided by the comment, not its author: a thread asking for a code change the pass can make and verify is repaired, whoever rooted it; a thread needing intent, design, rationale or a decision is `NEEDS_USER` — reserved for the owner, never answered on the run's own authority, and holding the merge gate shut. An `auto-fix-reviewers` key used to gate this on the author, tested against a vetted bot allowlist. It was removed rather than re-defaulted, because author identity is a poor proxy for the only thing that matters: automated reviewers raise design questions no run should answer, and human reviewers file one-line nits any run can fix, so the key erred in both directions at once. The kind test the repair path already applied was doing the real work.
+
+Policy resolves **per PR, from the repository that PR lives in**, so a run spanning a personal and a work repository applies each repo's own rules within the same tranche. The file is owner-authored configuration: it is read at preflight from the repository state the run started from, never from anything a worker wrote mid-run, and a malformed file fails closed, reported rather than guessed at. An invocation argument overrides any key except `auto-merge`, which it can switch off but never on — the repository's opt-in is the only route to a merge. That one grant covers every consumer of the key, `implement-issue` included, so a file committed before a consumer could merge authorizes it once the skills are reinstalled: the permission is scoped to the invariant 12 gate rather than to the skill evaluating it, every consumer defers to that gate for all of its conditions, and splitting the key per consumer would gate which skill opened the PR rather than any difference in risk. `auto-merge: false` is how an owner declines autonomous merging outright. The resolved policy is reported per PR in the checkpoint output.
+
+`implement-issue` runs the same settle sequence over its single PR — summary, then the decision walkthrough while `auto-request-settle` is on, then the merge gate, with `plan-merge-order` deliberately skipped because one PR has no ordering to rank — and reads the same file for the one PR it supervises — the budgets and `auto-merge`, on the semantics `backlog-orchestrator` defines and does not duplicate — so a repository's policy governs a single-issue run as much as a tranche. Its run-level keys have no single-issue meaning and are ignored. A caller that already resolved policy passes it down and suppresses the child's own read, so the parent's preflight read stays the run's policy rather than being re-derived later against a file that may have moved. The file keeps its `backlog-orchestrator` name now that two skills read it.
 
 ## Recovery model
 

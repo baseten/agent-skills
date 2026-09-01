@@ -89,6 +89,12 @@
     "Bash(git push --force)",
     "Bash(git push --mirror*)",
     "Bash(git push -f*)",
-    "Bash(git reset --hard*)"
+    "Bash(git push* -f *)",
+    "Bash(git push* -f)",
+    "Bash(git push*+*)",
+    "Bash(git push*--force *)",
+    "Bash(git push*--force)",
+    "Bash(git reset --hard*)",
+    "mcp__github__delete_file"
   ]
 }
