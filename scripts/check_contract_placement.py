@@ -59,6 +59,13 @@ def main() -> int:
         ("ii predicate: handled is reserved or no-action", "reserved or no-action" in ii_pred),
         ("bo predicate: new-content exception", "new content has arrived on it since" in bo_pred),
         ("ii predicate: new-content exception", "new content has arrived on it since" in ii_pred),
+        # A settlement record posted into a reserved thread is this workflow
+        # answering it, not a reviewer follow-up. Without this, answering a
+        # thread re-opens it and the answer is re-escalated forever.
+        ("bo predicate: settlement records are not new content",
+         "a write this workflow did not author" in bo_pred),
+        ("ii predicate: settlement records are not new content",
+         "a write this workflow did not author" in ii_pred),
         # Classification is dispatchable with the repair budget spent.
         ("bo dispatch ungates classification",
          "gates repairing, not classifying" in clause(bo, "2. allocate an isolated checkout")),
@@ -106,6 +113,10 @@ def main() -> int:
         "git push -unvf origin main", "git push -unvvf origin HEAD:main",
         "git push -unvvvvvf origin main", "git push origin +HEAD:master",
         "git push -u origin +feat:main", "git reset --hard HEAD~1", "git clean -fdx",
+        # Bundles must be caught in any option position, not only the first.
+        "git push -q -uf origin main", "git push -v -unvf origin main",
+        "git push --tags -uf origin main", "git push origin master --force",
+        "git push origin master -f",
     ]
     # Every entry here is a command that a previous version of this file broke.
     must_allow = [
@@ -114,6 +125,8 @@ def main() -> int:
         "git push -u origin my-branch-f", "git push -u origin claude/fix-auth-conf",
         "git push -u origin feature+metrics", "git push origin release+rc1",
         "git push origin hotfix", "git push -u origin perf main", "git push -n origin main",
+        "git push origin feature--force", "git push -u origin my-f",
+        "git push origin feat --force-with-lease",
     ]
     for c in must_deny:
         checks.append((f"deny: {c}", denied(c)))

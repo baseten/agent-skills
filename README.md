@@ -194,10 +194,15 @@ and cannot match a second leading dash, so `--force-with-lease` and an ordinary
 Because fnmatch has no bounded repetition, the bundle length is enumerated
 rather than expressed — eight classes, so `-unvvvvvf` is covered. That ceiling
 is real and is the honest shape of the constraint, not a claim of completeness.
+Each entry is anchored on a whitespace-delimited `-` rather than on the start of
+the command, so a bundle is caught wherever it sits: `git push -q -uf origin main`
+is a force push and an entry anchored at `git push -` never sees it.
 
-The `+`-refspec entry is likewise anchored to a whitespace-delimited `+` rather
-than matching `+` anywhere in the command: an unanchored version denies a push
-to a branch named `feature+metrics`, which `git check-ref-format` accepts.
+The `+`-refspec and `--force` entries are likewise anchored to whitespace-delimited
+option tokens rather than matching the substring anywhere: unanchored versions
+deny a push to a branch named `feature+metrics` or `feature--force`, both of which
+`git check-ref-format` accepts, while `--force` also has to be anchored on its
+*right* so it cannot swallow `--force-with-lease`.
 
 The full matrix is asserted by `scripts/check_contract_placement.py` and runs in
 CI, rather than being reasoned about in prose. Every must-allow case in it is a
