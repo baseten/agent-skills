@@ -88,30 +88,66 @@ previous text rather than against a fixed threshold.
 `permissions.json` is merged into `~/.claude/settings.json` by `bootstrap.sh`, so
 a skill run does not stop on a prompt for a call the skill is expected to make.
 
-### Install it in your repositories too, not only via bootstrap
+**The file holds tool-name rules only — no `Bash(...)` entries.** That is the
+whole design now, and it follows from how auto mode treats each kind of rule.
 
-**Do both.** They fix different halves of the problem and neither covers the
-other.
+### Why the tool-name entries are load-bearing under auto mode
 
-1. **Per repository — the durable half.** Copy this file into the repo's own
-   `.claude/settings.json`, wrapped in a `permissions` key:
+Cloud containers and most Pro/Max/Team sessions start in **auto mode**, where a
+classifier reviews actions instead of the user. Auto mode already permits the
+ordinary work these skills do — local file operations, dependency installs,
+`git` and `gh` against the session's own repository, pushing to any branch of it,
+opening a PR that matches the request — so shell allow rules for that work buy
+nothing but a saved classifier round-trip.
 
-   ```json
-   { "permissions": { "allow": [ ... ], "deny": [ ... ] } }
-   ```
+The tool-name entries are different, because several tools **decline to approve
+themselves in auto mode**. Their own permission hook returns `passthrough` with
+a message such as *"Scheduling a cron prompt requires classifier review"*, and
+the permission pipeline converts an unresolved `passthrough` into **`ask`**. In
+an unattended fan-out an `ask` is a deadlock, not a delay.
 
-   Add that repo's own check commands (its test, lint, format and typecheck
-   entrypoints) to `allow` while you are there — those are repo-specific and
-   cannot ship from here. Commit it. It is version-controlled, reviewable in a
-   diff, and applies to every session in that repo whether or not `bootstrap.sh`
-   ever ran.
+A matched whole-tool allow rule is evaluated **before** that conversion, so the
+rule is what keeps the tool from asking. The only tools that ignore a whole-tool
+allow rule declare `ignoresWholeToolAllowRule`, and none of the tools listed here
+do. So every entry in this file is doing real work, and removing one reintroduces
+a stop.
 
-2. **Per container — the convenience half.** `bootstrap.sh` writes
-   `~/.claude/settings.json`, which is a live settings scope and genuinely does
-   apply. But `~/.claude` is per-container and disappears with it, so it only
-   helps sessions where bootstrap actually ran.
+Two entries were removed for the opposite reason — auto mode drops them, so they
+never did anything there:
 
-The two scopes merge, and `deny` wins over `allow` in either.
+| Removed | Why |
+| --- | --- |
+| `Agent` | Auto mode drops `Agent` allow rules on entry |
+| All `Bash(...)` entries | Wildcarded interpreters and package-manager run commands are dropped; the rest duplicate what auto mode already allows |
+
+Dropping the shell rules also retires the injection surface documented below:
+a tool-name rule admits no trailing arguments, so there is nothing for a flag to
+ride in on.
+
+### Where to install it
+
+1. **Per container — the working default.** `bootstrap.sh` writes
+   `~/.claude/settings.json`. Claude Code watches its settings files and reloads
+   `permissions` edits into a running session, so a bootstrap that finishes after
+   the session starts still applies. `~/.claude` is per-container and disappears
+   with it.
+2. **Org-wide — the durable option.** An Owner or Primary Owner can paste the
+   same `permissions.allow` into **Managed settings** at
+   [claude.ai/admin-settings/claude-code](https://claude.ai/admin-settings/claude-code).
+   Server-managed settings are the *only* managed channel that reaches cloud
+   sessions — an MDM profile or a device `managed-settings.json` does not — and
+   they sit at the highest precedence tier. This needs no per-repo file and no
+   bootstrap write.
+3. **Per repository — usually unnecessary.** Committing these entries to a
+   repo's `.claude/settings.json` works, but it puts agent configuration in a
+   shared repo for no gain over (1) or (2). Permission allow/deny lists **merge**
+   across every scope rather than overriding, so a repo copy adds nothing that
+   the union does not already contain.
+
+One admin key to know about: `allowManagedPermissionRulesOnly: true` makes
+Claude Code ignore every non-managed permission rule, including everything
+`bootstrap.sh` installs. If an organization sets it, route (2) is the only one
+that works, and route (1) fails silently.
 
 ### `permissions.json` is a managed set
 
@@ -152,6 +188,10 @@ matters.
 into one.** Do not reason about it as though a hostile or prompt-injected agent
 is contained by it — it isn't, by construction rather than by oversight.
 
+This file no longer carries `Bash(...)` rules, which removes the sharpest edge
+of that statement — the history below is kept because it is the reason the rules
+went, and because anyone tempted to add one back needs it.
+
 Permission rules are **prefix matches**, so any rule ending in `*` admits
 arbitrary trailing arguments. `git` and `gh` are both full of flags that name a
 command to run or a file to read, and those flags simply ride along after
@@ -165,8 +205,8 @@ whatever prefix is granted. Five rounds of automated review found:
 | `Bash(git fetch*)` / `Bash(git push*)` | local shell, via `--upload-pack=` / `--receive-pack=` against a `.` remote |
 | `Bash(gh api*)` | reads a local file and publishes it, via `-F key=@<path>` |
 
-Each was removed or replaced with a wildcard-free form. Those were cheap fixes
-for capabilities nothing needed, and they should stay.
+Each was removed or replaced with a wildcard-free form, and the whole class is
+now gone from this file.
 
 The fifth round is the one that settles the question. `Bash(git commit*)` and
 `Bash(git push)` are each safe in isolation — the second takes no arguments at
@@ -180,8 +220,14 @@ broad enough to exfiltrate a file. Narrowing relocates the hole; it does not
 remove it. The controls that actually hold are elsewhere — container isolation,
 credential scoping, egress policy, and what the token can reach.
 
+Auto mode is now the layer doing that work for shell commands, which is why the
+`Bash(...)` rules could go rather than be narrowed a sixth time. It is not a
+boundary either, but it is a reviewer, and a reviewer beats a prefix match.
+
 Judge additions to this file by "does a skill need this to run without
-prompting", not by "is this safe to grant an adversary".
+prompting, and does auto mode not already allow it", not by "is this safe to
+grant an adversary". A `Bash(...)` entry should now be an argued exception with a
+named tool that stopped, not a default.
 
 ### Two things that are easy to get wrong
 
