@@ -22,6 +22,7 @@ This file is the contract; the reasoning behind its rules lives in `NOTES.md` be
 - Never implement unrelated backlog scope; never merge the PR.
 - Never wait for the next CI/review event, **and never delegate the wait** — no scheduled check-in, trigger, or PR-activity subscription: the caller supervises this PR, and a wake armed here outlives the pass that armed it (NOTES).
 - One invocation consumes at most one repair cycle.
+- **A supplied remaining repair-cycle budget of zero makes this a classify-only invocation, and that is enforced here rather than by the caller.** Callers dispatch a review round with the budget spent on purpose — an unclassified thread has no draft, and the settlement path needs one to clear the merge gate — so this skill must honour the zero rather than treat the dispatch as authorization to repair. Classify and draft every supplied thread; **make no correction, run no verification, commit nothing and push nothing**; return `NO_CODE_CHANGE` and consume no cycle. Every thread that would have been repairable comes back as a `NEEDS_USER` item **on budget grounds** — say so in the item, because that is a different reason from the kind test and the caller reports them differently. Nothing is resolved either: a thread is never resolved without an applied fix (`resolve-pr-comment`), and there is none. Without this branch the cap does not bind at all: steps 3-5 below would push, the caller would count and retrigger that push, and rounds would continue past the configured limit.
 - Every authored forge write this pass makes — directly or through `resolve-pr-comment` — follows the posting-identity rule (`backlog-orchestrator`, *Posting identity*). Select the author from **the caller's map entry for this pass's own selected `(transport, credential)` pair** — `unestablished` where the map carries no such pair — never from an entry for a pair this pass is not writing under; pass that selection into `resolve-pr-comment` (NOTES). The Output read-back still happens and is what the caller merges.
 - A supplied failure/comment requiring product or architecture judgment → return `NEEDS_USER`, never guess.
 - Never select or escalate your own model. A pass that judges itself under-powered reports the locus evidence (Output) and returns (NOTES).
@@ -42,9 +43,9 @@ Never chase multiple unrelated failures speculatively in one cycle unless they s
 
 1. group the supplied actionable comments forming one coherent review round;
 2. invoke `resolve-pr-comment` for every supplied thread, in unattended mode, so each is classified and a thread needing a human comes back as a `NEEDS_USER` item with its draft rather than being answered (`resolve-pr-comment`, *Unattended callers*). **Invoke it even where the whole round looks like questions** — the caller dispatches such rounds precisely to get them classified and drafted, so returning early without invoking it defeats the dispatch. Where every supplied thread classifies `NEEDS_USER`, there is nothing to fix: push nothing, return `NO_CODE_CHANGE` with the items and their drafts, and consume no cycle;
-3. make only the requested/in-scope corrections;
-4. run relevant local verification;
-5. commit/push once for the coherent round where practical;
+3. make only the requested/in-scope corrections — **skipped entirely on a classify-only invocation** (zero remaining budget, above);
+4. run relevant local verification — same;
+5. commit/push once for the coherent round where practical — same, and there is nothing to push;
 6. verify required replies/thread resolutions were performed;
 7. count the actionable review threads still unresolved on the PR — **including any outside the round supplied to this invocation** — and report the number;
 8. return immediately.

@@ -74,7 +74,8 @@
         "names the failure mode: approving an option-only draft records a ruling that chose nothing, which the already-ruled test then retires",
         "the recorded ruling for the decision-only thread is the chosen option, not an approval of the options list",
         "rulings are recorded as replies on their threads",
-        "the undrafted, evidence-gatherable question is still treated as homework"
+        "the undrafted, evidence-gatherable question is still treated as homework",
+        "applies the draft-kind split wherever the item is presented, not only where the qualification bar states it"
       ],
       "files": []
     }

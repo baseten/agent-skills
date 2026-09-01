@@ -69,6 +69,20 @@
         "reports the escalation even though the pass pushed a fix and CI is green",
         "does not post the draft anywhere"
       ]
+    },
+    {
+      "id": 6,
+      "name": "zero-budget-invocation-is-classify-only",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review. The caller dispatched you with a remaining repair-cycle budget of **zero** \u2014 it did so deliberately, because an unclassified thread has no draft and its settlement path needs one. The supplied round has two threads: one asks you to rename a misleading variable (a straightforward code change you could make in a minute), the other asks why a caching strategy was chosen. Questions: (a) do you make and push the rename? (b) what do you return for each thread? (c) do you resolve either thread? (d) is a cycle consumed?",
+      "expected_output": "(a) No. A zero remaining budget makes this a classify-only invocation, and that is enforced here rather than by the caller: the dispatch is not authorization to repair. Classify and draft both threads; make no correction, run no verification, commit nothing, push nothing. (b) Both come back as NEEDS_USER items with drafts. The rename is NEEDS_USER **on budget grounds** \u2014 stated as such in the item, because that is a different reason from the kind test and the caller reports them differently; the caching question is NEEDS_USER on the kind test. (c) Neither: a thread is never resolved without an applied fix, and there is none. (d) No cycle is consumed, and the outcome is NO_CODE_CHANGE. Pushing the rename here would mean the cap does not bind at all \u2014 the caller would count and retrigger the push and rounds would continue past the configured limit.",
+      "assertions": [
+        "does not make, commit or push the rename despite it being trivially repairable",
+        "still classifies and drafts both threads",
+        "the rename returns as NEEDS_USER on budget grounds, distinguished from the kind test",
+        "neither thread is resolved, because no fix was applied",
+        "returns NO_CODE_CHANGE and consumes no cycle",
+        "names the consequence of pushing anyway: the configured cap would not bind"
+      ]
     }
   ]
 }
