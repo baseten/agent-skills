@@ -120,7 +120,7 @@ On unhandled feedback — a thread rooting on the diff, not authored by this run
 5. wait event-driven;
 6. budget exhausted → `NEEDS_USER` for what remains repairable, having still classified and drafted the rest.
 
-A pass that returns `NO_CODE_CHANGE` — every thread in the round classified `NEEDS_USER`, nothing to fix — consumes no review cycle, and its items and drafts are recorded exactly as a pushing pass's are. Never derive the classification or write the draft here instead of dispatching: `resolve-pr-comment` owns both, and a round this skill triaged as question-only and never dispatched would be reserved with no draft.
+A pass that returns `NO_CODE_CHANGE` — the classification left it no repair to make, whether the round was questions, acknowledgements or any mix of them (`repair-pr`, *Review repair (`repair type = review`)*, step 2) — consumes no review cycle, and its items and drafts are recorded exactly as a pushing pass's are. Never derive the classification or write the draft here instead of dispatching: `resolve-pr-comment` owns both, and a round this skill triaged as question-only and never dispatched would be reserved with no draft.
 
 ## Draft state
 

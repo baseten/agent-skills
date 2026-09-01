@@ -95,6 +95,20 @@
         "the mixed thread at zero budget yields NO_CODE_CHANGE and consumes no cycle",
         "the mixed-thread rule is not read as an unconditional push"
       ]
+    },
+    {
+      "id": 7,
+      "name": "acknowledgements-only-round-returns-no-code-change",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review, with **two of three review cycles still remaining** \u2014 the budget is not the constraint. The caller dispatched a round of three threads and all three read \"nice catch\", \"thanks, this looks good\" and \"agreed\". Questions: (a) what outcome do you return? (b) do you run the correction, verification and commit steps? (c) is a cycle consumed? (d) what do you return for the three threads? (e) the early-return rule you are applying \u2014 is it about the threads all being NEEDS_USER?",
+      "expected_output": "(a) NO_CODE_CHANGE. (b) No \u2014 there is nothing to correct, so pushing nothing is the outcome, not a fall-through: running the commit step with no change either fails or manufactures an empty commit, and the cycle accounting would be undefined. (c) No cycle. (d) Three no-action entries, one per thread, each with its thread URL and why it wants nothing and no draft \u2014 forwarding them is what marks them handled, and an unforwarded acknowledgement is re-dispatched every cycle since a pass like this consumes none. (e) No. The test is the **absence of repair work**, not the presence of a particular kind: questions qualify, acknowledgements qualify, any mix qualifies. Reading it as every-thread-is-NEEDS_USER is what left this round with no defined outcome.",
+      "assertions": [
+        "returns NO_CODE_CHANGE for a round of only acknowledgements, with budget remaining",
+        "does not run the correction, verification or commit steps",
+        "no repair cycle is consumed",
+        "all three threads are forwarded as no-action entries rather than omitted",
+        "states the early-return test as the absence of repair work rather than as all threads being NEEDS_USER",
+        "names the empty-commit or undefined-outcome failure of falling through"
+      ]
     }
   ]
 }
