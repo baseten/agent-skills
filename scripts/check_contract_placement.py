@@ -116,6 +116,16 @@ def main() -> int:
          "no draft" in clause(ii, "- review threads reserved for the owner", 2000)),
         ("ii checkpoint template splits by item kind",
          "no draft" in clause(ii, "Threads reserved for the owner: <count>")),
+        # A draft lives only in a run report, which is a cache. Absent after a
+        # restart it must not read as work nobody did, or the walkthrough the
+        # owner ran to clear the thread declines the one item it could clear.
+        ("settle: a missing draft is not the homework test",
+         "A missing draft is not that test" in st),
+        ("settle regenerates a lost draft rather than declining it",
+         "regenerate the draft before applying" in st),
+        ("bo names the draft as the enrichment a later walkthrough regenerates",
+         "the draft reply attached to a reserved thread is exactly that"
+         in bo.lower()),
         # Settle's two writes, and what retires a question.
         ("settle requires the approved answer text", "the approved or edited answer text itself" in st),
         ("settle zero-output keys on authored writes", "no authored write of any kind" in st),

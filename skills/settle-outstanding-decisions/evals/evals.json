@@ -105,6 +105,20 @@
         "the edited text is posted rather than the original draft"
       ],
       "files": []
+    },
+    {
+      "id": 8,
+      "name": "a-lost-draft-is-not-homework",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: an owner invokes you directly, days after an orchestrator run settled on a scheduled wake and declined the walkthrough. Discovery finds an unresolved review thread on an open PR asking \"does the retry path handle a 429 differently from a 503?\" — a question the codebase answers. The run that escalated it produced a draft reply with the evidence, but that draft lived in the run's closing report and is gone. Questions: (a) is this homework? (b) what do you do before applying the qualification bar? (c) what if the draft cannot be regenerated at all? (d) what is the failure if you decline it?",
+      "expected_output": "(a) No. Homework is a question nobody has done the work on — the run could have answered it and did not. A missing draft is not that test: a draft lives only in a run's report, which invariant 1 classifies as a cache, so a thread discovered after the escalating run is gone arrives with its draft lost rather than never produced. (b) Regenerate it: read the thread and the code around it and classify it as resolve-pr-comment would. Reading is collection, which this skill does — not action, which it does not. Then apply the bar, which on an answerable-from-work draft means the carve-out: ask it as an approval (approve, edit, or discard) and record the approved or edited answer text itself as a reply on the thread. (c) Ask the question with what is known rather than declining it — an unanswerable-here question is still the owner's to answer. (d) The deadlock the carve-out exists to prevent, arriving by a different route: the thread stays reserved, its NEEDS_USER item goes on holding the merge gate, and the walkthrough the owner ran specifically to clear it declined the one item it could have cleared.",
+      "assertions": [
+        "the question is not classified as homework despite the codebase answering it",
+        "the draft is regenerated from the thread and the surrounding code before the bar is applied",
+        "regenerating is identified as collection rather than action, so it does not breach the no-act constraint",
+        "names the run report as a cache, so the draft was lost rather than never produced",
+        "the un-regenerable case is asked rather than declined",
+        "names the deadlock: a reserved thread holding the merge gate with the walkthrough unable to clear it"
+      ]
     }
   ]
 }
