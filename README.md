@@ -52,6 +52,7 @@ runnable locally:
 
 ```bash
 python3 scripts/check_skills.py                       # structure, schema, cross-references
+python3 scripts/check_contract_placement.py           # rules at their decision points, deny matrix
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
 bash scripts/eval_reminder.sh origin/main             # advisory, never fails
@@ -190,13 +191,22 @@ also matches `git push -u origin ref`** and denies every push to a ref ending in
 and cannot match a second leading dash, so `--force-with-lease` and an ordinary
 `-u` push both stay allowed.
 
-The full matrix is asserted in the repo's placement check rather than reasoned
-about — including the refs that broke the first attempt (`ref`, `wip-perf`,
-`my-branch-f`). **One residual is left uncovered on purpose:** options written
-*after* the refspec (`git push origin -uf`) are not matched, because every
-pattern that catches them also denies a legitimate push to some ref. That is the
-prefix-match arms race this section is about; auto mode's classifier is the
-control that actually covers it.
+Because fnmatch has no bounded repetition, the bundle length is enumerated
+rather than expressed — eight classes, so `-unvvvvvf` is covered. That ceiling
+is real and is the honest shape of the constraint, not a claim of completeness.
+
+The `+`-refspec entry is likewise anchored to a whitespace-delimited `+` rather
+than matching `+` anywhere in the command: an unanchored version denies a push
+to a branch named `feature+metrics`, which `git check-ref-format` accepts.
+
+The full matrix is asserted by `scripts/check_contract_placement.py` and runs in
+CI, rather than being reasoned about in prose. Every must-allow case in it is a
+command some earlier version of this file broke. **Two residuals are left
+uncovered on purpose:** options written *after* the refspec
+(`git push origin -uf`), because every pattern that catches them also denies a
+legitimate push to some ref; and option bundles longer than the enumerated
+depth. That is the prefix-match arms race this section is about; auto mode's
+classifier is the control that actually covers both.
 
 The entries are also anchored as substrings rather than prefixes, which closes
 gaps a prefix-anchored form leaves open — `git push origin master --force`,
