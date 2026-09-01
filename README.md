@@ -89,8 +89,14 @@ previous text rather than against a fixed threshold.
 `permissions.json` is merged into `~/.claude/settings.json` by `bootstrap.sh`, so
 a skill run does not stop on a prompt for a call the skill is expected to make.
 
-**The file holds tool-name rules only — no `Bash(...)` entries.** That is the
-whole design now, and it follows from how auto mode treats each kind of rule.
+**The `allow` list holds tool-name rules only — no `Bash(...)` entries.** That is
+the whole design now, and it follows from how auto mode treats each kind of rule.
+
+`deny` is the deliberate exception and keeps its `Bash(...)` entries: a deny rule
+binds in every permission mode, which is the one thing auto mode does not give,
+so the reasoning below about dropping shell rules applies to `allow` alone. See
+*Do we still need the deny list?* — the two sections describe opposite halves of
+the same file and neither licenses editing the other.
 
 ### Why the tool-name entries are load-bearing under auto mode
 

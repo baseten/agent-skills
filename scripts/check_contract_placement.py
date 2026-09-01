@@ -82,6 +82,12 @@ def main() -> int:
         ("chain 3/4: repair-pr forwards no-action entries", "every thread classified no-action" in rp),
         ("chain 4/4: both orchestrators record no-action threads",
          "no-action thread it returned" in bo and "no-action thread it returned" in ii),
+        # A budget-deferred repair is not a question, so it carries no draft:
+        # a draft is defined only for the two question shapes.
+        ("repair-pr: budget-deferred item is a distinct kind with no draft",
+         "deferred-repair item" in rp and "no draft" in rp),
+        ("bo records deferred-repair items without a draft", "deferred-repair item" in bo),
+        ("ii records deferred-repair items without a draft", "deferred-repair item" in ii),
         # Settle's two writes, and what retires a question.
         ("settle requires the approved answer text", "the approved or edited answer text itself" in st),
         ("settle zero-output keys on authored writes", "no authored write of any kind" in st),
@@ -132,6 +138,17 @@ def main() -> int:
         checks.append((f"deny: {c}", denied(c)))
     for c in must_allow:
         checks.append((f"allow: {c}", not denied(c)))
+
+    # The README's "tool-name rules only" claim is about `allow`. Assert that it
+    # stays true of `allow` and that `deny` is not silently emptied to match it.
+    perms = json.loads((ROOT / "permissions.json").read_text())
+    readme = (ROOT / "README.md").read_text()
+    checks.append(("allow list has no Bash entries",
+                   not any(e.startswith("Bash(") for e in perms["allow"])))
+    checks.append(("deny list still has Bash entries",
+                   any(e.startswith("Bash(") for e in perms["deny"])))
+    checks.append(("README scopes the tool-name claim to the allow list",
+                   "**The `allow` list holds tool-name rules only" in readme))
 
     failures = [name for name, ok in checks if not ok]
     for name, ok in checks:
