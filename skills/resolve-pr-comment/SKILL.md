@@ -60,6 +60,8 @@ Explain the batching decision before touching any files.
 
 ### 3. Apply the fix(es)
 
+**Skipped entirely on a classify-only invocation** (below), along with steps 4-6.
+
 - Make the minimal change needed to address each comment.
 - Do not refactor, clean up, or change anything not mentioned in the comment.
 - Check this repo's contribution doc (`CLAUDE.md`/`AGENTS.md`) for pre-commit
@@ -146,6 +148,30 @@ open. A reply the run composes on its own authority is an answer nobody
 authorised: the question was addressed to a person, and a plausible-sounding
 guess in their voice is worse than silence, because the reviewer reads it as the
 owner's answer and stops asking.
+
+### Classify-only invocations
+
+A caller may invoke this skill to **classify and draft only**. It says so by
+passing a classify-only context; `repair-pr` passes it whenever its remaining
+repair budget is zero (`repair-pr`, *Review repair (`repair type = review`)*, step 2).
+
+In that mode **steps 3-6 of the workflow do not run**: make no correction, run
+no verification, commit nothing, push nothing, reply to nothing and resolve
+nothing. Return every supplied thread as its classification and nothing else:
+
+| Classification | Returned as |
+| --- | --- |
+| Wants a code change | The thread with the change it asks for — **not applied**. The caller reports it as a deferred repair |
+| Wants an answer | A `NEEDS_USER` item with its draft reply, exactly as unattended |
+| Wants nothing | A no-action entry, exactly as unattended |
+
+**The mode has to be explicit, because this skill's default workflow pushes.**
+A caller that wants classification without repair and does not say so gets the
+mutation workflow anyway — the first branch above applies, commits and pushes a
+fix. That is how a caller's repair cap is exceeded by the callee: `repair-pr`
+skipping its own steps 3-5 constrains `repair-pr`, not the skill it invoked
+(`repair-pr`, *Review repair (`repair type = review`)*, step 2 states the same
+requirement from the caller's side).
 
 ### The draft reply
 

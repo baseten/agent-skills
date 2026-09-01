@@ -198,8 +198,12 @@ and cannot match a second leading dash, so `--force-with-lease` and an ordinary
 `-u` push both stay allowed.
 
 Because fnmatch has no bounded repetition, the bundle length is enumerated
-rather than expressed — eight classes, so `-unvvvvvf` is covered. That ceiling
-is real and is the honest shape of the constraint, not a claim of completeness.
+rather than expressed — **eight classes, so eight option letters before the `f`
+are covered and the ninth is not**: `git push -unvvvvvvf` is denied,
+`git push -unvvvvvvvf` is not. That ceiling is real and is the honest shape of
+the constraint, not a claim of completeness. `check_contract_placement.py`
+asserts both sides of it, so this number and the shipped patterns cannot drift
+apart: extending the depth means updating this sentence in the same commit.
 Each entry is anchored on a whitespace-delimited `-` rather than on the start of
 the command, so a bundle is caught wherever it sits: `git push -q -uf origin main`
 is a force push and an entry anchored at `git push -` never sees it.
@@ -212,12 +216,30 @@ deny a push to a branch named `feature+metrics` or `feature--force`, both of whi
 
 The full matrix is asserted by `scripts/check_contract_placement.py` and runs in
 CI, rather than being reasoned about in prose. Every must-allow case in it is a
-command some earlier version of this file broke. **Two residuals are left
-uncovered on purpose:** options written *after* the refspec
-(`git push origin -uf`), because every pattern that catches them also denies a
-legitimate push to some ref; and option bundles longer than the enumerated
-depth. That is the prefix-match arms race this section is about; auto mode's
-classifier is the control that actually covers both.
+command some earlier version of this file broke, and the enumerated depth is
+asserted at its edge so the boundary below is a tested fact rather than a claim.
+
+**Three residuals are left in on purpose. None is fixable in the rule language,
+and each is the cheaper side of a trade:**
+
+| Residual | Why it stays |
+| --- | --- |
+| Options written *after* the refspec — `git push origin -uf` | Every pattern that catches them also denies a legitimate push to some ref |
+| Option bundles longer than the enumerated depth — `git push -unvvvvvvvvvf` | fnmatch has no bounded repetition and `*` spans spaces, so "an option token containing `f`" cannot be written; only enumerated. Extending the depth moves the ceiling and cannot remove it |
+| A remote whose name begins with `+` — `git push +prod HEAD:main` | The refspec entry cannot tell argument position, because `*` spans spaces. A false positive on a remote name git allows and nobody uses, versus covering `git push origin +HEAD:master`, which is a force push someone writes by accident |
+
+The first two are gaps and the third is a false positive, but they are the same
+constraint seen from both sides: a glob matcher cannot see token boundaries or
+argument positions, so every rule is either too narrow at some length or too
+wide at some position.
+
+**What the gaps are not is a bypass worth closing.** This list guards against an
+*accident* — a force push someone or something writes without meaning to — and
+against accidents the enumerated depth is complete: nobody types
+`-unvvvvvvvvvf` by mistake. Against an adversary it was never a control at all
+(*What this allowlist is, and is not*), and a longer enumeration would not make
+it one, because a shell offers unbounded ways to write the same flag. Auto
+mode's classifier is the control that covers both cases.
 
 The entries are also anchored as substrings rather than prefixes, which closes
 gaps a prefix-anchored form leaves open — `git push origin master --force`,

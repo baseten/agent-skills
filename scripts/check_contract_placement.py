@@ -41,6 +41,12 @@ def clause(text: str, anchor: str, span: int = 700) -> str:
     return "" if i < 0 else text[i : i + span].split("\n")[0]
 
 
+def near(text: str, anchor: str, span: int = 300) -> str:
+    """The window just after `anchor` — for a rule that must sit under a heading."""
+    i = text.find(anchor)
+    return "" if i < 0 else text[i : i + span]
+
+
 def main() -> int:
     bo = skill("backlog-orchestrator")
     ii = skill("implement-issue")
@@ -88,6 +94,24 @@ def main() -> int:
          "deferred-repair item" in rp and "no draft" in rp),
         ("bo records deferred-repair items without a draft", "deferred-repair item" in bo),
         ("ii records deferred-repair items without a draft", "deferred-repair item" in ii),
+        # The callee's own workflow pushes, so a caller skipping its own
+        # mutation steps does not constrain it. Only an explicit mode does.
+        ("resolve-pr-comment has a classify-only mode", "### Classify-only invocations" in rc),
+        ("classify-only gates the resolver's apply step at the step itself",
+         "classify-only invocation" in near(rc, "### 3. Apply the fix(es)")),
+        ("repair-pr passes classify-only into the resolver, not just to itself",
+         "classify-only** mode where the remaining budget is zero"
+         in clause(rp, "2. invoke `resolve-pr-comment`")),
+        # A deferred repair carries no draft, so every site that reports a
+        # reserved thread must split by kind or the case is unsatisfiable.
+        ("bo reserved-thread report splits by item kind",
+         "no draft" in clause(bo, "A thread classified `NEEDS_USER` is **reserved", 3000)),
+        ("ii reserved-thread definition splits by item kind",
+         "no draft" in clause(ii, "- A `NEEDS_USER` thread is **reserved", 3000)),
+        ("ii structured result splits by item kind",
+         "no draft" in clause(ii, "- review threads reserved for the owner", 2000)),
+        ("ii checkpoint template splits by item kind",
+         "no draft" in clause(ii, "Threads reserved for the owner: <count>")),
         # Settle's two writes, and what retires a question.
         ("settle requires the approved answer text", "the approved or edited answer text itself" in st),
         ("settle zero-output keys on authored writes", "no authored write of any kind" in st),
@@ -134,6 +158,10 @@ def main() -> int:
         "git push origin feature--force", "git push -u origin my-f",
         "git push origin feat --force-with-lease",
     ]
+    # The enumerated depth. fnmatch has no bounded repetition, so the ceiling
+    # cannot be removed — only stated. Assert where it actually falls, and that
+    # the README documents it, so it stops being an unnoticed hole.
+    must_deny.append("git push -vvvvvvvvf origin main")  # 8 letters: the last covered
     for c in must_deny:
         checks.append((f"deny: {c}", denied(c)))
     for c in must_allow:
@@ -149,6 +177,12 @@ def main() -> int:
                    any(e.startswith("Bash(") for e in perms["deny"])))
     checks.append(("README scopes the tool-name claim to the allow list",
                    "**The `allow` list holds tool-name rules only" in readme))
+    checks.append(("deny depth ceiling is where the README says it is",
+                   not denied("git push -vvvvvvvvvf origin main")))
+    checks.append(("README documents all three deny residuals",
+                   "Three residuals are left in on purpose" in readme
+                   and "git push -unvvvvvvvvvf" in readme
+                   and "git push +prod HEAD:main" in readme))
 
     failures = [name for name, ok in checks if not ok]
     for name, ok in checks:

@@ -99,6 +99,21 @@
         "the acknowledgement is returned as an explicit no-action entry rather than omitted from the output",
         "names the unbounded re-dispatch loop that omitting it would cause"
       ]
+    },
+    {
+      "id": 8,
+      "name": "classify-only-invocation-does-not-push",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invoked you with an unattended context and an explicit classify-only context, supplying three threads: (1) 'this off-by-one should be `<=`' \u2014 a one-line fix you can see is correct, (2) 'why did you pick optimistic locking here?', (3) 'nice, thanks'. Questions: (a) do you apply, commit and push the fix for thread 1? (b) what do you return for each of the three? (c) do you reply to or resolve any of them? (d) the caller told you it is skipping its own correction and push steps \u2014 is that on its own enough to stop you fixing thread 1, and why does the mode have to be passed explicitly?",
+      "expected_output": "(a) No. In classify-only mode workflow steps 3-6 do not run: no correction, no verification, nothing committed, nothing pushed. (b) Thread 1 comes back as the thread with the change it asks for, unapplied \u2014 the caller reports it as a deferred repair, and it carries no draft. Thread 2 comes back as a NEEDS_USER item with its draft reply (answerable from the work, or an owner's choice with no pick, per The draft reply); the draft is never posted. Thread 3 wants neither a diff nor an answer, so it comes back as an explicit no-action entry \u2014 not NEEDS_USER, since escalating an acknowledgement leaves it holding the merge gate with nothing able to clear it, and not silence either, since an unrecorded thread is re-dispatched on every supervision cycle. (c) No: reply to nothing, resolve nothing. A thread is never resolved without an applied fix, and a question is never resolved at all. (d) No, not on its own. The caller skipping its own steps constrains the caller, not this skill \u2014 this skill's default workflow applies, commits and pushes, so absent an explicit classify-only mode it would push the thread-1 fix and exceed the caller's repair cap. The mode is the only thing that binds the callee.",
+      "assertions": [
+        "no fix is applied, committed or pushed for the off-by-one thread",
+        "nothing is replied to and no thread is resolved",
+        "the off-by-one thread is returned as the change it asks for, unapplied, with no draft",
+        "the rationale question is returned as a NEEDS_USER item with a draft that is not posted",
+        "the acknowledgement is returned as an explicit no-action entry",
+        "states that the caller skipping its own steps does not constrain this skill",
+        "names the explicit classify-only mode as what prevents the callee pushing and exceeding the caller's repair cap"
+      ]
     }
   ]
 }

@@ -309,7 +309,8 @@
         "gives the reason as classification and draft creation needing the pass's context, owned by resolve-pr-comment",
         "the NO_CODE_CHANGE pass consumes no review-repair cycle",
         "does not retrigger automated review, because the pass pushed nothing and the head is unchanged",
-        "recorded reserved threads are not re-grouped into a later round absent new content"
+        "recorded reserved threads are not re-grouped into a later round absent new content",
+        "a deferred-repair item is reported with its requested change and no draft, while a question item is reported with its draft — the report splits by item kind"
       ],
       "files": []
     }
