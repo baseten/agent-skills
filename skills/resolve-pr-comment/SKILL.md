@@ -141,10 +141,38 @@ as unattended.
 Unattended, the classification in *Handling queries* below still runs, but its
 second branch changes: **do not answer the question and do not reply
 substantively.** Return the thread to the caller as a `NEEDS_USER` item — thread
-URL, root author, and what it asks — and leave it open. A reply the run composes
-on its own authority is an answer nobody authorised: the question was addressed
-to a person, and a plausible-sounding guess in their voice is worse than
-silence, because the reviewer reads it as the owner's answer and stops asking.
+URL, root author, what it asks, and a **draft reply** (below) — and leave it
+open. A reply the run composes on its own authority is an answer nobody
+authorised: the question was addressed to a person, and a plausible-sounding
+guess in their voice is worse than silence, because the reviewer reads it as the
+owner's answer and stops asking.
+
+### The draft reply
+
+Escalating a question without the work of answering it wastes what this pass
+already knows. You read the thread and the code around it; the owner would start
+from nothing. So every `NEEDS_USER` item carries a draft the owner can send,
+edit, or throw away — **never posted by this skill, on any path.** It is
+material for a person, not a pending write.
+
+What the draft contains depends on which kind of question it is, and the two
+must not be blurred:
+
+| Question | Draft |
+| --- | --- |
+| **Answerable from the work** — "why this approach", "does this handle X", "where is this covered" | The actual answer, with the evidence: the file and line, the constraint that forced the choice, the test that covers the case. State it as a claim the owner can check, not as a hedge |
+| **A decision only the owner can make** — which behaviour is wanted, whether to accept a tradeoff, product intent | The options and what each costs, and **no pick**. A draft that quietly chooses is the autonomous answer this section exists to prevent, wearing a different hat |
+
+Mark every assumption inline, in the draft itself rather than in a preamble the
+owner skips — write `[assumes the retry budget is per-request, not per-batch]`
+where the claim sits. The draft will be read quickly and may be pasted; an
+assumption noted anywhere else is an assumption nobody read. Where the thread
+cannot be answered without information the pass does not have, say what is
+missing instead of writing around it — that is a useful draft, and a confident
+one built on a gap is not.
+
+Keep it to what the thread asks. A draft that reopens the design is a new
+review round, not a reply.
 
 `backlog-orchestrator`, *Per-repository policy configuration*, owns the rule
 that separates the two kinds. Apply it from there rather than inventing a
@@ -187,7 +215,9 @@ After completing all steps, summarize:
 - The commit SHA(s) applied
 - Confirmation that replies were posted and threads marked resolved
 - **Any thread classified `NEEDS_USER`**, one entry each: thread URL, root
-  author, and what it asks. Unattended, these were neither answered nor
-  resolved, and the caller needs them individually — `repair-pr` propagates
-  them and the orchestrators hold the merge gate on them, neither of which a
-  count supports
+  author, what it asks, and the draft reply (see *Unattended callers*).
+  Unattended, these were neither answered nor resolved, and the caller needs
+  them individually — `repair-pr` propagates them, the orchestrators hold the
+  merge gate on them, and `settle-outstanding-decisions` puts them to the owner
+  with the draft as the context that makes them answerable on the spot; a count
+  supports none of that

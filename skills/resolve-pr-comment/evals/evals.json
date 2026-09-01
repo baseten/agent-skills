@@ -5,12 +5,13 @@
     {
       "id": 0,
       "name": "question-comment-reply-without-resolving",
-      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md from the skill directory you were given). Scenario: the targeted review comment is a reviewer asking 'Why did you choose polling here instead of a webhook?' \u2014 a genuine question about intent; no code change is needed and none was requested. Question: what do you do \u2014 change code, reply, resolve the thread, some combination? Be precise about the thread's resolution state when you finish.",
-      "expected_output": "Post a reply explaining the intent; do NOT resolve the thread \u2014 resolution of query threads is left to the user. No code change.",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md from the skill directory you were given). Scenario: a person invoked this skill directly and named the comment, so the caller is attended. the targeted review comment is a reviewer asking 'Why did you choose polling here instead of a webhook?' \u2014 a genuine question about intent; no code change is needed and none was requested. Question: what do you do \u2014 change code, reply, resolve the thread, some combination? Be precise about the thread's resolution state when you finish.",
+      "expected_output": "Post a reply explaining the intent; do NOT resolve the thread \u2014 resolution of query threads is left to the user. No code change. This is the attended path: a person invoked the skill and named the comment, so the reply is posted for them to correct. Unattended \u2014 a caller that selected the thread set itself \u2014 the substantive reply is not posted at all; the thread comes back as a NEEDS_USER item with a draft reply instead. Either way the thread is not resolved.",
       "assertions": [
         "The answer posts a reply addressing the question without making a code change",
         "The answer does NOT resolve the thread",
-        "The answer leaves resolution to the user explicitly"
+        "The answer leaves resolution to the user explicitly",
+        "does not treat the attended reply as licence to answer a question unattended"
       ]
     },
     {
@@ -55,6 +56,21 @@
         "The answer does not start fixing all (or a self-selected subset of) threads",
         "The answer asks the user which comment(s) to target before proceeding",
         "The answer proceeds only after the target set is specified"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "unattended-query-drafts-does-not-post",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invoked you with a thread set it selected itself; no human is present. Two threads. (a) close-spice-reviewer[bot] asks \"why retry three times here rather than using the shared backoff helper?\" \u2014 you can see from the code that the shared helper does not support the per-request budget this call site needs, and there is a comment at src/client.ts:88 saying so. (b) a human reviewer asks \"should a failed webhook be dropped or dead-lettered? Dead-lettering means we need a queue we don't have yet.\" Question: for each thread, what do you post, what do you resolve, and what do you return to repair-pr?",
+      "expected_output": "Neither thread is answered on the run's own authority and neither is resolved \u2014 a question is never resolved by this skill, and unattended the substantive reply is not posted either. Both come back as NEEDS_USER items with thread URL, root author, what it asks, and a draft reply. The two drafts differ in kind. (a) is answerable from the work, so the draft states the actual answer with its evidence \u2014 the shared helper cannot express the per-request budget this call site needs, citing src/client.ts:88 \u2014 as a claim the owner can check. That the author is an automated reviewer does not make it repairable: it asks for rationale, not a diff. (b) is a decision only the owner can make, so the draft gives both options and what each costs \u2014 dropping loses failed webhooks silently, dead-lettering needs a queue that does not exist yet \u2014 and deliberately makes no pick. Any assumption is marked inline where the claim sits, not in a preamble. Neither draft is posted on any path.",
+      "assertions": [
+        "neither thread is resolved",
+        "no substantive reply is posted to either thread, because the caller is unattended",
+        "both threads are returned as NEEDS_USER items carrying a draft reply",
+        "the answerable-from-work question gets a draft stating the answer with its evidence, citing src/client.ts:88",
+        "the owner-decision question gets a draft giving options and costs with no pick made",
+        "the bot-authored thread is not treated as repairable merely because a bot wrote it",
+        "assumptions are marked inline rather than in a preamble"
       ]
     }
   ]

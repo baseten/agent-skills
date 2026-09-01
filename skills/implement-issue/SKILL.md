@@ -84,7 +84,7 @@ Finding repair cycles: <used>/<limit>
 Strongest-model repair rounds: <used>/<limit>
 Current remote head: <SHA>
 First review round: pending | complete-with-findings | clean
-Threads reserved for the owner: <count>
+Threads reserved for the owner: <count> (each with URL, question, draft reply)
 Draft state: <as-created> -> <current>
 Policy: budgets <source>; auto-merge <on|off> (<source>)
 State: waiting | repairing-ci | repairing-review | repairing-finding | healthy | needs-user
@@ -109,7 +109,7 @@ Actionability — `backlog-orchestrator`, *Per-repository policy configuration*,
 - a thread needing judgment rather than a diff — intent, design, rationale, a decision: `NEEDS_USER`, never answered on the run's own authority;
 - a comment this run authored: never.
 - Consequence: **never root a review thread on the supervised PR.** Reply inside existing threads; post timeline comments only (NOTES: the discriminator depends on it).
-- A `NEEDS_USER` thread is **reserved for the owner**: never repaired, never resolved, never answered, reported as awaiting them with its URL and what it asks. It does not stop this skill returning, but its round is not clean — it keeps the merge gate shut.
+- A `NEEDS_USER` thread is **reserved for the owner**: never repaired, never resolved, never answered, reported as awaiting them with its URL, what it asks, and the draft reply from the classifying pass, verbatim (`resolve-pr-comment`, *The draft reply*). It does not stop this skill returning, but its round is not clean — it keeps the merge gate shut.
 
 On actionable feedback:
 
@@ -120,7 +120,7 @@ On actionable feedback:
 5. wait event-driven;
 6. budget exhausted → `NEEDS_USER`.
 
-Subjective product/architecture judgment → `NEEDS_USER` immediately; burn no cycles.
+A thread needing judgment rather than a diff → `NEEDS_USER` with its draft reply immediately; burn no cycles.
 
 ## Draft state
 
@@ -199,7 +199,7 @@ Return:
 - issue linkage verified, and the form emitted — closing keyword, or non-closing `Part of:` because a coverage finding was reported;
 - implementation attempts used; CI, review, and finding repair cycles used; strongest-model repair rounds used against the limit, with the locus evidence that triggered each;
 - the resolved policy actually applied — budgets, `auto-merge` — each with its source (caller, repo config, built-in default), plus any policy file present but unhonourable (an unreadable file is authority the owner meant to grant and did not);
-- review threads reserved for the owner: count and URLs;
+- review threads reserved for the owner: count, URLs, what each asks, and its draft reply verbatim (`resolve-pr-comment`, *The draft reply*) — the draft is the point of reporting these, so a run that drops it has escalated without handing over the work it already did;
 - the merge, where one happened: the gate conditions it passed on, whether the PR was published from draft on the way, and the tracker reconciliation;
 - the `summarize-tranche` summary and action points, and the `settle-outstanding-decisions` report — rulings recorded, its one-line decline, or that `auto-request-settle` was off;
 - final CI/review state;
