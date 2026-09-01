@@ -61,6 +61,21 @@
         "(3) is asked, and (4) is asked in the evidence-first ratify-or-overturn shape (leading with what the run checked and did)"
       ],
       "files": []
+    },
+    {
+      "id": 5,
+      "name": "drafted-answer-is-approval-not-homework",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a settled run hands you two items. (i) An unresolved review thread where a reviewer asked why a retry count is 3 rather than using the shared backoff helper; the run classified it NEEDS_USER and attached a draft reply stating the actual answer with evidence — the shared helper cannot express this call site's per-request budget, per a comment at src/client.ts:88. The codebase does answer this question. (ii) An unresolved review thread asking whether a config value should be 30s or 60s, with no draft attached and no evidence gathered. Questions: for each, does it qualify for the walkthrough, and how do you phrase it?",
+      "expected_output": "(i) Qualifies, despite the codebase answering it. The carve-out turns on who the answer comes from, not on how hard it was to find: the run cannot post the draft, because the question was addressed to a person and the reply goes out under their identity, which is authority the run does not hold. What is outstanding is the owner's approval of an answer that will read as theirs, not the research. Phrase it as an approval — approve, edit, or discard the draft — never as the open question it started as, and record the ruling as a reply on that thread. Declining it as homework would deadlock: the NEEDS_USER item goes on holding the merge gate with nothing able to clear it. (ii) Does not qualify as posed. Nobody has done the work: no draft, and the evidence was gatherable. That is homework, and it stays in the summary's action points rather than becoming a question.",
+      "assertions": [
+        "the drafted answerable-from-work thread qualifies for the walkthrough",
+        "the reason given is that the run lacks authority to post under the owner's identity, not that the answer was hard to find",
+        "it is phrased as approve/edit/discard the draft rather than as the original open question",
+        "the ruling is recorded as a reply on that thread",
+        "names the deadlock that declining it would cause with the merge gate",
+        "the undrafted, evidence-gatherable question is still treated as homework"
+      ],
+      "files": []
     }
   ]
 }

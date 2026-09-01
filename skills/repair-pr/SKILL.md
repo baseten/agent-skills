@@ -41,7 +41,7 @@ Never chase multiple unrelated failures speculatively in one cycle unless they s
 ## Review repair (`repair type = review`)
 
 1. group the supplied actionable comments forming one coherent review round;
-2. invoke `resolve-pr-comment` for threads requiring code changes/replies/resolution, in unattended mode so a thread it classifies as needing a human comes back as a `NEEDS_USER` item rather than being answered (`resolve-pr-comment`, *Unattended callers*);
+2. invoke `resolve-pr-comment` for every supplied thread, in unattended mode, so each is classified and a thread needing a human comes back as a `NEEDS_USER` item with its draft rather than being answered (`resolve-pr-comment`, *Unattended callers*). **Invoke it even where the whole round looks like questions** — the caller dispatches such rounds precisely to get them classified and drafted, so returning early without invoking it defeats the dispatch. Where every supplied thread classifies `NEEDS_USER`, there is nothing to fix: push nothing, return `NO_CODE_CHANGE` with the items and their drafts, and consume no cycle;
 3. make only the requested/in-scope corrections;
 4. run relevant local verification;
 5. commit/push once for the coherent round where practical;
