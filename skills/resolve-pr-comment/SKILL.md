@@ -229,6 +229,14 @@ declined, the thread stays reserved, and it holds the merge gate with nothing
 able to clear it. A three-way split is what avoids that: **a diff, an answer, or
 nothing at all.**
 
+**Return no-action threads to the caller explicitly, one entry each.** Silence
+is not the same as no-action: an unattended caller's predicate re-groups any
+thread it has not recorded as handled, so a no-action thread the pass simply
+omitted comes back on the next supervision cycle, is classified again, and —
+because a classify-only pass consumes no cycle — loops without bound. The entry
+is what marks it handled. It carries no draft and asks nothing of the owner; it
+exists so the caller can record that this thread needs no one.
+
 ## Output
 
 After completing all steps, summarize:
@@ -236,6 +244,9 @@ After completing all steps, summarize:
 - Which comments were resolved
 - The commit SHA(s) applied
 - Confirmation that replies were posted and threads marked resolved
+- **Any thread classified no-action**, one entry each: thread URL and why it
+  wants nothing. No draft. This is what lets the caller mark it handled so it is
+  not re-dispatched forever (see *A comment that wants nothing*)
 - **Any thread classified `NEEDS_USER`**, one entry each: thread URL, root
   author, what it asks, and the draft reply (see *Unattended callers*).
   Unattended, these were neither answered nor resolved, and the caller needs

@@ -182,14 +182,21 @@ A `deny` rule binds in **every** mode, which is what makes it worth keeping for
 local runs in Manual or `acceptEdits`, where no classifier reviews anything.
 
 The entries also cover force bundled into a short-option group — `git push -uf`,
-`-uqf`, `-nf` — which the whitespace-delimited `-f` forms miss entirely. They are
-anchored so they cannot swallow `--force-with-lease`, an ordinary `-u` push, or a
-branch name containing `f`, all verified against `fnmatch` before shipping.
-**One residual is known and left uncovered on purpose:** options written *after*
-the refspec (`git push origin -uf`) are not matched, because the pattern that
-would catch them also denies a legitimate push to a branch ending in `-f`. That
-is the prefix-match arms race this section is about; auto mode's classifier is
-the control that actually covers it.
+`-uqf`, `-unvf` — which the whitespace-delimited `-f` forms miss entirely. They
+use character classes rather than `*` for the letters before the `f`, and that
+detail is the whole point: **`*` spans spaces in `fnmatch`, so `git push -*f`
+also matches `git push -u origin ref`** and denies every push to a ref ending in
+`f`. A first attempt shipped exactly that bug. `-[!- ]f*` cannot cross a space
+and cannot match a second leading dash, so `--force-with-lease` and an ordinary
+`-u` push both stay allowed.
+
+The full matrix is asserted in the repo's placement check rather than reasoned
+about — including the refs that broke the first attempt (`ref`, `wip-perf`,
+`my-branch-f`). **One residual is left uncovered on purpose:** options written
+*after* the refspec (`git push origin -uf`) are not matched, because every
+pattern that catches them also denies a legitimate push to some ref. That is the
+prefix-match arms race this section is about; auto mode's classifier is the
+control that actually covers it.
 
 The entries are also anchored as substrings rather than prefixes, which closes
 gaps a prefix-anchored form leaves open — `git push origin master --force`,
