@@ -72,6 +72,18 @@
         "the bot-authored thread is not treated as repairable merely because a bot wrote it",
         "assumptions are marked inline rather than in a preamble"
       ]
+    },
+    {
+      "id": 6,
+      "name": "kind-judged-by-intent-not-punctuation",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: an unattended caller supplies two threads on the diff. (a) \"Could you add a null check here? line 40 can be undefined.\" (b) \"I don't follow why this needs a second pass over the array.\" Note that (a) is phrased as a question and (b) is not. Questions: for each, is it repairable or NEEDS_USER, and on what basis?",
+      "expected_output": "(a) Repairable. Despite the question mark, it asks for a code change the pass can make and verify \u2014 add the null check, commit, reply with the SHA, resolve the thread. Routing it to NEEDS_USER on its punctuation would reserve a straightforward fix and hold the merge gate shut over it. (b) NEEDS_USER, despite having no question mark: its correct response is prose \u2014 an explanation of why the second pass is needed \u2014 not a diff, so it comes back as an item with a draft and is neither answered nor resolved. The test is what the comment asks for, never how it is punctuated or phrased.",
+      "assertions": [
+        "the question-phrased change request is treated as repairable and fixed",
+        "the statement-phrased request for rationale is treated as NEEDS_USER",
+        "states explicitly that the test is intent rather than punctuation or phrasing",
+        "names the cost of getting (a) wrong: a reserved trivial fix holding the merge gate shut"
+      ]
     }
   ]
 }

@@ -198,10 +198,18 @@ unattended path lacks.
 
 ## Handling queries
 
-If a comment is a question or doesn't require a code change (e.g., asking for
-clarification, explaining intent, or acknowledging something), post a reply
+If a comment's correct response is prose rather than a diff — asking for
+clarification, rationale, or intent, or acknowledging something — post a reply
 with an appropriate response but do **not** resolve the thread. Leave
 resolution to the user.
+
+**Judge that by what the comment asks for, not by whether it is phrased as a
+question.** "Could you add a null check here?" is a change request wearing a
+question mark: it is repairable, and routing it here on its punctuation would
+reserve a straightforward fix and hold the merge gate shut over it. Conversely a
+comment with no question mark at all ("I don't follow why this needs a second
+pass") wants prose. The kind test is the intent (`backlog-orchestrator`,
+*Per-repository policy configuration*).
 
 **Unattended, do not post that reply** — return the thread as a `NEEDS_USER`
 item instead (see *Unattended callers*). Either way the thread stays open: a
