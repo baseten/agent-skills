@@ -92,6 +92,19 @@
         "states that what retires a question is a record supplying the answer or choice, not the presence of a record"
       ],
       "files": []
+    },
+    {
+      "id": 7,
+      "name": "approved-draft-is-posted-as-the-answer",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a review thread asks why a retry count is 3. An answerable-from-work draft is attached, stating that the shared backoff helper cannot express this call site's per-request budget, citing src/client.ts:88. You put it to the owner, who edits one sentence for tone and approves. Questions: (a) what exactly goes in the reply on that thread? (b) is 'Draft approved by owner, 2026-09-01' a sufficient record, and why? (c) does the item retire, and does the merge gate clear? (d) which text is posted, the original draft or the edited one?",
+      "expected_output": "(a) The approved answer text itself, as the body of the reply, alongside the ruling record's other required parts — the question as asked, the owner-ruling marker with its date, and what it confirms. (b) No. 'Draft approved' answers nobody: the reviewer asked a question and cannot read the answer out of an approval marker, so the thread would look handled while remaining unanswered. It also supplies neither the answer nor a choice, so it would not retire the question under the already-ruled test in any case — the requirement to post the text is what makes the reply useful, and the test is what stops a useless one clearing the gate. (c) Yes, once the answer text is posted: the question is answered, the item retires and the gate can clear on that thread. (d) The edited text, never the original — the owner's edit is the answer.",
+      "assertions": [
+        "the approved answer text itself is the body of the reply",
+        "a bare approval marker is rejected as insufficient, because the reviewer cannot read the answer out of it",
+        "notes that a bare marker supplies neither answer nor choice and so would not retire the question anyway",
+        "the edited text is posted rather than the original draft"
+      ],
+      "files": []
     }
   ]
 }

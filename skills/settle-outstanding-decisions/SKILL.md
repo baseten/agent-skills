@@ -9,7 +9,7 @@ Turn the human-only decisions a run left scattered across its durable state into
 
 This file is the contract; the reasoning behind its rules lives in `NOTES.md` beside it, keyed by section. NOTES explains; it never overrides.
 
-This skill **collects and records; it does not act**. It never implements a ruling, deletes or closes a PR, merges, or dispatches a worker. **Its one write is the ruling itself.** Every action a ruling calls for already has an owner — `repair-pr` for a fix, `merge-stack` for a merge, the orchestrator's frontier logic for a held path — and the output names which owner each ruling now belongs to (NOTES).
+This skill **collects and records; it does not act**. It never implements a ruling, deletes or closes a PR, merges, or dispatches a worker. **It writes two things and no others: the ruling itself, and — where an exchange ended in a non-answer — the explicitly marked rejected-draft record that keeps a later walkthrough from re-offering the same material** (see the qualification bar). The second is a narrow, named exception rather than a loosening: it records that no answer was given, so it can never stand in for one. Every action a ruling calls for already has an owner — `repair-pr` for a fix, `merge-stack` for a merge, the orchestrator's frontier logic for a held path — and the output names which owner each ruling now belongs to (NOTES).
 
 ## Attendance is the precondition
 
@@ -122,6 +122,7 @@ A recorded ruling contains:
 
 - the question **as asked**, options included — the next reader judges the answer against what was actually offered;
 - the option chosen, and any free text the owner added, verbatim;
+- **for an approved answerable-from-work draft, the approved or edited answer text itself, as the body of the reply** — not a note that a draft was approved. The reviewer asked a question and this record is what answers it; "draft approved" answers nobody, and a reply the reviewer cannot read the answer out of leaves the thread unanswered while looking handled. Where the owner edited the draft, the edited text is what is posted, never the original. This and the already-ruled test agree rather than one covering for the other: a bare approval marker supplies neither the answer nor a choice, so it would not retire the question in any case — the requirement here is what makes the reply *useful*, and the test is what stops a useless one from clearing the gate;
 - an explicit marker that this is an **owner ruling, given interactively and dated** — never an agent's inference or an applied default. A default is overturnable in review; a ruling is the review (NOTES: the marker, not the posting account, carries the owner's authority);
 - what the ruling confirms or overturns, so the follow-up work is derivable from the comment alone.
 
