@@ -78,6 +78,20 @@
         "applies the draft-kind split wherever the item is presented, not only where the qualification bar states it"
       ],
       "files": []
+    },
+    {
+      "id": 6,
+      "name": "non-answer-does-not-retire-the-question",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you put two items to the owner. (i) A review thread asking why a retry count is 3, with an answerable-from-work draft attached; the owner picks **discard** — the draft is wrong and they do not supply a replacement. (ii) A review thread asking whether failed webhooks should be dropped or dead-lettered, with a decision-only draft; the owner says they need to talk to the team and picks nothing. Questions: for each, (a) what do you record and where, (b) does the thread stay reserved, (c) does its NEEDS_USER item still hold the merge gate, and (d) what happens on the next discovery pass?",
+      "expected_output": "Both are non-answers and both behave the same way. (a) Record no ruling for the question. Record the rejection itself — the discarded draft, the declined option set — so a later run does not re-offer the same text, but explicitly as a rejected draft rather than as the question's ruling. (b) Yes, both threads stay reserved. (c) Yes, both NEEDS_USER items stand and the merge gate stays shut: the reviewer's question is still unanswered. (d) The already-ruled test does not retire either one, because what retires a question is a record supplying the answer or the choice, not merely the presence of a record. Retiring on a rejection would clear the gate over a question nobody answered — the mirror of approving an option-only draft.",
+      "assertions": [
+        "no ruling is recorded for either question",
+        "the rejection is recorded as a rejected draft rather than as the question's ruling",
+        "both threads stay reserved and their NEEDS_USER items still hold the merge gate",
+        "the already-ruled test does not retire either item on the next pass",
+        "states that what retires a question is a record supplying the answer or choice, not the presence of a record"
+      ],
+      "files": []
     }
   ]
 }
