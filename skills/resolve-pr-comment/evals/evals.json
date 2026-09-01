@@ -84,6 +84,19 @@
         "states explicitly that the test is intent rather than punctuation or phrasing",
         "names the cost of getting (a) wrong: a reserved trivial fix holding the merge gate shut"
       ]
+    },
+    {
+      "id": 7,
+      "name": "acknowledgements-are-no-action-not-needs-user",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: an unattended caller supplies three open threads on the diff. (a) \"Thanks, this looks good.\" (b) \"I don't follow why this needs a second pass over the array.\" (c) \"Add a null check on line 40.\" Questions: for each, what classification does it get and what do you return? And specifically for (a): what would go wrong if you returned it as NEEDS_USER with a draft?",
+      "expected_output": "(a) No-action. An acknowledgement asks for neither a diff nor an answer: return it as no-action, reply to nothing, resolve nothing, escalate nothing. (b) NEEDS_USER \u2014 its correct response is prose, so it comes back as an item with a draft, unanswered and unresolved. (c) Repairable \u2014 make the change, commit, reply with the SHA, resolve the thread. Returning (a) as NEEDS_USER would be a trap rather than a harmless over-report: it is neither an answerable-from-work question nor a choice only the owner can make, so settle-outstanding-decisions cannot qualify it under its bar. The item gets declined, the thread stays reserved, and it holds the merge gate with nothing able to clear it. The classification is three-way: a diff, an answer, or nothing at all.",
+      "assertions": [
+        "the acknowledgement is classified no-action, not NEEDS_USER and not repairable",
+        "nothing is replied, resolved or escalated for the acknowledgement",
+        "the rationale question is NEEDS_USER and the change request is repairable",
+        "names the deadlock: settle cannot qualify an acknowledgement, so it would hold the merge gate indefinitely",
+        "states the classification as three-way rather than two-way"
+      ]
     }
   ]
 }

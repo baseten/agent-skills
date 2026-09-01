@@ -135,13 +135,13 @@ A run with no outstanding decisions still reports `No outstanding decisions.` in
 # Boundaries
 
 - Never prompts where nobody is present — *Attendance is the precondition* governs, the automatic callers included.
-- Never acts on a ruling: no implementation, no PR deletion or closure, no thread resolution that stands in for a fix, no dispatch. **The one write is the ruling comment.**
+- Never acts on a ruling: no implementation, no PR deletion or closure, no thread resolution that stands in for a fix, no dispatch. **The only writes are the ruling comment and the explicitly marked rejected-draft record** (see the qualification bar for what the second is and why it cannot stand in for the first).
 - Never asks a question with a documented default, an existing ruling, or one real option.
 - Never merges, and never treats a ruling as merge authority — a "merge A first" ruling is recorded and handed to whoever invokes `merge-stack`.
 
 # Output
 
-Alongside the report below, return **the posting identity observed for the first ruling of each write kind written through each `(transport, credential)` pair this pass used** — one entry per pair, carrying every kind observed through it; not one per pass, and not one ruling per pair (NOTES: what returning only a pair's first ruling drops). Report `unestablished` for a transport, or a kind, with no read-back write; return nothing where no ruling was written at all. Read each observation back from the written comment rather than assuming the caller's answer — a ruling can be the first authored write through a transport the caller has not used, so it is evidence the caller cannot derive: it updates the posting-identity checkpoint and can re-open a provisionally unavailable review trigger (`backlog-orchestrator`, *Posting identity*).
+Alongside the report below, return **the posting identity observed for the first authored write of each write kind through each `(transport, credential)` pair this pass used — rulings and rejected-draft records alike**. A pass where every item was discarded or left undecided writes no ruling and still writes rejected-draft comments, so keying the read-back on rulings would return nothing and drop the pass's only identity evidence; the posting-identity rule covers every authored write, so the evidence does too — one entry per pair, carrying every kind observed through it; not one per pass, and not one ruling per pair (NOTES: what returning only a pair's first ruling drops). Report `unestablished` for a transport, or a kind, with no read-back write; return nothing where no ruling was written at all. Read each observation back from the written comment rather than assuming the caller's answer — a ruling can be the first authored write through a transport the caller has not used, so it is evidence the caller cannot derive: it updates the posting-identity checkpoint and can re-open a provisionally unavailable review trigger (`backlog-orchestrator`, *Posting identity*).
 
 ```text
 ## Decisions settled

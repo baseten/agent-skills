@@ -215,6 +215,20 @@ pass") wants prose. The kind test is the intent (`backlog-orchestrator`,
 item instead (see *Unattended callers*). Either way the thread stays open: a
 question is never resolved by this skill.
 
+### A comment that wants nothing
+
+Prose is not the same as a request. "Thanks, this looks good", "nice catch",
+"agreed" — an acknowledgement asks for neither a diff nor an answer, so it is
+**no-action**: not repairable, and **not `NEEDS_USER`**. Return it as no-action,
+reply to nothing, resolve nothing, escalate nothing.
+
+Escalating one is a trap rather than a harmless over-report. It is neither an
+answerable-from-work question nor a choice only the owner can make, so
+`settle-outstanding-decisions` cannot qualify it under its bar — the item is
+declined, the thread stays reserved, and it holds the merge gate with nothing
+able to clear it. A three-way split is what avoids that: **a diff, an answer, or
+nothing at all.**
+
 ## Output
 
 After completing all steps, summarize:

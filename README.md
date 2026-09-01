@@ -181,6 +181,16 @@ already blocks most of what it names — force push, `git reset --hard`,
 A `deny` rule binds in **every** mode, which is what makes it worth keeping for
 local runs in Manual or `acceptEdits`, where no classifier reviews anything.
 
+The entries also cover force bundled into a short-option group — `git push -uf`,
+`-uqf`, `-nf` — which the whitespace-delimited `-f` forms miss entirely. They are
+anchored so they cannot swallow `--force-with-lease`, an ordinary `-u` push, or a
+branch name containing `f`, all verified against `fnmatch` before shipping.
+**One residual is known and left uncovered on purpose:** options written *after*
+the refspec (`git push origin -uf`) are not matched, because the pattern that
+would catch them also denies a legitimate push to a branch ending in `-f`. That
+is the prefix-match arms race this section is about; auto mode's classifier is
+the control that actually covers it.
+
 The entries are also anchored as substrings rather than prefixes, which closes
 gaps a prefix-anchored form leaves open — `git push origin master --force`,
 `git push origin master -f` and `git push origin +HEAD:master` all evade a rule
