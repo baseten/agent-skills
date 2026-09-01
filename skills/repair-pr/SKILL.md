@@ -41,7 +41,7 @@ Never chase multiple unrelated failures speculatively in one cycle unless they s
 ## Review repair (`repair type = review`)
 
 1. group the supplied actionable comments forming one coherent review round;
-2. invoke `resolve-pr-comment` for threads requiring code changes/replies/resolution;
+2. invoke `resolve-pr-comment` for threads requiring code changes/replies/resolution, in unattended mode so a thread it classifies as needing a human comes back as a `NEEDS_USER` item rather than being answered (`resolve-pr-comment`, *Unattended callers*);
 3. make only the requested/in-scope corrections;
 4. run relevant local verification;
 5. commit/push once for the coherent round where practical;
@@ -81,5 +81,6 @@ Return:
 - checks run; review threads resolved/replied when relevant;
 - **every posting-identity entry observed** for this pass's authored writes — its own and any made through `resolve-pr-comment` — under the `(transport, credential)` key each was observed on, whether or not it differed from the invoking user, and `unestablished` where no authored write was read back. Read it back from the first such write rather than echoing the caller's map: this pass's transports may not be the caller's, and the observation is the caller's only evidence about this worker's write path (NOTES);
 - actionable review threads still unresolved on the PR: count;
+- **every thread classified `NEEDS_USER`**, one entry each: thread URL, root author, and what it asks. A count alone is not enough here — the caller reports these to the owner and holds the merge gate on them, and neither is possible from a number (`backlog-orchestrator`, *Per-repository policy configuration*, owns the classification rule). Report them whether or not this pass pushed anything; a round that fixed three threads and escalated one has both results;
 - **whether any finding supplied to this pass sits on a locus an earlier repair of this PR wrote** — a reshaped version of something an earlier round addressed, or a new finding inside text a previous repair authored — naming the file, region, and earlier commit. The caller uses this for the next round's model; it can read the same signal from commit history, so this is corroboration (NOTES);
 - failure/judgment details; recommended next action.

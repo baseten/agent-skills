@@ -131,6 +131,34 @@ gh api graphql -f query='{ repository(owner:"<owner>", name:"<repo>") { pullRequ
 
 Match `databaseId` to the comment ID you replied to.
 
+## Unattended callers
+
+`repair-pr` and the orchestrators invoke this skill with nobody watching. A
+caller states that by passing an unattended context; treat a caller that
+supplies a thread set it selected itself, rather than a human naming comments,
+as unattended.
+
+Unattended, the classification in *Handling queries* below still runs, but its
+second branch changes: **do not answer the question and do not reply
+substantively.** Return the thread to the caller as a `NEEDS_USER` item — thread
+URL, root author, and what it asks — and leave it open. A reply the run composes
+on its own authority is an answer nobody authorised: the question was addressed
+to a person, and a plausible-sounding guess in their voice is worse than
+silence, because the reviewer reads it as the owner's answer and stops asking.
+
+`backlog-orchestrator`, *Per-repository policy configuration*, owns the rule
+that separates the two kinds. Apply it from there rather than inventing a
+second test. Its short form: a thread asking for a code change this pass can
+make and verify is repairable, whoever wrote it; a thread needing intent,
+design, rationale, or a decision is `NEEDS_USER`. Author identity decides
+nothing — a human's one-line nit is repaired, an automated reviewer's
+architecture question is escalated.
+
+Attended — a person invoked this skill and named the comments — the original
+behaviour stands: answer the query in a reply and leave the thread open for
+them. They are present to correct you, which is exactly the condition the
+unattended path lacks.
+
 ## Handling ambiguity
 
 - If a comment is vague or has multiple valid interpretations, ask before
@@ -147,6 +175,10 @@ clarification, explaining intent, or acknowledging something), post a reply
 with an appropriate response but do **not** resolve the thread. Leave
 resolution to the user.
 
+**Unattended, do not post that reply** — return the thread as a `NEEDS_USER`
+item instead (see *Unattended callers*). Either way the thread stays open: a
+question is never resolved by this skill.
+
 ## Output
 
 After completing all steps, summarize:
@@ -154,3 +186,8 @@ After completing all steps, summarize:
 - Which comments were resolved
 - The commit SHA(s) applied
 - Confirmation that replies were posted and threads marked resolved
+- **Any thread classified `NEEDS_USER`**, one entry each: thread URL, root
+  author, and what it asks. Unattended, these were neither answered nor
+  resolved, and the caller needs them individually — `repair-pr` propagates
+  them and the orchestrators hold the merge gate on them, neither of which a
+  count supports

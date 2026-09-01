@@ -29,12 +29,12 @@
     {
       "id": 2,
       "name": "policy-file-fails-closed",
-      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a repository's .claude/backlog-orchestrator.json parses as JSON and contains exactly: {\"auto-fix-reviewer\": false, \"auto_merge\": true, \"ci-repair-cycles\": 2}. Note the two misspelled keys ('auto-fix-reviewer' missing the s, 'auto_merge' with an underscore); there is no correctly spelled auto-fix-reviewers or auto-merge key. Question: what do auto-fix-reviewers, auto-merge, and ci-repair-cycles resolve to for this repository's PRs, and what does the checkpoint output say?",
-      "expected_output": "auto-fix-reviewers resolves to FALSE: a present policy file containing any unrecognized key resolves auto-fix-reviewers to false unless that key itself parsed successfully — the owner's 'auto-fix-reviewer: false' intent must not yield wider auto-fixing from its own typo. auto-merge resolves to its built-in false (its default is already its closed end — no merges from a misspelling). ci-repair-cycles parsed and stands at 2. The unrecognized keys are reported in the checkpoint output, but the report is the diagnosis, not the safeguard.",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a repository's .claude/backlog-orchestrator.json parses as JSON and contains exactly: {\"auto_merge\": true, \"ci-repair-cycles\": 2}. Note the misspelled key ('auto_merge' with an underscore); there is no correctly spelled auto-merge key. Question: what do auto-merge and ci-repair-cycles resolve to for this repository's PRs, and what does the checkpoint output say?",
+      "expected_output": "auto-merge resolves to its built-in false: its default is already its closed end, so a misspelling produces no merges. ci-repair-cycles parsed and stands at 2. The unrecognized key is reported in the checkpoint output. Closed and built-in coincide for every key in this file, so no key needs a special fail-closed guard.",
       "assertions": [
-        "auto-fix-reviewers resolves to false because unrecognized keys are present and no valid auto-fix-reviewers key parsed",
-        "auto-merge resolves to false (built-in default = closed end); the misspelled auto_merge grants nothing",
-        "The valid ci-repair-cycles key stands as written, and the unrecognized keys are reported in the checkpoint output"
+        "auto-merge resolves to false because no correctly spelled auto-merge key parsed",
+        "ci-repair-cycles stands at 2",
+        "the unrecognized key auto_merge is reported in the checkpoint output"
       ],
       "files": []
     },
@@ -271,6 +271,32 @@
         "For (c), the answer refuses the permission-request framing and names the dispatch defect as the finding, rather than reporting `find` as a tool to allowlist.",
         "For (d), the answer names passing `source_url` and `source_revision` explicitly, and connects it to `outcome_branch` requiring `source_url` and therefore to the per-worker outcome_branch used for session branch mandates."
       ]
+    },
+    {
+      "id": 22,
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a supervised PR has no .claude/backlog-orchestrator.json in its repository. Three review threads are open on the diff: (a) rooted by a human colleague, asking you to rename a variable for clarity; (b) rooted by close-spice-reviewer[bot], asking why you chose this caching strategy over an alternative; (c) rooted by you earlier in this run, a reply you posted in an existing thread. Question: for each thread, is it auto-fixed, escalated, or neither, and why?",
+      "expected_output": "(a) Auto-fixed. It roots on the diff and asks for a code change the pass can make and verify. That the author is a human is irrelevant — author identity decides nothing. (b) NEEDS_USER, reserved for the owner: it asks for rationale, not a diff, so it is escalated with its URL and what it asks, never answered on the run's own authority, and it holds the merge gate shut. That the author is an automated reviewer does not make it repairable. (c) Neither: a comment this run authored is never feedback, which follows from the thread-root test rather than from any author test. No reviewer allowlist or bot test is consulted at any point.",
+      "name": "review-thread-kind-not-author",
+      "assertions": [
+        "the human-rooted rename is auto-fixed, and the answer states author identity does not decide repairability",
+        "the bot-rooted design question is NEEDS_USER and is not answered on the run's own authority",
+        "the run's own earlier comment is never feedback, via the thread-root test",
+        "no bot test or reviewer allowlist is applied anywhere"
+      ],
+      "files": []
+    },
+    {
+      "id": 23,
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a repository's .claude/backlog-orchestrator.json contains {\"auto-fix-reviewers\": [\"close-spice-reviewer\"]}. Question: what does this key do, and what does the run report?",
+      "expected_output": "Nothing: auto-fix-reviewers is not a recognized key and no longer exists. It is reported in the checkpoint output as an unrecognized key, and every other key takes its built-in default — auto-merge stays off. The run does not treat the list as a reviewer allowlist, does not restrict auto-fixing to that login, and does not widen it either: repairability is decided by whether a thread asks for a code change the pass can make, whoever rooted it.",
+      "name": "retired-reviewer-key-is-inert",
+      "assertions": [
+        "auto-fix-reviewers is identified as unrecognized and inert",
+        "it is reported in the checkpoint output as an unrecognized key",
+        "author-based gating is not resurrected from the list's contents",
+        "auto-merge remains off"
+      ],
+      "files": []
     }
   ]
 }

@@ -31,14 +31,14 @@ This file is the contract. The reasoning behind each rule — incident history, 
 
 ## Policy and budgets
 
-`backlog-orchestrator`, *Per-repository policy configuration*, owns the entire config contract — key list, per-PR resolution, fail-closed rules, `auto-fix-reviewers` matching. Apply it from there; never restate it (NOTES: drift).
+`backlog-orchestrator`, *Per-repository policy configuration*, owns the entire config contract — key list, per-PR resolution, fail-closed rules, and the kind test that decides what a run may auto-fix. Apply it from there; never restate it (NOTES: drift).
 
 - Preserve exactly any caller-supplied repository, worktree, branch, base, dependency context, tracker, and budgets.
 - Read `.claude/backlog-orchestrator.json` **once, at run start, from the head of the repository's default branch** — never from the worktree this run writes, and never again afterwards.
-- Keys consumed: `implementation-attempts`, `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-fix-reviewers`, `auto-merge`, `auto-request-settle`. Ignore `concurrent-workers` and `new-issue-budget` — no single-issue meaning.
-- **A caller's complete resolved policy suppresses the read**: use supplied keys as given; omitted keys take the built-in defaults — except `auto-merge` and `auto-fix-reviewers`, which take **`false`**: an unmentioned permission was not granted.
+- Keys consumed: `implementation-attempts`, `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-merge`, `auto-request-settle`. Ignore `concurrent-workers` and `new-issue-budget` — no single-issue meaning.
+- **A caller's complete resolved policy suppresses the read**: use supplied keys as given; omitted keys take the built-in defaults — except `auto-merge`, which takes **`false`**: an unmentioned permission was not granted.
 - **A partial invocation override suppresses nothing**: read the file and merge the argument over it per key (`auto-merge`: off only). NOT: treating one argument as a resolved policy — that would hand a zero-repair-cycles repository two cycles because its owner narrowed something else (NOTES).
-- Built-in defaults (absent file — the common case): implementation attempts **2** · CI repair **2** · review repair **2** · finding repair **2** · strongest-model repair rounds **1** · `auto-fix-reviewers` **true** · `auto-merge` **off** · `auto-request-settle` **on**. Monitoring cap: **8 hours** where persistent monitoring is supported — an invocation property, not a policy key.
+- Built-in defaults (absent file — the common case): implementation attempts **2** · CI repair **2** · review repair **2** · finding repair **2** · strongest-model repair rounds **1** · `auto-merge` **off** · `auto-request-settle` **on**. Monitoring cap: **8 hours** where persistent monitoring is supported — an invocation property, not a policy key.
 
 # Phase 1 — durable implementation
 
@@ -86,7 +86,7 @@ Current remote head: <SHA>
 First review round: pending | complete-with-findings | clean
 Threads reserved for the owner: <count>
 Draft state: <as-created> -> <current>
-Policy: budgets <source>; auto-fix-reviewers <resolved> (<source>); auto-merge <on|off> (<source>)
+Policy: budgets <source>; auto-merge <on|off> (<source>)
 State: waiting | repairing-ci | repairing-review | repairing-finding | healthy | needs-user
 ```
 
@@ -105,11 +105,11 @@ Unrelated/external/flaky failure with no justified code change: report and monit
 
 Actionability — `backlog-orchestrator`, *Per-repository policy configuration*, owns these rules and the matching test; apply them from there:
 
-- a thread the **invoking user** rooted: always actionable, whatever the policy resolved to;
-- any other thread: only when its author passes the resolved `auto-fix-reviewers` test;
+- a thread rooting on the diff and asking for a code change this pass can make: actionable, whoever wrote it;
+- a thread needing judgment rather than a diff — intent, design, rationale, a decision: `NEEDS_USER`, never answered on the run's own authority;
 - a comment this run authored: never.
 - Consequence: **never root a review thread on the supervised PR.** Reply inside existing threads; post timeline comments only (NOTES: the discriminator depends on it).
-- A thread failing the test is **reserved for the owner**: never repaired, never resolved, reported as awaiting them. It does not stop this skill returning, but its round is not clean — it keeps the merge gate shut.
+- A `NEEDS_USER` thread is **reserved for the owner**: never repaired, never resolved, never answered, reported as awaiting them with its URL and what it asks. It does not stop this skill returning, but its round is not clean — it keeps the merge gate shut.
 
 On actionable feedback:
 
@@ -198,7 +198,7 @@ Return:
 - branch/base; PR URL/number; remote head SHA;
 - issue linkage verified, and the form emitted — closing keyword, or non-closing `Part of:` because a coverage finding was reported;
 - implementation attempts used; CI, review, and finding repair cycles used; strongest-model repair rounds used against the limit, with the locus evidence that triggered each;
-- the resolved policy actually applied — budgets, `auto-fix-reviewers`, `auto-merge` — each with its source (caller, repo config, built-in default), plus any policy file present but unhonourable (that is what silently narrows `auto-fix-reviewers` to `false`);
+- the resolved policy actually applied — budgets, `auto-merge` — each with its source (caller, repo config, built-in default), plus any policy file present but unhonourable (an unreadable file is authority the owner meant to grant and did not);
 - review threads reserved for the owner: count and URLs;
 - the merge, where one happened: the gate conditions it passed on, whether the PR was published from draft on the way, and the tracker reconciliation;
 - the `summarize-tranche` summary and action points, and the `settle-outstanding-decisions` report — rulings recorded, its one-line decline, or that `auto-request-settle` was off;

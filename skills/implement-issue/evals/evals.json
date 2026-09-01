@@ -41,12 +41,12 @@
     {
       "id": 3,
       "name": "caller-resolved-policy-omitted-permissions-are-false",
-      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: backlog-orchestrator invoked this skill as a child, passing a complete resolved policy: {implementation-attempts: 2, ci-repair-cycles: 1, review-repair-cycles: 1, finding-repair-cycles: 1, repair-model-escalations: 0, auto-request-settle: false}. Note auto-merge and auto-fix-reviewers are absent from what the caller passed. The repository's own .claude/backlog-orchestrator.json on disk says {\"auto-merge\": true, \"auto-fix-reviewers\": true}. Question: (a) does this run read the repository's policy file? (b) what do auto-merge and auto-fix-reviewers resolve to for this run? (c) may the run merge the PR if everything else is green?",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: backlog-orchestrator invoked this skill as a child, passing a complete resolved policy: {implementation-attempts: 2, ci-repair-cycles: 1, review-repair-cycles: 1, finding-repair-cycles: 1, repair-model-escalations: 0, auto-request-settle: false}. Note auto-merge is absent from what the caller passed. The repository's own .claude/backlog-orchestrator.json on disk says {\"auto-merge\": true}. Question: (a) does this run read the repository's policy file? (b) what does auto-merge resolve to for this run? (c) may the run merge the PR if everything else is green?",
       "expected_output": "(a) No — a caller's complete resolved policy suppresses the read. (b) Both resolve to false: omitted permission keys under a resolved policy take false, not the file's values or the permissive defaults. (c) No merge — auto-merge resolved false for this run.",
       "assertions": [
         "The answer states the repository policy file is NOT read (the caller's complete resolved policy suppresses the read)",
         "The answer resolves auto-merge to false (off) for this run, not to the file's true",
-        "The answer resolves auto-fix-reviewers to false for this run, and concludes no merge may happen"
+        "The answer resolves auto-merge to false for this run, and concludes no merge may happen"
       ],
       "files": []
     },
