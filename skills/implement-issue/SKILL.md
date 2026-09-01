@@ -114,11 +114,11 @@ Actionability — `backlog-orchestrator`, *Per-repository policy configuration*,
 On unhandled feedback — a thread rooting on the diff, not authored by this run, not already recorded as reserved. **Dispatch on any such round, including one where nothing looks repairable from the outside:** classification and the draft need the thread body and the surrounding code, which is the pass's context, not this skill's.
 
 1. group one coherent review round;
-2. review budget remains → invoke `repair-pr` once with `repair type = review`, the threads, and the map, on the same model rule as CI;
+2. invoke `repair-pr` once with `repair type = review`, the threads, and the map, on the same model rule as CI. **The budget gates repairing, not classifying:** invoke it even with the review budget spent, since a classify-only pass consumes no cycle and an unclassified thread has no draft for the settlement path to clear its gate with. With the budget spent it classifies and drafts but repairs nothing, and threads that would have been repairable become `NEEDS_USER` on budget grounds;
 3. adopt the returned head **and merge every identity entry the pass observed** into the map, and **record every `NEEDS_USER` thread it returned with its draft verbatim** — recording is what stops the thread being re-grouped into a later round;
-4. retrigger review where repository convention requires it — selecting the trigger's author from the map **as updated in step 3**: the repair may have established the invoking-user path, and re-triggering from the pre-repair map is what makes a trigger silently fail;
+4. **only where the pass pushed a repair**, retrigger review where repository convention requires it — a `NO_CODE_CHANGE` pass left the head unchanged, so a retrigger asks for another review of identical code and its fresh threads would be dispatched again — selecting the trigger's author from the map **as updated in step 3**: the repair may have established the invoking-user path, and re-triggering from the pre-repair map is what makes a trigger silently fail;
 5. wait event-driven;
-6. budget exhausted → `NEEDS_USER`.
+6. budget exhausted → `NEEDS_USER` for what remains repairable, having still classified and drafted the rest.
 
 A pass that returns `NO_CODE_CHANGE` — every thread in the round classified `NEEDS_USER`, nothing to fix — consumes no review cycle, and its items and drafts are recorded exactly as a pushing pass's are. Never derive the classification or write the draft here instead of dispatching: `resolve-pr-comment` owns both, and a round this skill triaged as question-only and never dispatched would be reserved with no draft.
 
