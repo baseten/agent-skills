@@ -234,10 +234,20 @@ resolution to the user.
 
 One comment can ask for a diff **and** for prose — *"add the null guard, and say
 why the shared helper is unsuitable here."* It is not a third thing to classify;
-it is both classifications at once, and it gets both treatments: **repair the
-change it asks for, and return the question as a `NEEDS_USER` item with its
-draft.** The thread is reserved, so it is **not resolved**, whatever was pushed
-for it.
+it is both classifications at once, and it gets both treatments. The change is
+repaired either way; **what differs is the prose half, and it differs exactly as
+it does for a question standing alone** — this section adds a case to the
+classification, not an exception to the mode rules:
+
+| Mode | The prose half |
+| --- | --- |
+| Attended | Post the substantive answer in the thread, as the rule above gives for any query. The person is present and asked for it; withholding it here because the same comment also asked for a diff answers nobody |
+| Unattended (*Unattended callers*) | Do not answer it. Return the question as a `NEEDS_USER` item with its draft, and reply only to report what changed if the mode permits a reply at all — a statement about work done, never written as though it answered the question |
+
+**Neither mode resolves the thread.** Attended, resolution of a query thread is
+the user's; unattended, the thread is reserved and a reserved thread is never
+resolved. So a mixed comment never closes on a pushed fix, whichever mode
+handled it.
 
 Forcing it into one classification fails in a different way each direction, and
 the repairable direction fails silently:
@@ -247,12 +257,10 @@ the repairable direction fails silently:
 | Repairable only | The fix lands and the thread is resolved with the rationale unanswered — and a resolved thread is not a reserved one, so the merge gate reads the review as clean over a question nobody answered. This is the outcome the reserved-thread rule exists to prevent, reached through the fix rather than around it |
 | `NEEDS_USER` only | A fix the pass could have made and verified is left undone, waiting on a person who was only ever asked for prose |
 
-So the resolution rule is unchanged and is what makes this safe: a thread is
+The resolution rule is what makes this safe, and it is unchanged: a thread is
 never resolved without an applied fix, **and a reserved thread is never resolved
-at all.** A mixed thread meets the first and fails the second, so the fix is
-pushed and the thread stays open for the owner. Reply reporting what changed if
-the mode permits a reply at all — that is a statement about work done, not an
-answer, and it must not be written as though it were one.
+at all.** A mixed thread meets the first and fails the second, so unattended the
+fix is pushed and the thread stays open for the owner.
 
 **Judge that by what the comment asks for, not by whether it is phrased as a
 question.** "Could you add a null check here?" is a change request wearing a

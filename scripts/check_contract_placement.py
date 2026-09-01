@@ -104,7 +104,23 @@ def main() -> int:
         ("repair-pr excludes a mixed thread from NO_CODE_CHANGE",
          "A mixed thread is not such a thread" in rp),
         ("repair-pr Output keeps a mixed thread's NEEDS_USER entry",
-         "including a mixed thread this pass also pushed a fix for" in rp),
+         "a mixed thread this pass also pushed a fix for" in rp),
+        # Classify-only x mixed is a cross product: one thread, two items. An
+        # Output keyed per thread has to drop one of them.
+        ("repair-pr Output is keyed by item, not by thread",
+         "items, not threads" in flat(rp)),
+        ("bo records a two-item thread as handled only when both are in",
+         "handled only when both are in" in flat(bo)),
+        ("ii records a two-item thread as handled only when both are in",
+         "handled only when both are in" in flat(ii)),
+        # The mixed rule adds a classification case, not an exception to the
+        # attended/unattended split: attended still answers in the thread.
+        ("mixed comments follow the mode split for the prose half",
+         "not an exception to the mode rules" in flat(rc)),
+        ("attended posts the substantive answer on a mixed comment",
+         "Post the substantive answer in the thread" in rc),
+        ("neither mode resolves a mixed thread",
+         "Neither mode resolves the thread" in flat(rc)),
         ("bo scopes never-auto-fixed to the part wanting an answer",
          "for the part that wants an answer" in bo),
         ("ii scopes never-repaired to the part wanting an answer",
@@ -116,7 +132,7 @@ def main() -> int:
         # repair-pr's own Output is a consumer site too: the caller only ever
         # sees what this bullet says to return.
         ("repair-pr Output splits NEEDS_USER entries by item kind",
-         "no draft" in clause(rp, "- **every thread classified `NEEDS_USER`**", 3000)),
+         "no draft" in clause(rp, "- **every `NEEDS_USER` item", 3000)),
         ("bo records deferred-repair items without a draft", "deferred-repair item" in bo),
         ("ii records deferred-repair items without a draft", "deferred-repair item" in ii),
         # The callee's own workflow pushes, so a caller skipping its own

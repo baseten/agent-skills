@@ -128,6 +128,20 @@
         "names the silent failure of the repairable-only reading: the gate reads the review as clean over an unanswered question",
         "names the cost of the NEEDS_USER-only reading: a verifiable fix left undone"
       ]
+    },
+    {
+      "id": 10,
+      "name": "attended-mixed-comment-gets-a-real-answer",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a person invokes you directly and names one review comment: \"add the null guard here, and explain why the shared helper is unsuitable for this path.\" You can see both the fix and the answer. Questions: (a) do you post the explanation in the thread, or return it as a NEEDS_USER item with a draft? (b) do you apply the guard? (c) do you resolve the thread? (d) separately: the same comment reaches you from repair-pr with a zero repair budget \u2014 what do you return, and how many entries?",
+      "expected_output": "(a) Post the explanation in the thread. This is attended: a person is present and asked for prose, and the mixed-comment rule adds a classification case rather than an exception to the attended/unattended split. Withholding the answer because the same comment also asked for a diff answers nobody. The NEEDS_USER item with a draft is the unattended treatment. (b) Yes \u2014 apply and verify the guard. (c) No. Neither mode resolves a mixed thread: attended, resolution of a query thread is the user's; unattended, the thread is reserved and a reserved thread is never resolved. (d) Two entries for the one thread \u2014 a deferred-repair item carrying the unapplied change and no draft, and a question item carrying the drafted answer \u2014 and nothing is applied, pushed, replied to or resolved. The thread is handled only once the caller has recorded both; forwarding one entry drops either work nobody records or a question nobody can put to the owner.",
+      "assertions": [
+        "attended, the explanation is posted in the thread rather than returned as a draft",
+        "the null guard is applied in the attended case",
+        "the thread is not resolved in either mode",
+        "the mixed rule is applied as a classification case, not as an override of the attended contract",
+        "the zero-budget case returns two entries for the one thread, a deferred repair and a question item",
+        "nothing is applied, pushed, replied or resolved in the classify-only case"
+      ]
     }
   ]
 }
