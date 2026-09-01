@@ -142,6 +142,20 @@
         "the zero-budget case returns two entries for the one thread, a deferred repair and a question item",
         "nothing is applied, pushed, replied or resolved in the classify-only case"
       ]
+    },
+    {
+      "id": 11,
+      "name": "output-is-keyed-by-item-and-excludes-acknowledgements-from-prose",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invoked you unattended and classify-only (its repair budget is zero) with three threads: (1) \"Thanks, this looks good.\" (2) \"extract this constant\" \u2014 a code change only. (3) \"rename this field, and tell me whether the worker path shares it.\" Questions: (a) thread 1 asks for no diff \u2014 does it go down the prose-response branch and come back as NEEDS_USER? (b) what does your Output contain for thread 2, and does it carry a draft? (c) how many Output entries does thread 3 produce? (d) why is the Output keyed by item rather than by thread?",
+      "expected_output": "(a) No. An acknowledgement asks for no prose either, so it is no-action and never NEEDS_USER. Routing it through the prose branch would put it through the unattended override, which returns that branch as a NEEDS_USER item \u2014 and settle-outstanding-decisions cannot qualify an acknowledgement, so it would hold the merge gate with nothing able to clear it. It comes back as an explicit no-action entry. (b) A deferred-repair item: thread URL, root author, the change it asks for, and no draft. A draft is defined only for the two question shapes; the thread wants a diff the budget stopped, so there is nothing to answer. Do not fabricate a question-shaped draft and do not omit the item \u2014 omission leaves the request unrecorded, the thread never marked handled, and re-dispatched every cycle, since a classify-only pass consumes none. (c) Two \u2014 a deferred repair and a question item at the one URL. (d) Because a single thread can carry two items, so one entry per thread would force one of them to be dropped.",
+      "assertions": [
+        "the acknowledgement is no-action, not routed through the prose branch and not NEEDS_USER",
+        "names why escalating an acknowledgement deadlocks the merge gate",
+        "the code-only thread returns a deferred-repair item with no draft",
+        "no question-shaped draft is fabricated and the item is not omitted",
+        "the mixed thread produces two Output entries at one URL",
+        "the Output is described as keyed by item rather than by thread"
+      ]
     }
   ]
 }

@@ -129,6 +129,20 @@ def main() -> int:
          "for the part that wants an answer" in bo),
         ("ii scopes never-repaired to the part wanting an answer",
          "in the part that wants an answer" in ii),
+        # The prose branch must not list acknowledgements: the unattended
+        # override turns that branch into NEEDS_USER, which settle cannot
+        # qualify, so the thread holds the gate with nothing able to clear it.
+        ("the prose branch excludes acknowledgements",
+         "An acknowledgement is not this branch" in rc
+         and "acknowledging something" not in clause(rc, "If a comment's correct response")),
+        # resolve-pr-comment's own Output is the producer contract: the same
+        # per-item, per-kind split the downstream contracts already have.
+        ("resolve-pr-comment Output is keyed by item, not by thread",
+         "items, not threads" in flat(clause(rc, "- **Every `NEEDS_USER` item", 2000))),
+        ("resolve-pr-comment Output splits NEEDS_USER by item kind",
+         "no draft" in near(rc, "- **Every `NEEDS_USER` item", 1600)),
+        ("resolve-pr-comment Output names the two-entry mixed case",
+         "mixed thread returns two entries" in flat(rc)),
         # A budget-deferred repair is not a question, so it carries no draft:
         # a draft is defined only for the two question shapes.
         ("repair-pr: budget-deferred item is a distinct kind with no draft",

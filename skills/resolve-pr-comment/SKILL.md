@@ -226,9 +226,15 @@ unattended path lacks.
 ## Handling queries
 
 If a comment's correct response is prose rather than a diff — asking for
-clarification, rationale, or intent, or acknowledging something — post a reply
-with an appropriate response but do **not** resolve the thread. Leave
-resolution to the user.
+clarification, rationale, or intent — post a reply with an appropriate response
+but do **not** resolve the thread. Leave resolution to the user.
+
+**An acknowledgement is not this branch.** "Thanks, this looks good" asks for no
+prose either, so it is **no-action** and never `NEEDS_USER` (*A comment that
+wants nothing*). Listing it here would route it through the unattended override
+below, which returns this branch as a `NEEDS_USER` item — and an acknowledgement
+escalated that way cannot be qualified by `settle-outstanding-decisions`, so it
+would hold the merge gate with nothing able to clear it.
 
 ### A comment can want both
 
@@ -314,10 +320,22 @@ After completing all steps, summarize:
 - **Any thread classified no-action**, one entry each: thread URL and why it
   wants nothing. No draft. This is what lets the caller mark it handled so it is
   not re-dispatched forever (see *A comment that wants nothing*)
-- **Any thread classified `NEEDS_USER`**, one entry each: thread URL, root
-  author, what it asks, and the draft reply (see *Unattended callers*).
-  Unattended, these were neither answered nor resolved, and the caller needs
-  them individually — `repair-pr` propagates them, the orchestrators hold the
-  merge gate on them, and `settle-outstanding-decisions` puts them to the owner
-  with the draft as the context that makes them answerable on the spot; a count
+- **Every `NEEDS_USER` item, one entry each — items, not threads**: thread URL,
+  root author, what it asks, and then by item kind, because the kinds carry
+  different things and one shape cannot hold both:
+  - a **question item** carries its draft reply (see *Unattended callers*);
+  - a **deferred-repair item** carries the change it asks for and **no draft**
+    (see *Classify-only invocations*) — it wants a diff that the budget stopped,
+    so there is nothing to answer, and demanding a draft here would leave the
+    zero-budget case satisfiable only by fabricating a question-shaped one or
+    dropping the item. Dropping it is worse than it looks: the request goes
+    unrecorded, the thread is never marked handled, and it is dispatched again on
+    every cycle, since a classify-only pass consumes none.
+
+  A **mixed thread returns two entries** — a deferred repair and a question at
+  the one URL (*A comment can want both*) — which is why this is keyed by item.
+  Unattended, none of these were answered or resolved, and the caller needs them
+  individually: `repair-pr` propagates them, the orchestrators hold the merge
+  gate on them, and `settle-outstanding-decisions` puts a question to the owner
+  with its draft as the context that makes it answerable on the spot. A count
   supports none of that
