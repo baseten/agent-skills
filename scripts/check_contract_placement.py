@@ -56,6 +56,7 @@ def main() -> int:
     bo = skill("backlog-orchestrator")
     ii = skill("implement-issue")
     st = skill("settle-outstanding-decisions")
+    sm = skill("summarize-tranche")
     rp = skill("repair-pr")
     rc = skill("resolve-pr-comment")
 
@@ -201,6 +202,27 @@ def main() -> int:
         ("bo names the draft as the enrichment a later walkthrough regenerates",
          "the draft reply attached to a reserved thread is exactly that"
          in bo.lower()),
+        # A deferred repair is an item under NO_CODE_CHANGE, never a PR-level
+        # NEEDS_USER outcome. Both readings were live in one file: the summary
+        # path then had no rule for it and either dead-ended or looped.
+        ("bo interruption clause distinguishes outcome from item",
+         "item on a review thread is never an interruption" in flat(bo)),
+        ("bo budget-exhaustion rule names the review budget's item form",
+         "as **items** where a review budget is" in flat(bo)),
+        ("bo dispatch step calls a deferred repair an item, not an outcome",
+         "never a `NEEDS_USER` outcome for the PR" in flat(bo)),
+        ("ii budget-exhaustion step names items, not an outcome",
+         "never a `NEEDS_USER`\n   outcome for the PR" in ii or
+         "never a `NEEDS_USER` outcome for the PR" in flat(ii)),
+        ("summarize-tranche excludes reserved threads from IN_FLIGHT_FIX",
+         "never `IN_FLIGHT_FIX`" in flat(sm) and "as `MERGE_RISK`" in flat(sm)),
+        ("bo finding shape excludes reserved threads as a source",
+         "never the source of an `IN_FLIGHT_FIX`" in flat(bo)),
+        ("ii un-settling excludes reserved threads",
+         "never a thread reserved for the owner, deferred repairs included" in flat(ii)),
+        # A gate condition with no termination rule holds after the owner answers.
+        ("bo states what ends a reservation",
+         "A reservation ends in exactly two ways" in flat(bo)),
         # Settle's two writes, and what retires a question.
         # A rejected-draft record that nothing reads prevents nothing: draft
         # regeneration is the one path that could recreate the discarded text.

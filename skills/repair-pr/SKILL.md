@@ -57,7 +57,7 @@ Never chase multiple unrelated failures speculatively in one cycle unless they s
 
 ## Finding repair (`repair type = finding`)
 
-The evidence is a settle-time finding — an `IN_FLIGHT_FIX` action point from `summarize-tranche`, or a recorded `settle-outstanding-decisions` ruling that requires this PR's code to change — supplied verbatim, the way `ci` supplies logs and `review` supplies threads. It names actionable work on this PR that no failing check and no review thread carries (NOTES; the caller's budget is its own counter, `finding-repair-cycles`).
+The evidence is a settle-time finding — an `IN_FLIGHT_FIX` action point from `summarize-tranche`, or a recorded `settle-outstanding-decisions` ruling that requires this PR's code to change — supplied verbatim, the way `ci` supplies logs and `review` supplies threads. It names actionable work on this PR that no failing check and no reviewer's review thread carries (NOTES; the caller's budget is its own counter, `finding-repair-cycles`).
 
 1. read the supplied finding and its durable site;
 2. verify it still holds against the current head — a later push may already have fixed or mooted it. Where it no longer applies → return `NO_CODE_CHANGE` with the reason; change nothing; no cycle is consumed;
@@ -66,7 +66,7 @@ The evidence is a settle-time finding — an `IN_FLIGHT_FIX` action point from `
 5. commit only issue-owned changes; push;
 6. return immediately with the new head SHA and checks run.
 
-Never widen into other action points or findings the caller did not supply, and never resolve or reply to review threads here — a finding is not a thread; where a thread carries the same work, the caller dispatches `review` instead.
+Never widen into other action points or findings the caller did not supply, and never resolve or reply to review threads here — a finding is not a thread; where a **reviewer's** thread carries the same work, the caller dispatches `review` instead. A ruling recorded as a reply inside a review thread is still a finding: its site is the thread, but the work comes from the owner's ruling rather than from the root comment, and the reviewer's question is already answered by it.
 
 ## Recovery / checkpointing
 

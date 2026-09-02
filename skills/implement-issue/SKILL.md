@@ -118,7 +118,7 @@ On unhandled feedback — a thread rooting on the diff, not authored by this run
 3. adopt the returned head **and merge every identity entry the pass observed** into the map, and **record every `NEEDS_USER` thread it returned — a question item with its draft verbatim, a deferred-repair item with the change it asks for and no draft — **and a thread that returned two items is recorded once per item and is handled only when both are in, since a mixed thread carries a deferred repair and a question at the same URL (`resolve-pr-comment`, *A comment can want both*)** — and every no-action thread it returned** — recording is what stops a thread being re-grouped into a later round, until new content arrives on it, and a no-action thread left unrecorded is re-dispatched on every cycle since a classify-only pass consumes none;
 4. **only where the pass pushed a repair**, retrigger review where repository convention requires it — a `NO_CODE_CHANGE` pass left the head unchanged, so a retrigger asks for another review of identical code and its fresh threads would be dispatched again — selecting the trigger's author from the map **as updated in step 3**: the repair may have established the invoking-user path, and re-triggering from the pre-repair map is what makes a trigger silently fail;
 5. wait event-driven;
-6. budget exhausted → `NEEDS_USER` for what remains repairable, having still classified and drafted the rest.
+6. budget exhausted → the pass still runs classify-only; what remains repairable comes back as **deferred-repair items**, recorded and reported, never a `NEEDS_USER` outcome for the PR (`repair-pr`, *Hard constraints*) — the rest is still classified and drafted.
 
 A pass that returns `NO_CODE_CHANGE` — the classification left it no repair to make, whether the round was questions, acknowledgements or any mix of them (`repair-pr`, *Review repair (`repair type = review`)*, step 2) — consumes no review cycle, and its items and drafts are recorded exactly as a pushing pass's are. Never derive the classification or write the draft here instead of dispatching: `resolve-pr-comment` owns both, and a round this skill triaged as question-only and never dispatched would be reserved with no draft.
 
@@ -151,7 +151,7 @@ The run settles when its one issue reaches a terminal state: the PR individually
 - Unruled — deferred, declined, never asked — is still outstanding; unruled is not clean, and the gate already refuses it.
 - A free-text ruling that cannot be confidently placed takes the disposition row (NOTES: the misreadings are not symmetric).
 
-**Un-settling** — a summary `IN_FLIGHT_FIX`, or a code-changing ruling; identical handling from either source:
+**Un-settling** — a summary `IN_FLIGHT_FIX`, or a code-changing ruling; identical handling from either source, and **never a thread reserved for the owner, deferred repairs included** (`backlog-orchestrator`, *A settle finding is the third repair shape*):
 
 - dispatch `repair-pr` once with `repair type = finding` — the finding **verbatim** (the action point, or the recorded ruling with its site URL) plus the map, on the same model rule as CI and review;
 - a **pushed** repair consumes a `finding-repair-cycles` cycle and retriggers review where convention requires (substantive, never mechanical); **`NO_CODE_CHANGE`** consumes no cycle and triggers no review. Merge returned identity entries whatever the outcome. `backlog-orchestrator`, *A settle finding is the third repair shape*, owns the type, the budget, and the branching;
