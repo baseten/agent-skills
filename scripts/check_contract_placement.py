@@ -241,6 +241,12 @@ def main() -> int:
          "do that read first, then regenerate" in flat(st)),
         ("settle never re-offers a rejected draft",
          "the same answer is not offered again" in flat(st)),
+        # A model reading this reliably inverted it: regeneration surfaced that
+        # the codebase answers the question, so it declined it as homework.
+        ("settle puts a regenerated draft into the carve-out",
+         "A regenerated draft is an answerable-from-work draft" in flat(st)),
+        ("settle forbids regeneration making an item homework",
+         "Regeneration cannot turn an item into homework" in flat(st)),
         ("settle names offering, not regenerating, as the record's consumer",
          "Offering a draft is what consumes this record" in flat(st)),
         ("bo's regeneration pointer names the record too",
