@@ -222,8 +222,29 @@ file written inside the container is a live scope.
 Yes, and it is the one part of this file not to cut. Auto mode's classifier
 already blocks most of what it names — force push, `git reset --hard`,
 `git clean -fd`, amending a pushed commit — but it blocks them *in auto mode*.
-A `deny` rule binds in **every** mode, which is what makes it worth keeping for
-local runs in Manual or `acceptEdits`, where no classifier reviews anything.
+A `deny` rule binds in **every** mode, and the mode that makes it worth keeping
+is `bypassPermissions`.
+
+**Manual and `acceptEdits` are the weak argument, so do not lean on them.** Both
+prompt for shell commands — `acceptEdits` auto-accepts file edits, not `Bash` —
+so there a deny rule only stops you approving something at a prompt you are
+already reading. **`bypassPermissions` is the load-bearing case:** no classifier,
+no prompt, and deny is the only thing still evaluated. In the shipped permission
+flow `checkPermissions` runs first and a `deny` result returns before the
+mode-based allow:
+
+```js
+$ = await A.checkPermissions(X, K)
+if ($?.behavior === "deny") return $;          // ← here
+…
+if (mode === "bypassPermissions" || …) return { behavior: "allow", … }
+```
+
+and the mode's own handler defers to that flow rather than short-circuiting it
+(*"Bypass mode is handled in main permission flow"*). Verified against
+v2.1.252's bundle. That is the whole justification: an unattended local run with
+prompts turned off is exactly where a stray `git push -uf` lands, and nothing
+else is looking.
 
 The entries also cover force bundled into a short-option group — `git push -uf`,
 `-uqf`, `-unvf` — which the whitespace-delimited `-f` forms miss entirely. They

@@ -99,6 +99,10 @@ def main() -> int:
                    and "git push +prod HEAD:main" in readme))
     checks.append(("README does not claim post-refspec options are uncovered",
                    "Options written *after* the refspec are covered" in readme))
+    # The justification must name the mode that actually carries it. Manual and
+    # acceptEdits both prompt for Bash, so deny earns its keep in bypassPermissions.
+    checks.append(("README names bypassPermissions as the load-bearing mode",
+                   "`bypassPermissions` is the load-bearing case" in readme))
     # The bundle class must stay a list of value-less short options: widening it
     # back to "any non-dash character" reintroduces the `-ofoo` false positive.
     bundles = [e for e in perms["deny"] if "f*)" in e and "[" in e]
