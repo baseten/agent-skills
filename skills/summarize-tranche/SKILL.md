@@ -69,9 +69,11 @@ from the thread.
 one: a thread carrying a **recorded code-changing ruling whose change has not been pushed**
 is `IN_FLIGHT_FIX`, and the finding path takes it — a recorded ruling requiring this PR's
 code to change is exactly what that path's evidence is (`repair-pr`, *Finding repair (`repair type = finding`)*). It
-must be emitted, because after a restart nothing else will: the reservation persists until
-the change is pushed (`backlog-orchestrator`, *Merge policy and review feedback*), the
-walkthrough's already-ruled test retires the question rather than re-emitting it
+must be emitted, because after a restart nothing else will. **What survives is the ruling,
+not the reservation** — a reservation is run state that a later invocation does not carry
+(`backlog-orchestrator`, *Merge policy and review feedback*), so the recoverable fact is
+the ruling recorded on the thread with its change still unpushed. Nothing else reaches it:
+the walkthrough's already-ruled test retires the question rather than re-emitting it
 (`settle-outstanding-decisions`, *What qualifies as an outstanding decision*), and the
 same-run route from the walkthrough's own output is gone with the run. Excluding it would
 leave the change with no dispatch path and the merge gate shut for good.

@@ -213,6 +213,8 @@ def main() -> int:
         ("summarize-tranche excludes only reserved threads with no dispatch",
          "with nothing able to dispatch it is never `IN_FLIGHT_FIX`" in flat(sm)
          and "as `MERGE_RISK`" in flat(sm)),
+        ("summarize-tranche says the ruling survives a restart, not the reservation",
+         "What survives is the ruling, not the reservation" in flat(sm)),
         ("summarize-tranche emits a code-changing ruling as IN_FLIGHT_FIX",
          "The test is the absence of a dispatch, not the reservation" in flat(sm)
          and "whose change has not been pushed** is `IN_FLIGHT_FIX`" in flat(sm)),
@@ -239,8 +241,10 @@ def main() -> int:
          "the same answer is not offered again" in flat(st)),
         # A model reading this reliably inverted it: regeneration surfaced that
         # the codebase answers the question, so it declined it as homework.
-        ("settle puts a regenerated draft into the carve-out",
-         "A regenerated draft is an answerable-from-work draft" in flat(st)),
+        ("settle preserves the kind a regenerated draft was given",
+         "A regenerated draft keeps whichever kind regenerating it produced" in flat(st)),
+        ("settle's carve-out covers only the answerable-from-work kind",
+         "the carve-out above covers only the first" in flat(st)),
         ("settle forbids regeneration making an item homework",
          "Regeneration cannot turn an item into homework" in flat(st)),
         ("settle names offering, not regenerating, as the record's consumer",
