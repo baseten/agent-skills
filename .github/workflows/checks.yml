@@ -26,6 +26,9 @@ jobs:
       - name: Skill structure and cross-references
         run: python3 scripts/check_skills.py
 
+      - name: Permissions file shape
+        run: python3 scripts/check_permissions.py
+
       - name: Contract rule placement
         run: python3 scripts/check_contract_placement.py
 
