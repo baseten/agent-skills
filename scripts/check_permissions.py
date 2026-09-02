@@ -47,6 +47,11 @@ def main() -> int:
         # Options past the refspec. Once wrongly documented as uncovered; the
         # space-spanning `*` catches them, and the README says so now.
         "git push origin -uf", "git push origin main -uf", "git push origin main -uqf",
+        # `f` first in a bundle away from the first option position. `git push -f*`
+        # anchors at the command start and every other form wants a letter before
+        # the `f`, so this shape had no rule at all.
+        "git push -q -fv origin main", "git push --tags -fv origin main",
+        "git push -vfq origin main", "git push -q -4f origin main",
     ]
     # Every entry here is a command that a previous version of this file broke.
     must_allow = [
@@ -57,6 +62,12 @@ def main() -> int:
         "git push origin hotfix", "git push -u origin perf main", "git push -n origin main",
         "git push origin feature--force", "git push -u origin my-f",
         "git push origin feat --force-with-lease",
+        # An attached push-option value. `-o` takes an argument, so the `f` in
+        # `foo` is not a bundled force flag — which is why the bundle classes
+        # list the short options git push actually lets you bundle rather than
+        # any non-dash character.
+        "git push -ofoo origin main", "git push -orefs/heads/main origin main",
+        "git push -o foo origin main", "git push --push-option=foo origin main",
     ]
     # The enumerated depth. fnmatch has no bounded repetition, so the ceiling
     # cannot be removed — only stated. Assert where it actually falls, and that
@@ -88,6 +99,14 @@ def main() -> int:
                    and "git push +prod HEAD:main" in readme))
     checks.append(("README does not claim post-refspec options are uncovered",
                    "Options written *after* the refspec are covered" in readme))
+    # The bundle class must stay a list of value-less short options: widening it
+    # back to "any non-dash character" reintroduces the `-ofoo` false positive.
+    bundles = [e for e in perms["deny"] if "f*)" in e and "[" in e]
+    checks.append(("bundle classes exclude argument-taking options",
+                   bool(bundles) and all("o" not in e[e.index("[") : e.rindex("]")]
+                                         for e in bundles)))
+    checks.append(("bundle classes are an explicit option list, not a negation",
+                   bool(bundles) and not any("[!" in e for e in bundles)))
 
     failures = [name for name, ok in checks if not ok]
 

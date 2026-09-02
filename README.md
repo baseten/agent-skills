@@ -116,8 +116,16 @@ an unattended fan-out an `ask` is a deadlock, not a delay.
 A matched whole-tool allow rule is evaluated **before** that conversion, so the
 rule is what keeps the tool from asking. The only tools that ignore a whole-tool
 allow rule declare `ignoresWholeToolAllowRule`, and none of the tools listed here
-do. So every entry in this file is doing real work, and removing one reintroduces
-a stop.
+do.
+
+**What that argues, and what it does not.** The mechanism is general: a matched
+whole-tool rule is honoured, and a `passthrough` nothing resolves becomes `ask`.
+Which tools *return* `passthrough` is verified behaviourally for `CronCreate`
+alone (below), and the `Cron`/session-management family returns it through the
+same hook. The rest of the entries are kept as cheap insurance rather than
+demonstrated to be load-bearing — a tool-name rule costs nothing and admits no
+arguments, so the asymmetry favours keeping them, but this file does not claim
+that removing any one of them reintroduces a stop.
 
 Two entries were removed for the opposite reason — auto mode drops them, so they
 never did anything there:
@@ -219,12 +227,19 @@ local runs in Manual or `acceptEdits`, where no classifier reviews anything.
 
 The entries also cover force bundled into a short-option group — `git push -uf`,
 `-uqf`, `-unvf` — which the whitespace-delimited `-f` forms miss entirely. They
-use character classes rather than `*` for the letters before the `f`, and that
+use character classes rather than `*` for the letters around the `f`, and that
 detail is the whole point: **`*` spans spaces in `fnmatch`, so `git push -*f`
 also matches `git push -u origin ref`** and denies every push to a ref ending in
-`f`. A first attempt shipped exactly that bug. `-[!- ]f*` cannot cross a space
-and cannot match a second leading dash, so `--force-with-lease` and an ordinary
-`-u` push both stay allowed.
+`f`. A first attempt shipped exactly that bug. A class cannot cross a space and
+cannot match a second leading dash, so `--force-with-lease` and an ordinary `-u`
+push both stay allowed.
+
+**The class is the list of short options `git push` lets you bundle —
+`[dnqvu46]` — not "any character that is not a dash or a space."** That is
+narrower on purpose: `-o` takes a value, so a negated class read the `f` in
+`git push -ofoo` as a bundled force flag and denied a valid push. A false
+positive is worse than a gap here, because it breaks a real command in every
+mode while the gap only reaches a mode the classifier already covers.
 
 Because fnmatch has no bounded repetition, the bundle length is enumerated
 rather than expressed — **eight classes, so eight option letters before the `f`
