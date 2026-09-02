@@ -1,23 +1,30 @@
 #!/usr/bin/env python3
-"""Assert what `permissions.json` actually does, and that the README says so.
+"""Assert the shape of `permissions.json`, and that the README describes it.
 
-A permission glob argued about in prose ships bugs. `Bash(git push -*f)` looks
-like it matches a bundled force flag and also matches `git push -u origin ref`,
-because `*` spans spaces in fnmatch. So the deny list is asserted as a matrix of
-commands rather than reasoned about, and every must-allow case below is a command
-some earlier version of this file broke.
+The file holds tool-name allow rules and nothing else. Both halves of that are
+load-bearing and both were arrived at the hard way, so both are asserted here.
+
+`allow` carries no `Bash(...)` entries: auto mode already permits the ordinary
+work these skills do, and a shell rule ending in `*` admits arbitrary trailing
+arguments.
+
+`deny` is empty. It once held nineteen entries, every glob asserted against real
+commands because prose about globs ships bugs — and it still produced five false
+positives against no incident it is known to have prevented. A deny rule is the
+only part of this file that can stop a command in *every* mode, so its bugs
+break real work while its benefit is confined to `bypassPermissions`. The
+emptiness is asserted so that re-adding one is a deliberate edit to this check
+as well, which is where the command matrix would have to come back.
 
 The README assertions exist for a sharper reason: a check that quotes a claim's
 wording instead of testing its substance turns a mistake into a protected
-invariant. This file shipped a README sentence calling post-refspec options an
-uncovered residual while the shipped globs covered them, and an assertion held
-that sentence in place. Where a claim is mechanically checkable, check it by
-running the globs; where it is not, key on the discriminator and not the phrasing.
+invariant. This file once carried a README sentence calling post-refspec options
+an uncovered deny residual while the shipped globs covered them, and an
+assertion held that sentence in place. Key on the discriminator, not the phrasing.
 """
 
 from __future__ import annotations
 
-import fnmatch
 import json
 import pathlib
 import sys
@@ -26,93 +33,33 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 
 def main() -> int:
-    checks: list[tuple[str, bool]] = []
-
-    # Deny-pattern behaviour, asserted rather than argued.
-    deny = [e[5:-1] for e in json.loads((ROOT / "permissions.json").read_text())["deny"]
-            if e.startswith("Bash(")]
-
-    def denied(command: str) -> bool:
-        return any(fnmatch.fnmatch(command, p) for p in deny)
-
-    must_deny = [
-        "git push -f origin main", "git push --force origin main", "git push -uf origin main",
-        "git push -unvf origin main", "git push -unvvf origin HEAD:main",
-        "git push -unvvvvvf origin main", "git push origin +HEAD:master",
-        "git push -u origin +feat:main", "git reset --hard HEAD~1", "git clean -fdx",
-        # Bundles must be caught in any option position, not only the first.
-        "git push -q -uf origin main", "git push -v -unvf origin main",
-        "git push --tags -uf origin main", "git push origin master --force",
-        "git push origin master -f",
-        # Options past the refspec. Once wrongly documented as uncovered; the
-        # space-spanning `*` catches them, and the README says so now.
-        "git push origin -uf", "git push origin main -uf", "git push origin main -uqf",
-        # `f` first in a bundle away from the first option position. `git push -f*`
-        # anchors at the command start and every other form wants a letter before
-        # the `f`, so this shape had no rule at all.
-        "git push -q -fv origin main", "git push --tags -fv origin main",
-        "git push -vfq origin main", "git push -q -4f origin main",
-    ]
-    # Every entry here is a command that a previous version of this file broke.
-    must_allow = [
-        "git push --force-with-lease origin feat", "git push --force-with-lease",
-        "git push -u origin main", "git push -u origin ref", "git push -u origin wip-perf",
-        "git push -u origin my-branch-f", "git push -u origin claude/fix-auth-conf",
-        "git push -u origin feature+metrics", "git push origin release+rc1",
-        "git push origin hotfix", "git push -u origin perf main", "git push -n origin main",
-        "git push origin feature--force", "git push -u origin my-f",
-        "git push origin feat --force-with-lease",
-        # An attached push-option value. `-o` takes an argument, so the `f` in
-        # `foo` is not a bundled force flag — which is why the bundle classes
-        # list the short options git push actually lets you bundle rather than
-        # any non-dash character.
-        "git push -ofoo origin main", "git push -orefs/heads/main origin main",
-        "git push -o foo origin main", "git push --push-option=foo origin main",
-    ]
-    # The enumerated depth. fnmatch has no bounded repetition, so the ceiling
-    # cannot be removed — only stated. Assert where it actually falls, and that
-    # the README documents it, so it stops being an unnoticed hole.
-    must_deny.append("git push -vvvvvvvvf origin main")  # 8 letters: the last covered
-    for c in must_deny:
-        checks.append((f"deny: {c}", denied(c)))
-    for c in must_allow:
-        checks.append((f"allow: {c}", not denied(c)))
-
-    # The README's "tool-name rules only" claim is about `allow`. Assert that it
-    # stays true of `allow` and that `deny` is not silently emptied to match it.
     perms = json.loads((ROOT / "permissions.json").read_text())
     readme = (ROOT / "README.md").read_text()
-    checks.append(("allow list has no Bash entries",
-                   not any(e.startswith("Bash(") for e in perms["allow"])))
-    checks.append(("deny list still has Bash entries",
-                   any(e.startswith("Bash(") for e in perms["deny"])))
-    checks.append(("README scopes the tool-name claim to the allow list",
-                   "**The `allow` list holds tool-name rules only" in readme))
-    checks.append(("deny depth ceiling is where the README says it is",
-                   not denied("git push -vvvvvvvvvf origin main")))
-    checks.append(("README states what dropping the shell rules costs outside auto mode",
-                   "### What dropping the shell rules costs outside auto mode" in readme
-                   and "loses them on its next" in readme))
-    checks.append(("README documents both deny residuals",
-                   "Two residuals are left in on purpose" in readme
-                   and "git push -unvvvvvvvvvf" in readme
-                   and "git push +prod HEAD:main" in readme))
-    checks.append(("README does not claim post-refspec options are uncovered",
-                   "Options written *after* the refspec are covered" in readme))
-    # The justification must name the mode that actually carries it. Manual and
-    # acceptEdits both prompt for Bash, so deny earns its keep in bypassPermissions.
-    checks.append(("README names bypassPermissions as the load-bearing mode",
-                   "`bypassPermissions` is the load-bearing case" in readme))
-    # The bundle class must stay a list of value-less short options: widening it
-    # back to "any non-dash character" reintroduces the `-ofoo` false positive.
-    bundles = [e for e in perms["deny"] if "f*)" in e and "[" in e]
-    checks.append(("bundle classes exclude argument-taking options",
-                   bool(bundles) and all("o" not in e[e.index("[") : e.rindex("]")]
-                                         for e in bundles)))
-    checks.append(("bundle classes are an explicit option list, not a negation",
-                   bool(bundles) and not any("[!" in e for e in bundles)))
+    flat = " ".join(readme.split())
 
-    failures = [name for name, ok in checks if not ok]
+    checks: list[tuple[str, bool]] = [
+        ("allow list has no Bash entries",
+         not any(e.startswith("Bash(") for e in perms["allow"])),
+        ("allow list is not empty",
+         len(perms["allow"]) > 0),
+        ("every allow entry is a bare tool name — no arguments to ride in on",
+         all("(" not in e for e in perms["allow"])),
+        # Re-adding a deny rule means re-adding the command matrix that used to
+        # guard it; failing here is the reminder, not an obstacle.
+        ("deny list is empty",
+         perms.get("deny") == []),
+        ("README says the file is allow-only",
+         "This file holds tool-name allow rules and nothing else" in flat),
+        ("README explains why there is no deny list",
+         "### There is no deny list" in readme),
+        ("README names bypassPermissions as the gap that is knowingly accepted",
+         "where a deny rule genuinely is the only thing still evaluated" in flat),
+        ("README states what dropping the shell rules costs outside auto mode",
+         "### What dropping the shell rules costs outside auto mode" in readme
+         and "loses them on its next" in flat),
+        ("README documents the container verification probe",
+         "CronCreate" in readme and "refuses to approve itself under auto" in flat),
+    ]
 
     failures = [name for name, ok in checks if not ok]
     for name, ok in checks:

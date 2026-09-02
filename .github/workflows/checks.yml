@@ -26,7 +26,7 @@ jobs:
       - name: Skill structure and cross-references
         run: python3 scripts/check_skills.py
 
-      - name: Permissions deny matrix
+      - name: Permissions file shape
         run: python3 scripts/check_permissions.py
 
       - name: Checkpoint capture tests

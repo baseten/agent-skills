@@ -52,7 +52,7 @@ runnable locally:
 
 ```bash
 python3 scripts/check_skills.py                       # structure, schema, cross-references
-python3 scripts/check_permissions.py                  # deny matrix, and the README's claims about it
+python3 scripts/check_permissions.py                  # the shape of permissions.json, and the README's claims
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
 bash scripts/eval_reminder.sh origin/main             # advisory, never fails
@@ -89,14 +89,10 @@ previous text rather than against a fixed threshold.
 `permissions.json` is merged into `~/.claude/settings.json` by `bootstrap.sh`, so
 a skill run does not stop on a prompt for a call the skill is expected to make.
 
-**The `allow` list holds tool-name rules only — no `Bash(...)` entries.** That is
-the whole design now, and it follows from how auto mode treats each kind of rule.
-
-`deny` is the deliberate exception and keeps its `Bash(...)` entries: a deny rule
-binds in every permission mode, which is the one thing auto mode does not give,
-so the reasoning below about dropping shell rules applies to `allow` alone. See
-*Do we still need the deny list?* — the two sections describe opposite halves of
-the same file and neither licenses editing the other.
+**This file holds tool-name allow rules and nothing else** — no `Bash(...)`
+entries, and an empty `deny`. That is the whole design, and it follows from how
+auto mode treats each kind of rule. See *There is no deny list* for why the deny
+side went too.
 
 ### Why the tool-name entries are load-bearing under auto mode
 
@@ -149,15 +145,14 @@ used to run straight through, and **an existing install loses them on its next
 (*`permissions.json` is a managed set*). An unattended run in one of those modes
 stops at the first prompt.
 
-That cost is accepted rather than overlooked, and the asymmetry with the deny
-list — kept *because* Manual mode exists, while allow is dropped *despite* it —
-is the deliberate part: **a deny rule cannot be exploited by an argument riding a
-prefix, and an allow rule can.** A `Bash(...)` allow rule ending in `*` admits
-arbitrary trailing flags, and `git` and `gh` are full of flags that name a
-command to run or a file to read (*What this allowlist is, and is not*, which
-lists what five review rounds found). So deny buys a guard in every mode at no
-exposure, while allow bought a saved classifier round-trip in the one mode these
-skills actually run in and carried that surface into every other.
+That cost is accepted rather than overlooked. **A `Bash(...)` allow rule ending
+in `*` admits arbitrary trailing flags**, and `git` and `gh` are full of flags
+that name a command to run or a file to read (*What this allowlist is, and is
+not*, which lists what five review rounds found) — so those rules bought a saved
+classifier round-trip in the one mode these skills actually run in, and carried
+an injection surface into every other. The same reasoning, applied to the other
+side of the file, is why there is no deny list either: both halves were paying a
+real cost for a benefit confined to a mode that is optional.
 
 If you do run them locally in Manual or `acceptEdits`, there are three
 non-interactive paths and none of them is this file:
@@ -217,118 +212,47 @@ machine's* copy not being uploaded — the same table says the same of
 `~/.claude/skills/`, which bootstrap populates and which demonstrably loads. A
 file written inside the container is a live scope.
 
-### Do we still need the deny list?
+### There is no deny list
 
-Yes, and it is the one part of this file not to cut. Auto mode's classifier
-already blocks most of what it names — force push, `git reset --hard`,
-`git clean -fd`, amending a pushed commit — but it blocks them *in auto mode*.
-A `deny` rule binds in **every** mode, and the mode that makes it worth keeping
-is `bypassPermissions`.
+`deny` is empty on purpose, and this is the second time that decision has been
+made — the list was extended before being dropped, so the reasoning is worth
+keeping.
 
-**Manual and `acceptEdits` are the weak argument, so do not lean on them.** Both
-prompt for shell commands — `acceptEdits` auto-accepts file edits, not `Bash` —
-so there a deny rule only stops you approving something at a prompt you are
-already reading. **`bypassPermissions` is the load-bearing case:** no classifier,
-no prompt, and deny is the only thing still evaluated. In the shipped permission
-flow `checkPermissions` runs first and a `deny` result returns before the
-mode-based allow:
+**Auto mode's classifier already blocks what it named** — force push,
+`git reset --hard`, `git clean -fd`, amending a pushed commit — and auto mode is
+what cloud containers and most Pro/Max/Team sessions run in. A deny rule adds
+nothing there.
 
-```js
-$ = await A.checkPermissions(X, K)
-if ($?.behavior === "deny") return $;          // ← here
-…
-if (mode === "bypassPermissions" || …) return { behavior: "allow", … }
-```
+**The two modes that prompt do not need it either.** Manual and `acceptEdits`
+both ask before running a shell command — `acceptEdits` auto-accepts file edits,
+not `Bash` — so a deny rule only stops you approving something at a prompt you
+are already reading.
 
-and the mode's own handler defers to that flow rather than short-circuiting it
-(*"Bypass mode is handled in main permission flow"*). Verified against
-v2.1.252's bundle. That is the whole justification: an unattended local run with
-prompts turned off is exactly where a stray `git push -uf` lands, and nothing
-else is looking.
+**That leaves `bypassPermissions`, where a deny rule genuinely is the only thing
+still evaluated.** `checkPermissions` runs before the mode-based allow, so a
+`deny` result returns first. It is a real gap and it is accepted knowingly: if
+you run these skills with prompts turned off, add the rules to your own
+`~/.claude/settings.json`, where bootstrap keeps hand-added entries and never
+subtracts them.
 
-The entries also cover force bundled into a short-option group — `git push -uf`,
-`-uqf`, `-unvf` — which the whitespace-delimited `-f` forms miss entirely. They
-use character classes rather than `*` for the letters around the `f`, and that
-detail is the whole point: **`*` spans spaces in `fnmatch`, so `git push -*f`
-also matches `git push -u origin ref`** and denies every push to a ref ending in
-`f`. A first attempt shipped exactly that bug. A class cannot cross a space and
-cannot match a second leading dash, so `--force-with-lease` and an ordinary `-u`
-push both stay allowed.
+**What settled it was the record.** Every glob in that list was matched against
+commands by a check precisely because prose about globs ships bugs, and it still
+produced five false positives — `git push -u origin ref` denied outright by
+`-*f`, then a branch named `feature+metrics`, then `feature--force`, then an
+attached push-option value `-ofoo` — against no incident it is known to have
+prevented. **A deny rule is the only part of this file that can stop a command
+in every mode, auto mode included**, so its bugs break real work while its
+benefit is confined to one mode nobody is required to use. Twelve of the file's
+entries and every one of its defects came from that trade.
 
-**The class is the list of short options `git push` lets you bundle —
-`[dnqvu46]` — not "any character that is not a dash or a space."** That is
-narrower on purpose: `-o` takes a value, so a negated class read the `f` in
-`git push -ofoo` as a bundled force flag and denied a valid push. A false
-positive is worse than a gap here, because it breaks a real command in every
-mode while the gap only reaches a mode the classifier already covers.
+Removing them is not silent for existing installs: the sidecar subtracts what it
+previously wrote (*`permissions.json` is a managed set*), so the next
+`bootstrap.sh` run drops the shipped deny rules and leaves anything you added by
+hand.
 
-Because fnmatch has no bounded repetition, the bundle length is enumerated
-rather than expressed — **eight classes, so eight option letters before the `f`
-are covered and the ninth is not**: `git push -unvvvvvvf` is denied,
-`git push -unvvvvvvvf` is not. That ceiling is real and is the honest shape of
-the constraint, not a claim of completeness. `check_permissions.py`
-asserts both sides of it, so this number and the shipped patterns cannot drift
-apart: extending the depth means updating this sentence in the same commit.
-Each entry is anchored on a whitespace-delimited `-` rather than on the start of
-the command, so a bundle is caught wherever it sits: `git push -q -uf origin main`
-is a force push and an entry anchored at `git push -` never sees it.
-
-The `+`-refspec and `--force` entries are likewise anchored to whitespace-delimited
-option tokens rather than matching the substring anywhere: unanchored versions
-deny a push to a branch named `feature+metrics` or `feature--force`, both of which
-`git check-ref-format` accepts, while `--force` also has to be anchored on its
-*right* so it cannot swallow `--force-with-lease`.
-
-The full matrix is asserted by `scripts/check_permissions.py` and runs in
-CI, rather than being reasoned about in prose. Every must-allow case in it is a
-command some earlier version of this file broke, and the enumerated depth is
-asserted at its edge so the boundary below is a tested fact rather than a claim.
-
-**Two residuals are left in on purpose. Neither is fixable in the rule language,
-and each is the cheaper side of a trade:**
-
-| Residual | Why it stays |
-| --- | --- |
-| Option bundles longer than the enumerated depth — `git push -unvvvvvvvvvf` | fnmatch has no bounded repetition and `*` spans spaces, so "an option token containing `f`" cannot be written; only enumerated. Extending the depth moves the ceiling and cannot remove it |
-| A remote whose name begins with `+` — `git push +prod HEAD:main` | The refspec entry cannot tell argument position, because `*` spans spaces. A false positive on a remote name git allows and nobody uses, versus covering `git push origin +HEAD:master`, which is a force push someone writes by accident |
-
-**Options written *after* the refspec are covered, and were mistakenly listed
-here as a third residual.** `git push origin -uf` and `git push origin main -uf`
-are both denied, by the same property that makes these rules delicate: the `*` in
-`git push* -[!- ]f*` spans spaces, so a whitespace-delimited option token is
-caught wherever it sits, including past the refspec. Both cases are in the
-asserted matrix so the claim stays checked rather than argued.
-
-One gap and one false positive, then — the same constraint seen from both sides:
-a glob matcher cannot see token boundaries or argument positions, so every rule
-is either too narrow at some length or too
-wide at some position.
-
-**What the gaps are not is a bypass worth closing.** This list guards against an
-*accident* — a force push someone or something writes without meaning to — and
-against accidents the enumerated depth is complete: nobody types
-`-unvvvvvvvvvf` by mistake. Against an adversary it was never a control at all
-(*What this allowlist is, and is not*), and a longer enumeration would not make
-it one, because a shell offers unbounded ways to write the same flag. Auto
-mode's classifier is the control that covers both cases.
-
-The entries are also anchored as substrings rather than prefixes, which closes
-gaps a prefix-anchored form leaves open — `git push origin master --force`,
-`git push origin master -f` and `git push origin +HEAD:master` all evade a rule
-anchored at `git push --force`. Each is spaced so it cannot swallow
-`--force-with-lease`, which the stacked-PR restack needs.
-
-Two things deliberately **not** denied:
-
-| Not denied | Why |
-| --- | --- |
-| `git push --delete` / `git push origin :branch` | Branch deletion is something these skills legitimately do; it was an `allow` entry here before. It now reaches the classifier, which is the right treatment |
-| `git commit --amend` | Auto mode's handling is more precise than a blanket deny: it permits a message-only reword of a commit created in this session and blocks amending anything pushed |
-
-One admin key to know about: `allowManagedPermissionRulesOnly: true` makes
-Claude Code ignore every non-managed permission rule, including everything
-`bootstrap.sh` installs. If an organization sets it, route (2) is the only one
-that works, and route (1) fails silently.
+**If you re-add any, put them in this file rather than by hand and re-add the
+matrix with them** — the check asserts `deny` stays empty exactly so that a
+re-add is a deliberate edit to both, not a quiet one-liner.
 
 ### `permissions.json` is a managed set
 

@@ -83,25 +83,5 @@
     "mcp__linear__save_comment",
     "mcp__linear__save_issue"
   ],
-  "deny": [
-    "Bash(git clean -fdx*)",
-    "Bash(git push --mirror*)",
-    "Bash(git push -f*)",
-    "Bash(git push* +*)",
-    "Bash(git push* --force *)",
-    "Bash(git push* --force)",
-    "Bash(git push* -[dnqvu46][dnqvu46][dnqvu46][dnqvu46][dnqvu46][dnqvu46][dnqvu46][dnqvu46]f*)",
-    "Bash(git push* -[dnqvu46][dnqvu46][dnqvu46][dnqvu46][dnqvu46][dnqvu46][dnqvu46]f*)",
-    "Bash(git push* -[dnqvu46][dnqvu46][dnqvu46][dnqvu46][dnqvu46][dnqvu46]f*)",
-    "Bash(git push* -[dnqvu46][dnqvu46][dnqvu46][dnqvu46][dnqvu46]f*)",
-    "Bash(git push* -[dnqvu46][dnqvu46][dnqvu46][dnqvu46]f*)",
-    "Bash(git push* -[dnqvu46][dnqvu46][dnqvu46]f*)",
-    "Bash(git push* -[dnqvu46][dnqvu46]f*)",
-    "Bash(git push* -[dnqvu46]f*)",
-    "Bash(git push* -f *)",
-    "Bash(git push* -f)",
-    "Bash(git push* -f[dnqvu46]*)",
-    "Bash(git reset --hard*)",
-    "mcp__github__delete_file"
-  ]
+  "deny": []
 }
