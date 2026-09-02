@@ -227,8 +227,11 @@ def main() -> int:
          "with nothing able to dispatch it" in flat(ii)
          and "recorded code-changing ruling un-settles as it always did" in flat(ii)),
         # A gate condition with no termination rule holds after the owner answers.
-        ("bo states what ends a reservation",
-         "A reservation ends in exactly two ways" in flat(bo)),
+        ("bo states what ends a reservation, and that it is run state",
+         "A reservation is run state" in flat(bo)
+         and "does not survive one" in flat(bo)),
+        ("bo makes lifting the budget actionable",
+         "repairs it where it now has budget" in flat(bo)),
         ("bo counts the owner's own reply as ending a reservation",
          "or the owner's own reply in the thread" in flat(bo)),
         # Settle's two writes, and what retires a question.
