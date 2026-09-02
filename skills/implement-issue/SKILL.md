@@ -183,11 +183,11 @@ Where the repository opted in through `auto-merge`, evaluate **invariant 12's ga
 
 # Completion
 
-- Return `PR_OPEN`/healthy when the PR is implemented, correctly linked, and has no known CI/review item requiring autonomous repair — after Settle, whose summary and walkthrough are the gate's own inputs.
+- Return `PR_OPEN`/healthy when the PR is implemented, correctly linked, and has no known CI/review item a remaining budget could repair — a thread reserved for the owner, deferred repairs included, does not stop `PR_OPEN`; it holds the merge gate — after Settle, whose summary and walkthrough are the gate's own inputs.
 - Return `MERGED` where the gate's merge completed.
 - With persistent monitoring: continue until healthy, merge/close, user stop, budget exhaustion, or the monitoring cap.
 - If the runtime cannot stay active waiting only on external events, return a durable checkpoint — never pretend background monitoring continues.
-- Return `NEEDS_USER` with exact PR/issue URLs, the remaining failure or comment, attempts performed, and the recommended next action.
+- Return `NEEDS_USER` with exact PR/issue URLs, the remaining failure, attempts performed, and the recommended next action. **A reserved thread is not a remaining failure** — a comment never yields this outcome (step 6 above; `repair-pr`, *Hard constraints*); it is reported and holds the merge gate.
 
 ## Structured result
 

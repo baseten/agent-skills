@@ -229,15 +229,17 @@ def main() -> int:
         # A gate condition with no termination rule holds after the owner answers.
         ("bo states what ends a reservation",
          "A reservation ends in exactly two ways" in flat(bo)),
+        ("bo counts the owner's own reply as ending a reservation",
+         "or the owner's own reply in the thread" in flat(bo)),
         # Settle's two writes, and what retires a question.
         # A rejected-draft record that nothing reads prevents nothing: draft
         # regeneration is the one path that could recreate the discarded text.
-        ("settle reads the rejected-draft record before regenerating",
-         "read the thread's site for a rejected-draft record first" in flat(st)),
+        ("settle reads the record on the regenerate path too",
+         "do that read first, then regenerate" in flat(st)),
         ("settle never re-offers a rejected draft",
          "the same answer is not offered again" in flat(st)),
-        ("settle names regeneration as the consumer of the rejection record",
-         "Draft regeneration is what consumes this record" in flat(st)),
+        ("settle names offering, not regenerating, as the record's consumer",
+         "Offering a draft is what consumes this record" in flat(st)),
         ("bo's regeneration pointer names the record too",
          "reading any rejected-draft record there first" in flat(bo)),
         ("settle requires the approved answer text", "the approved or edited answer text itself" in st),
