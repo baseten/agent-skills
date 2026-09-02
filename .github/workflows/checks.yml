@@ -26,7 +26,7 @@ jobs:
       - name: Skill structure and cross-references
         run: python3 scripts/check_skills.py
 
-      - name: Contract placement and deny-pattern matrix
+      - name: Contract rule placement
         run: python3 scripts/check_contract_placement.py
 
       - name: Checkpoint capture tests

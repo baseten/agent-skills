@@ -52,7 +52,7 @@ runnable locally:
 
 ```bash
 python3 scripts/check_skills.py                       # structure, schema, cross-references
-python3 scripts/check_contract_placement.py           # rules at their decision points, deny matrix
+python3 scripts/check_contract_placement.py           # contract rules at their decision points
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
 bash scripts/eval_reminder.sh origin/main             # advisory, never fails
@@ -89,210 +89,30 @@ previous text rather than against a fixed threshold.
 `permissions.json` is merged into `~/.claude/settings.json` by `bootstrap.sh`, so
 a skill run does not stop on a prompt for a call the skill is expected to make.
 
-**The `allow` list holds tool-name rules only — no `Bash(...)` entries.** That is
-the whole design now, and it follows from how auto mode treats each kind of rule.
+### Install it in your repositories too, not only via bootstrap
 
-`deny` is the deliberate exception and keeps its `Bash(...)` entries: a deny rule
-binds in every permission mode, which is the one thing auto mode does not give,
-so the reasoning below about dropping shell rules applies to `allow` alone. See
-*Do we still need the deny list?* — the two sections describe opposite halves of
-the same file and neither licenses editing the other.
+**Do both.** They fix different halves of the problem and neither covers the
+other.
 
-### Why the tool-name entries are load-bearing under auto mode
+1. **Per repository — the durable half.** Copy this file into the repo's own
+   `.claude/settings.json`, wrapped in a `permissions` key:
 
-Cloud containers and most Pro/Max/Team sessions start in **auto mode**, where a
-classifier reviews actions instead of the user. Auto mode already permits the
-ordinary work these skills do — local file operations, dependency installs,
-`git` and `gh` against the session's own repository, pushing to any branch of it,
-opening a PR that matches the request — so shell allow rules for that work buy
-nothing but a saved classifier round-trip.
+   ```json
+   { "permissions": { "allow": [ ... ], "deny": [ ... ] } }
+   ```
 
-The tool-name entries are different, because several tools **decline to approve
-themselves in auto mode**. Their own permission hook returns `passthrough` with
-a message such as *"Scheduling a cron prompt requires classifier review"*, and
-the permission pipeline converts an unresolved `passthrough` into **`ask`**. In
-an unattended fan-out an `ask` is a deadlock, not a delay.
+   Add that repo's own check commands (its test, lint, format and typecheck
+   entrypoints) to `allow` while you are there — those are repo-specific and
+   cannot ship from here. Commit it. It is version-controlled, reviewable in a
+   diff, and applies to every session in that repo whether or not `bootstrap.sh`
+   ever ran.
 
-A matched whole-tool allow rule is evaluated **before** that conversion, so the
-rule is what keeps the tool from asking. The only tools that ignore a whole-tool
-allow rule declare `ignoresWholeToolAllowRule`, and none of the tools listed here
-do. So every entry in this file is doing real work, and removing one reintroduces
-a stop.
+2. **Per container — the convenience half.** `bootstrap.sh` writes
+   `~/.claude/settings.json`, which is a live settings scope and genuinely does
+   apply. But `~/.claude` is per-container and disappears with it, so it only
+   helps sessions where bootstrap actually ran.
 
-Two entries were removed for the opposite reason — auto mode drops them, so they
-never did anything there:
-
-| Removed | Why |
-| --- | --- |
-| `Agent` | Auto mode drops `Agent` allow rules on entry |
-| All `Bash(...)` entries | Wildcarded interpreters and package-manager run commands are dropped; the rest duplicate what auto mode already allows — **in auto mode**, which is the qualifier the next section is about |
-
-Dropping the shell rules also retires the injection surface documented below:
-a tool-name rule admits no trailing arguments, so there is nothing for a flag to
-ride in on.
-
-### What dropping the shell rules costs outside auto mode
-
-In **Manual** and `acceptEdits` no classifier reviews anything, so there the
-shell rules were not redundant — they were the entire grant. Removing them means
-a local session in one of those modes now prompts for routine `git`/`gh` work it
-used to run straight through, and **an existing install loses them on its next
-`bootstrap.sh` run**, because the sidecar subtracts retired entries by design
-(*`permissions.json` is a managed set*). An unattended run in one of those modes
-stops at the first prompt.
-
-That cost is accepted rather than overlooked, and the asymmetry with the deny
-list — kept *because* Manual mode exists, while allow is dropped *despite* it —
-is the deliberate part: **a deny rule cannot be exploited by an argument riding a
-prefix, and an allow rule can.** A `Bash(...)` allow rule ending in `*` admits
-arbitrary trailing flags, and `git` and `gh` are full of flags that name a
-command to run or a file to read (*What this allowlist is, and is not*, which
-lists what five review rounds found). So deny buys a guard in every mode at no
-exposure, while allow bought a saved classifier round-trip in the one mode these
-skills actually run in and carried that surface into every other.
-
-If you do run them locally in Manual or `acceptEdits`, there are three
-non-interactive paths and none of them is this file:
-
-| Option | Note |
-| --- | --- |
-| Run in auto mode | What cloud containers do, and where the classifier already permits this work |
-| Add the shell rules to your own `~/.claude/settings.json` by hand | Bootstrap **keeps** hand-added entries — with no install record they are indistinguishable from a deliberate edit, so they are never subtracted |
-| Managed settings | Route (2) below, if an organization wants them for everyone |
-
-### Where to install it
-
-1. **Per container — the working default.** `bootstrap.sh` writes
-   `~/.claude/settings.json`. Claude Code watches its settings files and reloads
-   `permissions` edits into a running session, so a bootstrap that finishes after
-   the session starts still applies. `~/.claude` is per-container and disappears
-   with it.
-2. **Org-wide — the durable option.** An Owner or Primary Owner can paste the
-   same `permissions.allow` into **Managed settings** at
-   [claude.ai/admin-settings/claude-code](https://claude.ai/admin-settings/claude-code).
-   Server-managed settings are the *only* managed channel that reaches cloud
-   sessions — an MDM profile or a device `managed-settings.json` does not — and
-   they sit at the highest precedence tier. This needs no per-repo file and no
-   bootstrap write.
-3. **Per repository — usually unnecessary.** Committing these entries to a
-   repo's `.claude/settings.json` works, but it puts agent configuration in a
-   shared repo for no gain over (1) or (2). Permission allow/deny lists **merge**
-   across every scope rather than overriding, so a repo copy adds nothing that
-   the union does not already contain.
-
-### Verifying the rules are live in a container
-
-`/permissions` does not exist in a cloud session, which is the one place this
-question matters. Use a behavioural probe instead: call **`CronCreate`** with a
-harmless one-shot job, then `CronDelete` it.
-
-```
-CronCreate  cron: "43 3 24 12 *"  prompt: "probe"  recurring: false
-CronDelete  id: <returned id>
-```
-
-`CronCreate` is the right probe because it refuses to approve itself under auto
-mode — its own hook returns `passthrough`, which the pipeline converts to `ask`.
-So if the job is scheduled with no prompt, a whole-tool allow rule matched, and
-the only file in a bootstrapped container that supplies one is
-`~/.claude/settings.json`. If instead a permission prompt appears, the rules are
-not reaching the session.
-
-Confirmed working this way on Claude Code v2.1.252 in a cloud container: the
-session's diagnostics log (`$CLAUDE_CODE_DIAGNOSTICS_FILE`) reports
-`settings_load_completed` with `source_count: 4, error_count: 0`, and the probe
-schedules without prompting.
-
-**The documentation is easy to misread here.** *Settings in cloud sessions* lists
-user settings (`~/.claude/settings.json`) as "not read". That is about *your
-machine's* copy not being uploaded — the same table says the same of
-`~/.claude/skills/`, which bootstrap populates and which demonstrably loads. A
-file written inside the container is a live scope.
-
-### Do we still need the deny list?
-
-Yes, and it is the one part of this file not to cut. Auto mode's classifier
-already blocks most of what it names — force push, `git reset --hard`,
-`git clean -fd`, amending a pushed commit — but it blocks them *in auto mode*.
-A `deny` rule binds in **every** mode, which is what makes it worth keeping for
-local runs in Manual or `acceptEdits`, where no classifier reviews anything.
-
-The entries also cover force bundled into a short-option group — `git push -uf`,
-`-uqf`, `-unvf` — which the whitespace-delimited `-f` forms miss entirely. They
-use character classes rather than `*` for the letters before the `f`, and that
-detail is the whole point: **`*` spans spaces in `fnmatch`, so `git push -*f`
-also matches `git push -u origin ref`** and denies every push to a ref ending in
-`f`. A first attempt shipped exactly that bug. `-[!- ]f*` cannot cross a space
-and cannot match a second leading dash, so `--force-with-lease` and an ordinary
-`-u` push both stay allowed.
-
-Because fnmatch has no bounded repetition, the bundle length is enumerated
-rather than expressed — **eight classes, so eight option letters before the `f`
-are covered and the ninth is not**: `git push -unvvvvvvf` is denied,
-`git push -unvvvvvvvf` is not. That ceiling is real and is the honest shape of
-the constraint, not a claim of completeness. `check_contract_placement.py`
-asserts both sides of it, so this number and the shipped patterns cannot drift
-apart: extending the depth means updating this sentence in the same commit.
-Each entry is anchored on a whitespace-delimited `-` rather than on the start of
-the command, so a bundle is caught wherever it sits: `git push -q -uf origin main`
-is a force push and an entry anchored at `git push -` never sees it.
-
-The `+`-refspec and `--force` entries are likewise anchored to whitespace-delimited
-option tokens rather than matching the substring anywhere: unanchored versions
-deny a push to a branch named `feature+metrics` or `feature--force`, both of which
-`git check-ref-format` accepts, while `--force` also has to be anchored on its
-*right* so it cannot swallow `--force-with-lease`.
-
-The full matrix is asserted by `scripts/check_contract_placement.py` and runs in
-CI, rather than being reasoned about in prose. Every must-allow case in it is a
-command some earlier version of this file broke, and the enumerated depth is
-asserted at its edge so the boundary below is a tested fact rather than a claim.
-
-**Two residuals are left in on purpose. Neither is fixable in the rule language,
-and each is the cheaper side of a trade:**
-
-| Residual | Why it stays |
-| --- | --- |
-| Option bundles longer than the enumerated depth — `git push -unvvvvvvvvvf` | fnmatch has no bounded repetition and `*` spans spaces, so "an option token containing `f`" cannot be written; only enumerated. Extending the depth moves the ceiling and cannot remove it |
-| A remote whose name begins with `+` — `git push +prod HEAD:main` | The refspec entry cannot tell argument position, because `*` spans spaces. A false positive on a remote name git allows and nobody uses, versus covering `git push origin +HEAD:master`, which is a force push someone writes by accident |
-
-**Options written *after* the refspec are covered, and were mistakenly listed
-here as a third residual.** `git push origin -uf` and `git push origin main -uf`
-are both denied, by the same property that makes these rules delicate: the `*` in
-`git push* -[!- ]f*` spans spaces, so a whitespace-delimited option token is
-caught wherever it sits, including past the refspec. Both cases are in the
-asserted matrix so the claim stays checked rather than argued.
-
-One gap and one false positive, then — the same constraint seen from both sides:
-a glob matcher cannot see token boundaries or argument positions, so every rule
-is either too narrow at some length or too
-wide at some position.
-
-**What the gaps are not is a bypass worth closing.** This list guards against an
-*accident* — a force push someone or something writes without meaning to — and
-against accidents the enumerated depth is complete: nobody types
-`-unvvvvvvvvvf` by mistake. Against an adversary it was never a control at all
-(*What this allowlist is, and is not*), and a longer enumeration would not make
-it one, because a shell offers unbounded ways to write the same flag. Auto
-mode's classifier is the control that covers both cases.
-
-The entries are also anchored as substrings rather than prefixes, which closes
-gaps a prefix-anchored form leaves open — `git push origin master --force`,
-`git push origin master -f` and `git push origin +HEAD:master` all evade a rule
-anchored at `git push --force`. Each is spaced so it cannot swallow
-`--force-with-lease`, which the stacked-PR restack needs.
-
-Two things deliberately **not** denied:
-
-| Not denied | Why |
-| --- | --- |
-| `git push --delete` / `git push origin :branch` | Branch deletion is something these skills legitimately do; it was an `allow` entry here before. It now reaches the classifier, which is the right treatment |
-| `git commit --amend` | Auto mode's handling is more precise than a blanket deny: it permits a message-only reword of a commit created in this session and blocks amending anything pushed |
-
-One admin key to know about: `allowManagedPermissionRulesOnly: true` makes
-Claude Code ignore every non-managed permission rule, including everything
-`bootstrap.sh` installs. If an organization sets it, route (2) is the only one
-that works, and route (1) fails silently.
+The two scopes merge, and `deny` wins over `allow` in either.
 
 ### `permissions.json` is a managed set
 
@@ -333,10 +153,6 @@ matters.
 into one.** Do not reason about it as though a hostile or prompt-injected agent
 is contained by it — it isn't, by construction rather than by oversight.
 
-This file no longer carries `Bash(...)` rules, which removes the sharpest edge
-of that statement — the history below is kept because it is the reason the rules
-went, and because anyone tempted to add one back needs it.
-
 Permission rules are **prefix matches**, so any rule ending in `*` admits
 arbitrary trailing arguments. `git` and `gh` are both full of flags that name a
 command to run or a file to read, and those flags simply ride along after
@@ -350,8 +166,8 @@ whatever prefix is granted. Five rounds of automated review found:
 | `Bash(git fetch*)` / `Bash(git push*)` | local shell, via `--upload-pack=` / `--receive-pack=` against a `.` remote |
 | `Bash(gh api*)` | reads a local file and publishes it, via `-F key=@<path>` |
 
-Each was removed or replaced with a wildcard-free form, and the whole class is
-now gone from this file.
+Each was removed or replaced with a wildcard-free form. Those were cheap fixes
+for capabilities nothing needed, and they should stay.
 
 The fifth round is the one that settles the question. `Bash(git commit*)` and
 `Bash(git push)` are each safe in isolation — the second takes no arguments at
@@ -365,14 +181,8 @@ broad enough to exfiltrate a file. Narrowing relocates the hole; it does not
 remove it. The controls that actually hold are elsewhere — container isolation,
 credential scoping, egress policy, and what the token can reach.
 
-Auto mode is now the layer doing that work for shell commands, which is why the
-`Bash(...)` rules could go rather than be narrowed a sixth time. It is not a
-boundary either, but it is a reviewer, and a reviewer beats a prefix match.
-
 Judge additions to this file by "does a skill need this to run without
-prompting, and does auto mode not already allow it", not by "is this safe to
-grant an adversary". A `Bash(...)` entry should now be an argued exception with a
-named tool that stopped, not a default.
+prompting", not by "is this safe to grant an adversary".
 
 ### Two things that are easy to get wrong
 
