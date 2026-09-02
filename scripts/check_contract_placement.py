@@ -77,6 +77,18 @@ def main() -> int:
          "a write this workflow did not author" in bo_pred),
         ("ii predicate: settlement records are not new content",
          "a write this workflow did not author" in ii_pred),
+        # The recorded states name only the two outcomes that leave a thread
+        # open, so a predicate listing them alone re-groups every fixed thread.
+        ("bo predicate: a resolved thread is handled", "still unresolved" in bo_pred),
+        ("ii predicate: a resolved thread is handled", "still unresolved" in ii_pred),
+        # NEEDS_USER is an outcome for ci/finding evidence and an item kind for a
+        # review thread. The caller branches on the outcome, so conflating them
+        # marks the whole PR NEEDS_USER and the run never settles.
+        ("repair-pr scopes the NEEDS_USER outcome away from review threads",
+         "it is a `NEEDS_USER` **item** carried" in flat(rp)),
+        # Settle's bar takes choices, not work, so it cannot clear a deferred repair.
+        ("bo does not claim settle consumes deferred repairs",
+         "does not consume a deferred repair" in flat(bo)),
         # Classification is dispatchable with the repair budget spent.
         ("bo dispatch ungates classification",
          "gates repairing, not classifying" in clause(bo, "2. allocate an isolated checkout")),
@@ -234,6 +246,9 @@ def main() -> int:
         "git push -q -uf origin main", "git push -v -unvf origin main",
         "git push --tags -uf origin main", "git push origin master --force",
         "git push origin master -f",
+        # Options past the refspec. Once wrongly documented as uncovered; the
+        # space-spanning `*` catches them, and the README says so now.
+        "git push origin -uf", "git push origin main -uf", "git push origin main -uqf",
     ]
     # Every entry here is a command that a previous version of this file broke.
     must_allow = [
@@ -269,10 +284,12 @@ def main() -> int:
     checks.append(("README states what dropping the shell rules costs outside auto mode",
                    "### What dropping the shell rules costs outside auto mode" in readme
                    and "loses them on its next" in readme))
-    checks.append(("README documents all three deny residuals",
-                   "Three residuals are left in on purpose" in readme
+    checks.append(("README documents both deny residuals",
+                   "Two residuals are left in on purpose" in readme
                    and "git push -unvvvvvvvvvf" in readme
                    and "git push +prod HEAD:main" in readme))
+    checks.append(("README does not claim post-refspec options are uncovered",
+                   "Options written *after* the refspec are covered" in readme))
 
     failures = [name for name, ok in checks if not ok]
     for name, ok in checks:

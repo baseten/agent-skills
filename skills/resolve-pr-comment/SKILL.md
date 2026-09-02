@@ -161,7 +161,7 @@ nothing. Return every supplied thread as its classification and nothing else:
 
 | Classification | Returned as |
 | --- | --- |
-| Wants a code change | The thread with the change it asks for — **not applied**. The caller reports it as a deferred repair |
+| Wants a code change | The thread with the change it asks for — **not applied**. It comes back as a deferred-repair item, which is a kind of `NEEDS_USER` item and not an alternative to one (*Output*) |
 | Wants an answer | A `NEEDS_USER` item with its draft reply, exactly as unattended |
 | Wants nothing | A no-action entry, exactly as unattended |
 | Wants both (*A comment can want both*) | Both entries for the one thread — the change unapplied as a deferred repair, and the question as a `NEEDS_USER` item with its draft. The thread is handled only once the caller has recorded both |
@@ -332,8 +332,11 @@ After completing all steps, summarize:
     unrecorded, the thread is never marked handled, and it is dispatched again on
     every cycle, since a classify-only pass consumes none.
 
-  A **mixed thread returns two entries** — a deferred repair and a question at
-  the one URL (*A comment can want both*) — which is why this is keyed by item.
+  **Under a classify-only invocation a mixed thread returns two entries** — a
+  deferred repair and a question at the one URL (*A comment can want both*) —
+  which is why this is keyed by item. With budget remaining the change was
+  repaired, so only the question item comes back and the fix is reported as the
+  fix.
   Unattended, none of these were answered or resolved, and the caller needs them
   individually: `repair-pr` propagates them, the orchestrators hold the merge
   gate on them, and `settle-outstanding-decisions` puts a question to the owner

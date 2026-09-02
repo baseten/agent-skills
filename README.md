@@ -248,18 +248,24 @@ CI, rather than being reasoned about in prose. Every must-allow case in it is a
 command some earlier version of this file broke, and the enumerated depth is
 asserted at its edge so the boundary below is a tested fact rather than a claim.
 
-**Three residuals are left in on purpose. None is fixable in the rule language,
+**Two residuals are left in on purpose. Neither is fixable in the rule language,
 and each is the cheaper side of a trade:**
 
 | Residual | Why it stays |
 | --- | --- |
-| Options written *after* the refspec — `git push origin -uf` | Every pattern that catches them also denies a legitimate push to some ref |
 | Option bundles longer than the enumerated depth — `git push -unvvvvvvvvvf` | fnmatch has no bounded repetition and `*` spans spaces, so "an option token containing `f`" cannot be written; only enumerated. Extending the depth moves the ceiling and cannot remove it |
 | A remote whose name begins with `+` — `git push +prod HEAD:main` | The refspec entry cannot tell argument position, because `*` spans spaces. A false positive on a remote name git allows and nobody uses, versus covering `git push origin +HEAD:master`, which is a force push someone writes by accident |
 
-The first two are gaps and the third is a false positive, but they are the same
-constraint seen from both sides: a glob matcher cannot see token boundaries or
-argument positions, so every rule is either too narrow at some length or too
+**Options written *after* the refspec are covered, and were mistakenly listed
+here as a third residual.** `git push origin -uf` and `git push origin main -uf`
+are both denied, by the same property that makes these rules delicate: the `*` in
+`git push* -[!- ]f*` spans spaces, so a whitespace-delimited option token is
+caught wherever it sits, including past the refspec. Both cases are in the
+asserted matrix so the claim stays checked rather than argued.
+
+One gap and one false positive, then — the same constraint seen from both sides:
+a glob matcher cannot see token boundaries or argument positions, so every rule
+is either too narrow at some length or too
 wide at some position.
 
 **What the gaps are not is a bypass worth closing.** This list guards against an
