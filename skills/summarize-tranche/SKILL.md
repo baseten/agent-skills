@@ -52,17 +52,29 @@ Each one states: **what** (one line) · **where** (issue URL, PR URL, or `path:l
 
 The first three say **who owns the follow-up**; `MERGE_RISK` says the merge decision must account for it. Different questions — **an item can carry both** (a verified no-ticket defect that must land before one of this tranche's PRs is `NEW_ISSUE` *and* `MERGE_RISK`; NOTES). Where an item has an ordering consequence, say so on the item, whichever class it carries.
 
-**A review thread the run reserved for the owner is never `IN_FLIGHT_FIX`** — neither a
-question item nor a repair deferred because `review-repair-cycles` was spent
-(`backlog-orchestrator`, *Merge policy and review feedback*). The orchestrator already
-holds that PR's merge on it and has no compliant way to dispatch it: the review path
+**A reserved review thread with nothing able to dispatch it is never `IN_FLIGHT_FIX`** —
+a question item, or a repair deferred because `review-repair-cycles` was spent
+(`backlog-orchestrator`, *Merge policy and review feedback*). For those two the
+orchestrator already holds that PR's merge and has no compliant dispatch: the review path
 refuses the thread on budget and re-admits it only on new content, and the finding path
 exists for work no thread carries
 (`backlog-orchestrator`, *A settle finding is the third repair shape*).
-Classing one as `IN_FLIGHT_FIX` un-settles the tranche with nothing able to act on it. So report a **deferred repair as `MERGE_RISK`** — the requested change, the
-thread URL, that the review repair budget was spent, and that the next step is to apply it
-or lift the budget. A **question** thread is not an action point of its own: the
-walkthrough reads it from the thread.
+Classing one as `IN_FLIGHT_FIX` un-settles the tranche with nothing able to act on it. So
+report a **deferred repair as `MERGE_RISK`** — the requested change, the thread URL, that
+the review repair budget was spent, and that the next step is to apply it or lift the
+budget. A **question** thread is not an action point of its own: the walkthrough reads it
+from the thread.
+
+**The test is the absence of a dispatch, not the reservation.** One reserved thread has
+one: a thread carrying a **recorded code-changing ruling whose change has not been pushed**
+is `IN_FLIGHT_FIX`, and the finding path takes it — a recorded ruling requiring this PR's
+code to change is exactly what that path's evidence is (`repair-pr`, *Finding repair (`repair type = finding`)*). It
+must be emitted, because after a restart nothing else will: the reservation persists until
+the change is pushed (`backlog-orchestrator`, *Merge policy and review feedback*), the
+walkthrough's already-ruled test retires the question rather than re-emitting it
+(`settle-outstanding-decisions`, *What qualifies as an outstanding decision*), and the
+same-run route from the walkthrough's own output is gone with the run. Excluding it would
+leave the change with no dispatch path and the merge gate shut for good.
 
 Drop the merely informational: "worth keeping an eye on" is not an action point.
 

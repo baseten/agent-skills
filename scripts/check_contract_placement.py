@@ -214,12 +214,18 @@ def main() -> int:
         ("ii budget-exhaustion step names items, not an outcome",
          "never a `NEEDS_USER`\n   outcome for the PR" in ii or
          "never a `NEEDS_USER` outcome for the PR" in flat(ii)),
-        ("summarize-tranche excludes reserved threads from IN_FLIGHT_FIX",
-         "never `IN_FLIGHT_FIX`" in flat(sm) and "as `MERGE_RISK`" in flat(sm)),
-        ("bo finding shape excludes reserved threads as a source",
-         "never the source of an `IN_FLIGHT_FIX`" in flat(bo)),
-        ("ii un-settling excludes reserved threads",
-         "never a thread reserved for the owner, deferred repairs included" in flat(ii)),
+        ("summarize-tranche excludes only reserved threads with no dispatch",
+         "with nothing able to dispatch it is never `IN_FLIGHT_FIX`" in flat(sm)
+         and "as `MERGE_RISK`" in flat(sm)),
+        ("summarize-tranche emits a code-changing ruling as IN_FLIGHT_FIX",
+         "The test is the absence of a dispatch, not the reservation" in flat(sm)
+         and "whose change has not been pushed** is `IN_FLIGHT_FIX`" in flat(sm)),
+        ("bo finding shape excludes only threads with no dispatch",
+         "not a source of an `IN_FLIGHT_FIX` where nothing can dispatch it" in flat(bo)
+         and "recorded code-changing ruling is the exception" in flat(bo)),
+        ("ii un-settling excludes only threads with no dispatch",
+         "with nothing able to dispatch it" in flat(ii)
+         and "recorded code-changing ruling un-settles as it always did" in flat(ii)),
         # A gate condition with no termination rule holds after the owner answers.
         ("bo states what ends a reservation",
          "A reservation ends in exactly two ways" in flat(bo)),

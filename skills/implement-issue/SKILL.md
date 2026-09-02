@@ -151,7 +151,7 @@ The run settles when its one issue reaches a terminal state: the PR individually
 - Unruled — deferred, declined, never asked — is still outstanding; unruled is not clean, and the gate already refuses it.
 - A free-text ruling that cannot be confidently placed takes the disposition row (NOTES: the misreadings are not symmetric).
 
-**Un-settling** — a summary `IN_FLIGHT_FIX`, or a code-changing ruling; identical handling from either source, and **never a thread reserved for the owner, deferred repairs included** (`backlog-orchestrator`, *A settle finding is the third repair shape*):
+**Un-settling** — a summary `IN_FLIGHT_FIX`, or a code-changing ruling; identical handling from either source, and **never a thread reserved for the owner with nothing able to dispatch it — questions and deferred repairs** (`backlog-orchestrator`, *A settle finding is the third repair shape*). A thread carrying a recorded code-changing ruling un-settles as it always did: the ruling is the evidence and the finding path takes it:
 
 - dispatch `repair-pr` once with `repair type = finding` — the finding **verbatim** (the action point, or the recorded ruling with its site URL) plus the map, on the same model rule as CI and review;
 - a **pushed** repair consumes a `finding-repair-cycles` cycle and retriggers review where convention requires (substantive, never mechanical); **`NO_CODE_CHANGE`** consumes no cycle and triggers no review. Merge returned identity entries whatever the outcome. `backlog-orchestrator`, *A settle finding is the third repair shape*, owns the type, the budget, and the branching;
