@@ -29,6 +29,9 @@ jobs:
       - name: Permissions file shape
         run: python3 scripts/check_permissions.py
 
+      - name: Contract rule placement
+        run: python3 scripts/check_contract_placement.py
+
       - name: Checkpoint capture tests
         run: bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
 

@@ -53,8 +53,60 @@
       "expected_output": "Never change draft state \u2014 promotion is the supervisor's decision needing the whole-PR picture. Report TWO unresolved actionable threads: the count includes threads outside the supplied round.",
       "assertions": [
         "The answer does not mark the PR ready / never changes draft state, leaving promotion to the caller",
-        "The answer reports 2 unresolved actionable threads, explicitly counting threads outside the supplied round",
-        "The answer returns immediately after push/verification rather than waiting for the next review state"
+        "The answer reports 2 unresolved actionable threads, explicitly counting threads outside the supplied round"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "escalated-threads-propagate-with-drafts",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review. The supplied round has four threads. You invoke resolve-pr-comment, which fixes three of them, and classifies the fourth as NEEDS_USER \u2014 a reviewer asking whether a failed webhook should be dropped or dead-lettered \u2014 returning a draft reply that lays out both options and their costs and makes no pick. You commit and push the three fixes; CI is green. Questions: (a) what does your Output report about the fourth thread, and is a count of unresolved threads sufficient? (b) may you shorten the draft to a one-line summary to keep the report tight? (c) since you pushed a fix and CI is green, may you omit the escalation and let the caller discover it from the PR? (d) do you post the draft anywhere? Additionally: a fifth thread says \"rename this to `retryAfterMs`, and tell me whether the 429 path shares this timer.\" You make the rename. Does that thread appear in your Output, is it resolved, and is this round NO_CODE_CHANGE?",
+      "expected_output": "(a) One entry for the fourth thread carrying its URL, root author, what it asks, and the draft reply. The count of unresolved actionable threads is still reported but is not sufficient on its own: the caller reports these individually to the owner and holds the merge gate on them, and neither is possible from a number. (b) No \u2014 the draft passes through verbatim. A summarised draft is one the owner has to redo, which defeats the point of producing it. (c) No. A pushed head is never evidence that nothing was escalated; a round that fixed three threads and escalated one has both results, and both are reported. (d) No \u2014 the draft is material for a person, never posted, on any path. Posting it would be the autonomous answer the classification exists to prevent. The fifth thread wants both a diff and an answer, so it is repaired and still reserved: the rename is pushed, the thread is left unresolved, and it appears in the Output as a NEEDS_USER entry with its draft alongside the pushed fix. Dropping its entry because the fix landed resolves nothing and hides the question. The round pushed a repair, so it is not NO_CODE_CHANGE and it consumes a cycle \u2014 the no-repair-work early return does not apply to a round containing a mixed thread.",
+      "assertions": [
+        "reports the fourth thread as its own entry with URL, question, and draft reply",
+        "states that a count alone is insufficient",
+        "passes the draft through verbatim rather than summarising it",
+        "reports the escalation even though the pass pushed a fix and CI is green",
+        "does not post the draft anywhere",
+        "the mixed thread appears in the Output as a NEEDS_USER entry despite its fix being pushed",
+        "the mixed thread is not resolved",
+        "the round is not NO_CODE_CHANGE and consumes a cycle"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "zero-budget-invocation-is-classify-only",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review. The caller dispatched you with a remaining repair-cycle budget of **zero** \u2014 it did so deliberately, because an unclassified thread has no draft and its settlement path needs one. The supplied round has two threads: one asks you to rename a misleading variable (a straightforward code change you could make in a minute), the other asks why a caching strategy was chosen. Questions: (a) do you make and push the rename? (a2) the rename comes back as NEEDS_USER on budget grounds \u2014 does that item carry a draft reply, and why? (b) what do you return for each thread? (c) do you resolve either thread? (d) is a cycle consumed? (e) you invoke resolve-pr-comment for both threads \u2014 what do you have to tell it, and what happens if you do not? (f) what exactly does your Output return for the rename thread? (g) A third supplied thread says \"extract this constant, and tell me whether the worker path shares it.\" How many Output entries does that one thread produce, and what does dropping either of them cost? (h) Is that mixed thread's round NO_CODE_CHANGE, and does it consume a cycle?",
+      "expected_output": "(a) No. A zero remaining budget makes this a classify-only invocation, and that is enforced here rather than by the caller: the dispatch is not authorization to repair. Classify and draft both threads; make no correction, run no verification, commit nothing, push nothing. (a2) No draft. A deferred-repair item is a distinct kind: a draft is defined only for the two question shapes \u2014 an answer from the work, or an owner's choice between options \u2014 and a repairable change request is neither. Requiring one would force a query-shaped draft to be invented for work that simply did not happen, and the caller would then put it to the owner as though there were something to decide; the thread wants a diff and the budget ran out. It carries the change it asks for instead. (b) The caching question comes back as a question item with a draft; the rename comes back as a deferred-repair item without one. The rename is NEEDS_USER **on budget grounds** \u2014 stated as such in the item, because that is a different reason from the kind test and the caller reports them differently; the caching question is NEEDS_USER on the kind test. (c) Neither: a thread is never resolved without an applied fix, and there is none. (d) No cycle is consumed, and the outcome is NO_CODE_CHANGE. Pushing the rename here would mean the cap does not bind at all \u2014 the caller would count and retrigger the push and rounds would continue past the configured limit. (e) Invoke it in its classify-only mode and say so in the invocation. That mode is what stops the callee's own workflow applying, committing and pushing the rename: skipping steps 3-5 here constrains this skill, not the one it invokes. Without the explicit mode the callee runs its default workflow, pushes the fix, and the caller's repair cap is exceeded by the callee \u2014 the same failure as pushing directly, one level down. (f) A NEEDS_USER entry with the thread URL, its root author, what it asks, and the change it asks for \u2014 with no draft field, because the Output contract splits those entries by item kind. Do not report it under the question shape: that leaves a query-shaped draft to be invented, or the item dropped, and dropping it means the change request never reaches the caller, is never recorded as handled, and is re-dispatched every supervision cycle in classify-only mode without bound. (g) Two. It wants a diff and an answer, so under a classify-only invocation it returns a deferred-repair item carrying the unapplied extraction and no draft, and a question item carrying the drafted answer. The Output is keyed by item and not by thread precisely for this: one entry per thread would have to drop either the unapplied change, leaving work nobody records, or the unanswered question, leaving the thread reserved with nothing to put to the owner. The thread is handled only once the caller has recorded both. (h) Yes NO_CODE_CHANGE, and no cycle. A mixed thread is not a no-repair-work case, but what follows from that depends on the budget, because the budget decides whether there was a repair to make at all: with budget remaining the repair is pushed and the round consumes a cycle, and at zero budget this is a classify-only invocation, nothing is pushed, and the zero-budget constraint governs. Reading the mixed rule as an unconditional push here would exceed the cap and retrigger review off a round that changed nothing \u2014 the two failures the zero-budget branch exists to prevent.",
+      "assertions": [
+        "does not make, commit or push the rename despite it being trivially repairable",
+        "the rename returns as NEEDS_USER on budget grounds, distinguished from the kind test",
+        "neither thread is resolved, because no fix was applied",
+        "returns NO_CODE_CHANGE and consumes no cycle",
+        "names the consequence of pushing anyway: the configured cap would not bind",
+        "the rename returns as a deferred-repair item carrying the requested change and no draft",
+        "the caching question returns as a question item with a draft",
+        "states that a draft is defined only for the two question shapes",
+        "invokes resolve-pr-comment in an explicit classify-only mode rather than relying on skipping its own steps",
+        "names the failure without the mode: the callee pushes and the caller's cap is exceeded",
+        "the Output entry for the rename carries the requested change and no draft field, distinct from the question item's shape",
+        "the mixed thread produces two Output entries for the one thread URL",
+        "names what dropping either entry costs: unrecorded work, or a reserved thread with nothing to ask",
+        "the mixed thread at zero budget yields NO_CODE_CHANGE and consumes no cycle",
+        "the mixed-thread rule is not read as an unconditional push"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "acknowledgements-only-round-returns-no-code-change",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review, with **two of three review cycles still remaining** \u2014 the budget is not the constraint. The caller dispatched a round of three threads and all three read \"nice catch\", \"thanks, this looks good\" and \"agreed\". Questions: (a) what outcome do you return? (b) do you run the correction, verification and commit steps? (c) is a cycle consumed? (d) what do you return for the three threads? (e) the early-return rule you are applying \u2014 is it about the threads all being NEEDS_USER?",
+      "expected_output": "(a) NO_CODE_CHANGE. (b) No \u2014 there is nothing to correct, so pushing nothing is the outcome, not a fall-through: running the commit step with no change either fails or manufactures an empty commit, and the cycle accounting would be undefined. (c) No cycle. (d) Three no-action entries, one per thread, each with its thread URL and why it wants nothing and no draft \u2014 forwarding them is what marks them handled, and an unforwarded acknowledgement is re-dispatched every cycle since a pass like this consumes none. (e) No. The test is the **absence of repair work**, not the presence of a particular kind: questions qualify, acknowledgements qualify, any mix qualifies. Reading it as every-thread-is-NEEDS_USER is what left this round with no defined outcome.",
+      "assertions": [
+        "returns NO_CODE_CHANGE for a round of only acknowledgements, with budget remaining",
+        "does not run the correction, verification or commit steps",
+        "no repair cycle is consumed",
+        "all three threads are forwarded as no-action entries rather than omitted",
+        "states the early-return test as the absence of repair work rather than as all threads being NEEDS_USER",
+        "names the empty-commit or undefined-outcome failure of falling through"
       ]
     }
   ]

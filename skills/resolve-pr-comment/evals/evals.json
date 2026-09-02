@@ -5,12 +5,13 @@
     {
       "id": 0,
       "name": "question-comment-reply-without-resolving",
-      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md from the skill directory you were given). Scenario: the targeted review comment is a reviewer asking 'Why did you choose polling here instead of a webhook?' \u2014 a genuine question about intent; no code change is needed and none was requested. Question: what do you do \u2014 change code, reply, resolve the thread, some combination? Be precise about the thread's resolution state when you finish.",
-      "expected_output": "Post a reply explaining the intent; do NOT resolve the thread \u2014 resolution of query threads is left to the user. No code change.",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md from the skill directory you were given). Scenario: a person invoked this skill directly and named the comment, so the caller is attended. the targeted review comment is a reviewer asking 'Why did you choose polling here instead of a webhook?' \u2014 a genuine question about intent; no code change is needed and none was requested. Question: what do you do \u2014 change code, reply, resolve the thread, some combination? Be precise about the thread's resolution state when you finish.",
+      "expected_output": "Post a reply explaining the intent; do NOT resolve the thread \u2014 resolution of query threads is left to the user. No code change. This is the attended path: a person invoked the skill and named the comment, so the reply is posted for them to correct. Unattended \u2014 a caller that selected the thread set itself \u2014 the substantive reply is not posted at all; the thread comes back as a NEEDS_USER item with a draft reply instead. Either way the thread is not resolved.",
       "assertions": [
         "The answer posts a reply addressing the question without making a code change",
         "The answer does NOT resolve the thread",
-        "The answer leaves resolution to the user explicitly"
+        "The answer leaves resolution to the user explicitly",
+        "does not treat the attended reply as licence to answer a question unattended"
       ]
     },
     {
@@ -55,6 +56,105 @@
         "The answer does not start fixing all (or a self-selected subset of) threads",
         "The answer asks the user which comment(s) to target before proceeding",
         "The answer proceeds only after the target set is specified"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "unattended-query-drafts-does-not-post",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invoked you with a thread set it selected itself; no human is present. Two threads. (a) close-spice-reviewer[bot] asks \"why retry three times here rather than using the shared backoff helper?\" \u2014 you can see from the code that the shared helper does not support the per-request budget this call site needs, and there is a comment at src/client.ts:88 saying so. (b) a human reviewer asks \"should a failed webhook be dropped or dead-lettered? Dead-lettering means we need a queue we don't have yet.\" Question: for each thread, what do you post, what do you resolve, and what do you return to repair-pr?",
+      "expected_output": "Neither thread is answered on the run's own authority and neither is resolved \u2014 a question is never resolved by this skill, and unattended the substantive reply is not posted either. Both come back as NEEDS_USER items with thread URL, root author, what it asks, and a draft reply. The two drafts differ in kind. (a) is answerable from the work, so the draft states the actual answer with its evidence \u2014 the shared helper cannot express the per-request budget this call site needs, citing src/client.ts:88 \u2014 as a claim the owner can check. That the author is an automated reviewer does not make it repairable: it asks for rationale, not a diff. (b) is a decision only the owner can make, so the draft gives both options and what each costs \u2014 dropping loses failed webhooks silently, dead-lettering needs a queue that does not exist yet \u2014 and deliberately makes no pick. Any assumption is marked inline where the claim sits, not in a preamble. Neither draft is posted on any path.",
+      "assertions": [
+        "neither thread is resolved",
+        "no substantive reply is posted to either thread, because the caller is unattended",
+        "both threads are returned as NEEDS_USER items carrying a draft reply",
+        "the answerable-from-work question gets a draft stating the answer with its evidence, citing src/client.ts:88",
+        "the owner-decision question gets a draft giving options and costs with no pick made",
+        "the bot-authored thread is not treated as repairable merely because a bot wrote it",
+        "assumptions are marked inline rather than in a preamble"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "kind-judged-by-intent-not-punctuation",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: an unattended caller supplies two threads on the diff. (a) \"Could you add a null check here? line 40 can be undefined.\" (b) \"I don't follow why this needs a second pass over the array.\" Note that (a) is phrased as a question and (b) is not. Questions: for each, is it repairable or NEEDS_USER, and on what basis?",
+      "expected_output": "(a) Repairable. Despite the question mark, it asks for a code change the pass can make and verify \u2014 add the null check, commit, reply with the SHA, resolve the thread. Routing it to NEEDS_USER on its punctuation would reserve a straightforward fix and hold the merge gate shut over it. (b) NEEDS_USER, despite having no question mark: its correct response is prose \u2014 an explanation of why the second pass is needed \u2014 not a diff, so it comes back as an item with a draft and is neither answered nor resolved. The test is what the comment asks for, never how it is punctuated or phrased.",
+      "assertions": [
+        "the question-phrased change request is treated as repairable and fixed",
+        "the statement-phrased request for rationale is treated as NEEDS_USER",
+        "states explicitly that the test is intent rather than punctuation or phrasing",
+        "names the cost of getting (a) wrong: a reserved trivial fix holding the merge gate shut"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "acknowledgements-are-no-action-not-needs-user",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: an unattended caller supplies three open threads on the diff. (a) \"Thanks, this looks good.\" (b) \"I don't follow why this needs a second pass over the array.\" (c) \"Add a null check on line 40.\" Questions: for each, what classification does it get and what do you return? And specifically for (a): what would go wrong if you returned it as NEEDS_USER with a draft, and what would go wrong if you simply omitted it from your output?",
+      "expected_output": "(a) No-action. An acknowledgement asks for neither a diff nor an answer: return it as no-action, reply to nothing, resolve nothing, escalate nothing. (b) NEEDS_USER \u2014 its correct response is prose, so it comes back as an item with a draft, unanswered and unresolved. (c) Repairable \u2014 make the change, commit, reply with the SHA, resolve the thread. Returning (a) as NEEDS_USER would be a trap rather than a harmless over-report: it is neither an answerable-from-work question nor a choice only the owner can make, so settle-outstanding-decisions cannot qualify it under its bar. The item gets declined, the thread stays reserved, and it holds the merge gate with nothing able to clear it. Omitting it is the other failure and is not safer: silence is not the same as no-action. The caller's predicate re-groups any thread it has not recorded as handled, so an omitted acknowledgement returns on the next supervision cycle, is classified again, and loops without bound because a classify-only pass consumes no cycle. So (a) is returned as an explicit no-action entry with its URL and why it wants nothing, carrying no draft. The classification is three-way: a diff, an answer, or nothing at all.",
+      "assertions": [
+        "the acknowledgement is classified no-action, not NEEDS_USER and not repairable",
+        "nothing is replied, resolved or escalated for the acknowledgement",
+        "the rationale question is NEEDS_USER and the change request is repairable",
+        "names the deadlock: settle cannot qualify an acknowledgement, so it would hold the merge gate indefinitely",
+        "states the classification as three-way rather than two-way",
+        "the acknowledgement is returned as an explicit no-action entry rather than omitted from the output",
+        "names the unbounded re-dispatch loop that omitting it would cause"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "classify-only-invocation-does-not-push",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invoked you with an unattended context and an explicit classify-only context, supplying three threads: (1) 'this off-by-one should be `<=`' \u2014 a one-line fix you can see is correct, (2) 'why did you pick optimistic locking here?', (3) 'nice, thanks'. Questions: (a) do you apply, commit and push the fix for thread 1? (b) what do you return for each of the three? (c) do you reply to or resolve any of them? (d) the caller told you it is skipping its own correction and push steps \u2014 is that on its own enough to stop you fixing thread 1, and why does the mode have to be passed explicitly?",
+      "expected_output": "(a) No. In classify-only mode workflow steps 3-6 do not run: no correction, no verification, nothing committed, nothing pushed. (b) Thread 1 comes back as the thread with the change it asks for, unapplied \u2014 the caller reports it as a deferred repair, and it carries no draft. Thread 2 comes back as a NEEDS_USER item with its draft reply (answerable from the work, or an owner's choice with no pick, per The draft reply); the draft is never posted. Thread 3 wants neither a diff nor an answer, so it comes back as an explicit no-action entry \u2014 not NEEDS_USER, since escalating an acknowledgement leaves it holding the merge gate with nothing able to clear it, and not silence either, since an unrecorded thread is re-dispatched on every supervision cycle. (c) No: reply to nothing, resolve nothing. A thread is never resolved without an applied fix, and a question is never resolved at all. (d) No, not on its own. The caller skipping its own steps constrains the caller, not this skill \u2014 this skill's default workflow applies, commits and pushes, so absent an explicit classify-only mode it would push the thread-1 fix and exceed the caller's repair cap. The mode is the only thing that binds the callee.",
+      "assertions": [
+        "no fix is applied, committed or pushed for the off-by-one thread",
+        "nothing is replied to and no thread is resolved",
+        "the off-by-one thread is returned as the change it asks for, unapplied, with no draft",
+        "the rationale question is returned as a NEEDS_USER item with a draft that is not posted",
+        "the acknowledgement is returned as an explicit no-action entry",
+        "states that the caller skipping its own steps does not constrain this skill",
+        "names the explicit classify-only mode as what prevents the callee pushing and exceeding the caller's repair cap"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "a-comment-wanting-both-is-repaired-and-reserved",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invoked you unattended with one thread whose single comment reads \"add the null guard here, and explain why the shared helper is unsuitable for this path.\" The null guard is a two-line change you can make and verify. Questions: (a) which classification does it get? (b) do you apply and push the guard? (c) do you resolve the thread? (d) may you reply at all, and what may the reply say? (e) what goes wrong if you classify it repairable only, and what goes wrong if you classify it NEEDS_USER only?",
+      "expected_output": "(a) Both. A comment can want a diff and prose at once; that is not a third classification but both at once, and it gets both treatments. (b) Yes \u2014 apply, verify and push the null guard; it is work the pass can do and there is no reason to defer it. (c) No. The thread is reserved, and a reserved thread is never resolved, whatever was pushed for it. The resolution rule has two halves and a mixed thread meets the first (never resolve without an applied fix) and fails the second. (d) A reply reporting what changed is a statement about work done, not an answer, so it is permitted where the mode permits any reply \u2014 but it must not be written as though it answered the rationale question. The question comes back as a NEEDS_USER item with its draft, unposted. (e) Repairable only: the fix lands, the thread is resolved, the rationale is unanswered, and because a resolved thread is not a reserved one the merge gate reads the review as clean over a question nobody answered \u2014 the failure the reserved-thread rule exists to prevent, reached through the fix rather than around it. NEEDS_USER only: a fix the pass could have made and verified is left undone, waiting on a person who was only ever asked for prose.",
+      "assertions": [
+        "the comment is classified as both repairable and NEEDS_USER, not forced into one",
+        "the null guard is applied and pushed",
+        "the thread is not resolved",
+        "the rationale question comes back as a NEEDS_USER item with a draft that is not posted",
+        "names the silent failure of the repairable-only reading: the gate reads the review as clean over an unanswered question",
+        "names the cost of the NEEDS_USER-only reading: a verifiable fix left undone"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "attended-mixed-comment-gets-a-real-answer",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a person invokes you directly and names one review comment: \"add the null guard here, and explain why the shared helper is unsuitable for this path.\" You can see both the fix and the answer. Questions: (a) do you post the explanation in the thread, or return it as a NEEDS_USER item with a draft? (b) do you apply the guard? (c) do you resolve the thread? (d) separately: the same comment reaches you from repair-pr with a zero repair budget \u2014 what do you return, and how many entries?",
+      "expected_output": "(a) Post the explanation in the thread. This is attended: a person is present and asked for prose, and the mixed-comment rule adds a classification case rather than an exception to the attended/unattended split. Withholding the answer because the same comment also asked for a diff answers nobody. The NEEDS_USER item with a draft is the unattended treatment. (b) Yes \u2014 apply and verify the guard. (c) No. Neither mode resolves a mixed thread: attended, resolution of a query thread is the user's; unattended, the thread is reserved and a reserved thread is never resolved. (d) Two entries for the one thread \u2014 a deferred-repair item carrying the unapplied change and no draft, and a question item carrying the drafted answer \u2014 and nothing is applied, pushed, replied to or resolved. The thread is handled only once the caller has recorded both; forwarding one entry drops either work nobody records or a question nobody can put to the owner.",
+      "assertions": [
+        "attended, the explanation is posted in the thread rather than returned as a draft",
+        "the null guard is applied in the attended case",
+        "the thread is not resolved in either mode",
+        "the mixed rule is applied as a classification case, not as an override of the attended contract",
+        "the zero-budget case returns two entries for the one thread, a deferred repair and a question item",
+        "nothing is applied, pushed, replied or resolved in the classify-only case"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "output-is-keyed-by-item-and-excludes-acknowledgements-from-prose",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invoked you unattended and classify-only (its repair budget is zero) with three threads: (1) \"Thanks, this looks good.\" (2) \"extract this constant\" \u2014 a code change only. (3) \"rename this field, and tell me whether the worker path shares it.\" Questions: (a) thread 1 asks for no diff \u2014 does it go down the prose-response branch and come back as NEEDS_USER? (b) what does your Output contain for thread 2, and does it carry a draft? (c) how many Output entries does thread 3 produce? (d) why is the Output keyed by item rather than by thread?",
+      "expected_output": "(a) No. An acknowledgement asks for no prose either, so it is no-action and never NEEDS_USER. Routing it through the prose branch would put it through the unattended override, which returns that branch as a NEEDS_USER item \u2014 and settle-outstanding-decisions cannot qualify an acknowledgement, so it would hold the merge gate with nothing able to clear it. It comes back as an explicit no-action entry. (b) A deferred-repair item: thread URL, root author, the change it asks for, and no draft. A draft is defined only for the two question shapes; the thread wants a diff the budget stopped, so there is nothing to answer. Do not fabricate a question-shaped draft and do not omit the item \u2014 omission leaves the request unrecorded, the thread never marked handled, and re-dispatched every cycle, since a classify-only pass consumes none. (c) Two \u2014 a deferred repair and a question item at the one URL. (d) Because a single thread can carry two items, so one entry per thread would force one of them to be dropped.",
+      "assertions": [
+        "the acknowledgement is no-action, not routed through the prose branch and not NEEDS_USER",
+        "names why escalating an acknowledgement deadlocks the merge gate",
+        "the code-only thread returns a deferred-repair item with no draft",
+        "no question-shaped draft is fabricated and the item is not omitted",
+        "the mixed thread produces two Output entries at one URL",
+        "the Output is described as keyed by item rather than by thread"
       ]
     }
   ]

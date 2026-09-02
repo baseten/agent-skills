@@ -61,6 +61,78 @@
         "(3) is asked, and (4) is asked in the evidence-first ratify-or-overturn shape (leading with what the run checked and did)"
       ],
       "files": []
+    },
+    {
+      "id": 5,
+      "name": "draft-kind-decides-how-it-is-asked",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a settled run hands you two items. (i) An unresolved review thread where a reviewer asked why a retry count is 3 rather than using the shared backoff helper; the run classified it NEEDS_USER and attached a draft reply stating the actual answer with evidence — the shared helper cannot express this call site's per-request budget, per a comment at src/client.ts:88. The codebase does answer this question. (ii) An unresolved review thread asking whether failed webhooks should be dropped or dead-lettered, with a decision-only draft attached that lists both options and their costs and deliberately makes no pick. (iii) An unresolved review thread asking whether a config value should be 30s or 60s, with no draft attached and no evidence gathered. Questions: for each, does it qualify for the walkthrough, and how do you phrase it?",
+      "expected_output": "(i) Qualifies, despite the codebase answering it. The carve-out turns on who the answer comes from, not on how hard it was to find: the run cannot post the draft, because the question was addressed to a person and the reply goes out under their identity, which is authority the run does not hold. What is outstanding is the owner's approval of an answer that will read as theirs, not the research. Phrase it as an approval — approve, edit, or discard the draft — never as the open question it started as, and record the ruling as a reply on that thread. Declining it as homework would deadlock: the NEEDS_USER item goes on holding the merge gate with nothing able to clear it. (ii) Qualifies, but is NOT asked as approve/edit/discard. A decision-only draft makes no pick, so approving it would record a ruling that chose nothing — and the already-ruled test would then retire the question on the next discovery pass, letting the review gate read as answered while the product decision is still unmade. It needs no carve-out anyway: a genuine choice between defensible options already qualifies on the bar's own terms. Ask the underlying options directly, use the draft as the material that makes them answerable in one pass, and record the chosen option as the ruling. (iii) Qualifies, but not as posed — and the missing draft is not what decides that. A missing draft is never the homework test: it may mean the draft was lost with a run report rather than never produced, and discovery cannot tell those apart. So read the thread's site for a rejected-draft record, regenerate, and only then apply the bar. Regenerated, 30s versus 60s is a choice between two defensible options turning on preference, so it qualifies on the bar's own terms and is asked as the options with the chosen one recorded as the ruling — not as an approval. What would be homework is a question the run could have answered and did not, which is a statement about the work, not about whether a draft survived.",
+      "assertions": [
+        "the drafted answerable-from-work thread qualifies and is phrased as approve/edit/discard the draft",
+        "the reason given is that the run lacks authority to post under the owner's identity, not that the answer was hard to find",
+        "the decision-only draft is asked as the underlying options, NOT as approve/edit/discard",
+        "names the failure mode: approving an option-only draft records a ruling that chose nothing, which the already-ruled test then retires",
+        "the recorded ruling for the decision-only thread is the chosen option, not an approval of the options list",
+        "rulings are recorded as replies on their threads",
+        "(iii) is not declined for having no draft — the draft is regenerated first and then handled by whichever kind regeneration produced; where it comes back decision-only, as 30s-versus-60s does, it is asked as the options and never put up for approval",
+        "applies the draft-kind split wherever the item is presented, not only where the qualification bar states it"
+      ],
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "non-answer-does-not-retire-the-question",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you put two items to the owner. (i) A review thread asking why a retry count is 3, with an answerable-from-work draft attached; the owner picks **discard** — the draft is wrong and they do not supply a replacement. (ii) A review thread asking whether failed webhooks should be dropped or dead-lettered, with a decision-only draft; the owner says they need to talk to the team and picks nothing. Questions: for each, (a) what do you record and where, (b) does the thread stay reserved, (c) does its NEEDS_USER item still hold the merge gate, and (d) what happens on the next discovery pass?",
+      "expected_output": "Both are non-answers and both behave the same way. (a) Record no ruling for the question. Record the rejection itself — the discarded draft, the declined option set — so a later run does not re-offer the same text, but explicitly as a rejected draft rather than as the question's ruling. (b) Yes, both threads stay reserved. (c) Yes, both NEEDS_USER items stand and the merge gate stays shut: the reviewer's question is still unanswered. (d) The already-ruled test does not retire either one, because what retires a question is a record supplying the answer or the choice, not merely the presence of a record. Retiring on a rejection would clear the gate over a question nobody answered — the mirror of approving an option-only draft.",
+      "assertions": [
+        "no ruling is recorded for either question",
+        "the rejection is recorded as a rejected draft rather than as the question's ruling",
+        "both threads stay reserved and their NEEDS_USER items still hold the merge gate",
+        "the already-ruled test does not retire either item on the next pass",
+        "states that what retires a question is a record supplying the answer or choice, not the presence of a record"
+      ],
+      "files": []
+    },
+    {
+      "id": 7,
+      "name": "approved-draft-is-posted-as-the-answer",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a review thread asks why a retry count is 3. An answerable-from-work draft is attached, stating that the shared backoff helper cannot express this call site's per-request budget, citing src/client.ts:88. You put it to the owner, who edits one sentence for tone and approves. Questions: (a) what exactly goes in the reply on that thread? (b) is 'Draft approved by owner, 2026-09-01' a sufficient record, and why? (c) does the item retire, and does the merge gate clear? (d) which text is posted, the original draft or the edited one?",
+      "expected_output": "(a) The approved answer text itself, as the body of the reply, alongside the ruling record's other required parts — the question as asked, the owner-ruling marker with its date, and what it confirms. (b) No. 'Draft approved' answers nobody: the reviewer asked a question and cannot read the answer out of an approval marker, so the thread would look handled while remaining unanswered. It also supplies neither the answer nor a choice, so it would not retire the question under the already-ruled test in any case — the requirement to post the text is what makes the reply useful, and the test is what stops a useless one clearing the gate. (c) Yes, once the answer text is posted: the question is answered, the item retires and the gate can clear on that thread. (d) The edited text, never the original — the owner's edit is the answer.",
+      "assertions": [
+        "the approved answer text itself is the body of the reply",
+        "a bare approval marker is rejected as insufficient, because the reviewer cannot read the answer out of it",
+        "notes that a bare marker supplies neither answer nor choice and so would not retire the question anyway",
+        "the edited text is posted rather than the original draft"
+      ],
+      "files": []
+    },
+    {
+      "id": 8,
+      "name": "a-lost-draft-is-not-homework",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: an owner invokes you directly, days after an orchestrator run settled on a scheduled wake and declined the walkthrough. Discovery finds an unresolved review thread on an open PR asking \"does the retry path handle a 429 differently from a 503?\" — a question the codebase answers. The run that escalated it produced a draft reply with the evidence, but that draft lived in the run's closing report and is gone. Questions: (a) is this homework? (b) what do you do before applying the qualification bar? (c) what if the draft cannot be regenerated at all? (d) what is the failure if you decline it, and (e) does regenerating the draft breach this skill's no-act constraint?",
+      "expected_output": "(a) No. Homework is a question nobody has done the work on — the run could have answered it and did not. A missing draft is not that test: a draft lives only in a run's report, which invariant 1 classifies as a cache, so a thread discovered after the escalating run is gone arrives with its draft lost rather than never produced. (b) Read the thread's site for a rejected-draft record first — every path that offers a draft does that read, a regenerated draft as much as a carried one — then regenerate: read the thread and the code around it and classify it as resolve-pr-comment would. Then apply the bar, which on an answerable-from-work draft means the carve-out: ask it as an approval (approve, edit, or discard) and record the approved or edited answer text itself as a reply on the thread. (c) Ask the question with what is known rather than declining it — an unanswerable-here question is still the owner's to answer. (d) The deadlock the carve-out exists to prevent, arriving by a different route: the thread stays reserved, its NEEDS_USER item goes on holding the merge gate, and the walkthrough the owner ran specifically to clear it declined the one item it could have cleared. (e) No. Reading a thread and the code around it is collection, which this skill does; it is not action, which it does not. Regenerating writes nothing and posts nothing — it sits inside the constraint rather than against it. Reading it as action would leave the skill unable to recover a lost draft, which is the route by which the homework misread reaches the deadlock in (d).",
+      "assertions": [
+        "the question is not classified as homework despite the codebase answering it",
+        "the draft is regenerated from the thread and the surrounding code before the bar is applied",
+        "regenerating is identified as collection rather than action, so it does not breach the no-act constraint",
+        "names the run report as a cache, so the draft was lost rather than never produced",
+        "the un-regenerable case is asked rather than declined",
+        "names the deadlock: a reserved thread holding the merge gate with the walkthrough unable to clear it"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "regeneration-consults-the-rejected-draft-record",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: an owner invokes you. Discovery finds an unresolved review thread asking \"does the retry path handle a 429 differently from a 503?\" with no draft attached — and on that thread, a record from an earlier walkthrough marked as a **rejected draft**: the owner was offered the answer \"yes, 429 backs off on Retry-After and 503 uses the fixed ladder\" and discarded it without supplying a replacement. Questions: (a) is the question retired? (b) do you regenerate a draft, and what do you do with the record? (c) what if regeneration produces the same answer that was rejected? (d) what if you find new evidence that changes it? (e) does the item stay outstanding?",
+      "expected_output": "(a) No. A rejected draft is deliberately not a ruling — the already-ruled test turns on a record that supplies the answer or the choice, and a rejection supplies neither — so the question is still outstanding and the merge gate stays shut. (b) Read the thread's site for a rejected-draft record before regenerating, then regenerate. The record is what makes regeneration safe: without reading it, regeneration recreates the text the owner already discarded and offers it again on every run, forever, which is precisely what the record exists to prevent. (c) Do not offer it again. Put the question to the owner as still open, with no draft, naming the rejection. (d) Then it is materially different material and is offered as that — a different answer, or evidence that changes the one refused. (e) Yes, on either path.",
+      "assertions": [
+        "the question is not retired by the rejected-draft record",
+        "the rejected-draft record is read before regenerating",
+        "an identical regenerated answer is not offered again",
+        "the still-open question is surfaced without a draft when there is nothing new to say",
+        "materially different material is offered as such",
+        "the item stays outstanding on both paths"
+      ]
     }
   ]
 }

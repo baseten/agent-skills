@@ -22,19 +22,19 @@
       "assertions": [
         "The answer captures the uncommitted worktree work to a recovery ref BEFORE archiving (checkpoint compliance precedes release, with the archive-first data-loss reason)",
         "The answer releases despite the merged PR, citing the durable-state-plus-unneeded-prompt arm (PR state irrelevant; a wake the worker armed is cleanup the run does not need)",
-        "The RUNNING session is not archived (interrupt-and-capture with lost-worker budget would be required first) and the user's own session is never reclaimed"
+        "the running session is not archived and the user's own session is never reclaimed"
       ],
       "files": []
     },
     {
       "id": 2,
       "name": "policy-file-fails-closed",
-      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a repository's .claude/backlog-orchestrator.json parses as JSON and contains exactly: {\"auto-fix-reviewer\": false, \"auto_merge\": true, \"ci-repair-cycles\": 2}. Note the two misspelled keys ('auto-fix-reviewer' missing the s, 'auto_merge' with an underscore); there is no correctly spelled auto-fix-reviewers or auto-merge key. Question: what do auto-fix-reviewers, auto-merge, and ci-repair-cycles resolve to for this repository's PRs, and what does the checkpoint output say?",
-      "expected_output": "auto-fix-reviewers resolves to FALSE: a present policy file containing any unrecognized key resolves auto-fix-reviewers to false unless that key itself parsed successfully — the owner's 'auto-fix-reviewer: false' intent must not yield wider auto-fixing from its own typo. auto-merge resolves to its built-in false (its default is already its closed end — no merges from a misspelling). ci-repair-cycles parsed and stands at 2. The unrecognized keys are reported in the checkpoint output, but the report is the diagnosis, not the safeguard.",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a repository's .claude/backlog-orchestrator.json parses as JSON and contains exactly: {\"auto_merge\": true, \"ci-repair-cycles\": 2}. Note the misspelled key ('auto_merge' with an underscore); there is no correctly spelled auto-merge key. Question: what do auto-merge and ci-repair-cycles resolve to for this repository's PRs, and what does the checkpoint output say?",
+      "expected_output": "auto-merge resolves to its built-in false: its default is already its closed end, so a misspelling produces no merges. ci-repair-cycles parsed and stands at 2. The unrecognized key is reported in the checkpoint output. Closed and built-in coincide for every key in this file, so no key needs a special fail-closed guard.",
       "assertions": [
-        "auto-fix-reviewers resolves to false because unrecognized keys are present and no valid auto-fix-reviewers key parsed",
-        "auto-merge resolves to false (built-in default = closed end); the misspelled auto_merge grants nothing",
-        "The valid ci-repair-cycles key stands as written, and the unrecognized keys are reported in the checkpoint output"
+        "auto-merge resolves to false because no correctly spelled auto-merge key parsed",
+        "ci-repair-cycles stands at 2",
+        "the unrecognized key auto_merge is reported in the checkpoint output"
       ],
       "files": []
     },
@@ -154,7 +154,7 @@
       "assertions": [
         "The answer refuses release: pushed branch + existing PR + clean worktree is not enough when the worker is blocked mid-deliverable (linkage verification and review trigger still pending)",
         "The answer names the consequence of archiving anyway: an unlinked or never-reviewed PR recorded as complete",
-        "The answer routes to the other Blocked-workers branches (parent clears it, or capture-archive-redispatch of the same work unit, or NEEDS_USER with the literal tool name)"
+        "The answer applies the remote tier's stated gap: with the worktree unreachable, condition 2 has no satisfier, so the worker is not releasable — NEEDS_USER naming the session and what it returned, container retained, the owner deciding"
       ],
       "files": []
     },
@@ -221,7 +221,7 @@
     {
       "id": 18,
       "name": "release-reconciliation-reads-the-runtime",
-      "prompt": "You are running backlog-orchestrator's parent supervision loop on Claude Code Remote. Your supervision notes from two cycles ago say 'repair worker for PR #88 archived'. This cycle you list the runtime's sessions filtered to your run's provenance key and find: S1 (parent_session_id = this run) is IDLE and alive, its PR #88 merged an hour ago; S2 (parent_session_id = a different orchestrator run) is IDLE since yesterday, checked out on a repository outside your GitHub scope so you cannot inspect its worktree; S3 is the user's own interactive session. All your own PRs are otherwise merged and every other settled condition holds. (a) What do you do about S1, given your notes say it was already archived? (b) What do you do about S2 and S3? (c) Can the run declare itself settled this cycle, and does S2 affect that?",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are running backlog-orchestrator's parent supervision loop on Claude Code Remote. Your supervision notes from two cycles ago say 'repair worker for PR #88 archived'. This cycle you list the runtime's sessions filtered to your run's provenance key and find: S1 (parent_session_id = this run) is IDLE and alive, its PR #88 merged an hour ago; S2 (parent_session_id = a different orchestrator run) is IDLE since yesterday, checked out on a repository outside your GitHub scope so you cannot inspect its worktree; S3 is the user's own interactive session. All your own PRs are otherwise merged and every other settled condition holds. (a) What do you do about S1, given your notes say it was already archived? (b) What do you do about S2 and S3? (c) Can the run declare itself settled this cycle, and does S2 affect that?",
       "expected_output": "Acts on S1 this cycle despite notes claiming it was archived (runtime beats memory); reports S2/S3 without reclaiming (cannot-verify != verified clean); settlement blocked by S1 but not by S2.",
       "assertions": [
         "The answer treats S1 as outstanding and acts on it this cycle (releasable test / archive), explicitly because the runtime's session list overrides the run's own notes — reporting or remembering an archive is not evidence it happened",
@@ -233,7 +233,7 @@
     {
       "id": 19,
       "name": "unproductive-wake-budget-and-durable-counter",
-      "prompt": "A settled backlog-orchestrator run is watching two open PRs with a PR-activity subscription plus a scheduled self check-in. The check-in has now fired five consecutive times finding no change in durable state. (a) When you re-arm it, what interval do you use and where must the consecutive-unproductive-wake count be stored, and why there? (b) On the next firing you find one PR's CI has turned red, but every repair budget for that PR is exhausted so you cannot act on it — does the counter reset or advance? (c) Suppose instead that the next two firings cannot read at all, because another run sharing the credential has exhausted the API allowance — do those wakes count toward the same budget, may they clear it, and when do you wake for them? And if one refusal were instead a secondary limit whose response names no resource and supplies no Retry-After, when would you arm that wake? (d) Suppose the unproductive wakes continue: what happens after the 8th, and may the watched PRs then be described as settled or finished?",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a settled backlog-orchestrator run is watching two open PRs with a PR-activity subscription plus a scheduled self check-in. The check-in has now fired five consecutive times finding no change in durable state. (a) When you re-arm it, what interval do you use and where must the consecutive-unproductive-wake count be stored, and why there? (b) On the next firing you find one PR's CI has turned red, but every repair budget for that PR is exhausted so you cannot act on it — does the counter reset or advance? (c) Suppose instead that the next two firings cannot read at all, because another run sharing the credential has exhausted the API allowance — do those wakes count toward the same budget, may they clear it, and when do you wake for them? And if one refusal were instead a secondary limit whose response names no resource and supplies no Retry-After, when would you arm that wake? (d) Suppose the unproductive wakes continue: what happens after the 8th, and may the watched PRs then be described as settled or finished?",
       "expected_output": "Backoff doubling from 20m capped at 4h with the consecutive-unproductive-wake count written into the re-armed wake prompt; red CI resets the counter even with no repair budget; the two unreadable wakes count against the same single budget and cannot clear it, and are armed no earlier than the allowance reset or Retry-After — while a secondary-limit refusal supplying neither bound sets no floor, so that wake goes at the backoff's next step alone and still counts; stop after 8 unproductive wakes with a full report naming their kind and no settled/finished reading of the PRs.",
       "assertions": [
         "The answer backs off (doubling from 20 minutes, capped at 4 hours) and stores the consecutive-unproductive-wake count in the re-armed wake's own prompt, because session memory does not survive between firings or across a compaction, so a counter kept there resets silently",
@@ -248,7 +248,7 @@
     {
       "id": 20,
       "name": "state-block-every-cycle",
-      "prompt": "A backlog-orchestrator run began as a 9-worker fan-out and has narrowed to supervising one final PR that is waiting on a human review; the run has already been context-compacted once. A teammate suggests: 'stop printing the status block each cycle — the numbers haven't changed in hours and it's noise; just include it in the closing report.' (a) Do you follow the suggestion? Cite the governing rule. (b) What must the block always carry? (c) Give two concrete failures the per-cycle emission prevents that a closing-only emission does not.",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a backlog-orchestrator run began as a 9-worker fan-out and has narrowed to supervising one final PR that is waiting on a human review; the run has already been context-compacted once. A teammate suggests: 'stop printing the status block each cycle — the numbers haven't changed in hours and it's noise; just include it in the closing report.' (a) Do you follow the suggestion? Cite the governing rule. (b) What must the block always carry? (c) Give two concrete failures the per-cycle emission prevents that a closing-only emission does not.",
       "expected_output": "Refuses to drop the per-cycle state block, names its required contents including the session count and check-in state, and gives the leak-visibility and compaction-survival failures a closing-only emission cannot prevent.",
       "assertions": [
         "The answer refuses: emitting the state block is a required step of every supervision cycle, explicitly including the long one-PR supervision tail, not a convention or closing-only output",
@@ -263,7 +263,8 @@
       "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a run is dispatching remote worker sessions via create_session on Claude Code Remote, and its startup detection recorded both of the tier's capabilities: no inbound message channel reaches a worker session it creates, and the parent cannot reach such a worker's checkout either. Two things happen. (i) At dispatch, a create_session call for issue A returns success with the session reporting RUNNING, but its `sources` is empty. (ii) Separately, a worker for issue B that was dispatched an hour ago is now stopped on a permission prompt for `find / -name \"simulator.ts\"`, and reading its session record shows `sources` empty there too. Questions: (a) For (i), what is the state of that worker, what do you do about the session itself before doing anything else, and does stopping it consume any of issue A's budget? (b) For (ii), is the recovery the same as (i)? State specifically whether the empty `sources` lets you skip capturing uncommitted work before archiving, and why — and say what follows for this worker given what the run established about reaching its checkout. (c) For (ii), would you resolve it as NEEDS_USER naming the tool the worker is waiting on? (d) Which arguments must be passed explicitly to prevent both cases, and what does passing them also make legal?",
       "expected_output": "(a) A failed start, not a running worker: the create response's `sources` is the only signal that differs before the worker starts work, and every later signal reads the same either way, so a worker with no checkout reads as still working. The session must be ended before any retry — interrupt, then archive — because a failed start on this tier still holds a container and a worker slot, so a retry that only creates a second session leaks a container per attempt. Stopping it consumes NO lost-worker budget: that budget bounds re-attempts at work, and a session ended before its first turn did none, so the redispatch is the issue's first real attempt. (b) No. The capture requirement applies in full for (ii): `sources` records what the runtime provisioned at creation and says nothing about what the worker did afterwards, and a worker that could not find its checkout is the one most likely to have cloned one itself — so that container may hold the only copy of real work. The discharge is creation-only. And because the run established it cannot reach this worker's checkout, it can neither perform that capture nor establish there was nothing to capture — cannot verify is not verified clean — so the slot is not recoverable on the run's own authority and this is NEEDS_USER naming the session, its last observed remote head and the question it stopped on, rather than archiving to free the slot. (c) No — not as a permission request. A filesystem search for the worker's own source files is a dispatch defect: allowlisting `find` buys the next worker a faster search of an empty container. The finding to record is the dispatch defect, not the tool. (d) Pass `source_url` and `source_revision` explicitly on every worker session rather than relying on environment inheritance for the checkout; that also satisfies the precondition that `outcome_branch` is rejected without `source_url`, which is what makes the per-worker outcome_branch of Session branch mandates legal.",
       "assertions": [
-        "For (i), the answer classifies the worker as a failed start rather than a running worker, and grounds that on the create-response `sources` being the only signal that differs before work begins.",
+        "identifies it as a failed start rather than a worker to supervise",
+        "cites the pre-work signal that distinguishes the two",
         "For (i), the answer ends the existing session before retrying — interrupt then archive, in that order — and gives the leak as the reason: the session already holds a container and a worker slot, so a bare retry orphans one per attempt.",
         "For (i), the answer states that stopping it does NOT consume the issue's lost-worker budget, and gives the reason that a session ended before its first turn performed no work to re-attempt.",
         "For (ii), the answer does NOT reuse the creation-time shortcut: it requires the ordinary capture of uncommitted work, on the grounds that `sources` describes provisioning at creation and not what the worker did afterwards, and that such a worker may have cloned a repository itself.",
@@ -271,6 +272,47 @@
         "For (c), the answer refuses the permission-request framing and names the dispatch defect as the finding, rather than reporting `find` as a tool to allowlist.",
         "For (d), the answer names passing `source_url` and `source_revision` explicitly, and connects it to `outcome_branch` requiring `source_url` and therefore to the per-worker outcome_branch used for session branch mandates."
       ]
+    },
+    {
+      "id": 22,
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a supervised PR has no .claude/backlog-orchestrator.json in its repository. Three review threads are open on the diff: (a) rooted by a human colleague, asking you to rename a variable for clarity; (b) rooted by close-spice-reviewer[bot], asking why you chose this caching strategy over an alternative; (c) rooted by you earlier in this run, a reply you posted in an existing thread. Question: for each thread, is it auto-fixed, escalated, or neither, and why?",
+      "expected_output": "(a) Auto-fixed. It roots on the diff and asks for a code change the pass can make and verify. That the author is a human is irrelevant — author identity decides nothing. (b) NEEDS_USER, reserved for the owner: it asks for rationale, not a diff, so it is escalated with its URL and what it asks, never answered on the run's own authority, and it holds the merge gate shut. That the author is an automated reviewer does not make it repairable. (c) Neither: a comment this run authored is never feedback, which follows from the thread-root test rather than from any author test. No reviewer allowlist or bot test is consulted at any point.",
+      "name": "review-thread-kind-not-author",
+      "assertions": [
+        "the human-rooted rename is auto-fixed, and the answer states author identity does not decide repairability",
+        "the bot-rooted design question is NEEDS_USER and is not answered on the run's own authority",
+        "the run's own earlier comment is never feedback, via the thread-root test",
+        "no bot test or reviewer allowlist is applied anywhere"
+      ],
+      "files": []
+    },
+    {
+      "id": 23,
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a repository's .claude/backlog-orchestrator.json contains {\"auto-fix-reviewers\": [\"close-spice-reviewer\"]}. Question: what does this key do, and what does the run report?",
+      "expected_output": "Nothing: auto-fix-reviewers is not a recognized key and no longer exists. It is reported in the checkpoint output as an unrecognized key, and every other key takes its built-in default — auto-merge stays off. The run does not treat the list as a reviewer allowlist, does not restrict auto-fixing to that login, and does not widen it either: repairability is decided by whether a thread asks for a code change the pass can make, whoever rooted it.",
+      "name": "retired-reviewer-key-is-inert",
+      "assertions": [
+        "auto-fix-reviewers is identified as unrecognized and inert",
+        "it is reported in the checkpoint output as an unrecognized key",
+        "author-based gating is not resurrected from the list's contents",
+        "auto-merge remains off"
+      ],
+      "files": []
+    },
+    {
+      "id": 24,
+      "name": "question-only-round-classifies-without-budget-or-retrigger",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a supervised PR gets a new review round containing exactly two threads, both rooted on the diff by a reviewer, and both asking questions rather than requesting changes — one asks why a caching strategy was chosen, the other asks whether failed webhooks should be dropped or dead-lettered. Nothing in the round looks repairable. The PR's review-repair budget is already fully spent. Questions: (a) do you dispatch a repair-pr worker for this round, or reserve both threads directly? (b) does this consume a review-repair cycle? (c) do you retrigger the repository's automated review convention afterwards? (d) if a later event brings no new content on those two threads, do you group them into another round?",
+      "expected_output": "(a) Dispatch. Reserving a thread is a conclusion, not a precondition: classification and the draft reply need the thread body and the surrounding code, which is the dispatched pass's context and not the parent's, and resolve-pr-comment owns both. A parent that triaged the round as question-only and skipped dispatch would reserve both threads with no draft — the one outcome the reservation exists to avoid. The spent budget is no obstacle: it gates repairing, not classifying, and an unclassified thread has no draft for the settlement path to clear its gate with. (b) No. The pass returns NO_CODE_CHANGE with both threads as NEEDS_USER items and their drafts; it pushed nothing and consumed no repair attempt, so it consumes no cycle, exactly as an external CI failure does not. (c) No. The pass pushed nothing, so the head is unchanged and a retrigger would ask for another review of identical code, whose fresh threads would be dispatched again — matching the finding branch, which on NO_CODE_CHANGE triggers nothing. (d) No. Recording the returned items is what makes them no longer unhandled, so they are not grouped into a later round unless new content arrives on them.",
+      "assertions": [
+        "dispatches a worker for the question-only round rather than reserving the threads directly",
+        "dispatches despite the review-repair budget being spent, because the budget gates repairing rather than classifying",
+        "gives the reason as classification and draft creation needing the dispatched pass's context rather than the parent's",
+        "the NO_CODE_CHANGE pass consumes no review-repair cycle",
+        "does not retrigger automated review, because the pass pushed nothing and the head is unchanged",
+        "recorded reserved threads are not re-grouped into a later round absent new content"
+      ],
+      "files": []
     }
   ]
 }

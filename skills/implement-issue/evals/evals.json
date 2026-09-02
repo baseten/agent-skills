@@ -41,12 +41,12 @@
     {
       "id": 3,
       "name": "caller-resolved-policy-omitted-permissions-are-false",
-      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: backlog-orchestrator invoked this skill as a child, passing a complete resolved policy: {implementation-attempts: 2, ci-repair-cycles: 1, review-repair-cycles: 1, finding-repair-cycles: 1, repair-model-escalations: 0, auto-request-settle: false}. Note auto-merge and auto-fix-reviewers are absent from what the caller passed. The repository's own .claude/backlog-orchestrator.json on disk says {\"auto-merge\": true, \"auto-fix-reviewers\": true}. Question: (a) does this run read the repository's policy file? (b) what do auto-merge and auto-fix-reviewers resolve to for this run? (c) may the run merge the PR if everything else is green?",
-      "expected_output": "(a) No — a caller's complete resolved policy suppresses the read. (b) Both resolve to false: omitted permission keys under a resolved policy take false, not the file's values or the permissive defaults. (c) No merge — auto-merge resolved false for this run.",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: backlog-orchestrator invoked this skill as a child, passing a complete resolved policy: {implementation-attempts: 2, ci-repair-cycles: 1, review-repair-cycles: 1, finding-repair-cycles: 1, repair-model-escalations: 0, auto-request-settle: false}. Note auto-merge is absent from what the caller passed. The repository's own .claude/backlog-orchestrator.json on disk says {\"auto-merge\": true}. Question: (a) does this run read the repository's policy file? (b) what does auto-merge resolve to for this run? (c) may the run merge the PR if everything else is green?",
+      "expected_output": "(a) No — a caller's complete resolved policy suppresses the read. (b) auto-merge resolves to false: an omitted permission key under a resolved policy takes false, not the file's value — an unmentioned permission was not granted. (c) No merge — auto-merge resolved false for this run.",
       "assertions": [
         "The answer states the repository policy file is NOT read (the caller's complete resolved policy suppresses the read)",
-        "The answer resolves auto-merge to false (off) for this run, not to the file's true",
-        "The answer resolves auto-fix-reviewers to false for this run, and concludes no merge may happen"
+        "The answer resolves auto-merge to false for this run rather than to the file's true, and concludes no merge may happen",
+        "The answer does not invent a second omitted permission key"
       ],
       "files": []
     },
@@ -71,6 +71,21 @@
         "The answer does NOT merge on the current (pre-repair) green state",
         "The answer dispatches repair-pr with repair type 'finding' (the settle-finding repair), consuming the finding-repair-cycles budget — not the review or CI budget",
         "The answer settles again from step 1 (recomputing the summary / re-running the settle sequence) after the repair, so the gate is evaluated on post-repair evidence"
+      ],
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "deferred-repair-item-is-reported-without-a-draft",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the review repair budget is spent. A repair pass dispatched at zero budget returns two NEEDS_USER items — a question item ('is this endpoint meant to be idempotent?') with a decision-only draft, and a deferred-repair item for a thread asking that a duplicated constant be extracted — plus one no-action entry. Questions: (a) what does each reserved thread carry in the checkpoint output and in the structured result? (b) the output contract says the draft is the point of reporting a reserved thread — what do you put in the draft field for the deferred-repair item? (c) does the no-action entry hold the merge gate?",
+      "expected_output": "(a) Both carry the thread URL and what it asks. What accompanies them differs by item kind, and the kinds must not be merged: the question item carries its draft reply verbatim; the deferred-repair item carries the change it asks for and no draft. (b) Nothing — the field does not apply to that kind. Do not invent a question-shaped draft to satisfy the contract: the budget ran out on work that wants a diff, there is nothing to answer, and a fabricated draft would be put to the owner as though there were something to decide. The draft requirement is scoped to question items, so the budget-exhaustion case is satisfiable as written. Omitting the item entirely is also wrong — it would be re-dispatched. (c) No. A no-action thread wants nothing from anybody and is not an unresolved finding, so it never holds the gate; recording it is what stops it being re-dispatched, since a classify-only pass consumes no cycle.",
+      "assertions": [
+        "the question item is reported with its draft reply verbatim",
+        "the deferred-repair item is reported with the requested change and explicitly no draft",
+        "no question-shaped draft is fabricated for the deferred-repair item",
+        "the deferred-repair item is not omitted from the output",
+        "states that the draft requirement is scoped to question items rather than to every reserved thread",
+        "the no-action entry does not hold the merge gate but is still recorded"
       ],
       "files": []
     }

@@ -31,14 +31,14 @@ This file is the contract. The reasoning behind each rule — incident history, 
 
 ## Policy and budgets
 
-`backlog-orchestrator`, *Per-repository policy configuration*, owns the entire config contract — key list, per-PR resolution, fail-closed rules, `auto-fix-reviewers` matching. Apply it from there; never restate it (NOTES: drift).
+`backlog-orchestrator`, *Per-repository policy configuration*, owns the entire config contract — key list, per-PR resolution, fail-closed rules, and the kind test that decides what a run may auto-fix. Apply it from there; never restate it (NOTES: drift).
 
 - Preserve exactly any caller-supplied repository, worktree, branch, base, dependency context, tracker, and budgets.
 - Read `.claude/backlog-orchestrator.json` **once, at run start, from the head of the repository's default branch** — never from the worktree this run writes, and never again afterwards.
-- Keys consumed: `implementation-attempts`, `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-fix-reviewers`, `auto-merge`, `auto-request-settle`. Ignore `concurrent-workers` and `new-issue-budget` — no single-issue meaning.
-- **A caller's complete resolved policy suppresses the read**: use supplied keys as given; omitted keys take the built-in defaults — except `auto-merge` and `auto-fix-reviewers`, which take **`false`**: an unmentioned permission was not granted.
+- Keys consumed: `implementation-attempts`, `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-merge`, `auto-request-settle`. Ignore `concurrent-workers` and `new-issue-budget` — no single-issue meaning.
+- **A caller's complete resolved policy suppresses the read**: use supplied keys as given; omitted keys take the built-in defaults — except `auto-merge`, which takes **`false`**: an unmentioned permission was not granted.
 - **A partial invocation override suppresses nothing**: read the file and merge the argument over it per key (`auto-merge`: off only). NOT: treating one argument as a resolved policy — that would hand a zero-repair-cycles repository two cycles because its owner narrowed something else (NOTES).
-- Built-in defaults (absent file — the common case): implementation attempts **2** · CI repair **2** · review repair **2** · finding repair **2** · strongest-model repair rounds **1** · `auto-fix-reviewers` **true** · `auto-merge` **off** · `auto-request-settle` **on**. Monitoring cap: **8 hours** where persistent monitoring is supported — an invocation property, not a policy key.
+- Built-in defaults (absent file — the common case): implementation attempts **2** · CI repair **2** · review repair **2** · finding repair **2** · strongest-model repair rounds **1** · `auto-merge` **off** · `auto-request-settle` **on**. Monitoring cap: **8 hours** where persistent monitoring is supported — an invocation property, not a policy key.
 
 # Phase 1 — durable implementation
 
@@ -84,9 +84,9 @@ Finding repair cycles: <used>/<limit>
 Strongest-model repair rounds: <used>/<limit>
 Current remote head: <SHA>
 First review round: pending | complete-with-findings | clean
-Threads reserved for the owner: <count>
+Threads reserved for the owner: <count> (question items: URL, question, draft reply; deferred repairs: URL, requested change, no draft)
 Draft state: <as-created> -> <current>
-Policy: budgets <source>; auto-fix-reviewers <resolved> (<source>); auto-merge <on|off> (<source>)
+Policy: budgets <source>; auto-merge <on|off> (<source>)
 State: waiting | repairing-ci | repairing-review | repairing-finding | healthy | needs-user
 ```
 
@@ -105,22 +105,22 @@ Unrelated/external/flaky failure with no justified code change: report and monit
 
 Actionability — `backlog-orchestrator`, *Per-repository policy configuration*, owns these rules and the matching test; apply them from there:
 
-- a thread the **invoking user** rooted: always actionable, whatever the policy resolved to;
-- any other thread: only when its author passes the resolved `auto-fix-reviewers` test;
+- a thread rooting on the diff and asking for a code change this pass can make: actionable, whoever wrote it;
+- a thread needing judgment rather than a diff — intent, design, rationale, a decision: `NEEDS_USER`, never answered on the run's own authority;
 - a comment this run authored: never.
 - Consequence: **never root a review thread on the supervised PR.** Reply inside existing threads; post timeline comments only (NOTES: the discriminator depends on it).
-- A thread failing the test is **reserved for the owner**: never repaired, never resolved, reported as awaiting them. It does not stop this skill returning, but its round is not clean — it keeps the merge gate shut.
+- A `NEEDS_USER` thread is **reserved for the owner**: never resolved, never answered, and never repaired **in the part that wants an answer** — a comment asking for a diff *and* prose is repaired and still reserved (`resolve-pr-comment`, *A comment can want both*), reported as awaiting them with its URL and what it asks. **What accompanies it depends on the item kind, and the two must not be merged:** a question item carries the draft reply from the classifying pass, verbatim (`resolve-pr-comment`, *The draft reply*); a deferred-repair item carries the change it asks for and **no draft**, because the budget ran out on work that wants a diff and there is nothing to answer (`repair-pr`). Requiring a draft of both forces a question-shaped draft to be invented for the second. It does not stop this skill returning, but its round is not clean — it keeps the merge gate shut.
 
-On actionable feedback:
+On unhandled feedback — a thread rooting on the diff, not authored by this run, **still unresolved**, and not already recorded as **handled — reserved or no-action — unless new content has arrived on it since**. **A thread this run repaired and resolved is handled by being resolved**, which the recorded states do not cover: they name only the two outcomes that leave a thread open, so a predicate listing them alone re-groups every fixed thread on every cycle — new content being a write this workflow did not author, never a settlement record posted into the thread (`backlog-orchestrator`, *CI/review repair*) (`backlog-orchestrator`, *CI/review repair*, states the rule). A reviewer who follows up inside a reserved question thread with a concrete change request has made it unhandled again: excluding the thread for the life of the PR because its root was once classified leaves that request unreachable and the stale reservation holding the gate. **Dispatch on any such round, including one where nothing looks repairable from the outside:** classification and the draft need the thread body and the surrounding code, which is the pass's context, not this skill's.
 
 1. group one coherent review round;
-2. review budget remains → invoke `repair-pr` once with `repair type = review`, the threads, and the map, on the same model rule as CI;
-3. adopt the returned head **and merge every identity entry the pass observed** into the map;
-4. retrigger review where repository convention requires it — selecting the trigger's author from the map **as updated in step 3**: the repair may have established the invoking-user path, and re-triggering from the pre-repair map is what makes a trigger silently fail;
+2. invoke `repair-pr` once with `repair type = review`, the threads, and the map, on the same model rule as CI. **The budget gates repairing, not classifying:** invoke it even with the review budget spent, since a classify-only pass consumes no cycle and an unclassified thread has no draft for the settlement path to clear its gate with. With the budget spent it classifies and drafts but repairs nothing, and threads that would have been repairable become `NEEDS_USER` on budget grounds;
+3. adopt the returned head **and merge every identity entry the pass observed** into the map, and **record every `NEEDS_USER` thread it returned — a question item with its draft verbatim, a deferred-repair item with the change it asks for and no draft — **and a thread that returned two items is recorded once per item and is handled only when both are in, since a mixed thread carries a deferred repair and a question at the same URL (`resolve-pr-comment`, *A comment can want both*)** — and every no-action thread it returned** — recording is what stops a thread being re-grouped into a later round, until new content arrives on it, and a no-action thread left unrecorded is re-dispatched on every cycle since a classify-only pass consumes none;
+4. **only where the pass pushed a repair**, retrigger review where repository convention requires it — a `NO_CODE_CHANGE` pass left the head unchanged, so a retrigger asks for another review of identical code and its fresh threads would be dispatched again — selecting the trigger's author from the map **as updated in step 3**: the repair may have established the invoking-user path, and re-triggering from the pre-repair map is what makes a trigger silently fail;
 5. wait event-driven;
-6. budget exhausted → `NEEDS_USER`.
+6. budget exhausted → the pass still runs classify-only; what remains repairable comes back as **deferred-repair items**, recorded and reported, never a `NEEDS_USER` outcome for the PR (`repair-pr`, *Hard constraints*) — the rest is still classified and drafted.
 
-Subjective product/architecture judgment → `NEEDS_USER` immediately; burn no cycles.
+A pass that returns `NO_CODE_CHANGE` — the classification left it no repair to make, whether the round was questions, acknowledgements or any mix of them (`repair-pr`, *Review repair (`repair type = review`)*, step 2) — consumes no review cycle, and its items and drafts are recorded exactly as a pushing pass's are. Never derive the classification or write the draft here instead of dispatching: `resolve-pr-comment` owns both, and a round this skill triaged as question-only and never dispatched would be reserved with no draft.
 
 ## Draft state
 
@@ -151,7 +151,7 @@ The run settles when its one issue reaches a terminal state: the PR individually
 - Unruled — deferred, declined, never asked — is still outstanding; unruled is not clean, and the gate already refuses it.
 - A free-text ruling that cannot be confidently placed takes the disposition row (NOTES: the misreadings are not symmetric).
 
-**Un-settling** — a summary `IN_FLIGHT_FIX`, or a code-changing ruling; identical handling from either source:
+**Un-settling** — a summary `IN_FLIGHT_FIX`, or a code-changing ruling; identical handling from either source, and **never a thread reserved for the owner with nothing able to dispatch it — questions and deferred repairs** (`backlog-orchestrator`, *A settle finding is the third repair shape*). A thread carrying a recorded code-changing ruling un-settles as it always did: the ruling is the evidence and the finding path takes it:
 
 - dispatch `repair-pr` once with `repair type = finding` — the finding **verbatim** (the action point, or the recorded ruling with its site URL) plus the map, on the same model rule as CI and review;
 - a **pushed** repair consumes a `finding-repair-cycles` cycle and retriggers review where convention requires (substantive, never mechanical); **`NO_CODE_CHANGE`** consumes no cycle and triggers no review. Merge returned identity entries whatever the outcome. `backlog-orchestrator`, *A settle finding is the third repair shape*, owns the type, the budget, and the branching;
@@ -183,11 +183,11 @@ Where the repository opted in through `auto-merge`, evaluate **invariant 12's ga
 
 # Completion
 
-- Return `PR_OPEN`/healthy when the PR is implemented, correctly linked, and has no known CI/review item requiring autonomous repair — after Settle, whose summary and walkthrough are the gate's own inputs.
+- Return `PR_OPEN`/healthy when the PR is implemented, correctly linked, and has no known CI/review item a remaining budget could repair — a thread reserved for the owner, deferred repairs included, does not stop `PR_OPEN`; it holds the merge gate — after Settle, whose summary and walkthrough are the gate's own inputs.
 - Return `MERGED` where the gate's merge completed.
 - With persistent monitoring: continue until healthy, merge/close, user stop, budget exhaustion, or the monitoring cap.
 - If the runtime cannot stay active waiting only on external events, return a durable checkpoint — never pretend background monitoring continues.
-- Return `NEEDS_USER` with exact PR/issue URLs, the remaining failure or comment, attempts performed, and the recommended next action.
+- Return `NEEDS_USER` with exact PR/issue URLs, the remaining failure, attempts performed, and the recommended next action. **A reserved thread is not a remaining failure** — a comment never yields this outcome (step 6 above; `repair-pr`, *Hard constraints*); it is reported and holds the merge gate.
 
 ## Structured result
 
@@ -198,8 +198,8 @@ Return:
 - branch/base; PR URL/number; remote head SHA;
 - issue linkage verified, and the form emitted — closing keyword, or non-closing `Part of:` because a coverage finding was reported;
 - implementation attempts used; CI, review, and finding repair cycles used; strongest-model repair rounds used against the limit, with the locus evidence that triggered each;
-- the resolved policy actually applied — budgets, `auto-fix-reviewers`, `auto-merge` — each with its source (caller, repo config, built-in default), plus any policy file present but unhonourable (that is what silently narrows `auto-fix-reviewers` to `false`);
-- review threads reserved for the owner: count and URLs;
+- the resolved policy actually applied — budgets, `auto-merge` — each with its source (caller, repo config, built-in default), plus any policy file present but unhonourable (an unreadable file is authority the owner meant to grant and did not);
+- review threads reserved for the owner: count, URLs, what each asks, and **per item kind** — a question item's draft reply verbatim (`resolve-pr-comment`, *The draft reply*), a deferred-repair item's requested change with no draft (`repair-pr`). For a question the draft is the point of reporting it, so a run that drops it has escalated without handing over the work it already did; for a deferred repair there is no draft to drop, and demanding one would make the budget-exhaustion case unsatisfiable;
 - the merge, where one happened: the gate conditions it passed on, whether the PR was published from draft on the way, and the tracker reconciliation;
 - the `summarize-tranche` summary and action points, and the `settle-outstanding-decisions` report — rulings recorded, its one-line decline, or that `auto-request-settle` was off;
 - final CI/review state;

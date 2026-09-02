@@ -90,4 +90,4 @@ Every "merge the returned identity entries into the map" step exists because a r
 
 ## Structured result
 
-The resolved policy is reported with sources because an owner should see the authority a run had before they see what it did with it — including a present-but-unhonourable policy file, since that is what silently narrows `auto-fix-reviewers` to `false`. Dependency evidence is reported even on `PR_OPEN` for the reason under Phase 1: nothing else in a standalone run will surface a partial transport view.
+The resolved policy is reported with sources because an owner should see the authority a run had before they see what it did with it — including a present-but-unhonourable policy file, since a file the run could not read is authority the owner meant to grant and did not. Dependency evidence is reported even on `PR_OPEN` for the reason under Phase 1: nothing else in a standalone run will surface a partial transport view.
