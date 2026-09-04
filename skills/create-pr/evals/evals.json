@@ -61,6 +61,20 @@
         "The answer scopes the no-issue exception to direct user invocation with explicit user confirmation, which does not apply here"
       ],
       "files": []
+    },
+    {
+      "id": 5,
+      "name": "description-style-cuts-rather-than-compresses",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: an implementation workflow hands you a finished branch for a GitHub issue. It bumps a dependency group, and the work turned up three real bugs, two of which were found by CI failing twice in a row. The draft body you were given runs about 3,000 words: a numbered paragraph per item narrating what changed in each file, a 'Surface area changed' list of every touched path, a step-by-step account of which CI shard failed after which push and what you grepped for, and a 15-item manual test checklist. Question: what do you do to that body before creating the PR, and what stays?",
+      "expected_output": "Cut it to at most 300 words of prose above the fold — the tracker linkage line(s), 2–4 sentences of background, and the solution plus why it is this one as one paragraph or at most 5 bullets. Drop the file-by-file inventory and the 'Surface area changed' list (the diff carries them), the code narration, and the whole investigation/CI-shard narrative (describe the final state of the branch, not the order things went wrong in). The three bugs stay, stated as intent rather than as a story. Move anything genuinely worth keeping — a changelog audit, say — into a collapsed <details> block or a commit message, and trim the checklist to at most 8 grouped items. Cut content rather than reflowing it, and read the result once as the reviewer before creating the PR.",
+      "assertions": [
+        "The answer caps prose above the fold at 300 words and keeps manual checklists exempt but capped at 8 grouped items",
+        "The answer removes the file-by-file/'Surface area changed' inventory and the code narration, on the grounds that the diff already carries them",
+        "The answer removes the investigation log and the CI-shard-by-shard journey, keeping the final state of the branch instead",
+        "The answer relocates retained depth into a collapsed <details> block or a commit message rather than deleting it outright",
+        "The answer cuts content rather than compressing whitespace, and does not propose posting the generated draft unedited",
+        "The answer keeps the three real bugs in the description, stated as intent (background, why, boundaries, risk)"
+      ]
     }
   ]
 }
