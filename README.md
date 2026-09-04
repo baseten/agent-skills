@@ -4,7 +4,7 @@ Reusable Claude Code skills for issue implementation, PR workflows, backlog vali
 
 ## A note on how the skills read
 
-The `SKILL.md` files are dense and not easily human readable. That is deliberate, and it was tested rather than assumed: [issue #51](https://github.com/baseten/agent-skills/issues/51) benchmarked a plain-English rewrite of the densest section against the current text — all 21 eval scenarios, on Sonnet and on Haiku — and the plain version made the models no better (identical on Sonnet, worse-to-indistinguishable on Haiku). The density costs the models nothing; they interpret this register at least as well as plain prose, so the skills are written for their actual reader. Humans get their own entry points instead: each skill's `NOTES.md` explains the reasoning behind its rules, and `backlog-orchestrator/README.md` gives a plain-language overview and a glossary of the coined terms.
+The `SKILL.md` files are dense and not easily human readable. That is deliberate, and it was tested rather than assumed: [issue #51](https://github.com/baseten/agent-skills/issues/51) benchmarked a plain-English rewrite of the densest section against the current text — all 21 eval scenarios, on Sonnet and on Haiku — and the plain version made the models no better (identical on Sonnet, worse-to-indistinguishable on Haiku). The density costs the models nothing; they interpret this register at least as well as plain prose, so the skills are written for their actual reader. Humans get their own entry points instead: a skill's `NOTES.md` explains the reasoning behind its rules — most skills have one, `resolve-pr-comment` and the two writing skills do not — and `backlog-orchestrator/README.md` gives a plain-language overview and a glossary of the coined terms.
 
 ## Core workflow skills
 
@@ -56,15 +56,19 @@ complete until no document in this repository contradicts it** — the code-shap
 "the flagged line now reads correctly", is what produces ten rounds of review on a single
 change.
 
-`CLAUDE.md` carries the binding rules: classify a round's findings before fixing any of
-them, walk the whole axis once on a finding that is really one assumption failing in several
-places, sweep for restatements and for rules written on the negation of any limitation you
-add, prefer deleting a restated rule for a pointer over editing two copies to agree, and
-leave a mechanical guard or an eval scenario behind. `docs/review-fix-workflow.md` is the
-long form, with the evidence from this repository's own history.
-`docs/invariant-12-gate-audit.md` is the worked example of the axis walk: seven review
-rounds produced thirteen findings, ten of them the same shape, and one audit closed all
-three real defects together.
+**`CLAUDE.md` carries the binding rules** — how to classify a review round's findings,
+when a finding is one assumption failing in several places rather than several defects, the
+consequence sweep and its scope, and when a change owes a mechanical guard. Read it there
+rather than here: each of those rules has conditions attached, and a compressed copy in this
+file that dropped one is a defect of exactly the kind the rules exist to prevent. (Codex
+round one on the PR that added them found precisely that — this paragraph had made the guard
+obligation unconditional.) `AGENTS.md` points at the same file for agents whose convention
+looks for that name.
+
+`docs/review-fix-workflow.md` is the long form, with the evidence from this repository's own
+history. `docs/invariant-12-gate-audit.md` is the worked example of the axis walk: seven
+review rounds produced thirteen findings, ten of them the same shape, and one audit closed
+all three real defects together.
 
 **Running these skills against this repository has three known mismatches** —
 `resolve-pr-comment` is line-local by contract, `auto-merge` is enabled here so the gate is

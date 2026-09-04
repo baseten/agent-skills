@@ -71,18 +71,28 @@ more missing supplier reactively. This audit walks the whole gate once instead."
 
 ## The consequence sweep
 
-Run this before committing any rule change, local findings included.
+`CLAUDE.md`, *The consequence sweep*, defines the five steps and their scope. This section
+expands each with its reasoning and adds no step of its own — the steps are not restated
+here, because two copies of a checklist is how the scopes come apart, which is what this
+document is about.
 
-- [ ] **Restatements.** `grep` for the rule and its paraphrases across `skills/` — `SKILL.md`
-      and `NOTES.md` both. Every copy either agrees or gets collapsed.
-- [ ] **Inbound cross-references.** `grep` for references into the section you changed. Each
-      must still say something true; `check_skills.py` proves the pointer *resolves*, never
-      that it is still accurate.
-- [ ] **Negations.** List the rules written on the assumption your new limitation breaks.
-      These sit sections away and read as reassurances — they are the expensive class.
-- [ ] **Decision point.** The rule must sit where it is read, not merely in the right file.
-- [ ] **Chain forwarding.** Where the rule produces something another skill must record,
-      confirm every skill between producer and recorder forwards it.
+1. **Restatements** — the search is repository-wide, and that boundary is the point.
+   `skills/` is the tempting scope and the wrong one: `CLAUDE.md`, `AGENTS.md`, `README.md`
+   and `docs/` all state shared rules, and a stale copy in any of them contradicts the
+   completion criterion exactly as one in a `SKILL.md` does. This PR's own first draft got
+   this wrong in this very file.
+2. **Inbound cross-references** — `check_skills.py` proves a pointer *resolves*; nothing
+   proves it is still *accurate*. A reference surviving a rule change while describing the
+   old rule is a passing check over a false statement.
+3. **Negations** — the expensive class. They sit sections away from the change, read as
+   reassurances rather than rules, and nothing links them to the limitation they assume
+   away. Mechanism 3 above is exactly this.
+4. **Decision point** — a rule in the right file and the wrong clause reads as correct to a
+   reviewer and to a grep, and is inert when executed.
+5. **Chain forwarding** — where the rule produces something another skill must record,
+   every skill between producer and recorder has to forward it. Half of
+   `check_contract_placement.py` exists for this: a `no-action` classification produced by
+   one skill that the skill between it and its recorder never forwarded.
 
 **Collapse over reconcile.** Given the choice between editing two copies to agree and
 deleting one for a pointer, delete. Restatement is mechanism 2's fuel; a rule stated once
@@ -107,11 +117,17 @@ later fixer re-deriving the rejected alternative.
    Deliberately out of CI — model-graded, non-deterministic, and a required check built on
    them "goes red on sampling noise and teaches everyone to override it." Run on demand,
    comparing against the previous text.
-3. **`CLAUDE.md`.** Reaches every agent that works in a checkout, and the skills are
-   contractually told to read it (`implement-issue-core`, `resolve-pr-comment`, `create-pr`,
-   `merge-stack`, and `backlog-orchestrator` for its resource inventory). But it is
-   unchecked prose — no cross-reference check covers it — so it is the tier that drifts.
-   Method belongs here; anything mechanizable belongs in tier 1.
+3. **`CLAUDE.md`, reached through two filenames.** The skills are contractually told to
+   read it by name (`implement-issue-core`, `resolve-pr-comment`, `create-pr`,
+   `merge-stack`, and `backlog-orchestrator` for its resource inventory), and `AGENTS.md`
+   points at it for agents whose convention looks for that name instead — Codex among
+   them, which matters because Codex is the reviewer deciding whether a round ends.
+   **Neither filename is loaded by every entry point**, so this tier reaches an agent only
+   where its harness or its contract reads one of the two; it is also unchecked prose that
+   no cross-reference check covers, so it is the tier that drifts. Method belongs here;
+   anything mechanizable belongs in tier 1. (Codex raised the discoverability half of this
+   on round one of the PR that added this document, against the commit before `AGENTS.md`
+   landed.)
 
 **Policy is not in this ladder.** `backlog-orchestrator/SKILL.md`, *Per-repository policy
 configuration*: policy that can authorize merges "is a config file and not prose — never a

@@ -5,8 +5,10 @@ are read and executed by models, they cross-reference each other, and several st
 same rule in more than one place on purpose. That changes what a correct fix looks like
 here, and this file is the rule for it.
 
-Reasoning lives in each skill's `NOTES.md`, keyed by its `SKILL.md` section names. Read a
-section's note before changing its rules. `NOTES.md` explains; it never overrides.
+Reasoning lives in a skill's `NOTES.md`, keyed by its `SKILL.md` section names. Read a
+section's note before changing its rules. `NOTES.md` explains; it never overrides. Most
+skills have one; `resolve-pr-comment`, `draft-blog-post` and `draft-slack-message` do not,
+so for those the commit message carries the reasoning instead.
 
 ## A rule change is not complete until its dependents agree
 
@@ -50,14 +52,22 @@ one audit closed all three real defects at once.
 
 Before committing a rule change, find what it now contradicts:
 
-1. `grep` the repository for every **restatement** of the rule — including paraphrases, and
-   including `NOTES.md`;
+1. `grep` **the whole repository** for every restatement of the rule, including
+   paraphrases — `skills/` is not the boundary: `CLAUDE.md`, `AGENTS.md`, `README.md` and
+   `docs/` state shared rules too, and a stale copy there contradicts the criterion above
+   exactly as one in a `SKILL.md` does;
 2. `grep` for every **cross-reference** into the section you changed, and check each still
    says something true;
 3. find every rule written on the **negation** of a limitation you just introduced — these
    are the expensive ones, they sit sections away and read as reassurances;
 4. check the rule is stated at the **decision point** that reads it, not merely present in
-   the file.
+   the file;
+5. where the rule produces something another skill must record, confirm every skill
+   **between producer and recorder forwards it** — a chain that drops it silently is the
+   defect class `check_contract_placement.py` was written for.
+
+These five steps are the sweep. `docs/review-fix-workflow.md` expands each with its
+reasoning and adds no step of its own.
 
 **Prefer collapsing over reconciling.** When a fix would make two copies of a rule agree,
 delete one and leave a pointer. A local fix cannot contradict a distant copy that no longer
@@ -71,7 +81,9 @@ on it.
 
 **Record the why.** Add the reasoning to the skill's `NOTES.md`, keyed by section, naming
 the review round it came from. The existing entries do this; it is what stops the next
-fixer re-breaking the fix.
+fixer re-breaking the fix. Where the skill has no `NOTES.md` (the three named at the top of
+this file), put it in the commit message — do not create one as a side effect of an
+unrelated fix.
 
 ## The sweep is scope clarification, not scope widening
 
