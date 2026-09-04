@@ -78,10 +78,9 @@ more missing supplier reactively. This audit walks the whole gate once instead."
 
 ## The consequence sweep
 
-`CLAUDE.md`, *The consequence sweep*, defines the five steps and their scope. This section
-expands each with its reasoning and adds no step of its own — the steps are not restated
-here, because two copies of a checklist is how the scopes come apart, which is what this
-document is about.
+`CLAUDE.md`, *The consequence sweep*, defines the steps and their scope; this section
+gives the reasoning for each. The steps are not repeated here — two copies of a checklist
+is how the scopes come apart, which is what this document is about.
 
 1. **Restatements** — `skills/` is the tempting scope, and what makes it the wrong one is
    that the root-level and `docs/` files carry shared rules too, so a stale copy there is
@@ -201,9 +200,9 @@ of CI. `CLAUDE.md` states when to narrow the key for a run; what makes narrowing
 available lever is the asymmetry the grant is built on — an invocation can close the gate
 but never open it, because the repository's opt-in is the sole route to a merge.
 
-**Why a run must not edit the contract it is executing.** Using `backlog-orchestrator` or
-`implement-issue` to modify `backlog-orchestrator/SKILL.md` has the run rewriting its own
-instructions mid-flight, and no contract here guards against it — the config file is read
+**Why the self-editing case has no guard to rely on.** An orchestrated run told to change
+the very `SKILL.md` it is following rewrites its own instructions mid-flight, and nothing in
+the contracts prevents it — the config file is read
 once at preflight and never re-read precisely so a worker's write cannot change the running
 policy, but nothing extends that protection to the contract text itself. `CLAUDE.md` carries
 the rule this reasoning supports.

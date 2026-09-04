@@ -67,18 +67,15 @@ obligation unconditional.) `AGENTS.md` points at the same file for agents whose 
 looks for that name.
 
 `docs/review-fix-workflow.md` is the long form, with the evidence from this repository's own
-history. `docs/invariant-12-gate-audit.md` is the worked example of the axis walk: seven
-review rounds produced thirteen findings, ten of them the same shape, and one audit closed
-all three real defects together.
+history. `docs/invariant-12-gate-audit.md` is the worked example of the axis walk, and
+`docs/review-fix-workflow.md` explains what it demonstrates.
 
-**Running these skills against this repository has three known mismatches** —
-`resolve-pr-comment` is line-local by contract, `auto-merge` is enabled here so the gate is
-reachable on a change no deterministic check can semantically verify, and a run that edits
-`backlog-orchestrator/SKILL.md` is rewriting its own instructions mid-flight. See
-`CLAUDE.md`, *Using this repository's own automation on this repository*. This repository's
+Running these skills against this repository has **three known mismatches, none of which
+announces itself** — see `CLAUDE.md`, *Using this repository's own automation on this
+repository*, which names them and what to do about each. They are why this repository's
 `.claude/backlog-orchestrator.json` raises `review-repair-cycles` and
-`repair-model-escalations` above their defaults for that reason; budgets are policy and live
-only in that file.
+`repair-model-escalations` above their defaults; budgets are policy and live only in that
+file.
 
 ## Checks
 
@@ -132,13 +129,21 @@ green check over a false claim is worse than no check, because it stops anyone l
 fixtures then immediately caught a second gap — a noun lead-in carrying the imperative in
 its body. Finding a new bypass means the detector was wrong, not the fixture.
 
-The phrase list had the same weakness one level up, and it was not hypothetical: a rule
-section of `CLAUDE.md` with no phrase entry was silently unguarded, which was true of
-*Classify a finding before fixing it* while a duplicate of its table sat in `docs/` and this
-check reported clean. So the check now also asserts that **every** rule section of
-`CLAUDE.md` is guarded by a phrase, with the one section that states no restatable rule
-declared exempt and the reason given in place. A new rule with nothing guarding it now fails
-CI rather than passing quietly.
+The phrase list had the same weakness one level up, and then again one level below that:
+a rule section with no phrase entry was unguarded (true of *Classify a finding before fixing
+it* while a duplicate of its table sat in `docs/`), and a section with a phrase counted as
+covered even where it held several rules and only one was named. Both were found by review,
+not by the check.
+
+The root cause is that naming what to guard is opt-in, so it can always be incomplete. The
+check therefore also **detects duplication rather than enumerating it**: any span of ten or
+more words of `CLAUDE.md`'s own prose reappearing in a pointer file is reported, with
+quotations, code blocks and section titles excluded, since two files citing the same
+evidence or running the same command is not duplication. New restatements now fail without
+anyone having predicted them. The threshold is measured rather than chosen — at twelve words
+the detector found nothing while two real duplications were live; below eight it starts
+reporting shared filename lists — and the fixtures pin both directions of that choice,
+because a threshold is the one parameter that silently turns a defect into a pass.
 
 `eval_reminder.sh` names a skill whose `SKILL.md`/`NOTES.md` changed while its
 `evals/evals.json` did not. It is a warning and never a failure: it cannot know

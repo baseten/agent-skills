@@ -30,7 +30,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-from check_rule_locality import is_directive  # noqa: E402
+from check_rule_locality import is_directive, shared_spans  # noqa: E402
 
 # (label, previous line, line) — every known violation, by the round that found it.
 BAD: list[tuple[str, str, str]] = [
@@ -60,7 +60,58 @@ GOOD: list[tuple[str, str, str]] = [
     ("mid-paragraph mention", "The rule is stated once.", "Keeping two copies is what round one got wrong."),
 ]
 
+# Duplication-detector fixtures. Each pair is (canonical text, pointer text) and
+# says whether a long shared span must be reported. The threshold was chosen by
+# measurement (see NGRAM); these pin both directions of that choice, because a
+# threshold is the one parameter that silently converts a defect into a pass.
+DUP_CASES: list[tuple[str, str, str, bool]] = [
+    (
+        "verbatim 12-word restatement is reported",
+        "The eval scenarios are deliberately not in CI because they are model-graded and cost money to run.",
+        "The eval scenarios are deliberately not in CI because they are model-graded and cost money to run.",
+        True,
+    ),
+    (
+        "a 10-word restatement is still reported",
+        "A rule needed at two decision points belongs at both and changes together always.",
+        "Note that a rule needed at two decision points belongs at both and changes together always.",
+        True,
+    ),
+    (
+        "a short shared phrase is not duplication",
+        "The consequence sweep is repository-wide in scope.",
+        "See the consequence sweep for the reason.",
+        False,
+    ),
+    (
+        "quoting the same evidence is not duplication",
+        'The note says "restating it in situ is how successive versions came to disagree about the same worker".',
+        'As recorded: "restating it in situ is how successive versions came to disagree about the same worker".',
+        False,
+    ),
+    (
+        "sharing a section title is not duplication",
+        "## A rule change is not complete until its dependents agree\n\nBody text here entirely different.",
+        "See CLAUDE.md, A rule change is not complete until its dependents agree, for the criterion.",
+        False,
+    ),
+    (
+        "running the same commands is not duplication",
+        "Run them:\n\n```bash\npython3 scripts/check_skills.py\npython3 scripts/check_rule_locality.py\n```",
+        "Run them:\n\n```bash\npython3 scripts/check_skills.py\npython3 scripts/check_rule_locality.py\n```",
+        False,
+    ),
+]
+
 failures: list[str] = []
+
+for label, canon, other, should_report in DUP_CASES:
+    reported = bool(shared_spans(canon, other))
+    if reported != should_report:
+        want = "reported" if should_report else "allowed"
+        failures.append(f"duplication fixture ({label}): expected {want}, got the opposite")
+    else:
+        print(f"PASS duplication: {label}")
 
 for label, prev, line in BAD:
     if not is_directive(line, prev):
@@ -76,7 +127,7 @@ for label, prev, line in GOOD:
         print(f"PASS allowed {label}")
 
 print()
-total = len(BAD) + len(GOOD)
+total = len(BAD) + len(GOOD) + len(DUP_CASES)
 for f in failures:
     print(f"FAIL {f}")
 print(f"{total - len(failures)}/{total} passing")

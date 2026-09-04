@@ -24,15 +24,14 @@ code-shaped criterion, and it is what produces ten rounds of review here.
 The reason is written into the repository's own history, in three places worth reading
 before your first fix:
 
-- `scripts/check_contract_placement.py` — a rule present in a file but stated in the wrong
-  clause reads as correct and is inert in practice. **Presence in a file is not presence at
-  the decision point.**
-- `skills/backlog-orchestrator/NOTES.md`, *Releasing a worker* — restating a rule in situ
-  is how successive versions of it came to disagree, "each introduced by the fix for the
-  last."
-- `skills/backlog-orchestrator/NOTES.md`, *Blocked workers* — a limitation stated only
-  where it was observed leaves every rule written on its negation standing, and those rules
-  do not announce themselves.
+- `scripts/check_contract_placement.py` — on a rule that reads as correct where it sits and
+  is inert where it is read;
+- `skills/backlog-orchestrator/NOTES.md`, *Releasing a worker* — on how successive versions
+  of one rule came to disagree, each by the fix for the last;
+- `skills/backlog-orchestrator/NOTES.md`, *Blocked workers* — on what a limitation stated
+  only where it was observed leaves standing elsewhere.
+
+`docs/review-fix-workflow.md` states all three in full, with the evidence.
 
 `docs/review-fix-workflow.md` is the long form: the finding classification, the audit-table
 method, and the sweep checklist. Follow it when resolving review rounds.
@@ -138,16 +137,17 @@ Every check is deterministic and runnable locally. Run them before committing:
 python3 scripts/check_skills.py
 python3 scripts/check_permissions.py
 python3 scripts/check_contract_placement.py
+python3 scripts/test_rule_locality.py
+python3 scripts/check_rule_locality.py
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
 bash scripts/eval_reminder.sh origin/main
 ```
 
-The eval scenarios are deliberately **not** in CI — they are model-graded, cost money, and
-are non-deterministic. Run them on demand per `skill-creator`, comparing against the
-previous text rather than a fixed threshold. Consequence: on a documentation change, the
-deterministic checks above are nearly the whole safety net, so the sweep is not optional
-diligence — it is the missing test.
+The eval scenarios are not among them, and `README.md`, *Checks*, gives the reasons. The
+consequence for a fixer is what matters here: on a documentation change these deterministic
+checks are nearly the whole safety net, so the sweep is not optional diligence — it is the
+missing test.
 
 ## Using this repository's own automation on this repository
 

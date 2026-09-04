@@ -59,6 +59,7 @@ RULE_PHRASES = [
     "find every place this repository now contradicts itself",
     "the strongest model available",
     "in an ordinary session",
+    "nearly the whole safety net",
 ]
 
 IMPERATIVES = (
@@ -124,12 +125,37 @@ FORBIDDEN_IN_AGENTS = ["requires", "must ", "should ", "prefer"]
 
 # A section of CLAUDE.md that states no restatable rule. Exempt explicitly and
 # with a reason, so the exemption is reviewable rather than an unnoticed gap.
-EXEMPT_SECTIONS = {
-    # A command list, legitimately repeated in README's own check section: the
-    # commands are the interface, and a second copy of them cannot drift
-    # semantically the way a rule can — CI runs the same ones either way.
-    "Checks",
+EXEMPT_SECTIONS: dict[str, str] = {
+    # Kept deliberately empty. "Checks" was exempt here on the reasoning that a
+    # command list is the interface and cannot drift the way a rule can. That was
+    # falsified two commits later by this very PR: two checks were added to CI and
+    # README while CLAUDE.md's copy went stale, and the whole-section exemption
+    # meant nothing reported it. An exemption that skips a section also skips the
+    # policy prose inside it, which is why this is empty rather than narrowed.
 }
+
+# ---------------------------------------------------------------------------
+# Duplication, detected rather than enumerated.
+#
+# RULE_PHRASES and the per-section coverage test are both opt-in: something has
+# to be named before it is guarded. Rounds five and six of this PR's review each
+# found the same consequence at a finer granularity — an unlisted rule, then an
+# unlisted rule inside a listed section — because an allowlist can always be
+# incomplete. This test inverts that: any long span of prose shared between
+# CLAUDE.md and a pointer file is reported, so a new restatement fails without
+# anyone having predicted it.
+#
+# Quotations, code blocks and CLAUDE.md's own section titles are excluded: two
+# files citing the same evidence, running the same command, or naming the same
+# section is not duplication. What is left is prose one file wrote and another
+# repeated.
+# Chosen by measurement, not by feel. At 12 the detector found nothing while two
+# real duplications were live (the eval policy, the self-editing rule); at 8 and
+# below it starts reporting shared filename lists and pointer phrasings. At 10 it
+# found exactly those two and nothing else.
+NGRAM = 10
+DUPLICATION_EXCEPTIONS: list[str] = []
+# ---------------------------------------------------------------------------
 
 errors: list[str] = []
 passes: list[str] = []
@@ -137,6 +163,43 @@ passes: list[str] = []
 
 def flat(text: str) -> str:
     return " ".join(text.split())
+
+
+def prose_words(text: str) -> list[str]:
+    """The file's own prose, as words: quotations and code removed."""
+    text = re.sub(r"```.*?```", " ", text, flags=re.S)
+    text = re.sub(r"^>.*$", " ", text, flags=re.M)
+    text = re.sub(r'"[^"]{0,400}"', " ", text, flags=re.S)
+    text = re.sub(r"[`*_#|\[\]()<>]", " ", text)
+    return re.findall(r"[a-z0-9'-]+", text.lower())
+
+
+def shared_spans(canonical: str, other: str, n: int = NGRAM) -> list[str]:
+    """Maximal runs of >= n words appearing in both, as whole spans."""
+    a, b = prose_words(canonical), prose_words(other)
+    bset = {" ".join(b[i : i + n]) for i in range(len(b) - n + 1)}
+    titles = " ".join(
+        re.findall(r"[a-z0-9'-]+", " ".join(re.findall(r"^#{2,3} (.+)$", canonical, re.M)).lower())
+    )
+    hits = [i for i in range(len(a) - n + 1) if " ".join(a[i : i + n]) in bset]
+    spans, start, prev = [], None, None
+    for i in hits:
+        if start is None:
+            start, prev = i, i
+        elif i == prev + 1:
+            prev = i
+        else:
+            spans.append((start, prev + n))
+            start, prev = i, i
+    if start is not None:
+        spans.append((start, prev + n))
+    out = []
+    for lo, hi in spans:
+        span = " ".join(a[lo:hi])
+        if span in titles or any(exc in span for exc in DUPLICATION_EXCEPTIONS):
+            continue
+        out.append(span)
+    return out
 
 
 def section(text: str, start: str, end: str) -> str:
@@ -204,7 +267,7 @@ def main() -> int:
     for part in re.split(r"^## ", canonical, flags=re.M)[1:]:
         title = part.split("\n")[0].strip()
         if title in EXEMPT_SECTIONS:
-            passes.append(f"section exempt by declaration: {title!r}")
+            passes.append(f"section exempt ({EXEMPT_SECTIONS[title]}): {title!r}")
             continue
         if any(phrase in flat(part) for phrase in RULE_PHRASES):
             passes.append(f"section guarded by a phrase: {title!r}")
@@ -215,6 +278,23 @@ def main() -> int:
                 "verbatim phrase from it above, or declare it in EXEMPT_SECTIONS "
                 "with the reason it holds no restatable rule."
             )
+
+    # 3. No long span of CLAUDE.md's prose is repeated in a pointer file. This
+    #    reads README whole rather than the section the directive test uses: a
+    #    restatement is a defect wherever it sits, and the section boundary is
+    #    exactly what hid one in README's own "## Checks" from this check.
+    dup_targets = dict(targets)
+    dup_targets["README.md"] = readme
+    for name, text in dup_targets.items():
+        dupes = shared_spans(canonical, text)
+        for span in dupes:
+            errors.append(
+                f"{name}: repeats {len(span.split())} words of CLAUDE.md's prose "
+                f"— {span[:70]!r}... Point at the section instead, or if both files "
+                "must carry it, add it to DUPLICATION_EXCEPTIONS with the reason."
+            )
+        if not dupes:
+            passes.append(f"no repeated prose from CLAUDE.md in {name}")
 
     agents = flat((ROOT / "AGENTS.md").read_text()).lower()
     for term in FORBIDDEN_IN_AGENTS:
