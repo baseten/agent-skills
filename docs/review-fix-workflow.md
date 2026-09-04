@@ -95,10 +95,10 @@ is how the scopes come apart, which is what this document is about.
    away. Mechanism 3 above is exactly this.
 4. **Decision point** — a rule in the right file and the wrong clause reads as correct to a
    reviewer and to a grep, and is inert when executed.
-5. **Chain forwarding** — where the rule produces something another skill must record,
-   every skill between producer and recorder has to forward it. Half of
-   `check_contract_placement.py` exists for this: a `no-action` classification produced by
-   one skill that the skill between it and its recorder never forwarded.
+5. **Chain forwarding** — half of `check_contract_placement.py` exists for this step, and
+   the incident behind it says why: a `no-action` classification produced by one skill,
+   which the skill sitting between it and its recorder never passed along. Nothing about
+   either end looked wrong; the gap was in the middle, where nobody was reading.
 
 **Why collapsing beats reconciling.** Restatement is mechanism 2's fuel, and a rule stated
 once cannot disagree with itself — reconciling two copies leaves both, so it buys agreement
@@ -186,17 +186,17 @@ the symptom is a stall that hands you the work, not a crash. This repository rai
 in `.claude/backlog-orchestrator.json`.
 
 **2. `resolve-pr-comment` is line-local by contract.** Its gather step reads "the referenced
-files at the relevant lines to understand what each comment is asking for." That is
-precisely the fix shape that spawns the next round here, and no budget increase changes it.
+files at the relevant lines to understand what each comment is asking for." For a code
+review that is the correct scope; for a prose contract it is the shape that manufactures the
+next round, and no budget increase touches it, because the limit is what the pass reads.
 `CLAUDE.md`'s completion criterion is the counterweight, and the skill is contractually
 told to read `CLAUDE.md` — though a criterion restated in the invocation is one the callee
 cannot fail to load, which is the argument for belt and braces here.
 
 **3. `auto-merge` is enabled here, so the gate is reachable.** For a documentation PR the
-exposure is not a stalled run: it is a locally-correct fix passing a green gate while
-contradicting a document the reviewer did not happen to re-check that round. The
-deterministic checks cannot catch a semantic contradiction, and the evals that could are out
-of CI. `CLAUDE.md` states when to narrow the key for a run; what makes narrowing the only
+exposure is not a stalled run. It is the opposite: a fix that is right where it was made,
+green on every check, merging while some other file still says the old thing — because no
+deterministic check reads for meaning, and the evals that could are out of CI. `CLAUDE.md` states when to narrow the key for a run; what makes narrowing the only
 available lever is the asymmetry the grant is built on — an invocation can close the gate
 but never open it, because the repository's opt-in is the sole route to a merge.
 

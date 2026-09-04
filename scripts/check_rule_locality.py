@@ -149,12 +149,23 @@ EXEMPT_SECTIONS: dict[str, str] = {
 # files citing the same evidence, running the same command, or naming the same
 # section is not duplication. What is left is prose one file wrote and another
 # repeated.
-# Chosen by measurement, not by feel. At 12 the detector found nothing while two
-# real duplications were live (the eval policy, the self-editing rule); at 8 and
-# below it starts reporting shared filename lists and pointer phrasings. At 10 it
-# found exactly those two and nothing else.
-NGRAM = 10
-DUPLICATION_EXCEPTIONS: list[str] = []
+# Measured, and re-measured downward twice under review. 12 found nothing while
+# two duplications were live; 10 found those two but not a nine-word restatement
+# of sweep step 5; 8 finds everything above it with one benign match, the shared
+# list of filenames below. At 7 and under the reports are mostly pointer
+# phrasings and section-name citations, which is where the signal stops.
+#
+# THE FLOOR IS REAL, AND GREEN IS NOT A PROOF. A restatement shorter than this,
+# or reworded enough to break every window, passes. Three review rounds were
+# spent discovering that successive settings of this constant were each green
+# over a live duplicate, so the value is a floor on what is detectable and never
+# a claim that nothing is left. The sweep is still the thing that finds the rest.
+NGRAM = 8
+DUPLICATION_EXCEPTIONS: list[str] = [
+    # A shared list of this repository's own filenames. Both files legitimately
+    # name the same set; it carries no rule.
+    "agents md readme md and docs",
+]
 # ---------------------------------------------------------------------------
 
 errors: list[str] = []
@@ -166,12 +177,26 @@ def flat(text: str) -> str:
 
 
 def prose_words(text: str) -> list[str]:
-    """The file's own prose, as words: quotations and code removed."""
+    """The file's words, code blocks and block quotes removed.
+
+    Inline quotations are deliberately KEPT. Removing them was the earlier
+    behaviour and it opened a hole: a restatement with its middle clause dressed
+    as a quotation split into two sub-threshold runs and vanished. Quotations are
+    instead excused later, and only when both files quote the same thing — which
+    is the case "we cite the same evidence" was meant to cover.
+    """
     text = re.sub(r"```.*?```", " ", text, flags=re.S)
     text = re.sub(r"^>.*$", " ", text, flags=re.M)
-    text = re.sub(r'"[^"]{0,400}"', " ", text, flags=re.S)
     text = re.sub(r"[`*_#|\[\]()<>]", " ", text)
     return re.findall(r"[a-z0-9'-]+", text.lower())
+
+
+def quoted_blob(text: str) -> str:
+    """Everything inside inline double quotes, normalised, as one string."""
+    parts = re.findall(r'"([^"]{0,400})"', text, flags=re.S)
+    return " || ".join(
+        " ".join(re.findall(r"[a-z0-9'-]+", p.lower())) for p in parts
+    )
 
 
 def shared_spans(canonical: str, other: str, n: int = NGRAM) -> list[str]:
@@ -193,10 +218,27 @@ def shared_spans(canonical: str, other: str, n: int = NGRAM) -> list[str]:
             start, prev = i, i
     if start is not None:
         spans.append((start, prev + n))
+    qa, qb = quoted_blob(canonical), quoted_blob(other)
     out = []
     for lo, hi in spans:
         span = " ".join(a[lo:hi])
         if span in titles or any(exc in span for exc in DUPLICATION_EXCEPTIONS):
+            continue
+        # Both files quoting the same evidence is citation, not duplication. One
+        # file quoting part of the other's rule is duplication wearing a quote,
+        # so the excuse requires the span to be quoted on BOTH sides.
+        #
+        # Tolerant of straddle by up to two words, because a shared span often
+        # picks up the verb introducing the quotation ("reads \"the referenced
+        # files ...\"") on both sides, which is still citation.
+        sw = span.split()
+        core_len = max(len(sw) - 2, 6)
+        cores = [
+            " ".join(sw[i : i + L])
+            for L in range(len(sw), core_len - 1, -1)
+            for i in range(len(sw) - L + 1)
+        ]
+        if any(c in qa and c in qb for c in cores):
             continue
         out.append(span)
     return out

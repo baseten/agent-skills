@@ -140,10 +140,21 @@ check therefore also **detects duplication rather than enumerating it**: any spa
 more words of `CLAUDE.md`'s own prose reappearing in a pointer file is reported, with
 quotations, code blocks and section titles excluded, since two files citing the same
 evidence or running the same command is not duplication. New restatements now fail without
-anyone having predicted them. The threshold is measured rather than chosen — at twelve words
-the detector found nothing while two real duplications were live; below eight it starts
-reporting shared filename lists — and the fixtures pin both directions of that choice,
-because a threshold is the one parameter that silently turns a defect into a pass.
+anyone having predicted them.
+
+The threshold was measured and then re-measured downward twice under review, because each
+setting turned out to be green over a live duplicate: twelve found nothing while two were
+live, ten missed a nine-word restatement of a sweep step, eight finds everything above it
+with one benign match. Below eight the reports are mostly pointer phrasings. Inline
+quotations are kept rather than stripped, and excused only where **both** files quote the
+same thing — stripping them let a restatement hide by dressing its middle clause as a quote.
+
+**The floor is real and green is not a proof.** A restatement shorter than eight words, or
+reworded enough to break every window, passes; the fixtures pin the floor in both
+directions so that limit stays visible rather than being mistaken for coverage. Three review
+rounds went on discovering that successive settings of this one constant each looked clean
+over a real defect, which is the argument for keeping the sweep rather than trusting the
+check.
 
 `eval_reminder.sh` names a skill whose `SKILL.md`/`NOTES.md` changed while its
 `evals/evals.json` did not. It is a warning and never a failure: it cannot know

@@ -28,8 +28,8 @@ before your first fix:
   is inert where it is read;
 - `skills/backlog-orchestrator/NOTES.md`, *Releasing a worker* — on how successive versions
   of one rule came to disagree, each by the fix for the last;
-- `skills/backlog-orchestrator/NOTES.md`, *Blocked workers* — on what a limitation stated
-  only where it was observed leaves standing elsewhere.
+- `skills/backlog-orchestrator/NOTES.md`, *Blocked workers* — on the third of them, which
+  the workflow document numbers and states.
 
 `docs/review-fix-workflow.md` states all three in full, with the evidence.
 

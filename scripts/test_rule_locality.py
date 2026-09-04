@@ -96,6 +96,30 @@ DUP_CASES: list[tuple[str, str, str, bool]] = [
         False,
     ),
     (
+        "a restatement with its middle clause quoted is still reported",
+        'On a shape finding, do not fix the instances: enumerate the axis and answer one question per cell, then fix the whole column in one pass.',
+        'On a shape finding, do not fix the instances: "enumerate the axis and answer one question per cell", then fix the whole column in one pass.',
+        True,
+    ),
+    (
+        "both files quoting the same evidence, verb straddling the quote, is not duplication",
+        'The contract reads "the referenced files at the relevant lines to understand what each comment asks".',
+        'Its gather step reads "the referenced files at the relevant lines to understand what each comment asks".',
+        False,
+    ),
+    (
+        "an eight-word restatement is reported, since the floor is eight",
+        "A chain that drops a classification silently is the defect class this exists for.",
+        "Remember: a chain that drops a classification silently is the defect class this exists for.",
+        True,
+    ),
+    (
+        "seven words is below the floor and passes — the documented limit",
+        "A chain that drops it silently fails.",
+        "Note: a chain that drops it silently fails.",
+        False,
+    ),
+    (
         "running the same commands is not duplication",
         "Run them:\n\n```bash\npython3 scripts/check_skills.py\npython3 scripts/check_rule_locality.py\n```",
         "Run them:\n\n```bash\npython3 scripts/check_skills.py\npython3 scripts/check_rule_locality.py\n```",
