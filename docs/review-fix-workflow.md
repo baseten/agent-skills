@@ -76,11 +76,11 @@ expands each with its reasoning and adds no step of its own — the steps are no
 here, because two copies of a checklist is how the scopes come apart, which is what this
 document is about.
 
-1. **Restatements** — the search is repository-wide, and that boundary is the point.
-   `skills/` is the tempting scope and the wrong one: `CLAUDE.md`, `AGENTS.md`, `README.md`
-   and `docs/` all state shared rules, and a stale copy in any of them contradicts the
-   completion criterion exactly as one in a `SKILL.md` does. This PR's own first draft got
-   this wrong in this very file.
+1. **Restatements** — `skills/` is the tempting scope, and what makes it the wrong one is
+   that the root-level and `docs/` files carry shared rules too, so a stale copy there is
+   as contradictory as one inside a `SKILL.md`. The step's scope is defined at the pointer
+   above and not restated here; this document narrowed it on its own first draft, and round
+   one caught that.
 2. **Inbound cross-references** — `check_skills.py` proves a pointer *resolves*; nothing
    proves it is still *accurate*. A reference surviving a rule change while describing the
    old rule is a passing check over a false statement.
@@ -94,20 +94,21 @@ document is about.
    `check_contract_placement.py` exists for this: a `no-action` classification produced by
    one skill that the skill between it and its recorder never forwarded.
 
-**Collapse over reconcile.** Given the choice between editing two copies to agree and
-deleting one for a pointer, delete. Restatement is mechanism 2's fuel; a rule stated once
-cannot disagree with itself. `NOTES.md`, *Releasing a worker*: "Why the releasable test is
-stated once."
+**Why collapsing beats reconciling.** Restatement is mechanism 2's fuel, and a rule stated
+once cannot disagree with itself — reconciling two copies leaves both, so it buys agreement
+today and the next round's finding tomorrow. The repository already settled this for one of
+its own rules: `NOTES.md`, *Releasing a worker*, "Why the releasable test is stated once."
 
-**Leave a guard.** Every shape that recurred should end its round as either an assertion in
-`scripts/check_contract_placement.py` or a scenario in the skill's `evals/evals.json`. This
-is the only tier that binds without being read. `scripts/eval_reminder.sh` flags a contract
-change whose evals did not move — advisory by design, since "it cannot know whether a change
-needs a scenario, only that nobody added one."
+**Why a recurring shape earns a guard.** A mechanical assertion or an eval scenario is the
+only tier that binds without being read, so it is the one thing a later round cannot skip
+past. `scripts/eval_reminder.sh` exists at the weaker end of the same idea and stays
+advisory on purpose: "it cannot know whether a change needs a scenario, only that nobody
+added one."
 
-**Record the why, naming the round.** The existing `NOTES.md` entries cite their origin
-("Codex round one on the PR that introduced this section"). That provenance is what stops a
-later fixer re-deriving the rejected alternative.
+**Why the provenance matters.** The existing `NOTES.md` entries cite their origin ("Codex
+round one on the PR that introduced this section"), and that is what stops a later fixer
+re-deriving the alternative an earlier round already rejected. A note without its round
+reads as preference rather than as a settled argument.
 
 ## Where the rules bind, weakest tier last
 
@@ -185,10 +186,13 @@ precisely the fix shape that spawns the next round here, and no budget increase 
 exposure is not a stalled run: it is a locally-correct fix passing a green gate while
 contradicting a document the reviewer did not happen to re-check that round. The
 deterministic checks cannot catch a semantic contradiction, and the evals that could are out
-of CI. An invocation can narrow `auto-merge` off for a run but never on; use that when a
-change touches rules shared across skills.
+of CI. `CLAUDE.md` states when to narrow the key for a run; what makes narrowing the only
+available lever is the asymmetry the grant is built on — an invocation can close the gate
+but never open it, because the repository's opt-in is the sole route to a merge.
 
-**And do not let a run edit the contract it is executing.** Using `backlog-orchestrator` or
+**Why a run must not edit the contract it is executing.** Using `backlog-orchestrator` or
 `implement-issue` to modify `backlog-orchestrator/SKILL.md` has the run rewriting its own
-instructions mid-flight. No contract here guards it. Make those changes in an ordinary
-session.
+instructions mid-flight, and no contract here guards against it — the config file is read
+once at preflight and never re-read precisely so a worker's write cannot change the running
+policy, but nothing extends that protection to the contract text itself. `CLAUDE.md` carries
+the rule this reasoning supports.

@@ -10,6 +10,11 @@ section's note before changing its rules. `NOTES.md` explains; it never override
 skills have one; `resolve-pr-comment`, `draft-blog-post` and `draft-slack-message` do not,
 so for those the commit message carries the reasoning instead.
 
+**These rules are stated in this file and nowhere else.** `AGENTS.md`, `README.md` and
+`docs/review-fix-workflow.md` point here or explain the reasoning behind what is here; none
+of them states a rule of its own, and none should be read as qualifying one. That is this
+file's own collapse rule applied to itself — three review rounds went by before it was.
+
 ## A rule change is not complete until its dependents agree
 
 **The completion criterion for any change to a rule: no document in this repository
@@ -69,9 +74,17 @@ Before committing a rule change, find what it now contradicts:
 These five steps are the sweep. `docs/review-fix-workflow.md` expands each with its
 reasoning and adds no step of its own.
 
-**Prefer collapsing over reconciling.** When a fix would make two copies of a rule agree,
-delete one and leave a pointer. A local fix cannot contradict a distant copy that no longer
-exists. This is the highest-leverage habit in this repository.
+**Prefer collapsing over reconciling — and know which restatements are legitimate.** Two
+cases look alike and are not. A rule needed at two **decision points** belongs at both: that
+is sweep step 4, and the repository's practice is to carry a pointer to the exception
+alongside the absolute rather than let the two copies drift silently
+(`backlog-orchestrator/NOTES.md`, *Remote worker session arguments*, on why `SKILL.md` line
+198 carries one). A **summary** of a rule in a second document is the other case: it serves
+no decision point of its own, it is where a condition gets quietly dropped, and it is what
+collapsing is for — delete it, leave a pointer. So when a fix would make two summaries
+agree, delete one instead; when it would make two decision points agree, keep both and
+change them together. A local fix cannot contradict a distant copy that no longer exists,
+which is what makes this the highest-leverage habit here.
 
 **Leave a guard behind.** A finding shape that recurred should end the round with an
 assertion in `scripts/check_contract_placement.py` or a scenario in the skill's

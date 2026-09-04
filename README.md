@@ -51,10 +51,11 @@ Adding a skill requires no change to `bootstrap.sh` — create a directory under
 ## Changing the skills
 
 The `SKILL.md` files are prose contracts executed by models, and they cross-reference each
-other, so a finding on one is rarely local to where it was reported. **A rule change is not
-complete until no document in this repository contradicts it** — the code-shaped criterion,
-"the flagged line now reads correctly", is what produces ten rounds of review on a single
-change.
+other, so a finding on one is rarely local to where it was reported. What counts as a
+complete fix is therefore not the code-shaped criterion — "the flagged line now reads
+correctly" — and that difference is what produces ten rounds of review on a single change.
+`CLAUDE.md`, *A rule change is not complete until its dependents agree*, states the
+criterion itself.
 
 **`CLAUDE.md` carries the binding rules** — how to classify a review round's findings,
 when a finding is one assumption failing in several places rather than several defects, the
