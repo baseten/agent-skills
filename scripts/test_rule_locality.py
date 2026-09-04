@@ -120,6 +120,22 @@ DUP_CASES: list[tuple[str, str, str, bool]] = [
         False,
     ),
     (
+        "a quotation elsewhere does not excuse an unquoted restatement here",
+        'Earlier the note said "alpha beta gamma delta epsilon zeta eta theta". '
+        "Separately: policy users alpha beta gamma delta epsilon zeta eta theta.",
+        'Earlier the note said "alpha beta gamma delta epsilon zeta eta theta". '
+        "Separately: policy users alpha beta gamma delta epsilon zeta eta theta.",
+        True,
+    ),
+    (
+        "a benign span with a rule attached is reported, not excused with it",
+        "The files are AGENTS.md, README.md and docs/review-fix-workflow.md and they "
+        "must never state binding rules themselves under any circumstances at all.",
+        "The files are AGENTS.md, README.md and docs/review-fix-workflow.md and they "
+        "must never state binding rules themselves under any circumstances at all.",
+        True,
+    ),
+    (
         "running the same commands is not duplication",
         "Run them:\n\n```bash\npython3 scripts/check_skills.py\npython3 scripts/check_rule_locality.py\n```",
         "Run them:\n\n```bash\npython3 scripts/check_skills.py\npython3 scripts/check_rule_locality.py\n```",

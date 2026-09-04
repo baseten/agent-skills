@@ -82,11 +82,11 @@ more missing supplier reactively. This audit walks the whole gate once instead."
 gives the reasoning for each. The steps are not repeated here — two copies of a checklist
 is how the scopes come apart, which is what this document is about.
 
-1. **Restatements** — `skills/` is the tempting scope, and what makes it the wrong one is
-   that the root-level and `docs/` files carry shared rules too, so a stale copy there is
-   as contradictory as one inside a `SKILL.md`. The step's scope is defined at the pointer
-   above and not restated here; this document narrowed it on its own first draft, and round
-   one caught that.
+1. **Restatements** — the scope is the step's, at the pointer above. The history is the
+   reason it is worth reading there rather than assuming it: this document assumed a
+   narrower one on its first draft, review caught it, and the replacement wording was
+   caught twice more for stating the boundary again in other words. Three rounds on one
+   paragraph is the argument for looking it up.
 2. **Inbound cross-references** — `check_skills.py` proves a pointer *resolves*; nothing
    proves it is still *accurate*. A reference surviving a rule change while describing the
    old rule is a passing check over a false statement.

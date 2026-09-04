@@ -136,11 +136,11 @@ covered even where it held several rules and only one was named. Both were found
 not by the check.
 
 The root cause is that naming what to guard is opt-in, so it can always be incomplete. The
-check therefore also **detects duplication rather than enumerating it**: any span of ten or
-more words of `CLAUDE.md`'s own prose reappearing in a pointer file is reported, with
-quotations, code blocks and section titles excluded, since two files citing the same
-evidence or running the same command is not duplication. New restatements now fail without
-anyone having predicted them.
+check therefore also **detects duplication rather than enumerating it**: a span of `NGRAM`
+or more words of `CLAUDE.md`'s own prose reappearing in a pointer file is reported, with
+code blocks, section titles and both-sides quotations excused, since two files citing the
+same evidence or running the same command is not duplication. That catches restatements
+nobody predicted — which an allowlist cannot — but it is a detector, not a proof.
 
 The threshold was measured and then re-measured downward twice under review, because each
 setting turned out to be green over a live duplicate: twelve found nothing while two were
@@ -150,11 +150,13 @@ quotations are kept rather than stripped, and excused only where **both** files 
 same thing — stripping them let a restatement hide by dressing its middle clause as a quote.
 
 **The floor is real and green is not a proof.** A restatement shorter than eight words, or
-reworded enough to break every window, passes; the fixtures pin the floor in both
-directions so that limit stays visible rather than being mistaken for coverage. Three review
-rounds went on discovering that successive settings of this one constant each looked clean
-over a real defect, which is the argument for keeping the sweep rather than trusting the
-check.
+reworded enough to break every window, passes; the fixtures pin the floor in both directions
+so that limit stays visible rather than being mistaken for coverage. Three review rounds
+went on discovering that successive settings of this one constant each looked clean over a
+real defect, and a fourth found a paragraph that had been reworded past the detector while
+still stating the rule in other words. Both are the same lesson: this check bounds the
+verbatim case, the sweep is what covers the rest, and "the check is green" is not an answer
+to "does anything now contradict this".
 
 `eval_reminder.sh` names a skill whose `SKILL.md`/`NOTES.md` changed while its
 `evals/evals.json` did not. It is a warning and never a failure: it cannot know

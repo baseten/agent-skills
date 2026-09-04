@@ -17,17 +17,23 @@ repository's own ladder, and a purity constraint over three documents is exactly
 what a human sweep keeps failing at. This is the tier-1 guard that recurring shape
 earned.
 
-Two properties, both decidable from the text:
+Three signals, none of them a guarantee. Say what they are plainly, because
+over-claiming what a check establishes is the single defect this repository's
+review has produced most often — including in earlier versions of this docstring:
 
-1. every canonical rule phrase appears in CLAUDE.md, and in none of the pointer
-   files — so a rule cannot be silently restated or re-qualified elsewhere;
+1. every enumerated rule phrase appears in CLAUDE.md and in none of the pointer
+   files. This protects the literals it lists and nothing else;
 2. no pointer file issues a directive of its own, detected as an imperative verb
-   opening a numbered step or a bold lead-in.
+   opening a numbered step, a bold lead-in, a table cell, or a sentence;
+3. no span of NGRAM or more words of CLAUDE.md's prose reappears in a pointer
+   file, quotations and code and section titles excused.
 
-(2) is a heuristic and deliberately narrow: it fires only on the construction the
-violations actually took — `1. **Name the axis.**`, `**Leave a guard.**` — and
-never on prose. A rule that needs to be stated belongs in CLAUDE.md, so a hit
-here is an instruction to move it, not to reword it.
+What none of them does is prevent restatement. (1) is an allowlist and can be
+incomplete. (2) fires on constructions, and prose can carry a rule without any
+of them. (3) has a documented floor: a shorter restatement, or one reworded
+enough to break every window, passes — and review has caught exactly that, three
+times, in prose these checks called clean. **Green here means no detected
+duplication, never none.** The sweep is what finds the rest.
 """
 
 from __future__ import annotations
@@ -163,8 +169,10 @@ EXEMPT_SECTIONS: dict[str, str] = {
 NGRAM = 8
 DUPLICATION_EXCEPTIONS: list[str] = [
     # A shared list of this repository's own filenames. Both files legitimately
-    # name the same set; it carries no rule.
-    "agents md readme md and docs",
+    # name the same set; it carries no rule. Stated as the complete span,
+    # because an exception is matched exactly: a larger duplicate that merely
+    # contains this list is reported rather than excused along with it.
+    "agents md readme md and docs review-fix-workflow md",
 ]
 # ---------------------------------------------------------------------------
 
@@ -191,17 +199,54 @@ def prose_words(text: str) -> list[str]:
     return re.findall(r"[a-z0-9'-]+", text.lower())
 
 
-def quoted_blob(text: str) -> str:
-    """Everything inside inline double quotes, normalised, as one string."""
-    parts = re.findall(r'"([^"]{0,400})"', text, flags=re.S)
-    return " || ".join(
-        " ".join(re.findall(r"[a-z0-9'-]+", p.lower())) for p in parts
-    )
+def prose_tokens(text: str) -> tuple[list[str], list[bool]]:
+    """The file's words, plus whether each one sits inside an inline quotation.
+
+    A per-word mask rather than a blob of all quoted text: the excuse below has
+    to know whether *this* occurrence is quoted. A blob only knows the sequence
+    is quoted somewhere, which excused an unquoted restatement whenever the same
+    words happened to appear inside a quotation elsewhere in both files.
+    """
+    text = re.sub(r"```.*?```", " ", text, flags=re.S)
+    text = re.sub(r"^>.*$", " ", text, flags=re.M)
+    words: list[str] = []
+    quoted: list[bool] = []
+    pos = 0
+    for m in re.finditer(r'"([^"]{0,400})"', text, flags=re.S):
+        for chunk, is_q in ((text[pos : m.start()], False), (m.group(1), True)):
+            chunk = re.sub(r"[`*_#|\[\]()<>]", " ", chunk)
+            found = re.findall(r"[a-z0-9'-]+", chunk.lower())
+            words += found
+            quoted += [is_q] * len(found)
+        pos = m.end()
+    tail = re.sub(r"[`*_#|\[\]()<>]", " ", text[pos:])
+    found = re.findall(r"[a-z0-9'-]+", tail.lower())
+    words += found
+    quoted += [False] * len(found)
+    return words, quoted
+
+
+def _quoted_core(mask: list[bool]) -> bool:
+    """True if this occurrence is a quotation, allowing two straddling words.
+
+    A shared span routinely picks up the verb introducing the quote on both
+    sides, so up to two unquoted words at the ends are tolerated; the quoted
+    core must still be at least six words, so the tolerance cannot swallow a
+    restatement.
+    """
+    n = len(mask)
+    for left in range(0, 3):
+        for right in range(0, 3 - left):
+            core = mask[left : n - right] if right else mask[left:]
+            if len(core) >= 6 and all(core):
+                return True
+    return False
 
 
 def shared_spans(canonical: str, other: str, n: int = NGRAM) -> list[str]:
     """Maximal runs of >= n words appearing in both, as whole spans."""
-    a, b = prose_words(canonical), prose_words(other)
+    a, qa_mask = prose_tokens(canonical)
+    b, qb_mask = prose_tokens(other)
     bset = {" ".join(b[i : i + n]) for i in range(len(b) - n + 1)}
     titles = " ".join(
         re.findall(r"[a-z0-9'-]+", " ".join(re.findall(r"^#{2,3} (.+)$", canonical, re.M)).lower())
@@ -218,27 +263,28 @@ def shared_spans(canonical: str, other: str, n: int = NGRAM) -> list[str]:
             start, prev = i, i
     if start is not None:
         spans.append((start, prev + n))
-    qa, qb = quoted_blob(canonical), quoted_blob(other)
+    def occurrences(span_words: list[str], hay: list[str]) -> list[int]:
+        L = len(span_words)
+        return [i for i in range(len(hay) - L + 1) if hay[i : i + L] == span_words]
+
     out = []
     for lo, hi in spans:
         span = " ".join(a[lo:hi])
-        if span in titles or any(exc in span for exc in DUPLICATION_EXCEPTIONS):
+        # An exception matches a span exactly. Substring matching let an
+        # exempted window discard the whole maximal span around it, so a rule
+        # duplicated alongside the benign filename list would have been excused
+        # with it. A larger span that merely contains an exception is reported.
+        if span in titles or span in DUPLICATION_EXCEPTIONS:
             continue
-        # Both files quoting the same evidence is citation, not duplication. One
-        # file quoting part of the other's rule is duplication wearing a quote,
-        # so the excuse requires the span to be quoted on BOTH sides.
-        #
-        # Tolerant of straddle by up to two words, because a shared span often
-        # picks up the verb introducing the quotation ("reads \"the referenced
-        # files ...\"") on both sides, which is still citation.
-        sw = span.split()
-        core_len = max(len(sw) - 2, 6)
-        cores = [
-            " ".join(sw[i : i + L])
-            for L in range(len(sw), core_len - 1, -1)
-            for i in range(len(sw) - L + 1)
-        ]
-        if any(c in qa and c in qb for c in cores):
+        # Both files quoting the same evidence is citation, not duplication. The
+        # excuse is bound to the matched occurrences: this span, here, must be
+        # quoted in the canonical file AND at some matching occurrence in the
+        # other. A quotation of the same words elsewhere in either file no longer
+        # excuses an unquoted copy — which it did while this compared blobs.
+        sw = a[lo:hi]
+        if _quoted_core(qa_mask[lo:hi]) and any(
+            _quoted_core(qb_mask[j : j + len(sw)]) for j in occurrences(sw, b)
+        ):
             continue
         out.append(span)
     return out
