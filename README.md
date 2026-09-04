@@ -90,6 +90,7 @@ runnable locally:
 python3 scripts/check_skills.py                       # structure, schema, cross-references
 python3 scripts/check_permissions.py                  # the shape of permissions.json, and the README's claims
 python3 scripts/check_contract_placement.py           # contract rules at their decision points
+python3 scripts/test_rule_locality.py                 # the locality detector still detects
 python3 scripts/check_rule_locality.py                # the workflow rules are stated in CLAUDE.md only
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
@@ -119,8 +120,17 @@ that claim was violated three review rounds running on the change that introduce
 fix believed complete at the time — a purity constraint over three documents is what a human
 sweep keeps failing at, so it belongs in the mechanical tier. It checks two decidable
 properties: every canonical rule phrase appears in `CLAUDE.md` and in none of the others,
-and no pointer file opens a directive of its own. The second is a narrow heuristic, matching
-only the construction the real violations took; it is verified against all nine of them.
+and no pointer file issues a directive of its own.
+
+The second is a heuristic, so `test_rule_locality.py` holds its fixtures — every
+construction a real violation has taken here, each labelled with the round that produced it,
+plus the reasoning prose that must keep passing. That file exists because the first version
+of the detector **shipped green over a live violation**: it required a bold lead-in, so a
+plain sentence and a table cell both bypassed CI while the claim it defends was false. A
+check that passes on the current tree is not evidence that it would catch the defect, and a
+green check over a false claim is worse than no check, because it stops anyone looking. The
+fixtures then immediately caught a second gap — a noun lead-in carrying the imperative in
+its body. Finding a new bypass means the detector was wrong, not the fixture.
 
 `eval_reminder.sh` names a skill whose `SKILL.md`/`NOTES.md` changed while its
 `evals/evals.json` did not. It is a warning and never a failure: it cannot know

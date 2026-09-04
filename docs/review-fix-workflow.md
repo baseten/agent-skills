@@ -36,20 +36,22 @@ a time, over successive rounds. Mechanism 2 is actively *created* by local fixin
 they guarantee that a fixer optimizing for "the flagged line now reads correctly" generates
 the next round.
 
-## Classify the round before touching it
+## Why the round is classified before anything is touched
 
-Take every finding of the round first. Fixing findings one at a time is what turns one
-shape into several rounds.
+`CLAUDE.md`, *Classify a finding before fixing it*, carries the classes and what each is
+owed. The reasoning is that one of the three classes is invisible to the reviewer reporting
+it.
 
-| kind | signature | method |
-| --- | --- | --- |
-| **local** | wording, typo, an ambiguous clause; no rule changes | fix in place, sweep, done |
-| **rule** | a rule is wrong, missing, or sited where nothing reads it | fix the rule, sweep its dependents |
-| **shape** | several findings that are instances of one assumption failing in several places | walk the axis once (below) |
+A diff-scoped reviewer cannot report a **shape**: it sees N separate local defects, because
+that is genuinely what the diff shows it. Fixing those N leaves the assumption behind them
+intact, so round N+1 finds instance N+1 — which is the whole ten-round phenomenon in one
+sentence. The class exists to be recognised on the reader's side, since it will never
+arrive labelled.
 
-The **shape** class is the one that matters. A diff-scoped reviewer cannot report a shape;
-it reports N locals. Fixing the N locals leaves the assumption intact, and round N+1 finds
-instance N+1.
+Reviewing this PR produced the demonstration: rounds one, three, four and five were all one
+shape — rule text outside the single source — arriving as eleven separately reported
+defects across four rounds, two of which were closed by fixes that turned out to be
+partial.
 
 ## The axis walk, for a shape finding
 

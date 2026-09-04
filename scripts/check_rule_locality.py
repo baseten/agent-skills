@@ -63,12 +63,51 @@ IMPERATIVES = (
     "read|run|add|check|find|grep|delete|keep|leave|record|collapse|prefer|make|use|"
     "name|build|answer|fix|walk|take|classify|state|move|point|spend|match|do not|never|always"
 )
-# A leading conjunction still opens a directive: "**And do not let a run ...**"
-# slipped past a version of this pattern that required the verb first.
-DIRECTIVE = re.compile(
-    rf"^(?:\s*[-*]\s+|\s*\d+\.\s+)?\*\*(?:(?:and|also|but|so|then)\s+)?(?:{IMPERATIVES})\b",
-    re.I,
-)
+# Three constructions, because every narrower version of this shipped green over a
+# violation. Requiring `**` missed a plain sentence ("Take every finding of the
+# round first.") and a table cell ("| **local** | ... | fix in place |"), and
+# requiring the verb first missed a leading conjunction ("**And do not let ...**").
+_LEAD = rf"(?:(?:and|also|but|so|then)\s+)?(?:{IMPERATIVES})\b"
+_MARKER = r"(?:\s*[-*]\s+|\s*\d+\.\s+|\s*-\s*\[[ x]\]\s+)?"
+
+BOLD_DIRECTIVE = re.compile(rf"^{_MARKER}\*\*{_LEAD}", re.I)
+PLAIN_DIRECTIVE = re.compile(rf"^{_MARKER}{_LEAD}", re.I)
+CELL_DIRECTIVE = re.compile(rf"^\s*(?:\*\*)?{_LEAD}", re.I)
+
+# Kept for the fixture test, which asserts every known violation is detected.
+DIRECTIVE = BOLD_DIRECTIVE
+
+
+def is_directive(line: str, prev: str = "") -> str | None:
+    """Why this line is a directive, or None.
+
+    `prev` is the preceding line, needed only for the plain-sentence test: a
+    wrapped continuation ("... can close the gate / but never open it ...") is
+    not a sentence-initial imperative, and testing it as one produced the single
+    false positive this check has had.
+    """
+    if line.lstrip().startswith(">"):
+        return None  # a quotation is evidence, not an instruction
+    if BOLD_DIRECTIVE.match(line):
+        return "bold lead-in"
+    # A noun lead-in can carry the directive in its body: "**Restatements.**
+    # `grep` for the rule across `skills/`". The verb is not first, and the
+    # fixture test is what surfaced that the verb-first patterns miss it.
+    body = re.sub(r"^\s*(?:[-*]\s+|\d+\.\s+|-\s*\[[ x]\]\s+)?\*\*[^*]+\*\*[.:]?\s*", "", line)
+    if body != line and CELL_DIRECTIVE.match(body.lstrip("`")):
+        return f"directive in the body of a noun lead-in {body[:32]!r}"
+    if line.count("|") >= 2:
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if any(set(c) <= set("- :") for c in cells):
+            return None  # the header separator row
+        for cell in cells:
+            if cell and CELL_DIRECTIVE.match(cell):
+                return f"table cell {cell[:32]!r}"
+        return None
+    starts_block = prev.strip() == "" or prev.lstrip().startswith("#")
+    if starts_block and PLAIN_DIRECTIVE.match(line):
+        return "sentence-initial imperative"
+    return None
 
 # Normative content that is a rule's substance rather than its verb. A pointer
 # file naming the sweep's scope is restating the rule however it is phrased —
@@ -130,10 +169,12 @@ def main() -> int:
 
     # 2. No pointer file issues a directive of its own.
     for name, text in targets.items():
-        for n, line in enumerate(text.split("\n"), 1):
-            if DIRECTIVE.match(line):
+        lines = text.split("\n")
+        for n, line in enumerate(lines, 1):
+            why = is_directive(line, lines[n - 2] if n > 1 else "")
+            if why:
                 errors.append(
-                    f"{name}:{n}: directive lead-in {line.strip()[:60]!r} — "
+                    f"{name}:{n}: directive ({why}) {line.strip()[:60]!r} — "
                     "a rule belongs in CLAUDE.md; keep the reasoning here and "
                     "rephrase this as a 'why', or move the rule."
                 )

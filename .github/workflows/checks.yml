@@ -32,6 +32,12 @@ jobs:
       - name: Contract rule placement
         run: python3 scripts/check_contract_placement.py
 
+      # The fixtures run first on purpose: they assert the detector still
+      # catches every construction a real violation has taken. The check
+      # passing means nothing if the detector has stopped detecting.
+      - name: Rule locality detector fixtures
+        run: python3 scripts/test_rule_locality.py
+
       - name: Rule locality
         run: python3 scripts/check_rule_locality.py
 
