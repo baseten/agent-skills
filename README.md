@@ -4,7 +4,7 @@ Reusable Claude Code skills for issue implementation, PR workflows, backlog vali
 
 ## A note on how the skills read
 
-The `SKILL.md` files are dense and not easily human readable. That is deliberate, and it was tested rather than assumed: [issue #51](https://github.com/baseten/agent-skills/issues/51) benchmarked a plain-English rewrite of the densest section against the current text — all 21 eval scenarios, on Sonnet and on Haiku — and the plain version made the models no better (identical on Sonnet, worse-to-indistinguishable on Haiku). The density costs the models nothing; they interpret this register at least as well as plain prose, so the skills are written for their actual reader. Humans get their own entry points instead: each skill's `NOTES.md` explains the reasoning behind its rules, and `backlog-orchestrator/README.md` gives a plain-language overview and a glossary of the coined terms.
+The `SKILL.md` files are dense and not easily human readable. That is deliberate, and it was tested rather than assumed: [issue #51](https://github.com/baseten/agent-skills/issues/51) benchmarked a plain-English rewrite of the densest section against the current text — all 21 eval scenarios, on Sonnet and on Haiku — and the plain version made the models no better (identical on Sonnet, worse-to-indistinguishable on Haiku). The density costs the models nothing; they interpret this register at least as well as plain prose, so the skills are written for their actual reader. Humans get their own entry points instead: a skill's `NOTES.md` explains the reasoning behind its rules — most skills have one, `resolve-pr-comment` and the two writing skills do not — and `backlog-orchestrator/README.md` gives a plain-language overview and a glossary of the coined terms.
 
 ## Core workflow skills
 
@@ -35,14 +35,47 @@ These read files from a personal machine (`~/Documents/version-control/ai-alex/.
 
 ```
 skills/           every directory with a SKILL.md ships
+CLAUDE.md         how to change a skill, and what a complete fix means here
+AGENTS.md         pointer to CLAUDE.md, for agents whose convention looks for it
+docs/             audits and workflows that outlive one PR
 permissions.json
 bootstrap.sh
 scripts/          repo-level checks (run in CI, runnable locally)
 .github/workflows/
+.claude/          this repository's own orchestrator policy
 ```
 
 Adding a skill requires no change to `bootstrap.sh` — create a directory under
 `skills/` with a `SKILL.md` in it and the next bootstrap run installs it.
+
+## Changing the skills
+
+The `SKILL.md` files are prose contracts executed by models, and they cross-reference each
+other, so a finding on one is rarely local to where it was reported. What counts as a
+complete fix is therefore not the code-shaped criterion — "the flagged line now reads
+correctly" — and that difference is what produces ten rounds of review on a single change.
+`CLAUDE.md`, *A rule change is not complete until its dependents agree*, states the
+criterion itself.
+
+**`CLAUDE.md` carries the binding rules** — how to classify a review round's findings,
+when a finding is one assumption failing in several places rather than several defects, the
+consequence sweep and its scope, and when a change owes a mechanical guard. Read it there
+rather than here: each of those rules has conditions attached, and a compressed copy in this
+file that dropped one is a defect of exactly the kind the rules exist to prevent. (Codex
+round one on the PR that added them found precisely that — this paragraph had made the guard
+obligation unconditional.) `AGENTS.md` points at the same file for agents whose convention
+looks for that name.
+
+`docs/review-fix-workflow.md` is the long form, with the evidence from this repository's own
+history. `docs/invariant-12-gate-audit.md` is the worked example of the axis walk, and
+`docs/review-fix-workflow.md` explains what it demonstrates.
+
+Running these skills against this repository has **three known mismatches, none of which
+announces itself** — see `CLAUDE.md`, *Using this repository's own automation on this
+repository*, which names them and what to do about each. They are why this repository's
+`.claude/backlog-orchestrator.json` raises `review-repair-cycles` and
+`repair-model-escalations` above their defaults; budgets are policy and live only in that
+file.
 
 ## Checks
 
@@ -54,6 +87,8 @@ runnable locally:
 python3 scripts/check_skills.py                       # structure, schema, cross-references
 python3 scripts/check_permissions.py                  # the shape of permissions.json, and the README's claims
 python3 scripts/check_contract_placement.py           # contract rules at their decision points
+python3 scripts/test_rule_locality.py                 # the locality detector still detects
+python3 scripts/check_rule_locality.py                # the workflow rules are stated in CLAUDE.md only
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
 bash scripts/eval_reminder.sh origin/main             # advisory, never fails
@@ -74,6 +109,54 @@ every contract section a shadow heading, and renaming one in `SKILL.md` alone
 would leave its references resolving happily against `NOTES.md`. References
 inside `NOTES.md` resolve against both, since a note legitimately cites a
 contract section or one of its own.
+
+`check_rule_locality.py` asserts what `CLAUDE.md` claims about itself: that the workflow
+rules are stated there and nowhere else, so `AGENTS.md`, `README.md` and
+`docs/review-fix-workflow.md` cannot silently restate or re-qualify one. It exists because
+that claim was violated three review rounds running on the change that introduced it, each
+fix believed complete at the time — a purity constraint over three documents is what a human
+sweep keeps failing at, so it belongs in the mechanical tier. It checks two decidable
+properties: every canonical rule phrase appears in `CLAUDE.md` and in none of the others,
+and no pointer file issues a directive of its own.
+
+The second is a heuristic, so `test_rule_locality.py` holds its fixtures — every
+construction a real violation has taken here, each labelled with the round that produced it,
+plus the reasoning prose that must keep passing. That file exists because the first version
+of the detector **shipped green over a live violation**: it required a bold lead-in, so a
+plain sentence and a table cell both bypassed CI while the claim it defends was false. A
+check that passes on the current tree is not evidence that it would catch the defect, and a
+green check over a false claim is worse than no check, because it stops anyone looking. The
+fixtures then immediately caught a second gap — a noun lead-in carrying the imperative in
+its body. Finding a new bypass means the detector was wrong, not the fixture.
+
+The phrase list had the same weakness one level up, and then again one level below that:
+a rule section with no phrase entry was unguarded (true of *Classify a finding before fixing
+it* while a duplicate of its table sat in `docs/`), and a section with a phrase counted as
+covered even where it held several rules and only one was named. Both were found by review,
+not by the check.
+
+The root cause is that naming what to guard is opt-in, so it can always be incomplete. The
+check therefore also **detects duplication rather than enumerating it**: a span of `NGRAM`
+or more words of `CLAUDE.md`'s own prose reappearing in a pointer file is reported, with
+code blocks, section titles and both-sides quotations excused, since two files citing the
+same evidence or running the same command is not duplication. That catches restatements
+nobody predicted — which an allowlist cannot — but it is a detector, not a proof.
+
+The threshold was measured and then re-measured downward twice under review, because each
+setting turned out to be green over a live duplicate: twelve found nothing while two were
+live, ten missed a nine-word restatement of a sweep step, eight finds everything above it
+with one benign match. Below eight the reports are mostly pointer phrasings. Inline
+quotations are kept rather than stripped, and excused only where **both** files quote the
+same thing — stripping them let a restatement hide by dressing its middle clause as a quote.
+
+**The floor is real and green is not a proof.** A restatement shorter than eight words, or
+reworded enough to break every window, passes; the fixtures pin the floor in both directions
+so that limit stays visible rather than being mistaken for coverage. Three review rounds
+went on discovering that successive settings of this one constant each looked clean over a
+real defect, and a fourth found a paragraph that had been reworded past the detector while
+still stating the rule in other words. Both are the same lesson: this check bounds the
+verbatim case, the sweep is what covers the rest, and "the check is green" is not an answer
+to "does anything now contradict this".
 
 `eval_reminder.sh` names a skill whose `SKILL.md`/`NOTES.md` changed while its
 `evals/evals.json` did not. It is a warning and never a failure: it cannot know
