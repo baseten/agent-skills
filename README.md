@@ -47,6 +47,13 @@ sessions by being enabled for a claude.ai account — cloud sessions load skills
 from your claude.ai account and from the cloned repository's `.claude/skills/`,
 so a public repo was never required to reach them.
 
+`check_no_machine_paths.py` enforces this. A skill referencing a path like
+`~/Documents/...` or `/Users/someone/...` fails the build, because that skill
+cannot work in a cloud session and the failure is silent when it doesn't:
+`` !`cat <missing path>` `` injects an empty string, so the skill loads with its
+guidance gone and says nothing. Paths under `~/.claude` or `$HOME/.codex` are
+fine — those exist wherever the agent runs.
+
 ## Checks
 
 `.github/workflows/checks.yml` runs on every pull request. Everything in it is
@@ -57,6 +64,7 @@ runnable locally:
 python3 scripts/check_skills.py                       # structure, schema, cross-references
 python3 scripts/check_permissions.py                  # the shape of permissions.json, and the README's claims
 python3 scripts/check_contract_placement.py           # contract rules at their decision points
+python3 scripts/check_no_machine_paths.py             # no skill depends on one machine's filesystem
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
 bash scripts/eval_reminder.sh origin/main             # advisory, never fails
