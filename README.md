@@ -35,14 +35,44 @@ These read files from a personal machine (`~/Documents/version-control/ai-alex/.
 
 ```
 skills/           every directory with a SKILL.md ships
+CLAUDE.md         how to change a skill, and what a complete fix means here
+docs/             audits and workflows that outlive one PR
 permissions.json
 bootstrap.sh
 scripts/          repo-level checks (run in CI, runnable locally)
 .github/workflows/
+.claude/          this repository's own orchestrator policy
 ```
 
 Adding a skill requires no change to `bootstrap.sh` — create a directory under
 `skills/` with a `SKILL.md` in it and the next bootstrap run installs it.
+
+## Changing the skills
+
+The `SKILL.md` files are prose contracts executed by models, and they cross-reference each
+other, so a finding on one is rarely local to where it was reported. **A rule change is not
+complete until no document in this repository contradicts it** — the code-shaped criterion,
+"the flagged line now reads correctly", is what produces ten rounds of review on a single
+change.
+
+`CLAUDE.md` carries the binding rules: classify a round's findings before fixing any of
+them, walk the whole axis once on a finding that is really one assumption failing in several
+places, sweep for restatements and for rules written on the negation of any limitation you
+add, prefer deleting a restated rule for a pointer over editing two copies to agree, and
+leave a mechanical guard or an eval scenario behind. `docs/review-fix-workflow.md` is the
+long form, with the evidence from this repository's own history.
+`docs/invariant-12-gate-audit.md` is the worked example of the axis walk: seven review
+rounds produced thirteen findings, ten of them the same shape, and one audit closed all
+three real defects together.
+
+**Running these skills against this repository has three known mismatches** —
+`resolve-pr-comment` is line-local by contract, `auto-merge` is enabled here so the gate is
+reachable on a change no deterministic check can semantically verify, and a run that edits
+`backlog-orchestrator/SKILL.md` is rewriting its own instructions mid-flight. See
+`CLAUDE.md`, *Using this repository's own automation on this repository*. This repository's
+`.claude/backlog-orchestrator.json` raises `review-repair-cycles` and
+`repair-model-escalations` above their defaults for that reason; budgets are policy and live
+only in that file.
 
 ## Checks
 
