@@ -63,6 +63,35 @@ Blocked by: https://github.com/acme/repo/issues/131
 - **Report which form you emitted**, so the caller reconciles completion against it rather than assuming a close.
 - Scope narrowly: a **recorded** coverage finding only — never a PR whose author merely feels uncertain (NOTES).
 
+# PR description style
+
+A description exists to transfer understanding to a reviewer who has none, has
+their own work waiting, and reads the diff anyway. Writing nothing withholds
+information; a generated wall of text buries it. Both fail the same test.
+
+| rule | why |
+|---|---|
+| **300 words of prose maximum above the fold** — tracker lines, background, description, testing summary. Manual checklists are exempt and capped at 8 grouped items | past that, the reviewer skims instead of reading, and the intent is what gets skipped |
+| **Background 2–4 sentences; description one paragraph or ≤5 bullets** | the problem, not its history |
+| **Never enumerate the changes or narrate the code** — no file-by-file inventory, no "surface area changed" list, no restating what a function now does | the diff already says it, and better. The description states *intent*: background, why this solution, boundaries, risk |
+| **Never include the investigation log or the journey** — no "grepped for…", "reproduced with…", "verdict:", no account of which CI shard failed after which push | the reviewer wants the conclusion. Describe the final state of the branch, not the order things went wrong in |
+| **Depth goes in a collapsed `<details>` block or a commit message** | progressive disclosure: plain-English problem and solution first, screenshots next, detail on demand |
+| **Screenshots or a clip for anything user-visible** | cheaper to read than the paragraphs it replaces |
+
+Over budget means **cut content**, never compress by deleting whitespace while
+keeping every fact. A genuinely trivial PR — a one-liner whose title says
+everything, no issue behind it — may have a near-empty description; do not
+manufacture prose to fill a template.
+
+Where the repo or the caller supplies a style guide of its own, that wins over
+this section for everything except the linkage rules above, which are this
+skill's contract.
+
+**Report the description as drafted, not as generated.** A generated draft
+posted unedited is the failure mode these rules exist to prevent, so the author
+is the editor of record: read it once as the reviewer would before creating the
+PR.
+
 # PR description template
 
 Tracker relationship line(s) first. Immediately after them, if `<parent-pr>` exists, exactly one:

@@ -24,17 +24,11 @@ The `SKILL.md` files are dense and not easily human readable. That is deliberate
 - `settle-outstanding-decisions` — walks the owner through the human-only decisions a settled run left outstanding, one at a time via `AskUserQuestion` with enough context to answer on the spot, and records each ruling durably where the decision lives. Run it yourself after a tranche, or let a settled step request it — `backlog-orchestrator` between summary and ranking, `implement-issue` between summary and merge gate — on by default, gated by `auto-request-settle`. Either way it refuses to prompt where nobody is present: a run settling on a scheduled wake gets a one-line decline, and the decisions stay in the summary's action points. Collect-and-record only; acting on the rulings stays with their owners.
 - `merge-stack` — safely merges one PR, part of a stack, or an explicitly authorized whole stack while rebasing/restacking descendants.
 
-## Writing skills
-
-These read files from a personal machine (`~/Documents/version-control/ai-alex/...`) at load time, so their content is empty in a cloud container where those paths do not exist. They install everywhere regardless; use them from a local setup.
-
-- `draft-blog-post` — draft a technical blog post using Alex's writing style and blog template from `ai-alex`.
-- `draft-slack-message` — draft a Slack message using Alex's Slack examples and writing style from `ai-alex`.
-
 ## Repository layout
 
 ```
 skills/           every directory with a SKILL.md ships
+skills/*/references/  style inputs and other material a skill reads at run time
 permissions.json
 bootstrap.sh
 scripts/          repo-level checks (run in CI, runnable locally)
@@ -43,6 +37,15 @@ scripts/          repo-level checks (run in CI, runnable locally)
 
 Adding a skill requires no change to `bootstrap.sh` — create a directory under
 `skills/` with a `SKILL.md` in it and the next bootstrap run installs it.
+
+### Personal skills stay out
+
+This repository is public, so it holds general engineering workflow skills and
+nothing personal. Skills that depend on someone's own writing samples, voice
+guide, or internal material live in a private checkout instead, and reach cloud
+sessions by being enabled for a claude.ai account — cloud sessions load skills
+from your claude.ai account and from the cloned repository's `.claude/skills/`,
+so a public repo was never required to reach them.
 
 ## Checks
 
@@ -380,13 +383,18 @@ rule, not a permission boundary.
 
 ## Local Codex usage
 
-Codex reads a subset of the skills via symlinks in `~/.codex/skills/`:
+Codex reads a subset of the skills via symlinks in `~/.codex/skills/`. Point
+`REPO` at your checkout of this repository:
 
 ```bash
-for s in create-pr resolve-pr-comment implement-issue draft-blog-post draft-slack-message; do
-  ln -sfn "$HOME/.claude-personal/skills/$s" "$HOME/.codex/skills/$s"
+REPO=$HOME/src/agent-skills
+for s in create-pr resolve-pr-comment implement-issue; do
+  ln -sfn "$REPO/skills/$s" "$HOME/.codex/skills/$s"
 done
 ```
+
+Personal writing skills are not in this repository — see [Personal skills stay
+out](#personal-skills-stay-out).
 
 ## Runtime model
 
