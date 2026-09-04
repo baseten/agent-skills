@@ -90,6 +90,7 @@ runnable locally:
 python3 scripts/check_skills.py                       # structure, schema, cross-references
 python3 scripts/check_permissions.py                  # the shape of permissions.json, and the README's claims
 python3 scripts/check_contract_placement.py           # contract rules at their decision points
+python3 scripts/check_rule_locality.py                # the workflow rules are stated in CLAUDE.md only
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
 bash scripts/eval_reminder.sh origin/main             # advisory, never fails
@@ -110,6 +111,16 @@ every contract section a shadow heading, and renaming one in `SKILL.md` alone
 would leave its references resolving happily against `NOTES.md`. References
 inside `NOTES.md` resolve against both, since a note legitimately cites a
 contract section or one of its own.
+
+`check_rule_locality.py` asserts what `CLAUDE.md` claims about itself: that the workflow
+rules are stated there and nowhere else, so `AGENTS.md`, `README.md` and
+`docs/review-fix-workflow.md` cannot silently restate or re-qualify one. It exists because
+that claim was violated three review rounds running on the change that introduced it, each
+fix believed complete at the time — a purity constraint over three documents is what a human
+sweep keeps failing at, so it belongs in the mechanical tier. It checks two decidable
+properties: every canonical rule phrase appears in `CLAUDE.md` and in none of the others,
+and no pointer file opens a directive of its own. The second is a narrow heuristic, matching
+only the construction the real violations took; it is verified against all nine of them.
 
 `eval_reminder.sh` names a skill whose `SKILL.md`/`NOTES.md` changed while its
 `evals/evals.json` did not. It is a warning and never a failure: it cannot know

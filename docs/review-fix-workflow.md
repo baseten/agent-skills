@@ -59,15 +59,20 @@ and all ten the same shape: an assumption the gate's author could make for
 `backlog-orchestrator` that silently does not hold standalone. ... Each round discovered one
 more missing supplier reactively. This audit walks the whole gate once instead."
 
-1. **Name the axis.** Usually a rule or gate crossed with its consumers — every condition ×
-   every skill that can reach it.
-2. **Build the table.** One row per condition, one column per consumer.
-3. **Answer one question per cell:** *what supplies this here?* Three answers only —
-   supplied identically, supplied by a different mechanism, or **not supplied at all**.
-4. **Fix every not-supplied cell in one pass.** That audit found three and closed all three
-   together; reactively they were three more rounds.
-5. **Keep the table.** It is the artifact that tells the next change what it owes: "a new
-   consumer of `auto-merge` owes this table a column before it ships."
+`CLAUDE.md` states the walk. What the audit adds is why each part of it earns its cost:
+
+- **The axis is a rule crossed with its consumers**, because that is the pairing an author
+  cannot hold in their head — the gate was written for a world with a validated DAG and a
+  tranche-wide view, and every assumption that held there failed silently for the consumer
+  that had neither.
+- **Three answers per cell, not two.** "Supplied by a different mechanism" is the answer
+  that keeps the table honest: collapsing it into "supplied" hides the drift risk, and
+  collapsing it into "missing" produces busywork.
+- **One pass over the whole column** is the entire saving. Ten of that audit's thirteen
+  findings were one shape; reactively they were one round each.
+- **The table outlives the fix**, which is what makes it a guard rather than a note: it
+  tells the next change what it owes — "a new consumer of `auto-merge` owes this table a
+  column before it ships."
 
 ## The consequence sweep
 
@@ -137,32 +142,35 @@ must not decide whether a run may merge." Budgets live in
 `.claude/backlog-orchestrator.json` and their values are stated there only. `CLAUDE.md`
 naming a budget number would be mechanism 2 applied to this very workflow.
 
-## Pre-flight: spend a free round first
+## Why the pre-flight round pays for itself
 
-A diff-scoped reviewer cannot see mechanisms 1 and 3, so round one is routinely spent on
-findings a repository-scoped pass gets for nothing. Before pushing, run a pass framed as
-*"find every place this repository now contradicts itself"* rather than *"review this
-diff"* — `/code-review` at high effort, or an equivalent — and complete the sweep above.
-Every finding caught here is a round not spent.
+`CLAUDE.md`, *Spend a free round before pushing*, carries the rule. The argument for it is
+mechanisms 1 and 3: both are invisible to a reviewer scoped to the diff, because the
+contradicting text is not in the diff. A repository-scoped pass sees them for nothing, and
+every one it catches is a round not spent — on this PR, the pre-commit sweep caught a
+misattributed cross-reference and two values that would have drifted, all three of which
+would otherwise have been round-one findings.
 
 ## Model choice
 
 The binding constraint on a shape finding is holding the whole corpus — every `SKILL.md`
 and `NOTES.md` at once — in view while reasoning about consequences, not the edit itself.
 
-- **local** findings: any capable model; the work is the sweep, not the reasoning.
-- **rule** and **shape** findings: the strongest model available, at high effort. This is
-  also what `backlog-orchestrator`, *Repair escalates on evidence, not on exhaustion*,
-  already triggers on — "a finding on a locus an earlier repair on this PR already wrote ...
-  the signal that the previous repair was shallow and the root was never understood." In a
-  prose contract that signal fires often, which is why this repository's
-  `repair-model-escalations` is set above the default.
+`CLAUDE.md`, *Match the model to the finding class*, carries the rule. Two things make it
+worth stating rather than leaving to judgement.
 
-Two caveats. A stronger model cannot find a contradiction in a document it was not given —
-process precedes model. And the strongest current models are prompt-sensitive in the
-opposite direction from older ones: prompts written for earlier models are often *too*
-prescriptive and reduce quality. Give the whole task spec up front — the full file set, the
-finding, and the completion criterion — rather than a micro-managed step list.
+The escalation signal already exists in the repository and is well chosen:
+`backlog-orchestrator`, *Repair escalates on evidence, not on exhaustion*, fires on "a
+finding on a locus an earlier repair on this PR already wrote ... the signal that the
+previous repair was shallow and the root was never understood." In a prose contract that
+signal fires often — it fired three rounds running on the PR that added this document, both
+times correctly diagnosing a shallow fix.
+
+And the limits cut both ways. A stronger model cannot find a contradiction in a document it
+was not given, so process precedes model. The strongest current models are also
+prompt-sensitive in the opposite direction from older ones: prompts written for earlier
+models are often *too* prescriptive and reduce quality, which is why the rule asks for the
+whole task spec rather than a step list.
 
 ## Automating rounds on this repository
 
@@ -179,8 +187,9 @@ in `.claude/backlog-orchestrator.json`.
 **2. `resolve-pr-comment` is line-local by contract.** Its gather step reads "the referenced
 files at the relevant lines to understand what each comment is asking for." That is
 precisely the fix shape that spawns the next round here, and no budget increase changes it.
-`CLAUDE.md`'s completion criterion is the counterweight, and the skill is told to read
-`CLAUDE.md` — but state the criterion in the invocation too where you can.
+`CLAUDE.md`'s completion criterion is the counterweight, and the skill is contractually
+told to read `CLAUDE.md` — though a criterion restated in the invocation is one the callee
+cannot fail to load, which is the argument for belt and braces here.
 
 **3. `auto-merge` is enabled here, so the gate is reachable.** For a documentation PR the
 exposure is not a stalled run: it is a locally-correct fix passing a green gate while

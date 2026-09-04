@@ -112,6 +112,24 @@ above. Widening is picking up a second finding; sweeping is finishing the first.
 Where a sweep genuinely cannot be completed inside the pass's scope, report the
 contradiction with its location rather than committing a fix that creates it.
 
+## Spend a free round before pushing
+
+A diff-scoped reviewer cannot see a rule stated at the wrong decision point, or one written
+on the negation of a limitation elsewhere, so its first round is routinely spent on findings
+a repository-scoped pass gets for nothing. Before pushing a rule change, run a pass framed
+as *"find every place this repository now contradicts itself"* rather than *"review this
+diff"* — `/code-review` at high effort, or an equivalent — and complete the sweep.
+
+## Match the model to the finding class
+
+A **local** finding takes any capable model; the work is the sweep, not the reasoning. A
+**rule** or **shape** finding takes the strongest model available, at high effort, because
+the binding constraint is holding the whole corpus in view while reasoning about
+consequences. Give it the whole task spec up front — the full file set, the finding, and the
+completion criterion — rather than a micro-managed step list. Where a fixer runs under
+`backlog-orchestrator`, the same escalation is already automatic on the strongest signal
+that a previous repair was shallow; this repository raises `repair-model-escalations` for it.
+
 ## Checks
 
 Every check is deterministic and runnable locally. Run them before committing:
