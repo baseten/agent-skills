@@ -36,6 +36,7 @@ These read files from a personal machine (`~/Documents/version-control/ai-alex/.
 ```
 skills/           every directory with a SKILL.md ships
 CLAUDE.md         how to change a skill, and what a complete fix means here
+AGENTS.md         pointer to CLAUDE.md, for agents whose convention looks for it
 docs/             audits and workflows that outlive one PR
 permissions.json
 bootstrap.sh
