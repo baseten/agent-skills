@@ -132,6 +132,14 @@ green check over a false claim is worse than no check, because it stops anyone l
 fixtures then immediately caught a second gap — a noun lead-in carrying the imperative in
 its body. Finding a new bypass means the detector was wrong, not the fixture.
 
+The phrase list had the same weakness one level up, and it was not hypothetical: a rule
+section of `CLAUDE.md` with no phrase entry was silently unguarded, which was true of
+*Classify a finding before fixing it* while a duplicate of its table sat in `docs/` and this
+check reported clean. So the check now also asserts that **every** rule section of
+`CLAUDE.md` is guarded by a phrase, with the one section that states no restatable rule
+declared exempt and the reason given in place. A new rule with nothing guarding it now fails
+CI rather than passing quietly.
+
 `eval_reminder.sh` names a skill whose `SKILL.md`/`NOTES.md` changed while its
 `evals/evals.json` did not. It is a warning and never a failure: it cannot know
 whether a change needs a scenario, only that nobody added one.

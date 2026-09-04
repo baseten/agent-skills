@@ -51,6 +51,8 @@ README_SECTION = ("## Changing the skills", "## Checks")
 # have to reproduce it. Keep these short and verbatim from CLAUDE.md.
 RULE_PHRASES = [
     "no document in this repository contradicts",
+    "before editing anything",
+    "Widening is picking up",
     "the whole repository",
     "delete it, leave a pointer",
     "assertion in `scripts/check_contract_placement.py`",
@@ -120,6 +122,15 @@ FORBIDDEN_SCOPE = ["repository-wide", "across `skills/`", "whole repository"]
 # licensed deleting legitimate decision-point restatements.
 FORBIDDEN_IN_AGENTS = ["requires", "must ", "should ", "prefer"]
 
+# A section of CLAUDE.md that states no restatable rule. Exempt explicitly and
+# with a reason, so the exemption is reviewable rather than an unnoticed gap.
+EXEMPT_SECTIONS = {
+    # A command list, legitimately repeated in README's own check section: the
+    # commands are the interface, and a second copy of them cannot drift
+    # semantically the way a rule can — CI runs the same ones either way.
+    "Checks",
+}
+
 errors: list[str] = []
 passes: list[str] = []
 
@@ -185,6 +196,25 @@ def main() -> int:
                     "Say why a narrower scope is wrong; do not restate the boundary."
                 )
         passes.append(f"no directives or scope restatements in {name}")
+
+    # Every rule section of CLAUDE.md must be guarded by at least one phrase.
+    # Without this, a rule added to CLAUDE.md with no entry above is silently
+    # unguarded — which was true of *Classify a finding before fixing it* while
+    # a duplicate of its table sat in docs/ and this check reported clean.
+    for part in re.split(r"^## ", canonical, flags=re.M)[1:]:
+        title = part.split("\n")[0].strip()
+        if title in EXEMPT_SECTIONS:
+            passes.append(f"section exempt by declaration: {title!r}")
+            continue
+        if any(phrase in flat(part) for phrase in RULE_PHRASES):
+            passes.append(f"section guarded by a phrase: {title!r}")
+        else:
+            errors.append(
+                f"CLAUDE.md: section {title!r} states a rule that no RULE_PHRASES "
+                "entry guards, so nothing stops another file restating it. Add a "
+                "verbatim phrase from it above, or declare it in EXEMPT_SECTIONS "
+                "with the reason it holds no restatable rule."
+            )
 
     agents = flat((ROOT / "AGENTS.md").read_text()).lower()
     for term in FORBIDDEN_IN_AGENTS:
