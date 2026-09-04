@@ -1,0 +1,83 @@
+{
+  "skill_name": "dependency-upgrade-orchestrator",
+  "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "concurrency-is-bounded",
+      "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: thirteen packages have passed triage and each has a clear scope. Your dispatch mechanism can run all thirteen subagents at once and wall-clock matters. Question: how many do you dispatch, and why?",
+      "expected_output": "Begin narrow \u2014 around four or five \u2014 and widen as agents complete. Agents each run test suites; a full-width dispatch has exhausted a machine's memory and killed a quarter of a run through starvation and watchdog timeouts, losing that work entirely.",
+      "assertions": [
+        "The answer dispatches a bounded subset rather than all thirteen at once",
+        "The answer grounds the bound in resource exhaustion from concurrent test suites, not in an arbitrary preference",
+        "The answer widens as agents complete rather than fixing one batch size for the whole run"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "model-selection-keys-on-failure-mode",
+      "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: two candidates. Package A is imported by 432 modules but its migration flags are already enabled, so the change is three configuration lines. Package B is imported by 4 modules and changes how a validation rule treats empty input. You must assign a model to each. Question: which gets the stronger model?",
+      "expected_output": "Package B. Selection keys on failure mode, not file count: B's wrong answer is silent \u2014 a build passes while a constraint loosens \u2014 whereas A's fails loudly against the compiler. File count is an opening estimate to be read critically, and it misleads in both directions.",
+      "assertions": [
+        "The answer assigns the stronger model to B, the validation change, despite its far smaller file count",
+        "The answer justifies this by how a wrong answer announces itself rather than by scope",
+        "The answer explicitly treats the 432-file count as a poor predictor here"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "empty-rollup-is-not-green",
+      "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you push a fix and check the PR moments later. The check rollup contains no failing checks and nothing pending. Question: do you report the PR as green?",
+      "expected_output": "No. An empty or barely-populated rollup means checks have not registered yet \u2014 commonly right after a push cancels an in-flight run. Green requires the repository's required check to have concluded successfully.",
+      "assertions": [
+        "The answer refuses to call it green",
+        "The answer identifies the unpopulated rollup as the cause rather than a genuine pass",
+        "The answer gates on the required check having concluded successfully"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "repository-wide-failure-is-escalated",
+      "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: five of your PRs fail the same image-build job with a builder timeout. You re-run two and they fail identically. Checking further, unrelated branches and the default branch are failing that job too. Question: what do you do?",
+      "expected_output": "Stop re-running and escalate. A job failing repository-wide including on the default branch is infrastructure, not the changes under test; further re-runs are futile and add load to the failing service.",
+      "assertions": [
+        "The answer stops re-running rather than continuing per-PR retries",
+        "The answer uses the default branch and unrelated branches failing as the discriminator",
+        "The answer escalates to whoever owns the service rather than treating it as a defect in the batch"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "coupled-packages-are-one-task",
+      "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a framework and three of its official companion packages are all a major behind, and one plugin family of twenty packages shares a version line. Dispatching one agent per package would parallelise nicely. Question: how do you group them?",
+      "expected_output": "One task and one PR per coupled group \u2014 the framework with its companions, the plugin family together. Splitting a coupled group reproduces the failure mode of naive automated bumps: one package advanced, siblings stale, installation failing against a version-pinned patch.",
+      "assertions": [
+        "The answer groups the framework with its companion packages into a single task",
+        "The answer groups the plugin family together rather than per package",
+        "The answer rejects the parallelisation benefit as a reason to split a coupled group"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "narrowing-failure-signature-is-read",
+      "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: before a fix, all eight end-to-end shards failed with empty result lists. After the fix, five shards fail, now on a specific element not being found. Question: what does that tell you and what do you do?",
+      "expected_output": "The fix worked and the defect has more than one site. A narrowed signature is progress; read the new one to locate the remaining site rather than reverting or retrying, which would discard the information.",
+      "assertions": [
+        "The answer reads the change in signature as evidence the fix was partially effective",
+        "The answer concludes there is a second site rather than that the fix failed",
+        "The answer does not revert the fix or simply re-run"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "peer-cap-with-no-release-is-a-blocker",
+      "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a candidate's target major is capped by two tooling packages that declare it as a peer at the previous major, and neither has a compatible release on any channel including pre-releases. The application's own source needs only trivial changes. Question: what do you do?",
+      "expected_output": "Report it as blocked rather than attempting the upgrade. A peer cap with no compatible release anywhere is a toolchain problem that reshapes the task; the application source being easy does not make it viable.",
+      "assertions": [
+        "The answer treats the peer cap as a hard blocker and does not attempt the bump",
+        "The answer does not let the small application-side diff justify proceeding",
+        "The answer records the blocker where the decision will be found again rather than only in a closed PR"
+      ]
+    }
+  ]
+}

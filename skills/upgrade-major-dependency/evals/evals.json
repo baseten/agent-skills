@@ -1,0 +1,83 @@
+{
+  "skill_name": "upgrade-major-dependency",
+  "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "existing-green-tests-do-not-substitute",
+      "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the package you are upgrading already has a thorough unit test suite covering every call site, and it is fully green on the current version. Question: do you still write characterization tests, and if so at what point in the sequence?",
+      "expected_output": "Yes. Existing tests do not substitute, and they are written against the CURRENT version, proven green there, committed alone, then re-run unmodified after the upgrade. Their being green now says nothing about equivalence after.",
+      "assertions": [
+        "The answer writes characterization tests despite the existing green suite",
+        "The answer writes and proves them green on the current version BEFORE applying the upgrade, not after",
+        "The answer explains that a post-upgrade test pins whatever the migration produced rather than proving behaviour was preserved"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "failing-characterization-is-not-edited",
+      "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: your characterization tests were green on the old version. After the upgrade, three of them fail. The new behaviour looks reasonable and arguably better. Question: what do you do with those three tests?",
+      "expected_output": "Classify each as a regression (report prominently) or an intended change (update the assertion with a comment recording why). Never edit a test merely to make it pass, and never relabel a regression as intended.",
+      "assertions": [
+        "The answer refuses to edit tests simply to get green",
+        "The answer classifies each difference as regression or intended change rather than treating all three the same way",
+        "The answer treats a regression as the highest-value output to report, not an obstacle"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "licence-change-stops-before-migration",
+      "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the target major relicensed from MIT to AGPL-3.0. You have already read the migration guide and the changes look mechanical \u2014 perhaps an hour of work. Question: what do you do?",
+      "expected_output": "Stop and report. A licence change against the repository's accepted set is an ownership decision, not an engineering one, and the viability gate runs before any migration work regardless of how easy the migration looks.",
+      "assertions": [
+        "The answer stops rather than performing the migration first and raising the licence afterwards",
+        "The answer frames the licence as a decision for the organisation rather than something to work around",
+        "The answer does not treat the migration being easy as a reason to proceed"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "published-artifact-outranks-docs-page",
+      "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the package's rendered changelog page describes a breaking change to a function you call. Reading the installed source in node_modules, that function appears unchanged between the two versions. Question: which do you act on?",
+      "expected_output": "The published artifact. Verify against the installed source or a diff of two published versions; a rendered changelog can be wrong or can interleave an unrelated release's notes. Report the discrepancy.",
+      "assertions": [
+        "The answer trusts the installed/published source over the rendered documentation",
+        "The answer notes the discrepancy rather than silently following one source",
+        "The answer does not resolve the conflict by assuming the documentation is authoritative"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "verify-with-the-gate-not-a-proxy",
+      "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you need to confirm the lockfile matches the manifest after the bump. CI runs a frozen-lockfile install. You could instead grep the lockfile for the new version string, which takes a second. Question: which do you do?",
+      "expected_output": "Run the frozen-lockfile install \u2014 the gate itself. A grep's failure mode is a false pass, and the real check is available locally and cheaper than the CI round trip it would otherwise cost.",
+      "assertions": [
+        "The answer runs the actual gate command rather than the grep",
+        "The answer identifies the proxy's failure mode as a false pass specifically",
+        "The answer does not treat the grep as adequate because it is faster"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "minors-in-range-are-audited",
+      "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are going from 3.22.1 to 3.30.5. The maintainers publish a migration guide for the major only, and the minor releases in between are described as bug fixes. Question: what do you read?",
+      "expected_output": "Every version in the range, not only the major. Minors ship breaking changes regardless of how they are described, and a behaviour change in a minor is a common source of upgrade defects.",
+      "assertions": [
+        "The answer reads every release in the range rather than only the major's guide",
+        "The answer explicitly rejects the assumption that a minor is safe because it is labelled a bug fix",
+        "The answer does not rely solely on the maintainers' characterisation of the intervening releases"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "real-component-over-mock-for-shape-changes",
+      "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the upgrade changes how the library's objects are constructed, so consumers that destructure methods off them may break. The codebase has a well-maintained mock factory used by every existing test. Question: what do your characterization tests render through?",
+      "expected_output": "The real component/provider, not the mock. A hand-built mock satisfies the old and new shape simultaneously, so it is structurally incapable of detecting a shape change \u2014 which is exactly the class of change here.",
+      "assertions": [
+        "The answer uses the real integration rather than the existing mock factory",
+        "The answer explains that a mock satisfies both shapes and therefore cannot detect this class of change",
+        "The answer does not reuse the mock on the grounds that it is well-maintained or conventional"
+      ]
+    }
+  ]
+}
