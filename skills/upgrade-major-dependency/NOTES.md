@@ -26,6 +26,8 @@ The failure that produces is the silent one the whole target machinery exists to
 
 The fix was not to patch the worktree bullet. The gate already knew the answer — "adopt it, or supersede it and close it with a reference" — so what was missing was **which one is the branch**, plus the two rules that read over all of them rather than over that one: a target moves when *any* adopted PR's head advances, per package; and *every* adopted PR's URL is identity that survives a moved target, so all of them come back in the report and none is closed on a stop. Stated once, at the worktree cases, because that is where the reader first meets the singular.
 
+Round thirty-three then found that rule contradicting itself two sentences later, which is worth recording because the contradiction was invisible to reading and obvious to simulation. The rule ordered the superseded PRs **closed with a reference** at branch setup, and then built on their staying open: a bot does not keep updating a closed PR, so the mechanism the very next sentence depends on — any adopted PR's head advancing moves its package's target — was dead before the stop that was meant to preserve it. The reference was not writable at that point either; it points at this task's PR, which does not exist until the task produces one. So superseding now defers its closure to the end, and only if a PR was produced. The eval written to pin the arity rule had committed to the harmful order in a single answer — close them in (a), have a bot advance one in (b), close nothing in (c) — which is the sharpest possible demonstration that a fixture inherits the ambiguity of the rule it fixes.
+
 
 ## Why viability is gated before research
 

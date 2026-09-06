@@ -145,9 +145,9 @@ then a sixth four lines away; a clause relabelled "the property" that a new bull
 straight through. Every one was found in seconds by breaking the rule and re-running the
 check, which `NOTES.md` had recommended since round twelve — as advice, in a repository whose
 own tier list says advice reaches an agent only when something makes it read the file. So it
-is a script: each entry breaks a rule and names the assertion that must go red, and a new
-corpus assertion owes it a mutation. An assertion you cannot write one for is not testing
-what its name says.
+is a script: each entry breaks a rule and names the assertion that must go red, and it
+reports how much of the checker it does not yet cover. The obligation that comes with adding
+an assertion is stated in `CLAUDE.md`, *Leave a guard behind*.
 
 `test_contract_placement.py` is the same tier for the guard that keeps the dependency
 skills' eval oracles from stating licence, cooldown and peer reuse as a single rule. It was

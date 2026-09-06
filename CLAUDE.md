@@ -85,9 +85,13 @@ agree, delete one instead; when it would make two decision points agree, keep bo
 change them together. A local fix cannot contradict a distant copy that no longer exists,
 which is what makes this the highest-leverage habit here.
 
-**Leave a guard behind.** A finding shape that recurred should end the round with an
-assertion in `scripts/check_contract_placement.py` or a scenario in the skill's
-`evals/evals.json` — that is what stops a later round reintroducing it. `scripts/eval_reminder.sh`
+**Leave a guard behind, and prove it can fail.** A finding shape that recurred should end the
+round with an assertion in `scripts/check_contract_placement.py` or a scenario in the skill's
+`evals/evals.json` — that is what stops a later round reintroducing it. **A new corpus
+assertion owes `scripts/test_contract_guards.py` a mutation**: the smallest edit to the
+contract that makes the rule false, paired with the assertion that must then go red. An
+assertion you cannot write one for is not testing what its name says; `README.md`, *Checks*,
+records what it cost to learn that. `scripts/eval_reminder.sh`
 flags a contract change whose evals did not move; it is advisory and needs someone to act
 on it.
 

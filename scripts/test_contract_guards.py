@@ -48,6 +48,15 @@ DU = "skills/dependency-upgrade-orchestrator/SKILL.md"
 UD_EVALS = "skills/upgrade-major-dependency/evals/evals.json"
 DU_EVALS = "skills/dependency-upgrade-orchestrator/evals/evals.json"
 
+# The replacement `MOVE_TO_END` deletes the text where it stands and appends it
+# unchanged to the end of the file. A deletion tests that a rule is PRESENT; a
+# relocation tests that it is present WHERE IT IS READ, which is what most of
+# these assertions are actually about and what a deletion cannot distinguish.
+# Round 33 measured this: with every `near()` reverted to a whole-file grep,
+# 21 of 23 deletions still went red, so they were not exercising the scoping
+# that three rounds of work had been about.
+MOVE_TO_END = "<<MOVE_TO_END>>"
+
 # (label, file, text to replace, replacement, assertion that must go red).
 # Each entry is a real defect this repository has had, or the smallest edit
 # that reintroduces the rule an assertion protects. The round that produced it
@@ -69,7 +78,13 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
      "is not this agent's to re-triage or re-route", "can be handled locally",
      "the routine batch is given the obligations it cannot inherit"),
     ("r30 the in-flight bullet loses its bot-PR exception", DU,
-     "removes that candidate", "concerns that candidate",
+     "**An automated bump PR for a batched package is not that**", "Anything open counts",
+     "the routine batch is given the obligations it cannot inherit"),
+    ("r33 the target bullet loses its blast-radius clause", DU,
+     "the rest of the batch is not void with it", "the batch is void with it",
+     "the routine batch is given the obligations it cannot inherit"),
+    ("r33 the adopted-PR bullet loses the superseded disposition", DU,
+     "take the successor on the same terms", "ignore the successor",
      "the routine batch is given the obligations it cannot inherit"),
 
     # --- a check carried to an actor that exists (rounds 3-5, 29-31) ---
@@ -116,8 +131,30 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
      "the incompatible tuple where a peer range is what moved,", "",
      "the return contract and its consumer agree on the incompatible tuple"),
     ("r29 the adopted PR is no longer left open on a stop", UD,
-     "**A task ended by a moved target leaves an adopted PR open**", "**Unrelated sentence**",
-     "a moved-target stop leaves the adopted PR open, stated beside the rule it disclaims"),
+     "**A task ended by a moved target leaves every adopted PR open**", "**Unrelated sentence**",
+     "a moved-target stop leaves every adopted PR open, stated beside the rule it disclaims"),
+    ("r33 superseded PRs are closed at branch setup again", UD,
+     "**Superseding does not close anything yet.**", "Close each now.",
+     "superseding is a closure at the end, not at branch setup"),
+    ("r33 the arity paragraph is relocated out of the worktree cases", UD,
+     "**Adopt exactly one as the branch — the member with the most of the migration already in it — and supersede the rest**",
+     MOVE_TO_END,
+     "the adopted-PR arity is stated, with the two rules that read over all of them"),
+    ("r33 the carried checks are relocated out of Supervise", DU,
+     "- **Compare each open PR's recorded lockfile base against the current base**, and name every PR whose lockfile has gone stale.",
+     MOVE_TO_END,
+     "the routine-target check is carried to actors that exist, not held at the merge"),
+    ("r33 the Report obligations are relocated out of Report", UD,
+     "- any **disagreement** between a supplied verdict and what this task re-derived, rather than silently taking either answer (see Task), and any divergence between a rendered docs page and the published artifact (see Research);",
+     MOVE_TO_END,
+     "every report obligation is stated where the report is written"),
+    ("r32 the arity rule's report obligation is dropped", UD,
+     "**every adopted PR's URL, not only the one adopted as the branch**", "a mapping",
+     "every report obligation is stated where the report is written"),
+    ("r33 the batch route forgets coupled siblings", DU,
+     "**Every removal below therefore removes a coupled group, never a member of one**",
+     "Removals are per candidate",
+     "the batch route removes coupled groups rather than members of them"),
     ("r29 Research resumes a task the gate ended", UD,
      "**That case does not resume here.**", "Re-read the range and continue.",
      "the research phase does not resume a task the gate ended"),
@@ -150,11 +187,52 @@ EVAL_MUTATIONS: list[tuple[str, str, str, str, str]] = [
 
 
 def run_check(tree: pathlib.Path) -> set[str]:
-    """Assertion names that FAILED, running the checker against `tree`."""
+    """Assertion names that FAILED, running the checker against `tree`.
+
+    A crash is not a failure: the checker dying (a moved anchor inside one of
+    its own helpers, say) produces no FAIL lines, and reading stdout alone
+    would report every mutation as green over its own defect while printing a
+    baseline PASS. Round 33 reproduced that. So the exit code is checked.
+    """
     proc = subprocess.run(
         [sys.executable, str(tree / "scripts" / "check_contract_placement.py")],
         capture_output=True, text=True)
+    if proc.returncode not in (0, 1):
+        raise SystemExit(
+            "the checker crashed rather than reporting failures "
+            f"(exit {proc.returncode}):\n{proc.stderr.strip()[:2000]}")
     return {m.group(1) for m in re.finditer(r"^FAIL (.+)$", proc.stdout, re.M)}
+
+
+# Assertions deliberately without a mutation, each with the reason. An entry
+# here is a claim that breaking the rule is not expressible as a text edit to
+# the two contracts — not that nobody got round to it. Keep it short; a long
+# exemption list is this file failing quietly.
+UNMUTATED_BY_DESIGN: dict[str, str] = {}
+
+
+def coverage_gap(tree: pathlib.Path) -> list[str]:
+    """Assertion names in the checker with neither a mutation nor an exemption.
+
+    This is the property the fixture list cannot supply. Round 32 built the
+    battery and round 33 measured it: 138 of 151 assertions had no mutation,
+    including round 32's own headline one, which turned out to be four
+    whole-file greps that a relocation walked straight through. A battery that
+    cannot tell you it is short reads as complete for exactly as long as nobody
+    checks — which is the defect this whole file exists to end, one level up.
+
+    Reported, not enforced, and the distinction is deliberate: failing the
+    build on an uncovered assertion would push the next person to write a
+    mutation that passes rather than one that breaks the rule. It prints, it
+    ranks, and `NAMED_BELOW` is what closes the gap.
+    """
+    src = (tree / "scripts" / "check_contract_placement.py").read_text(encoding="utf-8")
+    names = set(re.findall(r'^\s*\("([^"]{12,})",\s*$', src, re.M))
+    covered = {expected for *_, expected in MUTATIONS + EVAL_MUTATIONS}
+    unknown = covered - names
+    if unknown:
+        return [f"mutation names an assertion that no longer exists: {sorted(unknown)}"]
+    return sorted(names - covered - set(UNMUTATED_BY_DESIGN))
 
 
 def main() -> int:
@@ -181,7 +259,11 @@ def main() -> int:
                     f"fixture ({label}) no longer applies: its anchor matches {n} times in {rel}. "
                     "The contract moved; re-anchor the mutation rather than deleting it.")
                 continue
-            f.write_text(pristine.replace(old, new), encoding="utf-8")
+            if new == MOVE_TO_END:
+                mutated = pristine.replace(old, "") + "\n\n" + old + "\n"
+            else:
+                mutated = pristine.replace(old, new)
+            f.write_text(mutated, encoding="utf-8")
             red = run_check(tree)
             f.write_text(pristine, encoding="utf-8")
             if expected in red:
@@ -193,7 +275,21 @@ def main() -> int:
                 failures.append(
                     f"GREEN OVER ITS OWN DEFECT ({label}): {expected!r} passes with the rule broken")
 
+        gap = coverage_gap(tree)
+        if gap and gap[0].startswith("mutation names"):
+            failures.append(gap[0])
+            gap = []
+
     print()
+    if gap:
+        print(f"COVERAGE {len(MUTATIONS) + len(EVAL_MUTATIONS)} mutations over "
+              f"{len(MUTATIONS) + len(EVAL_MUTATIONS) + len(gap)} assertions "
+              f"({len(gap)} with no mutation and no stated exemption).")
+        print("  A guard nobody has broken is a guard nobody has tested. The next few:")
+        for name in gap[:8]:
+            print(f"  - {name}")
+        print()
+
     total = len(MUTATIONS) + len(EVAL_MUTATIONS) + 1
     for f in failures:
         print(f"FAIL {f}")

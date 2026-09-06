@@ -67,10 +67,18 @@ ROUTINE_BULLETS = _routine_bullets()
 # its entry by any one of several phrasings. This is the fixture; the arity
 # check above it is the property.
 ROUTINE_DISPOSITIONS = [
-    ("removes that candidate",),                       # in-flight search
-    ("verify against the installed version and report it",),  # adopted PR state
-    ("with both qualifiers that make it safe",),        # lockfile base record
-    ("is not this agent's to re-triage or re-route",),  # target re-check
+    # in-flight search: what a hit removes, and what is not a hit at all
+    ("removes that candidate",
+     "An automated bump PR for a batched package is not that"),
+    # adopted PR state: a disposition per outcome it names
+    ("verify against the installed version and report it",
+     "take the successor on the same terms"),
+    # lockfile base record: the value is not the record without them
+    ("with both qualifiers that make it safe",),
+    # target re-check: operand, whose decision it is, and the blast radius
+    ("what moves a target is an adopted PR's head advancing",
+     "is not this agent's to re-triage or re-route",
+     "the rest of the batch is not void with it"),
 ]
 
 
@@ -640,7 +648,11 @@ def main() -> int:
         # while every consumer below it was written for one. The rule names
         # which is the branch and which two things read over all of them.
         ("the adopted-PR arity is stated, with the two rules that read over all of them",
-         "**Adopt exactly one as the branch" in flat(ud)
+         # Scoped to the worktree cases. Whole-file, this passed with the whole
+         # paragraph relocated to an appendix — and NOTES says the placement is
+         # the point.
+         "**Adopt exactly one as the branch"
+         in flat(near(ud, "Work in a dedicated worktree", 2600))
          and "any** adopted PR's head advancing can move its own package's target"
          in flat(ud)
          and "every** adopted PR's URL is identity that survives a moved target"
@@ -840,12 +852,25 @@ def main() -> int:
         # disposition entry here. So the bullets are counted. Add one without
         # extending the list below and this goes red — which is the only thing
         # a list of literals could never do.
+        # A group whose every member triage cleared is routine AND coupled, so
+        # it batches — and every removal on this route pulled one member and
+        # shipped its siblings, which is the split *Triage each candidate*
+        # names by name. The worker has the rule; this route inherits nothing.
+        ("the batch route removes coupled groups rather than members of them",
+         "Every removal below therefore removes a coupled group, never a member of one"
+         in flat(du)
+         and all("coupled sibling" in flat(near(du, anchor, 900))
+                 for anchor in ("A colleague's branch pushed since triage",
+                                "**Merged or closed**:",
+                                "the rest of the batch is not void with it",
+                                "Where one moved, its clearance"))),
         ("the routine batch is given the obligations it cannot inherit",
          "The routine batch runs no named contract" in flat(du)
          and len(ROUTINE_BULLETS) == len(ROUTINE_DISPOSITIONS)
-         and all(any(d in flat(bullet) for d in dispositions)
+         and all(d in flat(bullet)
                  for bullet, dispositions in zip(ROUTINE_BULLETS,
-                                                 ROUTINE_DISPOSITIONS))),
+                                                 ROUTINE_DISPOSITIONS)
+                 for d in dispositions)),
         # SHAPE: an obligation on the report, stated only at the phase that
         # produces it, is dropped by an agent writing from *Report* — which
         # reads as an exhaustive list. Round 3 walked one cell (the base
@@ -868,6 +893,8 @@ def main() -> int:
                                 # and not this entry — inside the same commit
                                 # as the note telling the next fixer to.
                                 "any divergence between a rendered docs page",
+                                # Round 32's own, missed by round 32.
+                                "every adopted PR's URL, not only the one adopted as the branch",
                                 # The two qualifiers a bare restatement drops.
                                 "the re-resolution must be repeated if the base has moved since",
                                 "handoff result and never a merge-time one"))),
@@ -912,11 +939,18 @@ def main() -> int:
         # A moved-target stop is not "proved unsafe", and the rule beside it
         # tells the worker to close the adopted PR — destroying the one thing
         # the move leaves standing.
-        ("a moved-target stop leaves the adopted PR open, stated beside the rule it disclaims",
-         "leaves an adopted PR open"
-         in flat(near(ud, "**A task ended by a moved target leaves", 700))
+        ("a moved-target stop leaves every adopted PR open, stated beside the rule it disclaims",
+         "leaves every adopted PR open"
+         in flat(near(ud, "**A task ended by a moved target leaves", 800))
          and "If the upgrade proved unsafe"
-         in flat(near(ud, "**A task ended by a moved target leaves", 700))),
+         in flat(near(ud, "**A task ended by a moved target leaves", 800))),
+        # Round 32 ordered superseded PRs closed at branch setup and then built
+        # two rules on their staying open. A closed PR's bot stops updating it,
+        # so the mechanism was dead before the stop meant to preserve it.
+        ("superseding is a closure at the end, not at branch setup",
+         "**Superseding does not close anything yet.**" in flat(ud)
+         and "a closed PR stops being updated by its bot" in flat(ud)
+         and "at the end, and only if the task produced a PR" in flat(ud)),
         # Research was written when a moved target meant re-derive and continue.
         # An eval graded this for rounds before any contract sentence said it,
         # which is how it was found. Both decision points now carry it: the
