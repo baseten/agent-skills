@@ -405,11 +405,26 @@ def main() -> int:
          in flat(clause(ud, "- **Work already in flight.**", 2000))),
         # An advanced bot PR can move the target, which invalidates exactly the
         # three findings a verdict is most trusted for.
-        ("a moved target re-runs the target-dependent gate items, per package",
+        ("a moved target re-runs the per-package gate items for that package",
          "Compare each package's current target against the one triage measured for it"
          in flat(ud)
-         and "only while each package's target is the one it measured for that package"
-         in flat(near(ud, "## Viability gate", 400))),
+         and "only while that package's target is the one it measured for it"
+         in flat(near(ud, "## Viability gate", 500))),
+        # Peer viability is a relation over the whole target tuple, not a
+        # property of one package: a member advancing can void another
+        # member's clearance while that member's own target sits unchanged,
+        # so every individual clearance reads valid and the combination was
+        # never checked.
+        ("the peer finding is invalidated by any member's target moving",
+         "not** per package" in flat(ud)
+         and "invalidates the peer check for the **entire group**" in flat(ud)
+         and "only while no member's target has moved at all"
+         in flat(near(ud, "## Viability gate", 500))),
+        ("the peer-cap gate item says a supplied clearance dies group-wide",
+         "dies as soon as **any** member's target moves"
+         in flat(clause(ud, "- **Peer caps.**", 3000))),
+        ("the producer states the peer exception to per-package",
+         "The peer finding is the exception to per-package" in flat(du)),
         # The cherry-pick is the two-branch mechanism, not the rule; with one
         # branch the test commit is already an ancestor.
         ("the phase states the ordering as the invariant, not the cherry-pick",

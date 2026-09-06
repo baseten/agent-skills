@@ -156,6 +156,17 @@
         "The answer treats the licence, cooldown and peer findings as reusable only while the target version is unchanged, and names an advanced bot PR as the way the target moves",
         "The answer would read the adopted PR's current state rather than the verdict's head, noting the in-flight search cannot reveal a merged one"
       ]
+    },
+    {
+      "id": 14,
+      "name": "a-moved-companion-voids-the-whole-groups-peer-clearance",
+      "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a coupled group of framework plus one companion. Your caller's verdict cleared licence, cooldown and peer caps for framework@2 and companion@2, and named those targets. Since then the adopted PR advanced the companion to v3; framework's target is still v2. The companion's v3 release changed its peer range to require framework@3. Question: which cached clearances can you still use?",
+      "expected_output": "Only framework's licence and cooldown, because framework's own target did not move. The companion's licence and cooldown must be re-run against v3. And the peer clearance is void for the whole group, framework included: a peer range is a relation between packages, so the companion advancing invalidates the peer check for every member even though framework's target is unchanged. Re-run the peer check over the whole target tuple \u2014 it will show companion@3 demanding framework@3 against a framework target of v2, which is an incompatible tuple that per-package reuse would have passed, since each individual clearance still reads as valid.",
+      "assertions": [
+        "The answer re-runs the peer check for the entire group rather than only for the companion that moved",
+        "The answer keeps framework's licence and cooldown clearances while re-running the companion's, distinguishing per-package findings from the relational one",
+        "The answer identifies the incompatible tuple (companion@3 requiring framework@3 against framework@2) as what per-package reuse would have missed"
+      ]
     }
   ]
 }
