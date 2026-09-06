@@ -32,8 +32,8 @@ def skill(name: str) -> str:
     return (ROOT / "skills" / name / "SKILL.md").read_text()
 
 
-def eval_corpus(name: str) -> str:
-    """A skill's whole eval file as one blob — for ABSENCE checks only.
+def eval_expected(name: str) -> list[str]:
+    """Every scenario's expected answer — the only eval field that PRESCRIBES.
 
     Evals restate the rules they pin, so they go stale exactly as a second
     copy in prose does — and a stale one is worse than a stale paragraph,
@@ -42,11 +42,57 @@ def eval_corpus(name: str) -> str:
     ownerless instruction the round before it had removed from the contract.
     They are part of the consequence sweep, not a separate artifact.
 
-    A forbidden phrase is forbidden wherever it appears, so the corpus is the
-    right scope for absence. Presence is the opposite: see `eval_field`.
+    Scope matters in both directions and they are not symmetric:
+
+    * PRESENCE must scope to the field that has to carry the requirement —
+      see `eval_field`. A whole-file check accepts the phrase anywhere,
+      including inside the assertion meant to be testing for it.
+    * ABSENCE must scope to the fields that could *instruct* the behaviour.
+      A whole-file check conflates use with mention: a scenario whose prompt
+      quotes a forbidden instruction so the model can reject it, or whose
+      assertion requires that rejection, is the guard working, not failing.
+      Only the expected answer tells the model what to do.
     """
     f = ROOT / "skills" / name / "evals" / "evals.json"
-    return f.read_text(encoding="utf-8") if f.exists() else ""
+    if not f.exists():
+        return []
+    return [
+        c.get("expected_output", "")
+        for c in json.loads(f.read_text(encoding="utf-8")).get("evals", [])
+    ]
+
+
+NEGATORS = (
+    "not ", "never ", "n't ", "rather than", "instead of", "no longer",
+    "avoid", "cannot", "refus", "reject",
+)
+
+
+SENTENCE_END = re.compile(r"[.!?;:]\s")
+
+
+def prescribes(texts: list[str], phrase: str) -> bool:
+    """True where `phrase` appears as an instruction rather than as one being
+    rejected.
+
+    Negation is looked for in the phrase's **own sentence**, not in a fixed
+    character window. A window is the obvious implementation and it is wrong:
+    a negation belonging to a neighbouring sentence marks the occurrence as a
+    mention, so "Do not claim it as a merge-time result. Re-resolve
+    immediately before merging." reads as rejected. That mutation is the exact
+    regression this check exists to catch, and a 120-character window passed
+    it on the first negative test.
+    """
+    needle = phrase.lower()
+    for text in texts:
+        low = flat(text).lower()
+        i = low.find(needle)
+        while i != -1:
+            starts = [m.end() for m in SENTENCE_END.finditer(low, 0, i)]
+            if not any(n in low[(starts[-1] if starts else 0):i] for n in NEGATORS):
+                return True
+            i = low.find(needle, i + 1)
+    return False
 
 
 def eval_field(skill_name: str, case: str, field: str) -> str:
@@ -368,11 +414,14 @@ def main() -> int:
          "merges nothing, so it cannot hold that check at merge time" in flat(du)
          and "name every open PR whose lockfile has gone stale" in flat(du)),
         # The eval corpus is a restatement of the contract and is swept with it.
-        # Absence is checked corpus-wide; presence is checked per field, or a
-        # requirement dropped from the expected answer stays green on the
-        # strength of an assertion that happens to mention it.
-        ("no eval reinstates the ownerless merge-time re-resolution",
-         "immediately before merg" not in eval_corpus("upgrade-major-dependency")),
+        # Presence is checked per field, or a requirement dropped from the
+        # expected answer stays green on the strength of an assertion that
+        # happens to mention it. Absence is checked over expected answers
+        # only, and skips negated occurrences: a prompt quoting a forbidden
+        # instruction so the model can reject it is the guard working.
+        ("no eval prescribes the ownerless merge-time re-resolution",
+         not prescribes(eval_expected("upgrade-major-dependency"),
+                        "immediately before merg")),
         ("the stale-base eval's expected answer requires the handoff record",
          "record in the PR body the base commit"
          in eval_field("upgrade-major-dependency",
