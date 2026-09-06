@@ -25,6 +25,10 @@ That is one cell of a larger table, so the whole axis was walked rather than the
 
 Two defects, one column fix: dispatch forwards the viability verdict, the coupled set and any adopted PR, and the agent's gate reads a supplied verdict instead of re-deriving that item. The two safe cells stay forwarded for cost alone, and the contract now says which reason applies to which — an unlabelled list is what let the load-bearing entries drop out of it.
 
+The target version was added to the payload a round after the worker was told to compare against it. That is the chain defect `scripts/check_contract_placement.py` exists for, committed by the person who had just written the rule: a consumer obligation whose operand the producer never sends. It is worth separating from the ordinary stale-restatement case, because it fails differently — a restatement contradicts and can be read as a contradiction, while a missing operand makes the rule silently unrunnable and the omission looks like nothing at all. Reusing a stale clearance reads as compliance.
+
+The general form: **adding a rule that compares against something the caller knows is also a change to the caller's contract.** Ask what the new rule reads, and whether anything supplies it, in the same pass that writes the rule.
+
 **A new triage output owes this table a row before it ships**, answering the same question — what supplies this at the agent's gate, and what does the agent conclude without it. That is what makes the table a guard rather than a record of one fix.
 
 This file's own note on triage said all along that dispatch depends on *three* outputs including viability. The contract's supply list named breaking changes, usage surface and coupling. The disagreement sat in the repository for a full round; it is the ordinary way a rule and its restatement drift, and it is why the fix here is the table rather than the line.

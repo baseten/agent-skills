@@ -95,11 +95,11 @@
       "id": 8,
       "name": "dispatch-forwards-viability-and-coupling",
       "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are writing the dispatch brief for one agent. Its candidate is a framework plus two companion packages moving together, derived from an adopted bump PR, and your triage cleared viability. To keep the brief short, a colleague suggests sending only the breaking-change notes and the usage surface and letting the agent work the rest out from the repository. Question: what must the brief carry, and why?",
-      "expected_output": "It must also carry the viability verdict, the coupled set, and the adopted PR's URL, plus the worktree path and exact base branch. The coupled set is load-bearing: without it the agent's own viability gate reads a peer cap that another group member lifts as a hard blocker and stops on a candidate triage already cleared. Breaking changes and usage surface are safe to re-derive and are sent only to save duplicated work. The adopted PR is sent as identity, not as a state \u2014 the agent re-runs the work-in-flight search and reads that PR's current state before branching, because both expire in the dispatch gap.",
+      "expected_output": "It must also carry the viability verdict, **the exact target version that verdict measured**, the coupled set, and the adopted PR's URL, plus the worktree path and exact base branch. The target is load-bearing rather than informational: the agent is required to compare the current target against the triaged one before reusing the licence, cooldown and peer findings, because an adopted PR that advanced may have moved it \u2014 and it cannot run that comparison against a version the brief never named. The coupled set is load-bearing too: without it the agent's gate reads a peer cap another group member lifts as a hard blocker. Breaking changes and usage surface are safe to re-derive and are sent only to save duplicated work. The adopted PR is sent as identity, not as a state.",
       "assertions": [
-        "The answer adds the viability verdict, the coupled set and the adopted PR to the brief rather than accepting the shortened version",
-        "The answer distinguishes those from breaking changes and usage surface by consequence \u2014 a wrong stop versus duplicated work \u2014 rather than treating all four as the same kind of saving",
-        "The answer sends the adopted PR as identity while leaving its state and the in-flight search for the agent to refresh, rather than as a fact the verdict settles"
+        "The answer adds the measured target version to the brief, not just the verdict, and ties it to the comparison the agent must run",
+        "The answer distinguishes load-bearing entries from ones that merely save duplicated work, rather than treating all four the same",
+        "The answer sends the adopted PR as identity while leaving its state and the in-flight search for the agent to refresh"
       ]
     },
     {

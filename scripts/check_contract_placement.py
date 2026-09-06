@@ -359,9 +359,15 @@ def main() -> int:
         # conclusions from a narrower scope and reaches a *stop*. Every triage
         # output the gate can contradict has to be forwarded AND read at the
         # gate — presence in the dispatch prose is not presence at the gate.
-        ("dependency dispatch forwards the viability verdict and the coupled set",
-         "the viability verdict and the coupled set"
+        ("dependency dispatch forwards the verdict, its target, and the coupled set",
+         "the viability verdict, the exact target version it measured, and the coupled set"
          in flat(clause(du, "Supply each agent with the completed triage", 2000))),
+        # The consumer is required to compare current target against triaged
+        # target. A rule whose operand is never forwarded cannot fire, and the
+        # failure is silent: reusing a stale clearance looks like compliance.
+        ("the producer names why the target must travel with the verdict",
+         "It cannot run that comparison against a version this dispatch never named"
+         in flat(du)),
         ("dependency dispatch says why those two specifically",
          "reaches a different answer without them" in flat(du)),
         ("an automated bump PR is the work, not work already in flight",
@@ -416,10 +422,11 @@ def main() -> int:
         # Keyed on what the rule turns on — reuse scoped to facts, not items —
         # because the item-level phrasing this replaced was itself required by
         # an assertion, which is how a contradiction survived a round.
-        ("upgrade-major-dependency scopes reuse to facts that cannot have changed",
-         "reuses the facts that cannot have changed since" in flat(ud)
-         and "Reuse stops at those facts**, never at the item they arrived in"
-         in flat(ud)),
+        # One statement of the reuse rule, not a summary above the real one:
+        # the summary drifted from the rule below it within a single round.
+        ("the reuse rule is stated once, keyed on what it turns on",
+         flat(ud).count("Reuse a supplied finding only while the thing it measured has not moved") == 1
+         and "cannot have changed since" not in flat(ud)),
         ("the non-adopted branch is still eligible as the baseline",
          "it is the baseline, and stays one until the bump is applied to it"
          in flat(ud)),
