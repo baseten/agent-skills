@@ -22,6 +22,7 @@ That is one cell of a larger table, so the whole axis was walked rather than the
 | Coupling | *Viability gate*, peer caps | named, but the agent had no notion of a group | a companion moving in the same task still declares its cap at the installed major, so the group blocks on its own member |
 | Breaking changes | *Research* | yes | consistent; re-derivation is merely wasted work |
 | Usage surface | *Usage audit* | yes | consistent; same |
+| Target version, per package | *Task*'s reuse rule, and *Viability gate*'s first three items | **no** — added as a triage output without a row, in the round that wrote this rule | the worker is told to compare current target against triaged target and has no triaged target to compare with, so a stale licence, cooldown or peer clearance is reused and reads as compliance |
 
 Two defects, one column fix: dispatch forwards the viability verdict, the coupled set and any adopted PR, and the agent's gate reads a supplied verdict instead of re-deriving that item. The two safe cells stay forwarded for cost alone, and the contract now says which reason applies to which — an unlabelled list is what let the load-bearing entries drop out of it.
 
@@ -30,6 +31,8 @@ The target version was added to the payload a round after the worker was told to
 The general form: **adding a rule that compares against something the caller knows is also a change to the caller's contract.** Ask what the new rule reads, and whether anything supplies it, in the same pass that writes the rule.
 
 **A new triage output owes this table a row before it ships**, answering the same question — what supplies this at the agent's gate, and what does the agent conclude without it. That is what makes the table a guard rather than a record of one fix.
+
+The target-version row is the proof that a written rule is not a guard. It was added a round late, by the person who wrote the sentence above it, in the round that introduced the output — the rule was two lines away and did not fire, because nothing made it fire. A table maintained by remembering to maintain it has the same failure mode as a sweep performed by remembering to sweep. The row is here now; what would actually enforce it is a check, and none of the mechanical checks can tell a triage output from a paragraph.
 
 This file's own note on triage said all along that dispatch depends on *three* outputs including viability. The contract's supply list named breaking changes, usage surface and coupling. The disagreement sat in the repository for a full round; it is the ordinary way a rule and its restatement drift, and it is why the fix here is the table rather than the line.
 

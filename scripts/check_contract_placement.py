@@ -32,6 +32,11 @@ def skill(name: str) -> str:
     return (ROOT / "skills" / name / "SKILL.md").read_text()
 
 
+# A rule statement in these contracts is a bold lead-in; counting those is how
+# a duplicate rule is detected without matching its wording.
+BOLD = re.compile(r"\*\*(.+?)\*\*", re.S)
+
+
 def notes(name: str) -> str:
     """A skill's NOTES.md. It restates the rules it explains, so it drifts like
     any other restatement — one review round on this repo was spent on a rule
@@ -359,9 +364,14 @@ def main() -> int:
         # conclusions from a narrower scope and reaches a *stop*. Every triage
         # output the gate can contradict has to be forwarded AND read at the
         # gate — presence in the dispatch prose is not presence at the gate.
-        ("dependency dispatch forwards the verdict, its target, and the coupled set",
-         "the viability verdict, the exact target version it measured, and the coupled set"
+        ("dependency dispatch forwards the verdict, a per-package target, and the coupled set",
+         "the exact target version it measured for every package in the task"
          in flat(clause(du, "Supply each agent with the completed triage", 2000))),
+        # A coupled task's members can sit on different version lines, so one
+        # figure cannot say which version each finding measured.
+        ("the target mapping covers every coupled member",
+         "One target for the task is not enough" in flat(du)
+         and "package → triaged target" in flat(du)),
         # The consumer is required to compare current target against triaged
         # target. A rule whose operand is never forwarded cannot fire, and the
         # failure is silent: reusing a stale clearance looks like compliance.
@@ -395,9 +405,10 @@ def main() -> int:
          in flat(clause(ud, "- **Work already in flight.**", 2000))),
         # An advanced bot PR can move the target, which invalidates exactly the
         # three findings a verdict is most trusted for.
-        ("a moved target re-runs the target-dependent gate items",
-         "Compare the current target against the triaged one first" in flat(ud)
-         and "only while the target version is the one it measured"
+        ("a moved target re-runs the target-dependent gate items, per package",
+         "Compare each package's current target against the one triage measured for it"
+         in flat(ud)
+         and "only while each package's target is the one it measured for that package"
          in flat(near(ud, "## Viability gate", 400))),
         # The cherry-pick is the two-branch mechanism, not the rule; with one
         # branch the test commit is already an ancestor.
@@ -424,9 +435,16 @@ def main() -> int:
         # an assertion, which is how a contradiction survived a round.
         # One statement of the reuse rule, not a summary above the real one:
         # the summary drifted from the rule below it within a single round.
-        ("the reuse rule is stated once, keyed on what it turns on",
-         flat(ud).count("Reuse a supplied finding only while the thing it measured has not moved") == 1
-         and "cannot have changed since" not in flat(ud)),
+        # The failure shape here is duplication, so the guard counts rather than
+        # matching a phrase — and it counts the SHAPE a rule statement takes in
+        # these files (a bold lead-in) rather than one sentence, so a
+        # reintroduced summary fails even when reworded. What it cannot catch
+        # is a summary written unbolded as running prose; that is the residual,
+        # and it is smaller than the literal-match version this replaced, which
+        # any rewording defeated.
+        ("the reuse rule has exactly one bold statement",
+         len(BOLD.findall(near(ud, "**Reuse a supplied finding", 3000))) >= 1
+         and sum("reus" in b.lower() for b in BOLD.findall(ud)) == 1),
         ("the non-adopted branch is still eligible as the baseline",
          "it is the baseline, and stays one until the bump is applied to it"
          in flat(ud)),
