@@ -32,6 +32,18 @@ def skill(name: str) -> str:
     return (ROOT / "skills" / name / "SKILL.md").read_text()
 
 
+def notes(name: str) -> str:
+    """A skill's NOTES.md. It restates the rules it explains, so it drifts like
+    any other restatement — one review round on this repo was spent on a rule
+    the contract had already fixed, still standing in the note beside it.
+    Prefer a PRESENCE check on the corrected rule over an absence check on the
+    old one: NOTES legitimately quotes superseded wording when recording why it
+    was superseded, so absence cannot tell drift from history.
+    """
+    f = ROOT / "skills" / name / "NOTES.md"
+    return f.read_text(encoding="utf-8") if f.exists() else ""
+
+
 def eval_expected(name: str) -> list[str]:
     """Every scenario's expected answer — the only eval field that PRESCRIBES.
 
@@ -402,6 +414,10 @@ def main() -> int:
          in flat(clause(du, "**Viability** —", 2000))),
         # Source-conditional here and source-agnostic in the worker is the same
         # producer/consumer disagreement, one clause deeper.
+        ("the adoption note defines a duplicate by what the work is",
+         "somebody else's attempt at the same upgrade"
+         in flat(clause(notes("dependency-upgrade-orchestrator"),
+                        "The adoption rule itself is not merely an exemption", 1200))),
         ("the exemption does not turn on the discovery source",
          "Where the candidate came from does not enter into this" in flat(du)
          and "whatever discovery source produced the candidate" in flat(du)),
