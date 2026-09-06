@@ -20,6 +20,7 @@ this file is only about the skill contracts.
 
 from __future__ import annotations
 
+import json
 import pathlib
 import re
 import sys
@@ -31,8 +32,8 @@ def skill(name: str) -> str:
     return (ROOT / "skills" / name / "SKILL.md").read_text()
 
 
-def evals(name: str) -> str:
-    """A skill's eval corpus as one blob.
+def eval_corpus(name: str) -> str:
+    """A skill's whole eval file as one blob — for ABSENCE checks only.
 
     Evals restate the rules they pin, so they go stale exactly as a second
     copy in prose does — and a stale one is worse than a stale paragraph,
@@ -40,9 +41,36 @@ def evals(name: str) -> str:
     review round on this repo was spent on a scenario still carrying the
     ownerless instruction the round before it had removed from the contract.
     They are part of the consequence sweep, not a separate artifact.
+
+    A forbidden phrase is forbidden wherever it appears, so the corpus is the
+    right scope for absence. Presence is the opposite: see `eval_field`.
     """
     f = ROOT / "skills" / name / "evals" / "evals.json"
-    return f.read_text() if f.exists() else ""
+    return f.read_text(encoding="utf-8") if f.exists() else ""
+
+
+def eval_field(skill_name: str, case: str, field: str) -> str:
+    """One field of one named scenario — the scope every PRESENCE check needs.
+
+    Asserting a required phrase against the whole file passes when the phrase
+    sits in any field, so a requirement dropped from `expected_output` stays
+    green as long as an assertion still happens to mention it. The round that
+    added the corpus check shipped exactly that: its "the scenario requires
+    the handoff record" assertion matched only the assertion text, and the
+    expected answer it was written to pin never contained the phrase at all.
+    A presence check must name the field that has to carry the requirement.
+
+    Returns "" for a missing skill, scenario or field, so a renamed or deleted
+    scenario fails the check rather than silently satisfying it.
+    """
+    f = ROOT / "skills" / skill_name / "evals" / "evals.json"
+    if not f.exists():
+        return ""
+    for c in json.loads(f.read_text(encoding="utf-8")).get("evals", []):
+        if c.get("name") == case:
+            v = c.get(field, "")
+            return flat(v if isinstance(v, str) else " ".join(v))
+    return ""
 
 
 def clause(text: str, anchor: str, span: int = 700) -> str:
@@ -340,13 +368,36 @@ def main() -> int:
          "merges nothing, so it cannot hold that check at merge time" in flat(du)
          and "name every open PR whose lockfile has gone stale" in flat(du)),
         # The eval corpus is a restatement of the contract and is swept with it.
+        # Absence is checked corpus-wide; presence is checked per field, or a
+        # requirement dropped from the expected answer stays green on the
+        # strength of an assertion that happens to mention it.
         ("no eval reinstates the ownerless merge-time re-resolution",
-         "immediately before merg" not in evals("upgrade-major-dependency")),
-        ("the stale-base eval requires the handoff record and its expiry",
+         "immediately before merg" not in eval_corpus("upgrade-major-dependency")),
+        ("the stale-base eval's expected answer requires the handoff record",
+         "record in the PR body the base commit"
+         in eval_field("upgrade-major-dependency",
+                       "a-stale-base-reintroduces-a-removed-resolution",
+                       "expected_output")),
+        ("the stale-base eval's expected answer states the check expires",
+         "repeated by whoever merges"
+         in eval_field("upgrade-major-dependency",
+                       "a-stale-base-reintroduces-a-removed-resolution",
+                       "expected_output")),
+        ("the stale-base eval grades on the handoff record",
          "resolved-against base commit in the PR body"
-         in evals("upgrade-major-dependency")),
-        ("the routine-bump eval counts the batched task",
-         "Four tasks" in evals("dependency-upgrade-orchestrator")),
+         in eval_field("upgrade-major-dependency",
+                       "a-stale-base-reintroduces-a-removed-resolution",
+                       "assertions")),
+        ("the routine-bump eval's expected answer counts the batched task",
+         "Four tasks"
+         in eval_field("dependency-upgrade-orchestrator",
+                       "a-cleared-patch-is-not-one-dispatch-each",
+                       "expected_output")),
+        ("the routine-bump eval grades on that count",
+         "counts four tasks"
+         in eval_field("dependency-upgrade-orchestrator",
+                       "a-cleared-patch-is-not-one-dispatch-each",
+                       "assertions")),
         ("the PR-body record is stated where the report is written, not only where it is produced",
          "the base commit the lockfile was resolved against" in flat(clause(ud, "State what changed", 2000))),
         ("close-out reports per-PR lockfile staleness to the merger",
