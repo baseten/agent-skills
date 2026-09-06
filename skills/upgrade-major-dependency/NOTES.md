@@ -20,6 +20,13 @@ The adopted-bump-PR rule added in the [PR #72](https://github.com/baseten/agent-
 
 The cherry-pick beside it was written as though it were the rule, and a later round found the cost. It is the mechanism for moving a test commit between two branches — what the adopted-PR case needs and the ordinary case does not, since there the upgrade branch is already the baseline and the test commit is already its ancestor. Stated as an unconditional step it is a no-op that reads as work, which is enough to make a worker cut a second worktree to have something to cherry-pick *from* — the very thing the round before had just forbidden. Both paths are spelled out now, and the invariant is stated as the ordering: proven green on a tree without the bump, run unmodified on one with it.
 
+**On how many adopted PRs a task can have.** Round thirty-two simulated a coupled group end to end and found the contract assuming one per task at five consumers while triage produces one per *candidate* — `dependency-upgrade-orchestrator` marks adopted "an automated bump PR for a candidate", and the gate here searches "every one of this task's package names". A group of three can arrive with three. The consumers were all written in the definite article: *the* adopted PR's head is the upgrade branch, *the* adopted PR's head is what moves a target.
+
+The failure that produces is the silent one the whole target machinery exists to prevent. Branch from the framework's bot PR, supersede the companion's, and when the companion's bot advances it in the dispatch gap, that head is not "*the* adopted PR's head" — so the move is never detected, the peer clearance is stale, and the migration proceeds under a model selected for a release nobody is installing.
+
+The fix was not to patch the worktree bullet. The gate already knew the answer — "adopt it, or supersede it and close it with a reference" — so what was missing was **which one is the branch**, plus the two rules that read over all of them rather than over that one: a target moves when *any* adopted PR's head advances, per package; and *every* adopted PR's URL is identity that survives a moved target, so all of them come back in the report and none is closed on a stop. Stated once, at the worktree cases, because that is where the reader first meets the singular.
+
+
 ## Why viability is gated before research
 
 Each gate item ended a real upgrade before any code was written, and each is minutes of work against hours.
@@ -96,6 +103,8 @@ This is the restatement `CLAUDE.md` says to keep rather than collapse, and the d
 **And the axis was not four cells.** Round thirty, verifying that walk rather than trusting it, found two more obligations — a **disagreement** between a supplied verdict and what this task re-derived, and what the installed version shows where an adopted PR turned out merged or closed — plus a third stated at half: the base commit had been restated in *Report* as a bare value, dropping the two qualifiers that make it safe. Those qualifiers are the item; a base commit without "repeat if the base moved" and "handoff result, never merge-time" is the false pass the record exists to prevent, wearing the record's name.
 
 So the count went four, then six-plus-two, and **that movement is the durable part of this note**. Twice now a round has walked this axis, written its findings into an assertion, and left the enumeration reading as a closed set — which is what a later round reads as evidence the work is done. The list in the check is a fixture and says so; what the assertion actually holds is the sentence in *Report* stating **why** the restatement is there, because that is the property a new obligation is tested against. Anyone adding a report obligation should expect to add a cell here, not to find one waiting.
+
+Round thirty-one proved that immediately by adding one — a docs page diverging from the published artifact — and adding neither the cell nor the guard entry, inside the same commit as the sentence above. It was found because two evals had been grading the obligation while no contract sentence stated it, which is the second time that signal has paid out here and is worth naming as a technique: **an assertion grading something the contract does not say means the contract is short, not the eval.** The rule now sits at both places research happens — the worker's *Research*, per package, and the orchestrator's triage, which reads every candidate before any worker exists.
 
 ## Why shape-based changes get a scanning test rather than a search
 

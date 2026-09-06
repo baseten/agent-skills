@@ -138,6 +138,7 @@ python3 scripts/check_skills.py
 python3 scripts/check_permissions.py
 python3 scripts/test_contract_placement.py
 python3 scripts/check_contract_placement.py
+python3 scripts/test_contract_guards.py
 python3 scripts/test_rule_locality.py
 python3 scripts/check_rule_locality.py
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh

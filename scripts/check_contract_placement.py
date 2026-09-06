@@ -45,6 +45,35 @@ FINDINGS = ("licence", "cooldown", "peer")
 BLOCK_BOUNDARY = re.compile(r"\n\s*\n|\n(?=[ \t]*(?:[-*+]|\d+[.)])[ \t])")
 
 
+def _routine_bullets() -> list[str]:
+    """The routine batch's directive bullets, extracted rather than listed.
+
+    The obligations this route cannot inherit are stated as a bullet list, and
+    three rounds running a guard over them was a list of literal phrases — so
+    a bullet added without its disposition passed. Extracting them means the
+    guard can assert an arity: one disposition entry per bullet, checked
+    positionally. Adding a bullet is then a change the check notices.
+    """
+    text = skill("dependency-upgrade-orchestrator")
+    start = text.index("**The routine batch runs no named contract")
+    end = text.index("\n\nSupply each agent with the completed triage", start)
+    return [b.strip() for b in text[start:end].split("\n- ")[1:]]
+
+
+ROUTINE_BULLETS = _routine_bullets()
+
+# One entry per bullet, in order: the disposition that bullet must carry —
+# what the agent does when its check comes back positive. A bullet may satisfy
+# its entry by any one of several phrasings. This is the fixture; the arity
+# check above it is the property.
+ROUTINE_DISPOSITIONS = [
+    ("removes that candidate",),                       # in-flight search
+    ("verify against the installed version and report it",),  # adopted PR state
+    ("with both qualifiers that make it safe",),        # lockfile base record
+    ("is not this agent's to re-triage or re-route",),  # target re-check
+]
+
+
 def eval_names(skill_name: str) -> list[str]:
     f = ROOT / "skills" / skill_name / "evals" / "evals.json"
     if not f.exists():
@@ -604,9 +633,19 @@ def main() -> int:
         # in-flight search cannot cover this: it sees open work, and the
         # dangerous case is the adopted PR having merged.
         ("the adopted PR's state is refreshed, not taken from the verdict",
-         "URL is identity and does not change; nothing else about it is given"
+         "identity and does not change; nothing else about it is given"
          in flat(ud)
          and "read the PR itself before branching from it" in flat(ud)),
+        # A group is adopted per candidate and can arrive with several PRs,
+        # while every consumer below it was written for one. The rule names
+        # which is the branch and which two things read over all of them.
+        ("the adopted-PR arity is stated, with the two rules that read over all of them",
+         "**Adopt exactly one as the branch" in flat(ud)
+         and "any** adopted PR's head advancing can move its own package's target"
+         in flat(ud)
+         and "every** adopted PR's URL is identity that survives a moved target"
+         in flat(ud)
+         and "What moves a target is an adopted PR's head" in flat(ud)),
         ("the orchestrator does not present the verdict as covering either",
          "must not be presented as though it does" in flat(du)
          and "as identity rather than as a state" in flat(du)),
@@ -735,7 +774,10 @@ def main() -> int:
         ("the PR-body record is stated where the report is written, not only where it is produced",
          "the base commit the lockfile was resolved against" in flat(clause(ud, "State what changed", 2000))),
         ("close-out reports per-PR lockfile staleness to the merger",
-         "the merger's to repeat" in flat(du)),
+         all(phrase in flat(near(du, "## Close out", 1200))
+             for phrase in ("per open PR, whether its lockfile is still resolved "
+                            "against the current base",
+                            "the merger's to repeat"))),
 
         # SHAPE, found by a repository-scoped pass rather than a diff review.
         # Round 3 removed an ownerless "immediately before merging" from the
@@ -753,13 +795,15 @@ def main() -> int:
         ("the routine-target check is carried to actors that exist, not held at the merge",
          "That check is carried rather than held" in flat(du)
          and "The batch agent re-checks immediately before it writes anything" in flat(du)
-         # Scoped, not flat(du): the first version of this clause passed while
-         # *Supervise* said nothing about either check, because the sentence
-         # satisfying it sat in *Dispatch* describing what *Supervise* would
-         # do. A guard for a rule about WHERE something is stated has to check
-         # where it is stated.
+         # This one is legitimately whole-file: the sentence belongs to
+         # *Dispatch*, which is where the check is assigned.
          and "this run re-checks on every supervision pass and again at close-out"
          in flat(du)
+         # These are scoped, and that is the point. The first version of the
+         # clause below passed while *Supervise* said nothing about either
+         # check, because the sentence satisfying it sat in *Dispatch*
+         # describing what *Supervise* would do. A guard for a rule about
+         # WHERE something is stated has to check where it is stated.
          and all(phrase in flat(near(du, "## Supervise", 1400))
                  for phrase in ("Compare each open PR's recorded lockfile base",
                                 "Re-check every batched routine candidate's target"))
@@ -783,37 +827,25 @@ def main() -> int:
         # The routine batch is the one task that runs no named contract, so
         # every obligation delegated by pointing at `upgrade-major-dependency`
         # reaches it through nothing.
-        # Two rounds got this assertion wrong in the same way, which is why it
-        # is written as it is now. Round 29 listed the three obligations it had
-        # found, so the fourth was pinned OUT by the fix for it. Round 30 added
-        # the fourth and stated the standard — every bullet needs its operand,
-        # its disposition and its exception — then applied it to one bullet and
-        # listed phrases again. A list cannot tell you it is short.
-        # So the first clause asserts the PROPERTY: every obligation on this
-        # route says what the agent does when its check comes back positive.
-        # The phrase list is a fixture behind it, and is labelled as one.
+        # Three rounds got this assertion wrong in the same way, which is why
+        # it is written as it is now. Round 29 listed the three obligations it
+        # had found, so the fourth was pinned OUT by the fix for it. Round 30
+        # added the fourth, stated the standard — every bullet needs its
+        # operand, its disposition and its exception — and applied it to one
+        # bullet. Round 31 claimed to assert "the property" and shipped a
+        # longer list of literals, which a fifth bullet with no disposition
+        # passed straight through.
+        # The property that actually generates the list is ARITY: every bullet
+        # in this block is an obligation, and every obligation owes a
+        # disposition entry here. So the bullets are counted. Add one without
+        # extending the list below and this goes red — which is the only thing
+        # a list of literals could never do.
         ("the routine batch is given the obligations it cannot inherit",
          "The routine batch runs no named contract" in flat(du)
-         and all(disposition in flat(near(du, "**The routine batch runs no named contract", 3600))
-                 for disposition in (
-                     # in-flight: what a hit removes, and what is not a hit
-                     "removes that candidate",
-                     "An automated bump PR for a batched package is not that",
-                     # adopted PR: one disposition per outcome it names
-                     "verify against the installed version and report it",
-                     "adopt the successor on the same terms",
-                     # lockfile: the value plus the two qualifiers
-                     "with both qualifiers that make it safe",
-                     # target: operand, disposition, and blast radius
-                     "what moves a target is an adopted PR's head advancing",
-                     "is not this agent's to re-triage or re-route",
-                     "the rest of the batch is not void with it"))
-         # Fixture: the obligations found so far, by their lead-ins.
-         and all(phrase in flat(near(du, "**The routine batch runs no named contract", 3600))
-                 for phrase in ("Re-run the work-already-in-flight search",
-                                "Read each adopted bump PR's current state",
-                                "Re-resolve the lockfile against the base",
-                                "Re-check every candidate's target"))),
+         and len(ROUTINE_BULLETS) == len(ROUTINE_DISPOSITIONS)
+         and all(any(d in flat(bullet) for d in dispositions)
+                 for bullet, dispositions in zip(ROUTINE_BULLETS,
+                                                 ROUTINE_DISPOSITIONS))),
         # SHAPE: an obligation on the report, stated only at the phase that
         # produces it, is dropped by an agent writing from *Report* — which
         # reads as an exhaustive list. Round 3 walked one cell (the base
@@ -832,6 +864,10 @@ def main() -> int:
                                 "any **disagreement** between a supplied verdict",
                                 "merged or closed, what the installed version actually shows",
                                 "any blocker that ended the task",
+                                # Added by round 31, which added the obligation
+                                # and not this entry — inside the same commit
+                                # as the note telling the next fixer to.
+                                "any divergence between a rendered docs page",
                                 # The two qualifiers a bare restatement drops.
                                 "the re-resolution must be repeated if the base has moved since",
                                 "handoff result and never a merge-time one"))),
@@ -882,6 +918,15 @@ def main() -> int:
          and "If the upgrade proved unsafe"
          in flat(near(ud, "**A task ended by a moved target leaves", 700))),
         # Research was written when a moved target meant re-derive and continue.
+        # An eval graded this for rounds before any contract sentence said it,
+        # which is how it was found. Both decision points now carry it: the
+        # worker researches per package, and the orchestrator researches every
+        # candidate at triage before any worker exists.
+        ("a docs/artifact divergence is reported, at both places research happens",
+         "the artifact wins and the divergence is reported"
+         in flat(near(ud, "## Research", 1200))
+         and "the divergence is reported rather than silently resolved"
+         in flat(near(du, "**Breaking changes**", 700))),
         ("the research phase does not resume a task the gate ended",
          "That case does not resume here" in flat(near(ud, "## Research", 900))),
         # Discovery text is a decision point too: it is what a caller reads

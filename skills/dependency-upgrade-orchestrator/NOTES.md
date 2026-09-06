@@ -118,6 +118,12 @@ The general rule, which is what to carry away: **where a fix enumerates, the gua
 
 The other half of round thirty is the same shape one level down. Five of the seven assertions written the round before checked `flat(du)` or `flat(ud)` — whole file — for rules whose entire content is *where* they are stated. The worst of them was green over the defect it was written for: the carried-check guard passed while *Supervise* mentioned neither carried check, because the sentence satisfying it sat in *Dispatch* describing what *Supervise* would do. **A guard for a placement rule has to check placement**, and this file's own central claim is that a rule present but misplaced reads correct to a grep and is inert to a reader.
 
+Round thirty-two found the sixth instance of that class four lines above the block round thirty-one had just edited — a check named *"close-out reports per-PR lockfile staleness to the merger"* that tested for none of "lockfile", "base" or "PR", and passed on a sentence in *Dispatch* describing what *Close out* would do. It also found round thirty-one's "property" clause was a longer list of literals with the word *property* in the comment above it, which a fifth obligation with no disposition passed straight through.
+
+**Four consecutive rounds ended with a guard green over its own subject, and each round fixed the instance it was shown.** That is the finding, and it is not about any of the individual guards. Every one of them was found in seconds by breaking the rule and re-running the check — which this repository had recommended since round twelve, *as a paragraph*, in a file whose own tier list says prose reaches an agent only when something makes it read it. `scripts/test_contract_guards.py` is that paragraph as a script, and it caught a live instance on its first run.
+
+The routine-batch guard is now structural rather than a longer list: it extracts the bullets from the contract and asserts **one disposition entry per bullet**. Arity is the property that generates the list, so adding an obligation without saying what the agent does about it goes red. That is the difference between a property and a fixture, and the previous three attempts all failed it in the same direction — a list cannot tell you it is short, and calling it a property does not change that.
+
 ## Why supervisors emit only state changes, and only actionable ones
 
 A supervisor that re-emits unchanged state trains its reader to ignore it, which defeats the purpose at exactly the moment something real occurs.

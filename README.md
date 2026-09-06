@@ -93,6 +93,7 @@ python3 scripts/check_skills.py                       # structure, schema, cross
 python3 scripts/check_permissions.py                  # the shape of permissions.json, and the README's claims
 python3 scripts/test_contract_placement.py            # the oracle detector still detects
 python3 scripts/check_contract_placement.py           # contract rules at their decision points
+python3 scripts/test_contract_guards.py               # those assertions can actually fail
 python3 scripts/test_rule_locality.py                 # the locality detector still detects
 python3 scripts/check_rule_locality.py                # the workflow rules are stated in CLAUDE.md only
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
@@ -134,6 +135,19 @@ check that passes on the current tree is not evidence that it would catch the de
 green check over a false claim is worse than no check, because it stops anyone looking. The
 fixtures then immediately caught a second gap — a noun lead-in carrying the imperative in
 its body. Finding a new bypass means the detector was wrong, not the fixture.
+
+`test_contract_guards.py` is the strongest form of that tier, and it exists because the
+weaker forms kept failing in one specific way. Four review rounds in a row on one pull
+request ended with a corpus assertion **green over the exact defect it was written for** — a
+guard listing the three obligations it had found, so the fourth was pinned out by the fix for
+it; five whole-file checks rescoped and the class declared closed, then three more found,
+then a sixth four lines away; a clause relabelled "the property" that a new bullet passed
+straight through. Every one was found in seconds by breaking the rule and re-running the
+check, which `NOTES.md` had recommended since round twelve — as advice, in a repository whose
+own tier list says advice reaches an agent only when something makes it read the file. So it
+is a script: each entry breaks a rule and names the assertion that must go red, and a new
+corpus assertion owes it a mutation. An assertion you cannot write one for is not testing
+what its name says.
 
 `test_contract_placement.py` is the same tier for the guard that keeps the dependency
 skills' eval oracles from stating licence, cooldown and peer reuse as a single rule. It was
