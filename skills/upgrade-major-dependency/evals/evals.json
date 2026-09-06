@@ -144,6 +144,17 @@
         "The answer brings the base in and re-resolves with the package manager rather than editing the lockfile or resolving it textually",
         "The answer records the resolved-against base commit in the PR body and frames the result as a handoff check that expires, not as a merge-time one"
       ]
+    },
+    {
+      "id": 13,
+      "name": "a-supplied-verdict-does-not-cover-work-in-flight",
+      "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: your caller triaged this candidate four hours ago and handed you a viability verdict clearing every item, plus an adopted Dependabot PR by URL. Bounded concurrency meant you were only dispatched now. A colleague pushed a branch upgrading the same package two hours ago, after the verdict was written. Question: which parts of the verdict do you take as given, and what do you check yourself?",
+      "expected_output": "Take the licence, the publication date, the peer ranges, the coupled set and the adopted PR as given \u2014 none of those changes between triage and now. Re-run the work-already-in-flight search yourself, immediately before writing anything: it is the one gate item whose answer expires, and a bounded-concurrency delay is exactly the window it exists to cover. The search finds both the adopted Dependabot PR, which is the work and is not a duplicate, and the colleague's branch, which is somebody else's attempt at the same upgrade and ends the task. Report that rather than proceeding on the stale verdict.",
+      "assertions": [
+        "The answer re-runs the work-in-flight search despite the supplied verdict clearing it",
+        "The answer does not re-derive the licence, cooldown, peer caps or coupled set, taking those from the verdict",
+        "The answer stops on the colleague's branch while still recognising the adopted bot PR as the work rather than a duplicate"
+      ]
     }
   ]
 }

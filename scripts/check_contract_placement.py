@@ -74,79 +74,36 @@ def eval_expected(name: str) -> list[str]:
     ]
 
 
-NEGATORS = (
-    "not ", "never ", "n't ", "rather than", "instead of", "no longer",
-    "avoid", "cannot", "refus", "reject",
-)
+def states_rather_than_restates(name: str, phrase: str) -> bool:
+    """True when no scenario's expected answer contains `phrase` at all.
 
+    This replaces three rounds of natural-language negation detection, and the
+    replacement is the point rather than a retreat. The heuristic had to decide
+    whether an occurrence was an instruction or a rejection of one, and four
+    review rounds produced four constructions it got wrong — a negation from
+    the neighbouring sentence, then from the neighbouring clause, then a
+    coordinated disjunction it wrongly split, then comma-separated imperatives
+    it wrongly joined. Fixing that last one requires treating a bare comma as
+    a clause break, which immediately misreads "do not merge, or re-resolve
+    ...", a sentence English does not disambiguate either. The surface signals
+    were exhausted, and each round's fix bought one construction and cost
+    another.
 
-# A clause boundary: a sentence ender, or a conjunction that introduces a fresh
-# positive clause. `or` and `nor` are deliberately absent — under negation,
-# disjunction DISTRIBUTES ("do not merge or re-resolve" forbids both), so an
-# `or` carries the governing negator across it while an `and` after a negated
-# clause introduces a new imperative ("do not trust CI and re-resolve" requires
-# the second). That asymmetry is the only surface signal separating the two
-# constructions, which are otherwise identical in shape; the fixtures pin both.
-#
-# The residual ambiguity is real and worth knowing rather than trusting: a
-# comma-separated disjunction ("do not merge, or re-resolve …") is not
-# disambiguated by this, and English does not disambiguate it either. A
-# borderline sentence in an expected answer should be rewritten to say what the
-# answer requires rather than restate what it rejects, which is how all of this
-# repository's scenarios are already written.
-CLAUSE_BREAK = re.compile(r"[.!?;:]\s|,?\s+(?:and|but|then|so|yet)\s+")
+    So the check is on a property that is decidable: an expected answer states
+    what it requires and never restates what it rejects. That is a real
+    authoring convention rather than a device to satisfy a checker — all
+    eleven scenarios in these two skills already read that way, because the
+    wrong instruction belongs in the prompt, where a colleague suggests it,
+    and the assertions are free to name it. Only the expected answer is
+    constrained, and that is the field that teaches.
 
-
-def prescribes(texts: list[str], phrase: str) -> bool:
-    """True where `phrase` appears as an instruction rather than as one being
-    rejected.
-
-    Negation is looked for in the phrase's **own clause**. Two coarser scopes
-    were tried first and each was green over a live prescription:
-
-    * a fixed character window — a negation in the neighbouring *sentence*
-      suppressed the occurrence ("Do not claim it as a merge-time result.
-      Re-resolve immediately before merging.");
-    * the sentence — a negation in the neighbouring *clause* did the same
-      ("Do not trust green CI, and re-resolve immediately before merging."),
-      with or without the comma.
-
-    Both are the exact regression this check exists to catch, and both passed.
-    A third round then supplied the opposite failure — a false positive on
-    "Do not merge or re-resolve immediately before merging.", where the
-    negation governs both coordinated verbs — so the scope is a clause and
-    `or` does not open one. See CLAUSE_BREAK for why that asymmetry is the
-    only available signal. Every mutation that has defeated this function is
-    pinned as a fixture below; it has been wrong in both directions, so both
-    directions are tested.
+    What this gives up, said plainly: a paraphrase ("defer the re-resolution
+    to merge time") is not caught. Neither was it by the heuristic, which also
+    carried an undecidable class. The scenario that actually pins this rule is
+    held by the two field-scoped presence checks below, which require the
+    handoff record and its expiry positively.
     """
-    needle = phrase.lower()
-    for text in texts:
-        low = flat(text).lower()
-        i = low.find(needle)
-        while i != -1:
-            starts = [m.end() for m in CLAUSE_BREAK.finditer(low, 0, i)]
-            if not any(n in low[(starts[-1] if starts else 0):i] for n in NEGATORS):
-                return True
-            i = low.find(needle, i + 1)
-    return False
-
-
-# Fixtures for `prescribes`. A scope error in it is silent — the check simply
-# passes — so the two mutations that already defeated it are pinned here
-# rather than left to a future negative test somebody remembers to run.
-PRESCRIBES_FIXTURES = [
-    ("Re-resolve immediately before merging.", True),
-    ("Do not claim it as a merge-time result. Re-resolve immediately before merging.", True),
-    ("Do not trust green CI, and re-resolve immediately before merging.", True),
-    ("Do not trust green CI and re-resolve immediately before merging.", True),
-    ("You do not re-resolve immediately before merging; this task ends at handoff.", False),
-    ("Never re-resolve immediately before merging.", False),
-    ("Record the base rather than re-resolve immediately before merging.", False),
-    ("Do not merge or re-resolve immediately before merging.", False),
-    ("Do not merge nor re-resolve immediately before merging.", False),
-    ("This task ends at handoff.", False),
-]
+    return not any(phrase.lower() in e.lower() for e in eval_expected(name))
 
 
 def eval_field(skill_name: str, case: str, field: str) -> str:
@@ -423,6 +380,15 @@ def main() -> int:
          and "whatever discovery source produced the candidate" in flat(du)),
         ("the orchestrator's peer-cap item is scoped to the coupled group",
          "established before this item is answered" in flat(clause(du, "**Viability** —", 2000))),
+        # A supplied verdict is a snapshot. Most of it cannot go stale; the
+        # work-in-flight item can, and bounded concurrency is what makes the
+        # gap long enough to matter.
+        ("the worker re-runs the one gate item that expires",
+         "One item is exempt, because it expires" in flat(ud)
+         and "even when a caller supplied a viability verdict clearing it"
+         in flat(clause(ud, "- **Work already in flight.**", 2000))),
+        ("the orchestrator does not present the verdict as covering it",
+         "must not be presented as though it does" in flat(du)),
         ("upgrade-major-dependency reads a supplied verdict instead of re-deriving",
          "instead of re-deriving that item" in flat(ud)),
         ("its in-flight item exempts an automated bump PR at the item itself",
@@ -483,12 +449,9 @@ def main() -> int:
         # happens to mention it. Absence is checked over expected answers
         # only, and skips negated occurrences: a prompt quoting a forbidden
         # instruction so the model can reject it is the guard working.
-        ("prescribes() reads negation at clause scope",
-         all(prescribes([s], "immediately before merg") is want
-             for s, want in PRESCRIBES_FIXTURES)),
-        ("no eval prescribes the ownerless merge-time re-resolution",
-         not prescribes(eval_expected("upgrade-major-dependency"),
-                        "immediately before merg")),
+        ("no expected answer restates the ownerless merge-time instruction",
+         states_rather_than_restates("upgrade-major-dependency",
+                                     "immediately before merg")),
         ("the stale-base eval's expected answer requires the handoff record",
          "record in the PR body the base commit"
          in eval_field("upgrade-major-dependency",

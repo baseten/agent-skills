@@ -57,6 +57,8 @@ Supply each agent with the completed triage — **the viability verdict and the 
 
 **The first two are supplied because the agent's own gate reaches a different answer without them, not to save it work.** `upgrade-major-dependency` re-runs its viability gate over what its own scope can see: an adopted bump PR reads there as work already in flight, and a peer cap that another member of the same coupled group lifts reads as a hard blocker. Either stops an agent on a candidate this triage already cleared. Breaking changes and usage surface are safe for an agent to re-derive and are supplied only to save the duplicated work.
 
+**The verdict does not cover work already in flight, and must not be presented as though it does.** That item's answer expires: bounded concurrency can start an agent hours after triage cleared it, and a colleague's branch pushed in between is exactly what it exists to catch. The agent re-runs it itself (`upgrade-major-dependency`, *Viability gate*); supply the rest as findings, and the adopted PR by URL so the refreshed search recognises it rather than stopping on it.
+
 Constrain each agent explicitly:
 
 - **Foreground execution only.** No backgrounded long-running commands, no monitors. An agent that backgrounds a command and ends its turn waits on a wake-up that does not arrive.
