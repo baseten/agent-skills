@@ -116,10 +116,10 @@
       "id": 10,
       "name": "a-cleared-patch-is-not-one-dispatch-each",
       "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: triage is done. Two candidates are one major behind. Six are patch bumps whose research found no breaking change in any version in the range and whose usage audit found no affected call site. One more is a minor whose changelog describes a changed default that your audit could not rule out. Question: how many agents do you dispatch, and what does each get?",
-      "expected_output": "Three tasks. The two majors and the unruled-out minor each go through `upgrade-major-dependency` \u2014 that skill covers a major and any lesser bump triage did not clear, so the small version number is irrelevant. The six cleared patches are routine bumps with nothing for the phase order to do: group them into a single task with one PR rather than one agent apiece, and report which candidates were cleared and on what evidence.",
+      "expected_output": "Four tasks. The two majors and the unruled-out minor each go through `upgrade-major-dependency` \u2014 that skill covers a major and any lesser bump triage did not clear, so the small version number is irrelevant \u2014 and the six cleared patches form a fourth, batched task with one PR rather than one agent apiece, since there is nothing for the phase order to do on them. Report which candidates were cleared and on what evidence.",
       "assertions": [
         "The answer dispatches the unruled-out minor through the full skill rather than treating it as routine because it is a minor",
-        "The answer groups the six cleared patches into one task instead of one agent each",
+        "The answer counts four tasks, batching the six cleared patches into one rather than dispatching them individually or dropping them from the count",
         "The answer records which candidates were cleared and the evidence, rather than letting the clearance be implicit"
       ]
     },

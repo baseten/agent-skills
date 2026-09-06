@@ -31,6 +31,20 @@ def skill(name: str) -> str:
     return (ROOT / "skills" / name / "SKILL.md").read_text()
 
 
+def evals(name: str) -> str:
+    """A skill's eval corpus as one blob.
+
+    Evals restate the rules they pin, so they go stale exactly as a second
+    copy in prose does — and a stale one is worse than a stale paragraph,
+    because it actively rewards a rewrite that reintroduces the defect. One
+    review round on this repo was spent on a scenario still carrying the
+    ownerless instruction the round before it had removed from the contract.
+    They are part of the consequence sweep, not a separate artifact.
+    """
+    f = ROOT / "skills" / name / "evals" / "evals.json"
+    return f.read_text() if f.exists() else ""
+
+
 def clause(text: str, anchor: str, span: int = 700) -> str:
     """The single line beginning at `anchor` — the clause, not the file."""
     i = text.find(anchor)
@@ -325,6 +339,14 @@ def main() -> int:
         ("the batch carries the check to merge time rather than claiming to hold it",
          "merges nothing, so it cannot hold that check at merge time" in flat(du)
          and "name every open PR whose lockfile has gone stale" in flat(du)),
+        # The eval corpus is a restatement of the contract and is swept with it.
+        ("no eval reinstates the ownerless merge-time re-resolution",
+         "immediately before merg" not in evals("upgrade-major-dependency")),
+        ("the stale-base eval requires the handoff record and its expiry",
+         "resolved-against base commit in the PR body"
+         in evals("upgrade-major-dependency")),
+        ("the routine-bump eval counts the batched task",
+         "Four tasks" in evals("dependency-upgrade-orchestrator")),
         ("the PR-body record is stated where the report is written, not only where it is produced",
          "the base commit the lockfile was resolved against" in flat(clause(ud, "State what changed", 2000))),
         ("close-out reports per-PR lockfile staleness to the merger",
