@@ -383,10 +383,22 @@ def main() -> int:
         # A supplied verdict is a snapshot. Most of it cannot go stale; the
         # work-in-flight item can, and bounded concurrency is what makes the
         # gap long enough to matter.
-        ("the worker splits the verdict by what can change, not by item",
-         "Split the verdict by whether a fact can change" in flat(ud)
+        ("reuse is conditioned on the measured thing not having moved",
+         "only while the thing it measured has not moved" in flat(ud)
          and "even when a caller supplied a viability verdict clearing it"
          in flat(clause(ud, "- **Work already in flight.**", 2000))),
+        # An advanced bot PR can move the target, which invalidates exactly the
+        # three findings a verdict is most trusted for.
+        ("a moved target re-runs the target-dependent gate items",
+         "Compare the current target against the triaged one first" in flat(ud)
+         and "only while the target version is the one it measured"
+         in flat(near(ud, "## Viability gate", 400))),
+        # The cherry-pick is the two-branch mechanism, not the rule; with one
+        # branch the test commit is already an ancestor.
+        ("the phase states the ordering as the invariant, not the cherry-pick",
+         "What is invariant is the ordering, not the mechanism" in flat(ud)
+         and "the bump goes on top instead, and no second worktree is cut"
+         in flat(ud)),
         # A PR's URL is stable and everything else about it is not. The
         # in-flight search cannot cover this: it sees open work, and the
         # dangerous case is the adopted PR having merged.

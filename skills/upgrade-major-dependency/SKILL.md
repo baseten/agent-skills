@@ -22,16 +22,19 @@ Work in a dedicated worktree, never the main checkout. Two cases, and they diffe
 
 **Where a caller supplied a triage, the gate below reuses the facts that cannot have changed since — the verdict's licence, cooldown and peer findings, the coupled set, and an adopted PR's URL — instead of re-deriving them.** A caller that triaged the whole set knows things this task's scope cannot see, and re-deriving from inside it is how a cleared candidate stops on its own siblings. **Reuse stops at those facts**, never at the item they arrived in: the two that expire are refreshed below whatever the verdict said. Re-derive anything the verdict does not cover, and report a disagreement rather than silently taking either answer.
 
-**Split the verdict by whether a fact can change, not by which item it belongs to.** A licence, a publication date, a peer's published ranges and the coupled set are as true when this task starts as when triage cleared them; take those as given. Two things are not, because a bounded-concurrency dispatch can start a worker hours after its verdict was written:
+**Reuse a supplied finding only while the thing it measured has not moved.** A bounded-concurrency dispatch can start a worker hours after its verdict was written, so sort the verdict by what each finding is *about*, not by the item it arrived in:
 
-- **Work already in flight** — long enough for a colleague to push a branch. Re-run that search immediately before writing anything, whatever the verdict said. The reason it was ever read from the verdict has since gone: the gate now distinguishes an automated bump from somebody else's attempt, so re-running it cannot reject the adopted PR the verdict named.
-- **An adopted PR's state and head.** Its **URL is identity and does not change; nothing else about it is given.** In the same gap it can be merged, closed, superseded, or advanced past the head the verdict named — and the in-flight search will not surface a merged or closed one, because it searches open work. So read the PR itself before branching from it. Merged or closed: the upgrade may already be done or already declined, so verify against the installed version and report rather than branch and duplicate it. Advanced: branch from its current head. Superseded: adopt the successor on the same terms.
+- **Findings about the target version** — licence, install cooldown, peer caps. Reusable only while the target is the one triage measured. **Compare the current target against the triaged one first**, because an adopted PR that advanced may have moved it: a bot updating its own PR to a newer release is the ordinary way a licence change, a release published inside the cooldown window, or a fresh peer cap appears *after* triage cleared all three. Where the target moved, re-run those three against the new target before anything else, and treat the verdict as evidence about a version you are no longer installing.
+- **Findings about the set** — the coupled set. Reusable: it is a property of which packages must move together, not of which version they move to.
+- **Facts that expire regardless** — two, and neither is ever taken from the verdict:
+  - **Work already in flight**, because a colleague can push a branch in the gap. Re-run that search immediately before writing anything. The reason it was ever read from the verdict has since gone: the gate now distinguishes an automated bump from somebody else's attempt, so re-running it cannot reject the adopted PR the verdict named.
+  - **An adopted PR's state and head.** Its **URL is identity and does not change; nothing else about it is given.** In the same gap it can be merged, closed, superseded, or advanced — and the in-flight search will not surface a merged or closed one, because it searches open work. So read the PR itself before branching from it. Merged or closed: the upgrade may already be done or already declined, so verify against the installed version and report rather than branch and duplicate it. Advanced: check whether the target moved with it (above), then branch from its current head. Superseded: adopt the successor on the same terms.
 
 The phase order is load-bearing. Research precedes audit, audit precedes tests, tests precede the bump. Bumping first and reasoning backwards is how a silent behaviour change ships.
 
 ## Viability gate
 
-Run before any other work; each item independently ends the task.
+Run before any other work; each item independently ends the task. A supplied verdict stands in for the first three items **only while the target version is the one it measured** (see Task); the fourth is re-run always.
 
 - **Licence.** Compare the new version's licence against the repository's accepted set. A permissive-to-copyleft change is an ownership decision, not an engineering one.
 - **Install cooldown.** Where the package manager enforces a minimum release age, a version published inside that window is uninstallable. Never add a per-package exclusion to defeat a supply-chain control for a routine bump.
@@ -65,13 +68,18 @@ Also establish: version-pinned patches against this package (they will fail to a
 Write tests against the **current** version, prove them green there, commit them alone, then apply that commit **unmodified** to the upgrade branch and run it.
 
 ```
-baseline worktree at the pre-upgrade commit   # NOT an adopted bump PR's head
-write tests → prove green → commit (tests only)
-cherry-pick that commit onto the upgrade branch
-run untouched
+adopted PR        baseline = that PR's merge base, in its own worktree
+                  write tests → prove green → commit (tests only)
+                  cherry-pick that commit onto the PR's head → run untouched
+
+no adopted PR     the upgrade branch is already the baseline — one worktree
+                  write tests → prove green → commit (tests only)
+                  apply the bump on top → run that same commit untouched
 ```
 
-Where practical, reset the baseline worktree to the exact parent of the upgrade commit so the sole variable between runs is the upgrade.
+**What is invariant is the ordering, not the mechanism.** The tests are proven green on a tree that does not carry the bump and then run unmodified on one that does; whether that takes a cherry-pick depends only on how many branches are involved. With no adopted PR there is one branch, the test commit is already its ancestor, and cherry-picking it is at best a no-op — so the bump goes on top instead, and no second worktree is cut.
+
+Where the adopted case leaves a choice, reset the baseline worktree to the exact parent of the upgrade commit so the sole variable between runs is the upgrade.
 
 **An adopted bump PR's head is never the baseline.** It already carries the bump, so tests written and proven green there are post-migration tests wearing this phase's name — the precise inversion the phase order exists to prevent, and it arrives looking like ordinary compliance. Take the baseline from that PR's merge base and cherry-pick forward onto its head.
 

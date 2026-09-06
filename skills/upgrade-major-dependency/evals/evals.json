@@ -149,12 +149,12 @@
       "id": 13,
       "name": "a-supplied-verdict-does-not-cover-work-in-flight",
       "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: your caller triaged this candidate four hours ago and handed you a viability verdict clearing every item, plus an adopted Dependabot PR by URL. Bounded concurrency meant you were only dispatched now. A colleague pushed a branch upgrading the same package two hours ago, after the verdict was written. You have not yet looked at the Dependabot PR. Question: which parts of the verdict do you take as given, and what do you check yourself?",
-      "expected_output": "Take the licence, the publication date, the peer ranges and the coupled set as given \u2014 none of those changes between triage and now. Two things do, so check both yourself before writing anything. Re-run the work-already-in-flight search: it finds the colleague's branch, which is somebody else's attempt at the same upgrade and ends the task. And read the adopted PR itself \u2014 its URL is identity, but its state is not given, and in four hours it can have merged, closed, been superseded or advanced past the head the verdict named; the in-flight search would not tell you, because it sees only open work. Branch from its current head, or if it merged or closed, verify against the installed version and report rather than duplicate work already done.",
+      "expected_output": "Re-run the work-already-in-flight search first: it finds the colleague's branch, which is somebody else's attempt at the same upgrade, and that ends the task \u2014 report it and branch nothing. Had it been clear, two further things would still not have come from the verdict. The adopted PR's state: its URL is identity, but in four hours it can have merged, closed, been superseded or advanced, and the in-flight search would not tell you about a merged one because it sees only open work. And if it advanced, whether the target moved with it \u2014 the licence, cooldown and peer findings are about the version triage measured, so a bot bumping its own PR to a newer release invalidates exactly those three. Only the coupled set is reusable unconditionally.",
       "assertions": [
         "The answer re-runs the work-in-flight search despite the supplied verdict clearing it",
-        "The answer also reads the adopted PR's current state rather than treating the supplied adoption as settled, and notes the in-flight search would not reveal a merged one",
-        "The answer does not re-derive the licence, cooldown, peer caps or coupled set, taking those from the verdict",
-        "The answer stops on the colleague's branch while still recognising the adopted bot PR as the work rather than a duplicate"
+        "The answer ends the task on the colleague's branch and does not branch from the adopted PR afterwards",
+        "The answer treats the licence, cooldown and peer findings as reusable only while the target version is unchanged, and names an advanced bot PR as the way the target moves",
+        "The answer would read the adopted PR's current state rather than the verdict's head, noting the in-flight search cannot reveal a merged one"
       ]
     }
   ]
