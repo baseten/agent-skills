@@ -401,8 +401,19 @@ def main() -> int:
         # seven; the sites asserting it outlived it by three rounds.
         ("dispatch no longer justifies the adopted PR by a wrong stop",
          "supplied as identity rather than to prevent a wrong stop" in flat(du)),
-        ("upgrade-major-dependency reads a supplied verdict instead of re-deriving",
-         "instead of re-deriving that item" in flat(ud)),
+        # Keyed on what the rule turns on — reuse scoped to facts, not items —
+        # because the item-level phrasing this replaced was itself required by
+        # an assertion, which is how a contradiction survived a round.
+        ("upgrade-major-dependency scopes reuse to facts that cannot have changed",
+         "reuses the facts that cannot have changed since" in flat(ud)
+         and "Reuse stops at those facts**, never at the item they arrived in"
+         in flat(ud)),
+        ("the non-adopted branch is still eligible as the baseline",
+         "it is the baseline, and stays one until the bump is applied to it"
+         in flat(ud)),
+        ("a supplied adoption settles identity, not state",
+         "**identity** is settled and its state is not"
+         in flat(clause(ud, "- **Work already in flight.**", 3000))),
         ("its in-flight item exempts an automated bump PR at the item itself",
          "is not that" in flat(clause(ud, "- **Work already in flight.**", 2000))),
         ("its peer-cap item resolves caps against the group's targets",

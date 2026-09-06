@@ -94,11 +94,11 @@
       "id": 8,
       "name": "an-adopted-bump-pr-is-not-work-in-flight",
       "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: your caller triaged the batch and handed you this package with a viability verdict already cleared and an adopted Dependabot PR by URL. Running the viability gate yourself, the in-flight search returns exactly that PR. Question: do you stop?",
-      "expected_output": "No. An automated bump PR for the same package is the work, not a duplicate of it: adopt it \u2014 branch from its head, or supersede it and close it with a reference \u2014 and treat its diff as an input. The in-flight item stops the task on someone else's open work, which this is not. Where the caller supplied a triage the gate reads it rather than re-deriving that item.",
+      "expected_output": "No. An automated bump PR for the same package is the work, not a duplicate of it: adopt it \u2014 branch from its head, or supersede it and close it with a reference \u2014 and treat its diff as an input. The in-flight item stops the task on somebody else's attempt at the same upgrade, which this is not. The caller's triage settles that PR's identity, not its state: read the PR before branching from it, since it may have merged, closed, been superseded or advanced since the verdict was written.",
       "assertions": [
         "The answer does not stop or report the task blocked on the bump PR",
         "The answer continues on that PR \u2014 branching from its head or superseding and closing it \u2014 rather than opening a competing attempt",
-        "The answer distinguishes an automated bump PR from a colleague's or another agent's duplicate open work"
+        "The answer treats the supplied adoption as settling the PR's identity only, and reads its current state before branching rather than trusting the verdict's head"
       ]
     },
     {
