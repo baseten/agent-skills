@@ -782,28 +782,43 @@ def main() -> int:
          ))),
         # The routine batch is the one task that runs no named contract, so
         # every obligation delegated by pointing at `upgrade-major-dependency`
-        # reaches it through nothing. Three did.
+        # reaches it through nothing.
+        # Two rounds got this assertion wrong in the same way, which is why it
+        # is written as it is now. Round 29 listed the three obligations it had
+        # found, so the fourth was pinned OUT by the fix for it. Round 30 added
+        # the fourth and stated the standard — every bullet needs its operand,
+        # its disposition and its exception — then applied it to one bullet and
+        # listed phrases again. A list cannot tell you it is short.
+        # So the first clause asserts the PROPERTY: every obligation on this
+        # route says what the agent does when its check comes back positive.
+        # The phrase list is a fixture behind it, and is labelled as one.
         ("the routine batch is given the obligations it cannot inherit",
          "The routine batch runs no named contract" in flat(du)
-         and all(phrase in flat(near(du, "**The routine batch runs no named contract", 2600))
+         and all(disposition in flat(near(du, "**The routine batch runs no named contract", 3600))
+                 for disposition in (
+                     # in-flight: what a hit removes, and what is not a hit
+                     "removes that candidate",
+                     "An automated bump PR for a batched package is not that",
+                     # adopted PR: one disposition per outcome it names
+                     "verify against the installed version and report it",
+                     "adopt the successor on the same terms",
+                     # lockfile: the value plus the two qualifiers
+                     "with both qualifiers that make it safe",
+                     # target: operand, disposition, and blast radius
+                     "what moves a target is an adopted PR's head advancing",
+                     "is not this agent's to re-triage or re-route",
+                     "the rest of the batch is not void with it"))
+         # Fixture: the obligations found so far, by their lead-ins.
+         and all(phrase in flat(near(du, "**The routine batch runs no named contract", 3600))
                  for phrase in ("Re-run the work-already-in-flight search",
                                 "Read each adopted bump PR's current state",
                                 "Re-resolve the lockfile against the base",
-                                # The fourth. The first version of this list
-                                # held three, and the eval graded "all three",
-                                # so the missing obligation was pinned out at
-                                # two tiers by the fix for it.
-                                "Re-check every candidate's target",
-                                # And the three things this route cannot read
-                                # from the file it never opens.
-                                "what moves a target is an adopted PR's head advancing",
-                                "is not this agent's to re-triage or re-route",
-                                "An automated bump PR for a batched package is not that"))),
+                                "Re-check every candidate's target"))),
         # SHAPE: an obligation on the report, stated only at the phase that
         # produces it, is dropped by an agent writing from *Report* — which
         # reads as an exhaustive list. Round 3 walked one cell (the base
-        # commit) and left an assertion for it. Round 29 walked three more and
-        # missed two; round 30 walked those and the dropped qualifiers. The
+        # commit) and left an assertion for it. Rounds 29 and 30 each walked
+        # more and each left the list reading closed; see NOTES. The
         # list is a fixture — it holds every obligation found so far and
         # cannot see the next one — so the rule that matters is the sentence
         # asserted below it, which states WHY the restatement is here.
@@ -820,17 +835,33 @@ def main() -> int:
                                 # The two qualifiers a bare restatement drops.
                                 "the re-resolution must be repeated if the base has moved since",
                                 "handoff result and never a merge-time one"))),
-        # Three contract sweeps on this PR have left the eval corpus behind,
-        # and an expected answer that teaches a deleted rule actively rewards
-        # reintroducing it. These are the formulations the contract removed;
-        # each entry is a construction that was actually found stale here.
-        ("no expected answer teaches a formulation the contract removed",
-         not any(phrase in eval_field(sk, name, "expected_output")
+        # Three contract sweeps on this PR left the eval corpus behind, and an
+        # expected answer that teaches a deleted rule actively rewards
+        # reintroducing it. These are the formulations the contract removed.
+        # Scoped to expected_output AND assertions, because the first version
+        # of this guard scanned only the first — and the defect it was written
+        # for lived in an assertion ("The answer states all three obligations"),
+        # so the guard was green over the exact thing it existed to catch.
+        # Mutation-proved before this line was changed. Prompts are excluded on
+        # purpose: quoting a wrong instruction so the model rejects it is the
+        # corpus convention, and banning it there would conflate use with
+        # mention.
+        ("no expected answer or assertion teaches a formulation the contract removed",
+         not any(phrase in text
                  for sk in ("upgrade-major-dependency", "dependency-upgrade-orchestrator")
                  for name in eval_names(sk)
+                 for text in ([eval_field(sk, name, "expected_output")]
+                              + eval_assertions(sk, name))
                  for phrase in ("and it is re-run over the tuple",
                                 "reports the difference and stops",
                                 "all three obligations"))),
+        # A count in an eval goes stale the round after an obligation is added,
+        # and grading a count rewards a brief that stops at that many. The
+        # brief scenario grades the obligations instead.
+        ("the routine-brief eval grades obligations rather than a count of them",
+         not any(re.search(r"all (three|four|five|six) obligations", a)
+                 for a in eval_assertions("dependency-upgrade-orchestrator",
+                                          "the-routine-batch-inherits-nothing-by-cross-reference"))),
         ("close-out carries the clearance report dispatch requires of it",
          "which routine candidates were cleared and on what evidence"
          in flat(near(du, "## Close out", 1200))),
@@ -840,7 +871,8 @@ def main() -> int:
          # *Task* produces it, *Report* writes it, the caller expects it.
          "**the incompatible tuple**" in flat(near(ud, "So re-read enough to make the report useful", 700))
          and "the incompatible tuple" in flat(near(ud, "A task ended by a moved target reports", 1200))
-         and "the incompatible tuple where a peer range is what moved" in flat(du)),
+         and "the incompatible tuple where a peer range is what moved"
+         in flat(near(du, "**Expect that stop on any moved target", 1400))),
         # A moved-target stop is not "proved unsafe", and the rule beside it
         # tells the worker to close the adopted PR — destroying the one thing
         # the move leaves standing.
@@ -855,10 +887,17 @@ def main() -> int:
         # Discovery text is a decision point too: it is what a caller reads
         # before dispatching, and it advertised a workflow the contract rejects.
         ("the orchestrator's description names the routine-bump path",
-         "plus one batched task for the routine bumps" in flat(du)),
+         # Scoped to the frontmatter it names. Whole-file, this passed with the
+         # clause moved into the body — where a caller choosing a skill never
+         # reads it, which is the entire point of the assertion.
+         "plus one batched task for the routine bumps"
+         in flat(du.split("---")[1] if du.count("---") > 1 else "")),
         ("the characterization baseline excludes an adopted PR's head",
-         "never the baseline" in flat(ud)
-         and "merge base" in near(ud, "## Characterization tests", 1800)),
+         # Both clauses scoped to the phase. "never the baseline" also appears
+         # in *Task*, so the whole-file version stayed green with the rule
+         # deleted from the section that performs it.
+         "never the baseline" in flat(near(ud, "## Characterization tests", 2200))
+         and "merge base" in near(ud, "## Characterization tests", 2200)),
     ]
 
     # Every write-absolute must name the second write kind, or it silently

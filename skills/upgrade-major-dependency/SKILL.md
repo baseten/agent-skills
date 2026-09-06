@@ -60,7 +60,7 @@ Read the changelog **and** the upgrade guide, and read **every version in the ra
 
 Supplied research is reusable on the same condition as the gate's findings and no other: it described one target, so if that package's target moved it describes a release you are not installing (see Task). **That case does not resume here.** A moved target ended the task at the gate, and the only reading still owed is the one the report needs: the range up to the new target, read for what it says about failure mode and **reported rather than acted on**. Extending the old notes to cover the new range is the continuation the stop exists to prevent — and it arrives looking like diligence.
 
-Verify against the **published artifact** rather than a rendered docs page where the two could diverge — changelog pages have been observed conflating an unrelated major's notes with the current one. For any load-bearing question ("is our patch still required?", "did this matcher's semantics move?"), read the installed source or diff two published versions directly. Diffing sources answers behavioural questions that prose about them cannot.
+Verify against the **published artifact** rather than a rendered docs page where the two could diverge — changelog pages have been observed conflating an unrelated major's notes with the current one. **Where the two do diverge, the artifact wins and the divergence is reported**, never silently resolved: a docs page contradicting the package is a finding about the package's own documentation, and the next reader of that page has no way to discover it. For any load-bearing question ("is our patch still required?", "did this matcher's semantics move?"), read the installed source or diff two published versions directly. Diffing sources answers behavioural questions that prose about them cannot.
 
 Record what applies, and separately **what was checked and cleared**. A reviewer cannot distinguish a thorough audit from an absent one without the second list.
 
@@ -142,7 +142,7 @@ State what changed, what was audited and cleared, every behavioural difference a
 - the measurement standing in for a rejected/accepted pair where the behaviour is not a constraint over an input (see Characterization tests);
 - for every applicable row of the silent-failure table, what the real evidence is and that the passing build is not it (see Silent failure modes);
 - where the in-flight search rather than the caller found the adopted bump PR, that it did (see Viability gate);
-- any **disagreement** between a supplied verdict and what this task re-derived, rather than silently taking either answer (see Task);
+- any **disagreement** between a supplied verdict and what this task re-derived, rather than silently taking either answer (see Task), and any divergence between a rendered docs page and the published artifact (see Research);
 - where an adopted PR turned out to be merged or closed, what the installed version actually shows (see Task) — that upgrade may already be done or already declined, and the finding is the whole result;
 - **any blocker that ended the task**, which is a reported result and not only the "proved unsafe" case below: a licence change, a cooldown window or an unliftable peer cap ends it without anything being unsafe (see Viability gate).
 
