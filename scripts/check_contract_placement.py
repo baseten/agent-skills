@@ -464,6 +464,18 @@ def main() -> int:
          in flat(near(ud, "## Viability gate", 600))),
         # Coupling is DERIVED from peer requirements at the targets, so a move
         # can change task membership — which the worker must not decide.
+        # NOTES records superseded rules on purpose, so the guard is not
+        # absence of the old wording but that every statement of it is MARKED
+        # superseded. Four rounds were spent on intermediate versions of one
+        # rule reading as live prose in a changelog-shaped note.
+        ("the worker's notes state the superseded rules as superseded",
+         "worth recording as **superseded**" in flat(notes("upgrade-major-dependency"))
+         and "nothing survives but identity" in flat(notes("upgrade-major-dependency"))),
+        ("no unmarked survival claim for the coupled set remains in the notes",
+         "the coupled set is about which packages move together and survives"
+         not in flat(notes("upgrade-major-dependency"))
+         and "cannot go stale — a licence, a publication date, a peer's published ranges, the coupled set"
+         not in flat(notes("upgrade-major-dependency"))),
         ("a recomputed coupled set stops the task rather than reshaping it",
          "that is not this task's decision to make" in flat(ud)
          and "report it and stop" in flat(ud)),
