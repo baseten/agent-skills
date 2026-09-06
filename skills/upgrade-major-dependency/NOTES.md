@@ -62,11 +62,25 @@ This is not hypothetical: a defect that blanked every data-driven view in one ap
 
 An upgrade that tightens a constraint fails loudly. An upgrade that loosens one produces a suite that stays green while the guarantee evaporates. Only the rejection case detects loosening, and it is the case a test author writing from the happy path will not think to add.
 
+Both assertion rules are written for a constraint over an input, and the [PR #72](https://github.com/baseten/agent-skills/pull/72) round found the domains where that has no referent — the non-validation rows of this contract's own *Silent failure modes* table. Layout, source-map alignment and bundle size have no case to reject and often nothing serialized to compare, so a worker applying the two rules literally either writes an assertion that measures nothing or decides the phase is inapplicable and falls back on the green build, which those rows exist to say is not the evidence.
+
+The fix deliberately is not "apply these where they apply". An escape hatch phrased that way is taken by the same author who would have written happy-path-only assertions, and for the same reason. What replaces the rules is stated as an obligation of its own — capture the domain's measurement on the current version, compare it after — so the phase still produces a before/after comparison in every domain, and the only thing that varies is what is measured. The tolerance is fixed before the run for the same reason the contract forbids editing a failing test: a threshold widened to fit the result is that rule broken by another name.
+
 ## Why proxies for gates are forbidden
 
 Substituting a cheap approximation for an available gate produced two false passes on a run where the real command was a single invocation away. The approximation — searching a lockfile for a version string — matched an unrelated occurrence in a file of tens of thousands of lines and reported both branches correct. CI then failed on the real check twice.
 
 The generalisation is that a proxy's failure mode is a *false pass*, which is the most expensive kind, and its saving is usually smaller than one CI round trip.
+
+## Why the lockfile is re-resolved against the base, not against the base as it was
+
+A later incident, in a repository running several upgrades at once. One upgrade's branch was cut before a transitive package had been unified to a single version across the lockfile. The branch was not wrong about anything it changed; it simply resolved the *new* entries it introduced — a peer snapshot the upgrade added — against the tree as it stood when the branch was cut, pinning that transitive to the variant the base had since removed. It merged, and the stale resolution came back with it.
+
+What makes this worth a rule rather than a caution is that every signal a worker is taught to trust stayed green. The install succeeded, the characterization tests passed, CI was clean, and the merge had no conflict — a conflict is what would have surfaced it, and there was none, because the two changes touched different entries of the same file. The evidence the rule asks for therefore has to be produced deliberately: re-resolve with the package manager against the base as it is at merge time, and diff for entries the branch introduces at versions the base does not carry.
+
+It also compounds with two rules already here. "Branch from the latest `origin/<default>`" is a statement about the moment of cutting and says nothing about the hours after it, which is exactly the window this defect lives in. And an adopted bump PR is stale by construction — the queue proposed it at some earlier time — so adoption imports this failure mode rather than merely being exposed to it.
+
+Hand-resolving is excluded for the same reason a grep on the lockfile is: it is a proxy for a resolution the package manager is the only authority on, and its failure mode is a false pass.
 
 ## Why absence of output is called out explicitly
 

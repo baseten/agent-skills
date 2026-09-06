@@ -21,6 +21,8 @@ Derive the set where none is supplied — the package manager's outdated report,
 
 Bucket by distance behind: two or more majors (usually its own project, not a batch item), one major (the body of the work), minor and patch (cheap, but not assumed safe — a minor is a common source of breaking changes).
 
+That last bucket is not assumed safe and is not assumed unsafe either; **triage decides which, and the answer decides how the candidate is dispatched** (see Dispatch). A minor or patch its research and usage audit clear — no breaking change in any version in the range, no affected call site — is a routine bump. One triage did not clear is a breaking change wearing a small version number, and is dispatched exactly like a major.
+
 Order production dependencies before development ones.
 
 ## Triage each candidate
@@ -47,7 +49,9 @@ Where the estimate is uncertain, over-assign. Over-assignment costs budget; unde
 
 ## Dispatch
 
-One subagent per upgrade or coupled group, each in **its own worktree**, each invoking `upgrade-major-dependency`.
+One subagent per upgrade or coupled group, each in **its own worktree**, each invoking `upgrade-major-dependency` — which covers a major, and any lesser bump whose triage did **not** clear it of breaking changes. Send everything in that scope through it, whatever the version number says.
+
+**Routine bumps do not each get one.** A minor or patch triage cleared (see Enumerate) has nothing for the phase order to do: there is no migration to research and no behaviour to characterize, and dispatching one agent apiece spends a worktree and a test suite per candidate to prove that. Group them into a single task with one PR, and say in the report which candidates were cleared and on what evidence — a cleared candidate is a triage conclusion like any other, and the next run reads it as one.
 
 Supply each agent with the completed triage — **the viability verdict and the coupled set**, breaking changes, usage surface — rather than having it re-derive them. Supply its worktree path, its exact base branch, and any adopted bump PR by URL.
 
@@ -59,11 +63,13 @@ Constrain each agent explicitly:
 - **No full-suite runs** where the suite is sharded across CI runners. Scoped runs plus CI.
 - **Stopping and reporting outranks producing a PR.** State that a documented dead end is an acceptable and valuable outcome.
 
+**A batch shares one lockfile, and staleness compounds across it.** Every agent branches from the same base and resolves the lockfile against it independently, so each merge moves that base under every PR still open. Nothing announces the consequence: a branch cut before another's merge resolves its *new* entries against the tree as it was, and can pin a transitive to a version the base no longer carries. Require each agent to bring the base in and **re-resolve** immediately before its PR merges — not at the moment it was dispatched, which is the reading that produced the defect — and stagger merges for the same reason concurrency is bounded, so a re-resolving agent is not racing the next merge.
+
 **Bound concurrency.** Agents each running a test suite are not free; a batch dispatched at full width exhausted one machine's memory and killed a quarter of the run. Begin narrow and widen as agents complete. Where CI builds container images, stagger pushes — simultaneous multi-architecture builds exhaust shared infrastructure the run does not own.
 
 ## Supervise
 
-Gate "green" on the repository's actual required check concluding successfully. A rollup that is empty or barely populated means checks have not registered; reporting it as green is a false pass.
+Gate "green" on **every** check the repository actually requires having concluded successfully **on the current head** — enumerate what is required rather than gating on whichever check you happened to read. Two false passes share one root here, and closing only the second leaves the first: a rollup that is empty or barely populated means checks have not registered, and where several checks are required, one concluding successfully while another is still pending or failing satisfies any singular reading of this gate. Neither is a pass.
 
 Emit only state **changes**, and only actionable ones. A value that varies for reasons unrelated to state — a count, a timestamp — re-emits every unchanged entry on every tick.
 
@@ -73,7 +79,7 @@ Read a **changed** failure signature carefully. A signature that narrows after a
 
 ## Close out
 
-Per upgrade, a PR following the repository's conventions. Across the batch, report what landed, what was declined and why, and what remains blocked on a decision only a human can make.
+Per task, a PR following the repository's conventions — one per upgrade or coupled group, plus the one carrying the batched routine bumps (see Dispatch). Across the batch, report what landed, what was declined and why, and what remains blocked on a decision only a human can make.
 
 Record declined upgrades where decisions are tracked rather than in a closed PR, since the next attempt begins from the same outdated list.
 

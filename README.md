@@ -26,7 +26,7 @@ The `SKILL.md` files are dense and not easily human readable. That is deliberate
 
 ## Dependency upgrade skills
 
-- `upgrade-major-dependency` — upgrades one package, or one coupled group of them, across a major version: viability gate, research verified against the published artifact, usage audit, then characterization tests written and proven green on the current version and re-run unmodified after the bump.
+- `upgrade-major-dependency` — upgrades one package, or one coupled group of them, across any version whose breaking-change risk has not been ruled out: viability gate, research verified against the published artifact, usage audit, then characterization tests written and proven green on the current version and re-run unmodified after the bump.
 - `dependency-upgrade-orchestrator` — triages a batch of upgrades, establishes coupling and viability, selects a model per upgrade by failure mode, dispatches bounded-concurrency subagents that each run `upgrade-major-dependency`, and supervises CI while separating infrastructure failure from real failure.
 
 ## Writing skills

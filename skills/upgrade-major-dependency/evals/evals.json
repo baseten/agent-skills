@@ -122,6 +122,28 @@
         "The answer takes the baseline from that PR's merge base / pre-upgrade commit and cherry-picks forward onto the head",
         "The answer identifies tests proven green on the bumped branch as post-migration tests that pin whatever the migration produced"
       ]
+    },
+    {
+      "id": 11,
+      "name": "a-non-constraint-domain-still-gets-a-baseline",
+      "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the upgrade is a build-tool major whose risk is source-map alignment and bundle size. There is no input to reject, no input to accept, and no serialized value to compare \u2014 the two assertion rules have nothing to bind to. A colleague suggests skipping the characterization phase as inapplicable and relying on the green build. Question: what do you do?",
+      "expected_output": "Run the phase with the domain's own measurement in place of the two rules: capture a lookup of a known source position through the map, and a byte count of the bundle, on the current version, then compare after the upgrade. The substitute is mandatory, not an exemption \u2014 skipping is exactly the silent-failure case the table names, where a green build is not the evidence. Fix any tolerance before the run and never widen it to fit the result, and name the measurement in the report.",
+      "assertions": [
+        "The answer does not skip the characterization phase or accept the green build as the evidence",
+        "The answer substitutes a measured baseline captured on the current version and compared after, rather than inventing a rejected/accepted pair",
+        "The answer fixes any tolerance in advance and refuses to widen it to accommodate the observed difference"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "a-stale-base-reintroduces-a-removed-resolution",
+      "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you cut your branch from the default branch three days ago. Since then another PR unified a transitive package to one version across the lockfile. Your upgrade added a new peer snapshot, which your lockfile pins to the older variant of that transitive. Right now: the install succeeds, your characterization tests pass, CI is green, and the PR reports no merge conflict. Question: is this ready to merge?",
+      "expected_output": "No. Every green signal here is consistent with the defect: two changes touching different entries of the same lockfile do not conflict, so nothing surfaces it. Bring the base in and re-resolve the lockfile with the package manager \u2014 not by hand, and not by settling a conflict textually \u2014 then diff against the base and account for every entry your branch introduces at a version the base does not carry. Re-resolve immediately before merging, since 'branched from the latest' describes only the moment the branch was cut.",
+      "assertions": [
+        "The answer does not treat green CI, a passing install and the absence of a merge conflict as sufficient",
+        "The answer brings the base in and re-resolves with the package manager rather than editing the lockfile or resolving it textually",
+        "The answer diffs the lockfile against the base for entries introduced at versions the base no longer carries"
+      ]
     }
   ]
 }

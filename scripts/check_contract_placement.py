@@ -284,6 +284,39 @@ def main() -> int:
         # Adoption makes the bump PR's head the upgrade branch, so the obvious
         # place to write characterization tests is already post-migration. The
         # phase performs every visible step and its claim is gone.
+        # Round two. The green gate must be plural at BOTH decision points:
+        # a singular reading is green the moment any one required check
+        # concludes, with the rest still pending.
+        ("the orchestrator's green gate is over every required check",
+         "every** check the repository actually requires" in flat(du)
+         and "on the current head" in flat(clause(du, 'Gate "green"', 2000))),
+        ("the worker's rollup rule carries the same plural gate",
+         "every** check the repository requires" in flat(ud)),
+        # The two assertion rules bind only to a constraint over an input. The
+        # substitute for the other domains is an obligation, not an exemption:
+        # phrased as "where applicable" it is taken by the same author who
+        # would have written happy-path-only assertions.
+        ("the non-constraint domains get a mandatory substitute, not an exemption",
+         "mandatory, not an exemption" in flat(ud)),
+        ("the substitute names a captured measurement compared after",
+         "capture that domain's own measurement on the current version" in flat(ud)),
+        # Dispatch scope must match the worker's own scope statement, and both
+        # must key on unruled-out risk rather than on the version distance.
+        ("dispatch scopes the worker by unruled-out risk, not version distance",
+         "whose triage did **not** clear it of breaking changes" in flat(du)),
+        ("the worker states the same scope test itself",
+         "unruled-out risk of a breaking change does" in flat(ud)),
+        ("cleared routine bumps are batched rather than dispatched each",
+         "Routine bumps do not each get one" in flat(du)),
+        # A stale base is invisible to every green signal: two upgrades editing
+        # different lockfile entries do not conflict, so the merge is clean and
+        # the merged lockfile carries a resolution the base had removed.
+        ("the worker re-resolves the lockfile at merge time, not at branch time",
+         "immediately before merging" in flat(ud)
+         and "never by hand" in flat(ud)),
+        ("the batch states the shared-lockfile amplifier at the concurrency site",
+         "staleness compounds across it" in flat(du)
+         and "not at the moment it was dispatched" in flat(du)),
         ("the characterization baseline excludes an adopted PR's head",
          "never the baseline" in flat(ud)
          and "merge base" in near(ud, "## Characterization tests", 1800)),

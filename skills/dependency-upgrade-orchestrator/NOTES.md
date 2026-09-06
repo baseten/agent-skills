@@ -25,6 +25,8 @@ That is one cell of a larger table, so the whole axis was walked rather than the
 
 Two defects, one column fix: dispatch forwards the viability verdict, the coupled set and any adopted PR, and the agent's gate reads a supplied verdict instead of re-deriving that item. The two safe cells stay forwarded for cost alone, and the contract now says which reason applies to which — an unlabelled list is what let the load-bearing entries drop out of it.
 
+**A new triage output owes this table a row before it ships**, answering the same question — what supplies this at the agent's gate, and what does the agent conclude without it. That is what makes the table a guard rather than a record of one fix.
+
 This file's own note on triage said all along that dispatch depends on *three* outputs including viability. The contract's supply list named breaking changes, usage surface and coupling. The disagreement sat in the repository for a full round; it is the ordinary way a rule and its restatement drift, and it is why the fix here is the table rather than the line.
 
 The adoption rule itself is not merely an exemption. A bump PR is a machine's opening move on the work the run was sent to do, and it carries a lockfile resolution and a CI history worth having; superseding it silently also leaves the queue re-proposing the same bump forever. So the contract adopts or repairs it and says which, and reserves the duplicate finding for work the run did not derive its candidate from — which is the case the item was written for.
@@ -57,11 +59,23 @@ Dispatched at full width, a thirteen-agent batch drove one machine to a load ave
 
 The same reasoning extends to shared infrastructure: simultaneous container-image builds triggered by a batch of pushes exhausted a build service used by the whole repository, degrading unrelated engineers' work. Staggering costs wall-clock time that is cheaper than the failure.
 
+Concurrency has a second cost that is not about resources at all, found later and from a merged defect rather than a failed run: a batch shares one lockfile. Each agent resolves it against the base as the agent found it, and each merge moves that base under every PR still open — so the first merge is safe and none of the ones after it are, without anything failing to say so. The branch installs, its tests pass, CI is green and the merge is conflict-free, because two upgrades editing different entries of the same lockfile do not conflict; what merges is a resolution the base had already removed.
+
+The lever is the same one, which is why the rule sits beside it: re-resolve immediately before merging rather than at dispatch, and stagger the merges so a re-resolving agent is not racing the next one. `upgrade-major-dependency`, *Migration and verification*, states the per-agent half — this is the batch-level reason the per-agent rule cannot be left to each agent's own sense of timing.
+
 ## Why "green" gates on the required check specifically
 
 A check rollup is populated asynchronously. Immediately after a push — particularly one that cancels an in-flight run — it is briefly empty, and an empty rollup satisfies any predicate of the form "no failures and nothing pending".
 
 That predicate reported a false green on the single most consequential result of the run, on the one PR whose outstanding question was whether its end-to-end suite passed. Gating on the repository's required check having *concluded successfully* is immune, because a check that has not registered has not concluded.
+
+Reviewed again on [PR #72](https://github.com/baseten/agent-skills/pull/72): "the required check", singular, closes that hole and leaves an adjacent one open. A repository requiring three checks satisfies a singular reading the moment any one of them concludes successfully, so a PR reports green with two required results still pending — the same false pass reached from the other side, and it does not even need a race to happen. The rule is therefore stated over *every* required check on the current head, with enumerating what the repository actually requires as part of it, because gating on whichever check the run happened to read is how the singular reading gets rebuilt by accident.
+
+## Why a cleared minor is dispatched differently from an uncleared one
+
+From round two of the same PR, and worth recording as a hit for the escalation signal in `docs/review-fix-workflow.md`, *Model choice*: the finding landed on *Dispatch*, a locus round one had just rewritten. The round-one fix forwarded triage correctly and never asked the adjacent question — whether the agent it forwards to claims to cover what is being sent. Shallow at that locus, exactly as the signal predicts. *Enumerate* keeps minors and patches on the stated grounds that a minor is a common source of breaking changes, and *Dispatch* sent every surviving candidate through `upgrade-major-dependency` — whose own scope is a major, or a minor that ships breaking changes. A routine patch therefore went through a workflow that did not claim to cover it, and the two documents disagreed about what the worker was for.
+
+Filtering minors out of the batch would have thrown away the reason they are in it. Broadening the worker to every bump would have sent audited-clean patches through a viability gate, a research pass and a characterization phase that have nothing to act on. The resolution is that neither the version distance nor the bucket decides: **unruled-out risk does**, and triage is what rules it out. A cleared candidate has already had the phases performed on it, at the batch level, by the layer that can see the whole set; an uncleared one has not, whatever its version number says. So the cleared ones batch into one routine-bump task and the rest dispatch like majors — and the clearance is reported with its evidence, because it is a triage conclusion and the next run reads it as one.
 
 ## Why supervisors emit only state changes, and only actionable ones
 

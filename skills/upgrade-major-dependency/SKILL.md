@@ -1,6 +1,6 @@
 ---
 name: upgrade-major-dependency
-description: Upgrade one dependency, or one coupled group of them, across a major version — establish viability, research real breaking changes against the published package, audit usage, pin current behaviour with characterization tests written and proven green before the upgrade, migrate, then classify every behavioural difference. Use for any semver-major bump, and for minor bumps of packages that ship breaking changes regardless.
+description: Upgrade one dependency, or one coupled group of them, across a version whose breaking-change risk has not been ruled out — establish viability, research real breaking changes against the published package, audit usage, pin current behaviour with characterization tests written and proven green before the upgrade, migrate, then classify every behavioural difference. Use for any semver-major bump, and for any minor or patch bump not already cleared of breaking changes by an audit; a small version number is not evidence of a small change.
 ---
 
 # Upgrade a Major Dependency
@@ -12,6 +12,8 @@ Upgrade: $ARGUMENTS
 This file is the contract; the reasoning behind its rules lives in `NOTES.md` beside it, keyed by section. NOTES explains; it never overrides.
 
 `$ARGUMENTS` is one package, or one **coupled group** whose members cannot move independently — a framework with its official companions, a plugin family sharing a version line. A group is one task, one branch and one PR throughout, and every rule below reads over all of its packages.
+
+The version distance does not decide whether this skill applies; **unruled-out risk of a breaking change does**. A major always qualifies. So does any minor or patch a triage has not cleared — the phase order below is what clears it, and a bump nobody has audited is exactly the case where the number is the least informative thing about it. A lesser bump already cleared by a caller's research and usage audit is a routine bump and does not need this skill at all.
 
 Work in a dedicated worktree, never the main checkout. The **upgrade branch** is an adopted bump PR's head where one is supplied, otherwise a branch from the latest `origin/<default>` unless a base is supplied — but that head already carries the bump, so it is never the baseline (see Characterization tests).
 
@@ -70,6 +72,7 @@ Rules:
 - **Exercise the real integration, not a mock.** A hand-built stub satisfies the old and new shape simultaneously, so it cannot detect a shape change. Drive the real component, provider, or form.
 - **Assert both directions** — a case that must be rejected and one that must be accepted. Happy-path-only assertions prove nothing about a constraint loosening.
 - **Assert exact output.** Equality on the serialized value, not containment.
+- **Where the behaviour is not a constraint over an input, both rules above have no referent — and the substitute is mandatory, not an exemption.** Layout, source-map alignment, bundle size and the rest of the Silent failure modes table's non-validation rows have no case to reject and often no serialized value, so a worker applying the two rules literally either invents an irrelevant assertion or quietly skips the phase. Instead, capture that domain's own measurement on the current version and compare it after: a visual-regression baseline, a lookup of a known source position through the map, a byte count. Fix any tolerance **before** the run — a threshold widened to accommodate what the run produced is the edited-test rule broken by another name — and name the measurement in the report, because it is the evidence the passing build is not.
 - **Never edit a test to make it pass.** Each difference is a regression — report prominently, it is the highest-value output of the phase — or an intended change, updated with a comment recording why. Classify honestly; never relabel a regression as intended.
 
 A characterization failure after the upgrade is the mechanism working. It converts a silent change into a reviewable decision.
@@ -82,7 +85,9 @@ Run **scoped** tests locally. Where a suite is sharded across CI runners it does
 
 **Verify with the gate itself, never a proxy.** Where the gate is a command available locally, run that command. Approximating a lockfile check by searching the lockfile for a version string returns false passes. The real check is usually cheaper than the CI round trip it replaces.
 
-**Absence of output is not success.** A filter matching only the success signal is silent through a crash. An empty or barely-populated check rollup means checks have not registered, not that they passed.
+**Re-resolve the lockfile against the base you will actually merge into, immediately before merging.** A branch cut before a lockfile change landed on the base — another upgrade's merge, a dedupe, a version unified across the tree — resolves the entries *it* adds against the tree as it was, and can pin a transitive to a version the base no longer carries. Every signal stays green: the branch installs, the characterization tests pass, CI is clean and the merge has no conflict, and the merged lockfile carries a resolution the base had removed. So bring the base in and re-resolve with the package manager — never by hand, and never by settling a lockfile conflict textually — then diff the lockfile against the base and account for **every** entry the branch introduces at a version the base does not carry. An adopted bump PR is stale by construction: it was cut whenever the queue proposed it.
+
+**Absence of output is not success.** A filter matching only the success signal is silent through a crash. An empty or barely-populated check rollup means checks have not registered, not that they passed — and one required check concluding successfully while another is pending or failing is the same false pass reached from the other side. Green is **every** check the repository requires having concluded successfully on the current head.
 
 ## Silent failure modes
 

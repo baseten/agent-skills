@@ -28,11 +28,11 @@
       "id": 2,
       "name": "empty-rollup-is-not-green",
       "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you push a fix and check the PR moments later. The check rollup contains no failing checks and nothing pending. Question: do you report the PR as green?",
-      "expected_output": "No. An empty or barely-populated rollup means checks have not registered yet \u2014 commonly right after a push cancels an in-flight run. Green requires the repository's required check to have concluded successfully.",
+      "expected_output": "No. An empty or barely-populated rollup means checks have not registered yet \u2014 commonly right after a push cancels an in-flight run. Green requires every check the repository requires to have concluded successfully on the current head, which an unpopulated rollup cannot show.",
       "assertions": [
         "The answer refuses to call it green",
         "The answer identifies the unpopulated rollup as the cause rather than a genuine pass",
-        "The answer gates on the required check having concluded successfully"
+        "The answer gates on every required check having concluded successfully, not on the absence of a failure"
       ]
     },
     {
@@ -99,6 +99,28 @@
         "The answer adds the viability verdict, the coupled set and the adopted PR to the brief rather than accepting the shortened version",
         "The answer distinguishes those from breaking changes and usage surface by consequence \u2014 a wrong stop versus duplicated work \u2014 rather than treating all four as the same kind of saving",
         "The answer names the concrete re-derivation failures: the adopted PR read as in-flight work, and a peer cap lifted by a sibling in the same group"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "one-required-check-is-not-green",
+      "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the repository requires three checks on every PR \u2014 unit, lint and e2e. On your PR's current head the rollup is fully populated, nothing has failed, unit has concluded successfully, and lint and e2e are still running. A colleague points out the required check concluded successfully. Question: do you report the PR as green?",
+      "expected_output": "No. Green is every check the repository requires having concluded successfully on the current head, not one of them and not the absence of a failure. Two checks still running means two required results do not exist yet. The rollup being populated closes only the unregistered-checks false pass; this is the same false pass reached from the other side.",
+      "assertions": [
+        "The answer refuses to call it green while lint and e2e are still running",
+        "The answer gates on all three required checks rather than on the one that concluded",
+        "The answer does not treat a populated rollup with no failures as sufficient"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "a-cleared-patch-is-not-one-dispatch-each",
+      "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: triage is done. Two candidates are one major behind. Six are patch bumps whose research found no breaking change in any version in the range and whose usage audit found no affected call site. One more is a minor whose changelog describes a changed default that your audit could not rule out. Question: how many agents do you dispatch, and what does each get?",
+      "expected_output": "Three tasks. The two majors and the unruled-out minor each go through `upgrade-major-dependency` \u2014 that skill covers a major and any lesser bump triage did not clear, so the small version number is irrelevant. The six cleared patches are routine bumps with nothing for the phase order to do: group them into a single task with one PR rather than one agent apiece, and report which candidates were cleared and on what evidence.",
+      "assertions": [
+        "The answer dispatches the unruled-out minor through the full skill rather than treating it as routine because it is a minor",
+        "The answer groups the six cleared patches into one task instead of one agent each",
+        "The answer records which candidates were cleared and the evidence, rather than letting the clearance be implicit"
       ]
     }
   ]
