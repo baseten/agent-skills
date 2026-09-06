@@ -12,11 +12,20 @@ licence, cooldown and peer in one sentence.** Licence and cooldown are per
 package; the peer finding is a relation over the whole target tuple.
 
 Why the fixtures exist is the same lesson `test_rule_locality.py` records, and
-it recurred here: the detector shipped green over the construction it exists to
-reject. Its split treated `;` and `:` as sentence boundaries, so a run-on
-stating per-package peer reuse in one breath read as two compliant sentences —
-round 26 found the corpus guard green over it. A check that passes on the
-current tree is no evidence it would catch the defect.
+it recurred here twice. Round 26: the split treated `;` and `:` as sentence
+boundaries, so a run-on stating per-package peer reuse in one breath read as
+two compliant sentences. Round 27, on the narrowed split: an abbreviation did
+the same job, because `e.g. ` is a terminator with no sentence after it. Both
+times the corpus guard was green over the construction it exists to reject,
+which is the whole argument for this file — a check that passes on the current
+tree is no evidence it would catch the defect.
+
+The fix for the second was to require a sentence *start* rather than to
+enumerate abbreviations, so BAD carries a version number alongside `e.g.` and
+`i.e.`: the class is "a terminator with nothing starting after it", and an
+abbreviation list would have missed the version. GOOD carries the mirror cases
+— a version number that really is followed by a sentence, and a sentence
+starting with markup — because the boundary test has to admit those.
 
 So the split is asserted here rather than asserted by whoever wrote the regex.
 BAD holds every construction that must fire, each labelled with the round that
@@ -69,6 +78,23 @@ BAD: list[tuple[str, str]] = [
         "r26 wrapped across lines",
         "Reuse licence and cooldown per package,\nand reuse peer on the same terms.",
     ),
+    (
+        "r27 abbreviation before the peer clause",
+        "Reuse licence and cooldown for e.g. unchanged targets, and reuse peer "
+        "under the same rule.",
+    ),
+    (
+        "r27 the other abbreviation",
+        "Reuse licence and cooldown per package, i.e. where the target is "
+        "unchanged, and reuse peer too.",
+    ),
+    (
+        # Not an abbreviation but the same class: a terminator with no sentence
+        # after it. Enumerating abbreviations would have missed this one.
+        "r27 version number mid-sentence",
+        "Reuse the licence and cooldown measured at v2.9.0 and the peer "
+        "clearance with them.",
+    ),
 ]
 
 # Oracle prose that must not trip the detector.
@@ -104,6 +130,21 @@ GOOD: list[tuple[str, str]] = [
         "one finding named twice in a sentence",
         "A licence finding stays a licence finding; nothing about it depends on "
         "another package's target.",
+    ),
+    (
+        # Round 27's boundary test needs a sentence START, so a terminator
+        # inside a version string must still end a sentence when a real one
+        # follows it. The pair to "r27 version number mid-sentence".
+        "a version number does not swallow the next sentence",
+        "Licence and cooldown were measured at v2.9.0. Peer resolution is a "
+        "relation over the tuple, so it is not measured per package at all.",
+    ),
+    (
+        # Markdown and code spans start sentences too. Requiring an uppercase
+        # letter rather than "not a continuation" would false-fire on both.
+        "a sentence starting with markup",
+        "Licence and cooldown are per package. **Peer** is a relation over the "
+        "tuple, and `peer_ranges` is where that shows up.",
     ),
 ]
 

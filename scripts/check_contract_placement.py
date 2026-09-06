@@ -39,6 +39,11 @@ BOLD = re.compile(r"\*\*(.+?)\*\*", re.S)
 
 FINDINGS = ("licence", "cooldown", "peer")
 
+# A terminator ends a sentence only where the next thing starts one. See
+# `names_all_three_findings` for why both halves are needed and why `\s` is in
+# the negated class.
+SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])\s+(?=[^a-z0-9\s])")
+
 
 def eval_names(skill_name: str) -> list[str]:
     f = ROOT / "skills" / skill_name / "evals" / "evals.json"
@@ -84,23 +89,44 @@ def names_all_three_findings(text: str) -> bool:
     the two texts that had to change were a run-on sentence and an assertion
     grading two things at once.
 
-    A sentence ends at `.`, `!` or `?` and nowhere else. The first version of
-    this split also broke on `;` and `:`, which round 26 showed made the guard
-    green over exactly the sentence it exists to reject — "Per package, reuse
-    licence and cooldown; under that same rule, reuse peer too." states the
-    contradictory per-package peer rule in one breath, and a semicolon does not
-    make it two rules. Clause punctuation is how a run-on smuggles the
-    contradiction past a sentence-scoped check, so it is not a boundary here.
-    `scripts/test_contract_placement.py` pins that construction; the split is a
-    heuristic and belongs in the fixture tier with the other one.
+    A boundary is a terminator that something starts a sentence after. Two
+    rounds were spent on the terminator half alone: the first version broke on
+    `;` and `:` (round 26 — "Per package, reuse licence and cooldown; under
+    that same rule, reuse peer too." read as two compliant halves), and
+    narrowing to `.!?` then let an abbreviation do the same job (round 27 —
+    "...for e.g. unchanged targets, and reuse peer under the same rule." split
+    at `g.`). Both are one sentence conflating the two rules, and both were
+    green.
 
-    Residual, stated rather than implied: an oracle spread over two sentences
-    that still means per-package peer reuse passes. Same class as
-    `states_rather_than_restates`, and smaller than a detector that blocks
-    correct oracles.
+    Requiring a sentence *start* closes the class rather than the instance,
+    and it needs no vocabulary: `e.g. unchanged` continues, `v2.9.0. Peer`
+    does not. That is the difference from the two detectors this one replaced —
+    theirs were open-ended lists of English phrasings, this is one syntactic
+    property with a residual that fits on a line.
+
+    One implementation trap, pinned: split before lowercasing. Lowercasing
+    first turns every capital into a continuation marker, so the whole corpus
+    reads as one sentence — four fixtures fail if the two are reordered, which
+    is how that is held rather than by this paragraph.
+
+    The `\s` in the negated class is belt-and-braces and no fixture can reach
+    it: `flat` collapses whitespace runs first, so `\s+` never has more than
+    one space to backtrack over. It matters only if `flat` stops collapsing,
+    and it is called out here because an unreachable guard reads like a live
+    one to the next person changing either function.
+
+    Residuals, stated rather than implied: an oracle spread over two sentences
+    that still means per-package peer reuse passes, and a sentence genuinely
+    beginning with a lowercase word or a digit reads as a continuation of the
+    one before it. If a third construction escapes, the answer is not a third
+    patch — see `upgrade-major-dependency/NOTES.md`, *Why a moved target voids
+    the whole triage*, for the replacement that was pre-committed to at round
+    27. `scripts/test_contract_placement.py` pins every construction found so
+    far; the split is a heuristic and belongs in the fixture tier with the
+    other one.
     """
-    return any(all(f in s for f in FINDINGS)
-               for s in re.split(r"(?<=[.!?])\s", flat(text).lower()))
+    return any(all(f in part.lower() for f in FINDINGS)
+               for part in SENTENCE_BOUNDARY.split(flat(text)))
 
 
 def notes(name: str) -> str:
@@ -522,9 +548,10 @@ def main() -> int:
         # contract reject. Every contradiction on this PR about these three
         # findings grew from a sentence listing them together, so the rule is
         # that an oracle states the two rules as two — a property that needs
-        # no parsing. A sentence ends at `.`, `!` or `?` and nowhere else:
-        # round 26 found this assertion green over a semicolon joining the two
-        # rules into one, which is the construction it exists to reject.
+        # no parsing. What counts as a sentence is the part that took two
+        # rounds — 26 found this assertion green over a semicolon joining the
+        # two rules, 27 over an abbreviation splitting one — so the boundary
+        # itself is documented and fixtured at `names_all_three_findings`.
         ("no eval oracle names all three findings in one sentence",
          not any(names_all_three_findings(e)
                  for sk in ("upgrade-major-dependency", "dependency-upgrade-orchestrator")
