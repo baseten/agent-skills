@@ -135,15 +135,18 @@ green check over a false claim is worse than no check, because it stops anyone l
 fixtures then immediately caught a second gap — a noun lead-in carrying the imperative in
 its body. Finding a new bypass means the detector was wrong, not the fixture.
 
-`test_contract_placement.py` is the same tier for the one heuristic left in
-`check_contract_placement.py`: the detector that keeps the dependency skills' eval oracles
-from stating licence, cooldown and peer reuse as a single rule. It was added because that
-detector repeated the history above rather than learning from it — its sentence split broke
-on `;` and `:`, so a run-on joining the two rules in one breath read as two compliant
-sentences and the corpus guard stayed green over it. Its BAD list is that construction and
-its neighbours; its GOOD list is the oracle prose that must keep passing, which matters more
-here than elsewhere, because the two detectors this one replaced were both deleted for
-rejecting a correct oracle.
+`test_contract_placement.py` is the same tier for the guard that keeps the dependency
+skills' eval oracles from stating licence, cooldown and peer reuse as a single rule. It was
+added because that guard repeated the history above rather than learning from it, and then
+earned its keep three rounds running: while the guard asked whether the three findings
+appeared in one **sentence**, a semicolon, an abbreviation and finally markup faking a
+sentence start each let the conflation through, and each time the corpus check was green
+over it. The third ended sentence parsing rather than refining it — markup has to be able to
+start a sentence, so it cannot be stopped from faking one — and the unit became a paragraph
+or list item, which layout decides and wording cannot spoof. The escapes stay in the BAD list
+as the evidence for that; the GOOD list is the oracle prose that must keep passing, which
+matters more here than elsewhere, because the two detectors this guard replaced were both
+deleted for rejecting a correct oracle.
 
 The phrase list had the same weakness one level up, and then again one level below that:
 a rule section with no phrase entry was unguarded (true of *Classify a finding before fixing

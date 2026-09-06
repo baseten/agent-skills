@@ -39,10 +39,10 @@ BOLD = re.compile(r"\*\*(.+?)\*\*", re.S)
 
 FINDINGS = ("licence", "cooldown", "peer")
 
-# A terminator ends a sentence only where the next thing starts one. See
-# `names_all_three_findings` for why both halves are needed and why `\s` is in
-# the negated class.
-SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])\s+(?=[^a-z0-9\s])")
+# A blank line, or the start of a list item. Markdown structure, decided by
+# layout alone — no terminator, no capitalisation, no vocabulary. See
+# `names_all_three_findings` for why the sentence unit was abandoned for it.
+BLOCK_BOUNDARY = re.compile(r"\n\s*\n|\n(?=[ \t]*(?:[-*+]|\d+[.)])[ \t])")
 
 
 def eval_names(skill_name: str) -> list[str]:
@@ -55,9 +55,9 @@ def eval_names(skill_name: str) -> list[str]:
 def eval_assertions(skill_name: str, case: str) -> list[str]:
     """One scenario's assertions as a list, never joined.
 
-    Assertions rarely end in punctuation, so joining them makes consecutive
-    entries read as one sentence and any sentence-scoped rule then fires on an
-    artifact of the join rather than on the text.
+    Joining them makes consecutive entries read as one block, and any
+    block-scoped rule then fires on an artifact of the join rather than on the
+    text. Read as a list, each assertion is its own block, which is what it is.
     """
     f = ROOT / "skills" / skill_name / "evals" / "evals.json"
     if not f.exists():
@@ -69,64 +69,58 @@ def eval_assertions(skill_name: str, case: str) -> list[str]:
 
 
 def names_all_three_findings(text: str) -> bool:
-    """True where one sentence names licence, cooldown and peer together.
+    """True where one paragraph or list item names licence, cooldown and peer.
 
-    This replaces a detector that tried to decide whether such a sentence
-    scoped them per package — the second time on this contract that the answer
-    to an open-ended natural-language problem has been to stop solving it.
-    Four rounds of evidence: one spelling missed two others; a per-package
-    vocabulary missed "for every package"; the group vocabulary that was meant
-    to be the reliable half missed "for the group as a whole", blocking a
-    CORRECT oracle; and binding that exemption to the peer finding rather than
-    accepting any group marker anywhere in the sentence needs syntactic
-    attachment, not a word list.
+    The convention is that **an oracle states the two rules as two**: licence
+    and cooldown are per package, the peer finding is a relation over the whole
+    target tuple, and a text presenting them as one rule is the shape every
+    contradiction on this PR grew from. What changed three times is the unit
+    that "as two" is measured in, and the history is the argument for where it
+    landed.
 
-    So the check is on a property needing no parsing: **an oracle states the
-    two rules as two, and never names all three findings in one sentence.**
-    Licence and cooldown are per package; the peer finding is a relation over
-    the tuple. A sentence listing them together is the shape every
-    contradiction on this PR grew from. Making the corpus conform improved it:
-    the two texts that had to change were a run-on sentence and an assertion
-    grading two things at once.
+    It was a sentence, and a sentence could not be decided. Round 26: the split
+    broke on `;` and `:`, so "Per package, reuse licence and cooldown; under
+    that same rule, reuse peer too." read as two compliant halves. Round 27: an
+    abbreviation did the same job at `e.g. `, which was fixed by requiring a
+    sentence *start* rather than by listing abbreviations — a version number
+    has the identical property and no list would have held it. Round 28 ended
+    the approach rather than extending it: "...for e.g. **unchanged targets**,
+    and reuse peer under the same rule." splits at `g.` because `*` reads as a
+    sentence start.
 
-    A boundary is a terminator that something starts a sentence after. Two
-    rounds were spent on the terminator half alone: the first version broke on
-    `;` and `:` (round 26 — "Per package, reuse licence and cooldown; under
-    that same rule, reuse peer too." read as two compliant halves), and
-    narrowing to `.!?` then let an abbreviation do the same job (round 27 —
-    "...for e.g. unchanged targets, and reuse peer under the same rule." split
-    at `g.`). Both are one sentence conflating the two rules, and both were
-    green.
+    That last one is a proof, not another instance. Markup must be able to
+    start a sentence — `**Peer** is a relation over the tuple.` is ordinary
+    oracle prose, and a fixture required it — and markup must not be able to
+    fake one. No character class satisfies both, so the unit was wrong.
 
-    Requiring a sentence *start* closes the class rather than the instance,
-    and it needs no vocabulary: `e.g. unchanged` continues, `v2.9.0. Peer`
-    does not. That is the difference from the two detectors this one replaced —
-    theirs were open-ended lists of English phrasings, this is one syntactic
-    property with a residual that fits on a line.
+    A **block** — a paragraph or a list item — is decided by layout alone. No
+    terminator, no capitalisation, no vocabulary, nothing an oracle's wording
+    can spoof. It is the third time on this contract that an open-ended
+    natural-language problem has been answered by ceasing to solve it, after
+    `prescribes()` at round 10 and `groups_peer_per_package()` at round 25, and
+    it is the first of the three whose replacement has no residual an author
+    can trip over unknowingly.
 
-    One implementation trap, pinned: split before lowercasing. Lowercasing
-    first turns every capital into a continuation marker, so the whole corpus
-    reads as one sentence — four fixtures fail if the two are reordered, which
-    is how that is held rather than by this paragraph.
+    The price, stated plainly because it is real: this is **stricter** than the
+    sentence rule and rejects prose that reads perfectly well. "Licence and
+    cooldown are measured per package. Peer resolution is a relation over the
+    tuple." was a compliant oracle a round ago and is a violation now. That is
+    the difference between a heuristic's false positive and a convention's
+    demand — one is unfixable by the author, who cannot see why it fired, and
+    the other is mechanical: put the second rule in its own bullet. Conforming
+    the corpus cost three oracles, each of which already carried the two rules
+    under labels ("Per package:" / "Group-wide:") and now carries them as two
+    list items, which is how they should have been written.
 
-    The `\s` in the negated class is belt-and-braces and no fixture can reach
-    it: `flat` collapses whitespace runs first, so `\s+` never has more than
-    one space to backtrack over. It matters only if `flat` stops collapsing,
-    and it is called out here because an unreachable guard reads like a live
-    one to the next person changing either function.
+    Residual, unchanged from the sentence version and no worse: an oracle
+    spread over two blocks that still means per-package peer reuse passes.
+    Deciding *that* is the parsing problem two deleted detectors failed at.
 
-    Residuals, stated rather than implied: an oracle spread over two sentences
-    that still means per-package peer reuse passes, and a sentence genuinely
-    beginning with a lowercase word or a digit reads as a continuation of the
-    one before it. If a third construction escapes, the answer is not a third
-    patch — see `upgrade-major-dependency/NOTES.md`, *Why a moved target voids
-    the whole triage*, for the replacement that was pre-committed to at round
-    27. `scripts/test_contract_placement.py` pins every construction found so
-    far; the split is a heuristic and belongs in the fixture tier with the
-    other one.
+    Do not `flat` the text first — that collapses every block into one and the
+    guard fires on the whole corpus. The GOOD fixtures fail if it is added.
     """
-    return any(all(f in part.lower() for f in FINDINGS)
-               for part in SENTENCE_BOUNDARY.split(flat(text)))
+    return any(all(f in block.lower() for f in FINDINGS)
+               for block in BLOCK_BOUNDARY.split(text))
 
 
 def notes(name: str) -> str:
@@ -546,13 +540,13 @@ def main() -> int:
         # An oracle that groups peer with licence and cooldown under a
         # per-package comparison rewards exactly the behaviour eval 14 and the
         # contract reject. Every contradiction on this PR about these three
-        # findings grew from a sentence listing them together, so the rule is
-        # that an oracle states the two rules as two — a property that needs
-        # no parsing. What counts as a sentence is the part that took two
-        # rounds — 26 found this assertion green over a semicolon joining the
-        # two rules, 27 over an abbreviation splitting one — so the boundary
-        # itself is documented and fixtured at `names_all_three_findings`.
-        ("no eval oracle names all three findings in one sentence",
+        # findings grew from a text listing them together, so the rule is that
+        # an oracle states the two rules as two — a property that needs no
+        # parsing. Which UNIT of text took three rounds to settle: 26 found
+        # this assertion green over a semicolon, 27 over an abbreviation, 28
+        # over markup faking a sentence start. It is a paragraph or list item
+        # now, documented and fixtured at `names_all_three_findings`.
+        ("no eval oracle names all three findings in one block",
          not any(names_all_three_findings(e)
                  for sk in ("upgrade-major-dependency", "dependency-upgrade-orchestrator")
                  for e in eval_expected(sk))
