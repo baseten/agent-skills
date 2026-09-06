@@ -73,6 +73,8 @@ Depends on: <full parent PR URL>
 
 Then a blank line and the normal description/template. `Depends on:` always means the direct Git stack parent PR, never tracker issue dependencies.
 
+**The body is short, and it ends with the attribution footer** — the authored-write-form rule stated once in `backlog-orchestrator`, *Authored write form*; apply it from there rather than restating it here. Its consequence at this decision point: the linkage lines, the `Depends on:` line where there is one, then what changed and why in a handful of lines. Not a narration of the implementation run, not a restatement of the issue the linkage already points at, and not a log of what was tried. The mandated elements of this section and of *A PR shipping against a coverage finding links but does not close* are required contents and are never dropped to shorten the body; a repository template's sections are the same. Where a repository documents its own PR body conventions, those govern the body's shape and the footer still applies.
+
 # Creating and verifying the PR
 
 - Draft/full behavior follows repo docs; otherwise work repos default to draft and personal repos to full. Explicit caller/user preference wins.
@@ -92,7 +94,7 @@ After creation, fetch/read the PR and verify:
 
 By default, implementation workflows expect this skill to trigger the repository's documented automated review after the PR is created and final implementation state is pushed. Use the repo's documented trigger; with none, default to `@codex review` where that convention is supported.
 
-- **The trigger comment must come from the invoking user's own account, or the convention does not fire** — the one post exempted from the posting-identity rule (`backlog-orchestrator`, *Posting identity*, states the rule once; do not restate it). Every other authored write this skill makes — the PR itself, its body, any other comment — follows that rule and its availability test.
+- **The trigger comment must come from the invoking user's own account, or the convention does not fire** — the one post exempted from the posting-identity rule (`backlog-orchestrator`, *Posting identity*, states the rule once; do not restate it). It is exempt from the attribution footer for the same functional reason (`backlog-orchestrator`, *Authored write form*): the comment must read exactly as the convention expects, so it carries the trigger text and nothing else. Every other authored write this skill makes — the PR itself, its body, any other comment — follows both rules and the identity rule's availability test.
 - A caller may explicitly request a **deferred review trigger** (e.g. an intentionally early WIP draft): create/verify the PR but do not trigger until the caller later requests it.
 - Do not re-trigger merely because subsequent CI checks run. Re-trigger after a substantive review-fix round only when repo convention requires it.
 

@@ -313,6 +313,19 @@
         "recorded reserved threads are not re-grouped into a later round absent new content"
       ],
       "files": []
+    },
+    {
+      "id": 25,
+      "name": "dispatch-prompt-carries-the-authored-write-form-rule",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are about to dispatch a Sonnet implementation worker. Your draft dispatch prompt carries the issue URL, the outcome branch, the review-trigger instruction, the whole posting-identity map, and the requirement to post its worker report on the PR. Questions: (a) is anything missing that governs what that report and the PR body look like? (b) the worker posts a nine-paragraph report with no footer — whose defect is that? (c) does the footer requirement endanger the worker report's fixed first line, which three dependency readers key on skipping?",
+      "expected_output": "(a) Yes — the authored-write-form rule: brevity, the attribution footer, the precedence of a write's required contents over brevity, and the review-trigger comment's exemption from the footer. It is carried whole, not paraphrased. (b) The dispatch prompt's. A dispatched prompt is read literally, so a rule left out is a rule the worker never applies, and it will accurately report that the task never asked for it — the same failure the posting-identity map already had at the same write. (c) No. The marker line is required content and survives brevity, and the footer goes at the end of the comment, where it cannot displace the first line.",
+      "assertions": [
+        "the answer identifies the authored-write-form rule as missing from the dispatch prompt",
+        "the answer names brevity, the footer, required-contents precedence, and the trigger exemption",
+        "the answer attributes the unsigned nine-paragraph report to the omission in the prompt, not to the worker",
+        "the answer keeps the worker report's fixed first line intact and places the footer at the end"
+      ],
+      "files": []
     }
   ]
 }

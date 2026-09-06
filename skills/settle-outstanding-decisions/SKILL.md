@@ -128,6 +128,10 @@ A recorded ruling contains:
 
 The ruling comment follows the posting-identity rule stated once in `backlog-orchestrator` (*Posting identity*), selecting from the map the caller passes with the seed; invoked standalone with no map, every transport is `unestablished` and the rule's degraded path applies.
 
+It and the rejected-draft record both follow the authored-write-form rule stated once beside it (`backlog-orchestrator`, *Authored write form*) — keying it to rulings alone would leave the pass that writes only rejections unsigned, the same gap the Output section below had to close — with two consequences that matter here and are stated there rather than re-argued: the elements listed above are **required contents**, so brevity trims around them and never through them — an approved draft's answer text in particular is posted in full, edited exactly as the owner edited it, and is never compressed to fit; and the attribution footer **attributes the posting, not the content**, so it sits below the owner-ruling marker without softening it. The marker says whose answer this is; the footer says what typed it.
+
+**This is the one path on which an answer drafted by `resolve-pr-comment` is ever posted to a review thread** (`resolve-pr-comment`, *Handling queries*, makes every other path an absolute), and what licenses it is the owner having read the text and approved or edited it in the walkthrough. A drafted answer that reached no owner reaches no thread from here either.
+
 ## The zero case
 
 A run with no outstanding decisions still reports `No outstanding decisions.` in one line, plus the action-item checklist even when it is empty too — silence is indistinguishable from a skipped step.

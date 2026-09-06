@@ -19,6 +19,11 @@ has established one, and as the invoking user where it has not — the common
 case, and what the local `gh` path below always does, since it runs on the
 user's own credential.
 
+They follow the **authored write form** rule stated once beside it
+(`backlog-orchestrator`, *Authored write form*) for the same reason: every
+reply is short and ends with the attribution footer. Apply both from there
+rather than restating them; step 5 carries only what they mean for a reply.
+
 ## Task
 
 Resolve PR comment(s): $ARGUMENTS
@@ -107,6 +112,18 @@ gh api repos/<owner>/<repo>/pulls/<PR>/comments/<comment_id>/replies \
 - If multiple comments were fixed in the same commit, each gets the same SHA.
 - If each got its own commit, each gets its own SHA.
 
+**That one line is the whole reply, plus the attribution footer**
+(`backlog-orchestrator`, *Authored write form*). The reviewer wants to know the
+comment was acted on and where to look; the diff is the explanation and the
+thread already holds the request. Do not restate the comment back, justify the
+approach, or narrate what else was considered.
+
+**A reply reports work done and never answers a query.** Where the comment asked
+for prose, no reply of any kind carries the answer — see *Handling queries*,
+which is absolute across modes. Where a comment asked for both, this reply says
+what changed and stops there; the question is escalated with its draft
+(*A comment can want both*).
+
 ### 6. Resolve the conversation thread
 
 In a remote/web session, use `mcp__github__resolve_review_thread` with the
@@ -140,14 +157,19 @@ caller states that by passing an unattended context; treat a caller that
 supplies a thread set it selected itself, rather than a human naming comments,
 as unattended.
 
-Unattended, the classification in *Handling queries* below still runs, but its
-second branch changes: **do not answer the question and do not reply
-substantively.** Return the thread to the caller as a `NEEDS_USER` item — thread
-URL, root author, what it asks, and a **draft reply** (below) — and leave it
-open. A reply the run composes on its own authority is an answer nobody
-authorised: the question was addressed to a person, and a plausible-sounding
-guess in their voice is worse than silence, because the reviewer reads it as the
-owner's answer and stops asking.
+Unattended, the classification in *Handling queries* below runs and reaches the
+same verdicts it reaches attended — **the prose branch is `NEEDS_USER` in every
+mode, so this section overrides nothing about it.** What is unattended-specific
+is only where the result goes: nobody is in the session to hand it to, so every
+`NEEDS_USER` item is returned to the caller — thread URL, root author, what it
+asks, and a **draft reply** (below) — and the thread is left open.
+
+**Do not reply substantively on any path, here or elsewhere.** A reply the run
+composes on its own authority is an answer nobody authorised: the question was
+addressed to a person, and a plausible-sounding guess in their voice is worse
+than silence, because the reviewer reads it as the owner's answer and stops
+asking. Unattended there is also nobody to notice — but that is what makes the
+failure loud here, not what makes it a failure.
 
 ### Classify-only invocations
 
@@ -209,10 +231,13 @@ design, rationale, or a decision is `NEEDS_USER`. Author identity decides
 nothing — a human's one-line nit is repaired, an automated reviewer's
 architecture question is escalated.
 
-Attended — a person invoked this skill and named the comments — the original
-behaviour stands: answer the query in a reply and leave the thread open for
-them. They are present to correct you, which is exactly the condition the
-unattended path lacks.
+Attended — a person invoked this skill and named the comments — **the draft goes
+to them, in this session's output, and still not to the thread.** They send it,
+edit it first, or throw it away; posting it as themselves is the point, because
+then the reviewer is reading an answer its author stands behind. Their presence
+makes handing it over cheap and does not license posting: what a reviewer reads
+is the posted reply, not the correction that followed it, and by the time they
+could correct it the answer is already in their voice on a public thread.
 
 ## Handling ambiguity
 
@@ -226,15 +251,32 @@ unattended path lacks.
 ## Handling queries
 
 If a comment's correct response is prose rather than a diff — asking for
-clarification, rationale, or intent — post a reply with an appropriate response
-but do **not** resolve the thread. Leave resolution to the user.
+clarification, rationale, or intent — **it is `NEEDS_USER` in every mode, and
+this skill posts no answer to it.** Classify it, write the draft (*The draft
+reply*), leave the thread open and unresolved, and hand the draft to whoever is
+waiting on this pass: the person who invoked it attended, the caller as a
+`NEEDS_USER` item unattended. **A thread that ends without a code change is never
+closed out by prose from this skill** — the only outcomes it has are a pushed fix,
+an escalation, or no-action.
+
+The reason is that the reviewer asked a **person**. An answer composed here
+arrives in that person's voice — under their login on the degraded posting path,
+which is the common one — so the reviewer reads it as theirs and stops asking,
+whether or not it was right. Handing them the draft instead costs one paste and
+keeps the answer attributable to whoever actually stands behind it.
+
+**One path posts an answer this skill drafted, and it is not this skill**:
+`settle-outstanding-decisions`, *Recording the ruling*, posts the approved or
+edited text after the owner has read it, marked as their ruling. That is the
+negation this rule is written on — not that the answer never reaches the thread,
+but that it never reaches it on this pass's authority.
 
 **An acknowledgement is not this branch.** "Thanks, this looks good" asks for no
 prose either, so it is **no-action** and never `NEEDS_USER` (*A comment that
-wants nothing*). Listing it here would route it through the unattended override
-below, which returns this branch as a `NEEDS_USER` item — and an acknowledgement
-escalated that way cannot be qualified by `settle-outstanding-decisions`, so it
-would hold the merge gate with nothing able to clear it.
+wants nothing*). Listing it here would make it a `NEEDS_USER` item, since that is
+what this branch now returns in every mode — and an acknowledgement escalated
+that way cannot be qualified by `settle-outstanding-decisions`, so it would hold
+the merge gate with nothing able to clear it.
 
 ### A comment can want both
 
@@ -248,13 +290,21 @@ from contradicting the modes above:
 - the **change** is repaired wherever a change request is repaired, and is
   therefore *not* repaired under a classify-only invocation, where it comes back
   as a deferred repair instead (*Classify-only invocations*);
-- the **prose** follows the attended/unattended split:
+- the **prose** is a query like any other, so **no mode answers it in the
+  thread** (*Handling queries*). What the mode decides is only who receives the
+  draft, and whether there is a fix to report alongside it:
 
 | Mode | The prose half |
 | --- | --- |
-| Classify-only | Not answered and not drafted-and-posted: a question item with its draft, returned alongside the deferred repair as the second of two entries for the one thread |
-| Attended | Post the substantive answer in the thread, as the rule above gives for any query. The person is present and asked for it; withholding it here because the same comment also asked for a diff answers nobody |
-| Unattended (*Unattended callers*) | Do not answer it. Return the question as a `NEEDS_USER` item with its draft, and reply only to report what changed if the mode permits a reply at all — a statement about work done, never written as though it answered the question |
+| Classify-only | A question item with its draft, returned alongside the deferred repair as the second of two entries for the one thread. Nothing is posted at all |
+| Attended | Not answered in the thread. The draft goes to the person who invoked this skill, in this session's output, and they post it as themselves if they want it posted. The fix is pushed and reported as the fix |
+| Unattended (*Unattended callers*) | Not answered in the thread. Return the question as a `NEEDS_USER` item with its draft, and reply only to report what changed — a statement about work done, never written as though it answered the question |
+
+**Attended is not an exception here, and this section does not make one**: a
+person being present makes handing the draft over cheap, not posting it safe
+(*Handling queries*). The half-fix instinct — the same comment asked for a diff,
+so surely the prose can go back with it — is exactly the case the query rule
+covers, since what a reviewer reads is one thread with one voice in it.
 
 **No mode resolves the thread.** Attended, resolution of a query thread is the
 user's; unattended, the thread is reserved and a reserved thread is never
@@ -282,9 +332,10 @@ comment with no question mark at all ("I don't follow why this needs a second
 pass") wants prose. The kind test is the intent (`backlog-orchestrator`,
 *Per-repository policy configuration*).
 
-**Unattended, do not post that reply** — return the thread as a `NEEDS_USER`
-item instead (see *Unattended callers*). Either way the thread stays open: a
-question is never resolved by this skill.
+**No mode posts that reply** — the thread comes back as a `NEEDS_USER` item with
+its draft, to the caller unattended and to the invoking person attended (see
+*Handling queries*). Either way the thread stays open: a question is never
+resolved by this skill.
 
 ### A comment that wants nothing
 
@@ -323,7 +374,12 @@ After completing all steps, summarize:
 - **Every `NEEDS_USER` item, one entry each — items, not threads**: thread URL,
   root author, what it asks, and then by item kind, because the kinds carry
   different things and one shape cannot hold both:
-  - a **question item** carries its draft reply (see *Unattended callers*);
+  - a **question item** carries its draft reply (see *The draft reply*) —
+    **in every mode, because the prose branch is `NEEDS_USER` in every mode**
+    (*Handling queries*). Attended, this output *is* the delivery: the person who
+    invoked the skill is the one the draft is being handed to, so an attended run
+    reports its question items exactly as an unattended one does rather than
+    treating them as already dealt with;
   - a **deferred-repair item** carries the change it asks for and **no draft**
     (see *Classify-only invocations*) — it wants a diff that the budget stopped,
     so there is nothing to answer, and demanding a draft here would leave the
@@ -337,8 +393,11 @@ After completing all steps, summarize:
   which is why this is keyed by item. With budget remaining the change was
   repaired, so only the question item comes back and the fix is reported as the
   fix.
-  Unattended, none of these were answered or resolved, and the caller needs them
-  individually: `repair-pr` propagates them, the orchestrators hold the merge
-  gate on them, and `settle-outstanding-decisions` puts a question to the owner
-  with its draft as the context that makes it answerable on the spot. A count
-  supports none of that
+  None of these were answered or resolved, in any mode, and whoever is waiting on
+  the pass needs them individually. Unattended that is the caller: `repair-pr`
+  propagates them, the orchestrators hold the merge gate on them, and
+  `settle-outstanding-decisions` puts a question to the owner with its draft as
+  the context that makes it answerable on the spot — the one path on which a
+  drafted answer is ever posted, and only after the owner approves it. Attended
+  it is the person reading this output, who posts what they choose to post as
+  themselves. A count supports none of that
