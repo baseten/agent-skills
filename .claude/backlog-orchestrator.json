@@ -1,3 +1,5 @@
 {
-  "auto-merge": true
+  "auto-merge": true,
+  "review-repair-cycles": 6,
+  "repair-model-escalations": 2
 }
