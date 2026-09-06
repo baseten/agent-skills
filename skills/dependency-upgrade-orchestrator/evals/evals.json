@@ -154,7 +154,7 @@
       "assertions": [
         "The answer removes the advanced candidate from the routine batch rather than letting it land",
         "The answer identifies that the routine route contains no viability gate, so the batch being green is not evidence about it",
-        "The answer re-triages against the new target and reconsiders model selection, while leaving the five unmoved candidates cleared"
+        "The answer re-triages against the new target and reconsiders model selection, taking the target move itself as the trigger rather than waiting for a changed coupled set, while leaving the five unmoved candidates cleared"
       ]
     }
   ]

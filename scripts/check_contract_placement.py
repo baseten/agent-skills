@@ -442,9 +442,21 @@ def main() -> int:
          and "an agent cannot revise its own assignment" in flat(ud)),
         ("the re-reading serves the report, not the continuation",
          "The re-reading serves the report, not the continuation" in flat(ud)),
-        ("Report says what an ended task hands back",
-         "reports the new target, the refreshed failure-mode reading and the recomputed coupled set"
-         in flat(clause(ud, "A task ended by a moved target", 600))),
+        ("Report hands back a per-package mapping, symmetric with dispatch",
+         "package → current target mapping for every package that moved"
+         in flat(clause(ud, "A task ended by a moved target", 900))),
+        # The stop is on the move, not on the set changing — an oracle that
+        # conditions it lets an answer continue under a stale model.
+        ("an oracle makes the moved-target stop unconditional",
+         "including the one where the recomputed coupled set is unchanged"
+         in eval_field("upgrade-major-dependency",
+                       "an-advanced-target-can-change-the-coupled-set", "assertions")
+         and "unconditionally, whatever the recomputed coupled set turns out to be"
+         in eval_field("upgrade-major-dependency",
+                       "a-supplied-verdict-does-not-cover-work-in-flight",
+                       "expected_output")),
+        ("the producer's return contract names the same mapping",
+         "package → current target mapping for every package that moved" in flat(du)),
         # An advanced bot PR can move the target, which invalidates exactly the
         # three findings a verdict is most trusted for.
         ("a moved target re-runs the per-package gate items for that package",
