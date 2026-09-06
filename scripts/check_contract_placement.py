@@ -68,11 +68,21 @@ NEGATORS = (
 )
 
 
-# A clause boundary: a sentence ender, or a coordinating conjunction with or
-# without its comma. Negation does not cross one.
-CLAUSE_BREAK = re.compile(
-    r"[.!?;:]\s|,?\s+(?:and|but|then|so|yet|or|while|whereas)\s+"
-)
+# A clause boundary: a sentence ender, or a conjunction that introduces a fresh
+# positive clause. `or` and `nor` are deliberately absent — under negation,
+# disjunction DISTRIBUTES ("do not merge or re-resolve" forbids both), so an
+# `or` carries the governing negator across it while an `and` after a negated
+# clause introduces a new imperative ("do not trust CI and re-resolve" requires
+# the second). That asymmetry is the only surface signal separating the two
+# constructions, which are otherwise identical in shape; the fixtures pin both.
+#
+# The residual ambiguity is real and worth knowing rather than trusting: a
+# comma-separated disjunction ("do not merge, or re-resolve …") is not
+# disambiguated by this, and English does not disambiguate it either. A
+# borderline sentence in an expected answer should be rewritten to say what the
+# answer requires rather than restate what it rejects, which is how all of this
+# repository's scenarios are already written.
+CLAUSE_BREAK = re.compile(r"[.!?;:]\s|,?\s+(?:and|but|then|so|yet)\s+")
 
 
 def prescribes(texts: list[str], phrase: str) -> bool:
@@ -90,8 +100,13 @@ def prescribes(texts: list[str], phrase: str) -> bool:
       with or without the comma.
 
     Both are the exact regression this check exists to catch, and both passed.
-    The pattern is that a negator binds to its own clause and no further, so
-    that is the scope; the two mutations above are pinned as fixtures below.
+    A third round then supplied the opposite failure — a false positive on
+    "Do not merge or re-resolve immediately before merging.", where the
+    negation governs both coordinated verbs — so the scope is a clause and
+    `or` does not open one. See CLAUSE_BREAK for why that asymmetry is the
+    only available signal. Every mutation that has defeated this function is
+    pinned as a fixture below; it has been wrong in both directions, so both
+    directions are tested.
     """
     needle = phrase.lower()
     for text in texts:
@@ -116,6 +131,8 @@ PRESCRIBES_FIXTURES = [
     ("You do not re-resolve immediately before merging; this task ends at handoff.", False),
     ("Never re-resolve immediately before merging.", False),
     ("Record the base rather than re-resolve immediately before merging.", False),
+    ("Do not merge or re-resolve immediately before merging.", False),
+    ("Do not merge nor re-resolve immediately before merging.", False),
     ("This task ends at handoff.", False),
 ]
 
@@ -470,6 +487,17 @@ def main() -> int:
          "resolved-against base commit in the PR body"
          in eval_field("upgrade-major-dependency",
                        "a-stale-base-reintroduces-a-removed-resolution",
+                       "assertions")),
+        # Round seven made the exemption source-independent; round eight found
+        # this scenario still teaching the source-based rule. Evals restate,
+        # and a restatement left behind grades against the old contract.
+        ("no eval reserves duplicate status by discovery source",
+         "did not derive its candidate from"
+         not in " ".join(eval_expected("dependency-upgrade-orchestrator"))),
+        ("the bump-queue eval grades the source-independence",
+         "does not make the exemption depend on the bump queue having been the discovery source"
+         in eval_field("dependency-upgrade-orchestrator",
+                       "the-bump-queue-is-not-work-already-in-flight",
                        "assertions")),
         ("the routine-bump eval's expected answer counts the batched task",
          "Four tasks"

@@ -82,12 +82,13 @@
     {
       "id": 7,
       "name": "the-bump-queue-is-not-work-already-in-flight",
-      "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: no set was supplied, so you derived one from the repository's open Renovate queue \u2014 nine open bump PRs, one per package. Triage's viability item removes any candidate with work already open on a branch or PR. Question: how many candidates survive, and what do you do with those nine PRs?",
-      "expected_output": "All nine survive. A derived set's own source is never work already in flight \u2014 applying that item to the PRs the batch was derived from would empty the batch it just produced. Mark each PR adopted and carry it by URL into dispatch: the upgrade continues on it (branch from its head, or supersede it and close it with a reference) and its diff is an input. The duplicate finding is reserved for work the run did not derive its candidate from.",
+      "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: no set was supplied, so you derived one from the repository's open Renovate queue \u2014 nine open bump PRs, one per package. A tenth candidate came from the same queue but a colleague also has a five-week-old branch upgrading that package. Triage's viability item removes any candidate with work already open on a branch or PR. Question: how many candidates survive, and what do you do with those PRs?",
+      "expected_output": "Nine. What removes a candidate is somebody else's attempt at the same upgrade, so the tenth goes \u2014 the colleague's branch is that. The nine bot PRs are not: an automated bump PR for a candidate is the work, not a duplicate of it, and applying the in-flight item to them would empty the batch it just produced. Mark each adopted and carry it by URL into dispatch: the upgrade continues on it (branch from its head, or supersede it and close it with a reference) and its diff is an input. Note that none of this turns on the queue having been the discovery source \u2014 a bot PR found at triage on a candidate from the outdated report is adopted on the same terms.",
       "assertions": [
-        "The answer keeps all nine candidates rather than filtering them out as work already open",
-        "The answer adopts or repairs the source bump PRs rather than opening competing PRs beside them",
-        "The answer still applies the in-flight item to open work the candidates were not derived from"
+        "The answer keeps the nine bot-PR candidates rather than filtering them out as work already open",
+        "The answer adopts or repairs those bump PRs rather than opening competing PRs beside them",
+        "The answer removes the tenth candidate for the colleague's branch, distinguishing somebody else's attempt from an automated bump",
+        "The answer does not make the exemption depend on the bump queue having been the discovery source"
       ]
     },
     {

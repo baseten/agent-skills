@@ -33,6 +33,8 @@ Round seven found the exemption still half-scoped, and it is the same producer/c
 
 That is the third time on this PR that a rule was scoped to the circumstance it was first observed in rather than to the condition that actually governs it. Worth reading as a class, not three incidents.
 
+And the round after fixing the contract found the scenario still teaching the old rule — the second time on this PR that a contract was swept and its evals were not, after the identical miss two rounds earlier. Twice is not an oversight, it is a habit: the sweep reads as finished when the prose agrees, because prose is what a reader checks. The eval corpus is now asserted against on both sides of this particular rule, but the general remedy is the ordering — sweep the scenarios in the same pass as the paragraphs, never as a follow-up.
+
 The adoption rule itself is not merely an exemption. A bump PR is a machine's opening move on the work the run was sent to do, and it carries a lockfile resolution and a CI history worth having; superseding it silently also leaves the queue re-proposing the same bump forever. So the contract adopts or repairs it and says which, and reserves the duplicate finding for work the run did not derive its candidate from — which is the case the item was written for.
 
 ## Why file count is explicitly demoted

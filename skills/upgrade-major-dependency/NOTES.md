@@ -94,6 +94,13 @@ The second half was wrong as first stated. "A forbidden phrase is forbidden wher
 
 Within that, one more correction, from writing the check rather than from review: negation was first looked for in a fixed window of preceding characters, and a negation belonging to the *neighbouring* sentence then marked a genuine prescription as a mention. "Do not claim it as a merge-time result. Re-resolve immediately before merging." passed. That is the exact regression the check exists to catch, and it passed the first negative test — so the window is a sentence, and the check is negative-tested in three directions rather than one: prescribed (fails), negated in its own sentence (passes), quoted in a prompt (passes).
 
+A third round then supplied the opposite failure: the clause scope rejected `Do not merge or re-resolve immediately before merging.`, where one negation governs both coordinated verbs. So the function has now been wrong in both directions, and the two sentences that must be classified differently —
+
+    Do not trust green CI and re-resolve immediately before merging.   (prescribes)
+    Do not merge or re-resolve immediately before merging.             (mention)
+
+— are identical in shape. The only surface signal separating them is the conjunction: under negation, disjunction distributes and conjunction does not, so `or` and `nor` carry the negator across while `and` opens a fresh imperative. That is a real asymmetry rather than an epicycle, but it is also the last one available, and the residual case (a comma-separated disjunction) is genuinely ambiguous in English too. The practical consequence is an authoring convention rather than a better regex: an expected answer states what it requires instead of restating what it rejects, which is how every scenario here is already written.
+
 This repository has now had four rounds in which a guard was green over a live violation of the thing it guarded. Every one was a scope error; none was a logic error. That is the thing to attack first when writing the next guard, and the way to attack it is to mutate the rule the guard protects and watch the guard fail — testing the direction you are already confident in proves nothing.
 
 The resolution is not to weaken the moment but to stop pretending this skill occupies it. It re-resolves before pushing, records the base commit it resolved against in the PR body, and reports the result as a handoff result. That record is what converts "someone must remember to re-check" into a comparison anyone can make later, and it is why the contract forbids describing the handoff check as a merge-time one — a rule's own name attached to weaker evidence is the false pass in its purest form.
