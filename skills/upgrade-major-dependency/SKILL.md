@@ -20,20 +20,24 @@ Work in a dedicated worktree, never the main checkout. Two cases, and they diffe
 - **An adopted bump PR** — its head is the upgrade branch. **Read that PR before branching from it** (see Task). Its head already carries the bump, so it is never the baseline; take that from the PR's merge base (see Characterization tests).
 - **No adopted PR** — branch from the latest `origin/<default>` unless a base is supplied. That branch still carries the *current* version, so it is the baseline, and stays one until the bump is applied to it. Do not cut a second worktree for it.
 
-**A moved target voids the triage for that package — not selected findings of it.** Reuse is worth having: a caller that triaged the whole set knows things this task's scope cannot see, and re-deriving from inside one task is how a cleared candidate stops on its own siblings. But a bounded-concurrency dispatch can start a worker hours after triage, and everything triage concluded about a package it concluded about **one release**. So the sort is short:
+**A moved target ends this task; it does not reshape it.** Reuse is worth having: a caller that triaged the whole set knows things this task's scope cannot see, and re-deriving from inside one task is how a cleared candidate stops on its own siblings. But a bounded-concurrency dispatch can start a worker hours after triage, and everything triage concluded about a package it concluded about **one release**. **Compare each package's current target against the one triage measured for it before anything else** — a bot updating its own PR to a newer release is the ordinary way all of it goes stale at once.
 
-- **What survives a target move is identity only** — the package names, and an adopted PR's URL. Nothing else.
-- **A package's target moving voids that package's own findings**: licence, install cooldown, the breaking-change research, the usage audit. Re-run all four against its new target and treat the supplied triage as evidence about a version you are no longer installing.
-- **It also voids two conclusions that reach past that package, for the whole task** — because both are relations over the targets rather than properties of one:
-  - the **peer resolution**, since each release carries its own peer range: a companion at v3 demanding framework@3 breaks a framework@2 clearance whose own target never moved. Re-run it over the whole tuple.
-  - the **coupled set itself**, since which packages must move together is *derived* from those peer requirements — A@3 may require a compatible B@3 where A@2 accepted the installed B. **Where the recomputed set differs from the one supplied, the task's membership has changed, and that is not this task's decision to make**: report it and stop. Absorbing a new member silently upgrades a package nobody triaged; dropping one silently splits a coupled group, which is the failure the grouping exists to prevent.
+Where a target moved, **what survives is identity only**: the package names, and an adopted PR's URL. Everything else is void — that package's licence, install cooldown, breaking-change research and usage audit, and two conclusions that reach across the whole task, because both are relations over the targets rather than properties of one member:
 
-**Compare each package's current target against the one triage measured for it before any of this**, because an adopted PR that advanced may have moved any of them — a bot updating its own PR to a newer release is the ordinary way all of the above goes stale at once.
+- the **peer resolution**, since each release carries its own peer range: a companion at v3 demanding framework@3 breaks a framework@2 clearance whose own target never moved;
+- the **coupled set itself**, since which packages must move together is *derived* from those peer requirements — A@3 may require a compatible B@3 where A@2 accepted the installed B.
+
+**Two of the decisions built on that triage are the caller's, not this task's, which is why the answer is to stop rather than to re-derive and continue:**
+
+- **membership** — absorbing a new member upgrades a package nobody triaged; dropping one splits a coupled group, the failure the grouping exists to prevent;
+- **the model this task is running under** — selection keys on a failure mode derived from the research, and an agent cannot revise its own assignment. A release that advanced from a mechanical rename into a silent-failure domain needs a different model, and a worker that re-reads the range, sees exactly that, and proceeds anyway has produced the one migration the selection rule exists to prevent.
+
+So re-read enough to make the report useful — the new target, what the range up to it says about failure mode, and the recomputed set — and then **report and stop**. The re-reading serves the report, not the continuation. This costs a dispatch round trip in the common case where a bot advanced a patch and nothing material changed; that is the correct trade, because the failure it prevents is silent and this stop is not.
 
 **Two things are never taken from a verdict at all**, whether or not a target moved:
 
 - **Work already in flight**, because a colleague can push a branch in the gap. Re-run that search immediately before writing anything. The reason it was ever read from the verdict has since gone: the gate now distinguishes an automated bump from somebody else's attempt, so re-running it cannot reject the adopted PR the verdict named.
-- **An adopted PR's state and head.** Its **URL is identity and does not change; nothing else about it is given.** In the same gap it can be merged, closed, superseded, or advanced — and the in-flight search will not surface a merged or closed one, because it searches open work. So read the PR itself before branching from it. Merged or closed: the upgrade may already be done or already declined, so verify against the installed version and report rather than branch and duplicate it. Advanced: check whether any package's target moved with it (above), then branch from its current head. Superseded: adopt the successor on the same terms.
+- **An adopted PR's state and head.** Its **URL is identity and does not change; nothing else about it is given.** In the same gap it can be merged, closed, superseded, or advanced — and the in-flight search will not surface a merged or closed one, because it searches open work. So read the PR itself before branching from it. Merged or closed: the upgrade may already be done or already declined, so verify against the installed version and report rather than branch and duplicate it. Advanced: check whether any package's target moved with it — if so, that ends the task (above) — and otherwise branch from its current head. Superseded: adopt the successor on the same terms.
 
 Re-derive anything the verdict does not cover, and report a disagreement rather than silently taking either answer.
 
@@ -41,7 +45,7 @@ The phase order is load-bearing. Research precedes audit, audit precedes tests, 
 
 ## Viability gate
 
-Run before any other work; each item independently ends the task. A supplied verdict stands in for the licence and cooldown items **only while that package's target is the one it measured for it**, and for the peer item **only while no member's target has moved at all** — a move also puts the coupled set itself back in question, which stops the task rather than reshaping it (see Task). The fourth item is re-run always.
+Run before any other work; each item independently ends the task. A supplied verdict stands in for the licence and cooldown items **only while that package's target is the one it measured for it**, and for the peer item **only while no member's target has moved at all**. A moved target ends the task the way any gate item does — it puts membership and model selection back in the caller's hands (see Task). The fourth item is re-run always.
 
 - **Licence.** Compare the new version's licence against the repository's accepted set. A permissive-to-copyleft change is an ownership decision, not an engineering one.
 - **Install cooldown.** Where the package manager enforces a minimum release age, a version published inside that window is uninstallable. Never add a per-package exclusion to defeat a supply-chain control for a routine bump.
@@ -134,5 +138,7 @@ Type checks and unit tests do not detect these. For any that apply, state in the
 ## Report
 
 State what changed, what was audited and cleared, every behavioural difference and its classification, the base commit the lockfile was resolved against (see Migration and verification — it is what makes later staleness detectable, and it is the one item here a reader acts on rather than reads), and what a human must still verify manually. Follow the repository's PR conventions for the description; do not enumerate changed files or narrate the investigation.
+
+A task ended by a moved target reports the new target, the refreshed failure-mode reading and the recomputed coupled set, so the caller can re-triage and re-dispatch without repeating the reading (see Task).
 
 If the upgrade proved unsafe, open nothing and report why. Where a bump PR was adopted a PR already exists, so instead close it carrying the reason, and record the decision where the repository tracks them — a closed PR's thread is not where the next attempt will look, and the queue re-proposes the same bump until something durable says why not.

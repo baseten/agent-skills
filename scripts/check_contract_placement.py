@@ -429,11 +429,22 @@ def main() -> int:
         # A supplied verdict is a snapshot. Most of it cannot go stale; the
         # work-in-flight item can, and bounded concurrency is what makes the
         # gap long enough to matter.
-        ("a moved target voids the package's whole triage, not selected findings",
-         "voids the triage for that package — not selected findings of it" in flat(ud)
-         and "What survives a target move is identity only" in flat(ud)
+        ("a moved target ends the task rather than reshaping it",
+         "A moved target ends this task; it does not reshape it" in flat(ud)
+         and "what survives is identity only" in flat(ud)
          and "even when a caller supplied a viability verdict clearing it"
          in flat(clause(ud, "- **Work already in flight.**", 2000))),
+        # A worker cannot revise its own model assignment, so re-deriving the
+        # research and continuing is the one outcome the selection rule exists
+        # to prevent — a mid-tier agent implementing a silent-failure release.
+        ("the stop is justified by the two caller decisions, model included",
+         "the model this task is running under" in flat(ud)
+         and "an agent cannot revise its own assignment" in flat(ud)),
+        ("the re-reading serves the report, not the continuation",
+         "The re-reading serves the report, not the continuation" in flat(ud)),
+        ("Report says what an ended task hands back",
+         "reports the new target, the refreshed failure-mode reading and the recomputed coupled set"
+         in flat(clause(ud, "A task ended by a moved target", 600))),
         # An advanced bot PR can move the target, which invalidates exactly the
         # three findings a verdict is most trusted for.
         ("a moved target re-runs the per-package gate items for that package",
@@ -476,9 +487,12 @@ def main() -> int:
          not in flat(notes("upgrade-major-dependency"))
          and "cannot go stale — a licence, a publication date, a peer's published ranges, the coupled set"
          not in flat(notes("upgrade-major-dependency"))),
-        ("a recomputed coupled set stops the task rather than reshaping it",
-         "that is not this task's decision to make" in flat(ud)
-         and "report it and stop" in flat(ud)),
+        ("membership is named as a caller decision, not the worker's",
+         "the decisions built on that triage are the caller's, not this task's" in flat(ud)
+         and "report and stop" in flat(ud)),
+        ("the producer expects the stop on any moved target, not just a changed set",
+         "Expect that stop on any moved target, not only a changed set" in flat(du)
+         and "cannot revise its own model assignment" in flat(du)),
         ("the producer expects that report and owns membership",
          "Coupling is target-derived too" in flat(du)
          and "reports and stops rather than reshaping its own task" in flat(du)),
@@ -489,7 +503,7 @@ def main() -> int:
          "A routine clearance is about one release" in flat(du)
          and "the route it chose has no viability gate in it" in flat(du)),
         ("the target rule reaches the research and the audit, not just the gate",
-         "licence, install cooldown, the breaking-change research, the usage audit"
+         "licence, install cooldown, breaking-change research and usage audit"
          in flat(ud)
          and "Supplied research is reusable on the same condition" in flat(ud)),
         ("the producer states the peer exception to per-package",
@@ -527,8 +541,8 @@ def main() -> int:
         # and it is smaller than the literal-match version this replaced, which
         # any rewording defeated.
         ("the target-move rule has exactly one bold statement",
-         sum("voids the triage" in b.lower() for b in BOLD.findall(ud)) == 1
-         and sum("reus" in b.lower() for b in BOLD.findall(ud)) == 0),
+         sum("ends this task" in b.lower() for b in BOLD.findall(ud)) == 1
+         and sum("voids the triage" in b.lower() for b in BOLD.findall(ud)) == 0),
         ("the non-adopted branch is still eligible as the baseline",
          "it is the baseline, and stays one until the bump is applied to it"
          in flat(ud)),

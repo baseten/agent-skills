@@ -162,22 +162,23 @@
       "id": 14,
       "name": "a-moved-companion-voids-the-whole-groups-peer-clearance",
       "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a coupled group of framework plus one companion. Your caller's verdict cleared licence, cooldown and peer caps for framework@2 and companion@2, and named those targets. Since then the adopted PR advanced the companion to v3; framework's target is still v2. The companion's v3 release changed its peer range to require framework@3. Question: which cached clearances can you still use?",
-      "expected_output": "Only framework's licence and cooldown, because framework's own target did not move. The companion's licence and cooldown must be re-run against v3. And the peer clearance is void for the whole group, framework included: a peer range is a relation between packages, so the companion advancing invalidates the peer check for every member even though framework's target is unchanged. Re-run the peer check over the whole target tuple \u2014 it will show companion@3 demanding framework@3 against a framework target of v2, which is an incompatible tuple that per-package reuse would have passed, since each individual clearance still reads as valid.",
+      "expected_output": "None of them, and this ends the task rather than continuing under a refreshed triage. The companion's target moved, so its own findings are void; and the peer clearance is void for the whole group, framework included, because a peer range is a relation between packages \u2014 companion@3 demanding framework@3 breaks framework's clearance without framework's target moving at all, which per-package reuse would have passed since each individual clearance still reads as valid. Framework's licence and cooldown are the only findings unaffected, and they are not enough to proceed on: a moved target puts membership and the model assignment back in the caller's hands, and this task cannot revise either. Re-read enough to report \u2014 the new target, what the range says about failure mode, the recomputed coupled set \u2014 and report the incompatible tuple (companion@3 requiring framework@3 against framework@2) with it.",
       "assertions": [
-        "The answer re-runs the peer check for the entire group rather than only for the companion that moved",
-        "The answer keeps framework's licence and cooldown clearances while re-running the companion's, distinguishing per-package findings from the relational one",
-        "The answer identifies the incompatible tuple (companion@3 requiring framework@3 against framework@2) as what per-package reuse would have missed"
+        "The answer treats the peer clearance as void for the entire group, not only for the companion that moved",
+        "The answer ends the task and reports rather than re-deriving the triage and proceeding",
+        "The answer identifies the incompatible tuple that per-package reuse would have passed",
+        "The answer names model selection or membership as a caller decision this task cannot revise"
       ]
     },
     {
       "id": 15,
       "name": "an-advanced-target-can-change-the-coupled-set",
       "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: your task is package A alone; the caller's triage said A is not coupled to anything, and cleared A@2. The adopted PR has since advanced A's target to v3, and A@3's peer range requires a compatible B@3 where A@2 accepted the installed B@2. B is not in your task. Question: what do you do?",
-      "expected_output": "Recompute, then stop and report. A's target moved, so A's own findings are void and re-run against v3 \u2014 and the coupled set is void too, because membership is derived from peer requirements at the targets: A@3 needing B@3 means A and B must now move together. That is a change to the task's membership, which is the caller's decision and not this task's, so report the recomputed set and stop. Do not add B and upgrade it, because nobody triaged B; and do not proceed with A alone, because that is the split-coupled-group failure the grouping exists to prevent.",
+      "expected_output": "Report and stop. A's target moved, so A's own findings are void, and so is the coupled set \u2014 membership is derived from peer requirements at the targets, and A@3 needing B@3 means A and B must now move together. Two decisions built on the old triage belong to the caller and not to this task: which packages are in it, and which model it runs under, since selection keys on a failure mode derived from research that now describes the wrong release. So re-read enough to make the report useful \u2014 the new target, the failure mode of the new range, the recomputed set \u2014 and hand it back. Do not add B and upgrade it, because nobody triaged B; and do not proceed with A alone, because that is the split-coupled-group failure the grouping exists to prevent.",
       "assertions": [
         "The answer recomputes the coupled set rather than treating the supplied one as still valid",
         "The answer refuses both to absorb B into the task and to proceed with A alone",
-        "The answer reports the changed membership back to the caller as the caller's decision"
+        "The answer reports back to the caller and stops, naming membership and model selection as the caller's decisions"
       ]
     }
   ]
