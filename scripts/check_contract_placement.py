@@ -618,7 +618,12 @@ def main() -> int:
          and "cannot revise its own model assignment" in flat(du)),
         ("the producer expects that report and owns membership",
          "Coupling is target-derived too" in flat(du)
-         and "reports and stops rather than reshaping its own task" in flat(du)),
+         and "reports and stops rather than reshaping its own task" in flat(du)
+         # The phrase alone is not the rule: round 19's conditional wrapped it
+         # ("and, finding it different, reports and stops…") and round 29
+         # removed the wrapper while leaving a guard blind to its return.
+         and "on the move itself, whether or not the set came out different"
+         in flat(du)),
         ("the peer-cap gate item says a supplied clearance dies group-wide",
          "dies as soon as **any** member's target moves"
          in flat(clause(ud, "- **Peer caps.**", 3000))),
@@ -682,7 +687,12 @@ def main() -> int:
          and sum("voids the triage" in b.lower() for b in BOLD.findall(ud)) == 0),
         ("the non-adopted branch is still eligible as the baseline",
          "it is the baseline, and stays one until the bump is applied to it"
-         in flat(ud)),
+         in flat(ud)
+         # Stated at two decision points — *Task* chooses the worktree, the
+         # phase performs the ordering — and the guard held only the first, so
+         # the phase could lose its path entirely and stay green.
+         and "the upgrade branch is already the baseline"
+         in flat(near(ud, "## Characterization tests", 1500))),
         ("a supplied adoption settles identity, not state",
          "**identity** is settled and its state is not"
          in flat(clause(ud, "- **Work already in flight.**", 3000))),

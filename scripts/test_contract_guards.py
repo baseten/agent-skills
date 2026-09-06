@@ -35,6 +35,7 @@ testing what its name says.
 
 from __future__ import annotations
 
+import ast
 import pathlib
 import re
 import shutil
@@ -171,6 +172,73 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
     ("r29 Close out stops reporting the clearances Dispatch requires", DU,
      "**which routine candidates were cleared and on what evidence** (see Dispatch", "nothing at all (see Dispatch",
      "close-out carries the clearance report dispatch requires of it"),
+
+    # --- the moved-target rule and its consumers (rounds 15-21), never
+    # --- mutated until round 33 measured the battery's own coverage ---
+    ("r21 the stop becomes conditional on a changed set again", DU,
+     "**reports and stops rather than reshaping its own task** — on the move itself, whether or not the set came out different (below)",
+     "and, finding it different, **reports and stops rather than reshaping its own task**",
+     "the producer expects that report and owns membership"),
+    ("r21 the caller stops expecting an unconditional stop", DU,
+     "**Expect that stop on any moved target, not only a changed set", "**Expect that stop when the set changes",
+     "the producer expects the stop on any moved target, not just a changed set"),
+    ("r19 the peer clearance survives another member's move", UD,
+     "dies as soon as **any** member's target moves", "dies when its own package's target moves",
+     "the peer-cap gate item says a supplied clearance dies group-wide"),
+    ("r18 the target rule stops reaching research and the audit", UD,
+     "licence, install cooldown, breaking-change research and usage audit", "licence and install cooldown",
+     "the target rule reaches the research and the audit, not just the gate"),
+    ("r21 the re-reading becomes a continuation again", UD,
+     "The re-reading serves the report, not the continuation.", "Then continue.",
+     "the re-reading serves the report, not the continuation"),
+    ("r15 the return mapping collapses to one figure", UD,
+     "package → current target mapping for every package that moved**, the refreshed failure-mode reading",
+     "current target**, the refreshed failure-mode reading",
+     "Report hands back a per-package mapping, symmetric with dispatch"),
+    ("r16 dispatch stops forwarding the per-package target", DU,
+     "**the viability verdict, the exact target version it measured for every package in the task, and the coupled set**",
+     "**the viability verdict and the coupled set**",
+     "dependency dispatch forwards the verdict, a per-package target, and the coupled set"),
+    ("r1 the gate stops exempting an automated bump PR", UD,
+     "**An automated bump PR for these same packages is not that**", "Any open PR counts",
+     "its in-flight item exempts an automated bump PR at the item itself"),
+    ("r1 triage stops exempting an automated bump PR", DU,
+     "**An automated bump PR for a candidate is never work already in flight — it is the work.**",
+     "An open PR removes a candidate.",
+     "an automated bump PR is the work, not work already in flight"),
+    ("r19 peer caps resolve against installed versions again", UD,
+     "resolving every cap against the group's **target** versions and not their installed ones",
+     "resolving every cap against the installed versions",
+     "its peer-cap item resolves caps against the group's targets"),
+    ("r20 the adopted PR's state is taken from the verdict again", UD,
+     "read the PR itself before branching from it", "trust the verdict's description of it",
+     "the adopted PR's state is refreshed, not taken from the verdict"),
+    ("r3 the lockfile is settled by hand", UD,
+     "never by hand", "carefully by hand",
+     "the worker re-resolves the lockfile and never by hand"),
+    ("r22 the PR-body record leaves the section that writes the report", UD,
+     "the base commit the lockfile was resolved against (see Migration and verification",
+     "the base (see Migration and verification",
+     "the PR-body record is stated where the report is written, not only where it is produced"),
+    ("r23 the target mapping stops covering every coupled member", DU,
+     "Forward a **package → triaged target** mapping covering every member", "Forward the task's target",
+     "the target mapping covers every coupled member"),
+    ("r24 the worker is scoped by version distance again", UD,
+     "The version distance does not decide whether this skill applies; **unruled-out risk of a breaking change does**",
+     "This skill applies to majors",
+     "the worker states the same scope test itself"),
+    ("r24 dispatch scopes the worker by version distance again", DU,
+     "whose triage did **not** clear it of breaking changes", "that is a major",
+     "dispatch scopes the worker by unruled-out risk, not version distance"),
+    ("r24 cleared routine bumps get one agent each", DU,
+     "**Routine bumps do not each get one.**", "Routine bumps get one each.",
+     "cleared routine bumps are batched rather than dispatched each"),
+    ("r21 the coupled set is claimed to survive a move", UD,
+     "relations over the targets rather than properties of one", "properties of one package",
+     "peer resolution and the coupled set are voided task-wide"),
+    ("r29 the non-adopted branch stops being the baseline", UD,
+     "the upgrade branch is already the baseline — one worktree", "cut a second worktree for the baseline",
+     "the non-adopted branch is still eligible as the baseline"),
 ]
 
 # Mutations against the eval corpus, which is a restatement of the contract and
@@ -211,6 +279,40 @@ def run_check(tree: pathlib.Path) -> set[str]:
 UNMUTATED_BY_DESIGN: dict[str, str] = {}
 
 
+def _assertion_names(src: str) -> set[str]:
+    """Every assertion label in the checker, by parsing rather than grepping.
+
+    A regex over `("...",` also matches the phrase tuples the checker uses as
+    fixtures, which inflates the gap and makes the coverage line a number
+    nobody can act on — the exact species of false reassurance this file
+    exists to remove, committed inside the thing that measures it. So the
+    module is parsed and only the first element of each 2-tuple appended to a
+    list named `checks` is taken.
+    """
+    names: set[str] = set()
+    for node in ast.walk(ast.parse(src)):
+        # Both forms: `checks = [...]` and `checks: list[...] = [...]`. The
+        # first version of this handled only ast.Assign and found nothing,
+        # which surfaced as every mutation naming a missing assertion — loudly,
+        # which is the behaviour to keep.
+        if isinstance(node, ast.Assign):
+            targets, value = node.targets, node.value
+        elif isinstance(node, ast.AnnAssign):
+            targets, value = [node.target], node.value
+        else:
+            continue
+        if not isinstance(value, ast.List):
+            continue
+        if not any(isinstance(t, ast.Name) and t.id == "checks" for t in targets):
+            continue
+        for elt in value.elts:
+            if (isinstance(elt, ast.Tuple) and len(elt.elts) == 2
+                    and isinstance(elt.elts[0], ast.Constant)
+                    and isinstance(elt.elts[0].value, str)):
+                names.add(elt.elts[0].value)
+    return names
+
+
 def coverage_gap(tree: pathlib.Path) -> list[str]:
     """Assertion names in the checker with neither a mutation nor an exemption.
 
@@ -227,7 +329,7 @@ def coverage_gap(tree: pathlib.Path) -> list[str]:
     ranks, and `NAMED_BELOW` is what closes the gap.
     """
     src = (tree / "scripts" / "check_contract_placement.py").read_text(encoding="utf-8")
-    names = set(re.findall(r'^\s*\("([^"]{12,})",\s*$', src, re.M))
+    names = _assertion_names(src)
     covered = {expected for *_, expected in MUTATIONS + EVAL_MUTATIONS}
     unknown = covered - names
     if unknown:
@@ -282,9 +384,15 @@ def main() -> int:
 
     print()
     if gap:
-        print(f"COVERAGE {len(MUTATIONS) + len(EVAL_MUTATIONS)} mutations over "
-              f"{len(MUTATIONS) + len(EVAL_MUTATIONS) + len(gap)} assertions "
-              f"({len(gap)} with no mutation and no stated exemption).")
+        # Assertions and mutations are different units — several mutations can
+        # exercise one assertion — so the first version of this line added them
+        # together and printed a denominator that was not a count of anything.
+        # A reassuring number that does not mean what it says is the failure
+        # this file exists to catch, so it is spelled out.
+        covered = len({expected for *_, expected in MUTATIONS + EVAL_MUTATIONS})
+        print(f"COVERAGE {covered} of {covered + len(gap)} assertions have a mutation "
+              f"({len(MUTATIONS) + len(EVAL_MUTATIONS)} mutations in total); "
+              f"{len(gap)} have neither a mutation nor a stated exemption.")
         print("  A guard nobody has broken is a guard nobody has tested. The next few:")
         for name in gap[:8]:
             print(f"  - {name}")

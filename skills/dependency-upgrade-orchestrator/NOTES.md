@@ -130,6 +130,12 @@ Two smaller lessons from the same measurement, both about what a mutation actual
 
 And a coverage regression worth naming, because it hid inside a fix: replacing a twelve-literal fixture with one phrase per bullet dropped four protections, two of them consequences round thirty had paid a round to rescue. The structure was right and the contents were narrower than what they replaced, and nothing recorded the trade. A guard rewritten to be better shaped still owes an accounting of what it stopped checking.
 
+Then the coverage number itself was wrong twice, in ways worth recording because both are the shape this whole exercise is about. It first counted by grepping `("...",` — which also matches the checker's own phrase fixtures, inflating the denominator into a number nobody could act on — and then, once parsed properly, printed *mutations plus uncovered assertions* as a total, adding two different units. **A reassuring number that does not mean what it says is the same defect as a guard that cannot fail**, one level further out, and it was committed inside the thing built to measure that defect.
+
+Writing the first eighteen mutations for previously untested assertions immediately found two more guards green over their own subject: the one requiring the worker's stop to be reported checked a phrase that **survives inside the conditional wrapper round nineteen used**, so the old conditional could come back untouched; and the one holding the no-adopted-PR baseline checked the *Task* sentence while the phase that performs the ordering could lose its path entirely. Neither was reachable by reading. Both were the first thing their mutation found.
+
+That is the argument for the coverage line existing at all. It does not fail the build, so it costs nothing; it just says how much of the checker has never been broken on purpose, and every batch of that debt paid off so far has returned a real defect.
+
 ## Why supervisors emit only state changes, and only actionable ones
 
 A supervisor that re-emits unchanged state trains its reader to ignore it, which defeats the purpose at exactly the moment something real occurs.
