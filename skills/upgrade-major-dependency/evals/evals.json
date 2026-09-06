@@ -182,6 +182,42 @@
         "In the changed-set case the answer refuses both to absorb B and to proceed with A alone",
         "The answer returns a package-to-current-target mapping rather than a single new target"
       ]
+    },
+    {
+      "id": 16,
+      "name": "a-moved-target-stop-does-not-close-the-adopted-pr",
+      "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you adopted bump PR #412, which has since advanced and moved the target. You are ending the task on the moved target. A colleague says the contract's Report section is clear that where a bump PR was adopted you close it carrying the reason, so you should close #412 and explain the move in it. Questions: (a) do you close #412? (b) what does the rule the colleague is quoting actually cover? (c) what happens to the upgrade next, and what does your report have to carry for that to work?",
+      "expected_output": "Leave #412 open. The rule the colleague is quoting is about an upgrade that proved unsafe, and this one was not judged unsafe at all \u2014 nothing was researched, audited or migrated. The task ended because the caller has two decisions to make again, membership and the model, and it re-dispatches afterwards.\n\nClosing it would destroy the one thing a moved target leaves standing. Its URL is identity, and identity is the whole of what survives; the re-dispatch would get a dead reference and the queue would re-propose the same bump from scratch.\n\nThe report carries a package to current target mapping for every package that moved, the refreshed failure-mode reading per moved package, the recomputed coupled set, and the incompatible tuple if a peer range is what moved. #412 stays open and is named as the adopted PR the next dispatch continues on.",
+      "assertions": [
+        "The answer leaves the adopted PR open rather than closing it",
+        "The answer distinguishes a moved-target stop from an upgrade that proved unsafe",
+        "The answer says closing it would destroy the identity that survives the move",
+        "The answer names what the report carries back for the re-dispatch"
+      ]
+    },
+    {
+      "id": 17,
+      "name": "research-does-not-resume-a-task-the-gate-ended",
+      "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: your caller supplied research for parser@4. You are at the Research phase. You notice the adopted PR advanced to parser@5 while you were setting up the worktree. The supplied research describes a release you are not installing. The Research section says supplied research is reusable only while the target is the one it measured, and to read the range to the new target rather than extending the old notes. Questions: (a) do you read the range to parser@5? (b) if so, what do you do with what you find? (c) do you continue into Usage audit?",
+      "expected_output": "Read the range to parser@5, and report it rather than act on it. The task has already ended \u2014 a moved target ends it at the gate, before this phase \u2014 so what is owed here is not research for a migration, it is the failure-mode reading the caller needs to re-select a model.\n\nDo not continue into Usage audit. Extending the old notes to cover the new range, or re-researching and carrying on, is exactly the continuation the stop exists to prevent, and it arrives looking like diligence: the work is real, the notes are accurate, and the migration that follows is being run by a model selected from a failure mode that no longer describes the release.\n\nReport the mapping (parser: 4 to 5), what the range up to parser@5 says about failure mode, the recomputed coupled set, and stop. Leave the adopted PR open.",
+      "assertions": [
+        "The answer reads the range to the new target but does not continue the phase order",
+        "The answer explicitly declines to enter Usage audit",
+        "The answer says the re-read serves the report rather than the migration",
+        "The answer connects continuing to the model selection the caller owns"
+      ]
+    },
+    {
+      "id": 18,
+      "name": "a-registry-release-is-not-a-moved-target",
+      "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: no adopted PR. Your caller dispatched you to upgrade toolkit from v3 to v4 and named v4 as the target. Before starting you check the registry and find toolkit@4.1.0 was published two hours ago; the caller measured its licence, cooldown and peer caps against v4.0.0. Questions: (a) has the target moved? (b) do you end the task and report? (c) what would make it a moved target?",
+      "expected_output": "No, the target has not moved, and no, do not end the task. The target is v4.0.0 because that is what the caller named, and with no adopted PR there is nothing in this task that can move it. A newer release appearing upstream is not a moved target \u2014 reading it as one would stop every task the moment its registry published anything, and would cost a dispatch round trip on every dispatch.\n\nWhat moves a target is an adopted bump PR's head advancing, which is why the comparison is answered by reading that PR. There is no such PR here.\n\nProceed: branch from the latest default branch, run the gate with the supplied clearances for v4.0.0 intact, and upgrade to the version the caller named.",
+      "assertions": [
+        "The answer says the target has not moved and the task continues",
+        "The answer identifies an adopted PR's head as what moves a target",
+        "The answer rejects the reading that would stop the task on any upstream publication",
+        "The answer keeps the supplied clearances rather than voiding them"
+      ]
     }
   ]
 }

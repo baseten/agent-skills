@@ -157,6 +157,30 @@
         "The answer identifies that the routine route contains no viability gate, so the batch being green is not evidence about it",
         "The answer re-triages against the new target and reconsiders model selection, taking the target move itself as the trigger rather than waiting for a changed coupled set, while leaving the five unmoved candidates cleared"
       ]
+    },
+    {
+      "id": 14,
+      "name": "the-routine-batch-inherits-nothing-by-cross-reference",
+      "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: triage cleared six patches as routine bumps, and they are going out as one batched task with one PR. You are writing that agent's brief. A colleague says the batch needs only the package list and the version bumps, since Dispatch's other requirements \u2014 re-running the work-already-in-flight search, reading each adopted bump PR's current state, re-resolving the lockfile and recording the base \u2014 are all stated by pointing at upgrade-major-dependency, and this task does not run that skill. Questions: (a) is the colleague right that those requirements do not apply? (b) what goes in the brief? (c) which of them is this route most exposed to, and why?",
+      "expected_output": "The colleague is right that they are not inherited and wrong that they do not apply. This is the one task in the run that runs no named contract, so every obligation stated by pointing at upgrade-major-dependency reaches it through nothing \u2014 but those obligations are not about migration, which is the only thing the exclusion is about.\n\nState them to the agent directly: re-run the work-already-in-flight search immediately before writing anything, for every batched package; read each adopted bump PR's current state before branching from it; re-resolve the lockfile against the base before pushing, record which base, and state it in the PR body.\n\nThe lockfile one, most. Six candidates share one file and one PR, so it is the most lockfile-exposed task in the run, and it is the one whose producer contract has to be written out here rather than inherited from a skill it never invokes.",
+      "assertions": [
+        "The answer says the obligations apply but are not inherited",
+        "The answer states all three obligations in the brief rather than cross-referencing them",
+        "The answer explains that the exclusion is about migration and these rules are not",
+        "The answer identifies the shared lockfile as the sharpest exposure for this route"
+      ]
+    },
+    {
+      "id": 15,
+      "name": "the-routine-target-recheck-names-an-actor-that-exists",
+      "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: six routine bumps are batched into one task. A clearance is about one release, so a candidate whose target advances into a breaking release would ride the batch past upgrade-major-dependency entirely. A colleague drafts the rule as: re-check every batched candidate's target immediately before that task lands. Questions: (a) what is wrong with that rule? (b) where does the check actually go? (c) what does close-out say about it?",
+      "expected_output": "It names a moment this run does not occupy. This layer merges nothing, so nothing here reaches the point where the task lands, and a rule keyed to that moment has no actor to run it \u2014 the same defect the shared-lockfile rule had before it was rewritten to carry its check rather than hold it.\n\nSo the check is carried to actors that exist. The batch agent re-checks immediately before it writes anything, which is a moment it does occupy. This run re-checks on every supervision pass and again at close-out. Where a batched candidate's target moved, its clearance is void: pull it out, re-triage against the new target, and dispatch it like any uncleared bump, because the move also invalidates the model selection the clearance implied.\n\nClose-out reports whether any batched candidate's target moved since it was cleared, and names that check as the merger's to repeat \u2014 the same handoff the lockfile check gets, for the same reason.",
+      "assertions": [
+        "The answer identifies that the drafted rule names a moment this layer does not occupy",
+        "The answer places the check with the batch agent before it writes and with this run on every supervision pass",
+        "The answer has close-out name the check as the merger's to repeat",
+        "The answer draws the parallel to the shared-lockfile rule rather than treating this as a new problem"
+      ]
     }
   ]
 }

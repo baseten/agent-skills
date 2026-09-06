@@ -182,8 +182,9 @@ def states_rather_than_restates(name: str, phrase: str) -> bool:
 
     So the check is on a property that is decidable: an expected answer states
     what it requires and never restates what it rejects. That is a real
-    authoring convention rather than a device to satisfy a checker — all
-    eleven scenarios in these two skills already read that way, because the
+    authoring convention rather than a device to satisfy a checker — every
+    scenario in these two skills already read that way when it was introduced,
+    with no text changed to satisfy it, because the
     wrong instruction belongs in the prompt, where a colleague suggests it,
     and the assertions are free to name it. Only the expected answer is
     constrained, and that is the field that teaches.
@@ -735,6 +736,75 @@ def main() -> int:
          "the base commit the lockfile was resolved against" in flat(clause(ud, "State what changed", 2000))),
         ("close-out reports per-PR lockfile staleness to the merger",
          "the merger's to repeat" in flat(du)),
+
+        # SHAPE, found by a repository-scoped pass rather than a diff review.
+        # Round 3 removed an ownerless "immediately before merging" from the
+        # lockfile rule; the routine-bump rule then said "immediately before
+        # that task lands", which is the same defect with a different verb in
+        # the other file. The round-3 guard could not see it: it was scoped to
+        # the WORKER's evals and spelled to that instance's verb.
+        # An ABSENCE check on the phrasing is not the answer — `du` uses it
+        # correctly inside the authorized-merge clause and `ud` quotes it in
+        # order to reject it, so such a check would have to tell use from
+        # mention, which is the problem two deleted detectors failed at. So:
+        # presence of the CARRIED structure. Each part names an actor that
+        # exists — the agent before it writes, this run on every pass, the
+        # merger afterwards.
+        ("the routine-target check is carried to actors that exist, not held at the merge",
+         "That check is carried rather than held" in flat(du)
+         and "The batch agent re-checks immediately before it writes anything" in flat(du)
+         and "this run re-checks on every supervision pass and again at close-out"
+         in flat(du)
+         and "whether any batched candidate's target moved since it was cleared"
+         in flat(near(du, "## Close out", 900))
+         # The presence check above is the load-bearing half, and on its own it
+         # is satisfiable while the defect sits beside it — negative-testing
+         # showed the old heading restored with the carried paragraph left in
+         # place going green, which is the two-disagreeing-statements shape
+         # this pass found five times. So the exact constructions that have
+         # occurred are named. This is a fixture list, not a detector: it holds
+         # what a real defect said here, it cannot decide a novel verb, and a
+         # broad ban on the phrasing is unavailable because `du` uses it
+         # correctly under the authorized-merge exception and `ud` quotes it
+         # to reject it.
+         and not any(phrase in flat(text) for text in (ud, du) for phrase in (
+             "target immediately before that task lands",
+             "candidate's target immediately before",
+             "re-check every batched candidate's target immediately",
+         ))),
+        # The routine batch is the one task that runs no named contract, so
+        # every obligation delegated by pointing at `upgrade-major-dependency`
+        # reaches it through nothing. Three did.
+        ("the routine batch is given the obligations it cannot inherit",
+         "The routine batch runs no named contract" in flat(du)
+         and all(phrase in flat(near(du, "**The routine batch runs no named contract", 1800))
+                 for phrase in ("Re-run the work-already-in-flight search",
+                                "Read each adopted bump PR's current state",
+                                "Re-resolve the lockfile against the base"))),
+        # SHAPE: an obligation on the report, stated only at the phase that
+        # produces it, is dropped by an agent writing from *Report* — which
+        # reads as an exhaustive list. Round 3 walked one cell (the base
+        # commit) and left an assertion for it; four more were never walked.
+        ("every report obligation is stated where the report is written",
+         all(phrase in flat(near(ud, "State what changed", 2500))
+             for phrase in ("the base commit the lockfile was resolved against",
+                            "the measurement standing in for",
+                            "what the real evidence is and that the passing build is not it",
+                            "the in-flight search rather than the caller found the adopted bump PR"))),
+        ("close-out carries the clearance report dispatch requires of it",
+         "which routine candidates were cleared and on what evidence" in flat(du)),
+        # The worker's return grew a fourth item that eval 14 already graded.
+        ("the return contract and its consumer agree on the incompatible tuple",
+         "the incompatible tuple" in flat(near(ud, "A task ended by a moved target reports", 1200))
+         and "the incompatible tuple where a peer range is what moved" in flat(du)),
+        # A moved-target stop is not "proved unsafe", and the rule beside it
+        # tells the worker to close the adopted PR — destroying the one thing
+        # the move leaves standing.
+        ("a moved-target stop leaves the adopted PR open",
+         "leaves an adopted PR open" in flat(ud)),
+        # Research was written when a moved target meant re-derive and continue.
+        ("the research phase does not resume a task the gate ended",
+         "That case does not resume here" in flat(near(ud, "## Research", 900))),
         # Discovery text is a decision point too: it is what a caller reads
         # before dispatching, and it advertised a workflow the contract rejects.
         ("the orchestrator's description names the routine-bump path",
