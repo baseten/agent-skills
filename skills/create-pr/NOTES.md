@@ -16,6 +16,12 @@ On Linear and other trackers, the same rule holds through a different mechanism 
 
 The trigger comment is the one post exempted from the posting-identity rule because there its authorship is **functional, not cosmetic**: authored by anything but the invoking user, the repository's review convention silently does not fire — nothing refuses it, so the run waits out a review that was never going to arrive. `backlog-orchestrator`, *Posting identity*, states the rule once, including the bootstrap for a fresh run's first trigger; this skill carries only the exception, not a restatement.
 
+## The PR body's brevity, and the trigger's second exemption
+
+The brevity rule lives in `backlog-orchestrator`, *Authored write form*; what is local here is which of this skill's elements survive it. All of them do — the linkage line, `Depends on:`, and the `Part of:`/`Blocked by:` pair with its unmet-criteria section — and they have to be named rather than left to inference, because each exists to prevent a specific failure a shorter body would reintroduce: an orphan PR, a lost stack edge, an issue auto-closed over work nobody finished. The elements that brevity is actually aimed at are the ones nothing requires: the implementation narrative, the restated issue, the log of what was tried.
+
+The trigger comment's exemption from the footer is the same argument as its exemption from the posting-identity rule, one section up, and it is stated for the same reason: the comment must match what the convention matches on, and a convention that does not fire fails silently. Two exemptions, one cause — which is why the contract states them in one bullet rather than two.
+
 ## Why the output reports identities per write kind, even under one (transport, credential) pair
 
 The PR's creation and the trigger comment are distinct write kinds a platform may author differently under the same pair — an app-scoped token attributes most endpoints to the user and some to the app. A merged single answer would overwrite one observation with the other, and the trigger comment's entry is the only comment-kind evidence the caller's next trigger selection can use. Filed under a composite key but reporting only the transport, an entry cannot be merged into the caller's map at all. The invoking-user entries are reported too because they are exactly what trigger selection needs — a single-valued output would force the caller to lose either the distinct path for later writes or the invoking-user path for later triggers.

@@ -100,13 +100,17 @@ with the resolved `owner`/`repo`, `pullNumber`, `commentId`, and a `body`
 referencing the commit SHA and what changed, e.g.:
 
 > Fixed in `<sha>` — \<short description of the fix\>.
+>
+> \<attribution footer\>
 
 In a local session with `gh` CLI:
 
 ```bash
 gh api repos/<owner>/<repo>/pulls/<PR>/comments/<comment_id>/replies \
   --method POST \
-  --field body="Fixed in <sha> — <short description of the fix>."
+  --field body="Fixed in <sha> — <short description of the fix>.
+
+<attribution footer>"
 ```
 
 - If multiple comments were fixed in the same commit, each gets the same SHA.
@@ -166,10 +170,9 @@ asks, and a **draft reply** (below) — and the thread is left open.
 
 **Do not reply substantively on any path, here or elsewhere.** A reply the run
 composes on its own authority is an answer nobody authorised: the question was
-addressed to a person, and a plausible-sounding guess in their voice is worse
-than silence, because the reviewer reads it as the owner's answer and stops
-asking. Unattended there is also nobody to notice — but that is what makes the
-failure loud here, not what makes it a failure.
+addressed to a person, and it will be read as that person's position however it
+is signed. Unattended there is also nobody to notice — but that is what makes
+the failure loud here, not what makes it a failure.
 
 ### Classify-only invocations
 
@@ -223,6 +226,14 @@ one built on a gap is not.
 Keep it to what the thread asks. A draft that reopens the design is a new
 review round, not a reply.
 
+**The draft carries no attribution footer.** It is not a write this run authors
+— the person who posts it authors it, as themselves, which is the point of
+handing it over — and the form rule governs only writes the run makes
+(`backlog-orchestrator`, *Authored write form*). The one place a drafted answer
+is posted by a workflow is `settle-outstanding-decisions`,
+*Recording the ruling*, and the footer is added there, on that write, rather
+than carried in from here.
+
 `backlog-orchestrator`, *Per-repository policy configuration*, owns the rule
 that separates the two kinds. Apply it from there rather than inventing a
 second test. Its short form: a thread asking for a code change this pass can
@@ -259,11 +270,16 @@ waiting on this pass: the person who invoked it attended, the caller as a
 closed out by prose from this skill** — the only outcomes it has are a pushed fix,
 an escalation, or no-action.
 
-The reason is that the reviewer asked a **person**. An answer composed here
-arrives in that person's voice — under their login on the degraded posting path,
-which is the common one — so the reviewer reads it as theirs and stops asking,
-whether or not it was right. Handing them the draft instead costs one paste and
-keeps the answer attributable to whoever actually stands behind it.
+The reason is authority, not disclosure. The reviewer asked a **person**, and
+nobody authorised this pass to answer for them — so the reply would be read as
+that person's position whatever signs it. **The attribution footer does not
+license it** (`backlog-orchestrator`, *Authored write form*): saying which tool
+typed an answer says nothing about whose answer it is, and a reader who accepts
+a footered reply as the owner's position has read it correctly, because it is
+posted in a thread addressed to them. Disclosure would be the whole story only
+if the defect were the reviewer's confusion; the defect is that the position is
+not the run's to state. Handing over the draft costs one paste and keeps the
+answer attributable to whoever actually stands behind it.
 
 **One path posts an answer this skill drafted, and it is not this skill**:
 `settle-outstanding-decisions`, *Recording the ruling*, posts the approved or

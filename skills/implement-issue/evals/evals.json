@@ -88,6 +88,19 @@
         "the no-action entry does not hold the merge gate but is still recorded"
       ],
       "files": []
+    },
+    {
+      "id": 7,
+      "name": "direct-invocation-still-signs-its-comments-and-not-the-trigger",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a person invoked you directly on one issue. No orchestrator dispatched you, so you received no dispatch prompt. A repair pass has just pushed a fix and repository convention requires re-triggering review. Questions: (a) do the timeline comments you post on this PR carry the attribution footer, given that nothing dispatched the rule to you? (b) does the re-trigger comment carry it? (c) what happens if you get (b) wrong?",
+      "expected_output": "(a) Yes. The authored-write-form rule covers every authored forge write on the run's behalf, whichever skill performs it; the dispatch prompt is how a Sonnet worker receives it, not the source of the obligation, and a directly-invoked run is exactly the case with no prompt to carry it. Short, and ending with the footer. (b) No — the review-trigger comment is the one write exempt, because it must read exactly as the convention expects. (c) It fails silently: nothing errors, the convention does not fire, and the run waits out a review that was never going to arrive.",
+      "assertions": [
+        "the timeline comments carry the attribution footer even with no dispatch prompt",
+        "the answer does not treat the absence of a dispatch prompt as exempting the run from the rule",
+        "the re-trigger comment carries no footer",
+        "the answer names the silent failure as the consequence of footering the trigger"
+      ],
+      "files": []
     }
   ]
 }
