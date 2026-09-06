@@ -82,6 +82,10 @@ It also compounds with two rules already here. "Branch from the latest `origin/<
 
 Hand-resolving is excluded for the same reason a grep on the lockfile is: it is a proxy for a resolution the package manager is the only authority on, and its failure mode is a false pass.
 
+Round three of that PR then found the rule stated at a decision point this contract does not own. "Re-resolve immediately before merging" is correct about the moment and names an actor that does not exist here: this skill is dispatched to produce a PR and merges nothing, so the earliest it can act is handoff, and the base can go stale again in the hours before a human merges — reproducing the exact defect. That is mechanism 1 in `docs/review-fix-workflow.md`, and it is worth recording that the fix for the incident introduced it: a rule written where the failure was observed rather than where it can be executed reads as correct and is inert.
+
+The resolution is not to weaken the moment but to stop pretending this skill occupies it. It re-resolves before pushing, records the base commit it resolved against in the PR body, and reports the result as a handoff result. That record is what converts "someone must remember to re-check" into a comparison anyone can make later, and it is why the contract forbids describing the handoff check as a merge-time one — a rule's own name attached to weaker evidence is the false pass in its purest form.
+
 ## Why absence of output is called out explicitly
 
 Two distinct false positives on one run shared this root: a filter matching only success signals stayed silent through a crash, and an empty check rollup — checks not yet registered — was read as everything passing. In both, nothing was wrong with the observation; the error was treating "no evidence of failure" as "evidence of no failure".

@@ -122,6 +122,17 @@
         "The answer groups the six cleared patches into one task instead of one agent each",
         "The answer records which candidates were cleared and the evidence, rather than letting the clearance be implicit"
       ]
+    },
+    {
+      "id": 11,
+      "name": "a-handoff-lockfile-check-is-not-a-merge-time-one",
+      "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: five PRs from your batch are open and awaiting human review. Each agent re-resolved its lockfile before pushing and recorded the base commit it resolved against. Two hours ago one of the five merged, moving the base. A colleague asks for the batch status and notes that every PR is green and every lockfile was re-resolved. Question: what do you report, and what do you do?",
+      "expected_output": "Those re-resolutions are handoff results and the base has moved since. Compare each open PR's recorded base against the current base, name the ones now stale, and redispatch those for a re-resolution pass \u2014 do not report them green on the strength of the handoff check. This run merges nothing, so it cannot perform the check at merge time; it carries it, and the remaining check is named as the merger's to repeat.",
+      "assertions": [
+        "The answer compares each PR's recorded base against the current base rather than trusting the completed re-resolutions",
+        "The answer redispatches the stale PRs instead of reporting them green or merging them",
+        "The answer states that this run does not merge and hands the merge-time repeat of the check to whoever does"
+      ]
     }
   ]
 }

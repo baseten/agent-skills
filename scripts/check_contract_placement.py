@@ -311,12 +311,28 @@ def main() -> int:
         # A stale base is invisible to every green signal: two upgrades editing
         # different lockfile entries do not conflict, so the merge is clean and
         # the merged lockfile carries a resolution the base had removed.
-        ("the worker re-resolves the lockfile at merge time, not at branch time",
-         "immediately before merging" in flat(ud)
+        ("the worker re-resolves the lockfile and never by hand",
+         "before pushing, and record which base" in flat(ud)
          and "never by hand" in flat(ud)),
+        # Neither skill merges, so a rule saying "immediately before merging"
+        # names an actor that does not exist and the base goes stale again
+        # between handoff and the human's merge. The check is carried, not held.
+        ("the worker states that its result expires at handoff",
+         "That result expires, and this task ends at handoff" in flat(ud)
+         and "state in the PR body the base commit" in flat(ud)),
         ("the batch states the shared-lockfile amplifier at the concurrency site",
-         "staleness compounds across it" in flat(du)
-         and "not at the moment it was dispatched" in flat(du)),
+         "staleness compounds across it" in flat(du)),
+        ("the batch carries the check to merge time rather than claiming to hold it",
+         "merges nothing, so it cannot hold that check at merge time" in flat(du)
+         and "name every open PR whose lockfile has gone stale" in flat(du)),
+        ("the PR-body record is stated where the report is written, not only where it is produced",
+         "the base commit the lockfile was resolved against" in flat(clause(ud, "State what changed", 2000))),
+        ("close-out reports per-PR lockfile staleness to the merger",
+         "the merger's to repeat" in flat(du)),
+        # Discovery text is a decision point too: it is what a caller reads
+        # before dispatching, and it advertised a workflow the contract rejects.
+        ("the orchestrator's description names the routine-bump path",
+         "plus one batched task for the routine bumps" in flat(du)),
         ("the characterization baseline excludes an adopted PR's head",
          "never the baseline" in flat(ud)
          and "merge base" in near(ud, "## Characterization tests", 1800)),

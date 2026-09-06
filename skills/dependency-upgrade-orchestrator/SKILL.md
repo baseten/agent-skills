@@ -1,6 +1,6 @@
 ---
 name: dependency-upgrade-orchestrator
-description: Take a set of dependency upgrades, triage each against its changelog and the codebase's usage, establish coupling and viability, select a model per upgrade by failure mode, then dispatch isolated subagents that each run `upgrade-major-dependency`. Supervises CI and separates infrastructure failure from real failure. Use for a batch; use `upgrade-major-dependency` directly for one.
+description: Take a set of dependency upgrades, triage each against its changelog and the codebase's usage, establish coupling and viability, select a model per upgrade by failure mode, then dispatch isolated subagents — one per upgrade or coupled group running `upgrade-major-dependency`, plus one batched task for the routine bumps triage cleared, which need no migration workflow. Supervises CI and separates infrastructure failure from real failure. Use for a batch; use `upgrade-major-dependency` directly for one.
 ---
 
 # Dependency Upgrade Orchestrator
@@ -63,7 +63,9 @@ Constrain each agent explicitly:
 - **No full-suite runs** where the suite is sharded across CI runners. Scoped runs plus CI.
 - **Stopping and reporting outranks producing a PR.** State that a documented dead end is an acceptable and valuable outcome.
 
-**A batch shares one lockfile, and staleness compounds across it.** Every agent branches from the same base and resolves the lockfile against it independently, so each merge moves that base under every PR still open. Nothing announces the consequence: a branch cut before another's merge resolves its *new* entries against the tree as it was, and can pin a transitive to a version the base no longer carries. Require each agent to bring the base in and **re-resolve** immediately before its PR merges — not at the moment it was dispatched, which is the reading that produced the defect — and stagger merges for the same reason concurrency is bounded, so a re-resolving agent is not racing the next merge.
+**A batch shares one lockfile, and staleness compounds across it.** Every agent branches from the same base and resolves the lockfile against it independently, so each merge moves that base under every PR still open. Nothing announces the consequence: a branch cut before another's merge resolves its *new* entries against the tree as it was, and can pin a transitive to a version the base no longer carries.
+
+**This run merges nothing, so it cannot hold that check at merge time — it carries the check there instead.** Require each agent to re-resolve before pushing and to record the base commit its lockfile was resolved against (`upgrade-major-dependency`, *Migration and verification*). Then compare that recorded base against the current base on every supervision pass and again at close-out, and **name every open PR whose lockfile has gone stale**. That comparison is this layer's actual job here, it costs one read per PR, and it is the only thing standing between a handoff-time result and a merge that trusts it hours later. A stale PR is redispatched for a re-resolution pass like any other repair — never merged on the strength of the handoff check, and never reported green on it. Where a merge does happen under a separate explicit authorization, the re-resolution belongs immediately before that merge, and merges are staggered for the same reason concurrency is bounded, so a re-resolving agent is not racing the next one.
 
 **Bound concurrency.** Agents each running a test suite are not free; a batch dispatched at full width exhausted one machine's memory and killed a quarter of the run. Begin narrow and widen as agents complete. Where CI builds container images, stagger pushes — simultaneous multi-architecture builds exhaust shared infrastructure the run does not own.
 
@@ -79,7 +81,7 @@ Read a **changed** failure signature carefully. A signature that narrows after a
 
 ## Close out
 
-Per task, a PR following the repository's conventions — one per upgrade or coupled group, plus the one carrying the batched routine bumps (see Dispatch). Across the batch, report what landed, what was declined and why, and what remains blocked on a decision only a human can make.
+Per task, a PR following the repository's conventions — one per upgrade or coupled group, plus the one carrying the batched routine bumps (see Dispatch). Across the batch, report what landed, what was declined and why, what remains blocked on a decision only a human can make, and **per open PR, whether its lockfile is still resolved against the current base** — naming that check as the merger's to repeat, since this run merges nothing.
 
 Record declined upgrades where decisions are tracked rather than in a closed PR, since the next attempt begins from the same outdated list.
 

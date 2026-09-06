@@ -61,7 +61,11 @@ The same reasoning extends to shared infrastructure: simultaneous container-imag
 
 Concurrency has a second cost that is not about resources at all, found later and from a merged defect rather than a failed run: a batch shares one lockfile. Each agent resolves it against the base as the agent found it, and each merge moves that base under every PR still open — so the first merge is safe and none of the ones after it are, without anything failing to say so. The branch installs, its tests pass, CI is green and the merge is conflict-free, because two upgrades editing different entries of the same lockfile do not conflict; what merges is a resolution the base had already removed.
 
-The lever is the same one, which is why the rule sits beside it: re-resolve immediately before merging rather than at dispatch, and stagger the merges so a re-resolving agent is not racing the next one. `upgrade-major-dependency`, *Migration and verification*, states the per-agent half — this is the batch-level reason the per-agent rule cannot be left to each agent's own sense of timing.
+The lever is partly the same one, which is why the rule sits beside it, and partly not — as round three of that PR established. This layer defines no merge gate and merges nothing (`README.md` limits autonomous merging to the explicitly gated skills), so "re-resolve immediately before merging" was an instruction with no owner: the worker ends at handoff, and nothing in either contract occupies the moment the rule names.
+
+What this layer *can* do is the one thing neither the worker nor the merger is positioned to: it sees the whole batch, so it knows when a merge has moved the base under PRs that are still open. So the check is carried rather than held — each agent records the base its lockfile was resolved against, and this run compares that against the current base every supervision pass and at close-out, naming the PRs that have gone stale and redispatching them. The comparison costs one read per PR and it is the only thing between a handoff-time result and a merge that trusts it hours later. `upgrade-major-dependency`, *Migration and verification*, states the per-agent half and its own expiry.
+
+Staggering survives unchanged, for its original reason.
 
 ## Why "green" gates on the required check specifically
 
