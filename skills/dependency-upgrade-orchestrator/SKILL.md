@@ -57,11 +57,12 @@ One subagent per upgrade or coupled group, each in **its own worktree**, each in
 
 That check is carried rather than held, exactly as the shared-lockfile one below is and for the same reason: **this run merges nothing**. The batch agent re-checks immediately before it writes anything — a moment it does occupy — this run re-checks on every supervision pass and again at close-out, and close-out names the check as the merger's to repeat. A rule saying "before the task lands" would name an actor no layer here has.
 
-**The routine batch runs no named contract, so every obligation this section delegates by pointing at `upgrade-major-dependency` reaches it through nothing.** It is the one task in the run that skill explicitly excludes (see Enumerate), and the exclusion is correct — there is no migration to research — but the rules that ride on the cross-references are not about migration and apply to it unchanged. State them to that agent directly:
+**The routine batch runs no named contract, so every obligation this section delegates by pointing at `upgrade-major-dependency` reaches it through nothing.** It is the one task in the run that skill explicitly excludes (see Dispatch above, and `upgrade-major-dependency`, *Task*), and the exclusion is correct — there is no migration to research — but the rules that ride on the cross-references are not about migration and apply to it unchanged. State them to that agent directly:
 
-- **Re-run the work-already-in-flight search immediately before writing anything**, for every batched package. A colleague's branch pushed since triage removes that candidate exactly as it would any other, and no other check on this route would see it.
+- **Re-run the work-already-in-flight search immediately before writing anything**, for every batched package. A colleague's branch pushed since triage removes that candidate exactly as it would any other, and no other check on this route would see it. **An automated bump PR for a batched package is not that** — it is the work (see Task), and on this route nearly every candidate has one, so the naive reading empties the batch it was given.
 - **Read each adopted bump PR's current state before branching from it.** Merged, closed or superseded are all live outcomes in the dispatch gap, and the in-flight search sees only open work.
 - **Re-resolve the lockfile against the base before pushing and record which base**, and state that base in the PR body. This is the most lockfile-exposed task in the run — many candidates, one file, one PR — and it is the one whose producer contract is stated here rather than inherited.
+- **Re-check every candidate's target against the one triage cleared, before writing anything, and report and stop on any that moved** rather than proceeding with the batch. Three things this route cannot read anywhere else: **what moves a target is an adopted PR's head advancing**, so a candidate with no adopted PR has nothing that can move it and a newer release appearing upstream is *not* a moved target — reading it as one stops the batch every time any of its registries publishes; **a moved candidate is not this agent's to re-triage or re-route**, for the same reason a worker's is not, so it comes back here; and **the rest of the batch is not void with it** — pull the moved candidate out and the others stand.
 
 Supply each agent with the completed triage — **the viability verdict, the exact target version it measured for every package in the task, and the coupled set**, breaking changes, usage surface — rather than having it re-derive them. Supply its worktree path, its exact base branch, and any adopted bump PR by URL.
 
@@ -94,6 +95,13 @@ Constrain each agent explicitly:
 ## Supervise
 
 Gate "green" on **every** check the repository actually requires having concluded successfully **on the current head** — enumerate what is required rather than gating on whichever check you happened to read. Two false passes share one root here, and closing only the second leaves the first: a rollup that is empty or barely populated means checks have not registered, and where several checks are required, one concluding successfully while another is still pending or failing satisfies any singular reading of this gate. Neither is a pass.
+
+**Two checks are carried here from Dispatch, and this is the section that performs them.** Both were handed over because this run occupies the passes and the merge moment belongs to nobody here; a rule stated only where it was assigned is one no pass executes.
+
+- **Compare each open PR's recorded lockfile base against the current base**, and name every PR whose lockfile has gone stale. A stale one is redispatched for a re-resolution pass, never merged on the strength of the handoff check.
+- **Re-check every batched routine candidate's target against the one triage cleared.** Where one moved, its clearance and the model selection it implied are void: pull it out, re-triage against the new target, and dispatch it like any uncleared bump. The rest of the batch stands.
+
+Both run again at close-out, which hands them to the merger (see Close out).
 
 Emit only state **changes**, and only actionable ones. A value that varies for reasons unrelated to state — a count, a timestamp — re-emits every unchanged entry on every tick.
 

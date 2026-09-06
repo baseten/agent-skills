@@ -753,8 +753,16 @@ def main() -> int:
         ("the routine-target check is carried to actors that exist, not held at the merge",
          "That check is carried rather than held" in flat(du)
          and "The batch agent re-checks immediately before it writes anything" in flat(du)
+         # Scoped, not flat(du): the first version of this clause passed while
+         # *Supervise* said nothing about either check, because the sentence
+         # satisfying it sat in *Dispatch* describing what *Supervise* would
+         # do. A guard for a rule about WHERE something is stated has to check
+         # where it is stated.
          and "this run re-checks on every supervision pass and again at close-out"
          in flat(du)
+         and all(phrase in flat(near(du, "## Supervise", 1400))
+                 for phrase in ("Compare each open PR's recorded lockfile base",
+                                "Re-check every batched routine candidate's target"))
          and "whether any batched candidate's target moved since it was cleared"
          in flat(near(du, "## Close out", 900))
          # The presence check above is the load-bearing half, and on its own it
@@ -777,31 +785,70 @@ def main() -> int:
         # reaches it through nothing. Three did.
         ("the routine batch is given the obligations it cannot inherit",
          "The routine batch runs no named contract" in flat(du)
-         and all(phrase in flat(near(du, "**The routine batch runs no named contract", 1800))
+         and all(phrase in flat(near(du, "**The routine batch runs no named contract", 2600))
                  for phrase in ("Re-run the work-already-in-flight search",
                                 "Read each adopted bump PR's current state",
-                                "Re-resolve the lockfile against the base"))),
+                                "Re-resolve the lockfile against the base",
+                                # The fourth. The first version of this list
+                                # held three, and the eval graded "all three",
+                                # so the missing obligation was pinned out at
+                                # two tiers by the fix for it.
+                                "Re-check every candidate's target",
+                                # And the three things this route cannot read
+                                # from the file it never opens.
+                                "what moves a target is an adopted PR's head advancing",
+                                "is not this agent's to re-triage or re-route",
+                                "An automated bump PR for a batched package is not that"))),
         # SHAPE: an obligation on the report, stated only at the phase that
         # produces it, is dropped by an agent writing from *Report* — which
         # reads as an exhaustive list. Round 3 walked one cell (the base
-        # commit) and left an assertion for it; four more were never walked.
+        # commit) and left an assertion for it. Round 29 walked three more and
+        # missed two; round 30 walked those and the dropped qualifiers. The
+        # list is a fixture — it holds every obligation found so far and
+        # cannot see the next one — so the rule that matters is the sentence
+        # asserted below it, which states WHY the restatement is here.
         ("every report obligation is stated where the report is written",
-         all(phrase in flat(near(ud, "State what changed", 2500))
-             for phrase in ("the base commit the lockfile was resolved against",
-                            "the measurement standing in for",
-                            "what the real evidence is and that the passing build is not it",
-                            "the in-flight search rather than the caller found the adopted bump PR"))),
+         "this is the section an agent writes the report from" in flat(ud)
+         and all(phrase in flat(near(ud, "State what changed", 3200))
+                 for phrase in ("the base commit the lockfile was resolved against",
+                                "the measurement standing in for",
+                                "what the real evidence is and that the passing build is not it",
+                                "the in-flight search rather than the caller found the adopted bump PR",
+                                "any **disagreement** between a supplied verdict",
+                                "merged or closed, what the installed version actually shows",
+                                "any blocker that ended the task",
+                                # The two qualifiers a bare restatement drops.
+                                "the re-resolution must be repeated if the base has moved since",
+                                "handoff result and never a merge-time one"))),
+        # Three contract sweeps on this PR have left the eval corpus behind,
+        # and an expected answer that teaches a deleted rule actively rewards
+        # reintroducing it. These are the formulations the contract removed;
+        # each entry is a construction that was actually found stale here.
+        ("no expected answer teaches a formulation the contract removed",
+         not any(phrase in eval_field(sk, name, "expected_output")
+                 for sk in ("upgrade-major-dependency", "dependency-upgrade-orchestrator")
+                 for name in eval_names(sk)
+                 for phrase in ("and it is re-run over the tuple",
+                                "reports the difference and stops",
+                                "all three obligations"))),
         ("close-out carries the clearance report dispatch requires of it",
-         "which routine candidates were cleared and on what evidence" in flat(du)),
+         "which routine candidates were cleared and on what evidence"
+         in flat(near(du, "## Close out", 1200))),
         # The worker's return grew a fourth item that eval 14 already graded.
         ("the return contract and its consumer agree on the incompatible tuple",
-         "the incompatible tuple" in flat(near(ud, "A task ended by a moved target reports", 1200))
+         # Three prose sites enumerate this return and all three are checked:
+         # *Task* produces it, *Report* writes it, the caller expects it.
+         "**the incompatible tuple**" in flat(near(ud, "So re-read enough to make the report useful", 700))
+         and "the incompatible tuple" in flat(near(ud, "A task ended by a moved target reports", 1200))
          and "the incompatible tuple where a peer range is what moved" in flat(du)),
         # A moved-target stop is not "proved unsafe", and the rule beside it
         # tells the worker to close the adopted PR — destroying the one thing
         # the move leaves standing.
-        ("a moved-target stop leaves the adopted PR open",
-         "leaves an adopted PR open" in flat(ud)),
+        ("a moved-target stop leaves the adopted PR open, stated beside the rule it disclaims",
+         "leaves an adopted PR open"
+         in flat(near(ud, "**A task ended by a moved target leaves", 700))
+         and "If the upgrade proved unsafe"
+         in flat(near(ud, "**A task ended by a moved target leaves", 700))),
         # Research was written when a moved target meant re-derive and continue.
         ("the research phase does not resume a task the gate ended",
          "That case does not resume here" in flat(near(ud, "## Research", 900))),
