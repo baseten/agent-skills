@@ -553,7 +553,21 @@ def main() -> int:
                        "a-moved-companion-voids-the-whole-groups-peer-clearance",
                        "assertions")),
         ("an oracle makes the moved-target stop unconditional",
-         "including the one where the recomputed coupled set is unchanged"
+         # Both fields, because they can disagree: this checked only the
+         # assertions, so the expected answer — the one field that PRESCRIBES,
+         # per `eval_expected` — could teach "(b) the set is unchanged, so the
+         # task continues" while the assertion beside it still graded the stop.
+         # The grading field disagreeing with the teaching field is worse than
+         # either being stale alone.
+         "The stop is on the target having moved, not on the membership having changed"
+         in flat(eval_field("upgrade-major-dependency",
+                            "an-advanced-target-can-change-the-coupled-set",
+                            "expected_output"))
+         and "the set is unchanged and the answer is the same stop"
+         in flat(eval_field("upgrade-major-dependency",
+                            "an-advanced-target-can-change-the-coupled-set",
+                            "expected_output"))
+         and "including the one where the recomputed coupled set is unchanged"
          in eval_field("upgrade-major-dependency",
                        "an-advanced-target-can-change-the-coupled-set", "assertions")
          and "unconditionally, whatever the recomputed coupled set turns out to be"

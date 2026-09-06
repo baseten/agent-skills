@@ -134,7 +134,11 @@ Then the coverage number itself was wrong twice, in ways worth recording because
 
 Writing the first eighteen mutations for previously untested assertions immediately found two more guards green over their own subject: the one requiring the worker's stop to be reported checked a phrase that **survives inside the conditional wrapper round nineteen used**, so the old conditional could come back untouched; and the one holding the no-adopted-PR baseline checked the *Task* sentence while the phase that performs the ordering could lose its path entirely. Neither was reachable by reading. Both were the first thing their mutation found.
 
-That is the argument for the coverage line existing at all. It does not fail the build, so it costs nothing; it just says how much of the checker has never been broken on purpose, and every batch of that debt paid off so far has returned a real defect.
+That is the argument for the coverage line existing at all. It does not fail the build, so it costs nothing; it just says how much of the checker has never been broken on purpose, and the first two batches of that debt each returned a real defect.
+
+Paying down the rest of this PR's own subject returned one more, and it is the sharpest of the three. The guard requiring an oracle to make the moved-target stop unconditional read the scenario's **assertions** and not its **expected answer** — so the expected answer could teach *"the set is unchanged, so the task continues"* while the assertion beside it still graded the stop, and the check would pass over a scenario contradicting itself. That is worse than either field going stale alone: the corpus's own documentation calls the expected answer the only field that *prescribes*, so the field that teaches was free to disagree with the field that grades, and the guard watched the wrong one. It reads both now.
+
+The third batch was otherwise clean — fourteen mutations, no defects — which is the first batch that has been. Every assertion protecting a rule this pull request introduces now has a mutation behind it; what remains uncovered belongs to the other skills' rules and predates this work.
 
 ## Why supervisors emit only state changes, and only actionable ones
 
