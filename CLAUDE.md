@@ -136,6 +136,7 @@ Every check is deterministic and runnable locally. Run them before committing:
 ```bash
 python3 scripts/check_skills.py
 python3 scripts/check_permissions.py
+python3 scripts/test_contract_placement.py
 python3 scripts/check_contract_placement.py
 python3 scripts/test_rule_locality.py
 python3 scripts/check_rule_locality.py

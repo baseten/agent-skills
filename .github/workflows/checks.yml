@@ -29,6 +29,11 @@ jobs:
       - name: Permissions file shape
         run: python3 scripts/check_permissions.py
 
+      # Same reason as the locality fixtures below: this one shipped green over
+      # the construction it exists to reject, so the fixtures gate the check.
+      - name: Contract placement detector fixtures
+        run: python3 scripts/test_contract_placement.py
+
       - name: Contract rule placement
         run: python3 scripts/check_contract_placement.py
 

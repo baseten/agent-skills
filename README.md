@@ -91,6 +91,7 @@ runnable locally:
 ```bash
 python3 scripts/check_skills.py                       # structure, schema, cross-references
 python3 scripts/check_permissions.py                  # the shape of permissions.json, and the README's claims
+python3 scripts/test_contract_placement.py            # the oracle detector still detects
 python3 scripts/check_contract_placement.py           # contract rules at their decision points
 python3 scripts/test_rule_locality.py                 # the locality detector still detects
 python3 scripts/check_rule_locality.py                # the workflow rules are stated in CLAUDE.md only
@@ -133,6 +134,16 @@ check that passes on the current tree is not evidence that it would catch the de
 green check over a false claim is worse than no check, because it stops anyone looking. The
 fixtures then immediately caught a second gap — a noun lead-in carrying the imperative in
 its body. Finding a new bypass means the detector was wrong, not the fixture.
+
+`test_contract_placement.py` is the same tier for the one heuristic left in
+`check_contract_placement.py`: the detector that keeps the dependency skills' eval oracles
+from stating licence, cooldown and peer reuse as a single rule. It was added because that
+detector repeated the history above rather than learning from it — its sentence split broke
+on `;` and `:`, so a run-on joining the two rules in one breath read as two compliant
+sentences and the corpus guard stayed green over it. Its BAD list is that construction and
+its neighbours; its GOOD list is the oracle prose that must keep passing, which matters more
+here than elsewhere, because the two detectors this one replaced were both deleted for
+rejecting a correct oracle.
 
 The phrase list had the same weakness one level up, and then again one level below that:
 a rule section with no phrase entry was unguarded (true of *Classify a finding before fixing

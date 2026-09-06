@@ -1,0 +1,129 @@
+#!/usr/bin/env python3
+"""Fixtures for check_contract_placement.py's sentence-scoped detector.
+
+Run from the repository root:
+
+    python3 scripts/test_contract_placement.py
+
+`names_all_three_findings` enforces the one convention that keeps the two
+dependency skills' eval oracles from re-stating the contradiction this PR spent
+four rounds on: **an oracle states the two rules as two, and never names
+licence, cooldown and peer in one sentence.** Licence and cooldown are per
+package; the peer finding is a relation over the whole target tuple.
+
+Why the fixtures exist is the same lesson `test_rule_locality.py` records, and
+it recurred here: the detector shipped green over the construction it exists to
+reject. Its split treated `;` and `:` as sentence boundaries, so a run-on
+stating per-package peer reuse in one breath read as two compliant sentences —
+round 26 found the corpus guard green over it. A check that passes on the
+current tree is no evidence it would catch the defect.
+
+So the split is asserted here rather than asserted by whoever wrote the regex.
+BAD holds every construction that must fire, each labelled with the round that
+produced it; GOOD holds the oracle prose that must keep passing, because a
+detector that rejects a correct oracle gets switched off — that is how the two
+detectors this one replaced were lost.
+
+Finding a construction BAD misses means the detector was wrong, not the fixture.
+"""
+
+from __future__ import annotations
+
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+
+from check_contract_placement import names_all_three_findings  # noqa: E402
+
+# Must fire. Clause punctuation joins a sentence; it does not end one.
+BAD: list[tuple[str, str]] = [
+    (
+        "r26 semicolon join",
+        "Per package, reuse licence and cooldown; under that same rule, reuse peer too.",
+    ),
+    (
+        "r26 colon join",
+        "Reuse is per package: licence, cooldown and peer all survive where "
+        "that package's own target is unchanged.",
+    ),
+    (
+        "r26 dash join",
+        "Licence and cooldown are reusable per package — and so is the peer clearance.",
+    ),
+    (
+        "r25 plain listing",
+        "Compare each package's current target and reuse its licence, cooldown "
+        "and peer findings where the target is the one triage measured.",
+    ),
+    (
+        # Correct in content, rejected as a shape — this is the run-on round 26
+        # split into three sentences in eval 14. The convention is deliberately
+        # blind to whether the sentence gets the rules right, because deciding
+        # that is the parsing problem two deleted detectors failed at.
+        "r26 the run-on this round split",
+        "Everything else is void: the companion's licence and cooldown, because "
+        "its target moved; and the peer clearance for the whole group.",
+    ),
+    (
+        "r26 wrapped across lines",
+        "Reuse licence and cooldown per package,\nand reuse peer on the same terms.",
+    ),
+]
+
+# Oracle prose that must not trip the detector.
+GOOD: list[tuple[str, str]] = [
+    (
+        "eval 14, the two rules stated as two",
+        "The companion's licence and cooldown go, because its target moved. So "
+        "does the peer clearance for the **whole** group, framework included, "
+        "because a peer range is a relation between packages.",
+    ),
+    (
+        "the per-package pair alone",
+        "Framework's licence and cooldown stay valid — its own target did not "
+        "move — and they are not enough to continue on.",
+    ),
+    (
+        "the peer finding alone",
+        "The peer clearance for the whole group is void, because a peer range "
+        "is a relation between packages rather than a property of one.",
+    ),
+    (
+        "the contrast across a sentence boundary",
+        "Licence and cooldown are measured per package. Peer resolution is a "
+        "relation over the tuple, so any member moving voids it task-wide.",
+    ),
+    (
+        # The pair with "r26 wrapped across lines": a wrap is not a boundary,
+        # the terminator is, and a wrap after one does not undo it.
+        "a wrap after a terminator is still a boundary",
+        "Licence and cooldown are per package.\n\nThe peer finding is not.",
+    ),
+    (
+        "one finding named twice in a sentence",
+        "A licence finding stays a licence finding; nothing about it depends on "
+        "another package's target.",
+    ),
+]
+
+failures: list[str] = []
+
+for label, text in BAD:
+    if not names_all_three_findings(text):
+        failures.append(f"MISSED a construction that must fire ({label}): {text[:60]!r}")
+    else:
+        print(f"PASS caught {label}")
+
+for label, text in GOOD:
+    if names_all_three_findings(text):
+        failures.append(f"FALSE POSITIVE on compliant oracle prose ({label}): {text[:60]!r}")
+    else:
+        print(f"PASS allowed {label}")
+
+print()
+total = len(BAD) + len(GOOD)
+for f in failures:
+    print(f"FAIL {f}")
+print(f"{total - len(failures)}/{total} passing")
+sys.exit(1 if failures else 0)

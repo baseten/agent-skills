@@ -84,13 +84,23 @@ def names_all_three_findings(text: str) -> bool:
     the two texts that had to change were a run-on sentence and an assertion
     grading two things at once.
 
+    A sentence ends at `.`, `!` or `?` and nowhere else. The first version of
+    this split also broke on `;` and `:`, which round 26 showed made the guard
+    green over exactly the sentence it exists to reject — "Per package, reuse
+    licence and cooldown; under that same rule, reuse peer too." states the
+    contradictory per-package peer rule in one breath, and a semicolon does not
+    make it two rules. Clause punctuation is how a run-on smuggles the
+    contradiction past a sentence-scoped check, so it is not a boundary here.
+    `scripts/test_contract_placement.py` pins that construction; the split is a
+    heuristic and belongs in the fixture tier with the other one.
+
     Residual, stated rather than implied: an oracle spread over two sentences
     that still means per-package peer reuse passes. Same class as
     `states_rather_than_restates`, and smaller than a detector that blocks
     correct oracles.
     """
     return any(all(f in s for f in FINDINGS)
-               for s in re.split(r"(?<=[.!?;:])\s", flat(text).lower()))
+               for s in re.split(r"(?<=[.!?])\s", flat(text).lower()))
 
 
 def notes(name: str) -> str:
@@ -509,11 +519,12 @@ def main() -> int:
         # never checked.
         # An oracle that groups peer with licence and cooldown under a
         # per-package comparison rewards exactly the behaviour eval 14 and the
-        # contract reject. Detected structurally — the three finding names
-        # co-occurring in one sentence that also scopes to a package — rather
-        # Every contradiction on this PR about these three findings grew from
-        # a sentence listing them together; the rule is that an oracle states
-        # the two rules as two, and it needs no parsing to enforce.
+        # contract reject. Every contradiction on this PR about these three
+        # findings grew from a sentence listing them together, so the rule is
+        # that an oracle states the two rules as two — a property that needs
+        # no parsing. A sentence ends at `.`, `!` or `?` and nowhere else:
+        # round 26 found this assertion green over a semicolon joining the two
+        # rules into one, which is the construction it exists to reject.
         ("no eval oracle names all three findings in one sentence",
          not any(names_all_three_findings(e)
                  for sk in ("upgrade-major-dependency", "dependency-upgrade-orchestrator")
