@@ -133,6 +133,17 @@
         "The answer redispatches the stale PRs instead of reporting them green or merging them",
         "The answer states that this run does not merge and hands the merge-time repeat of the check to whoever does"
       ]
+    },
+    {
+      "id": 12,
+      "name": "a-bot-pr-found-at-triage-is-adopted-too",
+      "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you derived the set from the package manager's outdated report, not from the bump queue. Triaging one candidate you find an open Renovate PR already bumping it, and a colleague's three-week-old branch attempting a different candidate. The viability item removes candidates with work already open on a branch or PR. Question: what happens to each of those two candidates?",
+      "expected_output": "The Renovate candidate survives and its PR is adopted \u2014 an automated bump PR is the work, not a duplicate of it, and that does not depend on which discovery source produced the candidate; the bump queue only makes the point unmissable. Continue on that PR: branch from its head, or supersede it and close it with a reference, carrying its URL into dispatch. The colleague's branch is somebody else's attempt at the same upgrade, so that candidate is removed as a duplicate.",
+      "assertions": [
+        "The answer keeps the Renovate candidate and adopts its PR rather than filtering it out",
+        "The answer does not make the exemption conditional on the set having been derived from the bump queue",
+        "The answer still removes the candidate covered by the colleague's branch, distinguishing a bot bump from someone else's attempt at the work"
+      ]
     }
   ]
 }

@@ -29,6 +29,10 @@ Two defects, one column fix: dispatch forwards the viability verdict, the couple
 
 This file's own note on triage said all along that dispatch depends on *three* outputs including viability. The contract's supply list named breaking changes, usage surface and coupling. The disagreement sat in the repository for a full round; it is the ordinary way a rule and its restatement drift, and it is why the fix here is the table rather than the line.
 
+Round seven found the exemption still half-scoped, and it is the same producer/consumer disagreement one clause deeper. The rule was written as *a derived set's own source* is not work in flight, because the bump queue is where the defect was reported — so a candidate derived from the outdated report, whose triage then turned up a bot PR, was still removed. The worker's gate had never been conditional that way, so the two contracts disagreed about the same PR depending on how its candidate had been found. What matters is what the open PR *is*, never which discovery path reached the candidate: a bot bump is the work, somebody else's attempt at the same upgrade is a duplicate. The discovery source is now explicitly stated as irrelevant, and both sides of the chain are asserted.
+
+That is the third time on this PR that a rule was scoped to the circumstance it was first observed in rather than to the condition that actually governs it. Worth reading as a class, not three incidents.
+
 The adoption rule itself is not merely an exemption. A bump PR is a machine's opening move on the work the run was sent to do, and it carries a lockfile resolution and a CI history worth having; superseding it silently also leaves the queue re-proposing the same bump forever. So the contract adopts or repairs it and says which, and reserves the duplicate finding for work the run did not derive its candidate from — which is the case the item was written for.
 
 ## Why file count is explicitly demoted

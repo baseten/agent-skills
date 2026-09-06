@@ -68,31 +68,56 @@ NEGATORS = (
 )
 
 
-SENTENCE_END = re.compile(r"[.!?;:]\s")
+# A clause boundary: a sentence ender, or a coordinating conjunction with or
+# without its comma. Negation does not cross one.
+CLAUSE_BREAK = re.compile(
+    r"[.!?;:]\s|,?\s+(?:and|but|then|so|yet|or|while|whereas)\s+"
+)
 
 
 def prescribes(texts: list[str], phrase: str) -> bool:
     """True where `phrase` appears as an instruction rather than as one being
     rejected.
 
-    Negation is looked for in the phrase's **own sentence**, not in a fixed
-    character window. A window is the obvious implementation and it is wrong:
-    a negation belonging to a neighbouring sentence marks the occurrence as a
-    mention, so "Do not claim it as a merge-time result. Re-resolve
-    immediately before merging." reads as rejected. That mutation is the exact
-    regression this check exists to catch, and a 120-character window passed
-    it on the first negative test.
+    Negation is looked for in the phrase's **own clause**. Two coarser scopes
+    were tried first and each was green over a live prescription:
+
+    * a fixed character window — a negation in the neighbouring *sentence*
+      suppressed the occurrence ("Do not claim it as a merge-time result.
+      Re-resolve immediately before merging.");
+    * the sentence — a negation in the neighbouring *clause* did the same
+      ("Do not trust green CI, and re-resolve immediately before merging."),
+      with or without the comma.
+
+    Both are the exact regression this check exists to catch, and both passed.
+    The pattern is that a negator binds to its own clause and no further, so
+    that is the scope; the two mutations above are pinned as fixtures below.
     """
     needle = phrase.lower()
     for text in texts:
         low = flat(text).lower()
         i = low.find(needle)
         while i != -1:
-            starts = [m.end() for m in SENTENCE_END.finditer(low, 0, i)]
+            starts = [m.end() for m in CLAUSE_BREAK.finditer(low, 0, i)]
             if not any(n in low[(starts[-1] if starts else 0):i] for n in NEGATORS):
                 return True
             i = low.find(needle, i + 1)
     return False
+
+
+# Fixtures for `prescribes`. A scope error in it is silent — the check simply
+# passes — so the two mutations that already defeated it are pinned here
+# rather than left to a future negative test somebody remembers to run.
+PRESCRIBES_FIXTURES = [
+    ("Re-resolve immediately before merging.", True),
+    ("Do not claim it as a merge-time result. Re-resolve immediately before merging.", True),
+    ("Do not trust green CI, and re-resolve immediately before merging.", True),
+    ("Do not trust green CI and re-resolve immediately before merging.", True),
+    ("You do not re-resolve immediately before merging; this task ends at handoff.", False),
+    ("Never re-resolve immediately before merging.", False),
+    ("Record the base rather than re-resolve immediately before merging.", False),
+    ("This task ends at handoff.", False),
+]
 
 
 def eval_field(skill_name: str, case: str, field: str) -> str:
@@ -353,10 +378,16 @@ def main() -> int:
          in flat(clause(du, "Supply each agent with the completed triage", 2000))),
         ("dependency dispatch says why those two specifically",
          "reaches a different answer without them" in flat(du)),
-        ("the bump queue's own PRs are adopted, not filtered out",
-         "never work already in flight" in flat(du)),
-        ("the orchestrator's viability item exempts the adopted source PR",
-         "other than an adopted source bump PR" in flat(clause(du, "**Viability** —", 2000))),
+        ("an automated bump PR is the work, not work already in flight",
+         "never work already in flight — it is the work" in flat(du)),
+        ("the orchestrator's viability item exempts any automated bump PR",
+         "other than an automated bump PR for this candidate"
+         in flat(clause(du, "**Viability** —", 2000))),
+        # Source-conditional here and source-agnostic in the worker is the same
+        # producer/consumer disagreement, one clause deeper.
+        ("the exemption does not turn on the discovery source",
+         "Where the candidate came from does not enter into this" in flat(du)
+         and "whatever discovery source produced the candidate" in flat(du)),
         ("the orchestrator's peer-cap item is scoped to the coupled group",
          "established before this item is answered" in flat(clause(du, "**Viability** —", 2000))),
         ("upgrade-major-dependency reads a supplied verdict instead of re-deriving",
@@ -419,6 +450,9 @@ def main() -> int:
         # happens to mention it. Absence is checked over expected answers
         # only, and skips negated occurrences: a prompt quoting a forbidden
         # instruction so the model can reject it is the guard working.
+        ("prescribes() reads negation at clause scope",
+         all(prescribes([s], "immediately before merg") is want
+             for s, want in PRESCRIBES_FIXTURES)),
         ("no eval prescribes the ownerless merge-time re-resolution",
          not prescribes(eval_expected("upgrade-major-dependency"),
                         "immediately before merg")),
