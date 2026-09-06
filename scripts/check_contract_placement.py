@@ -37,19 +37,6 @@ def skill(name: str) -> str:
 BOLD = re.compile(r"\*\*(.+?)\*\*", re.S)
 
 
-PER_PACKAGE = (
-    "that package's", "each package's", "the package's", "per package", "per-package",
-    "for every package", "for each package", "package by package", "its own target",
-    "that package s", "each package s",
-)
-# A sentence that scopes the peer finding to the GROUP is correct however it
-# words the per-package half, so a group marker exempts it. "Separately" is
-# deliberately not one: it reads as "per package" at least as often as it
-# reads as "peer apart from the other two".
-GROUP_SCOPE = (
-    "group-wide", "task-wide", "whole tuple", "entire group", "every member",
-    "all members", "not per package", "across the group",
-)
 FINDINGS = ("licence", "cooldown", "peer")
 
 
@@ -60,51 +47,50 @@ def eval_names(skill_name: str) -> list[str]:
     return [c.get("name", "") for c in json.loads(f.read_text(encoding="utf-8")).get("evals", [])]
 
 
-def groups_peer_per_package(text: str) -> bool:
-    """True where one sentence names all three findings, scopes them to a
-    package, and does NOT mark the peer finding as group-scoped.
+def eval_assertions(skill_name: str, case: str) -> list[str]:
+    """One scenario's assertions as a list, never joined.
 
-    Three iterations taught the shape. Keying on one spelling passed the other
-    two ways to write the same list. Keying on co-occurrence plus a
-    per-package marker missed "for every package", because that vocabulary is
-    open-ended. What is *not* open-ended is the distinction the contract
-    requires: a correct oracle says somewhere in the same sentence that the
-    peer finding is group-scoped. So the group marker is the exemption, and
-    the per-package vocabulary only has to be good enough to catch the common
-    forms — a miss there is a false negative on a sentence the fixtures below
-    would have to be extended for, not a false positive blocking a correct
-    oracle, which is the failure that gets a guard deleted.
-
-    Sentence-scoped so a correct oracle stating the two rules in two
-    sentences — which is what the contract requires — is not caught.
+    Assertions rarely end in punctuation, so joining them makes consecutive
+    entries read as one sentence and any sentence-scoped rule then fires on an
+    artifact of the join rather than on the text.
     """
-    for sentence in re.split(r"(?<=[.;:])\s", flat(text).lower()):
-        if (all(f in sentence for f in FINDINGS)
-                and any(pp in sentence for pp in PER_PACKAGE)
-                and not any(gs in sentence for gs in GROUP_SCOPE)):
-            return True
-    return False
+    f = ROOT / "skills" / skill_name / "evals" / "evals.json"
+    if not f.exists():
+        return []
+    for c in json.loads(f.read_text(encoding="utf-8")).get("evals", []):
+        if c.get("name") == case:
+            return list(c.get("assertions", []))
+    return []
 
 
-# Fixtures for `groups_peer_per_package`, both directions. The two "must not
-# fire" entries at the end are the REAL text of oracles in this repository:
-# a guard that blocks them is worse than no guard.
-PEER_GROUPING_FIXTURES = [
-    ("the agent compares each package's current target before reusing that package's"
-     " licence, cooldown and peer findings.", True),
-    ("reuse that package's licence, cooldown, and peer findings only while unchanged.", True),
-    ("peer, licence and cooldown clearances are reused per package.", True),
-    ("Reuse licence, cooldown, and peer findings separately for every package"
-     " whose target is unchanged.", True),
-    ("Reuse licence, cooldown and peer findings for each package independently.", True),
-    ("Per package: reuse licence and cooldown. Group-wide: the peer finding is a"
-     " relation over the tuple.", False),
-    ("triage cleared licence, cooldown and peer caps for framework@2 and companion@2.", False),
-    ("The answer scopes per-package reuse to licence and cooldown, and states peer"
-     " reuse separately as invalidated group-wide by any member's move", False),
-    ("Void on a moved target: the package's licence, cooldown, research and usage"
-     " audit, plus the peer resolution and the coupled set task-wide.", False),
-]
+def names_all_three_findings(text: str) -> bool:
+    """True where one sentence names licence, cooldown and peer together.
+
+    This replaces a detector that tried to decide whether such a sentence
+    scoped them per package — the second time on this contract that the answer
+    to an open-ended natural-language problem has been to stop solving it.
+    Four rounds of evidence: one spelling missed two others; a per-package
+    vocabulary missed "for every package"; the group vocabulary that was meant
+    to be the reliable half missed "for the group as a whole", blocking a
+    CORRECT oracle; and binding that exemption to the peer finding rather than
+    accepting any group marker anywhere in the sentence needs syntactic
+    attachment, not a word list.
+
+    So the check is on a property needing no parsing: **an oracle states the
+    two rules as two, and never names all three findings in one sentence.**
+    Licence and cooldown are per package; the peer finding is a relation over
+    the tuple. A sentence listing them together is the shape every
+    contradiction on this PR grew from. Making the corpus conform improved it:
+    the two texts that had to change were a run-on sentence and an assertion
+    grading two things at once.
+
+    Residual, stated rather than implied: an oracle spread over two sentences
+    that still means per-package peer reuse passes. Same class as
+    `states_rather_than_restates`, and smaller than a detector that blocks
+    correct oracles.
+    """
+    return any(all(f in s for f in FINDINGS)
+               for s in re.split(r"(?<=[.!?;:])\s", flat(text).lower()))
 
 
 def notes(name: str) -> str:
@@ -525,16 +511,17 @@ def main() -> int:
         # per-package comparison rewards exactly the behaviour eval 14 and the
         # contract reject. Detected structurally — the three finding names
         # co-occurring in one sentence that also scopes to a package — rather
-        # than by one spelling, since "licence, cooldown, and peer findings"
-        # and a peer-first ordering are equally natural ways to write it.
-        ("groups_peer_per_package fires on the grouping and not on correct oracles",
-         all(groups_peer_per_package(s) is want for s, want in PEER_GROUPING_FIXTURES)),
-        ("no eval oracle groups the peer finding with the per-package pair",
-         not any(groups_peer_per_package(blob)
+        # Every contradiction on this PR about these three findings grew from
+        # a sentence listing them together; the rule is that an oracle states
+        # the two rules as two, and it needs no parsing to enforce.
+        ("no eval oracle names all three findings in one sentence",
+         not any(names_all_three_findings(e)
                  for sk in ("upgrade-major-dependency", "dependency-upgrade-orchestrator")
-                 for blob in eval_expected(sk) + [
-                     eval_field(sk, n, "assertions")
-                     for n in eval_names(sk)])),
+                 for e in eval_expected(sk))
+         and not any(names_all_three_findings(a)
+                     for sk in ("upgrade-major-dependency", "dependency-upgrade-orchestrator")
+                     for n in eval_names(sk)
+                     for a in eval_assertions(sk, n))),
         ("peer resolution and the coupled set are voided task-wide",
          "relations over the targets rather than properties of one" in flat(ud)
          and "only while no member's target has moved at all"
