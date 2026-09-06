@@ -415,6 +415,19 @@ def main() -> int:
         # member's clearance while that member's own target sits unchanged,
         # so every individual clearance reads valid and the combination was
         # never checked.
+        # An oracle that groups peer with licence and cooldown under a
+        # per-package comparison rewards exactly the behaviour eval 14 and the
+        # contract reject. Absence over expected answers AND assertions, since
+        # either half can carry the grouping.
+        ("no eval oracle groups the peer finding with the per-package pair",
+         all("cooldown and peer" not in blob.lower()
+             for sk in ("upgrade-major-dependency", "dependency-upgrade-orchestrator")
+             for blob in eval_expected(sk))
+         and all("cooldown and peer" not in eval_field(sk, name, "assertions").lower()
+                 for sk, name in (
+                     ("upgrade-major-dependency", "a-supplied-verdict-does-not-cover-work-in-flight"),
+                     ("dependency-upgrade-orchestrator", "dispatch-forwards-viability-and-coupling"))),
+         ),
         ("the peer finding is invalidated by any member's target moving",
          "not** per package" in flat(ud)
          and "invalidates the peer check for the **entire group**" in flat(ud)
