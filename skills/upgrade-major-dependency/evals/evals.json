@@ -162,12 +162,13 @@
       "id": 14,
       "name": "a-moved-companion-voids-the-whole-groups-peer-clearance",
       "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a coupled group of framework plus one companion. Your caller's verdict cleared licence, cooldown and peer caps for framework@2 and companion@2, and named those targets. Since then the adopted PR advanced the companion to v3; framework's target is still v2. The companion's v3 release changed its peer range to require framework@3. Question: which cached clearances can you still use?",
-      "expected_output": "None of them, and this ends the task rather than continuing under a refreshed triage. The companion's target moved, so its own findings are void; and the peer clearance is void for the whole group, framework included, because a peer range is a relation between packages \u2014 companion@3 demanding framework@3 breaks framework's clearance without framework's target moving at all, which per-package reuse would have passed since each individual clearance still reads as valid. Framework's licence and cooldown are the only findings unaffected, and they are not enough to proceed on: a moved target puts membership and the model assignment back in the caller's hands, and this task cannot revise either. Re-read enough to report \u2014 the new target, what the range says about failure mode, the recomputed coupled set \u2014 and report the incompatible tuple (companion@3 requiring framework@3 against framework@2) with it.",
+      "expected_output": "Framework's licence and cooldown stay valid \u2014 its own target did not move \u2014 and they are not enough to continue on. Everything else is void: the companion's licence and cooldown, because its target moved; and the peer clearance for the **whole** group, framework included, because a peer range is a relation between packages \u2014 companion@3 demanding framework@3 breaks framework's clearance without framework's target moving at all, which per-package reuse would have passed since each individual clearance still reads as valid. Then stop: a moved target puts membership and the model assignment back in the caller's hands and this task can revise neither. Re-read enough to report \u2014 a package \u2192 current target mapping for every package that moved, the failure mode of each new range, the recomputed coupled set \u2014 and report the incompatible tuple (companion@3 requiring framework@3 against framework@2) with it.",
       "assertions": [
-        "The answer treats the peer clearance as void for the entire group, not only for the companion that moved",
-        "The answer ends the task and reports rather than re-deriving the triage and proceeding, treating the move itself as the stopping reason",
+        "The answer keeps framework's licence and cooldown as still valid, rather than discarding every cached finding",
+        "The answer nonetheless treats those as insufficient to continue, and ends the task",
+        "The answer voids the peer clearance for the entire group, not only for the companion that moved",
         "The answer identifies the incompatible tuple that per-package reuse would have passed",
-        "The answer names model selection or membership as a caller decision this task cannot revise"
+        "The answer returns a package-to-current-target mapping and names a caller decision it cannot revise"
       ]
     },
     {

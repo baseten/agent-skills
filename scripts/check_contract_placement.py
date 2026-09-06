@@ -447,6 +447,17 @@ def main() -> int:
          in flat(clause(ud, "A task ended by a moved target", 900))),
         # The stop is on the move, not on the set changing — an oracle that
         # conditions it lets an answer continue under a stale model.
+        # An oracle that opens by discarding every cached finding and then
+        # exempts one contradicts itself, and the assertions decided neither
+        # way — so a rewrite could be rewarded for either behaviour.
+        ("the moved-companion oracle gives one answer on unchanged findings",
+         "stay valid" in eval_field("upgrade-major-dependency",
+                                    "a-moved-companion-voids-the-whole-groups-peer-clearance",
+                                    "expected_output")
+         and "rather than discarding every cached finding"
+         in eval_field("upgrade-major-dependency",
+                       "a-moved-companion-voids-the-whole-groups-peer-clearance",
+                       "assertions")),
         ("an oracle makes the moved-target stop unconditional",
          "including the one where the recomputed coupled set is unchanged"
          in eval_field("upgrade-major-dependency",
@@ -456,7 +467,8 @@ def main() -> int:
                        "a-supplied-verdict-does-not-cover-work-in-flight",
                        "expected_output")),
         ("the producer's return contract names the same mapping",
-         "package → current target mapping for every package that moved" in flat(du)),
+         "package → current target mapping for every package that moved"
+         in flat(clause(du, "**Expect that stop on any moved target", 2000))),
         # An advanced bot PR can move the target, which invalidates exactly the
         # three findings a verdict is most trusted for.
         ("a moved target re-runs the per-package gate items for that package",
