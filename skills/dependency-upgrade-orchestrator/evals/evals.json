@@ -145,6 +145,17 @@
         "The answer does not make the exemption conditional on the set having been derived from the bump queue",
         "The answer still removes the candidate covered by the colleague's branch, distinguishing a bot bump from someone else's attempt at the work"
       ]
+    },
+    {
+      "id": 13,
+      "name": "an-advanced-routine-bump-loses-its-clearance",
+      "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: six patch candidates were cleared as routine three hours ago \u2014 no breaking change in range, no affected call site \u2014 and batched into one task with one PR. You are about to let that task land. Checking, one of the six has an adopted Renovate PR that advanced since triage: its target is now a release whose changelog describes a changed default. The batch is green. Question: what do you do?",
+      "expected_output": "Pull that candidate out of the batch. A routine clearance is about one release, so a moved target voids it \u2014 and this one is not merely a finding but a routing decision, and the route it chose has no viability gate in it: left in the batch, a breaking release ships past `upgrade-major-dependency` with no research, no usage audit and no characterization tests, while every check it meets passes. Re-triage it against the new target and dispatch it like any uncleared bump, reconsidering the model selection too, since that keyed on a failure mode derived from the old release. The other five keep their clearances if their targets did not move. Green on the batch is not evidence here \u2014 nothing in that route would have gone red.",
+      "assertions": [
+        "The answer removes the advanced candidate from the routine batch rather than letting it land",
+        "The answer identifies that the routine route contains no viability gate, so the batch being green is not evidence about it",
+        "The answer re-triages against the new target and reconsiders model selection, while leaving the five unmoved candidates cleared"
+      ]
     }
   ]
 }

@@ -37,6 +37,36 @@ def skill(name: str) -> str:
 BOLD = re.compile(r"\*\*(.+?)\*\*", re.S)
 
 
+PER_PACKAGE = ("that package's", "each package's", "per package", "its own target",
+               "that package s", "each package s")
+FINDINGS = ("licence", "cooldown", "peer")
+
+
+def eval_names(skill_name: str) -> list[str]:
+    f = ROOT / "skills" / skill_name / "evals" / "evals.json"
+    if not f.exists():
+        return []
+    return [c.get("name", "") for c in json.loads(f.read_text(encoding="utf-8")).get("evals", [])]
+
+
+def groups_peer_per_package(text: str) -> bool:
+    """True where one sentence names all three findings AND scopes them to a
+    package — the contradictory-oracle shape, however it is worded.
+
+    Keyed on co-occurrence rather than a spelling: "licence, cooldown and peer
+    findings", "licence, cooldown, and peer findings" and a peer-first
+    ordering are all equally natural, and a check matching one of them passes
+    the other two while claiming to guard the shape. Sentence-scoped so that a
+    correct oracle stating the two rules in separate sentences — which is what
+    the contract requires — is not caught by mentioning all three in one
+    paragraph.
+    """
+    for sentence in re.split(r"(?<=[.;:])\s", flat(text).lower()):
+        if all(f in sentence for f in FINDINGS) and any(p in sentence for p in PER_PACKAGE):
+            return True
+    return False
+
+
 def notes(name: str) -> str:
     """A skill's NOTES.md. It restates the rules it explains, so it drifts like
     any other restatement — one review round on this repo was spent on a rule
@@ -417,17 +447,16 @@ def main() -> int:
         # never checked.
         # An oracle that groups peer with licence and cooldown under a
         # per-package comparison rewards exactly the behaviour eval 14 and the
-        # contract reject. Absence over expected answers AND assertions, since
-        # either half can carry the grouping.
+        # contract reject. Detected structurally — the three finding names
+        # co-occurring in one sentence that also scopes to a package — rather
+        # than by one spelling, since "licence, cooldown, and peer findings"
+        # and a peer-first ordering are equally natural ways to write it.
         ("no eval oracle groups the peer finding with the per-package pair",
-         all("cooldown and peer" not in blob.lower()
-             for sk in ("upgrade-major-dependency", "dependency-upgrade-orchestrator")
-             for blob in eval_expected(sk))
-         and all("cooldown and peer" not in eval_field(sk, name, "assertions").lower()
-                 for sk, name in (
-                     ("upgrade-major-dependency", "a-supplied-verdict-does-not-cover-work-in-flight"),
-                     ("dependency-upgrade-orchestrator", "dispatch-forwards-viability-and-coupling"))),
-         ),
+         not any(groups_peer_per_package(blob)
+                 for sk in ("upgrade-major-dependency", "dependency-upgrade-orchestrator")
+                 for blob in eval_expected(sk) + [
+                     eval_field(sk, n, "assertions")
+                     for n in eval_names(sk)])),
         ("the peer finding is invalidated by any member's target moving",
          "not** per package" in flat(ud)
          and "invalidates the peer check for the **entire group**" in flat(ud)
@@ -436,6 +465,13 @@ def main() -> int:
         ("the peer-cap gate item says a supplied clearance dies group-wide",
          "dies as soon as **any** member's target moves"
          in flat(clause(ud, "- **Peer caps.**", 3000))),
+        ("a moved target voids a routine clearance and its routing",
+         "A routine clearance is about one release" in flat(du)
+         and "the route it chose has no viability gate in it" in flat(du)),
+        ("the target rule reaches the research and the audit, not just the gate",
+         "the breaking-change research and usage audit supplied for that package"
+         in flat(ud)
+         and "Supplied research is reusable on the same condition" in flat(ud)),
         ("the producer states the peer exception to per-package",
          "The peer finding is the exception to per-package" in flat(du)),
         # The cherry-pick is the two-branch mechanism, not the rule; with one

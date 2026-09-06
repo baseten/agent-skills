@@ -16,13 +16,14 @@ Added after the review round on [PR #72](https://github.com/baseten/agent-skills
 
 That is one cell of a larger table, so the whole axis was walked rather than the instance patched. The axis is: **every conclusion triage reaches that `upgrade-major-dependency` re-derives from its own narrower scope**, and the question per cell is *what supplies this there?*
 
-| triage output | the agent's consuming phase | forwarded before? | what re-derivation produced |
-|---|---|---|---|
-| Viability | *Viability gate* | **no** — the contract's supply list named the other three | the reported defect: an adopted bump PR reads as work already in flight, and the agent stops on the very PR that supplied its candidate |
-| Coupling | *Viability gate*, peer caps | named, but the agent had no notion of a group | a companion moving in the same task still declares its cap at the installed major, so the group blocks on its own member |
-| Breaking changes | *Research* | yes | consistent; re-derivation is merely wasted work |
-| Usage surface | *Usage audit* | yes | consistent; same |
-| Target version, per package | *Task*'s reuse rule, and *Viability gate*'s first three items | **no** — added as a triage output without a row, in the round that wrote this rule | the worker is told to compare current target against triaged target and has no triaged target to compare with, so a stale licence, cooldown or peer clearance is reused and reads as compliance |
+| triage output | the agent's consuming phase | forwarded before? | survives a target move? | what re-derivation produced |
+|---|---|---|---|---|
+| Viability | *Viability gate* | **no** — the contract's supply list named the other three | licence and cooldown: no, per package. Peer caps: no, group-wide — any member moving voids it for all | the reported defect: an adopted bump PR reads as work already in flight, and the agent stops on the very PR that supplied its candidate |
+| Coupling | *Viability gate*, peer caps | named, but the agent had no notion of a group | yes — it is about membership, not versions | a companion moving in the same task still declares its cap at the installed major, so the group blocks on its own member |
+| Breaking changes | *Research* | yes | **no** — the research described one release | consistent; re-derivation is merely wasted work |
+| Usage surface | *Usage audit* | yes | **no** — same | consistent; same |
+| Routine-bump clearance | *Dispatch*'s batching, and the model selection it implies | not applicable — it routes rather than travels | **no**, and this is the sharp one: the route it picks has no viability gate in it, so a cleared patch whose PR advances to a breaking release bypasses the whole skill | added in the same round as the target rule, and exempted from it by oversight until the round after |
+| Target version, per package | *Task*'s reuse rule, and *Viability gate*'s first three items | **no** — added as a triage output without a row, in the round that wrote this rule | n/a — it *is* the thing that moves | the worker is told to compare current target against triaged target and has no triaged target to compare with, so a stale licence, cooldown or peer clearance is reused and reads as compliance |
 
 Two defects, one column fix: dispatch forwards the viability verdict, the coupled set and any adopted PR, and the agent's gate reads a supplied verdict instead of re-deriving that item. The two safe cells stay forwarded for cost alone, and the contract now says which reason applies to which — an unlabelled list is what let the load-bearing entries drop out of it.
 
@@ -31,6 +32,8 @@ The target version was added to the payload a round after the worker was told to
 The general form: **adding a rule that compares against something the caller knows is also a change to the caller's contract.** Ask what the new rule reads, and whether anything supplies it, in the same pass that writes the rule.
 
 **A new triage output owes this table a row before it ships**, answering the same question — what supplies this at the agent's gate, and what does the agent conclude without it. That is what makes the table a guard rather than a record of one fix.
+
+The routine-bump row is the one to read first, because it is the only cell whose failure is not a wrong answer but a **wrong route**. Every other target-dependent finding, if stale, gets a chance to be caught: the worker runs a gate, reads research, writes characterization tests. A stale routine clearance skips all of that by construction — batching is what "cleared" means — so a patch that advances into a breaking release ships with every check it meets passing, because the checks that would have failed are the ones the route removed. It was also exempted from the target rule by oversight for a round, which is the ordinary shape here and a worse cost than usual.
 
 The target-version row is the proof that a written rule is not a guard. It was added a round late, by the person who wrote the sentence above it, in the round that introduced the output — the rule was two lines away and did not fire, because nothing made it fire. A table maintained by remembering to maintain it has the same failure mode as a sweep performed by remembering to sweep. The row is here now; what would actually enforce it is a check, and none of the mechanical checks can tell a triage output from a paragraph.
 
