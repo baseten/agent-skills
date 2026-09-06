@@ -149,11 +149,12 @@
       "id": 13,
       "name": "a-supplied-verdict-does-not-cover-work-in-flight",
       "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: your caller triaged this candidate four hours ago and handed you a viability verdict clearing every item, plus an adopted Dependabot PR by URL. Bounded concurrency meant you were only dispatched now. A colleague pushed a branch upgrading the same package two hours ago, after the verdict was written. You have not yet looked at the Dependabot PR. Question: which parts of the verdict do you take as given, and what do you check yourself?",
-      "expected_output": "Re-run the work-already-in-flight search first: it finds the colleague's branch, which is somebody else's attempt at the same upgrade, and that ends the task \u2014 report it and branch nothing. Had it been clear, three further things would still not have come from the verdict. The adopted PR's state: its URL is identity, but in four hours it can have merged, closed, been superseded or advanced, and the in-flight search would not tell you about a merged one because it sees only open work. If it advanced, whether any package's target moved with it \u2014 **licence and cooldown** are about one package at one version, so a moved target voids only that package's two. And the **peer** finding, which is not per package at all: it is a relation over the whole target tuple, so any member moving voids it for every member and it is re-run over the tuple. Only the coupled set is reusable unconditionally.",
+      "expected_output": "Re-run the work-already-in-flight search first: it finds the colleague's branch, which is somebody else's attempt at the same upgrade, and that ends the task \u2014 report it and branch nothing. Had it been clear, nothing in the triage would have been safe to reuse except identity. Read the adopted PR itself: its URL is identity, but in four hours it can have merged, closed, been superseded or advanced, and the in-flight search would not reveal a merged one because it sees only open work. If it advanced and moved this package's target, that voids the package's whole triage \u2014 licence, cooldown, the breaking-change research and the usage audit, all four, since each described one release. It also voids two conclusions reaching past the package: the peer resolution, re-run over the whole tuple because any member moving breaks another member's clearance; and the coupled set itself, because membership is derived from peer requirements at the targets. If the recomputed set differs, report that and stop rather than reshaping the task \u2014 membership is the caller's decision.",
       "assertions": [
         "The answer re-runs the work-in-flight search despite the supplied verdict clearing it",
         "The answer ends the task on the colleague's branch and does not branch from the adopted PR afterwards",
-        "The answer scopes licence and cooldown reuse to the package whose target moved, and treats the peer finding as invalidated group-wide by any member's move",
+        "The answer voids all four of the package's own findings on a moved target \u2014 licence, cooldown, research and usage audit \u2014 not only the gate items",
+        "The answer additionally voids the peer resolution and the coupled set task-wide, and stops rather than reshaping membership if the set changed",
         "The answer would read the adopted PR's current state rather than the verdict's head, noting the in-flight search cannot reveal a merged one"
       ]
     },
@@ -166,6 +167,17 @@
         "The answer re-runs the peer check for the entire group rather than only for the companion that moved",
         "The answer keeps framework's licence and cooldown clearances while re-running the companion's, distinguishing per-package findings from the relational one",
         "The answer identifies the incompatible tuple (companion@3 requiring framework@3 against framework@2) as what per-package reuse would have missed"
+      ]
+    },
+    {
+      "id": 15,
+      "name": "an-advanced-target-can-change-the-coupled-set",
+      "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: your task is package A alone; the caller's triage said A is not coupled to anything, and cleared A@2. The adopted PR has since advanced A's target to v3, and A@3's peer range requires a compatible B@3 where A@2 accepted the installed B@2. B is not in your task. Question: what do you do?",
+      "expected_output": "Recompute, then stop and report. A's target moved, so A's own findings are void and re-run against v3 \u2014 and the coupled set is void too, because membership is derived from peer requirements at the targets: A@3 needing B@3 means A and B must now move together. That is a change to the task's membership, which is the caller's decision and not this task's, so report the recomputed set and stop. Do not add B and upgrade it, because nobody triaged B; and do not proceed with A alone, because that is the split-coupled-group failure the grouping exists to prevent.",
+      "assertions": [
+        "The answer recomputes the coupled set rather than treating the supplied one as still valid",
+        "The answer refuses both to absorb B into the task and to proceed with A alone",
+        "The answer reports the changed membership back to the caller as the caller's decision"
       ]
     }
   ]

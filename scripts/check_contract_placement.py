@@ -429,8 +429,9 @@ def main() -> int:
         # A supplied verdict is a snapshot. Most of it cannot go stale; the
         # work-in-flight item can, and bounded concurrency is what makes the
         # gap long enough to matter.
-        ("reuse is conditioned on the measured thing not having moved",
-         "only while the thing it measured has not moved" in flat(ud)
+        ("a moved target voids the package's whole triage, not selected findings",
+         "voids the triage for that package — not selected findings of it" in flat(ud)
+         and "What survives a target move is identity only" in flat(ud)
          and "even when a caller supplied a viability verdict clearing it"
          in flat(clause(ud, "- **Work already in flight.**", 2000))),
         # An advanced bot PR can move the target, which invalidates exactly the
@@ -457,11 +458,18 @@ def main() -> int:
                  for blob in eval_expected(sk) + [
                      eval_field(sk, n, "assertions")
                      for n in eval_names(sk)])),
-        ("the peer finding is invalidated by any member's target moving",
-         "not** per package" in flat(ud)
-         and "invalidates the peer check for the **entire group**" in flat(ud)
+        ("peer resolution and the coupled set are voided task-wide",
+         "relations over the targets rather than properties of one" in flat(ud)
          and "only while no member's target has moved at all"
-         in flat(near(ud, "## Viability gate", 500))),
+         in flat(near(ud, "## Viability gate", 600))),
+        # Coupling is DERIVED from peer requirements at the targets, so a move
+        # can change task membership — which the worker must not decide.
+        ("a recomputed coupled set stops the task rather than reshaping it",
+         "that is not this task's decision to make" in flat(ud)
+         and "report it and stop" in flat(ud)),
+        ("the producer expects that report and owns membership",
+         "Coupling is target-derived too" in flat(du)
+         and "reports and stops rather than reshaping its own task" in flat(du)),
         ("the peer-cap gate item says a supplied clearance dies group-wide",
          "dies as soon as **any** member's target moves"
          in flat(clause(ud, "- **Peer caps.**", 3000))),
@@ -469,7 +477,7 @@ def main() -> int:
          "A routine clearance is about one release" in flat(du)
          and "the route it chose has no viability gate in it" in flat(du)),
         ("the target rule reaches the research and the audit, not just the gate",
-         "the breaking-change research and usage audit supplied for that package"
+         "licence, install cooldown, the breaking-change research, the usage audit"
          in flat(ud)
          and "Supplied research is reusable on the same condition" in flat(ud)),
         ("the producer states the peer exception to per-package",
@@ -506,9 +514,9 @@ def main() -> int:
         # is a summary written unbolded as running prose; that is the residual,
         # and it is smaller than the literal-match version this replaced, which
         # any rewording defeated.
-        ("the reuse rule has exactly one bold statement",
-         len(BOLD.findall(near(ud, "**Reuse a supplied finding", 3000))) >= 1
-         and sum("reus" in b.lower() for b in BOLD.findall(ud)) == 1),
+        ("the target-move rule has exactly one bold statement",
+         sum("voids the triage" in b.lower() for b in BOLD.findall(ud)) == 1
+         and sum("reus" in b.lower() for b in BOLD.findall(ud)) == 0),
         ("the non-adopted branch is still eligible as the baseline",
          "it is the baseline, and stays one until the bump is applied to it"
          in flat(ud)),
