@@ -14,6 +14,8 @@ The empirical case: four packages on that run already carried post-migration tes
 
 This also explains why the contract forbids editing a failing characterization test. The failure is the signal the phase exists to produce; suppressing it returns the exercise to the post-hoc case it was designed to escape.
 
+The adopted-bump-PR rule added in the [PR #72](https://github.com/baseten/agent-skills/pull/72) round is the same proposition reached from a new direction, and it is worth stating separately because it does not look like a violation. Adopting a bump PR makes its head the upgrade branch, and a worker that then writes its characterization tests in the obvious place — the branch it is working on — has written them against the new version. Every visible step of the phase is performed and the phase's whole claim is gone. So the baseline is named as the adopted PR's merge base at the phase itself, not only implied by "still the old version".
+
 ## Why viability is gated before research
 
 Each gate item ended a real upgrade before any code was written, and each is minutes of work against hours.
@@ -21,6 +23,10 @@ Each gate item ended a real upgrade before any code was written, and each is min
 The licence gate is the sharpest: a package that relicensed from permissive to copyleft failed the repository's licence check outright. That is not a migration problem with a technical solution — it is an ownership decision about whether the organisation may ship the code at all, and an agent that migrates first and discovers it second has spent the entire budget on an artifact that cannot merge.
 
 "Work already in flight" is included because it nearly produced a duplicate of a colleague's five-week-old branch covering the same 69 files. Nothing in the dependency's own metadata reveals this; only searching the repository's open work does.
+
+That item was written from that case and phrased for it — *any* open PR naming the package. The review round on [PR #72](https://github.com/baseten/agent-skills/pull/72) found the case it therefore swallows: an automated bump PR for the same package is not a duplicate of the work, it *is* the work, and under a caller whose whole candidate set was derived from the bump queue the item removes every candidate it was handed. The distinction the item now draws is between work this task was sent to do and work someone else already started, which is what the colleague's-branch case was about all along.
+
+The same round is why the gate reads a supplied verdict where one exists. A caller that triaged the whole set — `dependency-upgrade-orchestrator`, *Dispatch* — resolved peer caps against the coupled group's target versions and cleared any adopted PR. Re-deriving those inside one task's scope reaches a different answer, and the answer it reaches is a stop: a companion moving in the same task still declares its cap at the installed major. Re-derivation is kept for everything the verdict does not cover, and a disagreement is reported rather than resolved silently, because the gate is still the last thing standing between a stale triage and a migration nobody may ship.
 
 ## Why the published artifact outranks the docs page
 
@@ -41,6 +47,10 @@ The remedy is not a better search. It is to encode the constraint mechanically �
 ## Why the audit checks multiple manifests
 
 In a workspace, a package can be declared by more than one member. Upgrading the declaration that surfaced first left a second member on the prior major and the resolved tree carrying both, in a state where every check passed. The consuming code was split across the two, so a module the upgrade's own summary claimed to have audited was still running against the old version.
+
+The rule this produced first said to confirm the resolved tree carries one copy afterwards, and that is the wrong reading of the incident. The signal was a *declaration* left behind; the duplicate copy was only how it showed. Reviewed on [PR #72](https://github.com/baseten/agent-skills/pull/72): in a workspace where every audited declaration has moved but an unrelated transitive dependency still requires the old major, the package manager retains both copies and is correct to. A rule demanding one copy calls that valid graph a failed upgrade, and an agent obeying it has exactly two moves — force an override the dependent never accepted, or drag an unrelated package forward — both of which ship more risk than the duplicate they remove.
+
+So the check is on resolution of the audited declarations and their consumers, which is what the incident actually needed, and global deduplication is reserved for packages that must be singletons. That exception is not a hedge: for a registry, a context, or any package holding shared process state, a second copy is a real defect, it is invisible to a declaration-level check, and it is worth naming which kind applies rather than asserting the requirement in the abstract.
 
 ## Why mocks are excluded from characterization tests
 

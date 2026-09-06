@@ -1,6 +1,6 @@
 ---
 name: upgrade-major-dependency
-description: Upgrade one dependency across a major version — establish viability, research real breaking changes against the published package, audit usage, pin current behaviour with characterization tests written and proven green before the upgrade, migrate, then classify every behavioural difference. Use for any semver-major bump, and for minor bumps of packages that ship breaking changes regardless.
+description: Upgrade one dependency, or one coupled group of them, across a major version — establish viability, research real breaking changes against the published package, audit usage, pin current behaviour with characterization tests written and proven green before the upgrade, migrate, then classify every behavioural difference. Use for any semver-major bump, and for minor bumps of packages that ship breaking changes regardless.
 ---
 
 # Upgrade a Major Dependency
@@ -11,7 +11,11 @@ Upgrade: $ARGUMENTS
 
 This file is the contract; the reasoning behind its rules lives in `NOTES.md` beside it, keyed by section. NOTES explains; it never overrides.
 
-Work in a dedicated worktree, never the main checkout. Branch from the latest `origin/<default>` unless a base is supplied.
+`$ARGUMENTS` is one package, or one **coupled group** whose members cannot move independently — a framework with its official companions, a plugin family sharing a version line. A group is one task, one branch and one PR throughout, and every rule below reads over all of its packages.
+
+Work in a dedicated worktree, never the main checkout. The **upgrade branch** is an adopted bump PR's head where one is supplied, otherwise a branch from the latest `origin/<default>` unless a base is supplied — but that head already carries the bump, so it is never the baseline (see Characterization tests).
+
+**Where a caller supplied a triage — a viability verdict, the coupled set, an adopted PR — the gate below reads it instead of re-deriving that item.** A caller that triaged the whole set knows things this task's scope cannot see, and re-deriving from inside it is how a cleared candidate stops on its own siblings. Re-derive only what the verdict does not cover, and report a disagreement rather than silently taking either answer.
 
 The phase order is load-bearing. Research precedes audit, audit precedes tests, tests precede the bump. Bumping first and reasoning backwards is how a silent behaviour change ships.
 
@@ -21,8 +25,8 @@ Run before any other work; each item independently ends the task.
 
 - **Licence.** Compare the new version's licence against the repository's accepted set. A permissive-to-copyleft change is an ownership decision, not an engineering one.
 - **Install cooldown.** Where the package manager enforces a minimum release age, a version published inside that window is uninstallable. Never add a per-package exclusion to defeat a supply-chain control for a routine bump.
-- **Peer caps.** Enumerate every package declaring this one as a peer and confirm each has a release accepting the target major. A cap with no compatible release anywhere is a hard blocker and reshapes the task.
-- **Work already in flight.** Search open PRs and branches for the package name before writing anything.
+- **Peer caps.** Enumerate every package declaring one of this task's packages as a peer and confirm each has a release accepting the target major, resolving every cap against the group's **target** versions and not their installed ones — a companion moving in this same task lifts its own cap, and reading it as installed blocks the group on itself. A cap held outside the group with no compatible release anywhere is a hard blocker and reshapes the task.
+- **Work already in flight.** Search open PRs and branches for every one of this task's package names before writing anything. Duplicating someone else's open work — a colleague's branch, another agent's attempt — ends the task. **An automated bump PR for these same packages is not that**: it is a machine's opening move on the work this task was sent to do, so adopt it — branch from its head, or supersede it and close it with a reference — and treat its diff as an input. Where a caller supplied one as adopted, that is settled; where the search found it, say so in the report.
 
 A blocked upgrade is reported, not worked around. A documented dead end is a result.
 
@@ -41,7 +45,8 @@ Establish which modules import the package and which APIs are actually called.
 Two systematic blind spots:
 
 - **Shape-based breaking changes evade line-oriented search.** Where a constraint concerns destructuring or object shape rather than an identifier, a grep under-reports it, and a second grep written from the same mental model under-reports it identically. Encode a mechanical constraint as a test that scans the tree, not as a search you repeat.
-- **A package may be declared in more than one manifest.** In a workspace, confirm every manifest declaring it, and confirm the resolved tree carries one copy afterwards.
+- **A package may be declared in more than one manifest.** In a workspace, confirm **every** manifest declaring it; a declaration left behind is the defect this looks for, and the upgrade's own summary will claim to have covered the module it strands.
+  Confirm that afterwards by resolving the audited declarations and their consumers to the target version — **not by counting copies in the tree**. A second copy is a correct resolution wherever an unrelated transitive dependency still requires the old major, and reading it as a failed upgrade drives the two repairs that are genuinely unsafe: an override forcing a version its dependent never accepted, or an unrelated package dragged forward to collapse the duplicate. Require one resolved copy only where the package must be a singleton — one registry, one context, one instance of shared state — and where it must, say which of those it is, because there a duplicate is a real defect that no declaration-level check finds.
 
 Also establish: version-pinned patches against this package (they will fail to apply), and whether it reaches the shipped bundle at all.
 
@@ -50,13 +55,15 @@ Also establish: version-pinned patches against this package (they will fail to a
 Write tests against the **current** version, prove them green there, commit them alone, then apply that commit **unmodified** to the upgrade branch and run it.
 
 ```
-worktree from origin/<default>   # still the old version
+baseline worktree at the pre-upgrade commit   # NOT an adopted bump PR's head
 write tests → prove green → commit (tests only)
 cherry-pick that commit onto the upgrade branch
 run untouched
 ```
 
 Where practical, reset the baseline worktree to the exact parent of the upgrade commit so the sole variable between runs is the upgrade.
+
+**An adopted bump PR's head is never the baseline.** It already carries the bump, so tests written and proven green there are post-migration tests wearing this phase's name — the precise inversion the phase order exists to prevent, and it arrives looking like ordinary compliance. Take the baseline from that PR's merge base and cherry-pick forward onto its head.
 
 Rules:
 
@@ -96,4 +103,4 @@ Type checks and unit tests do not detect these. For any that apply, state in the
 
 State what changed, what was audited and cleared, every behavioural difference and its classification, and what a human must still verify manually. Follow the repository's PR conventions for the description; do not enumerate changed files or narrate the investigation.
 
-If the upgrade proved unsafe, open nothing and report why.
+If the upgrade proved unsafe, open nothing and report why. Where a bump PR was adopted a PR already exists, so instead close it carrying the reason, and record the decision where the repository tracks them — a closed PR's thread is not where the next attempt will look, and the queue re-proposes the same bump until something durable says why not.

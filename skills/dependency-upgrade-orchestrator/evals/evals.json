@@ -78,6 +78,28 @@
         "The answer does not let the small application-side diff justify proceeding",
         "The answer records the blocker where the decision will be found again rather than only in a closed PR"
       ]
+    },
+    {
+      "id": 7,
+      "name": "the-bump-queue-is-not-work-already-in-flight",
+      "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: no set was supplied, so you derived one from the repository's open Renovate queue \u2014 nine open bump PRs, one per package. Triage's viability item removes any candidate with work already open on a branch or PR. Question: how many candidates survive, and what do you do with those nine PRs?",
+      "expected_output": "All nine survive. A derived set's own source is never work already in flight \u2014 applying that item to the PRs the batch was derived from would empty the batch it just produced. Mark each PR adopted and carry it by URL into dispatch: the upgrade continues on it (branch from its head, or supersede it and close it with a reference) and its diff is an input. The duplicate finding is reserved for work the run did not derive its candidate from.",
+      "assertions": [
+        "The answer keeps all nine candidates rather than filtering them out as work already open",
+        "The answer adopts or repairs the source bump PRs rather than opening competing PRs beside them",
+        "The answer still applies the in-flight item to open work the candidates were not derived from"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "dispatch-forwards-viability-and-coupling",
+      "prompt": "You are executing the dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are writing the dispatch brief for one agent. Its candidate is a framework plus two companion packages moving together, derived from an adopted bump PR, and your triage cleared viability. To keep the brief short, a colleague suggests sending only the breaking-change notes and the usage surface and letting the agent work the rest out from the repository. Question: what must the brief carry, and why?",
+      "expected_output": "It must also carry the viability verdict, the coupled set, and the adopted PR's URL, plus the worktree path and exact base branch. Those are forwarded because the agent's own viability gate reaches a different answer without them \u2014 the adopted PR reads there as work already in flight, and a peer cap another group member lifts reads as a hard blocker \u2014 so omitting them stops the agent on a candidate triage already cleared. Breaking changes and usage surface are safe to re-derive and are forwarded only to save the duplicated work.",
+      "assertions": [
+        "The answer adds the viability verdict, the coupled set and the adopted PR to the brief rather than accepting the shortened version",
+        "The answer distinguishes those from breaking changes and usage surface by consequence \u2014 a wrong stop versus duplicated work \u2014 rather than treating all four as the same kind of saving",
+        "The answer names the concrete re-derivation failures: the adopted PR read as in-flight work, and a peer cap lifted by a sibling in the same group"
+      ]
     }
   ]
 }

@@ -55,6 +55,8 @@ def main() -> int:
     sm = skill("summarize-tranche")
     rp = skill("repair-pr")
     rc = skill("resolve-pr-comment")
+    ud = skill("upgrade-major-dependency")
+    du = skill("dependency-upgrade-orchestrator")
 
     bo_pred = clause(bo, "On unhandled review feedback")
     ii_pred = clause(ii, "On unhandled feedback")
@@ -253,6 +255,38 @@ def main() -> int:
          "reading any rejected-draft record there first" in flat(bo)),
         ("settle requires the approved answer text", "the approved or edited answer text itself" in st),
         ("settle zero-output keys on authored writes", "no authored write of any kind" in st),
+        # The dependency-upgrade chain. The orchestrator's triage clears a
+        # candidate; the agent's own viability gate then re-derives the same
+        # conclusions from a narrower scope and reaches a *stop*. Every triage
+        # output the gate can contradict has to be forwarded AND read at the
+        # gate — presence in the dispatch prose is not presence at the gate.
+        ("dependency dispatch forwards the viability verdict and the coupled set",
+         "the viability verdict and the coupled set"
+         in flat(clause(du, "Supply each agent with the completed triage", 2000))),
+        ("dependency dispatch says why those two specifically",
+         "reaches a different answer without them" in flat(du)),
+        ("the bump queue's own PRs are adopted, not filtered out",
+         "never work already in flight" in flat(du)),
+        ("the orchestrator's viability item exempts the adopted source PR",
+         "other than an adopted source bump PR" in flat(clause(du, "**Viability** —", 2000))),
+        ("the orchestrator's peer-cap item is scoped to the coupled group",
+         "established before this item is answered" in flat(clause(du, "**Viability** —", 2000))),
+        ("upgrade-major-dependency reads a supplied verdict instead of re-deriving",
+         "instead of re-deriving that item" in flat(ud)),
+        ("its in-flight item exempts an automated bump PR at the item itself",
+         "is not that" in flat(clause(ud, "- **Work already in flight.**", 2000))),
+        ("its peer-cap item resolves caps against the group's targets",
+         "not their installed ones" in flat(clause(ud, "- **Peer caps.**", 2000))),
+        ("its manifest audit checks resolution, not copy count",
+         "not by counting copies in the tree" in flat(ud)),
+        ("the single-copy requirement is scoped to singletons",
+         "only where the package must be a singleton" in flat(ud)),
+        # Adoption makes the bump PR's head the upgrade branch, so the obvious
+        # place to write characterization tests is already post-migration. The
+        # phase performs every visible step and its claim is gone.
+        ("the characterization baseline excludes an adopted PR's head",
+         "never the baseline" in flat(ud)
+         and "merge base" in near(ud, "## Characterization tests", 1800)),
     ]
 
     # Every write-absolute must name the second write kind, or it silently

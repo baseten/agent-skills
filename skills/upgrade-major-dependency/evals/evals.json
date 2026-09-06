@@ -78,6 +78,50 @@
         "The answer explains that a mock satisfies both shapes and therefore cannot detect this class of change",
         "The answer does not reuse the mock on the grounds that it is well-maintained or conventional"
       ]
+    },
+    {
+      "id": 7,
+      "name": "a-second-resolved-copy-is-not-a-failed-upgrade",
+      "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a monorepo. Every manifest that declares the package has been moved to v5 and every module you audited resolves to v5. The lockfile still carries one v4 copy, required by an unrelated build plugin nobody in this task touches. You could add a resolution override to collapse it, or bump the plugin. Question: is the upgrade complete, and what do you do about the second copy?",
+      "expected_output": "Complete. The check is that the audited declarations and their consumers resolve to the target version, not that the tree carries one copy. A transitive dependency legitimately holding the old major is a correct resolution; neither the override nor the unrelated plugin bump is warranted here. A single resolved copy is required only where the package must be a singleton \u2014 one registry, one context, one instance of shared state \u2014 which this one is not.",
+      "assertions": [
+        "The answer treats the upgrade as complete rather than as failed or incomplete",
+        "The answer refuses both the resolution override and the unrelated plugin bump",
+        "The answer names the singleton case as the only one where a single resolved copy is required, and does not claim it applies here"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "an-adopted-bump-pr-is-not-work-in-flight",
+      "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: your caller triaged the batch and handed you this package with a viability verdict already cleared and an adopted Dependabot PR by URL. Running the viability gate yourself, the in-flight search returns exactly that PR. Question: do you stop?",
+      "expected_output": "No. An automated bump PR for the same package is the work, not a duplicate of it: adopt it \u2014 branch from its head, or supersede it and close it with a reference \u2014 and treat its diff as an input. The in-flight item stops the task on someone else's open work, which this is not. Where the caller supplied a triage the gate reads it rather than re-deriving that item.",
+      "assertions": [
+        "The answer does not stop or report the task blocked on the bump PR",
+        "The answer continues on that PR \u2014 branching from its head or superseding and closing it \u2014 rather than opening a competing attempt",
+        "The answer distinguishes an automated bump PR from a colleague's or another agent's duplicate open work"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "a-coupled-sibling-does-not-cap-its-own-group",
+      "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you were given a coupled group \u2014 a framework and two of its official companion packages \u2014 to move to the next major as one task. Enumerating peers, both companions declare the framework as a peer at the current major, and their installed versions cap it. No package outside the group caps it. Question: is this a hard blocker?",
+      "expected_output": "No. Peer caps resolve against the group's target versions, not their installed ones \u2014 the companions are moving in this same task and their target releases lift the cap. A hard blocker is a cap held outside the group with no compatible release anywhere. Reading installed versions here blocks the group on its own members.",
+      "assertions": [
+        "The answer proceeds rather than reporting a blocker",
+        "The answer resolves the caps against the companions' target versions rather than their installed ones",
+        "The answer reserves the hard-blocker verdict for a cap held outside the coupled group"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "an-adopted-pr-head-is-not-the-baseline",
+      "prompt": "You are executing the upgrade-major-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you adopted an open Dependabot PR, so your upgrade branch is that PR's head and the package is already at the new major there. You are now at the characterization-test phase and the worktree you have checked out is that branch. Question: where do you write and prove the tests green?",
+      "expected_output": "Not on that branch. Its head already carries the bump, so tests proven green there are post-migration tests \u2014 the inversion the phase order exists to prevent. Take a baseline worktree at the adopted PR's merge base (the pre-upgrade commit), write and prove the tests green there, commit them alone, then cherry-pick that commit forward onto the PR's head and run it untouched.",
+      "assertions": [
+        "The answer refuses to write or prove the characterization tests on the adopted PR's head",
+        "The answer takes the baseline from that PR's merge base / pre-upgrade commit and cherry-picks forward onto the head",
+        "The answer identifies tests proven green on the bumped branch as post-migration tests that pin whatever the migration produced"
+      ]
     }
   ]
 }

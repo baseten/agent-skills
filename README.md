@@ -1,6 +1,6 @@
 # Agent Skills
 
-Reusable Claude Code skills for issue implementation, PR workflows, backlog validation/orchestration, and stacked PR management.
+Reusable Claude Code skills for issue implementation, PR workflows, backlog validation/orchestration, stacked PR management, and dependency upgrades.
 
 ## A note on how the skills read
 
@@ -23,6 +23,11 @@ The `SKILL.md` files are dense and not easily human readable. That is deliberate
 - `plan-merge-order` — ranks a settled tranche's open PRs by how much downstream work each unblocks, and emits a review order, a merge batching plan, and the hard sequencing constraints as a table. Read-only; it never merges. `backlog-orchestrator` invokes it when a run settles.
 - `settle-outstanding-decisions` — walks the owner through the human-only decisions a settled run left outstanding, one at a time via `AskUserQuestion` with enough context to answer on the spot, and records each ruling durably where the decision lives. Run it yourself after a tranche, or let a settled step request it — `backlog-orchestrator` between summary and ranking, `implement-issue` between summary and merge gate — on by default, gated by `auto-request-settle`. Either way it refuses to prompt where nobody is present: a run settling on a scheduled wake gets a one-line decline, and the decisions stay in the summary's action points. Collect-and-record only; acting on the rulings stays with their owners.
 - `merge-stack` — safely merges one PR, part of a stack, or an explicitly authorized whole stack while rebasing/restacking descendants.
+
+## Dependency upgrade skills
+
+- `upgrade-major-dependency` — upgrades one package, or one coupled group of them, across a major version: viability gate, research verified against the published artifact, usage audit, then characterization tests written and proven green on the current version and re-run unmodified after the bump.
+- `dependency-upgrade-orchestrator` — triages a batch of upgrades, establishes coupling and viability, selects a model per upgrade by failure mode, dispatches bounded-concurrency subagents that each run `upgrade-major-dependency`, and supervises CI while separating infrastructure failure from real failure.
 
 ## Writing skills
 

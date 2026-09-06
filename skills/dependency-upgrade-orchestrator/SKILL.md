@@ -13,6 +13,8 @@ This file is the contract; the reasoning behind its rules lives in `NOTES.md` be
 
 Derive the set where none is supplied — the package manager's outdated report, a scheduled dependency report, or the open automated-bump queue.
 
+**A derived set's own source is never work already in flight.** Where the source is the open bump queue, every candidate arrives already open as a PR, and the viability item that removes work already open would empty the batch it just produced. Mark each such PR **adopted** and carry it by URL through triage into dispatch: the upgrade continues on it — branch from its head, or supersede it and close it with a reference — and its diff is an input rather than a competing attempt. Only work this run did not derive the candidate from is a duplicate (see Triage each candidate).
+
 **Triage is yours; implementation is delegated.** The research pass determines model selection, batching and viability, so it cannot be performed by the agents whose scope it defines.
 
 ## Enumerate
@@ -23,7 +25,7 @@ Order production dependencies before development ones.
 
 ## Triage each candidate
 
-**Viability** — each independently removes a candidate: licence change against the repository's accepted set; publication inside an enforced minimum release age; a peer declaring a cap with no compatible release anywhere; work already open on a branch or PR.
+**Viability** — each independently removes a candidate: licence change against the repository's accepted set; publication inside an enforced minimum release age; a peer declaring a cap with no compatible release anywhere — **resolved against the candidate's coupled group, which is therefore established before this item is answered**, since a peer moving inside the group lifts its own cap and a candidate rejected on one is rejected by its own siblings; work already open on a branch or PR **other than an adopted source bump PR** — a colleague's branch or a second agent's attempt is a duplicate and removes the candidate, while the bump PR a candidate was derived from is the work itself and is adopted or repaired rather than filtered out (see Task).
 
 **Breaking changes** — changelog and upgrade guide, every version in the range rather than only the major, verified against the published artifact where a rendered page could diverge from it.
 
@@ -47,7 +49,9 @@ Where the estimate is uncertain, over-assign. Over-assignment costs budget; unde
 
 One subagent per upgrade or coupled group, each in **its own worktree**, each invoking `upgrade-major-dependency`.
 
-Supply each agent with the completed triage — breaking changes, usage surface, coupling — rather than having it re-derive them. Supply its worktree path and exact base branch.
+Supply each agent with the completed triage — **the viability verdict and the coupled set**, breaking changes, usage surface — rather than having it re-derive them. Supply its worktree path, its exact base branch, and any adopted bump PR by URL.
+
+**The first two are supplied because the agent's own gate reaches a different answer without them, not to save it work.** `upgrade-major-dependency` re-runs its viability gate over what its own scope can see: an adopted bump PR reads there as work already in flight, and a peer cap that another member of the same coupled group lifts reads as a hard blocker. Either stops an agent on a candidate this triage already cleared. Breaking changes and usage surface are safe for an agent to re-derive and are supplied only to save the duplicated work.
 
 Constrain each agent explicitly:
 

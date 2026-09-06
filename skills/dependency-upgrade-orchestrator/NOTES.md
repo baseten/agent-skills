@@ -10,6 +10,25 @@ Triage produces three outputs the dispatch depends on: which candidates are viab
 
 The failure this prevents is concrete. Naive per-package automation produces exactly the broken artifact the contract describes: one package advanced, its siblings stale, installation failing against a version-pinned patch. That is not a bug in the automation; it is the consequence of having no layer that reasons about the set.
 
+## What dispatch forwards, and why the queue's own PRs are adopted
+
+Added after the review round on [PR #72](https://github.com/baseten/agent-skills/pull/72), which reported one instance of this — deriving the set from the open bump queue produces a batch that the "work already open on a branch or PR" viability item then empties, because every candidate arrived as exactly such a PR.
+
+That is one cell of a larger table, so the whole axis was walked rather than the instance patched. The axis is: **every conclusion triage reaches that `upgrade-major-dependency` re-derives from its own narrower scope**, and the question per cell is *what supplies this there?*
+
+| triage output | the agent's consuming phase | forwarded before? | what re-derivation produced |
+|---|---|---|---|
+| Viability | *Viability gate* | **no** — the contract's supply list named the other three | the reported defect: an adopted bump PR reads as work already in flight, and the agent stops on the very PR that supplied its candidate |
+| Coupling | *Viability gate*, peer caps | named, but the agent had no notion of a group | a companion moving in the same task still declares its cap at the installed major, so the group blocks on its own member |
+| Breaking changes | *Research* | yes | consistent; re-derivation is merely wasted work |
+| Usage surface | *Usage audit* | yes | consistent; same |
+
+Two defects, one column fix: dispatch forwards the viability verdict, the coupled set and any adopted PR, and the agent's gate reads a supplied verdict instead of re-deriving that item. The two safe cells stay forwarded for cost alone, and the contract now says which reason applies to which — an unlabelled list is what let the load-bearing entries drop out of it.
+
+This file's own note on triage said all along that dispatch depends on *three* outputs including viability. The contract's supply list named breaking changes, usage surface and coupling. The disagreement sat in the repository for a full round; it is the ordinary way a rule and its restatement drift, and it is why the fix here is the table rather than the line.
+
+The adoption rule itself is not merely an exemption. A bump PR is a machine's opening move on the work the run was sent to do, and it carries a lockfile resolution and a CI history worth having; superseding it silently also leaves the queue re-proposing the same bump forever. So the contract adopts or repairs it and says which, and reserves the duplicate finding for work the run did not derive its candidate from — which is the case the item was written for.
+
 ## Why file count is explicitly demoted
 
 Surface area is the intuitive proxy for effort and it is wrong in both directions, which is worse than being wrong in one.
