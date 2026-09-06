@@ -383,12 +383,24 @@ def main() -> int:
         # A supplied verdict is a snapshot. Most of it cannot go stale; the
         # work-in-flight item can, and bounded concurrency is what makes the
         # gap long enough to matter.
-        ("the worker re-runs the one gate item that expires",
-         "One item is exempt, because it expires" in flat(ud)
+        ("the worker splits the verdict by what can change, not by item",
+         "Split the verdict by whether a fact can change" in flat(ud)
          and "even when a caller supplied a viability verdict clearing it"
          in flat(clause(ud, "- **Work already in flight.**", 2000))),
-        ("the orchestrator does not present the verdict as covering it",
-         "must not be presented as though it does" in flat(du)),
+        # A PR's URL is stable and everything else about it is not. The
+        # in-flight search cannot cover this: it sees open work, and the
+        # dangerous case is the adopted PR having merged.
+        ("the adopted PR's state is refreshed, not taken from the verdict",
+         "URL is identity and does not change; nothing else about it is given"
+         in flat(ud)
+         and "read the PR itself before branching from it" in flat(ud)),
+        ("the orchestrator does not present the verdict as covering either",
+         "must not be presented as though it does" in flat(du)
+         and "as identity rather than as a state" in flat(du)),
+        # The rationale for forwarding the adopted PR was removed in round
+        # seven; the sites asserting it outlived it by three rounds.
+        ("dispatch no longer justifies the adopted PR by a wrong stop",
+         "supplied as identity rather than to prevent a wrong stop" in flat(du)),
         ("upgrade-major-dependency reads a supplied verdict instead of re-deriving",
          "instead of re-deriving that item" in flat(ud)),
         ("its in-flight item exempts an automated bump PR at the item itself",
