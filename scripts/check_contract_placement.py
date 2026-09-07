@@ -330,18 +330,48 @@ def flat(text: str) -> str:
     return " ".join(text.split())
 
 
-def packs_into_temp(block: str) -> bool:
-    """Does the recipe's `--pack-destination` name a directory from `mktemp -d`?
+def commands(block: str) -> list[str]:
+    """The block's shell commands, with `\\` continuations joined.
 
-    The option's presence is not the property. `--pack-destination .` and
-    `--pack-destination "$PWD"` both carry it and both write into the worktree,
-    so the value is what has to be read, and it has to trace back to a temporary
-    directory created in the same block.
+    A predicate that reads a line reads half a command wherever the recipe wraps,
+    and one that greps the whole block cannot tell which command a clause belongs
+    to. Both mistakes were shipped here; joining first is what makes the checks
+    below able to say "this command, not that one".
     """
-    m = re.search(r'--pack-destination\s+"\$(\w+)"', block)
-    if not m:
+    joined = re.sub(r"\\\n\s*", " ", block)
+    return [ln.strip() for ln in joined.splitlines() if ln.strip()]
+
+
+def packs_into_temp(block: str) -> bool:
+    """Does *every* `npm pack` write to a directory made by `mktemp -d`?
+
+    Every, not the first: spelling the two packs out separately and pointing only
+    the second at the worktree passed a version of this that stopped at the first
+    match. A pack with no destination at all writes to the working directory, so
+    a missing option fails too.
+    """
+    packs = [c for c in commands(block) if re.search(r"\bnpm pack\b", c)]
+    if not packs:
         return False
-    return re.search(r"\b" + re.escape(m.group(1)) + r"=\$\(mktemp -d\)", block) is not None
+    temps = set(re.findall(r"(\w+)=\$\(mktemp -d\)", block))
+    for c in packs:
+        m = re.search(r'--pack-destination\s+"\$(\w+)"', c)
+        if not m or m.group(1) not in temps:
+            return False
+    return True
+
+
+def extraction_is_checked(block: str) -> bool:
+    """Does each `tar` extraction carry its own non-zero handler?
+
+    Its own: a handler sitting on a different command in the same block leaves
+    the extraction unchecked, and an unchecked extraction is what lets `diff`
+    return 0 over two empty files.
+    """
+    tars = [c for c in commands(block) if re.search(r"\btar\b.*-xO", c)]
+    if not tars:
+        return False
+    return all(re.search(r"\|\|.*exit\s+1", c) for c in tars)
 
 
 def fenced(text: str, containing: str) -> str:
@@ -742,7 +772,8 @@ def main() -> int:
         ("the source diff runs npm from the project",
          not re.search(r"\b(?:cd|pushd)\b", fenced(ud, "npm pack"))),
         ("the source diff extracts to a checked file before diffing",
-         'exit 1; }' in flat(ud) and "diff <(tar" not in flat(ud)),
+         extraction_is_checked(fenced(ud, "npm pack"))
+         and "diff <(tar" not in flat(ud)),
         ("the dependency dispatch constraints carry the form rule",
          "**The authored-write-form rule**" in du
          and "carry the test, not the conclusion" in flat(du)),
