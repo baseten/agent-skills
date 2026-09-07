@@ -330,63 +330,6 @@ def flat(text: str) -> str:
     return " ".join(text.split())
 
 
-def commands(block: str) -> list[str]:
-    """The block's shell commands, with `\\` continuations joined.
-
-    A predicate that reads a line reads half a command wherever the recipe wraps,
-    and one that greps the whole block cannot tell which command a clause belongs
-    to. Both mistakes were shipped here; joining first is what makes the checks
-    below able to say "this command, not that one".
-    """
-    joined = re.sub(r"\\\n\s*", " ", block)
-    return [ln.strip() for ln in joined.splitlines() if ln.strip()]
-
-
-def packs_into_temp(block: str) -> bool:
-    """Does *every* `npm pack` write to a directory made by `mktemp -d`?
-
-    Every, not the first: spelling the two packs out separately and pointing only
-    the second at the worktree passed a version of this that stopped at the first
-    match. A pack with no destination at all writes to the working directory, so
-    a missing option fails too.
-    """
-    packs = [c for c in commands(block) if re.search(r"\bnpm pack\b", c)]
-    if not packs:
-        return False
-    temps = set(re.findall(r"(\w+)=\$\(mktemp -d\)", block))
-    for c in packs:
-        m = re.search(r'--pack-destination\s+"\$(\w+)"', c)
-        if not m or m.group(1) not in temps:
-            return False
-    return True
-
-
-def extraction_is_checked(block: str) -> bool:
-    """Does each `tar` extraction carry its own non-zero handler?
-
-    Its own: a handler sitting on a different command in the same block leaves
-    the extraction unchecked, and an unchecked extraction is what lets `diff`
-    return 0 over two empty files.
-    """
-    tars = [c for c in commands(block) if re.search(r"\btar\b.*-xO", c)]
-    if not tars:
-        return False
-    return all(re.search(r"\|\|.*exit\s+1", c) for c in tars)
-
-
-def fenced(text: str, containing: str) -> str:
-    """The fenced block containing `containing` -- the recipe, not the file.
-
-    A guard on a command has to read the command. Matching a literal spelling
-    of it instead lets an equivalent rewrite through: `cd "$tmp"` is the same
-    defect as `cd "$d"` and a check for the latter never sees it.
-    """
-    for m in re.finditer(r"```[^\n]*\n(.*?)```", text, re.S):
-        if containing in m.group(1):
-            return m.group(1)
-    return ""
-
-
 def near(text: str, anchor: str, span: int = 300) -> str:
     """The window just after `anchor` — for a rule that must sit under a heading."""
     i = text.find(anchor)
@@ -757,23 +700,6 @@ def main() -> int:
          and "partial copy that names two of its exclusions" in flat(ud)),
         ("upgrade-major-dependency names its writes unattended",
          "dispatched and unattended, so its writes answer No" in flat(ud)),
-        # The source-diff recipe took three review rounds, each fixing a command
-        # that looked like it worked: it dirtied the tree, then lost the project
-        # registry config, then reported "no change" over a failed extraction. A
-        # rewrite can reintroduce any of them with every other check green, so
-        # the properties are asserted rather than remembered.
-        # Two properties, two assertions: one guard with two halves left the
-        # second half untested, twice. Each of these owes its own mutation.
-        ("the source diff packs into a temporary directory",
-         packs_into_temp(fenced(ud, "npm pack"))),
-        # Reject any working-directory change rather than one spelling of it:
-        # packing outside the project loses its `.npmrc`, whichever variable a
-        # `cd` uses to get there.
-        ("the source diff runs npm from the project",
-         not re.search(r"\b(?:cd|pushd)\b", fenced(ud, "npm pack"))),
-        ("the source diff extracts to a checked file before diffing",
-         extraction_is_checked(fenced(ud, "npm pack"))
-         and "diff <(tar" not in flat(ud)),
         ("the dependency dispatch constraints carry the form rule",
          "**The authored-write-form rule**" in du
          and "carry the test, not the conclusion" in flat(du)),

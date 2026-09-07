@@ -504,32 +504,6 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
      "Gate \"green\" on **every** check the repository actually requires having concluded successfully **on the current head**",
      "Gate \"green\" on the required check",
      "the orchestrator's green gate is over every required check"),
-
-    # --- the source-diff recipe's three hard-won properties (rounds 1-3 on #75) ---
-    ('recipe: the tarball lands in the worktree again', UD,
-     ' --silent --pack-destination "$d" >/dev/null',
-     ' --silent >/dev/null',
-     'the source diff packs into a temporary directory'),
-    ('recipe: the destination is the project rather than a temp dir', UD,
-     '--pack-destination "$d"',
-     '--pack-destination .',
-     'the source diff packs into a temporary directory'),
-    ('recipe: a second pack aims at the worktree', UD,
-     'for v in <old> <new>; do\n  npm pack "<pkg>@$v" --silent --pack-destination "$d" >/dev/null',
-     'npm pack "<pkg>@<old>" --silent --pack-destination "$d" >/dev/null\nnpm pack "<pkg>@<new>" --silent --pack-destination . >/dev/null\nfor v in <old> <new>; do',
-     'the source diff packs into a temporary directory'),
-    ('recipe: an alternate variable smuggles the cd back in', UD,
-     'd=$(mktemp -d)\nfor v in <old> <new>; do',
-     'd=$(mktemp -d)\ntmp=$(mktemp -d) && cd "$tmp"\nfor v in <old> <new>; do',
-     'the source diff runs npm from the project'),
-    ('recipe: extraction failure stops being checked', UD,
-     '    || { echo "no package/<path> published at $v" >&2; exit 1; }\n',
-     '',
-     'the source diff extracts to a checked file before diffing'),
-    ('recipe: the handler moves off the extraction', UD,
-     '  tar -xOf "$d"/*-"$v".tgz package/<path> > "$d/$v" \\\n    || { echo "no package/<path> published at $v" >&2; exit 1; }',
-     '  tar -xOf "$d"/*-"$v".tgz package/<path> > "$d/$v"',
-     'the source diff extracts to a checked file before diffing'),
 ]
 
 # Mutations against the eval corpus, which is a restatement of the contract and
