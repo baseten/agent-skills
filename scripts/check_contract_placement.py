@@ -700,6 +700,15 @@ def main() -> int:
          and "partial copy that names two of its exclusions" in flat(ud)),
         ("upgrade-major-dependency names its writes unattended",
          "dispatched and unattended, so its writes answer No" in flat(ud)),
+        # The source-diff recipe took three review rounds, each fixing a command
+        # that looked like it worked: it dirtied the tree, then lost the project
+        # registry config, then reported "no change" over a failed extraction. A
+        # rewrite can reintroduce any of them with every other check green, so
+        # the properties are asserted rather than remembered.
+        ("the source diff redirects the tarball rather than changing directory",
+         '--pack-destination "$d"' in flat(ud) and 'cd "$d"' not in flat(ud)),
+        ("the source diff extracts to a checked file before diffing",
+         'exit 1; }' in flat(ud) and "diff <(tar" not in flat(ud)),
         ("the dependency dispatch constraints carry the form rule",
          "**The authored-write-form rule**" in du
          and "carry the test, not the conclusion" in flat(du)),
