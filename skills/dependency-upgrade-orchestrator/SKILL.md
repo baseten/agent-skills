@@ -87,6 +87,7 @@ Constrain each agent explicitly:
 - **Foreground execution only.** No backgrounded long-running commands, no monitors. An agent that backgrounds a command and ends its turn waits on a wake-up that does not arrive.
 - **No full-suite runs** where the suite is sharded across CI runners. Scoped runs plus CI.
 - **Stopping and reporting outranks producing a PR.** State that a documented dead end is an acceptable and valuable outcome.
+- **The authored-write-form rule** (`backlog-orchestrator`, *Authored write form*), carried whole rather than paraphrased: brevity and the intent-not-content shape for a PR body, the footer with its approval test, and the precedence of a write's required contents over brevity. A dispatched agent's writes are read by nobody before they are posted, so that test answers No and its PR body and any closure comment carry the footer — but carry the test, not the conclusion, because a rule enumerated as a conclusion is one the agent applies to writes it should not. This layer's own writes — the PRs it opens per task, the closures, the declined-upgrade records — follow the same rule for the same reason.
 
 **A batch shares one lockfile, and staleness compounds across it.** Every agent branches from the same base and resolves the lockfile against it independently, so each merge moves that base under every PR still open. Nothing announces the consequence: a branch cut before another's merge resolves its *new* entries against the tree as it was, and can pin a transitive to a version the base no longer carries.
 

@@ -60,10 +60,13 @@ refuses the thread on budget and re-admits it only on new content, and the findi
 exists for work no thread carries
 (`backlog-orchestrator`, *A settle finding is the third repair shape*).
 Classing one as `IN_FLIGHT_FIX` un-settles the tranche with nothing able to act on it. So
-report a **deferred repair as `MERGE_RISK`** — the requested change, the thread URL, that
-the review repair budget was spent, and that the next step is to apply it or lift the
-budget. A **question** thread is not an action point of its own: the walkthrough reads it
-from the thread.
+report a **deferred repair as `MERGE_RISK`** — the requested change, the thread's
+API `html_url` as the orchestrator recorded it and never rebuilt
+(`resolve-pr-comment`, *What a question item must contain*), that the review repair
+budget was spent, and that the next step is to apply it or lift the budget. A
+**question** thread is not an action point of its own: the walkthrough reads it from
+the question item the run recorded, which is what spares the owner opening the
+thread at all.
 
 **The test is the absence of a dispatch, not the reservation.** One reserved thread has
 one: a thread carrying a **recorded code-changing ruling whose change has not been pushed**

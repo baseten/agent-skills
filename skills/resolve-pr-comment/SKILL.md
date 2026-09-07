@@ -173,8 +173,10 @@ Unattended, the classification in *Handling queries* below runs and reaches the
 same verdicts it reaches attended — **the prose branch is `NEEDS_USER` in every
 mode, so this section overrides nothing about it.** What is unattended-specific
 is only where the result goes: nobody is in the session to hand it to, so every
-`NEEDS_USER` item is returned to the caller — thread URL, root author, what it
-asks, and a **draft reply** (below) — and the thread is left open.
+`NEEDS_USER` item is returned to the caller **carrying exactly what
+*What a question item must contain* requires**, and the thread is left open. That
+section owns the fields; this one does not restate them, because a second list is
+where one of them gets quietly dropped.
 
 **Do not reply substantively on any path, here or elsewhere.** A reply the run
 composes on its own authority is an answer nobody authorised: the question was

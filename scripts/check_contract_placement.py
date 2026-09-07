@@ -37,6 +37,14 @@ def skill(name: str) -> str:
 BOLD = re.compile(r"\*\*(.+?)\*\*", re.S)
 
 
+# "every authored write carries the footer" in either word order. The footer
+# marks only writes nobody read; a sentence claiming otherwise is the rule
+# this branch replaced, and it reads as correct where it sits.
+BLANKET_FOOTER = re.compile(
+    r"every authored write[^.\n]{0,80}footer|footer[^.\n]{0,80}every authored write",
+    re.I,
+)
+
 FINDINGS = ("licence", "cooldown", "peer")
 
 # A blank line, or the start of a list item. Markdown structure, decided by
@@ -508,7 +516,8 @@ def main() -> int:
         # The rule rests on authority, not on the reader being unable to tell --
         # a footer would otherwise read as licence to post.
         ("the no-answer rule rests on authority, not disclosure",
-         "A footer would not\nlicense it" in rc),
+         "The reason is authority, not disclosure" in flat(rc)
+         and "A footer would not license it" in flat(rc)),
 
         # --- Authored write form -------------------------------------------
         ("bo states the authored write form rule", "## Authored write form" in bo),
@@ -572,7 +581,14 @@ def main() -> int:
         ("both negation guards are stated to survive the narrowing",
          "hold unchanged under the approval test" in flat(bo)),
         ("the discriminator absolute names the footer as no substitute",
-         "is not a substitute either, and must not be tested for" in flat(bo)),
+         "is not a substitute either, and must not be tested for" in flat(bo)
+         and "it goes only on writes nobody read" in flat(bo)),
+        # The blanket footer was the previous rule, so it is the claim that
+        # creeps back. Detected as a shape, not a phrase: the positive
+        # assertion above survives the blanket being re-prefixed onto it, which
+        # is how a stale sentence at this decision point shipped green once.
+        ("no blanket footer claim survives anywhere in bo",
+         not BLANKET_FOOTER.search(flat(bo))),
         ("bo exempts the review trigger from the footer",
          "carries no footer and nothing else" in flat(bo)),
         ("the trigger's stated reason is the functional one",
@@ -597,6 +613,16 @@ def main() -> int:
         ("implement-issue carries the form rule at its own write site",
          "*Authored write form*" in ii
          and "unattended writes even on an attended run" in flat(ii)),
+        # #72's skills author forge writes too -- a PR body, a closure comment,
+        # a declined-upgrade record -- and the rule reached neither of them.
+        ("upgrade-major-dependency defers the form rule instead of copying it",
+         "*Authored write form*" in ud
+         and "partial copy that names two of its exclusions" in flat(ud)),
+        ("upgrade-major-dependency names its writes unattended",
+         "dispatched and unattended, so its writes answer No" in flat(ud)),
+        ("the dependency dispatch constraints carry the form rule",
+         "**The authored-write-form rule**" in du
+         and "carry the test, not the conclusion" in flat(du)),
         ("bo dispatch prompts carry the form rule",
          "every dispatched prompt carries the authored-write-form rule" in flat(bo)),
         ("the dispatched form rule is carried whole, not paraphrased",
@@ -634,16 +660,25 @@ def main() -> int:
          in flat(rp)),
         ("chain 2/5: repair-pr forbids rebuilding the URL",
          "Never rebuild the thread URL" in flat(rp)),
-        ("chain 3/5: bo records all five fields",
-         "all five fields `resolve-pr-comment`, *What a question item must contain*, requires"
+        ("chain 3/5: bo records everything the item requires",
+         "everything `resolve-pr-comment`, *What a question item must contain*, requires"
          in flat(bo)),
-        ("chain 4/5: ii records all five fields",
-         "all five fields of `resolve-pr-comment`, *What a question item must contain*"
+        ("chain 4/5: ii records everything the item requires",
+         "everything `resolve-pr-comment`, *What a question item must contain*, requires"
          in flat(ii)),
-        ("chain 5/5: settle consumes the item's fields, not just a draft",
-         "the API `html_url` so the owner can open the actual thread" in flat(st)),
+        ("chain 5/5: settle consumes all of the item's fields, not just a draft",
+         "carry **all of the item's fields** into the question" in flat(st)
+         and "reason it was not posted is the fastest read on which kind it is" in flat(st)),
         ("bo records partial items as no record at all",
-         "recording four of the five is recording none" in flat(bo)),
+         "recording all but one of them is recording none" in flat(bo)),
+        # The field list is owned by one section. A second copy is where a field
+        # gets dropped -- findings 6-8 and 11 of round two were all that shape.
+        ("the item's field list is not restated at the unattended summary",
+         "That section owns the fields; this one does not restate them" in flat(rc)),
+        ("settle does not keep its own copy of the field list",
+         "a copy of it is where a field goes missing" in flat(st)),
+        ("bo does not keep its own copy of the field list",
+         "that section owns the list and this one does not copy it" in flat(bo)),
         ("repair-pr forwards the notification state",
          "whether a notification was sent for each `NEEDS_USER` item" in flat(rp)),
         ("settle zero-output keys on authored writes", "no authored write of any kind" in st),

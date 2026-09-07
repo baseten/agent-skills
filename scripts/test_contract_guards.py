@@ -45,6 +45,11 @@ import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 UD = "skills/upgrade-major-dependency/SKILL.md"
+BO = "skills/backlog-orchestrator/SKILL.md"
+RC = "skills/resolve-pr-comment/SKILL.md"
+ST = "skills/settle-outstanding-decisions/SKILL.md"
+CP = "skills/create-pr/SKILL.md"
+RP = "skills/repair-pr/SKILL.md"
 DU = "skills/dependency-upgrade-orchestrator/SKILL.md"
 UD_EVALS = "skills/upgrade-major-dependency/evals/evals.json"
 DU_EVALS = "skills/dependency-upgrade-orchestrator/evals/evals.json"
@@ -64,6 +69,135 @@ MOVE_TO_END = "<<MOVE_TO_END>>"
 # is in the label, because a fixture without its provenance reads as a
 # preference rather than as evidence.
 MUTATIONS: list[tuple[str, str, str, str, str]] = [
+    # --- the footer marks writes nobody read (the owner's ruling) ---
+    # The blanket footer was the previous rule here, so the mutation that matters
+    # is the one that quietly restores it. Round two of this branch's review found
+    # the discriminator's own decision point still asserting the blanket, with a
+    # guard green over it because the guard's substring lived only in the stale
+    # sentence. These are the mutations that would have caught it in seconds.
+    ("footer: the attended row flips to carrying one", BO,
+     "confirmed or edited by them | this exact text | **no** |",
+     "confirmed or edited by them | this exact text | **yes** |",
+     "the attended path forbids the footer"),
+    ("footer: the unattended row flips to carrying none", BO,
+     "nobody read it | **yes** |", "nobody read it | **no** |",
+     "the unattended path requires it"),
+    ("footer: the approval test is softened to a blanket", BO,
+     "**No \u2192 the write carries the footer. Yes \u2192 it does not.**",
+     "**Every authored write carries it.**",
+     "the approval test states both answers"),
+    ("footer: approval becomes something short of reading the text", BO,
+     "Sitting in the session is not approval either.",
+     "A person who authorised the run has approved its writes.",
+     "approval is of the text, not of the run"),
+    ("footer: the unmarked direction becomes the default", BO,
+     "the answer is No and the footer goes on",
+     "the answer is Yes and the footer is omitted",
+     "the unmarked direction is the safe one"),
+    ("footer: the discriminator absolute reverts to the blanket claim", BO,
+     "The attribution footer is not a substitute either",
+     "The attribution footer every authored write now carries is not a substitute either",
+     "no blanket footer claim survives anywhere in bo"),
+    ("footer: the avatar argument is re-widened past the unattended case", BO,
+     "an argument about the unattended case only",
+     "an argument about every write the run makes",
+     "the avatar argument is scoped to the unattended case"),
+    ("footer: settle's ruling starts carrying one", ST,
+     "**neither write carries the attribution footer.**",
+     "**both writes carry the attribution footer.**",
+     "settle's ruling carries no footer"),
+    ("footer: create-pr's body stops splitting by mode", CP,
+     "this skill is where the test actually splits",
+     "the footer applies to every body this skill creates",
+     "create-pr's body footer is mode-dependent"),
+    ("footer: the dispatch prompt carries the conclusion, not the test", BO,
+     "the footer **with its approval test**", "the footer",
+     "the dispatched form rule carries the approval test itself"),
+
+    # --- a question item has to be usable without hunting ---
+    ("item: the URL rule becomes a shape rule", RC,
+     "as returned by the API, verbatim \u2014 never a hand-built anchor",
+     "a valid URL for the thread",
+     "the item's URL is API provenance, not a shape rule"),
+    ("item: the invisible-failure argument goes", RC,
+     "silently resolves to the wrong place", "may be incorrect",
+     "the item names why a rebuilt anchor fails invisibly"),
+    ("item: the ask may be paraphrased", RC,
+     "at most 2 lines**, trimmed with an ellipsis rather than paraphrased",
+     "summarised**",
+     "the item quotes the ask rather than paraphrasing it"),
+    ("item: the recommended reply gains a footer", RC,
+     "no attribution footer** \u2014 they author it when they post it",
+     "the attribution footer**",
+     "the recommended reply is paste-ready and unfootered"),
+    ("item: the URL rule is scoped to question items only", RC,
+     "obeys row 1", "is a matter for that entry",
+     "the URL rule covers every thread URL the skill emits"),
+    ("item: a notification becomes delivery", RC,
+     "a subscription dies\nwith the session that armed it",
+     "a notification reaches the person who needs it",
+     "notification never substitutes for the record"),
+    ("item: partial entries become acceptable", RC,
+     "four of the five is not this entry", "a summary is enough here",
+     "the resolver Output demands all five fields"),
+    ("item: repair-pr rebuilds the URL", RP,
+     "**Never rebuild the thread URL**", "Reconstruct the thread URL as needed",
+     "chain 2/5: repair-pr forbids rebuilding the URL"),
+    ("item: bo accepts an almost-complete record", BO,
+     "recording all but one of them is recording none",
+     "recording most of them is enough",
+     "bo records partial items as no record at all"),
+    ("item: settle drops back to consuming the reply alone", ST,
+     "carry **all of the item's fields** into the question",
+     "carry that item's **recommended reply** into the question",
+     "chain 5/5: settle consumes all of the item's fields, not just a draft"),
+
+    # --- no mode answers a query in the thread ---
+    ("query: the attended path posts the answer again", RC,
+     "it is `NEEDS_USER` in every mode, and\nthis skill posts no answer to it",
+     "post a reply with an appropriate response when a person invoked you",
+     "resolve-pr-comment answers no query in the thread, in any mode"),
+    ("query: the mixed rule re-admits attended as an exception", RC,
+     "Attended is not an exception here, and this section does not make one",
+     "Attended is the exception here",
+     "the mixed section makes attended no exception"),
+    ("query: the rule reverts to arguing from disclosure", RC,
+     "The reason is authority, not disclosure.",
+     "The reason is that the reviewer cannot tell.",
+     "the no-answer rule rests on authority, not disclosure"),
+
+    # --- #72's skills reach an authored write ---
+    ("dep: upgrade-major-dependency keeps its partial local copy", UD,
+     "partial copy that names two of its exclusions",
+     "restatement is fine here",
+     "upgrade-major-dependency defers the form rule instead of copying it"),
+    ("dep: the dispatch constraints lose the form rule", DU,
+     "- **The authored-write-form rule**", "- (removed)",
+     "the dependency dispatch constraints carry the form rule"),
+
+    # --- the PR body budget is a number, not an adjective ---
+    ("body: the budget becomes an adjective again", BO,
+     "300 words of prose above the fold, maximum", "kept reasonably short",
+     "the PR body budget is a number, not an adjective"),
+    ("body: intent-not-content is softened", BO,
+     "The body states intent, not content",
+     "The body describes what changed and why",
+     "the body states intent rather than content"),
+    ("body: over-budget may be reflowed", BO,
+     "never compress by deleting whitespace", "reflow it to fit",
+     "over budget means cut, not reflow"),
+    ("body: a trivial PR must still be filled out", BO,
+     "Do not manufacture prose to fill a template", "Fill every template heading",
+     "a trivial PR is allowed a near-empty body"),
+    ("body: a documented style guide stops winning", BO,
+     "that guide governs and its budget wins", "these rules still govern",
+     "a documented style guide overrides the floor"),
+    ("body: create-pr reads the guide after drafting", CP,
+     "read it before drafting the body, not after", "read it when convenient",
+     "create-pr reads the style guide before drafting"),
+    ("body: a subtraction may be flattened to a list", BO,
+     "may not convert the subtraction into a list", "may enumerate what it requires",
+     "the form rule keeps a subtraction a subtraction"),
     # --- the routine batch runs no named contract (rounds 29-32) ---
     ("r32 a fifth obligation with no disposition", DU,
      "\n\nSupply each agent with the completed triage",
