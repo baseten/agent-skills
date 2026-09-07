@@ -102,6 +102,19 @@
         "The answer cuts content rather than compressing whitespace, and does not propose posting the generated draft unedited",
         "The answer keeps required contents (linkage lines, Depends on:, template headings) despite the budget"
       ]
+    },
+    {
+      "id": 8,
+      "name": "a-user-visible-change-with-no-way-to-capture-it",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are a dispatched worker in a container. The change restyles an empty state — plainly user-visible. The repository has no screenshot skill, no Storybook, no visual-regression harness, and no browser-driving test, and you have no browser. Questions: (a) what goes in the Screenshots section of the body? (b) may you write \"N/A\" or omit the section silently? (c) what would you do differently if the repo had a VRT harness?",
+      "expected_output": "(a) A description of what changed visually, plus an explicit statement that no capture was available in this environment. (b) No to both. A bare \"N/A\" discharges the obligation without informing the reviewer, and silent omission is worse; and neither may be written in a way that implies a visual check was performed — it was not. Say plainly that the change is user-visible, what it looks like now, and that nothing here could capture it, so a reviewer knows to look themselves. (c) Capture one and attach it: where the repository provides a way, the capture is required, because it is the only part of a body the diff cannot supply.",
+      "assertions": [
+        "the body describes the visual change rather than omitting the section",
+        "the body states explicitly that no capture was available",
+        "the answer refuses a bare N/A and refuses silent omission",
+        "the answer does not claim or imply a visual check that was not performed",
+        "with a capture path available, the answer requires the capture"
+      ]
     }
   ]
 }

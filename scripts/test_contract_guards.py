@@ -72,6 +72,18 @@ MOVE_TO_END = "<<MOVE_TO_END>>"
 # is in the label, because a fixture without its provenance reads as a
 # preference rather than as evidence.
 MUTATIONS: list[tuple[str, str, str, str, str]] = [
+    # --- the capture rule, conditional on the actor being able to capture ---
+    ("capture: the obligation goes unconditional again", BO,
+     "**Where a change is user-visible and the repository provides a way to capture it**",
+     "**Anything user-visible gets a screenshot or a clip.** Also",
+     "no unconditional capture obligation survives"),
+    ("capture: the fallback for no capture path goes", BO,
+     "Where it does not, describe what changed visually and say that no capture was available.",
+     "Otherwise skip it.",
+     "the capture rule states its fallback"),
+    ("capture: fabricating a visual check stops being forbidden", BO,
+     "**Never imply a visual check that was not performed.**", "",
+     "the capture rule forbids implying an unperformed check"),
     # --- absolutes left behind when the footer rule was narrowed (round 4) ---
     # Each narrowing of this rule has left a downstream absolute standing, and
     # each read as a reassurance rather than a claim. Two of the three survivors

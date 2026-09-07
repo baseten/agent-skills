@@ -60,6 +60,18 @@ BLANKET_FOOTER = re.compile(
 # are excused before the scan, the same excuse `check_rule_locality.py` makes.
 QUOTED = re.compile(r'\*"[^"]*"\*')
 
+# "anything user-visible gets a screenshot", with no condition on the actor
+# having any way to take one. Matches the obligation, not the word.
+UNCONDITIONAL_CAPTURE = re.compile(
+    # obligation after the subject: "anything user-visible gets a screenshot"
+    r"(?:anything|any change|everything)[^.\n]{0,40}user-visible[^.\n]{0,40}"
+    r"(?:gets|needs|requires|must have)[^.\n]{0,30}(?:screenshot|clip|capture)"
+    # obligation before it: "screenshots or a clip for anything user-visible"
+    r"|(?:screenshots?|clips?|captures?)[^.\n]{0,40}"
+    r"for (?:anything|any change|everything)[^.\n]{0,20}user-visible",
+    re.I,
+)
+
 STALE_NO_FOOTER = re.compile(
     r"no path puts a footer"
     r"|neither write carries the attribution footer"
@@ -583,6 +595,19 @@ def main() -> int:
          "never compress by deleting whitespace" in flat(bo)),
         ("a trivial PR is allowed a near-empty body",
          "Do not manufacture prose to fill a template" in flat(bo)),
+        # The capture rule arrived unconditional from a human style guide, whose
+        # actor can always take a screenshot. This one often cannot, and an
+        # obligation an actor cannot meet is discharged with a fabricated "N/A".
+        ("the capture rule is conditional on a capture path existing",
+         "and the repository provides a way to capture it" in flat(bo)),
+        ("the capture rule states its fallback",
+         "say that no capture was available" in flat(bo)),
+        ("the capture rule forbids implying an unperformed check",
+         "Never imply a visual check that was not performed" in flat(bo)),
+        # The unconditional form is what regrows -- it is what the source guide
+        # says, and #71 still carries it.
+        ("no unconditional capture obligation survives",
+         not UNCONDITIONAL_CAPTURE.search(flat(bo))),
         ("the form rule keeps a subtraction a subtraction",
          "may not convert the subtraction into a list" in flat(bo)),
         ("a documented style guide overrides the floor",
