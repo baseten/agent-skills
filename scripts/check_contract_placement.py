@@ -759,12 +759,16 @@ def main() -> int:
          in flat(rp)),
         ("chain 2/5: repair-pr forbids rebuilding the URL",
          "Never rebuild the thread URL" in flat(rp)),
+        # Scoped to the recording step, not the file. The same phrase also sits in
+        # each skill's item-kind description, so a whole-file grep stayed green with
+        # the recording instruction broken -- which is what the mutation battery
+        # reported the first time these two were given one.
         ("chain 3/5: bo records everything the item requires",
          "everything `resolve-pr-comment`, *What a question item must contain*, requires"
-         in flat(bo)),
+         in flat(clause(bo, "5. adopt the new remote head", span=1200))),
         ("chain 4/5: ii records everything the item requires",
          "everything `resolve-pr-comment`, *What a question item must contain*, requires"
-         in flat(ii)),
+         in flat(clause(ii, "3. adopt the returned head", span=1200))),
         ("chain 5/5: settle consumes all of the item's fields, not just a draft",
          "carry **all of the item's fields** into the question" in flat(st)
          and "reason it was not posted is the fastest read on which kind it is" in flat(st)),
