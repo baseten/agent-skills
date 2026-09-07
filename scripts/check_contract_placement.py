@@ -330,6 +330,19 @@ def flat(text: str) -> str:
     return " ".join(text.split())
 
 
+def fenced(text: str, containing: str) -> str:
+    """The fenced block containing `containing` -- the recipe, not the file.
+
+    A guard on a command has to read the command. Matching a literal spelling
+    of it instead lets an equivalent rewrite through: `cd "$tmp"` is the same
+    defect as `cd "$d"` and a check for the latter never sees it.
+    """
+    for m in re.finditer(r"```[^\n]*\n(.*?)```", text, re.S):
+        if containing in m.group(1):
+            return m.group(1)
+    return ""
+
+
 def near(text: str, anchor: str, span: int = 300) -> str:
     """The window just after `anchor` — for a rule that must sit under a heading."""
     i = text.find(anchor)
@@ -705,8 +718,12 @@ def main() -> int:
         # registry config, then reported "no change" over a failed extraction. A
         # rewrite can reintroduce any of them with every other check green, so
         # the properties are asserted rather than remembered.
+        # Read the recipe, not the file, and reject any working-directory change
+        # rather than one spelling of it: packing outside the project loses its
+        # `.npmrc`, whichever variable the `cd` uses.
         ("the source diff redirects the tarball rather than changing directory",
-         '--pack-destination "$d"' in flat(ud) and 'cd "$d"' not in flat(ud)),
+         "--pack-destination" in fenced(ud, "npm pack")
+         and not re.search(r"\b(?:cd|pushd)\b", fenced(ud, "npm pack"))),
         ("the source diff extracts to a checked file before diffing",
          'exit 1; }' in flat(ud) and "diff <(tar" not in flat(ud)),
         ("the dependency dispatch constraints carry the form rule",
