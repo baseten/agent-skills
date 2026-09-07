@@ -70,17 +70,21 @@ Supplied research is reusable on the same condition as the gate's findings and n
 Verify against the **published artifact** rather than a rendered docs page where the two could diverge — changelog pages have been observed conflating an unrelated major's notes with the current one. **Where the two do diverge, the artifact wins and the divergence is reported**, never silently resolved: a docs page contradicting the package is a finding about the package's own documentation, and the next reader of that page has no way to discover it. For any load-bearing question ("is our patch still required?", "did this matcher's semantics move?"), read the installed source or diff two published versions directly. Diffing sources answers behavioural questions that prose about them cannot.
 
 Diffing two published versions has one non-obvious invocation, and the naive
-attempt gets it wrong — `npm pack` writes a tarball into the working directory
-and prints progress around the filename, so the path is wrong and the tree is
-left dirty:
+attempt leaves two tarballs in the worktree where a later `git add` can sweep
+them into the upgrade commit. `npm pack` writes to the working directory and
+`--silent` changes only its logging, not its destination, so pack somewhere else
+and read from there:
 
 ```
-diff <(tar -xOf "$(npm pack <pkg>@<old> --silent)" package/<path>) \
-     <(tar -xOf "$(npm pack <pkg>@<new> --silent)" package/<path>)
+d=$(mktemp -d) && (cd "$d" && npm pack <pkg>@<old> --silent >/dev/null \
+                          && npm pack <pkg>@<new> --silent >/dev/null)
+diff <(tar -xOf "$d"/*-<old>.tgz package/<path>) \
+     <(tar -xOf "$d"/*-<new>.tgz package/<path>)
 ```
 
-`--silent` reduces the output to the filename alone, `-O` streams the member to
-stdout instead of unpacking, and every published file sits under `package/`.
+`-O` streams the member to stdout instead of unpacking, and every published file
+sits under `package/`. Globbing the tarball by version rather than reading
+`npm pack`'s output keeps the command independent of what that output contains.
 Where the question is about the installed tree rather than two releases, read
 `node_modules` directly instead.
 

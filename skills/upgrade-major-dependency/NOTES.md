@@ -188,3 +188,20 @@ For any watcher, the test is: *if this failed right now, would my filter emit an
 ## Why the silent-failure table is enumerated rather than generalised
 
 Each row is a domain where the ordinary evidence of correctness — a green build — is uninformative, and where an agent will otherwise report success in good faith. The rows are not exhaustive, but naming them converts a general caution nobody acts on into a checklist that produces a specific sentence in the report: which check is the real evidence, and that the passing build is not it.
+
+## Research
+
+**Why the source diff carries an invocation when this contract otherwise leaves
+mechanism alone.** The rule beside it — that what is invariant is the ordering,
+not the mechanism — holds where the mechanism is inferable: how many worktrees a
+cherry-pick needs follows from the ordering itself. Streaming one file out of two
+published tarballs does not follow from anything, and the naive attempt fails on
+mechanics rather than judgment: `npm pack` writes into the working directory and
+`--silent` changes only its logging, so a first attempt reads the wrong path and
+leaves two tarballs a later `git add` can sweep into the upgrade commit. Codex
+found exactly that in the first version of this note, which had warned about the
+dirty tree and then not prevented it (round 1 on the PR that added this).
+
+The form given packs into a temporary directory and globs the tarball by version
+rather than parsing `npm pack`'s output, so it does not depend on what that
+output contains across npm versions.
