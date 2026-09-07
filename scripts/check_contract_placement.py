@@ -714,7 +714,8 @@ def main() -> int:
         # Four of five is not four-fifths useful: the missing field is the one
         # the person goes looking for.
         ("resolve-pr-comment states the question item's contents",
-         "### What a question item must contain" in rc),
+         "### What a question item must contain" in rc
+         and "carries exactly these five things" in flat(rc)),
         ("the item's URL is API provenance, not a shape rule",
          "as returned by the API, verbatim — never a hand-built anchor" in flat(rc)),
         ("the item names why a rebuilt anchor fails invisibly",
