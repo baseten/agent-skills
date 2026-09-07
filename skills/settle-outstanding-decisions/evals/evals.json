@@ -102,7 +102,8 @@
         "the approved answer text itself is the body of the reply",
         "a bare approval marker is rejected as insufficient, because the reviewer cannot read the answer out of it",
         "notes that a bare marker supplies neither answer nor choice and so would not retire the question anyway",
-        "the edited text is posted rather than the original draft"
+        "the edited text is posted rather than the original draft",
+        "the reply carries no attribution footer only if the owner approved the complete record, not merely the answer inside it"
       ],
       "files": []
     },

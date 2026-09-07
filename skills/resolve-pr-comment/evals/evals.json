@@ -182,7 +182,7 @@
         "the ask is quoted rather than paraphrased and held to at most two lines",
         "the recommended reply is paste-ready, one line, and carries no attribution footer — this draft is answerable from the work",
         "the change SHA 9f3e11c is named rather than left blank, because a fix was pushed for this thread",
-        "nothing is posted to the thread and the thread is not resolved"
+        "no substantive answer is posted and the thread is not resolved — the work-done reply naming 9f3e11c is required here, because this comment also asked for a diff"
       ]
     },
     {
