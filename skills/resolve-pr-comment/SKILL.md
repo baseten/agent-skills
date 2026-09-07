@@ -263,14 +263,21 @@ one built on a gap is not.
 Keep it to what the thread asks. A draft that reopens the design is a new
 review round, not a reply.
 
-**The draft carries no attribution footer, and this now follows from the rule
+**The draft carries no attribution footer, and this follows from the rule
 rather than sitting beside it as a special case.** A draft is not a write at
 all — the person who posts it authors it, as themselves, which is the point of
-handing it over — and where a workflow does post one,
-`settle-outstanding-decisions`, *Recording the ruling*, it posts text the owner
-approved or edited, so the approval test answers Yes there too
-(`backlog-orchestrator`, *Authored write form*). No path puts a footer on this
-text.
+handing it over — so there is no posted text for the approval test to ask about
+(`backlog-orchestrator`, *Authored write form*). **That absolute is about the
+draft, and it stops there.**
+
+**It does not carry over to the write that later contains the answer.** Where a
+workflow posts a drafted answer — `settle-outstanding-decisions`,
+*Recording the ruling* — the write is the **ruling comment**, not the draft, and
+that comment also carries the question as asked, a dated owner-ruling marker and
+what the ruling confirms, none of which the owner has necessarily read. Its
+footer is decided there, by the approval test asked of the complete comment, and
+**that answer can be yes**: approving the answer inside a record settles nothing
+about the record around it. Do not read this section as promising otherwise.
 
 `backlog-orchestrator`, *Per-repository policy configuration*, owns the rule
 that separates the two kinds. Apply it from there rather than inventing a

@@ -45,6 +45,46 @@ BLANKET_FOOTER = re.compile(
     re.I,
 )
 
+# The mirror of BLANKET_FOOTER, and the claim that actually keeps regrowing.
+# The footer rule was narrowed twice: from "every write" to "writes nobody
+# read", then settle's own case from "never" to "unless the owner approved the
+# complete comment". Each narrowing left absolutes behind that read as
+# reassurances -- "no path puts a footer on this text" survived a whole review
+# round in a contract while the rule it described was already conditional.
+#
+# Only claims about a RULING or a settle write are caught. Three absolutes are
+# legitimate and must not trip it: a draft is not a write, a write with no body
+# has nowhere to put one, and the review trigger is exempt.
+# A quotation is not a claim. NOTES narrates reversals by quoting the text it is
+# retracting -- which is the entire point of the entry -- so italic-quoted spans
+# are excused before the scan, the same excuse `check_rule_locality.py` makes.
+QUOTED = re.compile(r'\*"[^"]*"\*')
+
+STALE_NO_FOOTER = re.compile(
+    r"no path puts a footer"
+    r"|neither write carries the attribution footer"
+    r"|(?:recorded ruling|ruling comment)[^.\n]{0,80}carries[^.\n]{0,16}no[^.\n]{0,16}footer"
+    r"|approval test answers Yes at every write",
+    re.I,
+)
+
+# NOTES explains and never states a rule, so it gets no presence assertions --
+# but it can still contradict one, and two of the three defects in the round
+# that prompted this lived there, invisible because nothing read those files.
+def notes(name: str) -> str:
+    f = ROOT / "skills" / name / "NOTES.md"
+    return f.read_text() if f.exists() else ""
+
+
+def every_doc() -> list[tuple[str, str]]:
+    out = []
+    for d in sorted((ROOT / "skills").glob("*/SKILL.md")):
+        out.append((str(d.relative_to(ROOT)), d.read_text()))
+    for d in sorted((ROOT / "skills").glob("*/NOTES.md")):
+        out.append((str(d.relative_to(ROOT)), d.read_text()))
+    return out
+
+
 FINDINGS = ("licence", "cooldown", "peer")
 
 # A blank line, or the start of a list item. Markdown structure, decided by
@@ -1261,12 +1301,12 @@ def main() -> int:
         r"|never writes|sole write)\b[^.\n]*\.",
         re.I,
     )
-    stale = [
+    stale_absolutes = [
         m.group(0).strip()
         for m in absolute.finditer(st)
         if "rejected-draft" not in m.group(0)
     ]
-    checks.append(("settle write-absolutes name the rejected-draft record", not stale))
+    checks.append(("settle write-absolutes name the rejected-draft record", not stale_absolutes))
 
     # The footer literal is stated once. A second contract spelling it out is a
     # restatement that drifts -- the deferring skills name the rule, not the text.
@@ -1291,12 +1331,29 @@ def main() -> int:
         ("the PR body budget is stated in one contract only", budgeted == ["backlog-orchestrator"])
     )
 
+    # Round four: the settle rule went conditional and its downstream absolutes
+    # did not. Two of the three survivors were in NOTES.md, which nothing here
+    # read -- so this scans every contract AND every notes file. NOTES gets no
+    # presence assertions (it explains, it never states a rule), but a note that
+    # contradicts a contract breaks the completion criterion exactly as a
+    # contract would, and is the harder of the two to notice.
+    stale = [
+        f"{name}: {STALE_NO_FOOTER.search(QUOTED.sub(chr(32), flat(body))).group(0)[:60]}"
+        for name, body in every_doc()
+        if STALE_NO_FOOTER.search(QUOTED.sub("", flat(body)))
+    ]
+    checks.append(("no unconditional no-footer claim survives about a ruling", not stale))
+
     failures = [name for name, ok in checks if not ok]
     for name, ok in checks:
         print(("PASS " if ok else "FAIL ") + name)
     if stale:
-        print("\nwrite-absolutes not naming the rejected-draft record:")
+        print("\nunconditional no-footer claims about a ruling:")
         for s in stale:
+            print("  " + s)
+    if stale_absolutes:
+        print("\nwrite-absolutes not naming the rejected-draft record:")
+        for s in stale_absolutes:
             print("  " + s[:160])
     print(f"\n{len(checks) - len(failures)}/{len(checks)} passing")
     if failures:

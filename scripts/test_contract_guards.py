@@ -46,6 +46,7 @@ import tempfile
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 UD = "skills/upgrade-major-dependency/SKILL.md"
 BO = "skills/backlog-orchestrator/SKILL.md"
+BON = "skills/backlog-orchestrator/NOTES.md"
 RC = "skills/resolve-pr-comment/SKILL.md"
 ST = "skills/settle-outstanding-decisions/SKILL.md"
 CP = "skills/create-pr/SKILL.md"
@@ -71,6 +72,23 @@ MOVE_TO_END = "<<MOVE_TO_END>>"
 # is in the label, because a fixture without its provenance reads as a
 # preference rather than as evidence.
 MUTATIONS: list[tuple[str, str, str, str, str]] = [
+    # --- absolutes left behind when the footer rule was narrowed (round 4) ---
+    # Each narrowing of this rule has left a downstream absolute standing, and
+    # each read as a reassurance rather than a claim. Two of the three survivors
+    # last round were in NOTES.md, which nothing checked at all.
+    ("stale: the resolver promises no path ever footers the answer", RC,
+     "**That absolute is about the\ndraft, and it stops there.**",
+     "No path puts a footer on this text.",
+     "no unconditional no-footer claim survives about a ruling"),
+    ("stale: the orchestrator's notes call the ruling footerless again", BON,
+     "**is the one write whose footer is decided by a condition rather than by its kind**",
+     "recorded ruling now carries **no** footer",
+     "no unconditional no-footer claim survives about a ruling"),
+    # Owed by f3e0e5e's assertion, which was verified by hand and not durably.
+    ("duplicate: the budget is restated in create-pr, as #71 has it", CP,
+     "# PR description template",
+     "# PR description style\n\n300 words of prose above the fold, maximum.\n\n# PR description template",
+     "the PR body budget is stated in one contract only"),
     # --- the footer marks writes nobody read (the owner's ruling) ---
     # The blanket footer was the previous rule here, so the mutation that matters
     # is the one that quietly restores it. Round two of this branch's review found
