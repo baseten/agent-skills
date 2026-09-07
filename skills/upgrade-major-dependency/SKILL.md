@@ -69,6 +69,21 @@ Supplied research is reusable on the same condition as the gate's findings and n
 
 Verify against the **published artifact** rather than a rendered docs page where the two could diverge — changelog pages have been observed conflating an unrelated major's notes with the current one. **Where the two do diverge, the artifact wins and the divergence is reported**, never silently resolved: a docs page contradicting the package is a finding about the package's own documentation, and the next reader of that page has no way to discover it. For any load-bearing question ("is our patch still required?", "did this matcher's semantics move?"), read the installed source or diff two published versions directly. Diffing sources answers behavioural questions that prose about them cannot.
 
+Diffing two published versions has one non-obvious invocation, and the naive
+attempt gets it wrong — `npm pack` writes a tarball into the working directory
+and prints progress around the filename, so the path is wrong and the tree is
+left dirty:
+
+```
+diff <(tar -xOf "$(npm pack <pkg>@<old> --silent)" package/<path>) \
+     <(tar -xOf "$(npm pack <pkg>@<new> --silent)" package/<path>)
+```
+
+`--silent` reduces the output to the filename alone, `-O` streams the member to
+stdout instead of unpacking, and every published file sits under `package/`.
+Where the question is about the installed tree rather than two releases, read
+`node_modules` directly instead.
+
 Record what applies, and separately **what was checked and cleared**. A reviewer cannot distinguish a thorough audit from an absent one without the second list.
 
 ## Usage audit
