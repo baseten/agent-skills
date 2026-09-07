@@ -330,6 +330,20 @@ def flat(text: str) -> str:
     return " ".join(text.split())
 
 
+def packs_into_temp(block: str) -> bool:
+    """Does the recipe's `--pack-destination` name a directory from `mktemp -d`?
+
+    The option's presence is not the property. `--pack-destination .` and
+    `--pack-destination "$PWD"` both carry it and both write into the worktree,
+    so the value is what has to be read, and it has to trace back to a temporary
+    directory created in the same block.
+    """
+    m = re.search(r'--pack-destination\s+"\$(\w+)"', block)
+    if not m:
+        return False
+    return re.search(r"\b" + re.escape(m.group(1)) + r"=\$\(mktemp -d\)", block) is not None
+
+
 def fenced(text: str, containing: str) -> str:
     """The fenced block containing `containing` -- the recipe, not the file.
 
@@ -718,12 +732,15 @@ def main() -> int:
         # registry config, then reported "no change" over a failed extraction. A
         # rewrite can reintroduce any of them with every other check green, so
         # the properties are asserted rather than remembered.
-        # Read the recipe, not the file, and reject any working-directory change
-        # rather than one spelling of it: packing outside the project loses its
-        # `.npmrc`, whichever variable the `cd` uses.
-        ("the source diff redirects the tarball rather than changing directory",
-         "--pack-destination" in fenced(ud, "npm pack")
-         and not re.search(r"\b(?:cd|pushd)\b", fenced(ud, "npm pack"))),
+        # Two properties, two assertions: one guard with two halves left the
+        # second half untested, twice. Each of these owes its own mutation.
+        ("the source diff packs into a temporary directory",
+         packs_into_temp(fenced(ud, "npm pack"))),
+        # Reject any working-directory change rather than one spelling of it:
+        # packing outside the project loses its `.npmrc`, whichever variable a
+        # `cd` uses to get there.
+        ("the source diff runs npm from the project",
+         not re.search(r"\b(?:cd|pushd)\b", fenced(ud, "npm pack"))),
         ("the source diff extracts to a checked file before diffing",
          'exit 1; }' in flat(ud) and "diff <(tar" not in flat(ud)),
         ("the dependency dispatch constraints carry the form rule",
