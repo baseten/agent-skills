@@ -119,7 +119,12 @@ reads as preference rather than as a settled argument.
 ## Where the rules bind, weakest tier last
 
 1. **`scripts/check_*.py` assertions.** Mechanical, run in CI, bind whether or not anything
-   read them. Highest tier available.
+   read them. Highest tier available — with one caveat this repository keeps paying for: an
+   assertion resting on a natural-language heuristic can be green over the very construction
+   it exists to reject, and a green check over a false claim is worse than no check, because
+   it stops anyone looking. Each time, the fix was a fixture file pinning what must fire and
+   what must keep passing (`test_rule_locality.py`, `test_contract_placement.py`), which is
+   why they run ahead of the checks they defend.
 2. **`evals/evals.json` scenarios.** Pin a rule against the model actually applying it.
    Deliberately out of CI — model-graded, non-deterministic, and a required check built on
    them "goes red on sampling noise and teaches everyone to override it." Run on demand,

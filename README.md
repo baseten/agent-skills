@@ -1,6 +1,6 @@
 # Agent Skills
 
-Reusable Claude Code skills for issue implementation, PR workflows, backlog validation/orchestration, and stacked PR management.
+Reusable Claude Code skills for issue implementation, PR workflows, backlog validation/orchestration, stacked PR management, and dependency upgrades.
 
 ## A note on how the skills read
 
@@ -23,6 +23,11 @@ The `SKILL.md` files are dense and not easily human readable. That is deliberate
 - `plan-merge-order` — ranks a settled tranche's open PRs by how much downstream work each unblocks, and emits a review order, a merge batching plan, and the hard sequencing constraints as a table. Read-only; it never merges. `backlog-orchestrator` invokes it when a run settles.
 - `settle-outstanding-decisions` — walks the owner through the human-only decisions a settled run left outstanding, one at a time via `AskUserQuestion` with enough context to answer on the spot, and records each ruling durably where the decision lives. Run it yourself after a tranche, or let a settled step request it — `backlog-orchestrator` between summary and ranking, `implement-issue` between summary and merge gate — on by default, gated by `auto-request-settle`. Either way it refuses to prompt where nobody is present: a run settling on a scheduled wake gets a one-line decline, and the decisions stay in the summary's action points. Collect-and-record only; acting on the rulings stays with their owners.
 - `merge-stack` — safely merges one PR, part of a stack, or an explicitly authorized whole stack while rebasing/restacking descendants.
+
+## Dependency upgrade skills
+
+- `upgrade-major-dependency` — upgrades one package, or one coupled group of them, across any version whose breaking-change risk has not been ruled out: viability gate, research verified against the published artifact, usage audit, then characterization tests written and proven green on the current version and re-run unmodified after the bump.
+- `dependency-upgrade-orchestrator` — triages a batch of upgrades, establishes coupling and viability, selects a model per upgrade by failure mode, and dispatches bounded-concurrency subagents: one per upgrade or coupled group running `upgrade-major-dependency`, plus a single batched task for the routine bumps triage cleared, which need no migration workflow. Supervises CI while separating infrastructure failure from real failure. It merges nothing.
 
 ## Writing skills
 
@@ -86,7 +91,9 @@ runnable locally:
 ```bash
 python3 scripts/check_skills.py                       # structure, schema, cross-references
 python3 scripts/check_permissions.py                  # the shape of permissions.json, and the README's claims
+python3 scripts/test_contract_placement.py            # the oracle detector still detects
 python3 scripts/check_contract_placement.py           # contract rules at their decision points
+python3 scripts/test_contract_guards.py               # those assertions can actually fail
 python3 scripts/test_rule_locality.py                 # the locality detector still detects
 python3 scripts/check_rule_locality.py                # the workflow rules are stated in CLAUDE.md only
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
@@ -128,6 +135,32 @@ check that passes on the current tree is not evidence that it would catch the de
 green check over a false claim is worse than no check, because it stops anyone looking. The
 fixtures then immediately caught a second gap — a noun lead-in carrying the imperative in
 its body. Finding a new bypass means the detector was wrong, not the fixture.
+
+`test_contract_guards.py` is the strongest form of that tier, and it exists because the
+weaker forms kept failing in one specific way. Four review rounds in a row on one pull
+request ended with a corpus assertion **green over the exact defect it was written for** — a
+guard listing the three obligations it had found, so the fourth was pinned out by the fix for
+it; five whole-file checks rescoped and the class declared closed, then three more found,
+then a sixth four lines away; a clause relabelled "the property" that a new bullet passed
+straight through. Every one was found in seconds by breaking the rule and re-running the
+check, which `NOTES.md` had recommended since round twelve — as advice, in a repository whose
+own tier list says advice reaches an agent only when something makes it read the file. So it
+is a script: each entry breaks a rule and names the assertion that must go red, and it
+reports how much of the checker it does not yet cover. The obligation that comes with adding
+an assertion is stated in `CLAUDE.md`, *Leave a guard behind*.
+
+`test_contract_placement.py` is the same tier for the guard that keeps the dependency
+skills' eval oracles from stating licence, cooldown and peer reuse as a single rule. It was
+added because that guard repeated the history above rather than learning from it, and then
+earned its keep three rounds running: while the guard asked whether the three findings
+appeared in one **sentence**, a semicolon, an abbreviation and finally markup faking a
+sentence start each let the conflation through, and each time the corpus check was green
+over it. The third ended sentence parsing rather than refining it — markup has to be able to
+start a sentence, so it cannot be stopped from faking one — and the unit became a paragraph
+or list item, which layout decides and wording cannot spoof. The escapes stay in the BAD list
+as the evidence for that; the GOOD list is the oracle prose that must keep passing, which
+matters more here than elsewhere, because the two detectors this guard replaced were both
+deleted for rejecting a correct oracle.
 
 The phrase list had the same weakness one level up, and then again one level below that:
 a rule section with no phrase entry was unguarded (true of *Classify a finding before fixing
