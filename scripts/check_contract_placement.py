@@ -1279,6 +1279,18 @@ def main() -> int:
         ("the footer literal is spelled out in one contract only", spelled == ["backlog-orchestrator"])
     )
 
+    # Same hazard, different rule: two contracts stating the budget merge without a
+    # conflict marker, because the hunks never touch. That is how it arrived -- one
+    # branch put it in create-pr while another put it here, and git took both.
+    budgeted = [
+        d.parent.name
+        for d in sorted((ROOT / "skills").glob("*/SKILL.md"))
+        if "300 words of prose" in d.read_text()
+    ]
+    checks.append(
+        ("the PR body budget is stated in one contract only", budgeted == ["backlog-orchestrator"])
+    )
+
     failures = [name for name, ok in checks if not ok]
     for name, ok in checks:
         print(("PASS " if ok else "FAIL ") + name)
