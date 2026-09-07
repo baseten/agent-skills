@@ -562,8 +562,12 @@ def main() -> int:
          "the draft goes\nto them, in this session's output, and still not to the thread" in rc),
         ("unattended is a destination rule, not the source of the no-answer rule",
          "so this section overrides nothing about it" in flat(rc)),
+        # Both halves, because the first is the rationale and the second is what
+        # actually obliges an attended run: mutating the rationale alone left the
+        # obligation standing while this went red (Codex round 2 on the fixtures).
         ("resolve-pr-comment Output delivers question items attended too",
-         "in every mode, because the prose branch is `NEEDS_USER` in every mode" in flat(rc)),
+         "in every mode, because the prose branch is `NEEDS_USER` in every mode" in flat(rc)
+         and "an attended run reports it in full exactly as an unattended one does" in flat(rc)),
         ("settle names itself the exception the resolver's absolute is written on",
          "an answer drafted by `resolve-pr-comment` is ever posted" in flat(st)),
         # The rule rests on authority, not on the reader being unable to tell --
@@ -743,8 +747,11 @@ def main() -> int:
         ("validate-backlog carries the form rule to an authorized rewrite",
          "*Authored write form*" in vb
          and "authorizes the edit, not the wording" in flat(vb)),
+        # The heading names the option; the row's rule is what requires it. Removing
+        # the heading's `or none` left the requirement in force (same round).
         ("the change SHA is explicit or explicitly none",
-         "or `none`**" in flat(rc)),
+         "or `none`**" in flat(rc)
+         and "explicitly `none` where nothing was pushed" in flat(rc)),
         ("the item says why it was not posted",
          "why it was not posted" in flat(rc)),
         ("the URL rule covers every thread URL the skill emits",
