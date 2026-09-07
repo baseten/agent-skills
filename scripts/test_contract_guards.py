@@ -152,8 +152,17 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
     ("r32 the arity rule's report obligation is dropped", UD,
      "**every adopted PR's URL, not only the one adopted as the branch**", "a mapping",
      "every report obligation is stated where the report is written"),
+    ("r34 the batch route closes superseded PRs at setup again", DU,
+     "**Superseding does not close anything yet**", "Close each now",
+     "the superseding closure is deferred on the batch route too"),
+    ("r34 the gate item drops the deferral", UD,
+     "at the end, once there is a PR to reference", "immediately",
+     "the superseding closure is deferred on the batch route too"),
+    ("r34 the fifth removal point loses its sibling qualifier", DU,
+     "pull it out — **together with its coupled siblings** (below) —", "pull it out,",
+     "the batch route removes coupled groups rather than members of them"),
     ("r33 the batch route forgets coupled siblings", DU,
-     "**Every removal below therefore removes a coupled group, never a member of one**",
+     "**Every removal on this route therefore removes a coupled group, never a member of one**",
      "Removals are per candidate",
      "the batch route removes coupled groups rather than members of them"),
     ("r29 Research resumes a task the gate ended", UD,
@@ -251,8 +260,8 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
      "A routine clearance is about one release", "A routine clearance is durable",
      "a moved target voids a routine clearance and its routing"),
     ("r16 dispatch stops saying why those two are load-bearing", DU,
-     "**The first two are supplied because the agent's own gate reaches a different answer without them, not to save it work.**",
-     "**The first two are supplied.**",
+     "**The first three are supplied because the agent's own gate reaches a different answer without them, not to save it work.**",
+     "**They are supplied.**",
      "dependency dispatch says why those two specifically"),
     ("r20 dispatch justifies the adopted PR by the old wrong stop", DU,
      "so it is supplied as identity rather than to prevent a wrong stop",
@@ -377,6 +386,24 @@ def _assertion_names(src: str) -> set[str]:
                     and isinstance(elt.elts[0], ast.Constant)
                     and isinstance(elt.elts[0].value, str)):
                 names.add(elt.elts[0].value)
+    # `checks.append((...))` for an assertion built conditionally. The docstring
+    # above said "appended" from the first version and only the list literal was
+    # read, so the denominator was short by one and that assertion could never
+    # appear in the gap list — a number that does not mean what it says, which
+    # is the defect this file exists to catch, in the file itself.
+    for node in ast.walk(ast.parse(src)):
+        if not (isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "append"
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == "checks"
+                and node.args):
+            continue
+        arg = node.args[0]
+        if (isinstance(arg, ast.Tuple) and len(arg.elts) == 2
+                and isinstance(arg.elts[0], ast.Constant)
+                and isinstance(arg.elts[0].value, str)):
+            names.add(arg.elts[0].value)
     return names
 
 

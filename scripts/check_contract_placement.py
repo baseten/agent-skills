@@ -880,14 +880,32 @@ def main() -> int:
         # it batches — and every removal on this route pulled one member and
         # shipped its siblings, which is the split *Triage each candidate*
         # names by name. The worker has the rule; this route inherits nothing.
+        # Round 33 fixed four removal points and pinned exactly those four
+        # anchors, so the fifth — the earliest and most emphatic, sitting ABOVE
+        # the scope paragraph, whose "below" textually excluded it — passed.
+        # A list of anchors cannot tell you a site is missing, which is why the
+        # scope sentence itself is now asserted to cover the route rather than
+        # what follows it.
         ("the batch route removes coupled groups rather than members of them",
-         "Every removal below therefore removes a coupled group, never a member of one"
+         "Every removal on this route therefore removes a coupled group, never a member of one"
          in flat(du)
          and all("coupled sibling" in flat(near(du, anchor, 900))
-                 for anchor in ("A colleague's branch pushed since triage",
+                 for anchor in ("A routine clearance is about one release",
+                                "A colleague's branch pushed since triage",
                                 "**Merged or closed**:",
                                 "the rest of the batch is not void with it",
                                 "Where one moved, its clearance"))),
+        # The superseding closure is deferred to the end on both routes, for
+        # the two reasons round 33 established in the worker: the PR the
+        # reference points at does not exist yet, and a closed PR stops being
+        # updated by its bot, which the target rules read.
+        ("the superseding closure is deferred on the batch route too",
+         "**Superseding does not close anything yet**"
+         in flat(near(du, "- **Read each adopted bump PR's current state", 900))
+         and "closed with that reference at the end, only if the batch produced a PR"
+         in flat(du)
+         and "at the end, once there is a PR to reference"
+         in flat(near(ud, "- **Work already in flight.**", 1600))),
         ("the routine batch is given the obligations it cannot inherit",
          "The routine batch runs no named contract" in flat(du)
          and len(ROUTINE_BULLETS) == len(ROUTINE_DISPOSITIONS)
