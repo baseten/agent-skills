@@ -294,6 +294,7 @@ def main() -> int:
     ud = skill("upgrade-major-dependency")
     cp = skill("create-pr")
     ms = skill("merge-stack")
+    vb = skill("validate-backlog")
     du = skill("dependency-upgrade-orchestrator")
 
     bo_pred = clause(bo, "On unhandled review feedback")
@@ -567,10 +568,24 @@ def main() -> int:
          "confirmed or edited by them | this exact text | **no**" in flat(bo)),
         ("the unattended path requires it",
          "nobody read it | **yes**" in flat(bo)),
-        ("settle's ruling carries no footer",
-         "neither write carries the attribution footer" in flat(st)),
-        ("settle names the double-attribution reason",
-         "double-attribute a write the owner authored" in flat(st)),
+        # Codex P2: the owner choosing an option has not read the record built
+        # around it, so the exact-text test has to be asked of the whole comment.
+        ("settle asks the exact-text test of the complete comment",
+         "asked of **the complete comment, not of the answer inside it**" in flat(st)),
+        ("settle names what it composes that the owner did not",
+         "has not thereby read the comment built around it" in flat(st)),
+        ("settle's footer is conditional on the complete record being approved",
+         "the write carries the footer" in flat(st)
+         and "There is no exception here for this skill" in flat(st)),
+        # The double-attribution argument was wrong and is retracted in both
+        # files: an existing attribution is never a reason to drop the footer.
+        ("an existing attribution is not a reason to omit the footer",
+         "is never itself a reason to omit the footer" in flat(bo)),
+        ("settle retracts the double-attribution argument",
+         "wrongly argued that a footer beside the marker would double-attribute"
+         in flat(st)),
+        ("a write with no body carries no footer for want of anywhere to put one",
+         "there is nowhere to put one" in flat(bo)),
         ("create-pr's body footer is mode-dependent",
          "this skill is where the test actually splits" in flat(cp)),
         ("the avatar argument is scoped to the unattended case",
@@ -641,8 +656,27 @@ def main() -> int:
          "silently resolves to the wrong place" in flat(rc)),
         ("the item quotes the ask rather than paraphrasing it",
          "at most 2 lines**, trimmed with an ellipsis rather than paraphrased" in flat(rc)),
-        ("the recommended reply is paste-ready and unfootered",
-         "no attribution footer** — they author it when they post it" in flat(rc)),
+        # Codex P1: a decision-only draft makes no pick, so "paste-ready" is
+        # true of one kind only -- telling the person to send it posts a
+        # non-answer and bypasses the decision flow that would have settled it.
+        ("the recommended reply splits by draft kind",
+         "paste-ready only for one of the two draft kinds" in flat(rc)),
+        ("a decision-only draft is labelled not for posting",
+         "decision — not for posting" in flat(clause(rc, "| 3 | **the recommended reply", 2000))),
+        ("the attended path splits what may be sent by kind",
+         "a **decision-only** draft is not theirs to send at all" in flat(rc)),
+        ("the decision-only path names settle as its route",
+         "asks the underlying options and records the one chosen"
+         in flat(near(rc, "a **decision-only** draft is not theirs to send", 800))),
+        ("neither draft kind carries a footer",
+         "they author whatever they post" in flat(rc)),
+        # The two issue-writing decision points #72 and this round left uncovered.
+        ("summarize-tranche carries the form rule to issue creation",
+         "*Authored write form*" in sm
+         and "authorizing creation is not approving a body nobody has read" in flat(sm)),
+        ("validate-backlog carries the form rule to an authorized rewrite",
+         "*Authored write form*" in vb
+         and "authorizes the edit, not the wording" in flat(vb)),
         ("the change SHA is explicit or explicitly none",
          "or `none`**" in flat(rc)),
         ("the item says why it was not posted",

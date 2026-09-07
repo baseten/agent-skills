@@ -220,7 +220,7 @@ reconstruct from a thread URL defeats the whole rule. Every `NEEDS_USER`
 | --- | --- | --- |
 | 1 | **the thread's `html_url`** | **as returned by the API, verbatim — never a hand-built anchor.** A review-comment thread and a PR-level comment use different fragment forms, so a URL assembled from a PR number and a comment id silently resolves to the wrong place, or to the top of the PR, and the failure is invisible from here: the link works, it just does not land on the thread. Take the field the API gave you (`html_url` on the comment from `get_review_comments`, or the `gh api` equivalent) and pass it through unchanged. Not sure a URL came from the API → it did not; re-read the thread |
 | 2 | **the ask, quoted** | the reviewer's own words, **at most 2 lines**, trimmed with an ellipsis rather than paraphrased. A paraphrase is where the question quietly becomes the one the pass found easier to answer |
-| 3 | **the recommended reply, paste-ready** | one line where the answer fits in one. Written as the person would post it, not as a report to them: no "the reviewer asks whether…" preamble, no meta-commentary, and **no attribution footer** — they author it when they post it (*The draft reply*, below, for what it contains) |
+| 3 | **the recommended reply — and it is paste-ready only for one of the two draft kinds** | **An answerable-from-work draft** is paste-ready: one line where the answer fits in one, written as the person would post it rather than as a report to them — no "the reviewer asks whether…" preamble, no meta-commentary. **A decision-only draft is not**, and must not be presented as though it were: it lists the options and their costs and deliberately makes no pick (*The draft reply*), so pasting it into the thread posts a non-answer over a question still undecided. Label it **`decision — not for posting`** and say what the person's next step is: decide, then answer in their own words, or route it to `settle-outstanding-decisions`, which asks the underlying options and records the one chosen (*Handling queries*). Neither kind carries an attribution footer — they author whatever they post |
 | 4 | **the SHA of any code change made for this thread, or `none`** | explicitly `none` where nothing was pushed. A blank field reads as "not recorded" and sends the person to the diff to check; on a mixed thread (*A comment can want both*) this is where the pushed fix is named, which is the only place the two halves of that thread meet |
 | 5 | **why it was not posted** | one clause — *needs your intent*, *product decision*, *only you can confirm the constraint*. Not a restatement of the rule; the person knows the rule, they need to know which of its branches this thread is |
 
@@ -281,9 +281,20 @@ nothing — a human's one-line nit is repaired, an automated reviewer's
 architecture question is escalated.
 
 Attended — a person invoked this skill and named the comments — **the draft goes
-to them, in this session's output, and still not to the thread.** They send it,
-edit it first, or throw it away; posting it as themselves is the point, because
-then the reviewer is reading an answer its author stands behind. Their presence
+to them, in this session's output, and still not to the thread.** What they can
+do with it **depends on which kind it is**, and telling them otherwise is how a
+question ends up looking handled while still being open:
+
+- an **answerable-from-work** draft they send, edit first, or throw away —
+  posting it as themselves is the point, because then the reviewer is reading an
+  answer its author stands behind;
+- a **decision-only** draft is not theirs to send at all, because it answers
+  nothing: it is the options and their costs with no pick. Their next step is to
+  decide. Then they answer in their own words, or hand the thread to
+  `settle-outstanding-decisions`, which is built for exactly this — it asks the
+  underlying options and records the one chosen, and *"approve the draft" would
+  record a ruling that chose nothing* (that skill, *What qualifies as an
+  outstanding decision*). Their presence
 makes handing it over cheap and does not license posting: what a reviewer reads
 is the posted reply, not the correction that followed it, and by the time they
 could correct it the answer is already in their voice on a public thread.
@@ -351,7 +362,7 @@ from contradicting the modes above:
 | Mode | The prose half |
 | --- | --- |
 | Classify-only | A question item with its draft, returned alongside the deferred repair as the second of two entries for the one thread. Nothing is posted at all |
-| Attended | Not answered in the thread. The draft goes to the person who invoked this skill, in this session's output, and they post it as themselves if they want it posted. The fix is pushed and reported as the fix |
+| Attended | Not answered in the thread. The draft goes to the person who invoked this skill, in this session's output; an answerable-from-work draft they may post as themselves, a decision-only one they decide first (*Handling queries*). The fix is pushed and reported as the fix |
 | Unattended (*Unattended callers*) | Not answered in the thread. Return the question as a `NEEDS_USER` item with its draft, and reply only to report what changed — a statement about work done, never written as though it answered the question |
 
 **Attended is not an exception here, and this section does not make one**: a
@@ -431,7 +442,8 @@ After completing all steps, summarize:
   both:
   - a **question item** carries **all five fields of *What a question item must
     contain***, in that order and none omitted — API `html_url`, the ask quoted
-    to at most 2 lines, the paste-ready recommended reply with no footer, the
+    to at most 2 lines, the recommended reply with no footer — paste-ready, or
+    labelled `decision — not for posting` where the draft is decision-only — the
     SHA of any code change for this thread or an explicit `none`, and the
     one-clause reason it was not posted. Report the root author alongside them.
     **A count, a summary, or four of the five is not this entry**: the person
@@ -462,7 +474,8 @@ After completing all steps, summarize:
   the context that makes it answerable on the spot — the one path on which a
   drafted answer is ever posted, and only after the owner approves it. Attended
   it is the person reading this output, who posts what they choose to post as
-  themselves. A count supports none of that.
+  themselves — subject to the kind split above, since a decision-only draft is
+  one they decide rather than one they post. A count supports none of that.
 
 - **Whether a notification was sent for each `NEEDS_USER` item, and on what
   channel** — or that no channel was available. The record above is what the

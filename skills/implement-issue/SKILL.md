@@ -84,7 +84,7 @@ Finding repair cycles: <used>/<limit>
 Strongest-model repair rounds: <used>/<limit>
 Current remote head: <SHA>
 First review round: pending | complete-with-findings | clean
-Threads reserved for the owner: <count> (question items: api html_url, ask quoted, paste-ready reply, change SHA or none, why not posted; deferred repairs: api html_url, requested change, no draft)
+Threads reserved for the owner: <count> (question items: api html_url, ask quoted, recommended reply (paste-ready, or labelled decision-not-for-posting), change SHA or none, why not posted; deferred repairs: api html_url, requested change, no draft)
 Draft state: <as-created> -> <current>
 Policy: budgets <source>; auto-merge <on|off> (<source>)
 State: waiting | repairing-ci | repairing-review | repairing-finding | healthy | needs-user

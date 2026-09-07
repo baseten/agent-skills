@@ -160,4 +160,4 @@ Also return a normalized DAG using canonical full issue URLs as node identities.
 
 ## Mutation
 
-Validation is read-only by default. Never add/remove dependency links or rewrite issues unless the user explicitly asks to apply the suggested fixes.
+Validation is read-only by default. Never add/remove dependency links or rewrite issues unless the user explicitly asks to apply the suggested fixes. **Where a rewrite is authorized, the text it writes follows the authored-write-form rule** (`backlog-orchestrator`, *Authored write form*): short, and carrying the attribution footer unless the user approved that exact text — asking for the suggested fixes to be applied authorizes the edit, not the wording, so the default here is that the footer goes on. A dependency link carries no body and so no footer; an issue body does.

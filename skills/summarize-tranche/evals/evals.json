@@ -87,6 +87,17 @@
         "the walkthrough is said to read the question from the recorded item, not from the thread"
       ],
       "id": 6
+    },
+    {
+      "id": 7,
+      "name": "an-authorized-issue-body-is-short-and-footered",
+      "prompt": "You are executing the summarize-tranche skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the invocation explicitly authorizes issue creation, and the summary proposed two follow-ups. Questions: (a) what governs the shape of each issue body? (b) does it carry the attribution footer, given that the invocation authorized creation?",
+      "expected_output": "(a) The authored-write-form rule stated once in `backlog-orchestrator`, *Authored write form*: short, stating intent rather than restating the tranche, and linked to the originating PR or issue. (b) Yes. Authorizing creation is not approving a body nobody has read — that rule's test asks whether the invoking person approved *this exact text*, and an authorization given before the text existed cannot have. Never open an issue the summary did not propose.",
+      "assertions": [
+        "the issue body defers to backlog-orchestrator's Authored write form",
+        "the body carries the attribution footer",
+        "the answer distinguishes authorizing creation from approving the text"
+      ]
     }
   ]
 }
