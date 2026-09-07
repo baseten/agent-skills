@@ -60,10 +60,13 @@ refuses the thread on budget and re-admits it only on new content, and the findi
 exists for work no thread carries
 (`backlog-orchestrator`, *A settle finding is the third repair shape*).
 Classing one as `IN_FLIGHT_FIX` un-settles the tranche with nothing able to act on it. So
-report a **deferred repair as `MERGE_RISK`** — the requested change, the thread URL, that
-the review repair budget was spent, and that the next step is to apply it or lift the
-budget. A **question** thread is not an action point of its own: the walkthrough reads it
-from the thread.
+report a **deferred repair as `MERGE_RISK`** — the requested change, the thread's
+API `html_url` as the orchestrator recorded it and never rebuilt
+(`resolve-pr-comment`, *What a question item must contain*), that the review repair
+budget was spent, and that the next step is to apply it or lift the budget. A
+**question** thread is not an action point of its own: the walkthrough reads it from
+the question item the run recorded, which is what spares the owner opening the
+thread at all.
 
 **The test is the absence of a dispatch, not the reservation.** One reserved thread has
 one: a thread carrying a **recorded code-changing ruling whose change has not been pushed**
@@ -99,7 +102,7 @@ A worker-reported defect is a claim about that worker's environment. Confirm it 
 # Creating the follow-up issues
 
 - **Read-only by default**: propose `NEW_ISSUE` items; open nothing (NOTES: separate authority).
-- When the invocation explicitly authorizes creation: open each proposed issue in the tranche's tracker, link it to the originating PR or issue, and report the created URLs in place of the proposals. Never open an issue the summary did not propose, and never open one that deduplication matched to an existing ticket.
+- When the invocation explicitly authorizes creation: open each proposed issue in the tranche's tracker, link it to the originating PR or issue, and report the created URLs in place of the proposals. **Each issue body follows the authored-write-form rule** (`backlog-orchestrator`, *Authored write form*) — short, stating intent rather than restating the tranche, and **carrying the attribution footer**, because authorizing creation is not approving a body nobody has read: that rule's approval test asks whether the invoking person approved *this exact text*, and an authorization given before the text existed cannot have. Never open an issue the summary did not propose, and never open one that deduplication matched to an existing ticket.
 
 # Boundaries
 

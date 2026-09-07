@@ -77,15 +77,28 @@
     {
       "id": 6,
       "name": "deferred-repair-item-is-reported-without-a-draft",
-      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the review repair budget is spent. A repair pass dispatched at zero budget returns two NEEDS_USER items — a question item ('is this endpoint meant to be idempotent?') with a decision-only draft, and a deferred-repair item for a thread asking that a duplicated constant be extracted — plus one no-action entry. Questions: (a) what does each reserved thread carry in the checkpoint output and in the structured result? (b) the output contract says the draft is the point of reporting a reserved thread — what do you put in the draft field for the deferred-repair item? (c) does the no-action entry hold the merge gate?",
-      "expected_output": "(a) Both carry the thread URL and what it asks. What accompanies them differs by item kind, and the kinds must not be merged: the question item carries its draft reply verbatim; the deferred-repair item carries the change it asks for and no draft. (b) Nothing — the field does not apply to that kind. Do not invent a question-shaped draft to satisfy the contract: the budget ran out on work that wants a diff, there is nothing to answer, and a fabricated draft would be put to the owner as though there were something to decide. The draft requirement is scoped to question items, so the budget-exhaustion case is satisfiable as written. Omitting the item entirely is also wrong — it would be re-dispatched. (c) No. A no-action thread wants nothing from anybody and is not an unresolved finding, so it never holds the gate; recording it is what stops it being re-dispatched, since a classify-only pass consumes no cycle.",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the review repair budget is spent. A repair pass dispatched at zero budget returns two NEEDS_USER items — a question item ('is this endpoint meant to be idempotent?') with a decision-only draft, and a deferred-repair item for a thread asking that a duplicated constant be extracted — plus one no-action entry. Questions: (a) what does each reserved thread carry in the checkpoint output and in the structured result? (b) the output contract requires a question item to carry every field resolve-pr-comment specifies — what do you put in the draft field for the deferred-repair item? (c) does the no-action entry hold the merge gate?",
+      "expected_output": "(a) Both carry the thread's API html_url, forwarded rather than rebuilt, and what it asks. What accompanies them differs by item kind, and the kinds must not be merged: the question item carries its draft reply verbatim; the deferred-repair item carries the change it asks for and no draft. (b) Nothing — the field does not apply to that kind. Do not invent a question-shaped draft to satisfy the contract: the budget ran out on work that wants a diff, there is nothing to answer, and a fabricated draft would be put to the owner as though there were something to decide. The draft requirement is scoped to question items, so the budget-exhaustion case is satisfiable as written. Omitting the item entirely is also wrong — it would be re-dispatched. (c) No. A no-action thread wants nothing from anybody and is not an unresolved finding, so it never holds the gate; recording it is what stops it being re-dispatched, since a classify-only pass consumes no cycle.",
       "assertions": [
-        "the question item is reported with its draft reply verbatim",
+        "the question item is reported with every required field verbatim, not a draft alone",
         "the deferred-repair item is reported with the requested change and explicitly no draft",
         "no question-shaped draft is fabricated for the deferred-repair item",
         "the deferred-repair item is not omitted from the output",
         "states that the draft requirement is scoped to question items rather than to every reserved thread",
         "the no-action entry does not hold the merge gate but is still recorded"
+      ],
+      "files": []
+    },
+    {
+      "id": 7,
+      "name": "direct-invocation-still-signs-its-comments-and-not-the-trigger",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a person invoked you directly on one issue. No orchestrator dispatched you, so you received no dispatch prompt. A repair pass has just pushed a fix and repository convention requires re-triggering review. Questions: (a) do the timeline comments you post on this PR carry the attribution footer, given that nothing dispatched the rule to you? (b) does the re-trigger comment carry it? (c) what happens if you get (b) wrong?",
+      "expected_output": "(a) Yes. The footer marks a write no person read before it was posted, and a supervision comment posted from this skill's own event loop is never shown to anyone — so the approval test answers No however the run was started. A person invoking the skill is not a person who read the comment, and no dispatch prompt is needed for the rule to apply: it covers every authored write on the run's behalf. (b) No — the review-trigger comment is exempt, and the reason to state is the functional one: it must read exactly as the convention expects. (c) It fails silently: nothing errors, the convention does not fire, and the run waits out a review that was never going to arrive.",
+      "assertions": [
+        "the supervision comments carry the footer, justified by nobody having read them rather than by the run being unattended overall",
+        "the answer does not treat the absence of a dispatch prompt as exempting the run from the rule",
+        "the re-trigger comment carries no footer",
+        "the answer names the silent failure as the consequence of footering the trigger"
       ],
       "files": []
     }

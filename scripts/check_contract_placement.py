@@ -37,6 +37,66 @@ def skill(name: str) -> str:
 BOLD = re.compile(r"\*\*(.+?)\*\*", re.S)
 
 
+# "every authored write carries the footer" in either word order. The footer
+# marks only writes nobody read; a sentence claiming otherwise is the rule
+# this branch replaced, and it reads as correct where it sits.
+BLANKET_FOOTER = re.compile(
+    r"every authored write[^.\n]{0,80}footer|footer[^.\n]{0,80}every authored write",
+    re.I,
+)
+
+# The mirror of BLANKET_FOOTER, and the claim that actually keeps regrowing.
+# The footer rule was narrowed twice: from "every write" to "writes nobody
+# read", then settle's own case from "never" to "unless the owner approved the
+# complete comment". Each narrowing left absolutes behind that read as
+# reassurances -- "no path puts a footer on this text" survived a whole review
+# round in a contract while the rule it described was already conditional.
+#
+# Only claims about a RULING or a settle write are caught. Three absolutes are
+# legitimate and must not trip it: a draft is not a write, a write with no body
+# has nowhere to put one, and the review trigger is exempt.
+# A quotation is not a claim. NOTES narrates reversals by quoting the text it is
+# retracting -- which is the entire point of the entry -- so italic-quoted spans
+# are excused before the scan, the same excuse `check_rule_locality.py` makes.
+QUOTED = re.compile(r'\*"[^"]*"\*')
+
+# "anything user-visible gets a screenshot", with no condition on the actor
+# having any way to take one. Matches the obligation, not the word.
+UNCONDITIONAL_CAPTURE = re.compile(
+    # obligation after the subject: "anything user-visible gets a screenshot"
+    r"(?:anything|any change|everything)[^.\n]{0,40}user-visible[^.\n]{0,40}"
+    r"(?:gets|needs|requires|must have)[^.\n]{0,30}(?:screenshot|clip|capture)"
+    # obligation before it: "screenshots or a clip for anything user-visible"
+    r"|(?:screenshots?|clips?|captures?)[^.\n]{0,40}"
+    r"for (?:anything|any change|everything)[^.\n]{0,20}user-visible",
+    re.I,
+)
+
+STALE_NO_FOOTER = re.compile(
+    r"no path puts a footer"
+    r"|neither write carries the attribution footer"
+    r"|(?:recorded ruling|ruling comment)[^.\n]{0,80}carries[^.\n]{0,16}no[^.\n]{0,16}footer"
+    r"|approval test answers Yes at every write",
+    re.I,
+)
+
+# NOTES explains and never states a rule, so it gets no presence assertions --
+# but it can still contradict one, and two of the three defects in the round
+# that prompted this lived there, invisible because nothing read those files.
+def notes(name: str) -> str:
+    f = ROOT / "skills" / name / "NOTES.md"
+    return f.read_text() if f.exists() else ""
+
+
+def every_doc() -> list[tuple[str, str]]:
+    out = []
+    for d in sorted((ROOT / "skills").glob("*/SKILL.md")):
+        out.append((str(d.relative_to(ROOT)), d.read_text()))
+    for d in sorted((ROOT / "skills").glob("*/NOTES.md")):
+        out.append((str(d.relative_to(ROOT)), d.read_text()))
+    return out
+
+
 FINDINGS = ("licence", "cooldown", "peer")
 
 # A blank line, or the start of a list item. Markdown structure, decided by
@@ -284,6 +344,9 @@ def main() -> int:
     rp = skill("repair-pr")
     rc = skill("resolve-pr-comment")
     ud = skill("upgrade-major-dependency")
+    cp = skill("create-pr")
+    ms = skill("merge-stack")
+    vb = skill("validate-backlog")
     du = skill("dependency-upgrade-orchestrator")
 
     bo_pred = clause(bo, "On unhandled review feedback")
@@ -361,11 +424,14 @@ def main() -> int:
         ("ii records a two-item thread as handled only when both are in",
          "handled only when both are in" in flat(ii)),
         # The mixed rule adds a classification case, not an exception to the
-        # attended/unattended split: attended still answers in the thread.
+        # mode rules: the prose half is a query, and no mode answers a query in
+        # the thread. Attended used to be the exception and is not one now.
         ("mixed comments follow the mode split for the prose half",
          "no exception to any mode rule" in flat(rc)),
-        ("attended posts the substantive answer on a mixed comment",
-         "Post the substantive answer in the thread" in rc),
+        ("attended does not answer a mixed comment in the thread",
+         "Not answered in the thread. The draft goes to the person" in flat(rc)),
+        ("the mixed section makes attended no exception",
+         "Attended is not an exception here, and this section does not make one" in flat(rc)),
         ("no mode resolves a mixed thread",
          "No mode resolves the thread" in flat(rc)),
         ("the mixed rule's repair half is scoped away from classify-only",
@@ -376,9 +442,9 @@ def main() -> int:
          "for the part that wants an answer" in bo),
         ("ii scopes never-repaired to the part wanting an answer",
          "in the part that wants an answer" in ii),
-        # The prose branch must not list acknowledgements: the unattended
-        # override turns that branch into NEEDS_USER, which settle cannot
-        # qualify, so the thread holds the gate with nothing able to clear it.
+        # The prose branch must not list acknowledgements: that branch returns
+        # NEEDS_USER in every mode, and settle cannot qualify an
+        # acknowledgement, so the thread holds the gate with nothing to clear it.
         ("the prose branch excludes acknowledgements",
          "An acknowledgement is not this branch" in rc
          and "acknowledging something" not in clause(rc, "If a comment's correct response")),
@@ -482,6 +548,238 @@ def main() -> int:
         ("bo's regeneration pointer names the record too",
          "reading any rejected-draft record there first" in flat(bo)),
         ("settle requires the approved answer text", "the approved or edited answer text itself" in st),
+        # --- No mode answers a query in the thread -------------------------
+        # Stated in the branch itself, because that is the clause a classifying
+        # pass reads -- not only in the unattended override, which is what left
+        # the attended path posting an answer.
+        ("resolve-pr-comment answers no query in the thread, in any mode",
+         "it is `NEEDS_USER` in every mode, and this skill posts no answer to it" in flat(rc)),
+        ("the query branch says where the draft goes instead",
+         "the person who invoked it attended, the caller as a" in flat(rc)),
+        ("the query rule names settle as the one path that posts a drafted answer",
+         "One path posts an answer this skill drafted, and it is not this skill" in flat(rc)),
+        ("the attended path hands the draft over rather than posting it",
+         "the draft goes\nto them, in this session's output, and still not to the thread" in rc),
+        ("unattended is a destination rule, not the source of the no-answer rule",
+         "so this section overrides nothing about it" in flat(rc)),
+        ("resolve-pr-comment Output delivers question items attended too",
+         "in every mode, because the prose branch is `NEEDS_USER` in every mode" in flat(rc)),
+        ("settle names itself the exception the resolver's absolute is written on",
+         "an answer drafted by `resolve-pr-comment` is ever posted" in flat(st)),
+        # The rule rests on authority, not on the reader being unable to tell --
+        # a footer would otherwise read as licence to post.
+        ("the no-answer rule rests on authority, not disclosure",
+         "The reason is authority, not disclosure" in flat(rc)
+         and "A footer would not license it" in flat(rc)),
+
+        # --- Authored write form -------------------------------------------
+        ("bo states the authored write form rule", "## Authored write form" in bo),
+        ("the form rule claims sole statement",
+         "This section is the rule's only statement" in near(bo, "## Authored write form", 1200)),
+        ("the form rule carries the footer literal",
+         "_Generated by [Claude Code](https://claude.ai/code)_" in bo),
+        ("required contents beat brevity", "those contents win" in flat(bo)),
+        # "Keep it short" loses every argument with a model that believes its
+        # own body is the exceptional case. The budget is numbers, and the
+        # exclusions are named individually because each is a separate habit.
+        ("the PR body budget is a number, not an adjective",
+         "300 words of prose above the fold, maximum" in flat(bo)),
+        ("the body states intent rather than content",
+         "The body states intent, not content" in flat(bo)),
+        ("the excluded habits are named individually",
+         all(s in flat(bo) for s in ("file-by-file inventory", "investigation log",
+                                     "the order things went wrong in"))),
+        ("depth is collapsed rather than cut short",
+         "collapsed `<details>` block or a commit message" in flat(bo)),
+        ("over budget means cut, not reflow",
+         "never compress by deleting whitespace" in flat(bo)),
+        ("a trivial PR is allowed a near-empty body",
+         "Do not manufacture prose to fill a template" in flat(bo)),
+        # The capture rule arrived unconditional from a human style guide, whose
+        # actor can always take a screenshot. This one often cannot, and an
+        # obligation an actor cannot meet is discharged with a fabricated "N/A".
+        ("the capture rule is conditional on a capture path existing",
+         "and the repository provides a way to capture it" in flat(bo)),
+        ("the capture rule states its fallback",
+         "say that no capture was available" in flat(bo)),
+        ("the capture rule forbids implying an unperformed check",
+         "Never imply a visual check that was not performed" in flat(bo)),
+        # The unconditional form is what regrows -- it is what the source guide
+        # says, and #71 still carries it.
+        ("no unconditional capture obligation survives",
+         not UNCONDITIONAL_CAPTURE.search(flat(bo))),
+        ("the form rule keeps a subtraction a subtraction",
+         "may not convert the subtraction into a list" in flat(bo)),
+        ("a documented style guide overrides the floor",
+         "that guide governs and its budget wins" in flat(bo)),
+        ("create-pr reads the style guide before drafting",
+         "read it before drafting the body, not after" in flat(cp)),
+
+        # --- The footer marks unread writes, not every write ----------------
+        # A marker on everything carries no information, and specifically cannot
+        # separate an unedited automated reply from a body its author owns.
+        ("the footer rule is an approval test, not a blanket",
+         "marks the writes nobody read" in flat(bo)
+         and "approval of **this exact text** before posting it" in flat(bo)),
+        ("the approval test states both answers",
+         "the write carries the footer. Yes" in flat(bo)),
+        ("approval is of the text, not of the run",
+         "Sitting in the session is not approval either" in flat(bo)),
+        ("the unmarked direction is the safe one",
+         "the answer is No and the footer goes on" in flat(bo)),
+        # The attended path must forbid the footer explicitly, or the rule
+        # silently reverts to blanket the first time someone tidies it.
+        ("the attended path forbids the footer",
+         "confirmed or edited by them | this exact text | **no**" in flat(bo)),
+        ("the unattended path requires it",
+         "nobody read it | **yes**" in flat(bo)),
+        # Codex P2: the owner choosing an option has not read the record built
+        # around it, so the exact-text test has to be asked of the whole comment.
+        ("settle asks the exact-text test of the complete comment",
+         "asked of **the complete comment, not of the answer inside it**" in flat(st)),
+        ("settle names what it composes that the owner did not",
+         "has not thereby read the comment built around it" in flat(st)),
+        ("settle's footer is conditional on the complete record being approved",
+         "the write carries the footer" in flat(st)
+         and "There is no exception here for this skill" in flat(st)),
+        # The double-attribution argument was wrong and is retracted in both
+        # files: an existing attribution is never a reason to drop the footer.
+        ("an existing attribution is not a reason to omit the footer",
+         "is never itself a reason to omit the footer" in flat(bo)),
+        ("settle retracts the double-attribution argument",
+         "wrongly argued that a footer beside the marker would double-attribute"
+         in flat(st)),
+        ("a write with no body carries no footer for want of anywhere to put one",
+         "there is nowhere to put one" in flat(bo)),
+        ("create-pr's body footer is mode-dependent",
+         "this skill is where the test actually splits" in flat(cp)),
+        ("the avatar argument is scoped to the unattended case",
+         "an argument about the unattended case only" in flat(bo)),
+        ("the footer is not identity evidence", "The footer is not identity evidence" in bo),
+        ("the footer is not a run-authored-comment discriminator",
+         "and it is not a discriminator either" in flat(bo)),
+        ("both negation guards are stated to survive the narrowing",
+         "hold unchanged under the approval test" in flat(bo)),
+        ("the discriminator absolute names the footer as no substitute",
+         "is not a substitute either, and must not be tested for" in flat(bo)
+         and "it goes only on writes nobody read" in flat(bo)),
+        # The blanket footer was the previous rule, so it is the claim that
+        # creeps back. Detected as a shape, not a phrase: the positive
+        # assertion above survives the blanket being re-prefixed onto it, which
+        # is how a stale sentence at this decision point shipped green once.
+        ("no blanket footer claim survives anywhere in bo",
+         not BLANKET_FOOTER.search(flat(bo))),
+        ("bo exempts the review trigger from the footer",
+         "carries no footer and nothing else" in flat(bo)),
+        ("the trigger's stated reason is the functional one",
+         "That functional reason is the one to state" in flat(bo)),
+        ("create-pr exempts the trigger comment from the footer too",
+         "the reason to state is the functional one" in flat(cp)),
+        ("resolve-pr-comment applies the form rule at the reply step",
+         "The footer goes on unless the person approved this reply text" in flat(rc)),
+        ("a reply reports work done and never answers a query",
+         "A reply reports work done and never answers a query" in flat(rc)),
+        ("the draft's footerlessness follows from the rule",
+         "follows from the rule\nrather than sitting beside it as a special case" in rc),
+        ("repair-pr forwards the form rule", "authored-write-form rule" in flat(rp)),
+        ("repair-pr names itself unattended by construction",
+         "unattended by construction" in flat(rp)),
+        ("merge-stack forwards the form rule", "*Authored write form*" in ms),
+        ("merge-stack scopes the form rule to the body edit",
+         "reaches only the body edit" in flat(ms)),
+        ("merge-stack signs no body it did not write",
+         "never appends an attribution footer to one" in flat(ms)),
+        ("settle forwards the form rule", "*Authored write form*" in st),
+        ("implement-issue carries the form rule at its own write site",
+         "*Authored write form*" in ii
+         and "unattended writes even on an attended run" in flat(ii)),
+        # #72's skills author forge writes too -- a PR body, a closure comment,
+        # a declined-upgrade record -- and the rule reached neither of them.
+        ("upgrade-major-dependency defers the form rule instead of copying it",
+         "*Authored write form*" in ud
+         and "partial copy that names two of its exclusions" in flat(ud)),
+        ("upgrade-major-dependency names its writes unattended",
+         "dispatched and unattended, so its writes answer No" in flat(ud)),
+        ("the dependency dispatch constraints carry the form rule",
+         "**The authored-write-form rule**" in du
+         and "carry the test, not the conclusion" in flat(du)),
+        ("bo dispatch prompts carry the form rule",
+         "every dispatched prompt carries the authored-write-form rule" in flat(bo)),
+        ("the dispatched form rule is carried whole, not paraphrased",
+         "Carry the rule, not a paraphrase of it" in flat(bo)),
+        ("the dispatched form rule carries the approval test itself",
+         "the footer **with its approval test**" in flat(bo)),
+
+        # --- A question item has to be actionable without hunting -----------
+        # Four of five is not four-fifths useful: the missing field is the one
+        # the person goes looking for.
+        ("resolve-pr-comment states the question item's contents",
+         "### What a question item must contain" in rc),
+        ("the item's URL is API provenance, not a shape rule",
+         "as returned by the API, verbatim — never a hand-built anchor" in flat(rc)),
+        ("the item names why a rebuilt anchor fails invisibly",
+         "silently resolves to the wrong place" in flat(rc)),
+        ("the item quotes the ask rather than paraphrasing it",
+         "at most 2 lines**, trimmed with an ellipsis rather than paraphrased" in flat(rc)),
+        # Codex P1: a decision-only draft makes no pick, so "paste-ready" is
+        # true of one kind only -- telling the person to send it posts a
+        # non-answer and bypasses the decision flow that would have settled it.
+        ("the recommended reply splits by draft kind",
+         "paste-ready only for one of the two draft kinds" in flat(rc)),
+        ("a decision-only draft is labelled not for posting",
+         "decision — not for posting" in flat(clause(rc, "| 3 | **the recommended reply", 2000))),
+        ("the attended path splits what may be sent by kind",
+         "a **decision-only** draft is not theirs to send at all" in flat(rc)),
+        ("the decision-only path names settle as its route",
+         "asks the underlying options and records the one chosen"
+         in flat(near(rc, "a **decision-only** draft is not theirs to send", 800))),
+        ("neither draft kind carries a footer",
+         "they author whatever they post" in flat(rc)),
+        # The two issue-writing decision points #72 and this round left uncovered.
+        ("summarize-tranche carries the form rule to issue creation",
+         "*Authored write form*" in sm
+         and "authorizing creation is not approving a body nobody has read" in flat(sm)),
+        ("validate-backlog carries the form rule to an authorized rewrite",
+         "*Authored write form*" in vb
+         and "authorizes the edit, not the wording" in flat(vb)),
+        ("the change SHA is explicit or explicitly none",
+         "or `none`**" in flat(rc)),
+        ("the item says why it was not posted",
+         "why it was not posted" in flat(rc)),
+        ("the URL rule covers every thread URL the skill emits",
+         "obeys row 1" in flat(rc)),
+        ("notification never substitutes for the record",
+         "a subscription dies\nwith the session that armed it" in rc),
+        ("the resolver Output demands all five fields",
+         "four of the five is not this entry" in flat(rc)),
+        # The chain: producer -> repair-pr -> both recorders -> settle. A
+        # summarising middle link is the silent failure this file exists for.
+        ("chain 1/5: repair-pr forwards all five fields verbatim",
+         "all five fields of `resolve-pr-comment`, *What a question item must contain*"
+         in flat(rp)),
+        ("chain 2/5: repair-pr forbids rebuilding the URL",
+         "Never rebuild the thread URL" in flat(rp)),
+        ("chain 3/5: bo records everything the item requires",
+         "everything `resolve-pr-comment`, *What a question item must contain*, requires"
+         in flat(bo)),
+        ("chain 4/5: ii records everything the item requires",
+         "everything `resolve-pr-comment`, *What a question item must contain*, requires"
+         in flat(ii)),
+        ("chain 5/5: settle consumes all of the item's fields, not just a draft",
+         "carry **all of the item's fields** into the question" in flat(st)
+         and "reason it was not posted is the fastest read on which kind it is" in flat(st)),
+        ("bo records partial items as no record at all",
+         "recording all but one of them is recording none" in flat(bo)),
+        # The field list is owned by one section. A second copy is where a field
+        # gets dropped -- findings 6-8 and 11 of round two were all that shape.
+        ("the item's field list is not restated at the unattended summary",
+         "That section owns the fields; this one does not restate them" in flat(rc)),
+        ("settle does not keep its own copy of the field list",
+         "a copy of it is where a field goes missing" in flat(st)),
+        ("bo does not keep its own copy of the field list",
+         "that section owns the list and this one does not copy it" in flat(bo)),
+        ("repair-pr forwards the notification state",
+         "whether a notification was sent for each `NEEDS_USER` item" in flat(rp)),
         ("settle zero-output keys on authored writes", "no authored write of any kind" in st),
         # The dependency-upgrade chain. The orchestrator's triage clears a
         # candidate; the agent's own viability gate then re-derives the same
@@ -1028,19 +1326,59 @@ def main() -> int:
         r"|never writes|sole write)\b[^.\n]*\.",
         re.I,
     )
-    stale = [
+    stale_absolutes = [
         m.group(0).strip()
         for m in absolute.finditer(st)
         if "rejected-draft" not in m.group(0)
     ]
-    checks.append(("settle write-absolutes name the rejected-draft record", not stale))
+    checks.append(("settle write-absolutes name the rejected-draft record", not stale_absolutes))
+
+    # The footer literal is stated once. A second contract spelling it out is a
+    # restatement that drifts -- the deferring skills name the rule, not the text.
+    spelled = [
+        d.parent.name
+        for d in sorted((ROOT / "skills").glob("*/SKILL.md"))
+        if "_Generated by [Claude Code](https://claude.ai/code)_" in d.read_text()
+    ]
+    checks.append(
+        ("the footer literal is spelled out in one contract only", spelled == ["backlog-orchestrator"])
+    )
+
+    # Same hazard, different rule: two contracts stating the budget merge without a
+    # conflict marker, because the hunks never touch. That is how it arrived -- one
+    # branch put it in create-pr while another put it here, and git took both.
+    budgeted = [
+        d.parent.name
+        for d in sorted((ROOT / "skills").glob("*/SKILL.md"))
+        if "300 words of prose" in d.read_text()
+    ]
+    checks.append(
+        ("the PR body budget is stated in one contract only", budgeted == ["backlog-orchestrator"])
+    )
+
+    # Round four: the settle rule went conditional and its downstream absolutes
+    # did not. Two of the three survivors were in NOTES.md, which nothing here
+    # read -- so this scans every contract AND every notes file. NOTES gets no
+    # presence assertions (it explains, it never states a rule), but a note that
+    # contradicts a contract breaks the completion criterion exactly as a
+    # contract would, and is the harder of the two to notice.
+    stale = [
+        f"{name}: {STALE_NO_FOOTER.search(QUOTED.sub(chr(32), flat(body))).group(0)[:60]}"
+        for name, body in every_doc()
+        if STALE_NO_FOOTER.search(QUOTED.sub("", flat(body)))
+    ]
+    checks.append(("no unconditional no-footer claim survives about a ruling", not stale))
 
     failures = [name for name, ok in checks if not ok]
     for name, ok in checks:
         print(("PASS " if ok else "FAIL ") + name)
     if stale:
-        print("\nwrite-absolutes not naming the rejected-draft record:")
+        print("\nunconditional no-footer claims about a ruling:")
         for s in stale:
+            print("  " + s)
+    if stale_absolutes:
+        print("\nwrite-absolutes not naming the rejected-draft record:")
+        for s in stale_absolutes:
             print("  " + s[:160])
     print(f"\n{len(checks) - len(failures)}/{len(checks)} passing")
     if failures:

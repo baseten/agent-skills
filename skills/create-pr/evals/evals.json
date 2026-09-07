@@ -61,6 +61,60 @@
         "The answer scopes the no-issue exception to direct user invocation with explicit user confirmation, which does not apply here"
       ],
       "files": []
+    },
+    {
+      "id": 5,
+      "name": "trigger-comment-carries-no-footer",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you have created and verified the PR and are about to post the repository's automated review trigger, `@codex review`. Questions: (a) what exactly is the body of that comment? (b) does it carry the attribution footer, and what is the reason to state? (c) does the PR body you just created carry one?",
+      "expected_output": "(a) `@codex review` and nothing else. (b) No footer, and the reason to give is the functional one: the comment must read exactly as the convention expects, and when it does not the convention fails silently — nothing errors, and the run waits out a review that was never going to arrive. The approval test would also ask for a footer here, since nobody reads a trigger comment before it is posted; the exemption overrides it. Two independent reasons, and the functional one is the one a reader has to know. (c) It depends on the write: a body opened by a dispatched worker carries the footer, a body this skill showed the user and created after their confirmation or edit does not.",
+      "assertions": [
+        "the trigger comment body is just the trigger text, with no footer appended",
+        "the answer gives the functional reason — the convention must match, and fails silently — as the one to state",
+        "the answer does not claim the footer applies to every other write unconditionally",
+        "the answer splits the PR body by whether the user approved that exact text"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "pr-body-stays-short-and-signed",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are opening the PR for issue https://github.com/acme/repo/issues/412, implemented over eleven commits, with two approaches tried and abandoned and a CI shard that failed twice along the way. There is no stack parent, no coverage finding, and the repository documents no PR-description style guide of its own. You are chained from a dispatched implementation worker, so nobody has read the body. Question: what goes in the body, what does not, what is the budget, and does it carry the attribution footer?",
+      "expected_output": "In: the closing linkage line with the full canonical issue URL (`Closes: https://github.com/acme/repo/issues/412`), then background in 2-4 sentences, then the solution and why this one in a paragraph or at most 5 bullets, then the attribution footer — this body was opened by a dispatched worker and no person read it, so the approval test answers No. Had the body been shown to the user and confirmed or edited by them, it would carry none. Budget: 300 words of prose above the fold, a ceiling rather than a target; a manual test checklist is exempt but capped at 8 grouped items. Out: the eleven commits, the two abandoned approaches and the CI shard — that is the journey, not the change under review — plus any file-by-file inventory, any narration of what a function now does, and any investigation log. The body states intent; the diff is the content. Depth a reviewer would genuinely want goes in a collapsed <details> block or a commit message. Over budget means cut, never compress whitespace while keeping every fact. Brevity never drops a mandated element — the linkage line, a `Depends on:` line when stacked, the `Part of:`/`Blocked by:` pair under a coverage finding, and a repository template's headings all survive it.",
+      "assertions": [
+        "the body keeps the full-URL closing linkage line",
+        "the answer names the 300-word above-the-fold budget and the 2-4 sentence / 5-bullet shape",
+        "the eleven commits, abandoned approaches and CI shard are excluded as the journey",
+        "no file-by-file inventory, code narration, or investigation log appears",
+        "depth is offered as a collapsed details block or a commit message rather than above the fold",
+        "the body carries the attribution footer because no person approved this text",
+        "the answer states that an interactively confirmed body would carry none"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "description-style-cuts-rather-than-compresses",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: an implementation workflow hands you a finished branch for a GitHub issue. It bumps a dependency group, and the work turned up three real bugs, two found by CI failing twice in a row. The draft body you were given runs about 3,000 words: a numbered paragraph per item narrating what changed in each file, a 'Surface area changed' list of every touched path, a step-by-step account of which CI shard failed after which push and what you grepped for, and a 15-item manual test checklist. Question: what do you do to that body before creating the PR, and what stays?",
+      "expected_output": "Cut it to at most 300 words of prose above the fold — linkage line(s), 2-4 sentences of background, and the solution plus why this one as one paragraph or at most 5 bullets. Drop the file-by-file inventory and the 'Surface area changed' list, the code narration, and the whole investigation/CI-shard narrative. The three bugs stay, stated as intent rather than as a story. Move retained depth into a collapsed <details> block or a commit message, and trim the checklist to at most 8 grouped items. Cut content rather than reflowing it. Required contents — linkage, Depends on:, a template's headings — survive the budget.",
+      "assertions": [
+        "The answer caps prose above the fold at 300 words and keeps the manual checklist exempt but capped at 8 grouped items",
+        "The answer removes the file-by-file/'Surface area changed' inventory and the code narration because the diff already carries them",
+        "The answer removes the investigation log and the CI-shard-by-shard journey, keeping the final state of the branch instead",
+        "The answer relocates retained depth into a collapsed <details> block or a commit message rather than deleting it outright",
+        "The answer cuts content rather than compressing whitespace, and does not propose posting the generated draft unedited",
+        "The answer keeps required contents (linkage lines, Depends on:, template headings) despite the budget"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "a-user-visible-change-with-no-way-to-capture-it",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are a dispatched worker in a container. The change restyles an empty state — plainly user-visible. The repository has no screenshot skill, no Storybook, no visual-regression harness, and no browser-driving test, and you have no browser. Questions: (a) what goes in the Screenshots section of the body? (b) may you write \"N/A\" or omit the section silently? (c) what would you do differently if the repo had a VRT harness?",
+      "expected_output": "(a) A description of what changed visually, plus an explicit statement that no capture was available in this environment. (b) No to both. A bare \"N/A\" discharges the obligation without informing the reviewer, and silent omission is worse; and neither may be written in a way that implies a visual check was performed — it was not. Say plainly that the change is user-visible, what it looks like now, and that nothing here could capture it, so a reviewer knows to look themselves. (c) Capture one and attach it: where the repository provides a way, the capture is required, because it is the only part of a body the diff cannot supply.",
+      "assertions": [
+        "the body describes the visual change rather than omitting the section",
+        "the body states explicitly that no capture was available",
+        "the answer refuses a bare N/A and refuses silent omission",
+        "the answer does not claim or imply a visual check that was not performed",
+        "with a capture path available, the answer requires the capture"
+      ]
     }
   ]
 }

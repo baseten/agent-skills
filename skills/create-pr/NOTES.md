@@ -16,6 +16,18 @@ On Linear and other trackers, the same rule holds through a different mechanism 
 
 The trigger comment is the one post exempted from the posting-identity rule because there its authorship is **functional, not cosmetic**: authored by anything but the invoking user, the repository's review convention silently does not fire — nothing refuses it, so the run waits out a review that was never going to arrive. `backlog-orchestrator`, *Posting identity*, states the rule once, including the bootstrap for a fresh run's first trigger; this skill carries only the exception, not a restatement.
 
+## The PR body's brevity, and the trigger's second exemption
+
+The brevity rule lives in `backlog-orchestrator`, *Authored write form*; what is local here is which of this skill's elements survive it. All of them do — the linkage line, `Depends on:`, and the `Part of:`/`Blocked by:` pair with its unmet-criteria section — and they have to be named rather than left to inference, because each exists to prevent a specific failure a shorter body would reintroduce: an orphan PR, a lost stack edge, an issue auto-closed over work nobody finished. The elements that brevity is actually aimed at are the ones nothing requires: the implementation narrative, the restated issue, the log of what was tried.
+
+The trigger comment's exemption from the footer is the same argument as its exemption from the posting-identity rule, one section up: the comment must match what the convention matches on, and a convention that does not fire fails silently. Two exemptions, one cause — which is why the contract states them in one bullet rather than two.
+
+Under the approval test that now governs the footer (`backlog-orchestrator`, *Authored write form*), the trigger has **two** independent reasons to carry none, and only one of them is worth stating. The functional one — it must read exactly as the convention expects — is the one that fails silently and the one a reader has to know. The approval test on its own would ask for a footer here, since nobody reads a trigger comment before it is posted; the exemption overrides it. Stating both would invite someone to satisfy the weaker reason and think the rule met.
+
+## Why the body's footer is mode-dependent, and why this skill is where it splits
+
+Every other deferral site makes writes of one kind: a repair pass's replies are never read before posting, a walkthrough's rulings always are. This skill is the only one that authors the same artifact both ways — a PR body opened by a dispatched worker, which nobody has read, and a PR body this skill showed to the user and created after their confirmation or edit, which its author owns. So the approval test is not a formality to forward here; it is a real branch, and the confirmation step under *Creating and verifying the PR* is exactly the evidence that decides it. Where the run cannot say the user read the body, the answer is No.
+
 ## Why the output reports identities per write kind, even under one (transport, credential) pair
 
 The PR's creation and the trigger comment are distinct write kinds a platform may author differently under the same pair — an app-scoped token attributes most endpoints to the user and some to the app. A merged single answer would overwrite one observation with the other, and the trigger comment's entry is the only comment-kind evidence the caller's next trigger selection can use. Filed under a composite key but reporting only the transport, an entry cannot be merged into the caller's map at all. The invoking-user entries are reported too because they are exactly what trigger selection needs — a single-valued output would force the caller to lose either the distinct path for later writes or the invoking-user path for later triggers.
