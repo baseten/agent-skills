@@ -202,6 +202,13 @@ leaves two tarballs a later `git add` can sweep into the upgrade commit. Codex
 found exactly that in the first version of this note, which had warned about the
 dirty tree and then not prevented it (round 1 on the PR that added this).
 
-The form given packs into a temporary directory and globs the tarball by version
-rather than parsing `npm pack`'s output, so it does not depend on what that
-output contains across npm versions.
+The form given took two review rounds to get right, and each wrong version
+looked like it worked. Round 1: the note warned about the dirty tree and then
+did not prevent it. Round 2 found two more — `cd`-ing into the temporary
+directory to pack there discards the project `.npmrc`, which is where a private
+registry and its credentials live, so the recipe would silently query the public
+registry; and reading `tar` inside a process substitution hides its failure, so
+a mistyped path or an unpublished file yields two empty streams and `diff` exits
+0, reporting "no change" over nothing compared. That last one is the dangerous
+shape for this skill specifically: the whole point of reading published source
+is to answer "did this behaviour move?", and the failure answers "no".

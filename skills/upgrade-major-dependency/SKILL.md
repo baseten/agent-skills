@@ -69,24 +69,36 @@ Supplied research is reusable on the same condition as the gate's findings and n
 
 Verify against the **published artifact** rather than a rendered docs page where the two could diverge — changelog pages have been observed conflating an unrelated major's notes with the current one. **Where the two do diverge, the artifact wins and the divergence is reported**, never silently resolved: a docs page contradicting the package is a finding about the package's own documentation, and the next reader of that page has no way to discover it. For any load-bearing question ("is our patch still required?", "did this matcher's semantics move?"), read the installed source or diff two published versions directly. Diffing sources answers behavioural questions that prose about them cannot.
 
-Diffing two published versions has one non-obvious invocation, and the naive
-attempt leaves two tarballs in the worktree where a later `git add` can sweep
-them into the upgrade commit. `npm pack` writes to the working directory and
-`--silent` changes only its logging, not its destination, so pack somewhere else
-and read from there:
+Diffing two published versions has one non-obvious invocation, and three ways
+to get it wrong that all look like success:
 
 ```
-d=$(mktemp -d) && (cd "$d" && npm pack <pkg>@<old> --silent >/dev/null \
-                          && npm pack <pkg>@<new> --silent >/dev/null)
-diff <(tar -xOf "$d"/*-<old>.tgz package/<path>) \
-     <(tar -xOf "$d"/*-<new>.tgz package/<path>)
+d=$(mktemp -d)
+for v in <old> <new>; do
+  npm pack "<pkg>@$v" --silent --pack-destination "$d" >/dev/null
+  tar -xOf "$d"/*-"$v".tgz package/<path> > "$d/$v" \
+    || { echo "no package/<path> published at $v" >&2; exit 1; }
+done
+diff "$d/<old>" "$d/<new>"
 ```
 
-`-O` streams the member to stdout instead of unpacking, and every published file
-sits under `package/`. Globbing the tarball by version rather than reading
-`npm pack`'s output keeps the command independent of what that output contains.
-Where the question is about the installed tree rather than two releases, read
-`node_modules` directly instead.
+- **`--pack-destination`, not `cd`.** `npm pack` writes to the working
+  directory and `--silent` changes only its logging, so the naive form leaves
+  two tarballs a later `git add` can sweep into the upgrade commit. Redirect the
+  output rather than changing directory: project `.npmrc` applies only to the
+  project you run npm in, so `cd` into a temporary directory loses the registry
+  and credentials a privately published package needs.
+- **Extract to a checked file before diffing, never inside `<(…)`.** `diff`
+  reports status 0 for identical inputs and cannot see a failure inside a
+  process substitution, so a mistyped path or a file that release never
+  published gives two empty streams and a confident "no change" over nothing
+  compared.
+- **Glob the tarball by version** rather than parsing what `npm pack` prints,
+  which keeps the command independent of that output across npm versions.
+
+`-O` streams the member to stdout, and every published file sits under
+`package/`. Where the question is about the installed tree rather than two
+releases, read `node_modules` directly instead.
 
 Record what applies, and separately **what was checked and cleared**. A reviewer cannot distinguish a thorough audit from an absent one without the second list.
 
