@@ -175,7 +175,7 @@ After retargeting C:
 - if `P_BASE_BRANCH` is the head of another still-open parent PR, set C's line to that PR's full URL;
 - otherwise remove C's `Depends on:` line entirely.
 
-Preserve the rest of the PR body exactly. **This edit changes the `Depends on:` line and nothing else** — it does not shorten the body, and it never appends an attribution footer to one (`backlog-orchestrator`, *Authored write form*). A descendant PR is frequently a person's, and its body is theirs: brevity governs a body this run writes, not one it retargets, and signing someone else's text is the attribution dishonesty the footer exists to prevent. A body that already carries a footer keeps the one it has and never gains a second.
+Preserve the rest of the PR body exactly. **This edit changes the `Depends on:` line and nothing else** — it does not shorten the body, and it never appends an attribution footer to one — twice over, since the body is not this run's text to mark and its author read it (`backlog-orchestrator`, *Authored write form*). A descendant PR is frequently a person's, and its body is theirs: brevity governs a body this run writes, not one it retargets, and signing someone else's text is the attribution dishonesty the footer exists to prevent. A body that already carries a footer keeps the one it has and never gains a second.
 
 ### Recursively restack grandchildren
 

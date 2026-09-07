@@ -113,11 +113,12 @@
       "id": 8,
       "name": "pushed-repair-replies-in-one-signed-line",
       "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review, budget remaining. One supplied thread asks for a bounds check; you make it, run the package's tests, and push `9f3e11c`. A second supplied thread asks why the retry budget is per-request. Questions: (a) what does the reply on the first thread look like? (b) what goes on the second thread? (c) which of this pass's writes carries the attribution footer?",
-      "expected_output": "(a) One line naming the commit and what changed, plus the attribution footer — the authored-write-form rule this pass and everything it invokes follow. Not a restatement of the comment, a justification of the approach, or a list of the checks run. (b) Nothing. It is a question, so it is a NEEDS_USER item returned to the caller with its draft reply verbatim, and the thread is left open and unresolved — no mode answers a query in the thread. (c) Every authored write this pass makes, its own and any made through resolve-pr-comment. The draft is not one of them: it is material for a person, not a write, and it carries no footer.",
+      "expected_output": "(a) One line naming the commit and what changed, plus the attribution footer. This pass is unattended by construction — nobody reads its replies before they are posted — so the form rule's approval test answers No for every write it makes, its own and any made through resolve-pr-comment. Not a restatement of the comment, a justification of the approach, or a list of the checks run. (b) Nothing. It is a question, so it is a NEEDS_USER item returned to the caller with all five required fields verbatim — the thread's API html_url forwarded as a string and never rebuilt, the ask quoted to at most two lines, the paste-ready recommended reply, the change SHA or an explicit none, and the one-clause reason it was not posted — and the thread is left open and unresolved. No mode answers a query in the thread. (c) Every authored write this pass makes, its own and any made through resolve-pr-comment. The draft is not one of them: it is material for a person, not a write, and it carries no footer.",
       "assertions": [
         "the reply on the repaired thread is one short line naming the SHA, plus the attribution footer",
+        "the footer is justified by nobody having read the reply, not merely by the pass being automated",
         "nothing substantive is posted on the question thread and it is left unresolved",
-        "the question comes back to the caller as a NEEDS_USER item with its draft verbatim",
+        "the question item forwards all five required fields verbatim, including the API html_url unrebuilt",
         "the draft itself is not given a footer"
       ]
     }

@@ -65,26 +65,28 @@
     {
       "id": 5,
       "name": "trigger-comment-carries-no-footer",
-      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you have created and verified the PR and are about to post the repository's automated review trigger, `@codex review`. Questions: (a) what exactly is the body of that comment? (b) does it carry the attribution footer every other authored write carries, and why?",
-      "expected_output": "(a) `@codex review` and nothing else. (b) No footer. The trigger comment is exempt from the attribution footer for the same functional reason it is exempt from the posting-identity rule: it must read exactly as the convention expects and must come from the invoking user's own account, and when it does not fire it fails silently — nothing errors and the run waits out a review that was never going to arrive. Every other write this skill makes, the PR body included, carries the footer.",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you have created and verified the PR and are about to post the repository's automated review trigger, `@codex review`. Questions: (a) what exactly is the body of that comment? (b) does it carry the attribution footer, and what is the reason to state? (c) does the PR body you just created carry one?",
+      "expected_output": "(a) `@codex review` and nothing else. (b) No footer, and the reason to give is the functional one: the comment must read exactly as the convention expects, and when it does not the convention fails silently — nothing errors, and the run waits out a review that was never going to arrive. The approval test would also ask for a footer here, since nobody reads a trigger comment before it is posted; the exemption overrides it. Two independent reasons, and the functional one is the one a reader has to know. (c) It depends on the write: a body opened by a dispatched worker carries the footer, a body this skill showed the user and created after their confirmation or edit does not.",
       "assertions": [
         "the trigger comment body is just the trigger text, with no footer appended",
-        "the answer names the trigger as the one authored write exempt from the footer",
-        "the answer keeps the footer on the skill's other writes, such as the PR body"
+        "the answer gives the functional reason — the convention must match, and fails silently — as the one to state",
+        "the answer does not claim the footer applies to every other write unconditionally",
+        "the answer splits the PR body by whether the user approved that exact text"
       ]
     },
     {
       "id": 6,
       "name": "pr-body-stays-short-and-signed",
-      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are opening the PR for issue https://github.com/acme/repo/issues/412, implemented over eleven commits, with two approaches tried and abandoned and a CI shard that failed twice along the way. There is no stack parent, no coverage finding, and the repository documents no PR-description style guide of its own. Question: what goes in the body, what does not, and what is the budget?",
-      "expected_output": "In: the closing linkage line with the full canonical issue URL (`Closes: https://github.com/acme/repo/issues/412`), then background in 2-4 sentences, then the solution and why this one in a paragraph or at most 5 bullets, then the attribution footer. Budget: 300 words of prose above the fold, a ceiling rather than a target; a manual test checklist is exempt but capped at 8 grouped items. Out: the eleven commits, the two abandoned approaches and the CI shard — that is the journey, not the change under review — plus any file-by-file inventory, any narration of what a function now does, and any investigation log. The body states intent; the diff is the content. Depth a reviewer would genuinely want goes in a collapsed <details> block or a commit message. Over budget means cut, never compress whitespace while keeping every fact. Brevity never drops a mandated element — the linkage line, a `Depends on:` line when stacked, the `Part of:`/`Blocked by:` pair under a coverage finding, and a repository template's headings all survive it.",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are opening the PR for issue https://github.com/acme/repo/issues/412, implemented over eleven commits, with two approaches tried and abandoned and a CI shard that failed twice along the way. There is no stack parent, no coverage finding, and the repository documents no PR-description style guide of its own. You are chained from a dispatched implementation worker, so nobody has read the body. Question: what goes in the body, what does not, what is the budget, and does it carry the attribution footer?",
+      "expected_output": "In: the closing linkage line with the full canonical issue URL (`Closes: https://github.com/acme/repo/issues/412`), then background in 2-4 sentences, then the solution and why this one in a paragraph or at most 5 bullets, then the attribution footer — this body was opened by a dispatched worker and no person read it, so the approval test answers No. Had the body been shown to the user and confirmed or edited by them, it would carry none. Budget: 300 words of prose above the fold, a ceiling rather than a target; a manual test checklist is exempt but capped at 8 grouped items. Out: the eleven commits, the two abandoned approaches and the CI shard — that is the journey, not the change under review — plus any file-by-file inventory, any narration of what a function now does, and any investigation log. The body states intent; the diff is the content. Depth a reviewer would genuinely want goes in a collapsed <details> block or a commit message. Over budget means cut, never compress whitespace while keeping every fact. Brevity never drops a mandated element — the linkage line, a `Depends on:` line when stacked, the `Part of:`/`Blocked by:` pair under a coverage finding, and a repository template's headings all survive it.",
       "assertions": [
         "the body keeps the full-URL closing linkage line",
         "the answer names the 300-word above-the-fold budget and the 2-4 sentence / 5-bullet shape",
         "the eleven commits, abandoned approaches and CI shard are excluded as the journey",
         "no file-by-file inventory, code narration, or investigation log appears",
         "depth is offered as a collapsed details block or a commit message rather than above the fold",
-        "the body ends with the Generated by Claude Code attribution footer"
+        "the body carries the attribution footer because no person approved this text",
+        "the answer states that an interactively confirmed body would carry none"
       ]
     }
   ]

@@ -21,8 +21,10 @@ user's own credential.
 
 They follow the **authored write form** rule stated once beside it
 (`backlog-orchestrator`, *Authored write form*) for the same reason: every
-reply is short and ends with the attribution footer. Apply both from there
-rather than restating them; step 5 carries only what they mean for a reply.
+reply is short, and it carries the attribution footer unless this run obtained
+the invoking person's approval of that exact reply text before posting it.
+Apply both from there rather than restating them; step 5 carries only what they
+mean for a reply.
 
 ## Task
 
@@ -116,11 +118,17 @@ gh api repos/<owner>/<repo>/pulls/<PR>/comments/<comment_id>/replies \
 - If multiple comments were fixed in the same commit, each gets the same SHA.
 - If each got its own commit, each gets its own SHA.
 
-**That one line is the whole reply, plus the attribution footer**
-(`backlog-orchestrator`, *Authored write form*). The reviewer wants to know the
-comment was acted on and where to look; the diff is the explanation and the
-thread already holds the request. Do not restate the comment back, justify the
-approach, or narrate what else was considered.
+**That one line is the whole reply.** The reviewer wants to know the comment was
+acted on and where to look; the diff is the explanation and the thread already
+holds the request. Do not restate the comment back, justify the approach, or
+narrate what else was considered.
+
+**The footer goes on unless the person approved this reply text**
+(`backlog-orchestrator`, *Authored write form*, the approval test). Unattended
+and classify-only that is never true, so those replies carry it. Attended it is
+true only where the person was actually shown the reply and confirmed or edited
+it — invoking the skill is not that, and neither is being in the session. The
+placeholder in the templates above is where it goes when it applies.
 
 **A reply reports work done and never answers a query.** Where the comment asked
 for prose, no reply of any kind carries the answer — see *Handling queries*,
@@ -199,11 +207,38 @@ skipping its own steps 3-5 constrains `repair-pr`, not the skill it invoked
 (`repair-pr`, *Review repair (`repair type = review`)*, step 2 states the same
 requirement from the caller's side).
 
+### What a question item must contain
+
+**The reason the answer is not posted is so that a person can post it. That makes
+the item's job to be actionable without hunting**, and an item they have to
+reconstruct from a thread URL defeats the whole rule. Every `NEEDS_USER`
+**question item** carries exactly these five things, in this order:
+
+| # | field | rule |
+| --- | --- | --- |
+| 1 | **the thread's `html_url`** | **as returned by the API, verbatim — never a hand-built anchor.** A review-comment thread and a PR-level comment use different fragment forms, so a URL assembled from a PR number and a comment id silently resolves to the wrong place, or to the top of the PR, and the failure is invisible from here: the link works, it just does not land on the thread. Take the field the API gave you (`html_url` on the comment from `get_review_comments`, or the `gh api` equivalent) and pass it through unchanged. Not sure a URL came from the API → it did not; re-read the thread |
+| 2 | **the ask, quoted** | the reviewer's own words, **at most 2 lines**, trimmed with an ellipsis rather than paraphrased. A paraphrase is where the question quietly becomes the one the pass found easier to answer |
+| 3 | **the recommended reply, paste-ready** | one line where the answer fits in one. Written as the person would post it, not as a report to them: no "the reviewer asks whether…" preamble, no meta-commentary, and **no attribution footer** — they author it when they post it (*The draft reply*, below, for what it contains) |
+| 4 | **the SHA of any code change made for this thread, or `none`** | explicitly `none` where nothing was pushed. A blank field reads as "not recorded" and sends the person to the diff to check; on a mixed thread (*A comment can want both*) this is where the pushed fix is named, which is the only place the two halves of that thread meet |
+| 5 | **why it was not posted** | one clause — *needs your intent*, *product decision*, *only you can confirm the constraint*. Not a restatement of the rule; the person knows the rule, they need to know which of its branches this thread is |
+
+**A thread URL anywhere in this skill's output obeys row 1**, not only in a
+question item: a no-action entry and a deferred-repair item name the same thread
+and are read by the same person. Row 1 is what "thread URL" means here.
+
+**Where the session has a notification channel, notify as well as record.** The
+record is the durable half and the notification is not: **a subscription dies
+with the session that armed it**, so a person may never see the notification, and
+nothing may depend on their having seen it. The item is complete when it is
+recorded; the notification is a courtesy that shortens the wait. Never post the
+notification into the thread — that is the reply this whole section exists to
+withhold.
+
 ### The draft reply
 
 Escalating a question without the work of answering it wastes what this pass
 already knows. You read the thread and the code around it; the owner would start
-from nothing. So every `NEEDS_USER` item carries a draft the owner can send,
+from nothing. So the recommended reply above is a draft the owner can send,
 edit, or throw away — **never posted by this skill, on any path.** It is
 material for a person, not a pending write.
 
@@ -226,13 +261,14 @@ one built on a gap is not.
 Keep it to what the thread asks. A draft that reopens the design is a new
 review round, not a reply.
 
-**The draft carries no attribution footer.** It is not a write this run authors
-— the person who posts it authors it, as themselves, which is the point of
-handing it over — and the form rule governs only writes the run makes
-(`backlog-orchestrator`, *Authored write form*). The one place a drafted answer
-is posted by a workflow is `settle-outstanding-decisions`,
-*Recording the ruling*, and the footer is added there, on that write, rather
-than carried in from here.
+**The draft carries no attribution footer, and this now follows from the rule
+rather than sitting beside it as a special case.** A draft is not a write at
+all — the person who posts it authors it, as themselves, which is the point of
+handing it over — and where a workflow does post one,
+`settle-outstanding-decisions`, *Recording the ruling*, it posts text the owner
+approved or edited, so the approval test answers Yes there too
+(`backlog-orchestrator`, *Authored write form*). No path puts a footer on this
+text.
 
 `backlog-orchestrator`, *Per-repository policy configuration*, owns the rule
 that separates the two kinds. Apply it from there rather than inventing a
@@ -272,11 +308,11 @@ an escalation, or no-action.
 
 The reason is authority, not disclosure. The reviewer asked a **person**, and
 nobody authorised this pass to answer for them — so the reply would be read as
-that person's position whatever signs it. **The attribution footer does not
-license it** (`backlog-orchestrator`, *Authored write form*): saying which tool
-typed an answer says nothing about whose answer it is, and a reader who accepts
-a footered reply as the owner's position has read it correctly, because it is
-posted in a thread addressed to them. Disclosure would be the whole story only
+that person's position whatever signs it. **A footer would not
+license it** (`backlog-orchestrator`, *Authored write form*): saying that nobody
+reviewed an answer says nothing about whose position it is, and a reader who
+accepts a footered reply as the owner's position has read it correctly, because
+it is posted in a thread addressed to them. Disclosure would be the whole story only
 if the defect were the reviewer's confusion; the defect is that the position is
 not the run's to state. Handing over the draft costs one paste and keeps the
 answer attributable to whoever actually stands behind it.
@@ -384,19 +420,27 @@ After completing all steps, summarize:
 - Which comments were resolved
 - The commit SHA(s) applied
 - Confirmation that replies were posted and threads marked resolved
-- **Any thread classified no-action**, one entry each: thread URL and why it
-  wants nothing. No draft. This is what lets the caller mark it handled so it is
-  not re-dispatched forever (see *A comment that wants nothing*)
-- **Every `NEEDS_USER` item, one entry each — items, not threads**: thread URL,
-  root author, what it asks, and then by item kind, because the kinds carry
-  different things and one shape cannot hold both:
-  - a **question item** carries its draft reply (see *The draft reply*) —
-    **in every mode, because the prose branch is `NEEDS_USER` in every mode**
-    (*Handling queries*). Attended, this output *is* the delivery: the person who
-    invoked the skill is the one the draft is being handed to, so an attended run
-    reports its question items exactly as an unattended one does rather than
-    treating them as already dealt with;
-  - a **deferred-repair item** carries the change it asks for and **no draft**
+- **Any thread classified no-action**, one entry each: the thread's API
+  `html_url` (*What a question item must contain*, row 1) and why it wants
+  nothing. No draft. This is what lets the caller mark it handled so it is not
+  re-dispatched forever (see *A comment that wants nothing*)
+- **Every `NEEDS_USER` item, one entry each — items, not threads**, and then by
+  item kind, because the kinds carry different things and one shape cannot hold
+  both:
+  - a **question item** carries **all five fields of *What a question item must
+    contain***, in that order and none omitted — API `html_url`, the ask quoted
+    to at most 2 lines, the paste-ready recommended reply with no footer, the
+    SHA of any code change for this thread or an explicit `none`, and the
+    one-clause reason it was not posted. Report the root author alongside them.
+    **A count, a summary, or four of the five is not this entry**: the person
+    receiving it posts the reply themselves, and every field they have to go and
+    find is a field this pass already had. That holds **in every mode, because
+    the prose branch is `NEEDS_USER` in every mode** (*Handling queries*).
+    Attended, this output *is* the delivery — the person who invoked the skill is
+    the one being handed the item, so an attended run reports it in full exactly
+    as an unattended one does rather than treating it as already dealt with;
+  - a **deferred-repair item** carries the thread's API `html_url`, the change it
+    asks for, and **no draft**
     (see *Classify-only invocations*) — it wants a diff that the budget stopped,
     so there is nothing to answer, and demanding a draft here would leave the
     zero-budget case satisfiable only by fabricating a question-shaped one or
@@ -416,4 +460,10 @@ After completing all steps, summarize:
   the context that makes it answerable on the spot — the one path on which a
   drafted answer is ever posted, and only after the owner approves it. Attended
   it is the person reading this output, who posts what they choose to post as
-  themselves. A count supports none of that
+  themselves. A count supports none of that.
+
+- **Whether a notification was sent for each `NEEDS_USER` item, and on what
+  channel** — or that no channel was available. The record above is what the
+  caller and the merge gate read; this line only says whether anyone was told
+  sooner. Never report a notification as delivery: the subscription may have
+  died with the session that armed it (*What a question item must contain*)
