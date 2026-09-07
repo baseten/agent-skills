@@ -93,7 +93,6 @@ python3 scripts/check_skills.py                       # structure, schema, cross
 python3 scripts/check_permissions.py                  # the shape of permissions.json, and the README's claims
 python3 scripts/test_contract_placement.py            # the oracle detector still detects
 python3 scripts/check_contract_placement.py           # contract rules at their decision points
-python3 scripts/test_contract_guards.py               # those assertions can actually fail
 python3 scripts/test_rule_locality.py                 # the locality detector still detects
 python3 scripts/check_rule_locality.py                # the workflow rules are stated in CLAUDE.md only
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
@@ -136,70 +135,15 @@ green check over a false claim is worse than no check, because it stops anyone l
 fixtures then immediately caught a second gap — a noun lead-in carrying the imperative in
 its body. Finding a new bypass means the detector was wrong, not the fixture.
 
-`test_contract_guards.py` is the strongest form of that tier, and it exists because the
-weaker forms kept failing in one specific way. Four review rounds in a row on one pull
-request ended with a corpus assertion **green over the exact defect it was written for** — a
-guard listing the three obligations it had found, so the fourth was pinned out by the fix for
-it; five whole-file checks rescoped and the class declared closed, then three more found,
-then a sixth four lines away; a clause relabelled "the property" that a new bullet passed
-straight through. Every one was found in seconds by breaking the rule and re-running the
-check, which `NOTES.md` had recommended since round twelve — as advice, in a repository whose
-own tier list says advice reaches an agent only when something makes it read the file. So it
-is a script: each entry breaks a rule and names the assertion that must go red, and it
-reports how much of the checker it does not yet cover. The obligation that comes with adding
-an assertion is stated in `CLAUDE.md`, *Leave a guard behind*.
-
-`test_contract_placement.py` is the same tier for the guard that keeps the dependency
-skills' eval oracles from stating licence, cooldown and peer reuse as a single rule. It was
-added because that guard repeated the history above rather than learning from it, and then
-earned its keep three rounds running: while the guard asked whether the three findings
-appeared in one **sentence**, a semicolon, an abbreviation and finally markup faking a
-sentence start each let the conflation through, and each time the corpus check was green
-over it. The third ended sentence parsing rather than refining it — markup has to be able to
-start a sentence, so it cannot be stopped from faking one — and the unit became a paragraph
-or list item, which layout decides and wording cannot spoof. The escapes stay in the BAD list
-as the evidence for that; the GOOD list is the oracle prose that must keep passing, which
-matters more here than elsewhere, because the two detectors this guard replaced were both
-deleted for rejecting a correct oracle.
-
-The phrase list had the same weakness one level up, and then again one level below that:
-a rule section with no phrase entry was unguarded (true of *Classify a finding before fixing
-it* while a duplicate of its table sat in `docs/`), and a section with a phrase counted as
-covered even where it held several rules and only one was named. Both were found by review,
-not by the check.
-
-The root cause is that naming what to guard is opt-in, so it can always be incomplete. The
-check therefore also **detects duplication rather than enumerating it**: a span of `NGRAM`
-or more words of `CLAUDE.md`'s own prose reappearing in a pointer file is reported, with
-code blocks, section titles and both-sides quotations excused, since two files citing the
-same evidence or running the same command is not duplication. That catches restatements
-nobody predicted — which an allowlist cannot — but it is a detector, not a proof.
-
-The threshold was measured and then re-measured downward twice under review, because each
-setting turned out to be green over a live duplicate: twelve found nothing while two were
-live, ten missed a nine-word restatement of a sweep step, eight finds everything above it
-with one benign match. Below eight the reports are mostly pointer phrasings. Inline
-quotations are kept rather than stripped, and excused only where **both** files quote the
-same thing — stripping them let a restatement hide by dressing its middle clause as a quote.
-
-**The floor is real and green is not a proof.** A restatement shorter than eight words, or
-reworded enough to break every window, passes; the fixtures pin the floor in both directions
-so that limit stays visible rather than being mistaken for coverage. Three review rounds
-went on discovering that successive settings of this one constant each looked clean over a
-real defect, and a fourth found a paragraph that had been reworded past the detector while
-still stating the rule in other words. Both are the same lesson: this check bounds the
-verbatim case, the sweep is what covers the rest, and "the check is green" is not an answer
-to "does anything now contradict this".
-
-`eval_reminder.sh` names a skill whose `SKILL.md`/`NOTES.md` changed while its
-`evals/evals.json` did not. It is a warning and never a failure: it cannot know
-whether a change needs a scenario, only that nobody added one.
-
-**The eval scenarios themselves are deliberately not in CI.** They are
-model-graded, cost money per run, and are non-deterministic, so a required
-check built on them goes red on sampling noise and teaches everyone to override
-it. Run them on demand instead, per `skill-creator`, comparing against the
-previous text rather than against a fixed threshold.
+Mutation testing of the corpus assertions was tried and removed. It worked — writing
+thirty-six mutations from the checks' own predicates found five assertions that were not
+testing what their names said, and reading had found none of them. But every defect it found
+was in the grep layer, and that is the layer that should not have been that large: of 247
+assertions, 205 were substring tests over prose. An assertion that greps a sentence pins the
+wording rather than the rule, and a 706-line harness making those greps trustworthy is
+scaffolding for something worth less than the scaffolding. Which assertions remain, and why, is stated in `CLAUDE.md`; the question of
+whether prose *means* the right thing belongs to the eval corpus, which is the only layer
+that can answer it.
 
 ## Permissions
 
