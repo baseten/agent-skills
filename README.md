@@ -145,6 +145,18 @@ scaffolding for something worth less than the scaffolding. Which assertions rema
 whether prose *means* the right thing belongs to the eval corpus, which is the only layer
 that can answer it.
 
+The four ways one of those greps passed for the wrong reason are worth keeping, because they
+apply to any assertion that reads text and the structural ones still do. **The phrase
+appeared twice**, so mutating one copy left the other holding the check green. **A heading
+stood in for enforcement** — renaming a section reddened a heading-presence check while the
+table below it still said the rule. **A rationale stood in for an obligation** — narrowing
+"in every mode, because…" left the next sentence still obliging the behaviour. And **a
+broadening left the rule true**: "drafted by `resolve-pr-comment`" became "drafted
+anywhere", which still said this was the one posting path, so only the grep broke. In all
+four the check named a property it never read, and the way to notice is to ask whether the
+rule is still enforced somewhere else in the file rather than whether the edit looks like an
+inversion.
+
 ## Permissions
 
 `permissions.json` is merged into `~/.claude/settings.json` by `bootstrap.sh`, so
