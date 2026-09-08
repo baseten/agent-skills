@@ -31,25 +31,6 @@ know is to break the rule and watch.
 assertion owes a mutation here: the smallest edit to the contract that makes
 the rule it protects false. If you cannot write one, the assertion is not
 testing what its name says.
-
-**The test is "is this rule still enforced anywhere else in the file?", not
-"does my replacement look like an inversion?"** Reading fails on this. A later
-series added thirty-six mutations written from the checks' own predicates; five
-assertions turned out not to test what their names said, and re-reading the
-mutations with the right lens still cleared two of them wrongly. Four shapes,
-each seen more than once:
-
-* **The phrase appears twice.** Mutating one copy leaves the other keeping the
-  check green. Scope the assertion with `clause()` or `near()`.
-* **Heading, not enforcement.** Renaming a section reddens a heading-presence
-  assertion while the table below still states the rule.
-* **Rationale, not obligation.** Narrowing "in every mode, because..." leaves
-  the next sentence still obliging the behaviour.
-* **Broadening, not contradicting.** "drafted by `resolve-pr-comment`" becomes
-  "drafted anywhere" and the rule stays true; only the grep breaks.
-
-In every one of those, the fix is to strengthen the assertion, never to weaken
-the mutation.
 """
 
 from __future__ import annotations
