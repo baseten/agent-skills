@@ -4,7 +4,7 @@ Reusable Claude Code skills for issue implementation, PR workflows, backlog vali
 
 ## A note on how the skills read
 
-The `SKILL.md` files are dense and not easily human readable. That is deliberate, and it was tested rather than assumed: [issue #51](https://github.com/baseten/agent-skills/issues/51) benchmarked a plain-English rewrite of the densest section against the current text — all 21 eval scenarios, on Sonnet and on Haiku — and the plain version made the models no better (identical on Sonnet, worse-to-indistinguishable on Haiku). The density costs the models nothing; they interpret this register at least as well as plain prose, so the skills are written for their actual reader. Humans get their own entry points instead: a skill's `NOTES.md` explains the reasoning behind its rules — most skills have one, `resolve-pr-comment` and the two writing skills do not — and `backlog-orchestrator/README.md` gives a plain-language overview and a glossary of the coined terms.
+The `SKILL.md` files are dense and not easily human readable. That is deliberate, and it was tested rather than assumed: [issue #51](https://github.com/baseten/agent-skills/issues/51) benchmarked a plain-English rewrite of the densest section against the current text — all 21 eval scenarios, on Sonnet and on Haiku — and the plain version made the models no better (identical on Sonnet, worse-to-indistinguishable on Haiku). The density costs the models nothing; they interpret this register at least as well as plain prose, so the skills are written for their actual reader. Humans get their own entry points instead: a skill's `NOTES.md` explains the reasoning behind its rules — most skills have one, `resolve-pr-comment` does not — and `backlog-orchestrator/README.md` gives a plain-language overview and a glossary of the coined terms.
 
 ## Core workflow skills
 
@@ -29,17 +29,11 @@ The `SKILL.md` files are dense and not easily human readable. That is deliberate
 - `upgrade-major-dependency` — upgrades one package, or one coupled group of them, across any version whose breaking-change risk has not been ruled out: viability gate, research verified against the published artifact, usage audit, then characterization tests written and proven green on the current version and re-run unmodified after the bump.
 - `dependency-upgrade-orchestrator` — triages a batch of upgrades, establishes coupling and viability, selects a model per upgrade by failure mode, and dispatches bounded-concurrency subagents: one per upgrade or coupled group running `upgrade-major-dependency`, plus a single batched task for the routine bumps triage cleared, which need no migration workflow. Supervises CI while separating infrastructure failure from real failure. It merges nothing.
 
-## Writing skills
-
-These read files from a personal machine (`~/Documents/version-control/ai-alex/...`) at load time, so their content is empty in a cloud container where those paths do not exist. They install everywhere regardless; use them from a local setup.
-
-- `draft-blog-post` — draft a technical blog post using Alex's writing style and blog template from `ai-alex`.
-- `draft-slack-message` — draft a Slack message using Alex's Slack examples and writing style from `ai-alex`.
-
 ## Repository layout
 
 ```
 skills/           every directory with a SKILL.md ships
+skills/*/references/  style inputs and other material a skill reads at run time
 CLAUDE.md         how to change a skill, and what a complete fix means here
 AGENTS.md         pointer to CLAUDE.md, for agents whose convention looks for it
 docs/             audits and workflows that outlive one PR
@@ -52,6 +46,30 @@ scripts/          repo-level checks (run in CI, runnable locally)
 
 Adding a skill requires no change to `bootstrap.sh` — create a directory under
 `skills/` with a `SKILL.md` in it and the next bootstrap run installs it.
+
+### Personal skills stay out
+
+This repository is public, so it holds general engineering workflow skills and
+nothing personal. Skills that depend on someone's own writing samples, voice
+guide, or internal material live in a private checkout instead, and reach cloud
+sessions by being enabled for a claude.ai account — cloud sessions load skills
+from your claude.ai account and from the cloned repository's `.claude/skills/`,
+so a public repo was never required to reach them.
+
+`check_no_machine_paths.py` enforces this. A skill referencing a path like
+`~/Documents/...` or `/Users/someone/...` fails the build, because that skill
+cannot work in a cloud session and the failure is silent when it doesn't:
+`` !`cat <missing path>` `` injects an empty string, so the skill loads with its
+guidance gone and says nothing. Paths under `~/.claude` or `$HOME/.codex` are
+fine — those exist wherever the agent runs. `test_no_machine_paths.py` holds the
+forms it must reject and the ones it must not, and asserts the rejections come
+from the detector rather than the harness.
+
+`bootstrap.sh` deletes nothing. It merges each skill over whatever is installed
+and **reports** a skill this repository has retired rather than removing it,
+because nothing in a script can tell its own stale copy from one you wrote
+yourself under the same name.
+
 
 ## Changing the skills
 
@@ -91,6 +109,8 @@ runnable locally:
 ```bash
 python3 scripts/check_skills.py                       # frontmatter and evals schema
 python3 scripts/check_permissions.py                  # the shape of permissions.json, and the README's claims
+python3 scripts/check_no_machine_paths.py             # no skill depends on one machine's filesystem
+python3 scripts/test_no_machine_paths.py              # and that detector can actually fail
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
 bash scripts/eval_reminder.sh origin/main             # advisory, never fails
@@ -436,13 +456,18 @@ rule, not a permission boundary.
 
 ## Local Codex usage
 
-Codex reads a subset of the skills via symlinks in `~/.codex/skills/`:
+Codex reads a subset of the skills via symlinks in `~/.codex/skills/`. Point
+`REPO` at your checkout of this repository:
 
 ```bash
-for s in create-pr resolve-pr-comment implement-issue draft-blog-post draft-slack-message; do
-  ln -sfn "$HOME/.claude-personal/skills/$s" "$HOME/.codex/skills/$s"
+REPO=$HOME/src/agent-skills
+for s in create-pr resolve-pr-comment implement-issue; do
+  ln -sfn "$REPO/skills/$s" "$HOME/.codex/skills/$s"
 done
 ```
+
+Personal writing skills are not in this repository — see [Personal skills stay
+out](#personal-skills-stay-out).
 
 ## Runtime model
 

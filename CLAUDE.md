@@ -7,7 +7,7 @@ here, and this file is the rule for it.
 
 Reasoning lives in a skill's `NOTES.md`, keyed by its `SKILL.md` section names. Read a
 section's note before changing its rules. `NOTES.md` explains; it never overrides. Most
-skills have one; `resolve-pr-comment`, `draft-blog-post` and `draft-slack-message` do not,
+skills have one; `resolve-pr-comment` does not,
 so for those the commit message carries the reasoning instead.
 
 **These rules are stated in this file and nowhere else.** `AGENTS.md`, `README.md` and
@@ -116,7 +116,7 @@ and needs someone to act on it.
 
 **Record the why.** Add the reasoning to the skill's `NOTES.md`, keyed by section, naming
 the review round it came from. The existing entries do this; it is what stops the next
-fixer re-breaking the fix. Where the skill has no `NOTES.md` (the three named at the top of
+fixer re-breaking the fix. Where the skill has no `NOTES.md` (the one named at the top of
 this file), put it in the commit message — do not create one as a side effect of an
 unrelated fix.
 
