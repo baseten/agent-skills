@@ -14,7 +14,7 @@ Three distinct mechanisms, each already documented in this repository from the r
 discovered it:
 
 **1. Presence in a file is not presence at the decision point.**
-`scripts/check_contract_placement.py` exists because "two review rounds on this repo were
+The deleted contract checks existed because "two review rounds on this repo were
 spent on exactly that — an exception written into a step body that a predicate had already
 excluded the thread before reaching, and a `no-action` classification produced by one skill
 that the skill between it and its recorder never forwarded." A rule in the wrong clause
@@ -95,7 +95,7 @@ is how the scopes come apart, which is what this document is about.
    away. Mechanism 3 above is exactly this.
 4. **Decision point** — a rule in the right file and the wrong clause reads as correct to a
    reviewer and to a grep, and is inert when executed.
-5. **Chain forwarding** — half of `check_contract_placement.py` exists for this step, and
+5. **Chain forwarding** — half of the deleted contract checks existed for this step, and
    the incident behind it says why: a `no-action` classification produced by one skill,
    which the skill sitting between it and its recorder never passed along. Nothing about
    either end looked wrong; the gap was in the middle, where nobody was reading.
@@ -123,7 +123,6 @@ reads as preference rather than as a settled argument.
    assertion resting on a natural-language heuristic can be green over the very construction
    it exists to reject, and a green check over a false claim is worse than no check, because
    it stops anyone looking. Each time, the fix was a fixture file pinning what must fire and
-   what must keep passing (`test_rule_locality.py`, `test_contract_placement.py`), which is
    why they run ahead of the checks they defend.
 2. **`evals/evals.json` scenarios.** Pin a rule against the model actually applying it.
    Deliberately out of CI — model-graded, non-deterministic, and a required check built on

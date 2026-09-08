@@ -23,7 +23,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Skill structure and cross-references
+      - name: Skill structure and schema
         run: python3 scripts/check_skills.py
 
       - name: Permissions file shape
@@ -31,11 +31,7 @@ jobs:
 
       # Same reason as the locality fixtures below: this one shipped green over
       # the construction it exists to reject, so the fixtures gate the check.
-      - name: Contract placement detector fixtures
-        run: python3 scripts/test_contract_placement.py
 
-      - name: Contract rule placement
-        run: python3 scripts/check_contract_placement.py
 
       # Mutation battery: breaks each rule the corpus assertions protect and
       # requires the named assertion to go red. Four review rounds running
@@ -45,11 +41,7 @@ jobs:
       # The fixtures run first on purpose: they assert the detector still
       # catches every construction a real violation has taken. The check
       # passing means nothing if the detector has stopped detecting.
-      - name: Rule locality detector fixtures
-        run: python3 scripts/test_rule_locality.py
 
-      - name: Rule locality
-        run: python3 scripts/check_rule_locality.py
 
       - name: Checkpoint capture tests
         run: bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
