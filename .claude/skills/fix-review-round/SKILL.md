@@ -38,10 +38,15 @@ who had been handed that citation three times and never opened it.
 
 ## While you are in a round
 
-- `scripts/test_contract_guards.py` takes eight to ten minutes. Start it in the
-  background rather than waiting on it, and read its module docstring before
-  writing a mutation — the ways a mutation can prove nothing are recorded
-  there.
+- **Do not add a check that greps the contract's prose**, and do not restore one
+  that was removed. Four such checks were deleted after each was tested and
+  found to verify less than its name: assertions pinning a sentence, a
+  duplicate-rule check that passed on a paraphrase, a cross-reference checker
+  that confirmed a heading existed while its rule had been gutted from under it
+  (`README.md`, *Checks*). What earns CI here reads a token, not prose.
+- **Where a change should not alter meaning, compare two readings of it** rather
+  than looking for a check that will confirm it — `CLAUDE.md` states the
+  procedure, and with the prose checks gone it is the only signal there is.
 - Where a finding is about behaviour — a shell invocation, a tool's flag, what
   a command leaves behind — **run it**. Reasoning about mechanics is how such a
   defect gets in, and one recipe here took three rounds because each corrected
