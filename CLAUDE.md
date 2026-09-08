@@ -85,15 +85,19 @@ agree, delete one instead; when it would make two decision points agree, keep bo
 change them together. A local fix cannot contradict a distant copy that no longer exists,
 which is what makes this the highest-leverage habit here.
 
-**Leave a guard behind, and prove it can fail.** A finding shape that recurred should end the
-round with an assertion in `scripts/check_contract_placement.py` or a scenario in the skill's
-`evals/evals.json` — that is what stops a later round reintroducing it. **A new corpus
-assertion owes `scripts/test_contract_guards.py` a mutation**: the smallest edit to the
-contract that makes the rule false, paired with the assertion that must then go red. An
-assertion you cannot write one for is not testing what its name says; `README.md`, *Checks*,
-records what it cost to learn that. `scripts/eval_reminder.sh`
-flags a contract change whose evals did not move; it is advisory and needs someone to act
-on it.
+**Leave a guard behind, and prefer the one that reads meaning.** A finding shape that
+recurred should end the round with a scenario in the skill's `evals/evals.json`, and where
+the property is structural — a rule stated once, a cross-reference that resolves, a rule
+sitting at the decision point that reads it — with an assertion in
+`scripts/check_contract_placement.py`. **Do not add an assertion that greps a sentence.**
+Such an assertion pins the wording rather than the rule: it goes red on a rewording that
+improves the contract and stays green on a rewording that breaks it, and a mutation harness
+built to make those greps trustworthy was three rounds of proxies on a twelve-line change
+before it was removed (NOTES). Where a finding is about behaviour — an invocation, a flag,
+what a command leaves behind — **run it, and record what you ran** in the skill's
+`NOTES.md`; that is the durable artifact a grep was standing in for.
+`scripts/eval_reminder.sh` flags a contract change whose evals did not move; it is advisory
+and needs someone to act on it.
 
 **Record the why.** Add the reasoning to the skill's `NOTES.md`, keyed by section, naming
 the review round it came from. The existing entries do this; it is what stops the next
@@ -142,7 +146,6 @@ python3 scripts/check_skills.py
 python3 scripts/check_permissions.py
 python3 scripts/test_contract_placement.py
 python3 scripts/check_contract_placement.py
-python3 scripts/test_contract_guards.py
 python3 scripts/test_rule_locality.py
 python3 scripts/check_rule_locality.py
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh

@@ -41,8 +41,6 @@ jobs:
       # requires the named assertion to go red. Four review rounds running
       # ended with a guard green over its own subject; this is what makes that
       # mechanical instead of remembered.
-      - name: Contract guard mutations
-        run: python3 scripts/test_contract_guards.py
 
       # The fixtures run first on purpose: they assert the detector still
       # catches every construction a real violation has taken. The check
