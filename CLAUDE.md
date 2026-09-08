@@ -142,6 +142,18 @@ a repository-scoped pass gets for nothing. Before pushing a rule change, run a p
 as *"find every place this repository now contradicts itself"* rather than *"review this
 diff"* — `/code-review` at high effort, or an equivalent — and complete the sweep.
 
+## Open a draft PR as soon as you push
+
+Before the branch has anything worth reviewing on it. The PR is the claim ticket: it is how
+another session, or the same person in another window, discovers that this work exists.
+
+Two sessions once wrote the same PR-description rules into this repository in the same week,
+in different homes, because one of them had twenty-one files on a pushed branch with no PR.
+Neither could see the other, and the collision was found by a third party reading a CI event.
+Worse, the two edits **auto-merged clean** — they touched the same file in
+non-overlapping hunks — so the repository would have stated one rule twice with nothing
+flagging it.
+
 ## Match the model to the finding class
 
 A **local** finding takes any capable model; the work is the sweep, not the reasoning. A
