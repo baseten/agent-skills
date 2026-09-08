@@ -29,6 +29,12 @@ jobs:
       - name: Permissions file shape
         run: python3 scripts/check_permissions.py
 
+      - name: No machine-specific paths in skills
+        run: python3 scripts/check_no_machine_paths.py
+
+      - name: Path detector fixtures
+        run: python3 scripts/test_no_machine_paths.py
+
       # Same reason as the locality fixtures below: this one shipped green over
       # the construction it exists to reject, so the fixtures gate the check.
 

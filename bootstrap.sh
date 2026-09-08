@@ -14,9 +14,19 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_DIR="$HOME/.claude"
 
 # --- Skills ---
+#
+# Installing merges: `cp -r` over an existing directory leaves any file this
+# repo has since deleted from that skill in place. Replacing instead would mean
+# deleting a directory first, and nothing here can establish that the directory
+# is ours — a name collision with something you installed yourself looks
+# identical. Two review rounds went into trying to infer that ownership and each
+# attempt was a way to destroy somebody's work: refusing collisions froze every
+# pre-sidecar install, and adopting them took over skills that were never ours.
+# So this deletes nothing, and a retired skill is reported for you to remove.
 mkdir -p "$CLAUDE_DIR/skills"
 
 echo "Installing skills..."
+installed=""
 for skill_path in "$SCRIPT_DIR"/skills/*/; do
   skill_path="${skill_path%/}"
   # A directory without a SKILL.md is not a skill. This also absorbs the
@@ -24,11 +34,31 @@ for skill_path in "$SCRIPT_DIR"/skills/*/; do
   if [ ! -f "$skill_path/SKILL.md" ]; then
     continue
   fi
+  skill="$(basename "$skill_path")"
   # The trailing slash is stripped above because BSD cp reads
   # `cp -r src/ dest/` as "copy the contents of src", unlike GNU cp.
   cp -r "$skill_path" "$CLAUDE_DIR/skills/"
-  echo "  + $(basename "$skill_path")"
+  echo "  + $skill"
+  installed="$installed$skill
+"
 done
+
+# Skills this repository has removed. Reported, never deleted: an install that
+# has one may have got it from here or may have its own, and this script cannot
+# tell. Naming it is enough — the reader can.
+RETIRED="draft-blog-post draft-slack-message"
+for prev in $RETIRED; do
+  case "$installed" in
+    *"$prev"$'\n'*) continue ;;
+  esac
+  if [ -d "$CLAUDE_DIR/skills/$prev" ]; then
+    echo "  ! $prev is installed and this repository no longer ships it." >&2
+    echo "    If it came from here it is stale: delete" >&2
+    echo "    $CLAUDE_DIR/skills/$prev yourself." >&2
+  fi
+done
+
+echo "  Installed: $(ls "$CLAUDE_DIR/skills" | tr '\n' ' ')"
 
 # --- Permissions ---
 #
