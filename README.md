@@ -89,12 +89,8 @@ deterministic — no model calls, no API key, no cost — and every check is
 runnable locally:
 
 ```bash
-python3 scripts/check_skills.py                       # structure, schema, cross-references
+python3 scripts/check_skills.py                       # frontmatter and evals schema
 python3 scripts/check_permissions.py                  # the shape of permissions.json, and the README's claims
-python3 scripts/test_contract_placement.py            # the oracle detector still detects
-python3 scripts/check_contract_placement.py           # contract rules at their decision points
-python3 scripts/test_rule_locality.py                 # the locality detector still detects
-python3 scripts/check_rule_locality.py                # the workflow rules are stated in CLAUDE.md only
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
 bash scripts/eval_reminder.sh origin/main             # advisory, never fails
@@ -116,46 +112,34 @@ would leave its references resolving happily against `NOTES.md`. References
 inside `NOTES.md` resolve against both, since a note legitimately cites a
 contract section or one of its own.
 
-`check_rule_locality.py` asserts what `CLAUDE.md` claims about itself: that the workflow
-rules are stated there and nowhere else, so `AGENTS.md`, `README.md` and
-`docs/review-fix-workflow.md` cannot silently restate or re-qualify one. It exists because
-that claim was violated three review rounds running on the change that introduced it, each
-fix believed complete at the time — a purity constraint over three documents is what a human
-sweep keeps failing at, so it belongs in the mechanical tier. It checks two decidable
-properties: every canonical rule phrase appears in `CLAUDE.md` and in none of the others,
-and no pointer file issues a directive of its own.
+Four checks that read the contracts' prose were removed, and what they turned out to verify
+is worth recording so nobody rebuilds them.
 
-The second is a heuristic, so `test_rule_locality.py` holds its fixtures — every
-construction a real violation has taken here, each labelled with the round that produced it,
-plus the reasoning prose that must keep passing. That file exists because the first version
-of the detector **shipped green over a live violation**: it required a bold lead-in, so a
-plain sentence and a table cell both bypassed CI while the claim it defends was false. A
-check that passes on the current tree is not evidence that it would catch the defect, and a
-green check over a false claim is worse than no check, because it stops anyone looking. The
-fixtures then immediately caught a second gap — a noun lead-in carrying the imperative in
-its body. Finding a new bypass means the detector was wrong, not the fixture.
+`check_contract_placement.py` held 247 assertions, 205 of them a single `"phrase" in file`.
+Such an assertion pins the sentence rather than the rule: it fails on a rewording that
+improves the contract and passes on one that breaks it. Its two duplicate-rule assertions
+looked like the exception — a rule stated twice merges clean with no conflict marker, which
+happened here — but appending a *paraphrase* of the same rule to a second contract passed
+the check, so it caught only the copy-paste case a reader would notice anyway.
 
-Mutation testing of the corpus assertions was tried and removed. It worked — writing
-thirty-six mutations from the checks' own predicates found five assertions that were not
-testing what their names said, and reading had found none of them. But every defect it found
-was in the grep layer, and that is the layer that should not have been that large: of 247
-assertions, 205 were substring tests over prose. An assertion that greps a sentence pins the
-wording rather than the rule, and a 706-line harness making those greps trustworthy is
-scaffolding for something worth less than the scaffolding. Which assertions remain, and why, is stated in `CLAUDE.md`; the question of
-whether prose *means* the right thing belongs to the eval corpus, which is the only layer
-that can answer it.
+`check_rule_locality.py` asserted what `CLAUDE.md` claims about itself, that its pointer
+files never restate a rule. It matched verbatim phrases, so paraphrasing a rule into
+`README.md` passed while the duplication remained — again catching the visible case and
+missing the drifting one.
 
-The four ways one of those greps passed for the wrong reason are worth keeping, because they
-apply to any assertion that reads text and the structural ones still do. **The phrase
-appeared twice**, so mutating one copy left the other holding the check green. **A heading
-stood in for enforcement** — renaming a section reddened a heading-presence check while the
-table below it still said the rule. **A rationale stood in for an obligation** — narrowing
-"in every mode, because…" left the next sentence still obliging the behaviour. And **a
-broadening left the rule true**: "drafted by `resolve-pr-comment`" became "drafted
-anywhere", which still said this was the one posting path, so only the grep broke. In all
-four the check named a property it never read, and the way to notice is to ask whether the
-rule is still enforced somewhere else in the file rather than whether the edit looks like an
-inversion.
+`check_skills.py`'s cross-reference half confirmed that a `` `skill`, *Section* `` pointer
+named a heading that exists. Gutting a section while leaving its heading in place left
+nineteen pointers resolving to nothing and the check green; a reference written in a
+near-miss form was never examined. It verified names, not links, and only the names shaped
+the way its regex expected.
+
+The pattern is one thing pointed four ways: a string matcher aimed at meaning. It is
+evadable by rewording, trips on innocent overlap, and covers only the phrasings its author
+anticipated. What remains in CI reads **tokens** — a frontmatter name against its directory,
+an `evals.json` that parses, an allowlist entry that carries no arguments — because a token
+cannot be paraphrased and still be itself. Whether the prose *means* the right thing is
+answered by reading it, and by the eval corpus (`CLAUDE.md`, on comparing two readings of a
+change that should not alter meaning).
 
 ## Permissions
 

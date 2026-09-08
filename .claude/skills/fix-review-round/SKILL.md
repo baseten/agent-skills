@@ -19,8 +19,8 @@ Read these two, in this order, before editing anything:
 This file is a pointer and not a copy, for the reason `AGENTS.md` gives for
 being one: a second statement of that procedure would be a summary maintained
 apart from the rules it summarises, which is the failure mode `CLAUDE.md` is
-largely about. `scripts/check_rule_locality.py` enforces that for the two
-pointer files, and the same reasoning applies here.
+largely about, and the reasoning applies here whether or not a check enforces
+it — the one that did was removed for catching only verbatim copies.
 
 ## The one thing neither of those can tell you
 

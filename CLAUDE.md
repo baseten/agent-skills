@@ -24,8 +24,8 @@ code-shaped criterion, and it is what produces ten rounds of review here.
 The reason is written into the repository's own history, in three places worth reading
 before your first fix:
 
-- `scripts/check_contract_placement.py` — on a rule that reads as correct where it sits and
-  is inert where it is read;
+- `README.md`, *Checks* — on a rule that reads as correct where it sits and is inert where
+  it is read, and on the checks that were built to catch that and could not;
 - `skills/backlog-orchestrator/NOTES.md`, *Releasing a worker* — on how successive versions
   of one rule came to disagree, each by the fix for the last;
 - `skills/backlog-orchestrator/NOTES.md`, *Blocked workers* — on the third of them, which
@@ -68,7 +68,8 @@ Before committing a rule change, find what it now contradicts:
    the file;
 5. where the rule produces something another skill must record, confirm every skill
    **between producer and recorder forwards it** — a chain that drops it silently is the
-   defect class `check_contract_placement.py` was written for.
+   defect class the deleted contract checks were written for, and the one no check
+   caught.
 
 These five steps are the sweep. `docs/review-fix-workflow.md` expands each with its
 reasoning and adds no step of its own.
@@ -85,17 +86,31 @@ agree, delete one instead; when it would make two decision points agree, keep bo
 change them together. A local fix cannot contradict a distant copy that no longer exists,
 which is what makes this the highest-leverage habit here.
 
-**Leave a guard behind, and prefer the one that reads meaning.** A finding shape that
-recurred should end the round with a scenario in the skill's `evals/evals.json`, and where
-the property is structural — a rule stated once, a cross-reference that resolves, a rule
-sitting at the decision point that reads it — with an assertion in
-`scripts/check_contract_placement.py`. **Do not add an assertion that greps a sentence.**
-Such an assertion pins the wording rather than the rule: it goes red on a rewording that
-improves the contract and stays green on a rewording that breaks it, and a mutation harness
-built to make those greps trustworthy was three rounds of proxies on a twelve-line change
-before it was removed (NOTES). Where a finding is about behaviour — an invocation, a flag,
-what a command leaves behind — **run it, and record what you ran** in the skill's
-`NOTES.md`; that is the durable artifact a grep was standing in for.
+**Leave a guard behind, and do not point a string matcher at meaning.** A finding shape
+that recurred ends the round with a scenario in the skill's `evals/evals.json`. **Do not add
+a check that greps the contract's prose.** Every one this repository built was evadable by
+paraphrase and tripped on innocent overlap: an assertion pinning a sentence went red on a
+rewording that improved the contract and green on one that broke it; a duplicate-rule check
+passed the moment the duplicate was reworded; a cross-reference checker confirmed a heading
+existed while its rule had been gutted from under it, leaving nineteen pointers green. All
+of them are gone (README, *Checks*). A check earns CI only where the thing it reads is a
+**token** rather than prose — a filename, a config key, a schema — because a token cannot be
+paraphrased and still be itself.
+
+Where a finding is about behaviour — an invocation, a flag, what a command leaves behind —
+**run it, and record what you ran** in the skill's `NOTES.md`. That entry is the durable
+artifact, and it is what a grep was standing in for.
+
+**Where a change should not alter meaning, compare two readings of it.** A split, a
+reword, a reorganisation: the claim is that a reader reaches the same verdicts before and
+after, and the only way to know is to ask one. Derive the baseline from git —
+`git show origin/main:skills/<name>/SKILL.md` into a scratch directory, **never a copy
+committed to the tree**, which would be a second contract to maintain. Then, per scenario,
+give one reader the old text and another the new, each holding **only that contract and the
+prompt**: a reader that has seen `expected_output` or the assertions is grading its own
+answer. Grade both against the same assertions, blind to which arm is which where you can
+manage it. **The information is entirely in the disagreement** — running only the new arm
+returns a clean sweep and teaches nothing, which is the flattering direction this fails in.
 `scripts/eval_reminder.sh` flags a contract change whose evals did not move; it is advisory
 and needs someone to act on it.
 
@@ -144,10 +159,6 @@ Every check is deterministic and runnable locally. Run them before committing:
 ```bash
 python3 scripts/check_skills.py
 python3 scripts/check_permissions.py
-python3 scripts/test_contract_placement.py
-python3 scripts/check_contract_placement.py
-python3 scripts/test_rule_locality.py
-python3 scripts/check_rule_locality.py
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
 bash scripts/eval_reminder.sh origin/main

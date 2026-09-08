@@ -9,8 +9,14 @@ Run from the repository root:
 Every check here is mechanical. Anything needing judgement about whether a
 rule is *right* belongs in a skill's evals, not here — this only catches the
 defects that are decidable from the text: a skill whose frontmatter disagrees
-with its directory, an evals file that no longer parses, and a cross-reference
-pointing at a section that does not exist.
+with its directory, and an evals file that no longer parses.
+
+It used to check cross-references too — that a `` `skill`, *Section* `` pointer
+resolved to a heading that exists. That was removed after a test showed what it
+actually verified: gutting a section while keeping its heading left nineteen
+pointers resolving to an empty heading and the check green, and a reference
+written in a near-miss form was never examined at all. It confirmed names, not
+links, and only the names written in the shape its regex expected.
 """
 
 import argparse
@@ -65,108 +71,7 @@ def parse_frontmatter(text: str) -> dict[str, str] | None:
 
 # --- headings and references ------------------------------------------------
 
-HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*$", re.M)
-
-# "(see Section)", "(see Section, below)", "(see Section — aside)". The
-# trailing qualifiers are prose, not part of the name.
-SEE_REF = re.compile(r"\(see ([A-Z][^)]*?)\)")
-CUT = re.compile(r"\s*(?:,|;|:|—|–| - |\.\s|\?)")
-TRAILING = re.compile(r"\s+(?:above|below)$")
-
-# "`other-skill`, *Section Name*" — a reference into another skill's contract.
-CROSS_REF = re.compile(r"`([a-z][a-z0-9-]+)`,\s+\*([^*]+)\*")
-
-# "(NOTES: ...)" — asserts the skill has a NOTES.md at all.
-NOTES_REF = re.compile(r"\(NOTES[:)]")
-
-
-def headings(text: str) -> set[str]:
-    return {m.group(1).strip() for m in HEADING.finditer(text)}
-
-
-def resolves(target: str, known: set[str]) -> bool:
-    """Does `target` name one of `known`?
-
-    Exact match, or the short form of a heading shaped "Short name, the rest
-    of the sentence" — citing such a section by its first clause is the
-    repo's own style and should not be a failure. The boundary matters: a
-    bare prefix rule would let "Merge" resolve to "Merge behavior".
-    """
-    if target in known:
-        return True
-    return any(
-        h.startswith(target + sep) for h in known for sep in (",", " —", " –", ":")
-    )
-
-
-def normalize(name: str) -> str:
-    name = CUT.split(name.strip(), 1)[0]
-    name = TRAILING.sub("", name.strip())
-    return name.strip().rstrip(".").strip()
-
-
-def check_references(
-    skill: str,
-    path: Path,
-    text: str,
-    contract: dict[str, set[str]],
-    notes: dict[str, set[str]],
-) -> None:
-    """Check every reference in one document.
-
-    Heading sets are kept per document rather than merged per skill. NOTES.md
-    is keyed by the section names of SKILL.md by design — backlog-orchestrator
-    shares 20 of its 21 NOTES headings — so a merged set gives almost every
-    contract section a shadow heading, and renaming one in SKILL.md alone would
-    leave its references resolving against NOTES. That is the drift this check
-    exists to catch.
-
-    A reference inside NOTES.md may legitimately name a contract section or one
-    of NOTES' own, so those resolve against both; everything else resolves
-    against the contract alone.
-    """
-    own = contract[skill]
-    if path.name == "NOTES.md":
-        own = own | notes.get(skill, set())
-
-    for m in SEE_REF.finditer(text):
-        target = normalize(m.group(1))
-        if not target or (" " not in target and target.islower()):
-            continue
-        if not resolves(target, own):
-            line = text[: m.start()].count("\n") + 1
-            error(f"{rel(path)}:{line}", f'"(see {target})" matches no heading in this skill')
-
-    for m in CROSS_REF.finditer(text):
-        other, section = m.group(1), normalize(m.group(2))
-        line = text[: m.start()].count("\n") + 1
-        if other == skill:
-            continue
-        if other not in contract:
-            # No legitimate non-skill reference of this shape exists in the
-            # repo, so silently skipping unknown names only hid misspelled,
-            # renamed and deleted targets.
-            error(
-                f"{rel(path)}:{line}",
-                f'cross-reference `{other}`, *{section}* names no skill in this repository',
-            )
-            continue
-        if not resolves(section, contract[other]):
-            error(
-                f"{rel(path)}:{line}",
-                f"cross-reference `{other}`, *{section}* matches no heading in that skill's SKILL.md",
-            )
-
-    if NOTES_REF.search(text) and not (path.parent / "NOTES.md").exists():
-        error(rel(path), "cites (NOTES: …) but the skill has no NOTES.md")
-
-
-# --- per-skill checks -------------------------------------------------------
-
-
-def check_skill(
-    d: Path, contract: dict[str, set[str]], notes: dict[str, set[str]]
-) -> None:
+def check_skill(d: Path) -> None:
     name = d.name
     skill_md = d / "SKILL.md"
     text = skill_md.read_text(encoding="utf-8")
@@ -202,12 +107,6 @@ def check_skill(
                         if not c.get(field):
                             error(rel(evals), f'eval "{label}" has no {field}')
 
-    check_references(name, skill_md, text, contract, notes)
-    notes_md = d / "NOTES.md"
-    if notes_md.exists():
-        check_references(
-            name, notes_md, notes_md.read_text(encoding="utf-8"), contract, notes
-        )
 
 
 def main() -> int:
@@ -223,18 +122,8 @@ def main() -> int:
         print("skills/ holds no directory with a SKILL.md", file=sys.stderr)
         return 2
 
-    # Collect every skill's headings first: cross-references need them all.
-    # Contract and NOTES stay separate — see check_references.
-    contract: dict[str, set[str]] = {}
-    notes: dict[str, set[str]] = {}
     for d in dirs:
-        contract[d.name] = headings((d / "SKILL.md").read_text(encoding="utf-8"))
-        notes_md = d / "NOTES.md"
-        if notes_md.exists():
-            notes[d.name] = headings(notes_md.read_text(encoding="utf-8"))
-
-    for d in dirs:
-        check_skill(d, contract, notes)
+        check_skill(d)
 
     perms = ROOT / "permissions.json"
     if perms.exists():
