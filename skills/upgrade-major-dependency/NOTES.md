@@ -188,3 +188,37 @@ For any watcher, the test is: *if this failed right now, would my filter emit an
 ## Why the silent-failure table is enumerated rather than generalised
 
 Each row is a domain where the ordinary evidence of correctness — a green build — is uninformative, and where an agent will otherwise report success in good faith. The rows are not exhaustive, but naming them converts a general caution nobody acts on into a checklist that produces a specific sentence in the report: which check is the real evidence, and that the passing build is not it.
+
+## Research
+
+**Why the source diff carries an invocation when this contract otherwise leaves
+mechanism alone.** The rule beside it — that what is invariant is the ordering,
+not the mechanism — holds where the mechanism is inferable: how many worktrees a
+cherry-pick needs follows from the ordering itself. Streaming one file out of two
+published tarballs does not follow from anything, and the naive attempt fails on
+mechanics rather than judgment: `npm pack` writes into the working directory and
+`--silent` changes only its logging, so a first attempt reads the wrong path and
+leaves two tarballs a later `git add` can sweep into the upgrade commit. Codex
+found exactly that in the first version of this note, which had warned about the
+dirty tree and then not prevented it (round 1 on the PR that added this).
+
+The form given took three review rounds to get right, and each wrong version
+looked like it worked, which is why it is recorded here rather than left to
+whoever edits it next. Round 1: the note warned about the dirty tree and then
+did not prevent it. Round 2 found two more — `cd`-ing into the temporary
+directory to pack there discards the project `.npmrc`, which is where a private
+registry and its credentials live, so the recipe would silently query the public
+registry; and reading `tar` inside a process substitution hides its failure, so
+a mistyped path or an unpublished file yields two empty streams and `diff` exits
+0, reporting "no change" over nothing compared. That last one is the dangerous
+shape for this skill specifically: the whole point of reading published source
+is to answer "did this behaviour move?", and the failure answers "no".
+
+Three further rounds went into a corpus assertion protecting this recipe, and it
+is deliberately not here. Each of those findings was correct — the guard read
+the option's presence rather than its value, then one spelling of `cd` rather
+than any, then a substring rather than the command — and each fix was another
+proxy for the property. What holds this recipe is that it was executed: without
+`--pack-destination` npm leaves `is-number-6.0.0.tgz` in the tree, and `diff`
+exits 0 over a member no release published. Run it rather than trusting a
+grep.
