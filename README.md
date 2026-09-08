@@ -530,4 +530,73 @@ Where a repository opted into auto-merge, the invariant 12 gate is evaluated onl
 
 ## Cloud bootstrap
 
-Run `bootstrap.sh` from a checkout of this repository to install the skills into the standard Claude configuration for a cloud/container session. It discovers every directory under `skills/` that contains a `SKILL.md`, so the install list never drifts from the repository. The orchestration skills remain environment-agnostic and can also be used from local Claude Code setups.
+### What a cloud session can and cannot see
+
+A cloud session — Claude Code on the web, a Desktop cloud container, an auto-fix
+run — loads skills from exactly two places:
+
+- the skills enabled for your **claude.ai account**, and
+- the **cloned repository's** own `.claude/skills/`, plus any plugins its
+  `.claude/settings.json` declares.
+
+It does **not** read `~/.claude/skills` from the machine you started it from.
+Whatever you have installed locally is not there, and the failure is silent: the
+session simply behaves as though the skill was never written.
+
+So there are two ways to get these skills into one, and this repository is
+built for the first.
+
+### Install from a setup script
+
+Clone this repository in your [cloud environment's setup
+script](https://code.claude.com/docs/en/cloud-environments#setup-scripts) and
+run `bootstrap.sh`:
+
+```bash
+git clone --depth 1 https://github.com/baseten/agent-skills /tmp/agent-skills
+bash /tmp/agent-skills/bootstrap.sh
+```
+
+`bootstrap.sh` discovers every directory under `skills/` containing a
+`SKILL.md`, so the install list never drifts from the repository, and it writes
+`permissions.json` into the container's `~/.claude/settings.json` as well — see
+[Where to install it](#where-to-install-it).
+
+Reachability depends on the environment's [network access
+level](https://code.claude.com/docs/en/cloud-environments#access-levels). If the
+clone is blocked, fetch a tarball from `codeload.github.com` or
+`raw.githubusercontent.com` instead, both of which the default **Trusted** list
+allows.
+
+### Why this repository is public
+
+Because a setup script cannot reach a private one. The cloud GitHub proxy scopes
+access to the repositories **attached to the session**, so a script cloning an
+unattached private repository gets a 403. A session attaches the repository you
+are working in, which is never this one.
+
+That constraint is the whole reason for the split described in [Personal skills
+stay out](#personal-skills-stay-out): a public repository is the only kind a
+setup script can install, and anything that cannot be public has to reach cloud
+sessions through a claude.ai account upload instead.
+
+### Verifying the install landed
+
+`/plugin` and `/permissions` are unavailable in a cloud session, so check from
+the shell:
+
+```bash
+ls ~/.claude/skills
+```
+
+Every directory under `skills/` here should appear. If the list is empty the
+setup script did not run or the clone failed; if it is short, compare it against
+this repository rather than assuming a skill was retired — `bootstrap.sh`
+deletes nothing.
+
+For confirming the permission rules are live rather than merely written, see
+[Verifying the rules are live in a
+container](#verifying-the-rules-are-live-in-a-container).
+
+The orchestration skills are environment-agnostic and work identically from a
+local Claude Code setup.
