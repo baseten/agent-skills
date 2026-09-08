@@ -548,25 +548,29 @@ built for the first.
 
 ### Install from a setup script
 
-Clone this repository in your [cloud environment's setup
-script](https://code.claude.com/docs/en/cloud-environments#setup-scripts) and
-run `bootstrap.sh`:
+Put this in the **Setup script** field of your [cloud
+environment](https://code.claude.com/docs/en/cloud-environments) — on claude.ai,
+Settings > Cloud environments, then the environment you use:
 
 ```bash
-git clone --depth 1 https://github.com/baseten/agent-skills /tmp/agent-skills
+git clone --depth 1 https://github.com/baseten/agent-skills.git /tmp/agent-skills
 bash /tmp/agent-skills/bootstrap.sh
+rm -rf /tmp/agent-skills
 ```
+
+That field runs **before Claude Code launches**, which is what makes this work:
+the skills are on disk before anything looks for them. Removing the clone
+afterwards leaves the installed copy under `~/.claude/skills` as the only one in
+the container, so nothing can read a second copy from `/tmp`.
 
 `bootstrap.sh` discovers every directory under `skills/` containing a
 `SKILL.md`, so the install list never drifts from the repository, and it writes
 `permissions.json` into the container's `~/.claude/settings.json` as well — see
 [Where to install it](#where-to-install-it).
 
-Reachability depends on the environment's [network access
-level](https://code.claude.com/docs/en/cloud-environments#access-levels). If the
-clone is blocked, fetch a tarball from `codeload.github.com` or
-`raw.githubusercontent.com` instead, both of which the default **Trusted** list
-allows.
+This is verified at the **Trusted** [network access
+level](https://code.claude.com/docs/en/cloud-environments#access-levels), which
+is the default. A more restrictive level may not permit the clone.
 
 ### Why this repository is public
 
