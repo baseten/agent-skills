@@ -102,7 +102,7 @@ A worker-reported defect is a claim about that worker's environment. Confirm it 
 # Creating the follow-up issues
 
 - **Read-only by default**: propose `NEW_ISSUE` items; open nothing (NOTES: separate authority).
-- When the invocation explicitly authorizes creation: open each proposed issue in the tranche's tracker, link it to the originating PR or issue, and report the created URLs in place of the proposals. **Each issue body follows the authored-write-form rule** (`backlog-orchestrator`, *Authored write form*) — short, stating intent rather than restating the tranche, and **carrying the attribution footer**, because authorizing creation is not approving a body nobody has read: that rule's approval test asks whether the invoking person approved *this exact text*, and an authorization given before the text existed cannot have. Never open an issue the summary did not propose, and never open one that deduplication matched to an existing ticket.
+- When the invocation explicitly authorizes creation: open each proposed issue in the tranche's tracker, link it to the originating PR or issue, and report the created URLs in place of the proposals. **Each issue body follows the authored-write-form rule** (`references/authored-write-form.md`) — short, stating intent rather than restating the tranche, and **carrying the attribution footer**, because authorizing creation is not approving a body nobody has read: that rule's approval test asks whether the invoking person approved *this exact text*, and an authorization given before the text existed cannot have. Never open an issue the summary did not propose, and never open one that deduplication matched to an existing ticket.
 
 # Boundaries
 

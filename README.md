@@ -6,6 +6,18 @@ Reusable Claude Code skills for issue implementation, PR workflows, backlog vali
 
 The `SKILL.md` files are dense and not easily human readable. That is deliberate, and it was tested rather than assumed: [issue #51](https://github.com/baseten/agent-skills/issues/51) benchmarked a plain-English rewrite of the densest section against the current text — all 21 eval scenarios, on Sonnet and on Haiku — and the plain version made the models no better (identical on Sonnet, worse-to-indistinguishable on Haiku). The density costs the models nothing; they interpret this register at least as well as plain prose, so the skills are written for their actual reader. Humans get their own entry points instead: a skill's `NOTES.md` explains the reasoning behind its rules — most skills have one, `resolve-pr-comment` does not — and `backlog-orchestrator/README.md` gives a plain-language overview and a glossary of the coined terms.
 
+## Shared rules
+
+`rules/` holds a rule that more than one skill applies. It is **not** a skill: nobody invokes it, and it has no `SKILL.md`.
+
+- `rules/authored-write-form.md` — the shape of any write an agent authors on a forge: length, what a body is for, what must never be in it, the attribution footer and its approval test, and the precedence of required contents over brevity. Every skill that writes to a forge applies it, each carrying a generated copy under its own `references/`. Extracted from `backlog-orchestrator` so that a skill needing the rule does not have to carry a 41,000-word orchestrator, nor a paraphrase of the one section it uses — which that section names as the way the rule drifts.
+
+A shared rule cannot simply sit at the repo root and be read from an installed skill: `bootstrap.sh` copies `skills/<name>/` and nothing else, so `../../rules/x.md` does not exist on a machine that installed one skill. Nor can it live inside one skill, because whichever skill owned it would become a dependency the others carry for a rule they only read.
+
+So `scripts/refresh_shared_rules.sh` copies each rule into `skills/<name>/references/` for every skill that applies it. **Edit the source, never a copy.** The copies travel with a skill that is installed alone or moved into a plugin, and `scripts/check_shared_rules.py` fails the build when a copy diverges from its source, when a skill cites a reference it does not carry, or when a rule is bundled into nothing. All three are file-level checks; none reads the prose.
+
+Reasoning for a rule lives beside it as `rules/<name>-notes.md`, and is deliberately not bundled — its reader is someone editing the rule, and they have this checkout.
+
 ## Core workflow skills
 
 - `implement-issue-core` — implements exactly one tracked issue to a durable remote PR state, including remote branch/checkpoint pushes for restart recovery. It does not own long-lived CI/review monitoring.
@@ -107,7 +119,8 @@ deterministic — no model calls, no API key, no cost — and every check is
 runnable locally:
 
 ```bash
-python3 scripts/check_skills.py                       # frontmatter and evals schema
+python3 scripts/check_skills.py
+python3 scripts/check_shared_rules.py                # bundled rules match rules/, and no skill cites one it lacks                       # frontmatter and evals schema
 python3 scripts/check_permissions.py                  # the shape of permissions.json, and the README's claims
 python3 scripts/check_no_machine_paths.py             # no skill depends on one machine's filesystem
 python3 scripts/test_no_machine_paths.py              # and that detector can actually fail
