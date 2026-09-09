@@ -119,7 +119,8 @@ deterministic — no model calls, no API key, no cost — and every check is
 runnable locally:
 
 ```bash
-python3 scripts/check_skills.py                       # frontmatter and evals schema
+python3 scripts/check_skills.py
+python3 scripts/check_shared_rules.py                # bundled rules match rules/, and no skill cites one it lacks                       # frontmatter and evals schema
 python3 scripts/check_permissions.py                  # the shape of permissions.json, and the README's claims
 python3 scripts/check_no_machine_paths.py             # no skill depends on one machine's filesystem
 python3 scripts/test_no_machine_paths.py              # and that detector can actually fail

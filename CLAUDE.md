@@ -170,6 +170,7 @@ Every check is deterministic and runnable locally. Run them before committing:
 
 ```bash
 python3 scripts/check_skills.py
+python3 scripts/check_shared_rules.py                # and that every bundled rule matches its source
 python3 scripts/check_permissions.py
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
