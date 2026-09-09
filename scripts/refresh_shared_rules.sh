@@ -15,7 +15,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # rule source  ->  skills that apply it
-AUTHORED_WRITE_FORM="backlog-orchestrator create-pr npm-dependency-upgrade-orchestrator implement-issue
+AUTHORED_WRITE_FORM="backlog-orchestrator create-pr normalize-github-dependencies
+  npm-dependency-upgrade-orchestrator implement-issue
   merge-stack repair-pr resolve-pr-comment settle-outstanding-decisions
   summarize-tranche upgrade-npm-dependency validate-backlog"
 
