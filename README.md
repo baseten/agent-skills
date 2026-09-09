@@ -26,8 +26,8 @@ The `SKILL.md` files are dense and not easily human readable. That is deliberate
 
 ## Dependency upgrade skills
 
-- `upgrade-major-dependency` — upgrades one package, or one coupled group of them, across any version whose breaking-change risk has not been ruled out: viability gate, research verified against the published artifact, usage audit, then characterization tests written and proven green on the current version and re-run unmodified after the bump.
-- `dependency-upgrade-orchestrator` — triages a batch of upgrades, establishes coupling and viability, selects a model per upgrade by failure mode, and dispatches bounded-concurrency subagents: one per upgrade or coupled group running `upgrade-major-dependency`, plus a single batched task for the routine bumps triage cleared, which need no migration workflow. Supervises CI while separating infrastructure failure from real failure. It merges nothing.
+- `upgrade-npm-dependency` — upgrades one package, or one coupled group of them, across any version whose breaking-change risk has not been ruled out: viability gate, research verified against the published artifact, usage audit, then characterization tests written and proven green on the current version and re-run unmodified after the bump.
+- `npm-dependency-upgrade-orchestrator` — triages a batch of upgrades, establishes coupling and viability, selects a model per upgrade by failure mode, and dispatches bounded-concurrency subagents: one per upgrade or coupled group running `upgrade-npm-dependency`, plus a single batched task for the routine bumps triage cleared, which need no migration workflow. Supervises CI while separating infrastructure failure from real failure. It merges nothing.
 
 ## Repository layout
 
