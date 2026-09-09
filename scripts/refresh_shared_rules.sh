@@ -4,9 +4,9 @@
 # A shared rule cannot live at the repo root and be read from an installed
 # skill: bootstrap.sh copies `skills/<name>/` and nothing else, so
 # `../../rules/x.md` does not exist on a machine that installed one skill. And
-# it cannot live inside one skill either - ten skills cite this one, and
-# whichever skill owned it would be a dependency the other nine carry for a
-# rule they only read.
+# it cannot live inside one skill either - many skills cite this one, and
+# whichever skill owned it would become a dependency the rest carry for a rule
+# they only read.
 #
 # So the rule is held once under rules/ and copied into each applying skill's
 # references/. The copies are generated: edit the source. check_shared_rules.py

@@ -1,7 +1,7 @@
 # Notes — authored-write-form
 
 Reasoning for `rules/authored-write-form.md`. Deliberately *not* bundled into
-each skill: ten copies of 2,300 words of design history is cost with no reader,
+each skill: a copy of this per consumer would be design history with no reader,
 and the audience for it is a person editing the rule, who has this checkout.
 
 Why the rules in `SKILL.md` are shaped the way they are. Moved here with the
