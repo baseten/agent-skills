@@ -26,6 +26,9 @@ jobs:
       - name: Skill structure and schema
         run: python3 scripts/check_skills.py
 
+      - name: Shared rules are bundled and unmodified
+        run: python3 scripts/check_shared_rules.py
+
       - name: Permissions file shape
         run: python3 scripts/check_permissions.py
 
