@@ -47,8 +47,13 @@ In a remote/web session (no `gh` CLI access), use the GitHub MCP tools:
 In a local session with `gh` CLI available:
 
 ```bash
-gh pr view <PR> --repo <owner>/<repo> --json number,title,headRefName,url,comments,reviewThreads
+gh pr view <PR> --repo <owner>/<repo> --json number,title,headRefName,url,comments
 gh api repos/<owner>/<repo>/pulls/<PR>/comments
+
+# Review threads are GraphQL-only - `reviewThreads` is not a `gh pr view`
+# field, and asking for it fails the whole command. This is also the only
+# source of a thread's resolvable id, which step 6 needs.
+gh api graphql -f query='{ repository(owner:"<owner>", name:"<repo>") { pullRequest(number:<PR>) { reviewThreads(first:50) { nodes { id isResolved isOutdated path line comments(first:10) { nodes { databaseId author { login } body url } } } } } } }'
 ```
 
 If specific comment IDs or URLs were provided, fetch those directly. Read the
@@ -154,13 +159,15 @@ gh api graphql -f query='
 '
 ```
 
-To find the `threadId`, look in the `reviewThreads` from step 1 or fetch via:
+The `threadId` is the thread's `id` from the GraphQL query in step 1 — a node
+id like `PRRT_kwDO…`, not a number. **A thread has no `databaseId`**; asking for
+one fails the whole query. Match instead on the nested
+`comments.nodes[].databaseId`, which is the numeric id of the comment you
+replied to.
 
-```bash
-gh api graphql -f query='{ repository(owner:"<owner>", name:"<repo>") { pullRequest(number:<PR>) { reviewThreads(first:50) { nodes { id databaseId isResolved } } } } }'
-```
-
-Match `databaseId` to the comment ID you replied to.
+That query's `comments.nodes[].url` is also where a thread's URL comes from,
+which *What a question item must contain* requires to be the API's own value
+passed through verbatim rather than assembled.
 
 ## Unattended callers
 
