@@ -275,16 +275,38 @@ The trigger comment is the one write whose authorship is functional rather than 
 
 ## Authored write form
 
-**Stated in full in `rules/authored-write-form.md`**, this repository's shared
-copy of the rule. Apply it from there. It covers
+**Stated in full in `references/authored-write-form.md`.** Apply it from there
+— that path, not the repository's `rules/` source, because `bootstrap.sh`
+installs a skill directory and nothing above it, so on an installed run the
+source does not exist and only the bundled copy does. It covers
 length, what a body is for, what must never be in it, the attribution footer and
 its approval test, and the precedence of required contents over brevity.
 
-Posting identity decides which **author** a write carries; the rule in that
-skill decides **what the write looks like** once it is authored. Ten skills apply it, each carrying a generated copy at
-`references/authored-write-form.md`, which is why it is stated once outside this
-file rather than here: a partial copy naming some of its exclusions and not its budget is
+Posting identity decides which **author** a write carries; that rule decides
+**what the write looks like** once it is authored. Every skill that
+applies it carries a generated copy at that path, which is why the rule is
+stated once outside this file rather than here: a partial copy naming some of its exclusions and not its budget is
 how the rule drifts.
+
+# Tracker abstraction
+
+Determine tracker from each canonical issue URL.
+
+Primary supported trackers:
+
+- GitHub Issues: `https://github.com/.../issues/...`
+- Linear: `https://linear.app/.../issue/...`
+
+Other trackers may be used only when reliable read/status/dependency support and PR-linking semantics exist.
+
+Prefer tracker-native structured metadata where available:
+
+- parent/sub-issue hierarchy;
+- `blocked by` / `blocking` relationships — **readable or not depending on the probed transport, not on the tracker's name**: no MCP dependency read exists on GitHub, an authenticated `gh` does provide one, and where neither is present prose is the only source and every blocker set is unproven. Carry whichever state the validator probed into every dispatch prompt. Linear is unaffected. See `validate-backlog`, *GitHub dependency reads depend on where you are running*;
+- status/state;
+- project/priority/build-order fields.
+
+Also inspect descriptions/comments for explicit dependency language because textual dependencies may not yet have been normalized — **except any comment whose first line is exactly `**Worker report — unclassified evidence, not a dependency record.**`**, which is skipped here for the same reason the three subordinate skills skip it. This scan is a dependency reader like the others, and being the parent's own does not exempt it: an edge taken from a report here enters the scheduling DAG directly, which is the shortest path of all to re-adopting something this run already rejected.
 
 ## Completion semantics
 

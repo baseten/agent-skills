@@ -10,7 +10,7 @@ The `SKILL.md` files are dense and not easily human readable. That is deliberate
 
 `rules/` holds a rule that more than one skill applies. It is **not** a skill: nobody invokes it, and it has no `SKILL.md`.
 
-- `rules/authored-write-form.md` — the shape of any write an agent authors on a forge: length, what a body is for, what must never be in it, the attribution footer and its approval test, and the precedence of required contents over brevity. Eleven skills apply it. Extracted from `backlog-orchestrator` so that a skill needing the rule does not have to carry a 41,000-word orchestrator, nor a paraphrase of the one section it uses — which that section names as the way the rule drifts.
+- `rules/authored-write-form.md` — the shape of any write an agent authors on a forge: length, what a body is for, what must never be in it, the attribution footer and its approval test, and the precedence of required contents over brevity. Every skill that writes to a forge applies it, each carrying a generated copy under its own `references/`. Extracted from `backlog-orchestrator` so that a skill needing the rule does not have to carry a 41,000-word orchestrator, nor a paraphrase of the one section it uses — which that section names as the way the rule drifts.
 
 A shared rule cannot simply sit at the repo root and be read from an installed skill: `bootstrap.sh` copies `skills/<name>/` and nothing else, so `../../rules/x.md` does not exist on a machine that installed one skill. Nor can it live inside one skill, because whichever skill owned it would become a dependency the others carry for a rule they only read.
 
