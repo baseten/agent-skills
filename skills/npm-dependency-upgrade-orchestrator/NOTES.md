@@ -1,4 +1,4 @@
-# dependency-upgrade-orchestrator — design notes
+# npm-dependency-upgrade-orchestrator — design notes
 
 Companion to `SKILL.md`. That file is the contract; this one holds the reasoning behind its rules, keyed by section. Read a section's note before changing its rules or when applying them to a case the contract doesn't obviously cover. Nothing here overrides the contract.
 
