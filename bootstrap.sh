@@ -46,7 +46,7 @@ done
 # Skills this repository has removed. Reported, never deleted: an install that
 # has one may have got it from here or may have its own, and this script cannot
 # tell. Naming it is enough — the reader can.
-RETIRED="draft-blog-post draft-slack-message"
+RETIRED="draft-blog-post draft-slack-message upgrade-major-dependency"
 for prev in $RETIRED; do
   case "$installed" in
     *"$prev"$'\n'*) continue ;;
