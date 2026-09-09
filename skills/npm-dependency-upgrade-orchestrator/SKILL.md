@@ -3,7 +3,7 @@ name: npm-dependency-upgrade-orchestrator
 description: Take a set of dependency upgrades, triage each against its changelog and the codebase's usage, establish coupling and viability, select a model per upgrade by failure mode, then dispatch isolated subagents — one per upgrade or coupled group running `upgrade-npm-dependency`, plus one batched task for the routine bumps triage cleared, which need no migration workflow. Supervises CI and separates infrastructure failure from real failure. Use for a batch; use `upgrade-npm-dependency` directly for one.
 ---
 
-# Dependency Upgrade Orchestrator
+# npm Dependency Upgrade Orchestrator
 
 ## Task
 
