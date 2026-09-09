@@ -20,7 +20,7 @@ case, and what the local `gh` path below always does, since it runs on the
 user's own credential.
 
 They follow the **authored write form** rule stated once beside it
-(`backlog-orchestrator`, *Authored write form*) for the same reason: every
+(`references/authored-write-form.md`) for the same reason: every
 reply is short, and it carries the attribution footer unless this run obtained
 the invoking person's approval of that exact reply text before posting it.
 Apply both from there rather than restating them; step 5 carries only what they
@@ -124,7 +124,7 @@ holds the request. Do not restate the comment back, justify the approach, or
 narrate what else was considered.
 
 **The footer goes on unless the person approved this reply text**
-(`backlog-orchestrator`, *Authored write form*, the approval test). Unattended
+(`references/authored-write-form.md`, the approval test). Unattended
 and classify-only that is never true, so those replies carry it. Attended it is
 true only where the person was actually shown the reply and confirmed or edited
 it — invoking the skill is not that, and neither is being in the session. The
@@ -267,7 +267,7 @@ review round, not a reply.
 rather than sitting beside it as a special case.** A draft is not a write at
 all — the person who posts it authors it, as themselves, which is the point of
 handing it over — so there is no posted text for the approval test to ask about
-(`backlog-orchestrator`, *Authored write form*). **That absolute is about the
+(`references/authored-write-form.md`). **That absolute is about the
 draft, and it stops there.**
 
 **It does not carry over to the write that later contains the answer.** Where a
@@ -329,7 +329,7 @@ an escalation, or no-action.
 The reason is authority, not disclosure. The reviewer asked a **person**, and
 nobody authorised this pass to answer for them — so the reply would be read as
 that person's position whatever signs it. **A footer would not
-license it** (`backlog-orchestrator`, *Authored write form*): saying that nobody
+license it** (`references/authored-write-form.md`): saying that nobody
 reviewed an answer says nothing about whose position it is, and a reader who
 accepts a footered reply as the owner's position has read it correctly, because
 it is posted in a thread addressed to them. Disclosure would be the whole story only
