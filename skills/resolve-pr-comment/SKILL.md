@@ -53,7 +53,25 @@ gh api repos/<owner>/<repo>/pulls/<PR>/comments
 # Review threads are GraphQL-only - `reviewThreads` is not a `gh pr view`
 # field, and asking for it fails the whole command. This is also the only
 # source of a thread's resolvable id, which step 6 needs.
-gh api graphql -f query='{ repository(owner:"<owner>", name:"<repo>") { pullRequest(number:<PR>) { reviewThreads(first:50) { nodes { id isResolved isOutdated path line comments(first:10) { nodes { databaseId author { login } body url } } } } } } }'
+#
+# Paginate it. A fixed `first:` silently truncates, and the failure is the bad
+# kind: the reply in step 5 posts, then step 6 cannot find the thread it
+# belongs to. `--paginate` needs both an `$endCursor` variable and a
+# `pageInfo` selection to walk the connection.
+gh api graphql --paginate -f query='
+query($endCursor: String) {
+  repository(owner: "<owner>", name: "<repo>") {
+    pullRequest(number: <PR>) {
+      reviewThreads(first: 50, after: $endCursor) {
+        pageInfo { hasNextPage endCursor }
+        nodes {
+          id isResolved isOutdated path line
+          comments(first: 100) { nodes { databaseId author { login } body url } }
+        }
+      }
+    }
+  }
+}'
 ```
 
 If specific comment IDs or URLs were provided, fetch those directly. Read the
@@ -164,6 +182,11 @@ id like `PRRT_kwDO…`, not a number. **A thread has no `databaseId`**; asking f
 one fails the whole query. Match instead on the nested
 `comments.nodes[].databaseId`, which is the numeric id of the comment you
 replied to.
+
+If a match is not found, **do not resolve anything** — say the thread id could
+not be resolved for that comment and stop. A wrong thread resolved is worse than
+one left open, and the likeliest cause is a truncated read rather than a missing
+thread.
 
 That query's `comments.nodes[].url` is also where a thread's URL comes from,
 which *What a question item must contain* requires to be the API's own value
