@@ -57,16 +57,21 @@ gh api repos/<owner>/<repo>/pulls/<PR>/comments
 # Paginate it. A fixed `first:` silently truncates, and the failure is the bad
 # kind: the reply in step 5 posts, then step 6 cannot find the thread it
 # belongs to. `--paginate` needs both an `$endCursor` variable and a
-# `pageInfo` selection to walk the connection.
+# `pageInfo` selection to walk the connection - on the nested `comments` too,
+# for the same reason: the comment you replied to may not be in the first page
+# of its own thread.
 gh api graphql --paginate -f query='
-query($endCursor: String) {
+query($endCursor: String, $commentCursor: String) {
   repository(owner: "<owner>", name: "<repo>") {
     pullRequest(number: <PR>) {
       reviewThreads(first: 50, after: $endCursor) {
         pageInfo { hasNextPage endCursor }
         nodes {
           id isResolved isOutdated path line
-          comments(first: 100) { nodes { databaseId author { login } body url } }
+          comments(first: 100, after: $commentCursor) {
+            pageInfo { hasNextPage endCursor }
+            nodes { databaseId author { login } body url }
+          }
         }
       }
     }
