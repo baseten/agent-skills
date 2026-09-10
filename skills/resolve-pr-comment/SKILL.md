@@ -47,8 +47,36 @@ In a remote/web session (no `gh` CLI access), use the GitHub MCP tools:
 In a local session with `gh` CLI available:
 
 ```bash
-gh pr view <PR> --repo <owner>/<repo> --json number,title,headRefName,url,comments,reviewThreads
+gh pr view <PR> --repo <owner>/<repo> --json number,title,headRefName,url,comments
 gh api repos/<owner>/<repo>/pulls/<PR>/comments
+
+# Review threads are GraphQL-only - `reviewThreads` is not a `gh pr view`
+# field, and asking for it fails the whole command. This is also the only
+# source of a thread's resolvable id, which step 6 needs.
+#
+# Paginate it. A fixed `first:` silently truncates, and the failure is the bad
+# kind: the reply in step 5 posts, then step 6 cannot find the thread it
+# belongs to. `--paginate` needs both an `$endCursor` variable and a
+# `pageInfo` selection to walk the connection - on the nested `comments` too,
+# for the same reason: the comment you replied to may not be in the first page
+# of its own thread.
+gh api graphql --paginate -f query='
+query($endCursor: String, $commentCursor: String) {
+  repository(owner: "<owner>", name: "<repo>") {
+    pullRequest(number: <PR>) {
+      reviewThreads(first: 50, after: $endCursor) {
+        pageInfo { hasNextPage endCursor }
+        nodes {
+          id isResolved isOutdated path line
+          comments(first: 100, after: $commentCursor) {
+            pageInfo { hasNextPage endCursor }
+            nodes { databaseId author { login } body url }
+          }
+        }
+      }
+    }
+  }
+}'
 ```
 
 If specific comment IDs or URLs were provided, fetch those directly. Read the
@@ -154,13 +182,20 @@ gh api graphql -f query='
 '
 ```
 
-To find the `threadId`, look in the `reviewThreads` from step 1 or fetch via:
+The `threadId` is the thread's `id` from the GraphQL query in step 1 — a node
+id like `PRRT_kwDO…`, not a number. **A thread has no `databaseId`**; asking for
+one fails the whole query. Match instead on the nested
+`comments.nodes[].databaseId`, which is the numeric id of the comment you
+replied to.
 
-```bash
-gh api graphql -f query='{ repository(owner:"<owner>", name:"<repo>") { pullRequest(number:<PR>) { reviewThreads(first:50) { nodes { id databaseId isResolved } } } } }'
-```
+If a match is not found, **do not resolve anything** — say the thread id could
+not be resolved for that comment and stop. A wrong thread resolved is worse than
+one left open, and the likeliest cause is a truncated read rather than a missing
+thread.
 
-Match `databaseId` to the comment ID you replied to.
+That query's `comments.nodes[].url` is also where a thread's URL comes from,
+which *What a question item must contain* requires to be the API's own value
+passed through verbatim rather than assembled.
 
 ## Unattended callers
 
