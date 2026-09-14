@@ -55,9 +55,9 @@ The read exists — `issue_dependency_read`, methods `get_blocked_by` and `get_b
 
 Consequences of the split:
 
-- **A cloud run's graph is strictly poorer than a local one's.** A READY computed from prose alone is a narrower claim than one computed from a corroborated graph — report it in those terms.
-- **Both-cloud is first-class usage and the case to protect**: a cloud orchestrator dispatching cloud workers is symmetric — neither side reads edges. A local orchestrator dispatching cloud workers is a real mix the rules must handle, but the symmetric case is never written as an exception to it.
-- **This changes when the flag ships.** Re-confirm rather than trusting the table: it describes 2026-08-25.
+- **A cloud run's graph is poorer than a local one's unless a transport was provisioned for it** — by default, not by nature. A READY computed from prose alone is a narrower claim than one computed from a corroborated graph, and must be reported in those terms; where a probe confirmed a read, it is the corroborated claim and says so instead. The distinction is what the probe returned, never which container it ran in.
+- **Both-cloud is first-class usage and the case to protect**: a cloud orchestrator dispatching cloud workers is symmetric *by default* — neither side reads edges, because neither side's built-in server carries the flag. A local orchestrator dispatching cloud workers is a real mix the rules must handle, but the symmetric case is never written as an exception to it. **A provisioned second server breaks the symmetry wherever it exists**, and it is per-container: an orchestrator that can read edges must not assume its workers can, which is why the confirmed transport travels in the dispatch prompt rather than being re-derived.
+- **The flag has shipped; provisioning is what varies.** The table describes what a container has by default, not what it can have, and a second server provisioned for one session says nothing about the next. Re-confirm per run rather than trusting the table in either direction.
 
 **Record the confirmed transport state and pass it to everything downstream** — the rules elsewhere are written against *what the transport returned*, never against the word "GitHub". Report which transport answered and what it could see, so the orchestrator carries that into every dispatch prompt.
 
@@ -68,7 +68,7 @@ Consequences of the split:
 - **Record the completeness of every blocker set in scope as unproven**, and say why: no native source exists to corroborate prose, so an unwritten blocker is undetectable by construction. The skill carries unproven completeness to the caller as a judgement, not a stop.
 - **A visibility proof over that dependency boundary cannot be established at all.** Never substitute a hierarchy or issue read that happens to succeed: those prove *some* call works, which was never in doubt.
 
-**Where the probe found a working read** — an authenticated `gh`, or MCP once the flag ships — none of the four applies: the three-source union works as written, membership comparisons are meaningful, and a visibility proof is both possible and required, across a repository boundary if the set spans repositories. Linear is in this branch too.
+**Where the probe found a working read** — an authenticated `gh`, or a provisioned `mcp__github-deps__issue_dependency_read` — none of the four applies: the three-source union works as written, membership comparisons are meaningful, and a visibility proof is both possible and required, across a repository boundary if the set spans repositories. Linear is in this branch too.
 
 Everything above is a statement about a probed transport, never about a tracker. The classification travels with the result instead of being re-derived from the tracker's name downstream.
 

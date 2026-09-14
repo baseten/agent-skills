@@ -18,7 +18,7 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 **Why the confirming case must cross a repository boundary:** a credential can return same-repo edges perfectly while silently dropping cross-repo ones, so a same-repo confirmation proves nothing about the edges that matter most.
 
-**Why both-cloud is the case to protect:** a cloud orchestrator dispatching cloud workers is the common shape, and its limitation is symmetric — neither side reads edges. A local orchestrator dispatching cloud workers (a proven view up top its workers cannot reproduce) is real but rarer; writing the rules around it would demote the common case to an exception of the rare one.
+**Why both-cloud is the case to protect:** a cloud orchestrator dispatching cloud workers is the common shape, and its limitation is symmetric by default — neither side reads edges, because neither side's built-in server carries the `issue_dependencies` flag. Provisioning a second server on one side breaks that symmetry without announcing it, which is why the confirmed transport is carried into each dispatch rather than inferred from the shape. A local orchestrator dispatching cloud workers (a proven view up top its workers cannot reproduce) is real but rarer; writing the rules around it would demote the common case to an exception of the rare one.
 
 ## Transport visibility
 
