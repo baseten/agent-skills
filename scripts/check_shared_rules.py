@@ -30,6 +30,14 @@ def main() -> int:
     # Match the assignment, not any mention: the script's own comments cite
     # example paths that are not sources.
     generated = set(re.findall(r'src="\$ROOT/rules/([a-z0-9-]+\.md)"', refresh))
+
+    # And which skills the generator declares apply each rule, so a consumer
+    # that quietly stops carrying one is visible.
+    declared: dict[str, set[str]] = {}
+    for var, names in re.findall(r'^([A-Z_]+)="([^"]*)"', refresh, re.M):
+        rule = f"{var.lower().replace('_', '-')}.md"
+        if rule in generated:
+            declared[rule] = set(names.split())
     if not generated:
         errors.append(
             "scripts/refresh_shared_rules.sh names no rules/<name>.md — "
@@ -84,6 +92,29 @@ def main() -> int:
                 f"rules/{source.name} is cited by no skill — "
                 "a bundle nothing cites is never read"
             )
+
+        # "Some skill cites it" is not the property that matters. The generator
+        # names the skills that apply this rule, and each of them installs
+        # alone: one that loses its citation and its copy ships without the rule
+        # while every other consumer keeps CI green. Check each declared one.
+        for name in sorted(declared.get(source.name, ())):
+            skill_md = ROOT / "skills" / name / "SKILL.md"
+            if not skill_md.is_file():
+                errors.append(
+                    f"refresh_shared_rules.sh declares {name} a consumer of "
+                    f"{source.name} but skills/{name}/SKILL.md does not exist"
+                )
+                continue
+            if source.name not in CITATION.findall(skill_md.read_text(encoding="utf-8")):
+                errors.append(
+                    f"skills/{name} is declared a consumer of {source.name} "
+                    "but does not cite it"
+                )
+            if not (ROOT / "skills" / name / "references" / source.name).is_file():
+                errors.append(
+                    f"skills/{name} is declared a consumer of {source.name} "
+                    "but does not carry it — run scripts/refresh_shared_rules.sh"
+                )
 
     # And an orphan bundle is itself the wiring mistake, so name it rather than
     # leaving a stale copy that nothing installs and nothing refreshes.
