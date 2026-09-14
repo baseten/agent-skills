@@ -173,11 +173,18 @@ fi
 # credential fails to connect on every session start, and it is unnecessary
 # locally, where an authenticated `gh` already reads cross-repo edges.
 MCP_CONFIG_FILE="$HOME/.claude.json"
-# Deliberately NOT configurable. Permission rules match on the literal tool
-# name, so permissions.json can only allowlist one server segment -
-# mcp__github-deps__*. A configurable name would silently stop matching those
-# entries, and the symptom is a permission prompt mid-run on a tool that looks
-# allowlisted, exactly as the dual Claude Code Remote registration does.
+# Deliberately NOT configurable, and load-bearing for the allowlist.
+# permissions.json allows mcp__github-deps__* - a glob is permitted in the tool
+# position but only after a literal mcp__<server>__ prefix, so the server
+# segment is the one part that must not move. A configurable name would
+# silently stop matching, and the symptom is a permission prompt mid-run on a
+# tool that looks allowlisted, exactly as the dual Claude Code Remote
+# registration does.
+#
+# The tool and toolset variables below stay configurable precisely because the
+# allowlist is a glob over this prefix: whatever surface they select is covered,
+# including tools upstream renames. Narrowing that glob to fixed tool names
+# would make every override drift out of the allowlist.
 MCP_NAME="github-deps"
 # features= is the query-parameter channel (github/github-mcp-server#3146)
 # rather than X-MCP-Features, because the header wins whenever it is present -
@@ -199,7 +206,22 @@ MCP_TOOLSETS="${AGENT_SKILLS_GH_MCP_TOOLSETS:-projects}"
 MCP_TOOLS="${AGENT_SKILLS_GH_MCP_TOOLS:-issue_dependency_read,issue_dependency_write}"
 
 if [ "${AGENT_SKILLS_GH_MCP:-0}" != "1" ]; then
-  echo "Extra GitHub MCP server disabled (set AGENT_SKILLS_GH_MCP=1 to install)"
+  # Remove rather than merely skip. An entry left behind by an earlier run with
+  # the flag set keeps connecting on every Claude start, and if the credential
+  # went away at the same time that is precisely the repeated startup failure
+  # the opt-in exists to avoid - a wrong entry that is invisible, the same
+  # failure mode permissions.json keeps a managed-set record for. Only this
+  # entry is touched; unrelated configuration is preserved.
+  if [ -f "$MCP_CONFIG_FILE" ] && command -v jq >/dev/null 2>&1 \
+     && jq -e --arg n "$MCP_NAME" '.mcpServers[$n] // empty' \
+          "$MCP_CONFIG_FILE" >/dev/null 2>&1; then
+    jq --arg n "$MCP_NAME" 'del(.mcpServers[$n])' \
+      "$MCP_CONFIG_FILE" > "$MCP_CONFIG_FILE.tmp"
+    mv "$MCP_CONFIG_FILE.tmp" "$MCP_CONFIG_FILE"
+    echo "Extra GitHub MCP server disabled - removed '$MCP_NAME'"
+  else
+    echo "Extra GitHub MCP server disabled (set AGENT_SKILLS_GH_MCP=1 to install)"
+  fi
 elif ! command -v jq >/dev/null 2>&1; then
   echo "WARNING: jq unavailable, cannot install the extra GitHub MCP server." >&2
 else
