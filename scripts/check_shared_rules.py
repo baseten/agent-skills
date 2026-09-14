@@ -43,11 +43,27 @@ def main() -> int:
                 )
 
     # A source nobody bundles is dead weight, and more likely a wiring mistake.
+    # Only a directory holding a SKILL.md counts as a consumer: a rename or a
+    # rebase can leave skills/<old-name>/references/ behind with no skill beside
+    # it, and counting that orphan keeps this guard green while no installable
+    # skill carries the rule at all. That happened while assembling this change.
     for source in sorted(RULES.glob("*.md")):
         if source.name.endswith("-notes.md"):
             continue
-        if not any(ROOT.glob(f"skills/*/references/{source.name}")):
+        consumers = [
+            b for b in ROOT.glob(f"skills/*/references/{source.name}")
+            if (b.parent.parent / "SKILL.md").is_file()
+        ]
+        if not consumers:
             errors.append(f"rules/{source.name} is bundled into no skill")
+
+    # And an orphan bundle is itself the wiring mistake, so name it rather than
+    # leaving a stale copy that nothing installs and nothing refreshes.
+    for bundled in sorted(ROOT.glob("skills/*/references/*.md")):
+        if not (bundled.parent.parent / "SKILL.md").is_file():
+            errors.append(
+                f"{bundled.relative_to(ROOT)} has no SKILL.md beside it — orphan bundle"
+            )
 
     for e in errors:
         print(f"ERROR {e}", file=sys.stderr)

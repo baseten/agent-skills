@@ -32,3 +32,6 @@ That asymmetry — this skill *writes* what others only read — is why the prob
 ## Confirmation and mutation policy
 
 **Why descriptions stay intact by default:** the prose may contain useful context, and removing it is a separate editorial mutation from adding native edges — bundling the two turns an additive, reversible normalization into a lossy rewrite nobody asked for.
+
+
+**Why the opt-in cleanup carries the write-form rule** (added in the shared-rule extraction round): a description rewrite is the only authored prose this skill ever produces. Every other operation it performs is a native dependency edge, which has no body for a write rule to govern, and that asymmetry is what made this write easy to overlook when the rule was stated for PR bodies and review replies. It is also the write least likely to be read before it goes out — the cleanup is asked for across a tranche and seen afterwards — so it is precisely the case the footer's approval test exists for. Stating it at the decision point rather than leaving it implied means a future editor removing it has to decide to.

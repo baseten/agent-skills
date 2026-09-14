@@ -66,6 +66,10 @@ remains relevant here is only the interaction with *Posting identity*, which
 stayed: identity decides who a write appears to come from, and that skill
 decides what it looks like once authored.
 
+**Why the no-wrap rule sits with brevity rather than in a style guide:** it is not a claim about voice, which is why it survives a repository whose own guide governs the prose. It is a claim about the destination — a forge field renders a newline inside a paragraph as a line break, so a paragraph wrapped at a fixed column arrives as a ragged column. Verified rather than assumed: GitHub's own rendered HTML for a wrapped PR body carries a `<br>` at the end of every wrapped line.
+
+**Why it needs stating at all, given nothing else here is a formatting rule:** because the habit is trained by the repository and the write escapes the training. A project that formats its markdown at a fixed width enforces that on every file a run touches, usually in CI; the PR body is composed inline, reaches no formatter, and fails no check. So the one write where the habit is wrong is also the only one nothing corrects — two PRs made the same way, one wrapped at 72–79 columns and one running to 404 characters a line, differed only in whether the author happened to remember.
+
 ## Per-repository policy configuration
 
 **Why a config file and not prose or a skill override:** a `CLAUDE.md` paragraph gets interpreted, and interpretation must not decide whether a run may merge. A project-level skill override is not the mechanism either: `bootstrap.sh` installs these skills to `~/.claude/skills`, and a personal skill shadows a project skill of the same name, so a project copy would silently never load.
