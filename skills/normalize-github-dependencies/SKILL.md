@@ -154,6 +154,12 @@ Never remove existing native dependencies unless the user explicitly asks for cl
 
 By default, **leave the original description text intact** after adding native dependencies (NOTES). If the user asks to clean descriptions afterward, remove only redundant dependency boilerplate while preserving explanatory text.
 
+Rewriting a description is an authored tracker write, so it follows
+`references/authored-write-form.md` like any other — brevity, and the footer
+where nobody read the text before it went out. This is the skill's only
+authored write; every other operation it performs is a native dependency edge,
+which has no body for the rule to govern.
+
 ## Post-write verification
 
 After mutations:
