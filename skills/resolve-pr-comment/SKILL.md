@@ -57,19 +57,21 @@ gh api repos/<owner>/<repo>/pulls/<PR>/comments
 # Paginate it. A fixed `first:` silently truncates, and the failure is the bad
 # kind: the reply in step 5 posts, then step 6 cannot find the thread it
 # belongs to. `--paginate` needs both an `$endCursor` variable and a
-# `pageInfo` selection to walk the connection - on the nested `comments` too,
-# for the same reason: the comment you replied to may not be in the first page
-# of its own thread.
+# `pageInfo` selection to walk the connection. It advances that one variable by
+# name and nothing else, so a nested connection cannot be paged in the same
+# request - `comments` is capped at its first page here, and the follow-up
+# below is what covers a thread longer than that.
 gh api graphql --paginate -f query='
-query($endCursor: String, $commentCursor: String) {
+query($endCursor: String) {
   repository(owner: "<owner>", name: "<repo>") {
     pullRequest(number: <PR>) {
       reviewThreads(first: 50, after: $endCursor) {
         pageInfo { hasNextPage endCursor }
         nodes {
           id isResolved isOutdated path line
-          comments(first: 100, after: $commentCursor) {
-            pageInfo { hasNextPage endCursor }
+          comments(first: 100) {
+            totalCount
+            pageInfo { hasNextPage }
             nodes { databaseId author { login } body url }
           }
         }
@@ -187,6 +189,29 @@ id like `PRRT_kwDO…`, not a number. **A thread has no `databaseId`**; asking f
 one fails the whole query. Match instead on the nested
 `comments.nodes[].databaseId`, which is the numeric id of the comment you
 replied to.
+
+**If no thread matched and any thread reported `hasNextPage` on its comments**,
+the target may be beyond that thread's first page. Page that one thread on its
+own, where `$endCursor` is free to address the connection you care about:
+
+```bash
+gh api graphql --paginate -f query='
+query($endCursor: String) {
+  node(id: "<THREAD_NODE_ID>") {
+    ... on PullRequestReviewThread {
+      comments(first: 100, after: $endCursor) {
+        pageInfo { hasNextPage endCursor }
+        nodes { databaseId author { login } body url }
+      }
+    }
+  }
+}'
+```
+
+Run it for each thread whose `hasNextPage` was true, newest threads first, and
+stop at the first match. A thread with over 100 comments is rare enough that
+this is a fallback rather than the normal path — which is why the first query
+reports `totalCount` and `hasNextPage` instead of pretending to page.
 
 If a match is not found, **do not resolve anything** — say the thread id could
 not be resolved for that comment and stop. A wrong thread resolved is worse than
