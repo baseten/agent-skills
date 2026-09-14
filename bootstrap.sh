@@ -136,4 +136,120 @@ if [ -f "$SETTINGS_FILE" ]; then
   chmod 600 "$SETTINGS_FILE"
 fi
 
+# --- Extra GitHub MCP server ---
+#
+# Deliberately not called a sidecar: that word already means
+# ~/.claude/.agent-skills-permissions.json everywhere else in this repository.
+#
+# A cloud session's built-in GitHub MCP server is provisioned with no feature
+# flags and a restricted toolset list, so two things are missing from it, for
+# unrelated reasons:
+#
+#   issue_dependency_read/_write  - behind the `issue_dependencies` FEATURE
+#                                   FLAG, which travels on the connection as
+#                                   ?features= or X-MCP-Features
+#   Projects v2                   - `projects` is simply not one of the default
+#                                   TOOLSETS (context, issues, pull_requests,
+#                                   repos, users)
+#
+# Neither that server's URL nor its headers can be changed from inside a
+# session, and a project-scoped .mcp.json cannot help: a cloned repository is an
+# untrusted folder, so a committed enableAllProjectMcpServers is ignored and the
+# server sits at "Pending approval" with nobody able to approve it. A second
+# server in USER scope is the only route, which is why this lives here and has
+# to run from the setup script - see README, "Install from a setup script".
+#
+# The REST fallback cannot substitute. Requests to api.github.com exit through
+# the cloud GitHub proxy already described under "Why this repository is
+# public": it scopes access to the repositories attached to the session. A
+# dependency edge pointing into an unattached repository therefore comes back as
+# HTTP 200 and an empty array - the same 403 that stops a clone, but silent and
+# inside a response body, so a truncated graph is indistinguishable from an
+# empty one. Projects v2 is GraphQL-only and unreachable that way at all.
+# api.githubcopilot.com escapes both by making its GitHub calls server-side,
+# resolving visibility from its own token rather than the session's repo set.
+#
+# OFF unless AGENT_SKILLS_GH_MCP=1. A server configured without a working
+# credential fails to connect on every session start, and it is unnecessary
+# locally, where an authenticated `gh` already reads cross-repo edges.
+MCP_CONFIG_FILE="$HOME/.claude.json"
+# Deliberately NOT configurable, and load-bearing for the allowlist.
+# permissions.json allows mcp__github-deps__* - a glob is permitted in the tool
+# position but only after a literal mcp__<server>__ prefix, so the server
+# segment is the one part that must not move. A configurable name would
+# silently stop matching, and the symptom is a permission prompt mid-run on a
+# tool that looks allowlisted, exactly as the dual Claude Code Remote
+# registration does.
+#
+# The tool and toolset variables below stay configurable precisely because the
+# allowlist is a glob over this prefix: whatever surface they select is covered,
+# including tools upstream renames. Narrowing that glob to fixed tool names
+# would make every override drift out of the allowlist.
+MCP_NAME="github-deps"
+# features= is the query-parameter channel (github/github-mcp-server#3146)
+# rather than X-MCP-Features, because the header wins whenever it is present -
+# including when empty or misspelled - and a silently-losing query parameter is
+# a bad failure mode. Set one channel or the other, never both.
+MCP_URL="${AGENT_SKILLS_GH_MCP_URL:-https://api.githubcopilot.com/mcp/?features=issue_dependencies}"
+# Two channels, because the two gaps above are missing for different reasons.
+# The dependency tools are named individually - their names come from the
+# server's own feature-flag documentation, so naming them is safe. Projects is
+# requested as a toolset, because its grouped tool names (projects_get,
+# projects_list, projects_write) may be renamed upstream and an unrecognised
+# name in X-MCP-Tools is dropped silently rather than erroring.
+#
+# The two compose: a tool named in X-MCP-Tools is available even when its
+# toolset is not enabled. Setting X-MCP-Toolsets at all replaces the defaults,
+# which is what keeps this surface disjoint from the built-in server's - no
+# overlapping tool names, so nothing has to arbitrate between them.
+MCP_TOOLSETS="${AGENT_SKILLS_GH_MCP_TOOLSETS:-projects}"
+MCP_TOOLS="${AGENT_SKILLS_GH_MCP_TOOLS:-issue_dependency_read,issue_dependency_write}"
+
+if [ "${AGENT_SKILLS_GH_MCP:-0}" != "1" ]; then
+  # Remove rather than merely skip. An entry left behind by an earlier run with
+  # the flag set keeps connecting on every Claude start, and if the credential
+  # went away at the same time that is precisely the repeated startup failure
+  # the opt-in exists to avoid - a wrong entry that is invisible, the same
+  # failure mode permissions.json keeps a managed-set record for. Only this
+  # entry is touched; unrelated configuration is preserved.
+  if [ -f "$MCP_CONFIG_FILE" ] && command -v jq >/dev/null 2>&1 \
+     && jq -e --arg n "$MCP_NAME" '.mcpServers[$n] // empty' \
+          "$MCP_CONFIG_FILE" >/dev/null 2>&1; then
+    jq --arg n "$MCP_NAME" 'del(.mcpServers[$n])' \
+      "$MCP_CONFIG_FILE" > "$MCP_CONFIG_FILE.tmp"
+    mv "$MCP_CONFIG_FILE.tmp" "$MCP_CONFIG_FILE"
+    echo "Extra GitHub MCP server disabled - removed '$MCP_NAME'"
+  else
+    echo "Extra GitHub MCP server disabled (set AGENT_SKILLS_GH_MCP=1 to install)"
+  fi
+elif ! command -v jq >/dev/null 2>&1; then
+  echo "WARNING: jq unavailable, cannot install the extra GitHub MCP server." >&2
+else
+  echo "Installing extra GitHub MCP server as '$MCP_NAME'..."
+  [ -f "$MCP_CONFIG_FILE" ] || printf '{}\n' > "$MCP_CONFIG_FILE"
+
+  # Single-quoted so ${GITHUB_MCP_PAT} reaches the file unexpanded, for Claude
+  # Code to resolve when it loads the server. Under the default proxy auth the
+  # token never enters the container at all; under pat auth only this
+  # placeholder is written, so the secret lands in no file either way.
+  MCP_AUTH_VALUE='Bearer ${GITHUB_MCP_PAT}'
+  [ "${AGENT_SKILLS_GH_MCP_AUTH:-proxy}" = "pat" ] || MCP_AUTH_VALUE=""
+
+  jq --arg name "$MCP_NAME" \
+     --arg url "$MCP_URL" \
+     --arg tools "$MCP_TOOLS" \
+     --arg toolsets "$MCP_TOOLSETS" \
+     --arg auth "$MCP_AUTH_VALUE" '
+    .mcpServers //= {} |
+    .mcpServers[$name] = (
+      {type: "http", url: $url,
+       headers: {"X-MCP-Tools": $tools, "X-MCP-Toolsets": $toolsets}}
+      | if $auth == "" then . else .headers.Authorization = $auth end
+    )
+  ' "$MCP_CONFIG_FILE" > "$MCP_CONFIG_FILE.tmp"
+  mv "$MCP_CONFIG_FILE.tmp" "$MCP_CONFIG_FILE"
+  chmod 600 "$MCP_CONFIG_FILE"
+  echo "  + $MCP_NAME (auth: ${AGENT_SKILLS_GH_MCP_AUTH:-proxy})"
+fi
+
 echo "Done!"
