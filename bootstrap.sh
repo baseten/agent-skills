@@ -46,10 +46,15 @@ done
 # Skills this repository has removed. Reported, never deleted: an install that
 # has one may have got it from here or may have its own, and this script cannot
 # tell. Naming it is enough — the reader can.
-RETIRED="draft-blog-post draft-slack-message"
+RETIRED="draft-blog-post draft-slack-message upgrade-major-dependency dependency-upgrade-orchestrator"
 for prev in $RETIRED; do
-  case "$installed" in
-    *"$prev"$'\n'*) continue ;;
+  # Match a whole entry, not a substring. `installed` holds one name per line,
+  # so prefixing a newline delimits every entry on both sides; without it a
+  # retired name that is a SUFFIX of a current one matches the current one and
+  # the warning is skipped. `dependency-upgrade-orchestrator` inside
+  # `npm-dependency-upgrade-orchestrator` is exactly that case.
+  case $'\n'"$installed" in
+    *$'\n'"$prev"$'\n'*) continue ;;
   esac
   if [ -d "$CLAUDE_DIR/skills/$prev" ]; then
     echo "  ! $prev is installed and this repository no longer ships it." >&2

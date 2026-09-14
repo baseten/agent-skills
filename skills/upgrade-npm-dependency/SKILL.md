@@ -1,9 +1,9 @@
 ---
-name: upgrade-major-dependency
+name: upgrade-npm-dependency
 description: Upgrade one dependency, or one coupled group of them, across a version whose breaking-change risk has not been ruled out — establish viability, research real breaking changes against the published package, audit usage, pin current behaviour with characterization tests written and proven green before the upgrade, migrate, then classify every behavioural difference. Use for any semver-major bump, and for any minor or patch bump not already cleared of breaking changes by an audit; a small version number is not evidence of a small change.
 ---
 
-# Upgrade a Major Dependency
+# Upgrade an npm Dependency
 
 ## Task
 
