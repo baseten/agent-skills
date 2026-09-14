@@ -10,6 +10,13 @@ section's note before changing its rules. `NOTES.md` explains; it never override
 skills have one; `resolve-pr-comment` does not,
 so for those the commit message carries the reasoning instead.
 
+**A rule in `rules/` keeps its reasoning in `rules/<name>-notes.md`**, for the same
+reason and by the same rule: the note belongs with the text it explains, and that text no
+longer lives in any one skill. So a change to a shared rule records its rationale there,
+not in the `NOTES.md` of a skill that merely carries a copy — a note left beside a bundle
+is invisible to the next editor, who is reading the source. `README.md` describes this
+arrangement; this file is where it is required.
+
 **These rules are stated in this file and nowhere else.** `AGENTS.md`, `README.md` and
 `docs/review-fix-workflow.md` point here or explain the reasoning behind what is here; none
 of them states a rule of its own, and none should be read as qualifying one. That is this

@@ -23,6 +23,19 @@ def main() -> int:
     errors: list[str] = []
     checked = 0
 
+    # What this repo generates comes from the generator, not from what happens to
+    # exist. Reading it off rules/ cannot see a deleted source - the very case
+    # the missing-source check below exists for.
+    refresh = (ROOT / "scripts" / "refresh_shared_rules.sh").read_text(encoding="utf-8")
+    # Match the assignment, not any mention: the script's own comments cite
+    # example paths that are not sources.
+    generated = set(re.findall(r'src="\$ROOT/rules/([a-z0-9-]+\.md)"', refresh))
+    if not generated:
+        errors.append(
+            "scripts/refresh_shared_rules.sh names no rules/<name>.md — "
+            "this check cannot tell a generated bundle from a skill-local one"
+        )
+
     for skill_md in sorted(ROOT.glob("skills/*/SKILL.md")):
         skill_dir = skill_md.parent
         cited = set(CITATION.findall(skill_md.read_text(encoding="utf-8")))
@@ -35,7 +48,18 @@ def main() -> int:
                 continue
             source = RULES / ref
             if not source.is_file():
-                continue  # a skill-local reference with no shared source is fine
+                # A skill-local reference with no shared source is fine - but a
+                # bundle this repo generates is not. If rules/<name>.md is
+                # deleted while its copies remain, every citation takes this
+                # path, the source loop below has nothing to inspect, and the
+                # twelve copies quietly become independent files with no single
+                # source of truth - green the whole way.
+                if ref in generated:
+                    errors.append(
+                        f"rules/{ref} is missing but {rel} was generated from it — "
+                        "restore the source or drop the bundles"
+                    )
+                continue
             if bundled.read_bytes() != source.read_bytes():
                 errors.append(
                     f"{rel} differs from rules/{ref} — "
@@ -52,10 +76,14 @@ def main() -> int:
             continue
         consumers = [
             b for b in ROOT.glob(f"skills/*/references/{source.name}")
-            if (b.parent.parent / "SKILL.md").is_file()
+            if (skill := b.parent.parent / "SKILL.md").is_file()
+            and source.name in CITATION.findall(skill.read_text(encoding="utf-8"))
         ]
         if not consumers:
-            errors.append(f"rules/{source.name} is bundled into no skill")
+            errors.append(
+                f"rules/{source.name} is cited by no skill — "
+                "a bundle nothing cites is never read"
+            )
 
     # And an orphan bundle is itself the wiring mistake, so name it rather than
     # leaving a stale copy that nothing installs and nothing refreshes.
