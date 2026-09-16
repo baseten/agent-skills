@@ -6,9 +6,9 @@ same rule in more than one place on purpose. That changes what a correct fix loo
 here, and this file is the rule for it.
 
 Reasoning lives in a skill's `NOTES.md`, keyed by its `SKILL.md` section names. Read a
-section's note before changing its rules. `NOTES.md` explains; it never overrides. Most
-skills have one; `resolve-pr-comment` does not,
-so for those the commit message carries the reasoning instead.
+section's note before changing its rules. `NOTES.md` explains; it never overrides. Every
+skill has one; where a new skill does not yet, the commit message carries the reasoning
+until it does.
 
 **A rule in `rules/` keeps its reasoning in `rules/<name>-notes.md`**, for the same
 reason and by the same rule: the note belongs with the text it explains, and that text no
