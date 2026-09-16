@@ -95,6 +95,16 @@ That authority covers worker dispatch only. It is not permission to merge, to wi
 
 # Execution runtime
 
+**`swarm-dispatch` owns the generic statement of what this section and *Parent
+supervision loop* describe** — runtime detection and the degrade chain, one
+worker per task in its own worktree off a stated base, model selection by
+failure visibility, and the supervision rules including the no-change preflight.
+What those sections hold here is the PR- and DAG-specific form: stacked branch
+topology, per-PR repair budgets, draft state, and a frontier that advances off
+merges. Read the general rule there; the specifics stay here, and where the two
+appear to disagree the general rule is the one that was written to be reused.
+
+
 The orchestration policy must be independent of the mechanism used to run workers.
 
 ## Preferred runtime: Claude Code Dynamic Workflows
