@@ -61,10 +61,15 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 ## Authored write form
 
 The rule moved to `rules/authored-write-form.md` and its reasoning to
-`rules/authored-write-form-notes.md`. What
-remains relevant here is only the interaction with *Posting identity*, which
-stayed: identity decides who a write appears to come from, and that skill
-decides what it looks like once authored.
+`rules/authored-write-form-notes.md`. What remains here is the reasoning for the
+parts that did **not** move: the interaction with *Posting identity* — identity
+decides who a write appears to come from, that rule decides what it looks like
+once authored — and the two below, which explain rules this skill implements and
+the shared rule never states.
+
+The `html_url` provenance rule is the one that is not obvious. A review-comment thread and a PR-level comment carry different fragment forms, so a URL assembled from a PR number and a comment id resolves — to the top of the PR, or to a different comment — and **the failure is invisible from the run's side**: the link is well-formed, it returns 200, and only the person clicking it discovers it went nowhere useful. There is no way to detect that from here, which is why the rule is provenance ("the string the API returned") rather than shape ("a valid URL"). It applies to every thread URL the skill emits, not only a question item's, because a no-action entry and a deferred repair name the same threads and are read by the same person.
+
+The notification half is deliberately subordinate. A subscription dies with the session that armed it, so a notification is unobservable-in-principle from a later run: nothing may treat it as delivery, and the item is complete when it is *recorded*. Reporting whether one was sent is useful; depending on it having been seen is the failure mode.
 
 ## Per-repository policy configuration
 
