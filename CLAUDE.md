@@ -118,6 +118,10 @@ prompt**: a reader that has seen `expected_output` or the assertions is grading 
 answer. Grade both against the same assertions, blind to which arm is which where you can
 manage it. **The information is entirely in the disagreement** — running only the new arm
 returns a clean sweep and teaches nothing, which is the flattering direction this fails in.
+`scripts/run_evals.py` does the deterministic half of this — materialising both arms from
+git into a scratch directory, splitting each scenario into a reader packet and a grader key
+so neither side can see the other's half, and reporting the disagreements rather than the
+sweep (README, *Running the evals*). The model calls stay the caller's.
 `scripts/eval_reminder.sh` flags a contract change whose evals did not move; it is advisory
 and needs someone to act on it.
 

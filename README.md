@@ -177,6 +177,35 @@ cannot be paraphrased and still be itself. Whether the prose *means* the right t
 answered by reading it, and by the eval corpus (`CLAUDE.md`, on comparing two readings of a
 change that should not alter meaning).
 
+## Running the evals
+
+`CLAUDE.md` states the method — two arms, the same assertions, and the information in the
+disagreement. `scripts/run_evals.py` does the deterministic half of it, so the method stops
+depending on whoever remembers it:
+
+```bash
+python3 scripts/run_evals.py prepare --skill <name> --base origin/main
+# dispatch one reader per packet.json; save its reply to answer.md beside it
+# grade answer.md against key.json into grading.json
+python3 scripts/run_evals.py score --round <dir>
+```
+
+`prepare` materialises both arms from git into a scratch directory outside the tree, and
+splits each scenario in two: `packet.json` for a reader, carrying the prompt and the
+contract path, and `key.json` for a grader, carrying `expected_output` and the assertions.
+The split is the point — a reader that has seen either is grading its own answer — and
+`name` is withheld too, because a scenario name telegraphs its verdict in three words.
+
+`score` reads the `grading.json` files and reports the pass rate per arm, then the
+disagreements, which is the only part that carries information. It marks an ungraded
+scenario as ungraded rather than counting it either way.
+
+**The model calls are not in here.** This repository has no API key and *Checks* above gives
+the reason model-graded work stays out of CI; dispatching readers is the caller's, whether
+that is a person or an agent. **A skill new in this branch has no old arm**, and `prepare`
+says so: its scores are a baseline for the next round, not a result, because there is
+nothing to disagree with.
+
 ## Permissions
 
 `permissions.json` is merged into `~/.claude/settings.json` by `bootstrap.sh`, so
