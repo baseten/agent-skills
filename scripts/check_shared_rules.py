@@ -38,6 +38,21 @@ def main() -> int:
         rule = f"{var.lower().replace('_', '-')}.md"
         if rule in generated:
             declared[rule] = set(names.split())
+
+    # The consumer list is found by spelling the rule out of the variable name,
+    # so AUTHORED_WRITE_FORM works only because it happens to spell
+    # authored-write-form.md. Rename the variable and this mapping finds nothing,
+    # every per-consumer check below iterates an empty set, and the guard becomes
+    # a no-op that reports success. A rule the generator copies must have a
+    # consumer list the check can actually read - the same self-awareness the
+    # empty-`generated` error above provides for sources.
+    for name in sorted(generated):
+        if not declared.get(name):
+            errors.append(
+                f"scripts/refresh_shared_rules.sh copies rules/{name} but names no "
+                "consumers the check can read — the variable holding them must be "
+                f"spelled {name[:-3].upper().replace('-', '_')}"
+            )
     if not generated:
         errors.append(
             "scripts/refresh_shared_rules.sh names no rules/<name>.md — "

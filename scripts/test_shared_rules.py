@@ -110,6 +110,10 @@ GUARDS = {
         "    if not generated:",
         "    if False:",
     ),
+    "unreadable-consumers": (
+        "        if not declared.get(name):",
+        "        if False:",
+    ),
 }
 
 
@@ -166,6 +170,18 @@ def generator_names_no_source(tree: pathlib.Path) -> None:
         text.replace(f'src="$ROOT/rules/{RULE}"', 'src="$ROOT/$RULE_PATH"'), encoding="utf-8")
 
 
+def generator_renames_the_consumer_list(tree: pathlib.Path) -> None:
+    """The consumer list is found by spelling the rule out of the variable name,
+    so renaming the variable empties it and every per-consumer check iterates
+    nothing. Reported by the agent that wrote these fixtures, and green before
+    the guard existed: the rule keeps being copied, no consumer is ever checked.
+    """
+    text = (tree / REFRESH).read_text(encoding="utf-8")
+    (tree / REFRESH).write_text(
+        text.replace(RULE[:-3].upper().replace("-", "_"), "SOME_OTHER_NAME"),
+        encoding="utf-8")
+
+
 BROKEN = [
     ("a bundled copy diverges from its source", "divergence", diverged_copy),
     ("a skill cites the rule and does not carry it", "missing-copy", citation_without_copy),
@@ -179,6 +195,8 @@ BROKEN = [
      declared_consumer_drops_rule),
     ("the generator names no source the check can read", "generator-names-nothing",
      generator_names_no_source),
+    ("the generator renames the consumer list", "unreadable-consumers",
+     generator_renames_the_consumer_list),
 ]
 
 
