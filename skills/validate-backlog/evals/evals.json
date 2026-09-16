@@ -66,7 +66,7 @@
       "id": 5,
       "name": "an-authorized-rewrite-signs-the-body-not-the-edge",
       "prompt": "You are executing the validate-backlog skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the user has explicitly asked you to apply the suggested fixes. Two are dependency-link additions; one rewrites an issue body to remove a stale prose blocker. Questions: (a) does the rewritten body carry the attribution footer? (b) do the dependency links?",
-      "expected_output": "(a) Yes, by default. The authored-write-form rule (`backlog-orchestrator`, *Authored write form*) asks whether the user approved that exact text; asking for the suggested fixes to be applied authorizes the edit, not the wording. Only if they were shown and approved the exact rewritten body does the footer come off. (b) No — a dependency link carries no body, so there is nowhere to put a footer and nothing for brevity to govern.",
+      "expected_output": "(a) Yes, by default. The authored-write-form rule (`references/authored-write-form.md`) asks whether the user approved that exact text; asking for the suggested fixes to be applied authorizes the edit, not the wording. Only if they were shown and approved the exact rewritten body does the footer come off. (b) No — a dependency link carries no body, so there is nowhere to put a footer and nothing for brevity to govern.",
       "assertions": [
         "the rewritten issue body carries the attribution footer by default",
         "the answer distinguishes authorizing the edit from approving the wording",

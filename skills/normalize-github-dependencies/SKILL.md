@@ -154,6 +154,19 @@ Never remove existing native dependencies unless the user explicitly asks for cl
 
 By default, **leave the original description text intact** after adding native dependencies (NOTES). If the user asks to clean descriptions afterward, remove only redundant dependency boilerplate while preserving explanatory text.
 
+That cleanup is **subtractive, and it is not this run's text to sign.** It
+removes boilerplate from a description a person wrote and keeps everything else,
+so `references/authored-write-form.md` reaches it only as a constraint on what
+may be removed: brevity governs a body this run writes, never one it edits down,
+and **no attribution footer is added** — appending one would mark the author's
+own retained prose as generated, which is the dishonesty the footer exists to
+prevent. `merge-stack` applies the same rule to a descendant PR's body for the
+same reason (*Update `Depends on:` after parent merge*). A description that
+already carries a footer keeps the one it has.
+
+Every other operation this skill performs is a native dependency edge, which has
+no body for the rule to govern at all.
+
 ## Post-write verification
 
 After mutations:

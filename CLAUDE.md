@@ -6,9 +6,16 @@ same rule in more than one place on purpose. That changes what a correct fix loo
 here, and this file is the rule for it.
 
 Reasoning lives in a skill's `NOTES.md`, keyed by its `SKILL.md` section names. Read a
-section's note before changing its rules. `NOTES.md` explains; it never overrides. Most
-skills have one; `resolve-pr-comment` does not,
-so for those the commit message carries the reasoning instead.
+section's note before changing its rules. `NOTES.md` explains; it never overrides. Every
+skill has one; where a new skill does not yet, the commit message carries the reasoning
+until it does.
+
+**A rule in `rules/` keeps its reasoning in `rules/<name>-notes.md`**, for the same
+reason and by the same rule: the note belongs with the text it explains, and that text no
+longer lives in any one skill. So a change to a shared rule records its rationale there,
+not in the `NOTES.md` of a skill that merely carries a copy — a note left beside a bundle
+is invisible to the next editor, who is reading the source. `README.md` describes this
+arrangement; this file is where it is required.
 
 **These rules are stated in this file and nowhere else.** `AGENTS.md`, `README.md` and
 `docs/review-fix-workflow.md` point here or explain the reasoning behind what is here; none
@@ -170,6 +177,8 @@ Every check is deterministic and runnable locally. Run them before committing:
 
 ```bash
 python3 scripts/check_skills.py
+python3 scripts/check_shared_rules.py                # and that every bundled rule matches its source
+python3 scripts/test_shared_rules.py                 # and that each of that check's guards can fail
 python3 scripts/check_permissions.py
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
