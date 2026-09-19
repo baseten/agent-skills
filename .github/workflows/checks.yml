@@ -26,6 +26,16 @@ jobs:
       - name: Skill structure and schema
         run: python3 scripts/check_skills.py
 
+      - name: Shared rules are bundled and unmodified
+        run: python3 scripts/check_shared_rules.py
+
+      # Same reason as the path detector fixtures below: the check above runs
+      # against a tree that is already wired correctly, so it is green whether
+      # its guards work or not. These fixtures break the wiring on purpose, one
+      # way per guard, and require the named guard to be what rejects each.
+      - name: Shared rule guard fixtures
+        run: python3 scripts/test_shared_rules.py
+
       - name: Permissions file shape
         run: python3 scripts/check_permissions.py
 
@@ -34,6 +44,14 @@ jobs:
 
       - name: Path detector fixtures
         run: python3 scripts/test_no_machine_paths.py
+
+      # run_evals.py makes no model calls, so nothing here grades anything - it
+      # is the scaffolding that keeps the reader's packet and the grader's key
+      # apart. Both its guards fail in the flattering direction (a leaked answer
+      # reads as a clean sweep; an ungraded scenario reads as a pass), so the
+      # fixtures are the only thing that says they work.
+      - name: Eval runner guard fixtures
+        run: python3 scripts/test_run_evals.py
 
       # Same reason as the locality fixtures below: this one shipped green over
       # the construction it exists to reject, so the fixtures gate the check.

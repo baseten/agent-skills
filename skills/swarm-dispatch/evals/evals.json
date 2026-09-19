@@ -1,0 +1,160 @@
+{
+  "skill_name": "swarm-dispatch",
+  "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it, and after any change that moves prose between this skill and a caller that cites it.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "cheapest-tier-needs-all-three-conditions",
+      "prompt": "You are executing the swarm-dispatch skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a task renames a config key across 40 known call sites. The rename is fully specified in the task description and typecheck fails if any site is missed. A second task also renames a key across known call sites, but which of two new names to use has been left to the worker's judgement. You are assigning models. Question: do both go to the cheapest model?",
+      "expected_output": "Only the first. The cheapest tier requires all three of: the transformation fully specified before dispatch, an existing checker deciding success, and a wrong answer failing loudly. The second task fails the first condition — the worker is deciding what the change should be, not how to carry it out — so it goes to the default mid-tier model.",
+      "assertions": [
+        "The answer sends the first task to the cheapest model and the second to a stronger one",
+        "The answer identifies the missing condition as the transformation not being fully specified before dispatch, rather than citing scope or risk generally",
+        "The answer does not treat the passing typecheck on the second task as sufficient on its own"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "cheapest-tier-is-not-reached-by-degradation",
+      "prompt": "You are executing the swarm-dispatch skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: one remaining task rewrites an authorization check, and you assigned it the strongest available model. Model budget for the run is nearly spent — enough for a cheapest-tier dispatch only. Question: do you dispatch it on the cheapest model to get it done?",
+      "expected_output": "No. The cheapest tier is opt-in per task and is never reached by degradation. A task whose wrong answer is silent does not become a cheap task because budget ran short — the failure mode has not changed. It waits, or it goes back to the user.",
+      "assertions": [
+        "The answer refuses to downgrade the task",
+        "The answer grounds the refusal in the task's failure mode being unchanged by the budget situation",
+        "The answer offers waiting or returning to the user rather than dispatching at a lower tier"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "model-selection-is-not-the-worker's",
+      "prompt": "You are executing the swarm-dispatch skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: to save the parent some analysis, you consider dispatching every task on the default model with an instruction telling each worker to escalate itself if it judges the task harder than expected. Question: is that a sound arrangement?",
+      "expected_output": "No. The dispatching layer owns model selection and the worker never makes it. A worker permitted to judge its own model sufficient will judge it sufficient, and that is the specific judgement it is worst placed to make. The parent assigns, and escalation is also the parent's, triggered by evidence it can read.",
+      "assertions": [
+        "The answer rejects letting workers select or escalate their own model",
+        "The answer locates the decision with the dispatching layer rather than the worker",
+        "The answer does not accept the arrangement as an acceptable cost-saving compromise"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "escalation-is-on-evidence-not-exhaustion",
+      "prompt": "You are executing the swarm-dispatch skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: two tasks each just failed for the second time. Task A's new failure is in a function an earlier attempt in this run rewrote. Task B's new failure is in an unrelated module no attempt has touched. Both have a retry remaining. Question: which, if either, gets the strongest available model for its next attempt?",
+      "expected_output": "Task A. A failure sitting on something an earlier attempt already wrote is evidence the previous attempt was shallow and the root was never understood, which is the one place model strength is the binding constraint. Task B's second failure is not that signal, so it retries at the default. Escalation follows evidence, not a count of attempts.",
+      "assertions": [
+        "The answer escalates A and not B",
+        "The answer distinguishes them by whether the failure lands on work an earlier attempt in this run authored",
+        "The answer does not escalate B merely because it is also on its second failure"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "escalated-attempt-still-consumes-its-retry",
+      "prompt": "You are executing the swarm-dispatch skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a task has one retry left. Its next attempt qualifies for escalation to the strongest model on the evidence rule. Question: does the escalated attempt consume that last retry, or does escalating give the task a fresh one?",
+      "expected_output": "It consumes it. An escalated attempt still spends its ordinary retry; otherwise escalating becomes a way to buy extra attempts and a task can loop indefinitely by failing upward. The escalation budget and the retry counter bound different things and are tracked separately.",
+      "assertions": [
+        "The answer has the escalated attempt consume the retry",
+        "The answer identifies the failure mode of the alternative as buying extra attempts by escalating",
+        "The answer keeps the escalation allowance and the retry count as separate counters"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "unrecorded-watch-state-is-a-blind-spot-not-quiet",
+      "prompt": "You are executing the swarm-dispatch skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a supervision cycle completes. No events arrived for any of six tracked tasks. Four have a recorded subscription; for two the watch state was never recorded at all. Question: what do you report?",
+      "expected_output": "Four quiet, and two named as blind spots — not six quiet. 'No events because nothing happened' and 'no events because nothing was listening' produce identical silence, so a task whose watch state was never recorded cannot be reported as quiet: the run cannot say whether anything is listening to it. Enumerating the tracked set with each task's watch state is required before any no-change result.",
+      "assertions": [
+        "The answer refuses to report all six as quiet",
+        "The answer names the two unrecorded tasks as blind spots or unknown rather than as quiet",
+        "The answer justifies this by the two causes of silence being indistinguishable from inside the run"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "a-polled-task-is-quiet-only-after-its-poll-ran",
+      "prompt": "You are executing the swarm-dispatch skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: one tracked task has no subscription available, so it is on deliberate polling. This cycle you skipped its due poll to conserve a tight API allowance. Nothing else changed. Question: is that task quiet?",
+      "expected_output": "No — it reports as unread, not quiet. A polled task counts as quiet only once the poll has actually run this cycle, and is reported with when it was last observed. A due poll skipped to save budget is a known staleness, and budget pressure does not convert an unread task into a quiet one.",
+      "assertions": [
+        "The answer reports the task as unread or known-stale rather than quiet",
+        "The answer includes when it was last observed, or states that a staleness bound must accompany it",
+        "The answer does not accept the tight allowance as justification for reporting it quiet"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "explicit-base-overrides-the-container's-branch",
+      "prompt": "You are executing the swarm-dispatch skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are running in a cloud container that arrived checked out on a branch called `release/2026-09`. The caller asked for the swarm to run off `main`. Question: which base do the workers' worktrees come from?",
+      "expected_output": "`main`, fetched from the remote first and branched from `origin/main`. An explicit base overrides the environment, including a container's predefined branch. Inheriting the checked-out branch silently is the failure this rule exists to prevent: the run looks correct throughout and the diffs contain other people's work, which surfaces only at review.",
+      "assertions": [
+        "The answer uses main rather than the container's checked-out branch",
+        "The answer fetches and branches from the remote ref rather than the local working copy",
+        "The answer identifies the failure as silent until review rather than as an immediate error"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "serialized-tier-must-be-reported-as-such",
+      "prompt": "You are executing the swarm-dispatch skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: no Dynamic Workflow was opted into, remote sessions are unavailable, and subagents are unavailable. You run the five tasks yourself in sequence and all five succeed. Question: what does the report say about the runtime?",
+      "expected_output": "That it ran on the serialized tier, having probed and rejected the others. The outcome is legitimate, but a run that does not say which tier it used has reported nothing checkable — and the serialized tier is not a swarm at all, so leaving it unstated is actively misleading about what happened.",
+      "assertions": [
+        "The answer reports the serialized tier explicitly",
+        "The answer also reports which tiers were probed and unavailable",
+        "The answer treats the five successes as not excusing the omission"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "do-not-dispatch-a-worker-to-make-a-read",
+      "prompt": "You are executing the swarm-dispatch skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the parent's own request for some repository metadata was just refused by a rate limit. Dispatching four workers would let each fetch its own slice under the same credential and finish sooner. Question: do you dispatch them?",
+      "expected_output": "No. Fan out work, never looking: no agent is dispatched for the purpose of making a read the parent could make itself, least of all to re-ask something the parent was just refused. The allowance belongs to the credential rather than to the run, so four workers authenticating as the same identity draw on the same refused bucket.",
+      "assertions": [
+        "The answer refuses to dispatch workers for the read",
+        "The answer identifies that the workers share the same credential and therefore the same exhausted allowance",
+        "The answer defers the reads until the limit resets rather than finding another route to them"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "dependent-tasks-are-not-a-swarm",
+      "prompt": "You are executing the swarm-dispatch skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are handed five tasks. Two of them consume output that a third produces. Question: do you dispatch all five in parallel?",
+      "expected_output": "No. A swarm is for independent tasks; if one needs another's output that is a pipeline, and dispatching it in parallel produces a worker blocked on a sibling it cannot see. Resolve the set into independent tranches and dispatch one tranche at a time, or hand the dependency back to the caller that owns the graph.",
+      "assertions": [
+        "The answer declines to dispatch the dependent tasks alongside their producer",
+        "The answer identifies the failure as a worker blocked on a sibling it cannot observe",
+        "The answer proposes tranches or a caller-side resolution rather than dispatching and hoping"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "a-worker's-reported-results-are-a-claim",
+      "prompt": "You are executing the swarm-dispatch skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a worker reports that the whole test suite fails on its checkout, which would be a serious regression affecting every task in the run. Question: do you relay that to the user and halt the swarm?",
+      "expected_output": "Not unverified. A worker's report is a claim about its own environment, which may be misconfigured in ways the worker cannot see. Verify against durable evidence — the state the work actually reached, or a re-run outside that worker's environment — before relaying it or acting on it. A worker-reported mass failure is exactly the case not to escalate on the worker's word.",
+      "assertions": [
+        "The answer verifies before relaying or halting",
+        "The answer treats the worker's environment as a possible cause rather than accepting the regression claim",
+        "The answer names durable evidence or a re-run outside that worker's environment as the check"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "a-returned-workflow-supervises-nothing",
+      "prompt": "You are executing the swarm-dispatch skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a Dynamic Workflow ran the fan-out and returned its results successfully. Its workers each produced output that will attract later events. Question: who is watching that output now, and what do you do?",
+      "expected_output": "Nobody, until this run says so. A Dynamic Workflow's fan-out ends when it returns and it supervises nothing afterwards; supervision is the parent's from that moment. Adopt each output, arm its watch as part of adopting it, and record the watch state per task. A workflow's successful completion is not evidence that anything is being watched.",
+      "assertions": [
+        "The answer places supervision with the parent rather than the workflow",
+        "The answer arms the watch at adoption rather than later",
+        "The answer does not read the workflow's successful return as its outputs being monitored"
+      ]
+    },
+    {
+      "id": 13,
+      "name": "release-the-worker-rather-than-hold-it-waiting",
+      "prompt": "You are executing the swarm-dispatch skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a worker has pushed its output and there is nothing more for it to do until an external check completes, which may take fifteen minutes. Keeping it alive would let it react immediately. Two other tasks are queued and there are no free slots. Question: keep it alive?",
+      "expected_output": "No. Release it once its output is durable — on a remote-session runtime that means archiving the session rather than merely stopping messaging it. Waiting is the parent's job and costs nothing, while an idle worker holds a slot the queue needs. Resume or dispatch a worker when the change actually arrives.",
+      "assertions": [
+        "The answer releases the worker",
+        "The answer identifies waiting as the parent's job rather than the worker's",
+        "The answer notes that release means archiving the session on a remote-session runtime, not merely ceasing to message it"
+      ]
+    }
+  ]
+}

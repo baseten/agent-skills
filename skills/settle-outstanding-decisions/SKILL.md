@@ -128,7 +128,7 @@ A recorded ruling contains:
 
 The ruling comment follows the posting-identity rule stated once in `backlog-orchestrator` (*Posting identity*), selecting from the map the caller passes with the seed; invoked standalone with no map, every transport is `unestablished` and the rule's degraded path applies.
 
-It and the rejected-draft record both follow the authored-write-form rule stated once beside it (`backlog-orchestrator`, *Authored write form*), with two consequences that matter here and are stated there rather than re-argued.
+It and the rejected-draft record both follow the authored-write-form rule stated once beside it (`references/authored-write-form.md`), with two consequences that matter here and are stated there rather than re-argued.
 
 First, the elements listed above are **required contents**, so brevity trims around them and never through them — an approved draft's answer text in particular is posted in full, edited exactly as the owner edited it, and is never compressed to fit.
 

@@ -3,7 +3,7 @@ name: npm-dependency-upgrade-orchestrator
 description: Take a set of dependency upgrades, triage each against its changelog and the codebase's usage, establish coupling and viability, select a model per upgrade by failure mode, then dispatch isolated subagents — one per upgrade or coupled group running `upgrade-npm-dependency`, plus one batched task for the routine bumps triage cleared, which need no migration workflow. Supervises CI and separates infrastructure failure from real failure. Use for a batch; use `upgrade-npm-dependency` directly for one.
 ---
 
-# Dependency Upgrade Orchestrator
+# npm Dependency Upgrade Orchestrator
 
 ## Task
 
@@ -37,6 +37,11 @@ Order production dependencies before development ones.
 
 ## Model selection
 
+`swarm-dispatch` owns the general rule and the tiers, including the cheapest
+tier this skill does not use. What follows is the same rule stated over this
+domain, which is where the judgement actually is: the failure modes below are
+specific to dependency work and are not derivable from the general form.
+
 Select by **failure mode**, not by file count.
 
 Assign the strongest available model where a wrong answer is **silent**: validation, authorization or monetary logic, where a constraint can loosen without erroring; framework or build configuration, where breakage is environmental rather than local; API rewrites requiring judgement about intent rather than mechanical rename; and any case where a regression's appearance cannot be described in advance.
@@ -48,6 +53,14 @@ Where an escalation tier requires authorization, request it rather than assuming
 Where the estimate is uncertain, over-assign. Over-assignment costs budget; under-assignment costs a silently incorrect migration.
 
 ## Dispatch
+
+**`swarm-dispatch` owns the dispatch mechanics**, and this skill does not restate
+them: which runtime is available and how to degrade when the preferred one is
+not, one worker per task in its own worktree created from a stated base, and the
+supervision rules under *Supervise* below — including the preflight that stops a
+no-change result being reported over a task nothing was watching. Invoke it for
+the fan-out rather than assembling one here. What stays here is the task set and
+what each worker is told to do.
 
 One subagent per upgrade or coupled group, each in **its own worktree**, each invoking `upgrade-npm-dependency` — which covers a major, and any lesser bump whose triage did **not** clear it of breaking changes. Send everything in that scope through it, whatever the version number says.
 
@@ -87,7 +100,7 @@ Constrain each agent explicitly:
 - **Foreground execution only.** No backgrounded long-running commands, no monitors. An agent that backgrounds a command and ends its turn waits on a wake-up that does not arrive.
 - **No full-suite runs** where the suite is sharded across CI runners. Scoped runs plus CI.
 - **Stopping and reporting outranks producing a PR.** State that a documented dead end is an acceptable and valuable outcome.
-- **The authored-write-form rule** (`backlog-orchestrator`, *Authored write form*), carried whole rather than paraphrased: brevity and the intent-not-content shape for a PR body, the no-wrap constraint on forge fields, the footer with its approval test, and the precedence of a write's required contents over brevity. A dispatched agent's writes are read by nobody before they are posted, so that test answers No and its PR body and any closure comment carry the footer — but carry the test, not the conclusion, because a rule enumerated as a conclusion is one the agent applies to writes it should not. This layer's own writes — the PRs it opens per task, the closures, the declined-upgrade records — follow the same rule for the same reason.
+- **The authored-write-form rule** (`references/authored-write-form.md`), carried whole rather than paraphrased: brevity and the intent-not-content shape for a PR body, the no-wrap constraint on forge fields, the footer with its approval test, and the precedence of a write's required contents over brevity. A dispatched agent's writes are read by nobody before they are posted, so that test answers No and its PR body and any closure comment carry the footer — but carry the test, not the conclusion, because a rule enumerated as a conclusion is one the agent applies to writes it should not. This layer's own writes — the PRs it opens per task, the closures, the declined-upgrade records — follow the same rule for the same reason.
 
 **A batch shares one lockfile, and staleness compounds across it.** Every agent branches from the same base and resolves the lockfile against it independently, so each merge moves that base under every PR still open. Nothing announces the consequence: a branch cut before another's merge resolves its *new* entries against the tree as it was, and can pin a transitive to a version the base no longer carries.
 

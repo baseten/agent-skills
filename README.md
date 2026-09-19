@@ -4,7 +4,21 @@ Reusable Claude Code skills for issue implementation, PR workflows, backlog vali
 
 ## A note on how the skills read
 
-The `SKILL.md` files are dense and not easily human readable. That is deliberate, and it was tested rather than assumed: [issue #51](https://github.com/baseten/agent-skills/issues/51) benchmarked a plain-English rewrite of the densest section against the current text — all 21 eval scenarios, on Sonnet and on Haiku — and the plain version made the models no better (identical on Sonnet, worse-to-indistinguishable on Haiku). The density costs the models nothing; they interpret this register at least as well as plain prose, so the skills are written for their actual reader. Humans get their own entry points instead: a skill's `NOTES.md` explains the reasoning behind its rules — most skills have one, `resolve-pr-comment` does not — and `backlog-orchestrator/README.md` gives a plain-language overview and a glossary of the coined terms.
+The `SKILL.md` files are dense and not easily human readable. That is deliberate, and it was tested rather than assumed: [issue #51](https://github.com/baseten/agent-skills/issues/51) benchmarked a plain-English rewrite of the densest section against the current text — all 21 eval scenarios, on Sonnet and on Haiku — and the plain version made the models no better (identical on Sonnet, worse-to-indistinguishable on Haiku). The density costs the models nothing; they interpret this register at least as well as plain prose, so the skills are written for their actual reader. Humans get their own entry points instead: a skill's `NOTES.md` explains the reasoning behind its rules, and `backlog-orchestrator/README.md` gives a plain-language overview and a glossary of the coined terms.
+
+## Shared rules
+
+`rules/` holds a rule that more than one skill applies. It is **not** a skill: nobody invokes it, and it has no `SKILL.md`.
+
+- `rules/authored-write-form.md` — the shape of any write an agent authors on a forge: length, what a body is for, what must never be in it, the attribution footer and its approval test, and the precedence of required contents over brevity. Every skill that writes to a forge applies it, each carrying a generated copy under its own `references/`. Extracted from `backlog-orchestrator` so that a skill needing the rule does not have to carry a 41,000-word orchestrator, nor a paraphrase of the one section it uses — which that section names as the way the rule drifts.
+
+A shared rule cannot simply sit at the repo root and be read from an installed skill: `bootstrap.sh` copies `skills/<name>/` and nothing else, so `../../rules/x.md` does not exist on a machine that installed one skill. Nor can it live inside one skill, because whichever skill owned it would become a dependency the others carry for a rule they only read.
+
+So `scripts/refresh_shared_rules.sh` copies each rule into `skills/<name>/references/` for every skill that applies it. **Edit the source, never a copy.** The copies travel with a skill that is installed alone or moved into a plugin, and `scripts/check_shared_rules.py` fails the build when a copy diverges from its source, when a skill cites a reference it does not carry, when a rule is cited by nothing, when a bundle is left behind with no `SKILL.md` beside it, when a source is deleted while its copies remain, when a skill the generator declares a consumer does not exist, does not cite the rule, or does not carry it, and when the generator stops naming a consumer list the check can read at all. Every one is file-level; none reads the prose.
+
+The check reads the generator rather than the tree for which bundles are generated and which skills consume each, precisely so that a deleted source with its copies left behind is still detectable. `scripts/test_shared_rules.py` holds a broken repository per failure it claims to catch, and asserts each is rejected by the guard that names it rather than by a neighbour — without which the check stays green over a guard someone deleted, because the tree it runs against in CI is always already correct.
+
+Reasoning for a rule lives beside it as `rules/<name>-notes.md`, and is deliberately not bundled — its reader is someone editing the rule, and they have this checkout.
 
 ## Core workflow skills
 
@@ -107,7 +121,9 @@ deterministic — no model calls, no API key, no cost — and every check is
 runnable locally:
 
 ```bash
-python3 scripts/check_skills.py                       # frontmatter and evals schema
+python3 scripts/check_skills.py
+python3 scripts/check_shared_rules.py                # bundled rules match rules/, and no skill cites one it lacks
+python3 scripts/test_shared_rules.py                  # and each of those guards can actually fail
 python3 scripts/check_permissions.py                  # the shape of permissions.json, and the README's claims
 python3 scripts/check_no_machine_paths.py             # no skill depends on one machine's filesystem
 python3 scripts/test_no_machine_paths.py              # and that detector can actually fail
@@ -160,6 +176,35 @@ an `evals.json` that parses, an allowlist entry that carries no arguments — be
 cannot be paraphrased and still be itself. Whether the prose *means* the right thing is
 answered by reading it, and by the eval corpus (`CLAUDE.md`, on comparing two readings of a
 change that should not alter meaning).
+
+## Running the evals
+
+`CLAUDE.md` states the method — two arms, the same assertions, and the information in the
+disagreement. `scripts/run_evals.py` does the deterministic half of it, so the method stops
+depending on whoever remembers it:
+
+```bash
+python3 scripts/run_evals.py prepare --skill <name> --base origin/main
+# dispatch one reader per packet.json; save its reply to answer.md beside it
+# grade answer.md against key.json into grading.json
+python3 scripts/run_evals.py score --round <dir>
+```
+
+`prepare` materialises both arms from git into a scratch directory outside the tree, and
+splits each scenario in two: `packet.json` for a reader, carrying the prompt and the
+contract path, and `key.json` for a grader, carrying `expected_output` and the assertions.
+The split is the point — a reader that has seen either is grading its own answer — and
+`name` is withheld too, because a scenario name telegraphs its verdict in three words.
+
+`score` reads the `grading.json` files and reports the pass rate per arm, then the
+disagreements, which is the only part that carries information. It marks an ungraded
+scenario as ungraded rather than counting it either way.
+
+**The model calls are not in here.** This repository has no API key and *Checks* above gives
+the reason model-graded work stays out of CI; dispatching readers is the caller's, whether
+that is a person or an agent. **A skill new in this branch has no old arm**, and `prepare`
+says so: its scores are a baseline for the next round, not a result, because there is
+nothing to disagree with.
 
 ## Permissions
 

@@ -6,9 +6,16 @@ same rule in more than one place on purpose. That changes what a correct fix loo
 here, and this file is the rule for it.
 
 Reasoning lives in a skill's `NOTES.md`, keyed by its `SKILL.md` section names. Read a
-section's note before changing its rules. `NOTES.md` explains; it never overrides. Most
-skills have one; `resolve-pr-comment` does not,
-so for those the commit message carries the reasoning instead.
+section's note before changing its rules. `NOTES.md` explains; it never overrides. Every
+skill has one; where a new skill does not yet, the commit message carries the reasoning
+until it does.
+
+**A rule in `rules/` keeps its reasoning in `rules/<name>-notes.md`**, for the same
+reason and by the same rule: the note belongs with the text it explains, and that text no
+longer lives in any one skill. So a change to a shared rule records its rationale there,
+not in the `NOTES.md` of a skill that merely carries a copy — a note left beside a bundle
+is invisible to the next editor, who is reading the source. `README.md` describes this
+arrangement; this file is where it is required.
 
 **These rules are stated in this file and nowhere else.** `AGENTS.md`, `README.md` and
 `docs/review-fix-workflow.md` point here or explain the reasoning behind what is here; none
@@ -111,6 +118,10 @@ prompt**: a reader that has seen `expected_output` or the assertions is grading 
 answer. Grade both against the same assertions, blind to which arm is which where you can
 manage it. **The information is entirely in the disagreement** — running only the new arm
 returns a clean sweep and teaches nothing, which is the flattering direction this fails in.
+`scripts/run_evals.py` does the deterministic half of this — materialising both arms from
+git into a scratch directory, splitting each scenario into a reader packet and a grader key
+so neither side can see the other's half, and reporting the disagreements rather than the
+sweep (README, *Running the evals*). The model calls stay the caller's.
 `scripts/eval_reminder.sh` flags a contract change whose evals did not move; it is advisory
 and needs someone to act on it.
 
@@ -170,6 +181,8 @@ Every check is deterministic and runnable locally. Run them before committing:
 
 ```bash
 python3 scripts/check_skills.py
+python3 scripts/check_shared_rules.py                # and that every bundled rule matches its source
+python3 scripts/test_shared_rules.py                 # and that each of that check's guards can fail
 python3 scripts/check_permissions.py
 bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
