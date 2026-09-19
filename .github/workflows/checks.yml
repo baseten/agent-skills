@@ -45,6 +45,14 @@ jobs:
       - name: Path detector fixtures
         run: python3 scripts/test_no_machine_paths.py
 
+      # run_evals.py makes no model calls, so nothing here grades anything - it
+      # is the scaffolding that keeps the reader's packet and the grader's key
+      # apart. Both its guards fail in the flattering direction (a leaked answer
+      # reads as a clean sweep; an ungraded scenario reads as a pass), so the
+      # fixtures are the only thing that says they work.
+      - name: Eval runner guard fixtures
+        run: python3 scripts/test_run_evals.py
+
       # Same reason as the locality fixtures below: this one shipped green over
       # the construction it exists to reject, so the fixtures gate the check.
 
