@@ -37,6 +37,11 @@ Order production dependencies before development ones.
 
 ## Model selection
 
+`swarm-dispatch` owns the general rule and the tiers, including the cheapest
+tier this skill does not use. What follows is the same rule stated over this
+domain, which is where the judgement actually is: the failure modes below are
+specific to dependency work and are not derivable from the general form.
+
 Select by **failure mode**, not by file count.
 
 Assign the strongest available model where a wrong answer is **silent**: validation, authorization or monetary logic, where a constraint can loosen without erroring; framework or build configuration, where breakage is environmental rather than local; API rewrites requiring judgement about intent rather than mechanical rename; and any case where a regression's appearance cannot be described in advance.
@@ -48,6 +53,14 @@ Where an escalation tier requires authorization, request it rather than assuming
 Where the estimate is uncertain, over-assign. Over-assignment costs budget; under-assignment costs a silently incorrect migration.
 
 ## Dispatch
+
+**`swarm-dispatch` owns the dispatch mechanics**, and this skill does not restate
+them: which runtime is available and how to degrade when the preferred one is
+not, one worker per task in its own worktree created from a stated base, and the
+supervision rules under *Supervise* below — including the preflight that stops a
+no-change result being reported over a task nothing was watching. Invoke it for
+the fan-out rather than assembling one here. What stays here is the task set and
+what each worker is told to do.
 
 One subagent per upgrade or coupled group, each in **its own worktree**, each invoking `upgrade-npm-dependency` — which covers a major, and any lesser bump whose triage did **not** clear it of breaking changes. Send everything in that scope through it, whatever the version number says.
 
