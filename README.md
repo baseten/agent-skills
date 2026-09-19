@@ -629,6 +629,108 @@ stay out](#personal-skills-stay-out): a public repository is the only kind a
 setup script can install, and anything that cannot be public has to reach cloud
 sessions through a claude.ai account upload instead.
 
+### Reading issue dependencies and Projects v2
+
+A cloud session's built-in GitHub MCP server arrives with no feature flags and a
+restricted toolset list, so two things are missing from it — for unrelated
+reasons, which is why each is switched back on differently:
+
+| missing | why | how it is asked for |
+| --- | --- | --- |
+| `issue_dependency_read` / `_write` (native blocked-by/blocking) | behind the `issue_dependencies` **feature flag** | `?features=` on the URL |
+| Projects v2 | `projects` is not one of the default **toolsets** (`context`, `issues`, `pull_requests`, `repos`, `users`) | `X-MCP-Toolsets` |
+
+`bootstrap.sh` can install a second GitHub MCP server that has both. It is
+**off by default** — set `AGENT_SKILLS_GH_MCP=1` — because a server configured
+without a working credential fails to connect on every session start, and it is
+unnecessary locally where an authenticated `gh` already reads cross-repo edges.
+
+A second server is the only route. The built-in one's URL and headers are fixed
+before the session starts, and a `.mcp.json` committed to the repository cannot
+help either: a cloned repository is an untrusted folder, so
+`enableAllProjectMcpServers` in it is ignored and the server sits at *Pending
+approval* with nobody able to approve it. User scope written by the setup
+script is what works, for the same reason the skills themselves are installed
+that way — see [Install from a setup script](#install-from-a-setup-script).
+
+#### Why `curl` is not enough
+
+The dependency REST endpoints do answer from a cloud session. But they answer
+through the same GitHub proxy described in [Why this repository is
+public](#why-this-repository-is-public), which scopes access to the
+repositories attached to the session — and here that scoping is **silent**.
+Asking for an unattached repository directly gives the familiar 403; asking for
+it *inside another repository's response body* gives `200` and an empty array:
+
+```
+GET /repos/OWNER/ATTACHED/issues/192/dependencies/blocked_by   → 200, same-repo edge
+GET /repos/OWNER/ATTACHED/issues/192/dependencies/blocking     → 200, []
+GET /repos/OWNER/UNATTACHED/issues/106                         → 403, "use add_repo"
+```
+
+An empty `200` is indistinguishable from "no dependencies", so a graph read this
+way cannot report its own incompleteness. A PAT does not widen it — the proxy's
+scope applies regardless of the credentials supplied — and neither does running
+`github-mcp-server` inside the container, whose calls exit the same way.
+Projects v2 is GraphQL-only and unreachable through the proxy at all.
+`api.githubcopilot.com` sidesteps this by making its GitHub calls server-side,
+resolving visibility from its own token rather than the session's repository
+set.
+
+#### Configuring it
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `AGENT_SKILLS_GH_MCP` | `0` | `1` installs the server |
+| `AGENT_SKILLS_GH_MCP_AUTH` | `proxy` | `proxy` or `pat` |
+| `AGENT_SKILLS_GH_MCP_URL` | `…/mcp/?features=issue_dependencies` | feature flags |
+| `AGENT_SKILLS_GH_MCP_TOOLSETS` | `projects` | `X-MCP-Toolsets` — replaces the defaults |
+| `AGENT_SKILLS_GH_MCP_TOOLS` | `issue_dependency_read,issue_dependency_write` | `X-MCP-Tools` — named individually |
+
+**`proxy` (preferred).** Add an **API credential** to the cloud environment:
+type Bearer, allowed website `api.githubcopilot.com`, header `Authorization`,
+prefix `Bearer`, value a PAT. The agent proxy attaches it after the request
+leaves the VM, so the token never enters the container, and credential hosts
+bypass the network allowlist. Needs an org admin role.
+
+**`pat`.** Set `GITHUB_MCP_PAT` as an environment variable. No admin role, but
+the token is readable by the session and everything it runs. Only the
+unexpanded `${GITHUB_MCP_PAT}` is written to `~/.claude.json`; Claude Code
+expands it at load time, so the secret lands in no file either way.
+
+Use a **fine-grained PAT scoped to every repository whose issues take part in a
+dependency edge** — that repository list is exactly what decides cross-repo
+visibility, and it is the whole reason this reads what the proxy cannot. Issues:
+Read (Read & write for `issue_dependency_write`), Projects: Read or Read &
+write. Organization-owned projects need the *organization* Projects permission,
+and an org may require approval for fine-grained PATs.
+
+#### Finding the tools, and keeping the two servers apart
+
+The tools arrive under the server segment —
+`mcp__github-deps__issue_dependency_read`, `mcp__github-deps__projects_list` —
+not the bare names the upstream documentation uses. Two consequences, both
+already handled:
+
+- `permissions.json` allowlists them under that full name, because rule matching
+  is on the literal tool name. This is why the server name is **not**
+  configurable: a renamed server would silently stop matching, and the symptom
+  is a permission prompt mid-run on a tool that looks allowlisted — the same
+  trap as the dual Claude Code Remote registration under [`permissions.json` is
+  a managed set](#permissionsjson-is-a-managed-set).
+- Under tool search a model sees names first and loads schemas on demand, so one
+  that does not know this server exists will not stumble onto it.
+  `validate-backlog` therefore names the prefixed tool in its transport table
+  rather than describing the capability abstractly.
+
+Keep the second server **additive**. At these defaults the two surfaces do not
+overlap — only this one offers `issue_dependency_read` and `projects_*`, only
+the built-in offers `issue_read` and the rest — so nothing has to arbitrate
+between them. Setting `X-MCP-Toolsets` at all replaces the defaults, which is
+what prevents a duplicate GitHub surface. Widening it to include `issues` would
+give two servers both offering `issue_read`, with the PAT's scope silently
+differing from the session's.
+
 ### Verifying the install landed
 
 `/plugin` and `/permissions` are unavailable in a cloud session, so check from

@@ -2,7 +2,7 @@
 
 Companion to `SKILL.md`. That file is the contract; this one holds the reasoning, keyed by section. Read a section's note before changing its rules or when applying them to a case the contract doesn't obviously cover. Nothing here overrides the contract.
 
-## Why a cloud container does not degrade gracefully
+## Why an absent dependency read does not degrade gracefully
 
 Run without a real dependency read, this skill normalizes against a view that cannot see half the graph, and writes the result into the metadata every later readiness check trusts. Concretely:
 
