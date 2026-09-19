@@ -13,7 +13,7 @@ This file is the contract; the reasoning behind its rules lives in `NOTES.md` be
 
 - PR URL; canonical issue URL; repository; dedicated checkout/worktree for the PR branch;
 - repair type: `ci`, `review` or `finding`;
-- the evidence matching the type: exact failure logs/check summaries for `ci`; review thread(s) for `review`; for `finding`, the settle-time finding verbatim — a `summarize-tranche` `IN_FLIGHT_FIX` action point, or a recorded walkthrough ruling that requires this PR's code to change — with the durable site it lives at;
+- the evidence matching the type, and evidence means the artifact rather than its absence (`references/absence-is-not-a-verdict.md`): exact failure logs/check summaries for `ci`; review thread(s) for `review`; for `finding`, the settle-time finding verbatim — a `summarize-tranche` `IN_FLIGHT_FIX` action point, or a recorded walkthrough ruling that requires this PR's code to change — with the durable site it lives at;
 - remaining repair-cycle budget;
 - expected branch/base when supplied.
 

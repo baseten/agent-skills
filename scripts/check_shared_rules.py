@@ -27,9 +27,11 @@ def main() -> int:
     # exist. Reading it off rules/ cannot see a deleted source - the very case
     # the missing-source check below exists for.
     refresh = (ROOT / "scripts" / "refresh_shared_rules.sh").read_text(encoding="utf-8")
-    # Match the assignment, not any mention: the script's own comments cite
-    # example paths that are not sources.
-    generated = set(re.findall(r'src="\$ROOT/rules/([a-z0-9-]+\.md)"', refresh))
+    # The generator names its rules in one RULES list and holds each rule's
+    # consumers in a variable spelled from the rule name. Read the list, not the
+    # copy line: the copy line is now a loop over $rule and names nothing.
+    rules_list = re.search(r'^RULES="([^"]*)"', refresh, re.M)
+    generated = {f"{r}.md" for r in (rules_list.group(1).split() if rules_list else ())}
 
     # And which skills the generator declares apply each rule, so a consumer
     # that quietly stops carrying one is visible.
@@ -55,7 +57,7 @@ def main() -> int:
             )
     if not generated:
         errors.append(
-            "scripts/refresh_shared_rules.sh names no rules/<name>.md — "
+            'scripts/refresh_shared_rules.sh declares no RULES="..." list — '
             "this check cannot tell a generated bundle from a skill-local one"
         )
 
