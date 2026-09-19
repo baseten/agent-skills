@@ -29,7 +29,8 @@ RULES="authored-write-form absence-is-not-a-verdict"
 # and a clean result are the same bytes.
 ABSENCE_IS_NOT_A_VERDICT="backlog-orchestrator implement-issue repair-pr
   resolve-pr-comment merge-stack plan-merge-order validate-backlog
-  normalize-github-dependencies"
+  normalize-github-dependencies swarm-dispatch
+  upgrade-npm-dependency npm-dependency-upgrade-orchestrator"
 
 
 echo "Refreshing shared rules..."

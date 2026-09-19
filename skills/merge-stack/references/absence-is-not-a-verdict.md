@@ -1,9 +1,20 @@
 # Absence is not a verdict
 
-**A query that returned nothing is evidence about the query.** It is not evidence
-about the world, and it is never evidence that the thing you were checking for is
-fine. This rule exists because the failure is invisible from inside the run: an
-empty read and a clean result are the same bytes, so the run reports success and
+**Two claims, and the second is the one with no exceptions.**
+
+1. **Until a read is proven exhaustive and authoritative, its emptiness is
+   evidence about the read.** Validate visibility, exhaust pagination, check the
+   other place the answer could be — and then an empty result does establish that
+   the object is absent. Before that it establishes only that you did not find it.
+2. **Absence of a record is never a positive verdict about what the record would
+   have said.** This holds however exhaustive the read was. A review that does not
+   exist is not a clean review. A scenario nothing graded is not a scenario that
+   passed. A check that never ran is not a check that succeeded. Proving the
+   absence is real upgrades *"I did not find it"* to *"it is not there"* — never
+   to *"it is fine"*.
+
+This rule exists because the failure is invisible from inside the run: an empty
+read and a clean result are the same bytes, so the run reports success and
 nothing contradicts it.
 
 Observed, independently, in six places:

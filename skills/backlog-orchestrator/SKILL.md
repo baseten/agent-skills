@@ -671,6 +671,38 @@ A dispatch prompt that enumerates a required process is followed literally: a de
 
 Issuing the trigger is not the end of that step. Confirm it took effect — and confirm it against the artifact, not against the absence of one (`references/absence-is-not-a-verdict.md`): a review from the repository's automated reviewer materializes within a bounded window, and the reviewer does not instead answer indicating it is not configured or not authorized. Verify per attempt, on every PR — one review arriving elsewhere in the run is not evidence the trigger works. A trigger that silently no-ops is worse than one that fails loudly, because the run then reports PRs as reviewed and clean when nothing reviewed them.
 
+### Establishing that a review is clean
+
+**A verdict attaches to the commit it was computed on, not to the PR**, and the
+head moves under it. Where a review names a commit other than the current head,
+there is no review for the current head: that is `NOT REVIEWED`, not a stale
+clean verdict. Findings routinely exist only after a repair push, so re-trigger
+and wait rather than reading the earlier verdict forward. The same holds for CI:
+an arriving check event is evidence about the SHA it names, and a name that is
+not the head is no signal yet rather than a green.
+
+**The two review sources are either/or, not summary-and-detail** — each is empty
+exactly where the other carries the answer, which is why reading them in the
+wrong order produces a confident wrong result. A clean review creates no review
+object and no threads, so no endpoint can distinguish *clean* from *never ran*
+without the second read.
+
+1. Read the **review threads** first. Any thread proves a review ran. Any
+   unresolved thread means it is not clean, and an owner-reserved thread holds
+   the gate regardless of the rest.
+2. **Only when there are no threads**, or all are resolved and outdated, read the
+   reviewer's **summary comment** and require a `Reviewed commit:` matching the
+   current head. That is the existence proof, and the only thing that endpoint
+   establishes.
+3. Neither → `NOT REVIEWED`. Re-trigger; never merge.
+
+**The summary comment is never evidence of severity.** A review that found things
+may post a summary carrying no verdict, so its wording decides nothing — only the
+thread list does. The prohibition is on that endpoint *for severity*, and it is
+scoped deliberately: it is the wrong source for what a review found and the only
+source for whether one happened, and a rule that forbade it outright misfired in
+the opposite direction once already.
+
 An elapsed window is not a refusal. A reviewer that is merely queued or slow leaves the PR unreviewed-pending, reconciled through ordinary event supervision and visible as such in checkpoint output; only an explicit not-configured/not-authorized response marks the trigger unavailable.
 
 A refusal is first evidence of the wrong write path, not of insufficient authority. Where the platform offers more than one way to perform the write, reissue the trigger once through a different available mechanism before drawing any conclusion. Where the platform exposes only one write mechanism, the available paths are already exhausted. Do not otherwise repeat the same write path: it will not start working on the next PR, and each failed attempt leaves trigger and refusal comments behind on the PR.
