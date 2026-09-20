@@ -63,7 +63,7 @@ Reusable worker skills:
 9. **The parent/orchestration layer owns long-lived PR state.** Implementation and repair workers are bounded and short-lived.
 10. **Retries and repairs are bounded.** Persistent failure becomes `NEEDS_USER`.
 11. **Recovery is idempotent.** Never duplicate work, branches, PRs, or repairs after restart.
-12. **Merges are opt-in per repository, and gated even then.** By default the run performs no merge. It may merge a PR only when that PR's own repository opted in via `auto-merge` in its policy config (see Per-repository policy configuration) — **the repository's opt-in is the only route to a merge: an invocation argument can switch `auto-merge` off for a run, narrowing the gate, but never on — an invocation cannot open it** (the precedence rule under Default usage safeguards states the same exemption) — **and** the gate holds: the tranche has no `DECISION`, `MERGE_RISK`, or `NEEDS_USER` item outstanding — anywhere in the tranche, not only on that PR, and a `DECISION` that settled without being ruled on is outstanding: unruled is not clean — **and** CI is green on the PR's current head, **and** it has no merge conflict, **and** its review is clean (a completed automated review round, every actionable finding resolved or answered, no thread reserved for the owner), **and** no recovery ref for its branch is outstanding (see Checkpoint compliance — captured work that never reached the head is work a merge would silently drop), **and** it is not an **explicitly held draft** (see Draft state) — a held draft is neither published nor merged, and is reported as held — **and** the dependency view the PR was built on is proven complete or explicitly answered for (see Merge behavior, which names each consumer's supplier; a view unproven because the run's dependency transport is unavailable is accepted for dispatch and still holds this condition — proceedable is not mergeable). This is the gate's only definition; every other site defers to it. Everything outside the gate stays where it was: the user's separate `merge-stack` authorization.
+12. **Merges are opt-in per repository, and gated even then.** By default the run performs no merge. It may merge a PR only when that PR's own repository opted in via `auto-merge` in its policy config (see Per-repository policy configuration) — **the repository's opt-in is the only route to a merge: an invocation argument can switch `auto-merge` off for a run, narrowing the gate, but never on — an invocation cannot open it** (the precedence rule under Default usage safeguards states the same exemption) — **and** the gate holds: the tranche has no `DECISION`, `MERGE_RISK`, or `NEEDS_USER` item outstanding — anywhere in the tranche, not only on that PR, and a `DECISION` that settled without being ruled on is outstanding: unruled is not clean — **and** CI is green on the PR's current head, **and** it has no merge conflict, **and** its review is clean (**every automated review round the PR's routing requires, completed** — `create-pr` owns the routing, and where it puts two conventions on one PR, the faster one completing is not this condition met — every actionable finding resolved or answered, no thread reserved for the owner), **and** no recovery ref for its branch is outstanding (see Checkpoint compliance — captured work that never reached the head is work a merge would silently drop), **and** it is not an **explicitly held draft** (see Draft state) — a held draft is neither published nor merged, and is reported as held — **and** the dependency view the PR was built on is proven complete or explicitly answered for (see Merge behavior, which names each consumer's supplier; a view unproven because the run's dependency transport is unavailable is accepted for dispatch and still holds this condition — proceedable is not mergeable). This is the gate's only definition; every other site defers to it. Everything outside the gate stays where it was: the user's separate `merge-stack` authorization.
 13. **A merge is a scheduling event, not an end state.** The run advances its own frontier off merges someone else performed; it does not wait to be re-invoked.
 
 # Autonomy and interactive prompts
@@ -521,7 +521,7 @@ The trigger is that evidence and nothing else, so it fires on the earliest round
 
 **The dispatching layer owns the decision.** `repair-pr` never selects or escalates its own model, exactly as `implement-issue-core` returns a reasoning-heavy repeated failure instead of escalating one. The evidence is readable here from durable state — the PR's own commit history against where each finding sits — so a restart evaluates the same trigger its predecessor would have; the repair worker reports what it saw as corroboration, not as the record.
 
-Implementation workers require `implement-issue-core` and `create-pr`.
+Implementation workers require `implement-issue-core` and `create-pr` — and `review-docs` wherever a target repository documents the documentation-review routing, since `create-pr` invokes it there and a worker without it would silently fall back to the ordinary trigger.
 Repair workers require `repair-pr` and, for review fixes, `resolve-pr-comment`.
 The parent layer requires `validate-backlog` at preflight, and `summarize-tranche`, `settle-outstanding-decisions` and `plan-merge-order`, in that order, when the run settles — the middle one only while `auto-request-settle` is on (see Settled tranche). It also requires `merge-stack` wherever any repository's resolved `auto-merge` leaves invariant 12's gate reachable — checked at the run's first preflight, where policy is read, rather than discovered at the gate, exactly as `implement-issue` checks it for its one PR: the stack rules require that skill for any merge or restack, so a run that could merge without it holding would have no compliant mechanism for the very merge the repository authorized.
 
@@ -671,7 +671,7 @@ A dispatch prompt that enumerates a required process is followed literally: a de
 
 Issuing the trigger is not the end of that step. Confirm it took effect: a review from the repository's automated reviewer materializes within a bounded window, and the reviewer does not instead answer indicating it is not configured or not authorized. Verify per attempt, on every PR — one review arriving elsewhere in the run is not evidence the trigger works. A trigger that silently no-ops is worse than one that fails loudly, because the run then reports PRs as reviewed and clean when nothing reviewed them.
 
-Where the routed convention is a **review skill this run invokes** rather than an external reviewer (`create-pr` owns the routing, and `review-docs` is the case that exists), confirmation is that skill's completed pass and the review comment it posted. There is no arrival window to wait out and no refusal path to reissue through, so a pass that did not complete is an error to surface now — never a PR left unreviewed-pending against a reviewer that was never going to come.
+Where the routed convention is a **review skill this run invokes** rather than an external reviewer (`create-pr` owns the routing, and `review-docs` is the case that exists), confirmation is that skill's completed pass and the review comment it posted. There is no arrival window to wait out and no refusal path to reissue through, so a pass that did not complete is an error to surface now — never a PR left unreviewed-pending against a reviewer that was never going to come. **A pass that declines because that skill's own round budget is spent has completed**, and is recorded with the residue it returned: the review happened, and its answer is that it is over.
 
 An elapsed window is not a refusal. A reviewer that is merely queued or slow leaves the PR unreviewed-pending, reconciled through ordinary event supervision and visible as such in checkpoint output; only an explicit not-configured/not-authorized response marks the trigger unavailable.
 
@@ -775,9 +775,9 @@ PR URL
 branch/base
 remote head SHA
 CI state
-review state
-review trigger: issued/verified/pending/unavailable
-first review round: pending/complete-with-findings/clean
+review state                                  } one set per review convention
+review trigger: issued/verified/pending/unavailable  } the PR's routing requires
+first review round: pending/complete-with-findings/clean }
 draft state: as-created -> current
 CI repair cycles used/remaining
 review repair cycles used/remaining
@@ -787,6 +787,8 @@ event subscription: armed/unavailable
 last read: <time> — event / poll / mutation by this run
 worker session: <session id, or none on tiers without one> — archived: yes/no
 ```
+
+**The three review lines are held per review convention, not per PR.** Where a repository routes documentation to a second convention alongside its code review (`create-pr` owns the routing), a PR carries two of them, and a single set cannot record that one completed while the other is still pending — which is precisely the state invariant 12's gate has to read. One set is the common case and reads as before.
 
 The worker-session line is what makes the loop's release reconciliation a lookup instead of guesswork: without a session id on the record, matching sessions to PRs means fuzzy-matching session titles, which is what an actual recovery had to script its way through (NOTES).
 
@@ -1349,7 +1351,7 @@ A run is **settled** when no further implementation can start and every open PR 
 
 - no in-scope issue is READY — each unstarted issue is blocked by work that is implemented but unmerged;
 - no implementation or repair worker is in flight — and a worker blocked on a permission prompt is in flight, not absent (see Blocked workers): it reads as quiet from every angle the other conditions look from, which is how a run declares itself settled over a worker stopped mid-issue;
-- every open PR from this run has had at least one **completed** automated review round, not merely a trigger issued;
+- every open PR from this run has had **every** automated review round its routing requires **completed**, not merely a trigger issued — where the routing requires two, one completing is not this condition met (`create-pr` owns the routing);
 - every actionable review finding on every open PR is resolved or answered — a thread reserved for the owner — by the kind test or on budget grounds (see Merge policy and review feedback) — counts here as surfaced, not outstanding: it blocks that PR's merge, never settlement;
 - no open PR is `NEEDS_USER` or waiting on CI;
 - **no worker session this run created is still alive** — verified against the runtime's session list by the reconciliation step of the supervision loop, never against the run's memory of having archived. A run holding a live session it created is not settled, cannot emit a clean settled report, and does not reach invariant 12's gate; this is what makes a skipped or merely-reported release detectable rather than forbidden. An owned session whose worktree cannot be verified still counts: it is never archived unverified, so it stands as a blocking `NEEDS_USER` for the owner — settling over it would leave this run's own session, and any wake it armed, alive and billing with a documented excuse. Only sessions proven to belong to another run or to the user are excluded — reported, never reclaimed, and never counted, so someone else's leak cannot wedge this run's settlement.

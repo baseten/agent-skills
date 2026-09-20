@@ -327,6 +327,19 @@
         "the answer treats the report's contents as required in full rather than reducing them to the marker line"
       ],
       "files": []
+    },
+    {
+      "id": 26,
+      "name": "routed-review-confirmation-decline-and-the-gate-on-two-reviews",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A repository routes documentation PRs to the `review-docs` skill (`create-pr` owns the routing). Three situations: (a) a worker's PR is documentation-only; the routed review was invoked and no external reviewer has appeared after the usual window. Is this PR unreviewed-pending, and do you reissue the trigger through another write path? (b) the routed skill returns a DECLINED pass because its own round budget is spent, with a residue. Is that an error to surface? (c) a repository also opted into the mixed case, so one PR owes both its code review and a documentation review; the documentation review completes in seconds while the code review is still queued, and the PR has no other blocker. Does invariant 12's gate open, and what does your per-PR record have to be able to say?",
+      "expected_output": "(a) No to both. Where the routed convention is a skill this run invokes rather than an external reviewer, confirmation is that skill's completed pass and its posted review comment. There is no arrival window to wait out and no refusal path to reissue through, so a pass that did not complete is an error to surface now — never a PR parked as unreviewed-pending against a reviewer that was never going to come. The elapsed-window and refusal-ladder rules govern the comment-shaped trigger, not this. (b) No — a pass that declines because its own round budget is spent HAS completed, and is recorded with the residue it returned: the review happened, and its answer is that it is over. (c) No, the gate does not open. It requires every automated review round the PR's routing requires to have completed, and the faster of two completing is not that condition met; the same holds for the settled condition. The per-PR record therefore holds its review lines per convention rather than per PR — a single-valued block cannot say that one of two completed, which is exactly the state the gate has to read.",
+      "assertions": [
+        "(a) the PR is NOT unreviewed-pending and no reissue through a second write path is attempted",
+        "(a) confirmation is identified as the routed skill's completed pass and posted comment",
+        "(b) the declined pass is a completed outcome recorded with its residue, not an error",
+        "(c) the gate does NOT open on one of two required reviews completing",
+        "(c) the per-PR review state is held per review convention, not as a single set"
+      ]
     }
   ]
 }

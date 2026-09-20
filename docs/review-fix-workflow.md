@@ -189,6 +189,16 @@ merge gate and reaching the owner at settle, never as a `NEEDS_USER` outcome for
 the symptom is a stall that hands you the work, not a crash. This repository raises the key
 in `.claude/backlog-orchestrator.json`.
 
+That observed round count is the count of a **code reviewer's** rounds on prose, and it is
+the measurement `review-docs` exists to make unnecessary rather than a target to budget for:
+a reviewer with no oracle does not converge, so a bigger budget buys more rounds and not a
+better document. The two bounds are not alternatives and do not reconcile into one — they
+bound different loops and fail differently. `review-repair-cycles` bounds this run's repair
+passes over review threads, and exhausting it yields deferred-repair `NEEDS_USER` items that
+hold the PR's merge gate. `review-docs` bounds its own review rounds at two, and exhausting
+them yields a decline that posts nothing and hands the residue to the author. Raising the
+former buys nothing against the latter, and neither one is the other's ceiling.
+
 **2. `resolve-pr-comment` is line-local by contract.** Its gather step reads "the referenced
 files at the relevant lines to understand what each comment is asking for." For a code
 review that is the correct scope; for a prose contract it is the shape that manufactures the

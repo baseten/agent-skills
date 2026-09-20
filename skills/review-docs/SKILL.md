@@ -5,11 +5,18 @@ description: Review the documentation in a pull request by checking what it clai
 
 # Review Docs
 
-Review one documentation-only pull request. **Two things make this different from the code review it replaces, and both are the reason it exists:** it stops at a point fixed in advance rather than when someone decides to stop, and it reads the document against the **codebase** rather than against itself.
+Review the documentation in one pull request. **Two things make this different from the code review it replaces, and both are the reason it exists:** it stops at a point fixed in advance rather than when someone decides to stop, and it reads the document against the **codebase** rather than against itself.
 
 This file is the contract; the reasoning behind its rules lives in `NOTES.md` beside it, keyed by section. NOTES explains; it never overrides.
 
 Read-only over the PR and the repository: it verifies, it reports once, and it changes no file, pushes nothing, resolves nothing, and merges nothing.
+
+## Inputs
+
+- **the PR** — URL, or `owner/repo` and number;
+- **the run's posting-identity map**, where the caller has one (`backlog-orchestrator`, *Posting identity*): the comment below is an authored write and needs its author selected from that map like any other.
+
+**Nothing else is supplied, and in particular the round number never is.** The documentation paths, the commit to check against, and the round are all derived from the PR itself — a caller that could assert the round could assert its way past the budget.
 
 ## Why an automated code reviewer is the wrong instrument here
 
@@ -64,7 +71,7 @@ Where a claim's tense is genuinely ambiguous, check the premises and say which r
 
 # 3. What is a finding
 
-| class | holds the merge gate |
+| class | actionable — becomes an item |
 |---|---|
 | `FALSE_CLAIM` | **yes** — a `FALSE` verdict |
 | `FALSE_PREMISE` | **yes** |
@@ -72,7 +79,11 @@ Where a claim's tense is genuinely ambiguous, check the premises and say which r
 | `NEEDS_AUTHOR` | **yes** |
 | `NOTE` | **never** |
 
-These four are what *actionable finding* means for this skill's findings wherever a merge gate or a settled-tranche condition asks whether a PR's review is clean (`backlog-orchestrator`, *Invariant 12* states the gate once; this states only which of this skill's own findings answer to it). A `NOTE` never does, whatever it says and however many there are. On a **mixed** PR this is an added condition and not a substituted one: the code review's actionable findings still hold the gate on their own, and a clean pass here never speaks for them.
+**These findings are not review-thread feedback, and the route they take to a merge decision is not the review path.** This skill's report is a timeline comment authored by the run, which `backlog-orchestrator`, *Merge policy and review feedback*, classifies as conversation by kind — that skill's discriminator, not an oversight here. So nothing groups these into a review round, and no `repair-pr` pass with `repair type = review` will ever see one.
+
+They travel the **finding** route instead, which exists for exactly this: work evidenced by something other than a thread. An actionable finding is **returned to the caller**, which carries it into the run's findings and so into `summarize-tranche` — a document change this PR still needs is an `IN_FLIGHT_FIX`, one that must not ship as it stands is also a `MERGE_RISK`, and a `NEEDS_AUTHOR` is a `DECISION`. Invariant 12's gate already refuses to open over any of the three, and `repair-pr` already accepts a finding as a repair type. **Nothing new is needed at the gate, and nothing here restates it** — a `NOTE` simply never becomes an item, whatever it says and however many there are.
+
+On a **mixed** PR the two reviews are independent and both are owed. A clean pass here speaks only for the documentation paths and never for the code review, whose own findings reach the gate by their own route.
 
 - **`NEEDS_AUTHOR`** — a question only the author can answer, admitted **only where you can name what would be built wrong without the answer.** That test is the whole class: without it, every sentence anyone found unclear qualifies, and the class becomes the 28 threads again under a new name.
 - **`CONTRADICTION`** — two parts of the document disagreeing **about what to build**, so an implementer has to pick and cannot. Differing emphasis, ordering, or level of detail is not a contradiction. **Capped at three.** Past three, emit a single finding saying the document contradicts itself structurally and needs its author, and stop enumerating: the fourth instance tells the author nothing the first three did not, and a list of them is how a review stops being read.
@@ -87,7 +98,7 @@ These four are what *actionable finding* means for this skill's findings whereve
 
 - **The one exception**: a fix that introduces a new `FALSE_CLAIM` or `FALSE_PREMISE`. That is the failure class the whole skill is for, and the fix created it, so it is reported — inside the finding whose fix created it, never as a new finding of its own, and it **earns no additional round.**
 
-**There is no round 3.** Whatever is unresolved after round 2 is named and handed to the author: the findings still open, with their evidence, and the statement that the review is over. A caller invoking a third time gets a **declined pass naming the residue** — the decline is the deliverable, not an error, and it posts nothing.
+**There is no round 3.** Whatever is unresolved after round 2 is named and handed to the author: the findings still open, with their evidence, and the statement that the review is over. A caller invoking a third time gets a **declined pass naming the residue** — the decline is the deliverable, not an error, and it posts nothing. **A decline is a completed outcome, not a pass that failed to happen**, and a caller confirming that a routed review took effect reads it as one (`backlog-orchestrator`, *Implementation worker contract*, says so at the confirmation step): the residue it returns is the review's result, already reported in round 2's comment.
 
 **The round is read off the PR, not off run state**: no prior `review-docs` comment → round 1; exactly one → round 2; two → declined. A restarted session, a different worker, and a person invoking by hand all count the same rounds, because the count lives where the comments do (NOTES).
 
@@ -97,7 +108,7 @@ The budget is **per PR, not per document.** A document that comes back as a new 
 
 # 5. The report is one comment
 
-One PR comment per round. **Never a thread per finding** — 28 threads was not the review being thorough, it was the review being unreadable, and a reader triaging a wall of threads cannot see that only two of them were about the code at all.
+One PR comment per round. **Never a thread per finding.** Two independent reasons, and the second is not this skill's to relax: 28 threads was not the review being thorough, it was the review being unreadable — a reader triaging a wall of threads cannot see that only two of them were about the code at all. And **the run never roots a review thread on a PR it is driving** (`backlog-orchestrator`, *Merge policy and review feedback*, states that prohibition and the discriminator that depends on it); a run-authored root would make this report indistinguishable from a reviewer's instruction.
 
 ```text
 ## Documentation review — round <1|2> of 2
@@ -123,7 +134,7 @@ Round 2 is the last round; unresolved findings after it go to the author.
 - **Every finding carries its evidence at `path:line`.** A claim reported false without the code that makes it false is an opinion in a table.
 - Round 2's comment reports each round 1 finding's outcome and **repeats nothing else** — no re-verification table, no re-listing of notes.
 
-**The comment follows the authored-write-form rule** (`references/authored-write-form.md`) and **carries the attribution footer**, because nobody read it before it was posted — that rule's approval test answers No for every comment this skill writes. Its brevity rule governs how each element is written and never whether it is written: the claims table and each finding's evidence are the write's **required contents**, and a table cut to fit a word count is the review deleting its own evidence. Never hard-wrap it. Its author follows the posting-identity rule (`backlog-orchestrator`, *Posting identity*, states it once); this comment is **not** the review-trigger comment and carries none of that comment's exemptions.
+**The comment follows the authored-write-form rule** (`references/authored-write-form.md`) and **carries the attribution footer**, because nobody read it before it was posted — that rule's approval test answers No for every comment this skill writes. Its brevity rule governs how each element is written and never whether it is written: the claims table and each finding's evidence are the write's **required contents**, and a table cut to fit a word count is the review deleting its own evidence. Its author follows the posting-identity rule (`backlog-orchestrator`, *Posting identity*, states it once); this comment is **not** the review-trigger comment and carries none of that comment's exemptions.
 
 # Enabling it in a repository
 
@@ -154,4 +165,4 @@ documentation paths, alongside the code review, which still runs in full.
 
 # Output
 
-Return: PR URL and the repository; which case the diff fell in (documentation-only, mixed, or no documentation) and the documentation paths reviewed, with the commit their claims were checked against; where nothing was reviewed, which review should run instead; round number and whether a further round exists; claims checked by verdict; findings by class, with the actionable count stated separately; the posted comment's URL; and anything that could not be verified, with why.
+Return: PR URL and the repository; which case the diff fell in (documentation-only, mixed, or no documentation) and the documentation paths reviewed, with the commit their claims were checked against; where nothing was reviewed, which review should run instead; round number and whether a further round exists; claims checked by verdict; findings by class, with the actionable count stated separately; the posted comment's URL; **the posting-identity observations made, one entry per `(transport, credential)` pair written through, with the write kind** — on a documentation-only routed PR no review-trigger comment is posted at all, so this comment is the run's only comment-kind evidence and a caller that drops it loses what its next trigger selection reads (`create-pr`, *Automated review trigger*); and anything that could not be verified, with why.

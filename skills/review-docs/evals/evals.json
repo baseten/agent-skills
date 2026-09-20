@@ -95,12 +95,13 @@
     },
     {
       "id": 7,
-      "name": "classification-is-conservative-and-declines-cleanly",
-      "prompt": "You are executing the review-docs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two sub-scenarios. (A) A PR changes `docs/architecture.md`, `README.md` and `config/rate-limits.yaml`, and the repository documents only the documentation-only routing. (B) A PR changes `docs/api-reference.md` — but that file is generated from source annotations by a build step, and you are not certain whether the repository treats it as prose or as generated output. What do you do in each, and which way does uncertainty resolve, and why that way?",
-      "expected_output": "(A) Not documentation-only: `config/rate-limits.yaml` is configuration, consumed by the runtime, so it disqualifies the replacement case. The repository has not opted into automatic mixed routing, so the ordinary code review runs and this declines in one line naming the file that disqualified it — declining is a result, not a failure, and it says which review should run. (Invoked by hand, it would review the two documentation paths alongside the code review, against the PR head.) (B) Cannot tell resolves to NOT documentation: generated output is excluded, and the uncertainty is resolved toward the code review. The reason is the asymmetry of the two errors — declining wrongly costs one ordinary reading of a file; accepting wrongly means a file that no reviewer read, silently. Given one classification and two error directions, take the cheap one.",
+      "name": "classification-is-conservative-about-what-counts-as-prose",
+      "prompt": "You are executing the review-docs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two sub-scenarios. (A) A PR changes `docs/architecture.md`, `README.md` and `config/rate-limits.yaml`, and the repository documents only the documentation-only routing. (B) A PR changes `docs/api-reference.md` — but that file is generated from source annotations by a build step, and you are not certain whether the repository treats it as prose or as generated output. You are invoked directly by a person in both. What do you do in each, and which way does uncertainty resolve, and why that way?",
+      "expected_output": "(A) `config/rate-limits.yaml` is configuration, consumed by the runtime, so it is not documentation — which makes this the MIXED case, not a decline. Documentation-only replacement is off the table, but a hand invocation on a mixed PR always works: review `docs/architecture.md` and `README.md` only, against the PR's own head, alongside the code review, which still runs in full over everything. Note that the repository did not opt into automatic mixed routing, so `create-pr` would not have routed this on its own. Only a diff with no documentation at all is declined. (B) Cannot tell resolves to NOT documentation: generated output is excluded, and the uncertainty is resolved toward the code review. The reason is the asymmetry of the two errors — declining wrongly costs one ordinary reading of a file; accepting wrongly means a file no reviewer read, silently. Given one classification and two error directions, take the cheap one.",
       "assertions": [
-        "(A) the YAML config disqualifies documentation-only; the decline names it and says which review runs instead",
-        "(A) declining is treated as a result rather than a failure",
+        "(A) is identified as the mixed case rather than declined — the YAML disqualifies documentation-only replacement, not the review itself",
+        "(A) reviews the two documentation paths only, against the PR's own head, with the code review still running in full",
+        "(A) notes that automatic mixed routing was not opted into, while the hand invocation stands",
         "(B) uncertainty resolves against documentation (toward the code review)",
         "The answer justifies the direction by the asymmetry of costs: a second reading versus a file nobody reviewed"
       ]
@@ -115,6 +116,42 @@
         "The fresh session runs round 2 rather than restarting at round 1",
         "The subsequent hand invocation is declined",
         "The answer names restart-survival / non-launderability of the budget as the point of reading it off the PR"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "docs-only-claims-check-against-the-base-not-the-head",
+      "prompt": "You are executing the review-docs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a documentation-only PR adds `docs/specs/rate-limiting.md`. It states 'the limiter currently allows 100 requests per minute per key'. Which commit do you verify that against, and does it matter here? A colleague proposes simplifying the contract to one rule — 'always check claims against the PR's head' — on the grounds that it gives the same answer on a documentation-only PR anyway. Is that a safe simplification?",
+      "expected_output": "The base branch's head: the prose is the only thing this PR changes, so the code an implementer will find is the code already there. It happens not to matter for THIS PR — a documentation-only diff leaves the code identical at base and head — which is exactly why the proposed simplification is unsafe. It encodes a coincidence as a rule, and the next reader cannot tell the coincidence from a decision; the same one rule is then wrong on a mixed PR, where it is the base that is wrong and the head that is right. The two cases genuinely take different commits and the contract states both.",
+      "assertions": [
+        "The claim is checked against the base branch head for a documentation-only PR",
+        "The answer recognises that base and head are equivalent on a documentation-only diff, so the verdict is unchanged here",
+        "The one-rule simplification is rejected, and the reason given is that it encodes a coincidence as a rule / would be wrong on the mixed case"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "verification-reads-the-code-rather-than-matching-a-token",
+      "prompt": "You are executing the review-docs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a spec says 'scan results are published to the `scan.completed` webhook topic'. You search the repository for `scan.completed` and get three hits: one in a code comment describing a topic that was removed, one in a test fixture's expected-payload JSON, and one in a `switch` arm inside a function that nothing reaches — the only caller was deleted. The live publisher publishes to `scan.finished`. What verdict do you give, and what would the three hits have produced if a match had been treated as verification? Why is that failure worth a rule of its own here?",
+      "expected_output": "FALSE — the live publisher uses `scan.finished`, cited at its path:line. Treating a match as verification would have returned TRUE with a path:line beside it, which is indistinguishable in the report from a real verification and would have shipped the exact false claim the skill exists to catch. It needs its own rule because a matching token proves a name exists somewhere, not that the sentence is true about it: this is the skill's own failure mode arriving inside its verification step, it is fast, and its output looks identical to the real thing — which is what makes it the shape that appears under time pressure. Evidence must come from the code that actually runs.",
+      "assertions": [
+        "The verdict is FALSE, with the live publisher's path:line as evidence",
+        "None of the comment, the test fixture, or the unreachable switch arm is accepted as verification",
+        "The answer states that a token match would have produced a TRUE verdict carrying a path:line, indistinguishable from a real one in the report",
+        "The reason given is that a match proves a name exists, not that the claim is true — the skill's own failure mode inside its verification step"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "findings-are-not-review-threads-and-reach-the-gate-as-items",
+      "prompt": "You are executing the review-docs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: round 1 on a documentation-only PR inside an orchestrated run produced two FALSE_CLAIMs, one NEEDS_AUTHOR, and four NOTEs. The orchestrator asks how these reach it and whether the PR can now merge. Questions: (a) do you root a review thread for each finding so the run's review-repair path picks them up? (b) if not, how does an unresolved FALSE_CLAIM stop the PR merging? (c) what happens to the NOTEs? (d) the orchestrator offers to dispatch a `repair-pr` pass with `repair type = review` against your comment — is that the right repair type?",
+      "expected_output": "(a) No. The report is one timeline comment, and the run never roots a review thread on a PR it is driving — that prohibition and the thread-root discriminator belong to `backlog-orchestrator`, *Merge policy and review feedback*, not to this skill, so a run-authored root would make this report indistinguishable from a reviewer's instruction. A timeline comment is conversation by kind, so nothing groups these into a review round. (b) The findings are returned to the caller and travel the FINDING route: they become action points — a document change this PR still needs is an IN_FLIGHT_FIX, one that must not ship as it stands is also a MERGE_RISK, a NEEDS_AUTHOR is a DECISION — and invariant 12's gate already refuses to open over any of those. Nothing new is needed at the gate. (c) NOTEs never become items and never hold anything. (d) No — `repair type = review` operates on review threads and there is no thread here; the finding repair type is the one that exists for work evidenced by something other than a thread.",
+      "assertions": [
+        "No review thread is rooted, and the reason cites the run's no-new-threads rule / thread-root discriminator rather than only the volume argument",
+        "The findings reach the merge gate as returned items on the finding route (IN_FLIGHT_FIX / MERGE_RISK / DECISION), not as review feedback",
+        "The answer does not invent new merge-gate machinery or restate the gate's conditions",
+        "NOTEs are excluded from items and from the gate",
+        "`repair type = review` is rejected in favour of the finding repair type, because there is no thread"
       ]
     }
   ]

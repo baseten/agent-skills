@@ -115,6 +115,20 @@
         "the answer does not claim or imply a visual check that was not performed",
         "with a capture path available, the answer requires the capture"
       ]
+    },
+    {
+      "id": 9,
+      "name": "documentation-routing-replaces-the-trigger-comment-and-governs-retriggers",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the repository's CLAUDE.md says 'Documentation-only PRs (every changed path is prose) are reviewed by the `review-docs` skill instead of the repository's automated code review.' It says nothing about mixed PRs. You have just created a PR whose only changed path is `docs/specs/scan-api.md`. Questions: (a) do you post `@codex review`? (b) what counts as confirming the trigger took effect? (c) a later supervision step pushes a substantive repair and re-triggers review 'where repo convention requires it', selecting the trigger's author from the posting-identity map — what does it actually do here, and what does it select? (d) `review-docs` is not installed on this machine. Now what? (e) what does your Output report about identities, given (a)?",
+      "expected_output": "(a) No — the documented convention is the trigger, and on a documentation-only diff it runs instead of the ordinary one. You invoke `review-docs` on the PR rather than posting a comment. (b) Its completed pass and the review comment it posts — not a reviewer arriving; there is no arrival window. (c) It re-invokes the skill rather than re-posting anything. There is no trigger comment and therefore no trigger author to select from the map: the selection step has nothing to select, and that is not an omission. If `review-docs`' own round budget is spent it declines, and a decline is the convention's completed answer to a re-trigger, not a failed trigger. (d) The ordinary trigger stands alone and you report that it did — same fail-safe direction as 'cannot tell whether a path is documentation → it is not': a PR reviewed by the wrong instrument costs a reading, a PR reviewed by nothing costs the review. (e) No trigger comment was posted, so this skill has no comment-kind identity evidence of its own to report; the routed skill posted the only comment, and its returned observations are forwarded in full rather than summarized away.",
+      "assertions": [
+        "No `@codex review` (or other comment-shaped trigger) is posted on the documentation-only PR; `review-docs` is invoked instead",
+        "Confirmation is the routed skill's completed pass and posted comment, not an external reviewer arriving",
+        "The re-trigger is a re-invocation, and the answer states there is no trigger author to select because there is no comment",
+        "A declined pass is treated as the convention's completed answer rather than a failed trigger",
+        "An unavailable `review-docs` falls back to the ordinary trigger AND is reported, rather than stopping or silently skipping review",
+        "The Output forwards the routed skill's result and identity observations, and does not claim comment-kind evidence this skill did not produce"
+      ]
     }
   ]
 }
