@@ -1,0 +1,121 @@
+{
+  "skill_name": "review-docs",
+  "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "mixed-pr-scope-commit-and-non-replacement",
+      "prompt": "You are executing the review-docs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are invoked by hand on a PR that changes `src/scanner/handler.ts`, `src/scanner/handler.test.ts` and `docs/specs/scan-api.md`. The repository documents the documentation-only routing but says nothing about mixed PRs. Questions: (a) what do you review? (b) which commit do you check the document's claims against, and why that one? (c) does the repository's automated code review still run, and over what? (d) the spec says the endpoint returns 202; the handler in this PR returns 200. What do you report, and what do you not ask for?",
+      "expected_output": "(a) The documentation paths only — `docs/specs/scan-api.md`. Never the code, on any PR. (b) The PR's own head, because on a mixed PR the document may describe the code landing beside it; checking against the base would mark every correctly-documented change FALSE, which is wrong in exactly the cases this is for. (c) Yes, in full, over everything in the diff including the documentation — on a mixed PR this runs alongside and never replaces or narrows the code review. A gate reading both is satisfied by both. (d) A FALSE_CLAIM about the document: the spec says 202, the handler at that path:line returns 200. It is reported as a claim the document gets wrong, never as a request to change the code to 202 — that choice is the code review's to ask for and the author's to make. Hand invocation on a mixed PR works even though the repository has not opted into automatic mixed routing.",
+      "assertions": [
+        "Only the documentation path is reviewed; the code files are not reviewed by this skill",
+        "Claims are checked against the PR's own head, not the base branch head, and the reason given is that the document may describe code landing in the same PR",
+        "The code review still runs in full and is neither replaced nor narrowed; this skill's pass is additive",
+        "The 202/200 mismatch is reported as a FALSE_CLAIM about the document, not as a request to change the handler",
+        "The hand invocation is honored despite the repository not having opted into automatic mixed routing"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "prescriptive-claims-are-not-false-but-their-premises-are-checked",
+      "prompt": "You are executing the review-docs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a documentation-only PR adds a design spec. Three of its sentences: (1) 'The worker will write each completed scan to the `scans` table with a `status` column.' There is no `scans` table anywhere in the repository — the table is called `scan_runs`. (2) 'A new `/v2/scan` endpoint will accept a batch of addresses.' Nothing like it exists yet, and nothing it depends on is missing. (3) 'The current scheduler polls every 30 seconds.' The code sets the interval to 300 seconds. Give each a verdict, and say which are findings. Then: why would marking (2) FALSE be a worse mistake than it first appears?",
+      "expected_output": "(1) FALSE_PREMISE — a prescriptive claim resting on a present-tense premise that is false; a finding, and the highest-value kind here, because it reads as a plan while sending someone to write a migration against a table that does not exist under that name. (2) PRESCRIPTIVE — the document says what will exist, its premises check out, nothing to check today, not a finding. (3) FALSE — a descriptive claim the code contradicts at its path:line; a finding. Marking (2) FALSE is worse than a single wrong verdict: a spec describes a codebase that does not exist yet, so a reviewer that flags forward-looking sentences buries the report in noise, and a report that is mostly noise gets switched off — after which the false claims the skill exists to catch go uncaught. The cheap over-flagging failure becomes the expensive one.",
+      "assertions": [
+        "(1) is FALSE_PREMISE and is a finding",
+        "(2) is PRESCRIPTIVE and is not a finding",
+        "(3) is FALSE and is a finding",
+        "The answer explains that over-flagging prescriptive sentences produces noise, and that the consequence is the skill being switched off / ignored rather than merely one wrong verdict",
+        "Evidence for the false verdicts is located in the code (path:line), not asserted from the document alone"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "round-2-raises-no-new-findings-except-a-fix-that-broke-a-claim",
+      "prompt": "You are executing the review-docs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: round 1 raised four findings. The author has pushed fixes and you are invoked again. You observe: (a) two findings cleanly fixed; (b) one not addressed at all; (c) one 'fixed' by a rewrite whose new sentence claims the retry limit is 5 — the code says 3; (d) an untouched section elsewhere that, rereading it, has a confusing ordering and one term used before it is defined; (e) a section the author rewrote well beyond what you asked, which now reads much better. What does your round 2 comment contain, and what does it deliberately omit? Does (c) earn another round?",
+      "expected_output": "Round 2 reports only the outcomes of round 1's four findings: two fixed, one not fixed, and (c) fixed wrongly — the rewrite introduced a new FALSE_CLAIM (retry limit 5 vs 3 in the code, with path:line). That exception is bounded: it is reported inside the existing finding, not as a new finding, and it earns no additional round. (d) is omitted entirely — round 2 raises no new findings, and ordering and define-before-use are not findings at any round. (e) is omitted — a section that improved in a way nobody asked about is not an occasion to comment. No round 3 exists: after this, whatever is unresolved (the unfixed finding and the newly false claim, if still wrong) is named and handed to the author. Re-reading a rewrite is a fresh unbounded reading, which is the loop the two-round rule breaks.",
+      "assertions": [
+        "Round 2 reports fixed / not fixed / fixed wrongly for round 1's findings only",
+        "The new false claim introduced by a fix IS reported, inside the existing finding rather than as a new finding",
+        "The new false claim does not earn a third round",
+        "The unrelated ordering / define-before-use observations are not raised — both because round 2 raises nothing new and because they are not findings at all",
+        "The improved section is not commented on",
+        "The answer states there is no round 3 and that the residue is named and handed to the author"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "third-invocation-declines-and-posts-nothing",
+      "prompt": "You are executing the review-docs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a documentation-only PR already carries two of your review comments (rounds 1 and 2). An orchestrator invokes you again after another substantive push, and the author says the document has changed a lot since round 2 and would benefit from another look. Two of round 1's findings are still unresolved. What do you do, and what appears on the PR? Would a per-repository configuration key raising the round limit be the right way to allow a third look?",
+      "expected_output": "Decline. The round is read off the PR's own comments — two present means declined — and a declined pass posts nothing, so no third comment ever appears. The decline is the deliverable, not an error: it returns naming the residue (the two unresolved findings with their evidence) and states the review is over and belongs to the author. A large rewrite since round 2 does not buy a round; a document coming back as a NEW PR gets its own two rounds, because that is a fresh decision by a person. No: the budget is deliberately not a policy key. A configurable limit is a ceiling, and the run that spent nine rounds would have spent any ceiling given — the failure was that stopping was nobody's decision, and making it configurable hands that decision back to the person who already declined to make it. This is why it sits in the contract and not in `.claude/backlog-orchestrator.json` with the repair budgets.",
+      "assertions": [
+        "The third invocation is declined",
+        "Nothing is posted on the PR — no third comment",
+        "The decline names the unresolved residue and hands it to the author rather than reporting an error or a failure",
+        "The rewrite-since-round-2 argument is rejected as grounds for another round, while a new PR is acknowledged as getting its own two rounds",
+        "A configurable round limit is rejected, with the reason that a ceiling is not a decision (distinguishing this from the repair budgets that do live in config)"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "contradiction-cap-and-the-not-a-finding-list",
+      "prompt": "You are executing the review-docs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: round 1 on a documentation-only spec PR. You have found: seven places where two sections disagree about what to build (each one genuinely forces an implementer to pick); nine places where terminology is inconsistent but the intent is obvious; a table whose row order does not match the prose above it; and one endpoint path the code does not have. How many findings do you emit, of what classes, and what happens to the seven? Why is the limit a flat cap rather than a severity ranking?",
+      "expected_output": "Two findings. The endpoint path is a FALSE_CLAIM with its path:line evidence. The seven contradictions exceed the cap of three, so they collapse into a single CONTRADICTION finding saying the document contradicts itself structurally and needs its author — the instances are not enumerated past that point. The nine terminology inconsistencies and the table ordering are not findings at all, at any count; they may appear as a NOTE, which never holds the merge gate. A flat cap is chosen precisely because it is crude and cannot be argued with; a severity ranking is a number a reviewer can always justify producing one more of. Past a few instances the finding stops being 'these two sections disagree' and becomes 'this document needs its author', and enumerating instances of a structural problem is how a review stops being read.",
+      "assertions": [
+        "The seven contradictions collapse into ONE finding rather than being emitted individually",
+        "The collapsed finding says the document is structurally self-contradictory and needs its author",
+        "The terminology inconsistencies and the table ordering are not findings (NOTE at most) and do not hold the merge gate",
+        "The endpoint path is emitted as a FALSE_CLAIM with code evidence",
+        "The answer justifies a flat cap over a ranking on the grounds that a ranking can always be argued into one more instance"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "needs-author-requires-naming-what-would-be-built-wrong",
+      "prompt": "You are executing the review-docs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: two ambiguities in a spec. (a) The document never says whether a failed scan should be retried before or after the rate-limit window resets; an implementer must choose, and the two choices produce different behaviour under load. (b) The document's introduction is vague about the project's long-term goals in a way you find unsatisfying, but nothing in the implementation depends on it. Which, if either, is a NEEDS_AUTHOR finding? What is the admission test, and what goes wrong if it is treated as advice rather than as the condition for admitting the class?",
+      "expected_output": "(a) is NEEDS_AUTHOR: you can name what would be built wrong without the answer — retry-before versus retry-after produces different behaviour under load, and the implementer cannot choose on the document's authority. (b) is not: nothing in the implementation depends on it, so it fails the test; at most a NOTE, which never holds the gate. The test is naming what would be built wrong without the answer, and it is the admission condition for the class, not guidance. Treated as advice, the class absorbs everything: any sentence a reader found unclear can be phrased as a question only the author can answer, and NEEDS_AUTHOR quietly becomes the 28 internal-consistency threads under a new name — which is the failure the whole skill is a response to.",
+      "assertions": [
+        "(a) is NEEDS_AUTHOR and (b) is not",
+        "The finding for (a) names the concrete thing that would be built wrong without the answer",
+        "(b) is at most a NOTE and does not hold the merge gate",
+        "The answer states the test as the admission condition rather than as guidance, and names the failure mode of relaxing it (the class absorbing every unclear sentence)"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "one-comment-with-evidence-survives-the-brevity-rule",
+      "prompt": "You are executing the review-docs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: round 1 verified 34 claims and produced 3 findings. You are about to post. You notice the authored-write-form rule asks for short forge writes, and your claims table is long. Questions: (a) do you post one comment or a thread per finding, and what is lost by the other choice beyond volume? (b) do you cut the claims table or the per-finding path:line evidence to satisfy brevity? (c) does the comment carry the attribution footer, and is it exempt as a review-trigger comment? (d) do you hard-wrap the body at 80 columns?",
+      "expected_output": "(a) One comment. Beyond volume, a thread per finding destroys the composition of the review: a reader triaging a column of threads cannot see that 2 concerned the codebase and 26 concerned internal ordering, and so cannot tell a review worth acting on from one worth closing. The claims table makes that composition the first visible thing, which threads structurally cannot. (b) Neither. Required contents win over brevity — brevity governs how each element is written, never whether it is written — and the evidence is exactly the tempting cut because it is longest and reads as padding. A claims table cut to fit is the review deleting the only thing distinguishing it from an opinion. (c) Yes, the footer goes on: nobody read this text before it was posted, so the approval test answers No. It is NOT the review-trigger comment and carries none of that comment's exemptions. (d) No — never hard-wrap a write that lands in a forge field; a newline inside a paragraph renders as a line break.",
+      "assertions": [
+        "One comment, never a thread per finding",
+        "The stated cost of threads goes beyond volume to the reader being unable to see the composition of the review",
+        "Neither the claims table nor the evidence is cut; required contents are named as winning over the brevity budget",
+        "The comment carries the attribution footer and is explicitly NOT treated as the exempt review-trigger comment",
+        "The body is not hard-wrapped"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "classification-is-conservative-and-declines-cleanly",
+      "prompt": "You are executing the review-docs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two sub-scenarios. (A) A PR changes `docs/architecture.md`, `README.md` and `config/rate-limits.yaml`, and the repository documents only the documentation-only routing. (B) A PR changes `docs/api-reference.md` — but that file is generated from source annotations by a build step, and you are not certain whether the repository treats it as prose or as generated output. What do you do in each, and which way does uncertainty resolve, and why that way?",
+      "expected_output": "(A) Not documentation-only: `config/rate-limits.yaml` is configuration, consumed by the runtime, so it disqualifies the replacement case. The repository has not opted into automatic mixed routing, so the ordinary code review runs and this declines in one line naming the file that disqualified it — declining is a result, not a failure, and it says which review should run. (Invoked by hand, it would review the two documentation paths alongside the code review, against the PR head.) (B) Cannot tell resolves to NOT documentation: generated output is excluded, and the uncertainty is resolved toward the code review. The reason is the asymmetry of the two errors — declining wrongly costs one ordinary reading of a file; accepting wrongly means a file that no reviewer read, silently. Given one classification and two error directions, take the cheap one.",
+      "assertions": [
+        "(A) the YAML config disqualifies documentation-only; the decline names it and says which review runs instead",
+        "(A) declining is treated as a result rather than a failure",
+        "(B) uncertainty resolves against documentation (toward the code review)",
+        "The answer justifies the direction by the asymmetry of costs: a second reading versus a file nobody reviewed"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "round-number-comes-from-the-pr-not-the-session",
+      "prompt": "You are executing the review-docs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a worker was dispatched to review a documentation-only PR, posted a round 1 comment, and its session died. A fresh session — no memory of the earlier run — is dispatched to review the same PR, and its invocation says nothing about rounds. Separately, the author, frustrated, invokes you by hand from their laptop on the same PR. How does each invocation determine which round it is running, and what property does that give the budget?",
+      "expected_output": "Each reads the round off the PR's own comments, not off run state: no prior review-docs comment means round 1, exactly one means round 2, two means declined. So the fresh session runs round 2 and the author's hand invocation — arriving after it — is declined. Run state survives neither a restart nor a different invoker, and the durable fact is the artifact on the forge. The property this gives the budget is that it cannot be laundered by re-invoking from a fresh session, which is precisely how a well-meaning operator would otherwise reach round nine.",
+      "assertions": [
+        "The round is derived from the count of this skill's prior comments on the PR, not from run state or the invocation",
+        "The fresh session runs round 2 rather than restarting at round 1",
+        "The subsequent hand invocation is declined",
+        "The answer names restart-survival / non-launderability of the budget as the point of reading it off the PR"
+      ]
+    }
+  ]
+}

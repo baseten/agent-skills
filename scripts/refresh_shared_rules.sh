@@ -17,7 +17,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # rule source  ->  skills that apply it
 AUTHORED_WRITE_FORM="backlog-orchestrator create-pr normalize-github-dependencies
   npm-dependency-upgrade-orchestrator implement-issue
-  merge-stack repair-pr resolve-pr-comment settle-outstanding-decisions
+  merge-stack repair-pr resolve-pr-comment review-docs settle-outstanding-decisions
   summarize-tranche upgrade-npm-dependency validate-backlog"
 
 echo "Refreshing shared rules..."
