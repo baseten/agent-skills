@@ -5,7 +5,7 @@ description: Single-issue orchestrator for one tracked issue from its canonical 
 
 # Implement Issue
 
-Orchestrate exactly one tracked issue end-to-end: implement it to a durable PR, supervise that PR's CI and review, repair within budgets, and merge only through invariant 12's gate where the repository opted in.
+Orchestrate exactly one tracked issue end-to-end: implement it to a durable PR, supervise that PR's CI and review — reading each verdict off the artifact and never off an empty lookup (`references/absence-is-not-a-verdict.md`), repair within budgets, and merge only through invariant 12's gate where the repository opted in.
 
 This file is the contract. The reasoning behind each rule — incident history, arguments, and answers to "why not the obvious other reading?" — lives in `NOTES.md` beside it, keyed by these section names. Read a section's note before changing its rules or when applying them to a case the contract does not obviously cover. NOTES.md explains; it never overrides.
 

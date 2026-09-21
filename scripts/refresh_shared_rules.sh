@@ -20,14 +20,33 @@ AUTHORED_WRITE_FORM="backlog-orchestrator create-pr normalize-github-dependencie
   merge-stack repair-pr resolve-pr-comment review-docs settle-outstanding-decisions
   summarize-tranche upgrade-npm-dependency validate-backlog"
 
+# One variable per rule, named for the rule file in upper snake case.
+# check_shared_rules.py reads these assignments to learn which skills are
+# declared consumers of which rule, so the spelling is load-bearing:
+# ABSENCE_IS_NOT_A_VERDICT <-> rules/absence-is-not-a-verdict.md.
+RULES="authored-write-form absence-is-not-a-verdict"
+# Skills that make a decision on the result of a lookup, where an empty result
+# and a clean result are the same bytes.
+ABSENCE_IS_NOT_A_VERDICT="backlog-orchestrator implement-issue repair-pr
+  resolve-pr-comment merge-stack plan-merge-order validate-backlog
+  normalize-github-dependencies swarm-dispatch
+  upgrade-npm-dependency npm-dependency-upgrade-orchestrator implement-issue-core
+  review-docs"
+
+
 echo "Refreshing shared rules..."
-for skill in $AUTHORED_WRITE_FORM; do
-  src="$ROOT/rules/authored-write-form.md"
-  dest="$ROOT/skills/$skill/references/authored-write-form.md"
-  [ -f "$src" ] || { echo "missing source: rules/authored-write-form.md" >&2; exit 1; }
-  [ -d "$ROOT/skills/$skill" ] || { echo "no such skill: $skill" >&2; exit 1; }
-  mkdir -p "$(dirname "$dest")"
-  cp "$src" "$dest"
-  echo "  skills/$skill/references/authored-write-form.md"
+for rule in $RULES; do
+  var="$(echo "$rule" | tr 'a-z-' 'A-Z_')"
+  eval "consumers=\$$var"
+  [ -n "$consumers" ] || { echo "no consumer list for rules/$rule.md (expected \$$var)" >&2; exit 1; }
+  src="$ROOT/rules/$rule.md"
+  [ -f "$src" ] || { echo "missing source: rules/$rule.md" >&2; exit 1; }
+  for skill in $consumers; do
+    dest="$ROOT/skills/$skill/references/$rule.md"
+    [ -d "$ROOT/skills/$skill" ] || { echo "no such skill: $skill" >&2; exit 1; }
+    mkdir -p "$(dirname "$dest")"
+    cp "$src" "$dest"
+    echo "  skills/$skill/references/$rule.md"
+  done
 done
 echo "Done."

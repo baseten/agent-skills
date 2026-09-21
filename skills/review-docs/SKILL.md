@@ -63,7 +63,7 @@ Enumerate every claim the document makes about the codebase, and give each one a
 | `FALSE` | the code says otherwise — always a finding |
 | `PRESCRIPTIVE` | the document says what *will* exist; nothing to check today, and its premises check out |
 | `FALSE_PREMISE` | a prescriptive claim resting on something that does not exist — *"add `status` to the `scans` table"* where there is no `scans` table — always a finding |
-| `UNVERIFIABLE` | the repository carries no evidence either way |
+| `UNVERIFIABLE` | the repository carries no evidence either way — a verdict of its own, never folded into `TRUE` (`references/absence-is-not-a-verdict.md`) |
 
 **The descriptive/prescriptive split is this skill's central judgment, and getting it wrong in either direction ruins the review.** A spec describes a codebase that does not exist yet. Marking its forward-looking sentences `FALSE` turns the whole report into noise, and a report that is mostly noise gets switched off — which is how the cheap mistake becomes the expensive one. But a prescriptive sentence still rests on **present-tense premises**, and those are checkable now. That is `FALSE_PREMISE`, and it is the highest-value finding here: it is the claim that looks like a plan, reads as unfalsifiable, and sends someone to write a migration against a table that was renamed two months ago.
 

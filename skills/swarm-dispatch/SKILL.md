@@ -156,7 +156,7 @@ because events keep arriving. They are simply the wrong ones.
 that fired and found nothing, a settled report claiming all quiet — enumerate the
 tracked set with each task's watch state.**
 
-This exists because *"no events because nothing happened"* and *"no events
+This exists because (`references/absence-is-not-a-verdict.md`) *"no events because nothing happened"* and *"no events
 because nothing was listening"* produce identical silence, and in an observed run
 it was the owner who noticed, not the run. So:
 

@@ -213,7 +213,7 @@ stop at the first match. A thread with over 100 comments is rare enough that
 this is a fallback rather than the normal path — which is why the first query
 reports `totalCount` and `hasNextPage` instead of pretending to page.
 
-If a match is not found, **do not resolve anything** — say the thread id could
+If a match is not found, **do not resolve anything** (`references/absence-is-not-a-verdict.md`: a lookup that returned nothing is evidence about the lookup) — say the thread id could
 not be resolved for that comment and stop. A wrong thread resolved is worse than
 one left open, and the likeliest cause is a truncated read rather than a missing
 thread.

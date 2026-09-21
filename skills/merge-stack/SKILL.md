@@ -85,7 +85,7 @@ For `merge through` or `merge entire stack`, always process the graph in parent-
 
 ## Readiness before each merge
 
-Immediately before merging a PR, refresh its GitHub state.
+Immediately before merging a PR, refresh its GitHub state. **A verdict attaches to the commit it was computed on, and the head moves**: a review or a CI result naming a SHA other than the current head is no signal, not a green (`references/absence-is-not-a-verdict.md`).
 
 Never bypass repository protection. Stop that PR if it is:
 

@@ -68,12 +68,18 @@ REFRESH_SH = """#!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "${{BASH_SOURCE[0]}}")/.." && pwd)"
 
+RULES="{stem}"
+
 SHARED_RULE="{consumers}"
 
-for skill in $SHARED_RULE; do
-  src="$ROOT/rules/{rule}"
-  dest="$ROOT/skills/$skill/references/{rule}"
-  cp "$src" "$dest"
+for rule in $RULES; do
+  var="$(echo "$rule" | tr 'a-z-' 'A-Z_')"
+  eval "consumers=\\$$var"
+  src="$ROOT/rules/$rule.md"
+  for skill in $consumers; do
+    dest="$ROOT/skills/$skill/references/$rule.md"
+    cp "$src" "$dest"
+  done
 done
 """
 
@@ -167,7 +173,7 @@ def declared_consumer_drops_rule(tree: pathlib.Path) -> None:
 def generator_names_no_source(tree: pathlib.Path) -> None:
     text = (tree / REFRESH).read_text(encoding="utf-8")
     (tree / REFRESH).write_text(
-        text.replace(f'src="$ROOT/rules/{RULE}"', 'src="$ROOT/$RULE_PATH"'), encoding="utf-8")
+        text.replace(f'RULES="{RULE[:-3]}"', 'RULES=""'), encoding="utf-8")
 
 
 def generator_renames_the_consumer_list(tree: pathlib.Path) -> None:
@@ -241,7 +247,7 @@ def tree_with(tmp: pathlib.Path, name: str, guard: str | None = None) -> pathlib
         src = neutered(src, guard)
     (tree / CHECK).write_text(src, encoding="utf-8")
     (tree / REFRESH).write_text(
-        REFRESH_SH.format(consumers=" ".join(CONSUMERS), rule=RULE), encoding="utf-8")
+        REFRESH_SH.format(consumers=" ".join(CONSUMERS), stem=RULE[:-3]), encoding="utf-8")
     (tree / "rules" / RULE).write_text(RULE_TEXT, encoding="utf-8")
     for skill in CONSUMERS:
         cite(tree, skill, RULE)

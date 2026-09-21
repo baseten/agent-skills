@@ -63,7 +63,7 @@ For each issue in `U`, collect its blockers, in this order of confidence:
 2. blockers **stated in the issue text** ("Depends on:", "Blocked by:", explicit prose);
 3. blockers **implied by scope** — the issue's own description names a capability another in-scope issue delivers.
 
-Record the confidence level per edge. An empty native blocker list is not evidence of an unblocked issue — check the text before concluding it (NOTES: native edges are frequently incomplete, cross-repository ones especially).
+Record the confidence level per edge. An empty native blocker list is not evidence of an unblocked issue — the general case is `references/absence-is-not-a-verdict.md`, and this is one of its sites — check the text before concluding it (NOTES: native edges are frequently incomplete, cross-repository ones especially).
 
 Mark an edge `inferred` when it came from source 2 or 3, and list every inferred edge the ranking depends on so the user can overrule it.
 
