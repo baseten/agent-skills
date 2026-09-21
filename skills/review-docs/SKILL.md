@@ -94,7 +94,10 @@ On a **mixed** PR the two reviews are independent and both are owed. A clean pas
 
 **Round 1** — the full pass above: extract, verify, classify, report.
 
-**Round 2** — reads **only round 1's findings** and the diff since, and says of each: fixed, not fixed, or fixed wrongly. It raises **no new findings.** Re-reading a rewritten section is a fresh unbounded reading, and that is the loop this skill exists to break; a section that got better in a way nobody asked about is not an occasion to say so.
+**Round 2** — reads **only round 1's findings** and the diff since, and says of each: fixed, not fixed, or fixed wrongly. It raises **no new findings** about text round 1 already read. Re-reading a rewritten section is a fresh unbounded reading, and that is the loop this skill exists to break; a section that got better in a way nobody asked about is not an occasion to say so.
+
+- **Claims the author *added* since round 1 are the exception, and they are not optional.** Round 2's comment records the current head as `Reviewed commit:`, and a consumer reads that line as *this document has been reviewed*. Certifying a head carrying claims nobody checked is the failure this skill exists to prevent, arriving through the marker meant to prevent it. So round 2 extracts and verifies the claims in the diff since round 1 — **that delta only**, never a re-pass over the whole document — and reports them in its own claims table beside the finding outcomes.
+- Where the delta is too large to check inside one bounded pass, **do not certify it**: report the outcomes, omit `Reviewed commit:`, and say the additions were not reviewed. A missing marker leaves the gate shut, which is the safe direction; a present one on unread prose opens it.
 
 - **The one exception**: a fix that introduces a new `FALSE_CLAIM` or `FALSE_PREMISE`. That is the failure class the whole skill is for, and the fix created it, so it is reported — inside the finding whose fix created it, never as a new finding of its own, and it **earns no additional round.**
 
@@ -134,9 +137,9 @@ Round 2 is the last round; unresolved findings after it go to the author.
 - **Name the paths reviewed.** On a mixed PR a reader who cannot see the scope will read a clean report as the code having been reviewed too, and this comment sitting beside a code review makes that misreading easy rather than perverse.
 - **Say which round this is and that there is no third**, in the comment. A reader has to be able to see that the review terminated by design rather than by neglect — that visibility is half of the fix, because the failure being corrected was nobody knowing whose job it was to stop.
 - **Every finding carries its evidence at `path:line`.** A claim reported false without the code that makes it false is an opinion in a table.
-- Round 2's comment reports each round 1 finding's outcome and **repeats nothing else** — no re-verification table, no re-listing of notes.
+- Round 2's comment reports each round 1 finding's outcome and **repeats nothing else** — no re-verification of text round 1 read, no re-listing of notes. Claims added since round 1 are not a repeat, and are the one thing it adds.
 
-**The claims table and its evidence are round 1's required contents.** Round 2's comment carries the header, each round 1 finding's outcome — fixed, not fixed, or fixed wrongly — and the closing line, and nothing else. It re-states no table and re-lists no notes, because a second table is a second full pass wearing the budget's clothes.
+**Round 2's comment carries the header, each round 1 finding's outcome — fixed, not fixed, or fixed wrongly — and the closing line.** It **re-states no table for text round 1 already read**, because a second full table is a second full pass wearing the budget's clothes. Where the author added documentation since round 1 it carries one further table, covering **those claims only** (*The rounds*), which is what makes its `Reviewed commit:` line true. No delta, no second table.
 
 **The comment follows the authored-write-form rule** (`references/authored-write-form.md`) and **carries the attribution footer**, because nobody read it before it was posted — that rule's approval test answers No for every comment this skill writes. Its brevity rule governs how each element is written and never whether it is written: in round 1 the claims table and each finding's evidence are the write's **required contents**, and a table cut to fit a word count is the review deleting its own evidence. Its author follows the posting-identity rule (`backlog-orchestrator`, *Posting identity*, states it once); this comment is **not** the review-trigger comment and carries none of that comment's exemptions.
 

@@ -206,6 +206,7 @@ Return:
 - draft state as created and current, and any transition observed with who performed it — the owner, or the merge path's publish; this run never promotes;
 - the run's **full posting-identity map** — every entry observed by core, each repair pass, the walkthrough, and a gate-authorized `merge-stack` invocation, under its `(transport, credential)` key; carry all entries, `unestablished` where no authored write was read back (NOTES: why nothing may be collapsed);
 - whether the blocker set's completeness was backed or left unproven, and on what boundary;
+- the routed documentation review's result, exactly as core reported it — round, status, and any findings with their evidence. It reaches `summarize-tranche` through this line and nowhere else, and **no routed review** is a different state from **a routed review that found nothing**;
 - dependencies checked and any source disagreements, exactly as core reported them — including on `PR_OPEN` (NOTES);
 - blocker/failure details, including the dependency class each block was judged under;
 - recommended user action when needed.
