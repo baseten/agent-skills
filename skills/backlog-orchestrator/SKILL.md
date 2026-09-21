@@ -687,14 +687,17 @@ wrong order produces a confident wrong result. A clean review creates no review
 object and no threads, so no endpoint can distinguish *clean* from *never ran*
 without the second read.
 
-1. Read the **review threads** first. Any thread proves a review ran. Any
-   unresolved thread means it is not clean, and an owner-reserved thread holds
-   the gate regardless of the rest.
-2. **Only when there are no threads**, or all are resolved and outdated, read the
-   reviewer's **summary comment** and require a `Reviewed commit:` matching the
-   current head. That is the existence proof, and the only thing that endpoint
-   establishes.
-3. Neither → `NOT REVIEWED`. Re-trigger; never merge.
+1. **Existence is the summary comment, always.** Require a `Reviewed commit:`
+   matching the current head. No match → `NOT REVIEWED`; re-trigger and never
+   merge. This read is not skippable, because a thread does not say *which round
+   produced it*: a resolved, non-outdated thread left by an earlier round or by a
+   person satisfies any existence test built on threads, and a new trigger that
+   silently no-ops then merges behind it.
+2. **Severity is the threads, always.** Any unresolved thread means not clean,
+   whatever the summary says, and an owner-reserved thread holds the gate
+   regardless of the rest.
+3. Both, or the PR does not merge. They are either/or as *sources* — each is
+   empty exactly where the other carries the answer — and both as *conditions*.
 
 **The summary comment is never evidence of severity.** A review that found things
 may post a summary carrying no verdict, so its wording decides nothing — only the
