@@ -104,7 +104,7 @@ Before any mutation:
 4. a control inside one repository proves that repository only. Where candidates span repositories, prove **every** boundary the write set touches — one visible A→B edge says nothing about C;
 5. a proof is bound to the credential that produced it. Revalidate after a restart and on reauthentication. **An authorization error invalidates every proof bound to that credential, across every transport using it** — a 403 through `gh` condemns cached raw-HTTP proofs on the same token; revalidating just the failed boundary, or just the failed transport, keeps writing against stale controls elsewhere.
 
-If visibility cannot be proven, report the candidate edges as `UNVERIFIED` and write nothing. Absence observed through an unvalidated transport is not evidence of absence, and the cost is asymmetric: not writing a needed edge leaves a report the user can act on; writing a duplicate of a live edge mutates a graph on the strength of a blind spot.
+If visibility cannot be proven, report the candidate edges as `UNVERIFIED` — an unreadable graph and an empty one are the same result (`references/absence-is-not-a-verdict.md`) and write nothing. Absence observed through an unvalidated transport is not evidence of absence, and the cost is asymmetric: not writing a needed edge leaves a report the user can act on; writing a duplicate of a live edge mutates a graph on the strength of a blind spot.
 
 ## Applying dependencies
 

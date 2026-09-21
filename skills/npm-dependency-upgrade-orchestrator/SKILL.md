@@ -110,7 +110,7 @@ Constrain each agent explicitly:
 
 ## Supervise
 
-Gate "green" on **every** check the repository actually requires having concluded successfully **on the current head** — enumerate what is required rather than gating on whichever check you happened to read. Two false passes share one root here, and closing only the second leaves the first: a rollup that is empty or barely populated means checks have not registered, and where several checks are required, one concluding successfully while another is still pending or failing satisfies any singular reading of this gate. Neither is a pass.
+Gate "green" on **every** check the repository actually requires having concluded successfully — an empty or partial rollup is not a green one (`references/absence-is-not-a-verdict.md`) **on the current head** — enumerate what is required rather than gating on whichever check you happened to read. Two false passes share one root here, and closing only the second leaves the first: a rollup that is empty or barely populated means checks have not registered, and where several checks are required, one concluding successfully while another is still pending or failing satisfies any singular reading of this gate. Neither is a pass.
 
 **Two checks are carried here from Dispatch, and this is the section that performs them.** Both were handed over because this run occupies the passes and the merge moment belongs to nobody here; a rule stated only where it was assigned is one no pass executes.
 

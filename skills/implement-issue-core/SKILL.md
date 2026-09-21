@@ -50,7 +50,7 @@ Each source alone has a failure mode that resembles success, and **a partial lis
 
 ### Back the completeness of the set, not only its entries
 
-Resolving every blocker you found says nothing about whether you found them all. What backs completeness:
+Resolving every blocker you found says nothing about whether you found them all (`references/absence-is-not-a-verdict.md`: an unreadable graph and an empty one are the same result). What backs completeness:
 
 1. **the caller marked its context complete AND reports proven visibility** behind it for the boundaries in play — backed. (An orchestrator normally has this — except a boundary reported `dependency transport unavailable`, which its preflight passes deliberately and no worker can improve on);
 2. **a known-true case, read and observed** — an edge the caller confirmed crossing the same boundary, queried **through the same transport and credential you are reading dependencies with**, and returned. The observation is the proof; the edge merely existing proves nothing, and if it does not come back you found the blind spot. Nothing weaker counts — not a second read, not another transport or credential (NOTES);

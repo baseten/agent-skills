@@ -327,6 +327,44 @@
         "the answer treats the report's contents as required in full rather than reducing them to the marker line"
       ],
       "files": []
+    },
+    {
+      "id": 26,
+      "name": "an-empty-review-endpoint-is-not-a-clean-review",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #412 is at the merge gate. CI is green on its current head. You call the reviews endpoint and it returns an empty list. You call the review-threads endpoint and it also returns nothing. The automated reviewer answered five sibling PRs in the same minute. Questions: (a) is the review condition of the merge gate satisfied? (b) which endpoint establishes that a review ran, and which establishes whether it found anything? (c) the run's earlier report said 'the reviewer is dropping requests' on this evidence — is that a sound conclusion?",
+      "expected_output": "(a) No. Neither endpoint returning rows is evidence of a clean review; it is evidence about the lookup. The gate is NOT satisfied and the PR does not merge. (b) They split by question, and both are required. Existence is the summary comment and only the summary comment: a `Reviewed commit:` matching the current head. That read is never skipped, because a thread does not say which round produced it — a resolved, non-outdated thread from an earlier round or from a person would satisfy any existence test built on threads, and a new trigger that silently no-ops merges behind it. Severity is the threads and only the threads: any unresolved thread means not clean, whatever the summary's wording says. (c) No. 'The reviewer is dropping requests' is a claim about an external system; the evidence is that one endpoint returned no rows. Where sibling items processed normally in the same window, a reading error is the default hypothesis. Report 'I did not find a review at <endpoint>', not 'no review ran'.",
+      "assertions": [
+        "the answer refuses to treat an empty endpoint as a clean review and holds the merge gate shut",
+        "the answer requires the summary's Reviewed commit to match the current head as the existence proof, and does not allow that read to be skipped",
+        "the answer gives the reason: a thread does not identify which round produced it, so thread presence cannot prove the required round ran",
+        "the answer uses unresolved threads for severity and never the summary's wording",
+        "the answer rejects the external-outage conclusion and distinguishes 'I did not find X at <place>' from 'X did not happen'"
+      ]
+    },
+    {
+      "id": 27,
+      "name": "a-verdict-attaches-to-a-commit-not-to-a-pr",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #418 carries a reviewer summary reading 'no major issues, Reviewed commit: a1b2c3d'. The PR's current head is f9e8d7c — a repair pushed after that review. Separately a check_suite.completed event arrives naming SHA 4455667, which was the head before a rebase. A collision scan over the tranche ran cleanly before ranking, two merges ago. Questions: (a) may #418 merge? (b) what does the check_suite event establish? (c) is the collision scan still valid?",
+      "expected_output": "(a) No. A clean review is a property of the commit it was computed on, not of the PR. The summary names a1b2c3d and the head is f9e8d7c, so for the current head there is no review at all — a mismatch is NOT REVIEWED, not a clean verdict. Re-trigger and wait; findings frequently exist only after a repair push. (b) Nothing about the PR. A CI event is evidence about the SHA it names. 4455667 is not the head, so this is no signal yet, not a green — merging on it would land code whose CI never ran against the current base. Re-read the PR's current head before acting on any CI event. (c) No. The scan is evidence about the tree it ran over, and two merges have moved that tree. Re-run it immediately before each merge, not only before ranking, because it also catches post-repair contamination.",
+      "assertions": [
+        "the answer refuses the merge because the review's Reviewed commit does not match the current head",
+        "the answer classifies a review/head mismatch as NOT REVIEWED rather than as a stale-but-clean verdict",
+        "the answer treats the check_suite event as evidence about the SHA it names and as no signal for the PR",
+        "the answer requires re-reading the current head before acting on a CI event",
+        "the answer re-runs the collision scan before each merge rather than trusting the pre-ranking run"
+      ]
+    },
+    {
+      "id": 28,
+      "name": "an-enabled-automation-is-not-a-performed-action",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the run files four follow-up issues. The repository's project board has an 'Auto-add to project' workflow that is enabled. You also close a status report with the sentence 'All four PRs now need a fresh review on their new heads — checking threads first.' Questions: (a) may the run record the four issues as on the board? (b) what should the status report say about the reviews? (c) what makes these two the same mistake?",
+      "expected_output": "(a) No. That the automation is enabled is a fact about configuration; that an item exists on the board is a fact about the board. They are different claims and the second is the one that matters — an enabled auto-add has been observed to miss issues in the same repository. Query the board for each issue and report membership as observed, not as implied. (b) It must not report a next step in a form readable as done. Either trigger the reviews before reporting, or mark them explicitly outstanding with the reason. A PR blocked on a parent-owned action carries that action's observable status — not triggered / triggered at <ts> / awaiting / findings / clean on <sha> — never a prose sentence about what is needed. (c) Both substitute a statement about what should follow for an observation of what did. In a report where every other row is evidence-backed, the prose row renders identically to an evidence row and is the more likely one to be false.",
+      "assertions": [
+        "the answer distinguishes the automation being enabled from the item being present, and requires querying the board",
+        "the answer forbids reporting a next step in a form that could be read as already done",
+        "the answer requires a parent-owned blocking action to carry an observable status value rather than prose",
+        "the answer names the shared failure: a claim about what should follow presented where an observation belongs"
+      ]
     }
   ]
 }

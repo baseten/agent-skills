@@ -156,7 +156,7 @@ Run **scoped** tests locally. Where a suite is sharded across CI runners it does
 
 **That result expires, and this task ends at handoff.** This skill produces a PR and merges nothing, so it cannot hold the check at the moment that decides the outcome; a rule telling it to act "immediately before merging" names an actor this contract does not have. What it can do is make later staleness visible instead of leaving it to be remembered: **state in the PR body the base commit the lockfile was resolved against**, and that the re-resolution must be repeated if the base has moved since. Report it as a handoff result and never as a merge-time one — the same false pass this rule exists to prevent, wearing the rule's own name.
 
-**Absence of output is not success.** A filter matching only the success signal is silent through a crash. An empty or barely-populated check rollup means checks have not registered, not that they passed — and one required check concluding successfully while another is pending or failing is the same false pass reached from the other side. Green is **every** check the repository requires having concluded successfully on the current head.
+**Absence of output is not success** (`references/absence-is-not-a-verdict.md`). A filter matching only the success signal is silent through a crash. An empty or barely-populated check rollup means checks have not registered, not that they passed — and one required check concluding successfully while another is pending or failing is the same false pass reached from the other side. Green is **every** check the repository requires having concluded successfully on the current head.
 
 ## Silent failure modes
 

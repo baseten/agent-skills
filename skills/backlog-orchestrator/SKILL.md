@@ -250,7 +250,7 @@ Before a run depends on **relationship data** — dependency edges, hierarchy, c
 - **The control must match the shape of what the run consumes.** Cover each scope boundary the graph actually crosses, and where the graph spans repositories, at least one control must itself be a cross-repository edge — one passing control on the easy case is how a scoped credential looks validated.
 - **Record validation per credential, transport and boundary**, never per transport alone: "MCP works" is not a finding; "MCP, as this account, resolves edges from A into B" is. Store a non-secret identity of the credential alongside the proof (the authenticated account and its scopes, an expiry, a fingerprint — never the credential itself).
 - **Revalidate whenever that identity changes, whenever a transport reauthenticates, and always after a restart. An authorization error invalidates every proof bound to that credential, across every transport that uses it** — grants narrow server-side, so a `gh` 403 says nothing about `gh` and everything about the token, and a narrowing is exactly what a silent partial view looks like from one call away.
-- **Absence observed through an unvalidated transport is not evidence of absence.** Report it as "not visible via `<transport>`", never as "does not exist" — the graph is what the run schedules against, so a false absence there dispatches work whose prerequisites are unbuilt.
+- **Absence observed through an unvalidated transport is not evidence of absence** (`references/absence-is-not-a-verdict.md`, of which this is the transport case). Report it as "not visible via `<transport>`", never as "does not exist" — the graph is what the run schedules against, so a false absence there dispatches work whose prerequisites are unbuilt.
 
 Record which transport was validated for which class of relationship read and across which boundaries, so a later read in the same run, or a restart, does not silently fall back to an unvalidated one.
 
@@ -669,7 +669,42 @@ A dispatch prompt that enumerates a required process is followed literally: a de
 
 **And every dispatched prompt carries the authored-write-form rule** (see Authored write form), for the same literalism and with the same failure at the same write: the worker's report is a PR comment this run caused, and a prompt that enumerates the requirement to report while omitting the form to report in gets a report of whatever length the worker felt like, unsigned — correctly, because the prompt never asked otherwise. Carry the rule, not a paraphrase of it: brevity, the no-wrap constraint on forge fields, the footer **with its approval test**, the required-contents precedence, and the trigger comment's exemption. A worker carrying "sign every write" instead of the test will footer a body a person edited; a worker carrying only "sign unattended writes" without the test will decide for itself what counts as attended. A dispatched worker's own writes answer No to the test — nobody reads them — so in practice its report and its PR body are footered, and the test is still what it carries, because the worker is what discovers whether anyone approved a given text. **Carry with it that the report's contents are required in full** — the marker first line, and the judgment step 11's subtraction defines — so brevity governs how the worker writes each item and never whether it writes one. A prompt saying *keep forge writes short* beside *only the first line is required* is a licence to drop exactly the judgment step 11 exists to carry, and four review rounds against an enumerated list are the evidence that the missing item is never the one anybody predicted. The footer goes at the end, where it cannot displace the marker line.
 
-Issuing the trigger is not the end of that step. Confirm it took effect: a review from the repository's automated reviewer materializes within a bounded window, and the reviewer does not instead answer indicating it is not configured or not authorized. Verify per attempt, on every PR — one review arriving elsewhere in the run is not evidence the trigger works. A trigger that silently no-ops is worse than one that fails loudly, because the run then reports PRs as reviewed and clean when nothing reviewed them.
+Issuing the trigger is not the end of that step. Confirm it took effect — and confirm it against the artifact, not against the absence of one (`references/absence-is-not-a-verdict.md`): a review from the repository's automated reviewer materializes within a bounded window, and the reviewer does not instead answer indicating it is not configured or not authorized. Verify per attempt, on every PR — one review arriving elsewhere in the run is not evidence the trigger works. A trigger that silently no-ops is worse than one that fails loudly, because the run then reports PRs as reviewed and clean when nothing reviewed them.
+
+### Establishing that a review is clean
+
+**A verdict attaches to the commit it was computed on, not to the PR**, and the
+head moves under it. Where a review names a commit other than the current head,
+there is no review for the current head: that is `NOT REVIEWED`, not a stale
+clean verdict. Findings routinely exist only after a repair push, so re-trigger
+and wait rather than reading the earlier verdict forward. The same holds for CI:
+an arriving check event is evidence about the SHA it names, and a name that is
+not the head is no signal yet rather than a green.
+
+**The two review sources are either/or, not summary-and-detail** — each is empty
+exactly where the other carries the answer, which is why reading them in the
+wrong order produces a confident wrong result. A clean review creates no review
+object and no threads, so no endpoint can distinguish *clean* from *never ran*
+without the second read.
+
+1. **Existence is the summary comment, always.** Require a `Reviewed commit:`
+   matching the current head. No match → `NOT REVIEWED`; re-trigger and never
+   merge. This read is not skippable, because a thread does not say *which round
+   produced it*: a resolved, non-outdated thread left by an earlier round or by a
+   person satisfies any existence test built on threads, and a new trigger that
+   silently no-ops then merges behind it.
+2. **Severity is the threads, always.** Any unresolved thread means not clean,
+   whatever the summary says, and an owner-reserved thread holds the gate
+   regardless of the rest.
+3. Both, or the PR does not merge. They are either/or as *sources* — each is
+   empty exactly where the other carries the answer — and both as *conditions*.
+
+**The summary comment is never evidence of severity.** A review that found things
+may post a summary carrying no verdict, so its wording decides nothing — only the
+thread list does. The prohibition is on that endpoint *for severity*, and it is
+scoped deliberately: it is the wrong source for what a review found and the only
+source for whether one happened, and a rule that forbade it outright misfired in
+the opposite direction once already.
 
 An elapsed window is not a refusal. A reviewer that is merely queued or slow leaves the PR unreviewed-pending, reconciled through ordinary event supervision and visible as such in checkpoint output; only an explicit not-configured/not-authorized response marks the trigger unavailable.
 
