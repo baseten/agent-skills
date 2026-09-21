@@ -153,6 +153,19 @@
         "NOTEs are excluded from items and from the gate",
         "`repair type = review` is rejected in favour of the finding repair type, because there is no thread"
       ]
+    },
+    {
+      "id": 12,
+      "name": "the-report-records-two-shas-and-only-one-proves-freshness",
+      "prompt": "You are executing the review-docs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a documentation-only PR. You review the prose at head 9f8e7d6 and check its claims against the base branch at a1b2c3d. You post the round 1 comment. The author then pushes a further documentation commit, moving the head to 4455667, and asks the orchestrator to merge. Questions: (a) which SHAs does your comment record, and what does each mean? (b) may the orchestrator merge on the strength of your round 1 comment? (c) what would go wrong if the comment recorded only the commit the claims were checked against?",
+      "expected_output": "(a) Two, and they answer different questions. `Reviewed commit:` is 9f8e7d6 — the PR head the documents were read at. The codebase commit is a1b2c3d — what the claims were checked against, which on a documentation-only PR is the base branch, because the code an implementer will find is the code already there. (b) No. The head is now 4455667 and the comment records 9f8e7d6, so for the current document there is no review: that is NOT REVIEWED, not a stale clean verdict. The orchestrator's freshness rule reads the `Reviewed commit:` line and requires it to match the current head. (c) On a documentation-only PR the base and head carry identical code, so a comment recording only a1b2c3d would keep matching after any number of prose pushes. A completed pass on an older document would satisfy the merge gate forever, and the failure is silent — the comment looks like a review because it is one, of a document nobody is merging.",
+      "assertions": [
+        "the answer records both SHAs and states that Reviewed commit is the documentation head, not the codebase commit",
+        "the answer keeps the codebase commit as the base branch for a documentation-only PR",
+        "the answer refuses the merge because the recorded head no longer matches the current head",
+        "the answer classifies the mismatch as NOT REVIEWED rather than a stale clean verdict",
+        "the answer explains that a codebase-commit-only record would keep matching across prose pushes and let an old pass satisfy the gate"
+      ]
     }
   ]
 }

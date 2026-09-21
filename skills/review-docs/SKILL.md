@@ -1,6 +1,6 @@
 ---
 name: review-docs
-description: Review the documentation in a pull request by checking what it claims about the codebase against the codebase, in a review that terminates by contract — one pass plus one re-check, never a third. Replaces automated code review on a documentation-only PR and runs alongside it over the prose of a mixed one. Use whenever a PR changes specs, ADRs, READMEs, design docs or runbooks; when asked to review a spec or design doc, to check a document against the code, or to review only the docs part of a PR; and when an automated code reviewer is grinding rounds on a document without converging.
+description: Review the documentation in a pull request by checking what it claims about the codebase against the codebase, in a review that terminates by contract — one pass plus one re-check, never a third. Replaces automated code review on a documentation-only PR and runs alongside it over the prose of a mixed one. Use when asked to review a spec, design doc, ADR, README or runbook, to check a document against the code, or to review only the docs part of a PR; when an automated code reviewer is grinding rounds on a document without converging; or when the repository routes documentation review here. **Do not select it merely because a PR touches a documentation path** — on a documentation-only PR it replaces the code review, so in a repository that has not adopted the convention that substitution is one nobody asked for.
 ---
 
 # Review Docs
@@ -114,7 +114,8 @@ One PR comment per round. **Never a thread per finding.** Two independent reason
 ## Documentation review — round <1|2> of 2
 
 <N> claims checked · <M> findings (<K> actionable)
-Reviewed: <the documentation paths>, against <commit>
+Reviewed commit: <the PR head SHA the documents were read at>
+Reviewed: <the documentation paths>, claims checked against <codebase commit>
 
 ### Claims about the codebase
 | claim | verdict | evidence |
@@ -129,12 +130,15 @@ Reviewed: <the documentation paths>, against <commit>
 Round 2 is the last round; unresolved findings after it go to the author.
 ```
 
-- **Name the paths reviewed and the commit checked against.** On a mixed PR a reader who cannot see the scope will read a clean report as the code having been reviewed too, and this comment sitting beside a code review makes that misreading easy rather than perverse.
+- **Record two SHAs, and they are different things.** `Reviewed commit:` is the PR head the documents were *read at*; the codebase commit is what their claims were *checked against*, which on a documentation-only PR is the base branch. Only the first answers *has the current document been reviewed*, and a consumer's freshness rule reads exactly that line (`backlog-orchestrator`, *Establishing that a review is clean*). Recording only the codebase commit lets a completed pass on an older document satisfy the gate after a later push.
+- **Name the paths reviewed.** On a mixed PR a reader who cannot see the scope will read a clean report as the code having been reviewed too, and this comment sitting beside a code review makes that misreading easy rather than perverse.
 - **Say which round this is and that there is no third**, in the comment. A reader has to be able to see that the review terminated by design rather than by neglect — that visibility is half of the fix, because the failure being corrected was nobody knowing whose job it was to stop.
 - **Every finding carries its evidence at `path:line`.** A claim reported false without the code that makes it false is an opinion in a table.
 - Round 2's comment reports each round 1 finding's outcome and **repeats nothing else** — no re-verification table, no re-listing of notes.
 
-**The comment follows the authored-write-form rule** (`references/authored-write-form.md`) and **carries the attribution footer**, because nobody read it before it was posted — that rule's approval test answers No for every comment this skill writes. Its brevity rule governs how each element is written and never whether it is written: the claims table and each finding's evidence are the write's **required contents**, and a table cut to fit a word count is the review deleting its own evidence. Its author follows the posting-identity rule (`backlog-orchestrator`, *Posting identity*, states it once); this comment is **not** the review-trigger comment and carries none of that comment's exemptions.
+**The claims table and its evidence are round 1's required contents.** Round 2's comment carries the header, each round 1 finding's outcome — fixed, not fixed, or fixed wrongly — and the closing line, and nothing else. It re-states no table and re-lists no notes, because a second table is a second full pass wearing the budget's clothes.
+
+**The comment follows the authored-write-form rule** (`references/authored-write-form.md`) and **carries the attribution footer**, because nobody read it before it was posted — that rule's approval test answers No for every comment this skill writes. Its brevity rule governs how each element is written and never whether it is written: in round 1 the claims table and each finding's evidence are the write's **required contents**, and a table cut to fit a word count is the review deleting its own evidence. Its author follows the posting-identity rule (`backlog-orchestrator`, *Posting identity*, states it once); this comment is **not** the review-trigger comment and carries none of that comment's exemptions.
 
 # Enabling it in a repository
 
