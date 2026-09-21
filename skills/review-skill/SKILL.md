@@ -10,11 +10,21 @@ code and not reviewing documentation: the question is neither *does it compile*
 nor *is it true about the codebase*, but **does a reader reach a different
 decision than before**.
 
-That question has an oracle, which is what makes this reviewable at all. The
-repository's `evals/evals.json` scenarios are decisions with assertions, and
-`scripts/run_evals.py` runs the two-arm comparison `CLAUDE.md` specifies. A
+That question can be **adjudicated**, which is what makes this reviewable at
+all: the repository's `evals/evals.json` scenarios are decisions with assertions,
+and `scripts/run_evals.py` runs the two-arm comparison `CLAUDE.md` specifies. A
 finding that cannot be expressed as a scenario a reader fails is a finding this
 skill does not make.
+
+**Adjudication is not exhaustiveness, and the difference is why the budget still
+governs.** A scenario settles whether a *proposed* finding is real — did a reader
+actually decide differently. Nothing settles whether anything is *left* to find,
+because no corpus is complete and a contract can be wrong in a way no scenario
+asks about. So this reviewer has an oracle for the findings it makes and none for
+when to stop, which is exactly the condition
+`references/prose-review-round-budget.md` describes: the ceiling is not a
+confession that findings are unverifiable, it is the answer to a question the
+verification cannot reach.
 
 ## Inputs
 
@@ -39,13 +49,55 @@ prepare` materialises the base contract into a scratch directory and emits reade
 packets carrying only the contract and the prompt. A reader that has seen
 `expected_output` or the assertions is grading its own answer.
 
-Run both arms over the scenarios that touch the changed sections. **The
-information is entirely in the disagreement** — a single-arm run returns a clean
-sweep and teaches nothing, which is the flattering direction this fails in.
+## Which corpora to run
 
-`score` reports the rate per arm, then the disagreements, and marks an ungraded
-scenario as **ungraded** rather than counting it either way
-(`references/absence-is-not-a-verdict.md`).
+`prepare` takes a **skill**, and reads that skill's `SKILL.md`, `NOTES.md` and
+`references/`. So the scope of the run follows the change:
+
+- **A change under `skills/<name>/`** — that skill's corpus.
+- **A change under `rules/`** — **every declared consumer of that rule, each
+  against its own corpus.** The consumer list is in
+  `scripts/refresh_shared_rules.sh`, in the variable spelled from the rule's
+  filename; `check_shared_rules.py` reads the same list. There is no root-rule
+  mode, and picking one consumer because it is the obvious one reviews the rule
+  at one decision point and misses the others — which is the whole reason the
+  rule is shared.
+- Where running every consumer is not affordable in one pass, **say which you ran
+  and which you did not.** An unreviewed consumer is an unknown, not a pass.
+
+## Comparing the arms
+
+`score` reports each scenario's assertion results per arm and flags where those
+**differ**. That is the cheap half and it is not sufficient: the scorer keeps a
+boolean per assertion, so two answers that choose **different actions** while
+satisfying the same broadly-worded assertions come back as agreement. That is
+precisely the changed reader decision this skill exists to catch.
+
+So for every scenario whose arms are claimed to agree on a section the change
+touched, **compare the two answers themselves, not their scores.** Read them
+side by side and ask whether a reader following each would do the same thing.
+Where `skill-creator` is available its blind comparator is the instrument for
+this — two answers, neither labelled, judged on which better accomplishes the
+task (*When to reach for a real task run*).
+
+**The information is entirely in the disagreement** — a single-arm run returns a
+clean sweep and teaches nothing, which is the flattering direction this fails in.
+`score` marks an ungraded scenario as **ungraded** rather than counting it either
+way (`references/absence-is-not-a-verdict.md`).
+
+## A contract this PR adds has no base arm
+
+A new `SKILL.md` or `rules/` file did not exist on the base, so `prepare` emits
+one arm and its score is a **future baseline, not a review result**. Say so and
+**decline the comparison for that file**: report the single arm's scenarios as
+recorded, name the file as newly added, and make no `REGRESSION` claim about it —
+there is nothing for it to have regressed from.
+
+The rest of the review still applies to a new contract: `UNPINNED` for behaviour
+no scenario covers, `RULE` for a rule stated away from its decision point, and
+`SHAPE` across its sections. Only the arms-disagree machinery is unavailable, and
+a review that reported a new file as clean on that basis would be reporting the
+absence of a baseline as a verdict.
 
 # 3. What is a finding
 
@@ -95,10 +147,13 @@ routed, not from this comment.
 
 <N> scenarios run, both arms · <M> findings · <U> ungraded
 Reviewed: <the contract paths>, base <commit>
+Corpora: <which consumers were run; which were not> · New contracts: <files with no base arm>
 
 ### Disagreements
-| scenario | base arm | changed arm | verdict |
-|---|---|---|---|
+| scenario | base arm | changed arm | verdict | found by |
+|---|---|---|---|---|
+
+`found by` is `score` or `comparison` — a scorer-flagged difference and one found by reading the two answers are different evidence, and a report that merges them hides how many the booleans missed.
 
 ### Findings
 1. [REGRESSION] <scenario> — base answered <X>, change answers <Y> — <what to do>
@@ -121,9 +176,16 @@ contents** — a table cut to fit a word count is the review deleting its eviden
 
 # 6. When to reach for a real task run
 
-`scripts/run_evals.py` grades answers to decision scenarios. It cannot tell you
-whether a rewritten contract makes a model *behave* better, and for a large
-meaning-preserving change that is the question.
+`skill-creator` has two jobs here, and only the second is optional.
+
+**Comparing two answers the scorer called equal** is part of the ordinary
+comparison (*Comparing the arms*), because assertion booleans cannot see a
+changed decision that still satisfies them. Its blind comparator does exactly
+that job.
+
+**Telling you whether a rewritten contract makes a model behave better** is the
+larger question, and for a big meaning-preserving change it is the one that
+matters.
 
 **Where `skill-creator` is available, use it for that** — real task prompts, its
 blind comparator judging two outputs without knowing which produced which, and

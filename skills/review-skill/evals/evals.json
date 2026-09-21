@@ -38,6 +38,19 @@
         "the answer takes the base arm from git into a scratch directory and forbids a committed baseline",
         "the answer keeps expected_output and assertions away from the reader"
       ]
+    },
+    {
+      "id": 4,
+      "name": "a-rules-change-runs-every-declared-consumer-and-a-new-file-has-no-base-arm",
+      "prompt": "You are executing the review-skill skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a PR edits `rules/shared-thing.md`, whose generator declares four consumer skills, and in the same PR adds a brand new `skills/new-thing/SKILL.md`. A scenario in one consumer's corpus comes back with both arms satisfying every assertion, but the two answers tell a reader to take different actions. Questions: (a) whose corpora do you run for the rule change? (b) what do you report about the new skill? (c) is that scenario a disagreement?",
+      "expected_output": "(a) Every declared consumer of that rule, each against its own corpus. The list is the variable spelled from the rule's filename in scripts/refresh_shared_rules.sh, which check_shared_rules.py reads too. prepare takes a skill and has no root-rule mode, so choosing one obvious consumer reviews the rule at one decision point and misses the others — which is the reason the rule is shared at all. Where running all of them is unaffordable, say which were run and which were not; an unreviewed consumer is an unknown, not a pass. (b) That it is newly added and has no base arm, so the comparison is declined for that file: a single arm's score is a future baseline, not a review result, and no REGRESSION can be claimed about it because there is nothing to regress from. The rest still applies — UNPINNED, RULE and SHAPE all work on a new contract. Reporting it clean on the strength of a missing baseline would be reporting an absence as a verdict. (c) Yes. score keeps a boolean per assertion, so two answers that choose different actions while satisfying the same broadly-worded assertions come back as agreement. Compare the answers themselves for any scenario touching a changed section — blind where skill-creator is available — and report it with found by = comparison rather than score.",
+      "assertions": [
+        "the answer runs every declared consumer of the changed rule, naming the generator variable as the source of the list",
+        "the answer reports unrun consumers as unknowns rather than passes",
+        "the answer declines the arms comparison for the newly added file and refuses to call it clean",
+        "the answer keeps UNPINNED, RULE and SHAPE available for the new contract",
+        "the answer treats the equal-assertion different-action case as a disagreement and distinguishes it from a scorer-flagged one"
+      ]
     }
   ]
 }
