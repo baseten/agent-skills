@@ -11,6 +11,7 @@ The `SKILL.md` files are dense and not easily human readable. That is deliberate
 `rules/` holds a rule that more than one skill applies. It is **not** a skill: nobody invokes it, and it has no `SKILL.md`.
 
 - `rules/absence-is-not-a-verdict.md` — a query that returned nothing is evidence about the query. An empty review endpoint is not a clean review, an ungraded scenario is not a passing one, and an enabled automation is not a performed action.
+- `rules/prose-review-round-budget.md` — prose has no oracle, so a reviewer of it terminates on a ceiling fixed in advance: one pass, one re-check, no third round, counted off the pull request.
 - `rules/authored-write-form.md` — the shape of any write an agent authors on a forge: length, what a body is for, what must never be in it, the attribution footer and its approval test, and the precedence of required contents over brevity. Every skill that writes to a forge applies it, each carrying a generated copy under its own `references/`. Extracted from `backlog-orchestrator` so that a skill needing the rule does not have to carry a 41,000-word orchestrator, nor a paraphrase of the one section it uses — which that section names as the way the rule drifts.
 
 A shared rule cannot simply sit at the repo root and be read from an installed skill: `bootstrap.sh` copies `skills/<name>/` and nothing else, so `../../rules/x.md` does not exist on a machine that installed one skill. Nor can it live inside one skill, because whichever skill owned it would become a dependency the others carry for a rule they only read.
@@ -28,6 +29,7 @@ Reasoning for a rule lives beside it as `rules/<name>-notes.md`, and is delibera
 - `implement-issue` — convenient standalone single-issue orchestrator. It composes `implement-issue-core`, supervises that one PR's CI/review lifecycle, and invokes `repair-pr` for bounded fixes.
 - `create-pr` — creates correctly linked PRs, preserves explicit stack bases, adds `Depends on:` for direct stack parents, verifies tracker linkage, and triggers repository review automation unless explicitly deferred.
 - `resolve-pr-comment` — addresses one PR review thread using the repository's review workflow.
+- `review-skill` — reviews a change to a prose contract by checking what it makes a reader decide, against the scenarios that pin it, two arms from git. Terminates on the same budget as `review-docs`.
 - `review-docs` — reviews the documentation in a PR by checking what it claims about the codebase against the codebase, and terminates by contract: one pass plus one re-check reading only that pass's findings, never a third. It replaces automated code review on a documentation-only PR and runs alongside it over the prose of a mixed one, reporting once per round in a single comment rather than a thread per finding. Read-only. Built after a spec PR ran nine review rounds and 28 threads, all 28 of them checking the document against itself; `create-pr` routes to it where a repository documents the convention.
 
 ## Backlog / orchestration skills
