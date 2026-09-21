@@ -16,6 +16,16 @@ On Linear and other trackers, the same rule holds through a different mechanism 
 
 The trigger comment is the one post exempted from the posting-identity rule because there its authorship is **functional, not cosmetic**: authored by anything but the invoking user, the repository's review convention silently does not fire — nothing refuses it, so the run waits out a review that was never going to arrive. `backlog-orchestrator`, *Posting identity*, states the rule once, including the bootstrap for a fresh run's first trigger; this skill carries only the exception, not a restatement.
 
+## Routing documentation PRs to a review skill
+
+Added with `review-docs` (Sept 2026). The routing lives here rather than in a repository list inside that skill because this step already reads `CLAUDE.md`/`AGENTS.md` for review-trigger conventions — the decision point existed, and a list of repository names inside a general skill would be a second place to maintain, invisible to the repositories it governed.
+
+**Why the bullet governs re-triggers explicitly rather than leaving them to the first sentence.** Four sites re-trigger review "where repo convention requires it" — two in `backlog-orchestrator`, two in `implement-issue` — and three of them additionally say to select the trigger's author from the posting-identity map. Under a routed convention there is no comment and therefore no author to select, and a reader finding a step it cannot perform will either improvise a comment or skip the re-trigger silently. Both are wrong and neither is visible. So the bullet says what a re-trigger *is* under a routed convention, and the four sites inherit it through the reference they already make.
+
+**Why an unavailable review skill falls back rather than stopping.** It is the same fail-safe direction as the cannot-tell rule beside it: a PR reviewed by the wrong instrument costs one reading, and a PR reviewed by nothing costs the review. Reported either way, because a silent fallback is how a repository discovers months later that its documentation convention never fired.
+
+**Why the Output forwards the routed skill's result whole.** On a documentation-only routed PR no trigger comment is posted, so the comment-kind identity evidence this skill's Output otherwise supplies has no source — and the routed skill posts the comment that would have supplied it. Summarizing its result away also breaks the producer→recorder chain into `summarize-tranche`, which is where its findings become action points and reach the merge gate at all.
+
 ## The PR body's brevity, and the trigger's second exemption
 
 The brevity rule lives in `references/authored-write-form.md`; what is local here is which of this skill's elements survive it. All of them do — the linkage line, `Depends on:`, and the `Part of:`/`Blocked by:` pair with its unmet-criteria section — and they have to be named rather than left to inference, because each exists to prevent a specific failure a shorter body would reintroduce: an orphan PR, a lost stack edge, an issue auto-closed over work nobody finished. The elements that brevity is actually aimed at are the ones nothing requires: the implementation narrative, the restated issue, the log of what was tried.

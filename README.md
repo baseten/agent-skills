@@ -28,6 +28,7 @@ Reasoning for a rule lives beside it as `rules/<name>-notes.md`, and is delibera
 - `implement-issue` — convenient standalone single-issue orchestrator. It composes `implement-issue-core`, supervises that one PR's CI/review lifecycle, and invokes `repair-pr` for bounded fixes.
 - `create-pr` — creates correctly linked PRs, preserves explicit stack bases, adds `Depends on:` for direct stack parents, verifies tracker linkage, and triggers repository review automation unless explicitly deferred.
 - `resolve-pr-comment` — addresses one PR review thread using the repository's review workflow.
+- `review-docs` — reviews the documentation in a PR by checking what it claims about the codebase against the codebase, and terminates by contract: one pass plus one re-check reading only that pass's findings, never a third. It replaces automated code review on a documentation-only PR and runs alongside it over the prose of a mixed one, reporting once per round in a single comment rather than a thread per finding. Read-only. Built after a spec PR ran nine review rounds and 28 threads, all 28 of them checking the document against itself; `create-pr` routes to it where a repository documents the convention.
 
 ## Backlog / orchestration skills
 
@@ -564,7 +565,7 @@ The orchestrator does not promote drafts: marking a PR ready is how you ask a pe
 
 ## Settled tranches
 
-A run is **settled** when no further implementation can start — every unstarted issue is blocked by implemented-but-unmerged work — and every open PR has had a completed automated review with all findings resolved. The run has produced everything it can; the next move belongs to whoever holds merge authority.
+A run is **settled** when no further implementation can start — every unstarted issue is blocked by implemented-but-unmerged work — and every open PR has had every review its routing requires completed, with all findings resolved. The run has produced everything it can; the next move belongs to whoever holds merge authority.
 
 At that point `backlog-orchestrator` invokes `summarize-tranche` — a short account of what the tranche did plus the action points needing a human, run per tranche because its findings come from run context the next session will not have, and because a follow-up discovered mid-run needs to exist while later tranches can still pick it up.
 

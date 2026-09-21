@@ -17,7 +17,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # rule source  ->  skills that apply it
 AUTHORED_WRITE_FORM="backlog-orchestrator create-pr normalize-github-dependencies
   npm-dependency-upgrade-orchestrator implement-issue
-  merge-stack repair-pr resolve-pr-comment settle-outstanding-decisions
+  merge-stack repair-pr resolve-pr-comment review-docs settle-outstanding-decisions
   summarize-tranche upgrade-npm-dependency validate-backlog"
 
 # One variable per rule, named for the rule file in upper snake case.
@@ -30,7 +30,8 @@ RULES="authored-write-form absence-is-not-a-verdict"
 ABSENCE_IS_NOT_A_VERDICT="backlog-orchestrator implement-issue repair-pr
   resolve-pr-comment merge-stack plan-merge-order validate-backlog
   normalize-github-dependencies swarm-dispatch
-  upgrade-npm-dependency npm-dependency-upgrade-orchestrator implement-issue-core"
+  upgrade-npm-dependency npm-dependency-upgrade-orchestrator implement-issue-core
+  review-docs"
 
 
 echo "Refreshing shared rules..."
