@@ -154,7 +154,7 @@ documentation paths, alongside the code review, which still runs in full.
 
 **Mixed routing is opt-in and off by default, while a hand invocation on a mixed PR always works.** A one-line README touch-up on a feature PR does not need a claims audit, and a second review comment on every PR that grazes a `docs/` path is how a useful report becomes something people scroll past — the cost this skill is otherwise spent avoiding (NOTES).
 
-`crypto-scanner-api` and `crypto-scanner-web-app` are the repositories this was built for. Until each states the documentation-only line above, `create-pr` has no convention to read and will keep triggering ordinary code review there — **the skill is installed but inert, and that is a documentation change in those repositories, not here.**
+**Installed is not enabled.** Until a repository states the documentation-only line above, `create-pr` has no convention to read there and keeps triggering ordinary code review, silently — the skill is present and inert. Enabling it is a change in that repository, never here, which is also why this contract names no repository: nothing here has to change when the next one adopts it, or stops.
 
 # Boundaries
 
