@@ -50,6 +50,8 @@ Each one states: **what** (one line) · **where** (issue URL, PR URL, or `path:l
 | `IN_FLIGHT_FIX` | belongs in an open PR from this tranche, not a new one; orchestrator-owned, never omitted for that reason |
 | `MERGE_RISK` | something the merge decision must account for |
 
+**A prose reviewer's findings arrive here to be classified, and they arrive as a result rather than as threads.** `review-docs` and `review-skill` post one comment per round and never a thread per finding (`prose-review-round-budget`), so their findings reach this skill through the PR result forwarded by `create-pr` → `implement-issue-core` → `implement-issue`, not by reading the PR's threads. Classify them like any other: a false claim a repair can correct is `IN_FLIGHT_FIX`, one the merge must account for is `MERGE_RISK`, one needing an author's intent is `DECISION`. **A routed review that found nothing and no routed review at all are different states**, and only the first is evidence the prose was read — do not read the absence of findings as a clean review (`references/absence-is-not-a-verdict.md`).
+
 The first three say **who owns the follow-up**; `MERGE_RISK` says the merge decision must account for it. Different questions — **an item can carry both** (a verified no-ticket defect that must land before one of this tranche's PRs is `NEW_ISSUE` *and* `MERGE_RISK`; NOTES). Where an item has an ordering consequence, say so on the item, whichever class it carries.
 
 **A reserved review thread with nothing able to dispatch it is never `IN_FLIGHT_FIX`** —

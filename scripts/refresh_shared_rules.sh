@@ -27,14 +27,14 @@ AUTHORED_WRITE_FORM="backlog-orchestrator create-pr normalize-github-dependencie
 RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget"
 
 # The prose reviewers. Both terminate on the same budget; neither owns it.
-PROSE_REVIEW_ROUND_BUDGET="review-docs review-skill"
+PROSE_REVIEW_ROUND_BUDGET="review-docs review-skill repair-pr"
 # Skills that make a decision on the result of a lookup, where an empty result
 # and a clean result are the same bytes.
 ABSENCE_IS_NOT_A_VERDICT="backlog-orchestrator implement-issue repair-pr
   resolve-pr-comment merge-stack plan-merge-order validate-backlog
   normalize-github-dependencies swarm-dispatch
   upgrade-npm-dependency npm-dependency-upgrade-orchestrator implement-issue-core
-  review-docs review-skill"
+  review-docs review-skill summarize-tranche"
 
 
 echo "Refreshing shared rules..."

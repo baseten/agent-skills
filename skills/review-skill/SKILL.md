@@ -147,3 +147,5 @@ Read-only. It reports findings; it does not edit a contract, push, resolve a
 thread, or merge. A finding needing intent or a product decision is reported for
 a person, never guessed — a reviewer suggestion is not evidence that a change
 improves the skill.
+
+**Its findings travel the finding route, not the review one.** They are returned to the caller and carried into `summarize-tranche`, which classifies them as `IN_FLIGHT_FIX` / `MERGE_RISK` / `DECISION`; a repair reaches `repair-pr` as `repair type = finding`. They are never threads — the report is one comment per round — so `repair type = review`, which resolves a thread per finding, finds nothing to resolve.
