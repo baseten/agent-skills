@@ -44,6 +44,10 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 ## Steps 3–5 — durable branch state and checkpoints
 
+**Why the new-field rule is stated as naming a consumer (Sept 2026):** the failure recurred three times in one tranche and the common cause is not carelessness about the signal — it is that the signal is born in the file being edited and the consumer is a separate navigation, not taken while the change still feels complete. A rule phrased as "remember to wire it up" relies on the same attention that just failed; a rule that demands the consumer be *named* is answerable by a grep, and the observability-only escape is what stops it becoming a lie told to satisfy the check.
+
+**Why a non-rethrowing catch has to say which it is:** the sharp case is not a swallowed error, which at least looks suspicious. It is `stopStreams()` returning a count — a perfectly reasonable return value that becomes a lie only once something downstream reads a number as an outcome, with a stream that failed to stop contributing to it identically. Nothing looks wrong at either end, which is why the requirement sits on the `catch`: it is the only place that knows containment happened.
+
 **Why commit-before-check:** checks take minutes, and those minutes are exactly when an ephemeral container is most likely to disappear — running a full suite over uncommitted work is the single most expensive habit available here. A commit is a save, not a claim of correctness: green is not a precondition, and neither is coherence — a checkpoint that exists and is imperfect always beats a perfect one that was never made. WIP history is fine; squash-merge removes it.
 
 **Why the parent is expected to commit on your behalf:** observed across runs, workers reliably hold completed work uncommitted despite instructions, so the orchestrator inspects worktrees and captures. Holding a change until it is tidy does not keep it tidy — it hands the commit to something with less context about what you were doing.

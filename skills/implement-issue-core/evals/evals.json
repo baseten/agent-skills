@@ -73,6 +73,18 @@
         "The answer refuses to subscribe to PR events or arm any watcher before returning — monitoring is neither performed nor delegated; the caller supervises"
       ],
       "files": []
+    },
+    {
+      "id": 6,
+      "name": "four-tests-that-pass-on-unfixed-code",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You wrote four tests alongside your fixes, and all four fail before the fix and pass after it. (a) Drain ordering, asserted with `expect(order.indexOf('a')).toBeLessThan(order.indexOf('b'))`. (b) Per-symbol ordering, run with one symbol. (c) 'Engine rejects a poisoned batch': it builds a poisoned batch and asserts the batch is poisoned. (d) 'Late stream, no workers': the fixture pushes a fake worker into the registry. You also added an assertion that the bounded drain took at least its 100ms timeout, measured with `Date.now()`. Which of these are verified?",
+      "expected_output": "None of them, and fail-first did not discriminate because the fix and the test were written together - it is the conclusion of the check, not the method. (a) indexOf returns -1 when absent, which is less than everything, so never-happened and happened-first are the same assertion: assert presence before asserting order. (b) One element is in order under every implementation; an ordering, grouping or dedup test needs enough elements that a wrong implementation gives a different answer, and enough repetitions where the failure is probabilistic. (c) The assertion names the premise rather than a decision the code made - it would hold with the module deleted, so it is testing the fixture. (d) The fixture supplies the condition the test exists to detect, so the stream-only path is never reached; the negative has to be constructed explicitly. The timing assertion is not a legitimate target at all: assert that the bound fired - the timeout result, the named pending work - never that elapsed wall-clock met or exceeded it without an explicit skew tolerance, since timers fire against a cached loop time that can sit behind a clock read and a monotonic clock does not remove the skew.",
+      "assertions": [
+        "the answer identifies all four defeats by mechanism",
+        "the answer states that fail-first was satisfied trivially because the fix and the test were written together",
+        "the answer rejects the elapsed-wall-clock assertion while allowing an assertion that the bound fired",
+        "the answer gives the concrete repair for each rather than only naming the defect"
+      ]
     }
   ]
 }
