@@ -25,11 +25,14 @@ AUTHORED_WRITE_FORM="backlog-orchestrator create-pr normalize-github-dependencie
 # declared consumers of which rule, so the spelling is load-bearing:
 # ABSENCE_IS_NOT_A_VERDICT <-> rules/absence-is-not-a-verdict.md.
 RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
-  establish-do-not-assume"
+  establish-do-not-assume a-passing-test-is-not-a-verified-fix"
 
 # Skills that act on something asserted by an agent, or assumed about a provider.
 ESTABLISH_DO_NOT_ASSUME="backlog-orchestrator swarm-dispatch repair-pr
   validate-backlog review-skill implement-issue-core"
+
+# Skills that write or change a test as part of their work.
+A_PASSING_TEST_IS_NOT_A_VERIFIED_FIX="implement-issue-core repair-pr"
 
 # The prose reviewers. Both terminate on the same budget; neither owns it.
 PROSE_REVIEW_ROUND_BUDGET="review-docs review-skill repair-pr"

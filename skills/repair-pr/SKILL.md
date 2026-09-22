@@ -32,7 +32,7 @@ This file is the contract; the reasoning behind its rules lives in `NOTES.md` be
 1. inspect the smallest useful failing check/log context;
 2. determine whether the failure is attributable to this PR;
 3. unrelated/external/flaky with no justified code change → report that; change nothing;
-4. otherwise make one coherent targeted repair;
+4. otherwise make one coherent targeted repair. **Where the repair adds or changes a test, run the four-defeat checklist against it** (`references/a-passing-test-is-not-a-verified-fix.md`) — a repair is the case the checklist is written for, since the fix and its test are written in the same pass and fail-first is satisfied trivially;
 5. run the smallest relevant local verification;
 6. commit only issue-owned changes; push;
 7. return immediately with the new head SHA and checks run.
