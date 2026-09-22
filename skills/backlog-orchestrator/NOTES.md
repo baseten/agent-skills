@@ -358,6 +358,12 @@ What landed instead is the trade stated where the preference is made, plus the o
 
 ## Settled tranche
 
+**Why one budget became two, and why the reset is routed through settle (Sept 2026):** `new-issue-budget` was doing two jobs and only one of them well. What actually hurt was the number of PRs open at once — reviewer load, merge-order complexity, conflict surface, thirteen across two repositories — and cumulative starts is a poor proxy for that. Worse, it made invariant 13 inert: a run that started twelve and merged all twelve watched its frontier advance onto work it was no longer permitted to begin, which is the opposite of a run advancing off merges.
+
+The obvious fix — merges reopen the budget — deadlocks. Invariant 12's gate needs `summarize-tranche`'s inputs before any merge is legal, so a run that can always dispatch never settles, so nothing merges, so nothing reopens. It would also have skipped the owner rulings the gate itself required, including a dependency-view discharge without which no merge was legal at all. Routing the reset through settle is what breaks the circle: a wave has to finish before its capacity comes back, and one invocation becomes wave → settle → wave → settle.
+
+The spend ceiling deliberately does not move on a merge. Merging work already paid for is not authorization to pay for more, and keeping that separate is what stops the flow-control fix quietly turning a bounded invocation into an unbounded one.
+
 **The removed decision docket (why the unattended decline's aggregation loss is accepted):** a second durable record written to close that gap is the decision docket this skill already carried and removed — it needed an in-place rewrite `permissions.json` cannot perform and stopped an unattended session on the prompt step 8 forbids. Re-deriving a lost aggregate costs one summary; the record that would have prevented it cost four review findings and could not run.
 
 **Why a code-changing ruling must not become a ranking constraint (the step-3 defect one step later):** choosing the other side of a decision a worker already implemented creates actionable work *after* step 3 processed the action points. Translating it into a ranking constraint would leave an orchestrator-owned fix undispatched and rank a PR that is not finished — the exact defect the `IN_FLIGHT_FIX` row guards against, arriving one step later.

@@ -404,7 +404,7 @@ Shallow mode reads declared dependency metadata and issue text. It never reads c
 
 Scope the escalation to the affected subgraph rather than the whole DAG. The cost objection to deep mode is about breadth, and this does not have to be all-or-nothing: escalate the triggering node and the dependencies it consumes, and leave unrelated branches shallow.
 
-Escalation changes the **mode** of the preflight, never whether one runs, and it reads more deeply *within* the bounded manifest — it never widens scope. `PASS` / `PASS_WITH_WARNINGS` / `FAIL` are handled exactly as above at either mode, unproven relationship visibility stays unproceedable at either mode — with the same `dependency transport unavailable` exception, since a deeper read cannot conjure a capability the tracker does not expose — and the deeper read consumes model budget, not the 12-new-issue budget.
+Escalation changes the **mode** of the preflight, never whether one runs, and it reads more deeply *within* the bounded manifest — it never widens scope. `PASS` / `PASS_WITH_WARNINGS` / `FAIL` are handled exactly as above at either mode, unproven relationship visibility stays unproceedable at either mode — with the same `dependency transport unavailable` exception, since a deeper read cannot conjure a capability the tracker does not expose — and the deeper read consumes model budget, not `new-issue-budget`.
 
 ### Coverage is not visibility
 
@@ -424,6 +424,7 @@ What is missing is **coverage**: the closed issue's deliverable does not include
 Unless overridden (below):
 
 - maximum concurrent implementation workers (`concurrent-workers`): **4**;
+- maximum PRs this run may hold open at once (`concurrent-open-prs`): **12**;
 - maximum newly started issues per invocation (`new-issue-budget`): **12**;
 - maximum implementation attempts per issue (`implementation-attempts`): **2 total**;
 - maximum strongest-model *implementation* escalations per issue (`model-escalations`): **1**;
@@ -441,9 +442,13 @@ Dynamic Workflows do not override these limits. Do not increase concurrency mere
 
 The concurrency number is a ceiling, not a target. Derive the level you actually run from machine capacity at startup — available CPUs, free disk against the container's fixed allowance, and whether each worker needs its own dependency install or test toolchain — and take the lower of the two. Decide that yourself and report it; do not ask.
 
-When the bounded scope exceeds the 12-new-issue limit, do not ask which issues to drop. Start the first 12 in scheduling order — DAG readiness first, then how much downstream work each unblocks — and defer the rest, naming the deferred issues in the checkpoint output so the next invocation adopts them. A user who wants a different cap says so in the invocation.
+**The two budgets bound different things and both apply.** `concurrent-open-prs` is **flow control**: how many of this run's PRs may be open at one time. That is the constraint that actually bites — reviewer load, merge-order complexity, conflict surface — and thirteen open across two repositories was the number that hurt. `new-issue-budget` is the **spend ceiling**: how much work one invocation is authorized to pay for, at roughly one worker's cost per issue. A single number cannot be both, and using cumulative starts as a proxy for how many PRs are open is what made invariant 13 inert — a run that started twelve and merged all twelve had its frontier advance onto work it was no longer permitted to begin.
 
-When the 12-new-issue limit is reached, allow active workers/repairs to reach durable state, stop starting new issues, reconcile, and return a checkpoint. Restarting does not count already-adopted work as newly started.
+**A merge restores flow-control capacity, and it does so only after the settle sequence has run for the tranche that produced it.** Merging alone must not reopen the budget: invariant 12's gate needs `summarize-tranche`'s `DECISION`/`MERGE_RISK` inputs before any merge is legal, so a rule where merges always reopen capacity lets a run keep dispatching and never settle, which means nothing merges, which means nothing reopens — circular, and it costs the run the owner rulings the gate itself required. Routing the reset through settle makes one invocation *wave → settle → wave → settle* rather than one wave and stop. `new-issue-budget` is untouched by any of it: a merge is not authorization to spend more.
+
+When the bounded scope exceeds `new-issue-budget`, do not ask which issues to drop. Start the first 12 in scheduling order — DAG readiness first, then how much downstream work each unblocks — and defer the rest, naming the deferred issues in the checkpoint output so the next invocation adopts them. A user who wants a different cap says so in the invocation. **State the spend in the checkpoint in cost terms**, not only as a count, since that is what the ceiling is for.
+
+When either budget is reached, allow active workers/repairs to reach durable state, stop starting new issues, reconcile, and return a checkpoint — **and say which of the two stopped the run**, since one is resumable within this invocation by settling and the other is not. Restarting does not count already-adopted work as newly started.
 
 Budget exhaustion on a node -> `NEEDS_USER`, not another speculative attempt — as an **outcome** where a CI, finding or implementation budget is spent, and as **items** where a review budget is: a spent `review-repair-cycles` produces deferred-repair items under a `NO_CODE_CHANGE` round (see Merge policy and review feedback), never a `NEEDS_USER` outcome for the PR. Continue unrelated DAG branches safely.
 
@@ -454,6 +459,7 @@ Personal and work repositories legitimately want opposite behavior from the same
 ```json
 {
   "concurrent-workers": 4,
+  "concurrent-open-prs": 12,
   "new-issue-budget": 12,
   "implementation-attempts": 2,
   "model-escalations": 1,
@@ -483,7 +489,7 @@ Keys scope to different objects, and each resolves from the repository that owns
 | --- | --- | --- |
 | `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-merge` | per PR | the PR's repository |
 | `implementation-attempts`, `model-escalations`, `lost-worker-redispatches` | per issue | the issue's repository |
-| `concurrent-workers`, `new-issue-budget`, `auto-request-settle` | per run | the manifest's repository; an explicit issue set contained in one repository uses that repository; a multi-repo set with no manifest uses the built-ins |
+| `concurrent-workers`, `concurrent-open-prs`, `new-issue-budget`, `auto-request-settle` | per run | the manifest's repository; an explicit issue set contained in one repository uses that repository; a multi-repo set with no manifest uses the built-ins |
 
 Read the file at the validation preflight, once per repository in the bounded scope, from the head of that repository's default branch as the run finds it at start — and never again during the run. **This file can authorize merges, so it is owner-authored configuration, and a run must never honour a version written by one of its own workers**: not from a worker's branch, not from a PR, not re-read after a mid-run merge moves the default branch. The policy governing a run is the one in the repository state it started from; a config change takes effect at the next run's preflight. A restart's preflight is a fresh read — that is the restart re-deriving from durable truth, not a worker write leaking in.
 
@@ -1045,7 +1051,7 @@ Holding is not idling. Name the outstanding item, the node it holds, and what an
 Nothing about the advance relaxes the safeguards it dispatches under:
 
 - **invariant 12 still holds.** Auto-advance is triggered by observing a merge — whoever performed it, a merge invariant 12's gate authorized included — never by deciding one should happen. The advance itself merges nothing.
-- **the 12-new-issue budget is consumed like any other dispatch.** If the budget is exhausted, do not dispatch: report the newly-READY frontier in the checkpoint output as the resume frontier, so a resumed invocation adopts it instead of rediscovering it. Silently dropping newly-unblocked work is the failure this step exists to prevent.
+- **both budgets are consumed like any other dispatch.** If `new-issue-budget` is exhausted, do not dispatch: report the newly-READY frontier in the checkpoint output as the resume frontier, so a resumed invocation adopts it instead of rediscovering it. If `concurrent-open-prs` is the one exhausted, the frontier is reachable within this invocation — settle the tranche, which is what restores the capacity the merges earned, and then dispatch into it. Silently dropping newly-unblocked work is the failure this step exists to prevent.
 - **`NEEDS_USER` is not cleared by a merge.** A node whose only remaining blocker is a question a human was asked to decide stays blocked, and auto-advance must not resume that path (above). Only the blockers the merge actually satisfied are retired.
 - 4 concurrent workers, attempt/repair caps, Sonnet workers, one issue per worker, and isolated checkouts apply to resumed dispatch unchanged.
 
@@ -1453,6 +1459,8 @@ Settled means the run has nothing it can start *right now*, not that the run is 
 
 A settled run has no events of its own, so reaching settled is also the point at which it must arm its wake — a PR-activity subscription plus a scheduled check-in, or an honest restartable checkpoint if it can arm neither (see Arming the wait when nothing is in flight). Everything below assumes that happened; without it the run is not resting, it is asleep.
 
+**Reaching settled is what restores `concurrent-open-prs` capacity for the merges this tranche produced.** A merge does not restore it on its own — the reset is routed through here precisely so a run cannot dispatch its way past settling, which is the deadlock the split exists to avoid: the gate needs the summary before any merge is legal, so a budget that reopened on merge alone would keep the run dispatching, keep it from settling, and keep anything from merging. Credit the merges the settle sequence covered; a merge performed after it counts at the next settle. `new-issue-budget` does not move here — a merge is not authorization to spend more, and a run out of spend settles and stops whatever its open-PR count says.
+
 After the ranking is delivered, supervision continues for merge/close events and for the restack work a merge triggers — and a merge that advances the frontier re-enters the dispatch loop automatically, under Frontier advance on merge, within the same run and with no new user prompt. Automatic continuation is the default; it yields only where this tranche left a genuine ask outstanding that bears on the next wave, and then only for the paths that ask reaches. The run un-settles itself: recompute readiness, re-run the preflight at the mode the escalation rules select, dispatch into free slots, and settle again when the frontier is empty. A tranche can settle, advance, and settle again several times in one invocation.
 
 Re-run `plan-merge-order` when merges change the graph enough that the previous ordering is stale, and again when a resumed dispatch produces new PRs that the delivered ranking does not cover.
@@ -1464,7 +1472,7 @@ What "stop spending tokens re-deriving the same state" forbids is idle re-deriva
 Stop starting new implementation work when:
 
 - every in-scope issue reached its requested durable state;
-- the 12-new-issue budget is exhausted;
+- `new-issue-budget` is exhausted — `concurrent-open-prs` alone is not a stop condition, since settling restores it;
 - every remaining path is `BLOCKED`/`NEEDS_USER` **and no merge is pending that could clear it**;
 - the user asks to stop;
 - safety approval is required;
@@ -1485,7 +1493,8 @@ Runtime: Dynamic Workflow
 Manifest: <full URL>
 Validation: PASS
 Scope: 18 issues
-Run budget: 9/12 newly started
+Run budget: 9/12 newly started (~$63 of ~$84 authorized)
+Open PRs: 7/12 concurrent (capacity restored at settle)
 Implementation workers: 3
 Repair workers: 1
 Worker sessions: 9 created / 8 archived / 1 alive (blocked on a prompt — see below)

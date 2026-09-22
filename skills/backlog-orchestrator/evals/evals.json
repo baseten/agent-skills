@@ -449,6 +449,18 @@
         "the answer leaves the deliberately deferred PR untriggered and names `deferred` as a recorded value rather than an inference",
         "the post-arming read covers state, head and base as well as checks, reviews and comments"
       ]
+    },
+    {
+      "id": 35,
+      "name": "two-budgets-and-a-reset-routed-through-settle",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your invocation started 12 issues and has 12 PRs open. Four of them merge, performed by the owner. Those merges make three more in-scope issues READY. Nothing has settled yet: the summary has not run, so invariant 12's gate has not been evaluated and no DECISION items have been ruled on. Can you dispatch into the newly-READY frontier now? What if instead the four merges had happened after a completed settle sequence?",
+      "expected_output": "Not now. Two budgets apply and they bound different things. `concurrent-open-prs` is flow control - how many of this run's PRs may be open at once, which is the constraint that actually bites through reviewer load, merge-order complexity and conflict surface - and it is restored by merges, but only once the settle sequence has run for the tranche that produced them. That routing is deliberate: the gate needs summarize-tranche's DECISION and MERGE_RISK inputs before any merge is legal, so a budget that reopened on merge alone would let the run keep dispatching, never settle, and therefore never legally merge. `new-issue-budget` is the spend ceiling and does not move on a merge at all - merging work already paid for is not authorization to pay for more - so with 12 of 12 started this invocation is out of spend regardless, settles, and reports the newly-READY frontier as the resume frontier with the spend stated in cost terms. In the second case the settle sequence has run, so those four merges credit back four slots of open-PR capacity; the run would re-enter the dispatch loop for them if and only if it still had new-issue-budget to spend, which here it does not. The checkpoint says which of the two budgets stopped it, because one is resumable within this invocation by settling and the other is not.",
+      "assertions": [
+        "the answer distinguishes the flow-control bound from the spend ceiling",
+        "the answer refuses to restore capacity on a merge that precedes the settle sequence, and names the deadlock that routing avoids",
+        "the answer keeps new-issue-budget unmoved by merges",
+        "the answer reports which budget stopped the run"
+      ]
     }
   ]
 }
