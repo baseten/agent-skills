@@ -146,7 +146,15 @@ Added with `review-docs` (Sept 2026). The confirmation step was written for an e
 
 **What the second monitoring loop costs:** the duplicate pass spends API budget on every cycle and decides nothing the first pass did not — it re-reads the same PR to reach the same conclusion, and where it does not, the two loops disagree about a PR one of them is mid-repair on. Writing the lifecycle out as a sequence exists because the failure is never a decision to run two loops; it is a worker that never stopped reading, or a supervision step that reads on its own rather than consuming the parent's pass.
 
+## Adopting a PR is three things, not one
+
+**Why a step that everyone performed correctly produced no review at all:** the worker is told to stop once the PR is pushed and open, which is right — it is what stops a worker becoming a second orchestrator. The repository opens feature PRs as drafts, which is also right. The two together mean the PR reaches its final state without anything having asked for a review, and no part of the run is in a position to notice: the worker returned its terminal outcome and was released, the parent recorded `PR_OPEN`, CI ran and reported. Four PRs sat for about seven hours with zero reviews and zero comments, one of them red within minutes of opening. Nothing failed. The section exists because the failure has no failure signal of its own — the only place left that looks at the PR is the parent's adoption, so that is where the check has to be.
+
+**Why the parent re-checks a trigger `create-pr` owns:** not because the trigger moved. A worker can return with the PR open and the trigger not yet issued — linkage verification and the trigger both run after creation, so `FAILED` and `NEEDS_USER` both arrive with a usable PR — and once that worker is released nobody will ever go back for it. Reading the `review trigger` line at adoption costs one lookup against a field the per-PR block already carries.
+
 ## Event handling
+
+**Why arming is followed by a read:** the subscription is forward-only and says so nowhere in its result, so a late arming looks exactly like an early one from the inside — both return success, both then deliver events. What differs is an unread interval that no later event will ever cover. Pairing every arming with one read of checks, reviews and comments makes the two cases distinguishable at the only moment the run can still tell them apart; stating the interval as unread rather than empty is the same rule the transport case of `absence-is-not-a-verdict` states, applied to time instead of to a transport.
 
 **The incident behind the no-change preflight:** a run tracked three PRs with check-ins alone, the `event subscription` field never recorded, an hourly poll, and a "nothing changed" report at 18:20Z. The owner merged at 18:46Z; the next poll was due 19:16Z. From the inside that run was indistinguishable from a healthy one, because "no events because nothing happened" and "no events because nothing was listening" produce the same quiet — and it was the owner who noticed, not the run.
 
