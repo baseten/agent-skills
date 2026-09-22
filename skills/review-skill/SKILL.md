@@ -16,6 +16,14 @@ and `scripts/run_evals.py` runs the two-arm comparison `CLAUDE.md` specifies. A
 finding that cannot be expressed as a scenario a reader fails is a finding this
 skill does not make.
 
+**A cross-reference is not evidence for what it points at**
+(`references/establish-do-not-assume.md`). A contract citing another as saying
+something is making a claim about that file, and it is checkable in one read —
+observed: an orchestrator cited `create-pr` as *naming a provider that
+re-reviews*, where `create-pr` says *(e.g. re-reviewing a draft marked ready)*,
+names nobody, and is explicitly scoping away from provider behaviour. Resolve
+every citation a change adds or leans on.
+
 **Adjudication is not exhaustiveness, and the difference is why the budget still
 governs.** A scenario settles whether a *proposed* finding is real — did a reader
 actually decide differently. Nothing settles whether anything is *left* to find,
