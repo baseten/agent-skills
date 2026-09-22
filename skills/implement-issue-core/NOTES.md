@@ -44,6 +44,10 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 ## Steps 3–5 — durable branch state and checkpoints
 
+**Why test-double churn is read as a design signal (Sept 2026):** the instinct on twenty broken fakes is to fix twenty files, and it is wrong in a specific way — those twenty are independent call sites, written by people who had no reason to care about this change, all objecting to the same seam. A clock method put on a REST client because the server-time call lived there broke twenty doubles across six files; the clock was a property of the process's relationship to the service rather than of a client, and a standalone module removed every one of the diffs. The signal is free and it arrives before review does, which is exactly why a worker optimising for a green suite spends it.
+
+**Why the loop bound is a production concern rather than a test one:** the observed drain recursed forever because a fake registry added a worker on every pass, which is a faithful model of the hazard. The bound got written because the test hung, and that is the accident to remove: where another party can extend the collection, termination is not a property of the loop, so the bound belongs in the code whether or not any test exercises it. The exhaustion log line is what makes hitting the bound visible rather than silent.
+
 **Why commit-before-check:** checks take minutes, and those minutes are exactly when an ephemeral container is most likely to disappear — running a full suite over uncommitted work is the single most expensive habit available here. A commit is a save, not a claim of correctness: green is not a precondition, and neither is coherence — a checkpoint that exists and is imperfect always beats a perfect one that was never made. WIP history is fine; squash-merge removes it.
 
 **Why the parent is expected to commit on your behalf:** observed across runs, workers reliably hold completed work uncommitted despite instructions, so the orchestrator inspects worktrees and captures. Holding a change until it is tidy does not keep it tidy — it hands the commit to something with less context about what you were doing.

@@ -30,7 +30,7 @@ This file is the contract; the reasoning behind its rules lives in `NOTES.md` be
 ## CI repair (`repair type = ci`)
 
 1. inspect the smallest useful failing check/log context;
-2. determine whether the failure is attributable to this PR;
+2. determine whether the failure is attributable to this PR. **Where the failure is a mass one across files with nothing in common, test the environment before the code**: a shared backing service can die mid-session, and the result reads exactly like this branch breaking everything. The tell is in the error rather than the assertion — a refused connection, a missing socket, an absent container — and one such line across unrelated failures settles it, at which point step 3 is the answer and no code change is justified;
 3. unrelated/external/flaky with no justified code change → report that; change nothing;
 4. otherwise make one coherent targeted repair;
 5. run the smallest relevant local verification;

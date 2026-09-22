@@ -771,6 +771,8 @@ For each enumerated resource, either give every worker its own namespace/instanc
 
 Pass the resolved access details explicitly in each dispatch prompt so no worker has to guess them. A worker that guesses wrong reports failures that are not real.
 
+**Tell every worker that a mass failure across unrelated files is an environment hypothesis first and a code hypothesis second.** A shared backing service can die *during* a session, not only between them, and what a worker then sees is its whole suite red across files with nothing in common — which reads exactly like "my change broke everything". Without being told, a worker reads a single test, concludes its own change is at fault, and either thrashes against it or returns `FAILED` on a codebase that is fine. **Check the infrastructure precondition before reading a single test**: the tell is in the error rather than in the assertion — a refused connection, a missing socket, an absent container — and one such line across unrelated failures settles it. This is the same rule the repository's own tooling states in the other direction, ruling out the local explanation before reporting an external system as broken; here the mass and the unrelatedness are what make the external explanation the first one to test, not the last.
+
 Standing rule in every dispatch prompt: never stop, reset, reconfigure, or clean up a concurrently shared resource — a sibling worker may be using it. A worker holding serialized exclusive access may perform the lifecycle operations the repository's own configuration sanctions, since nothing else holds the resource during its turn.
 
 ## Remote checkpoint requirement

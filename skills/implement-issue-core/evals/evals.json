@@ -73,6 +73,18 @@
         "The answer refuses to subscribe to PR events or arm any watcher before returning — monitoring is neither performed nor delegated; the caller supervises"
       ],
       "files": []
+    },
+    {
+      "id": 6,
+      "name": "test-double-churn-and-an-unbounded-drain",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two things happen while implementing. (a) You add a `now()` method to the REST client class, since the server-time call lives there, and twenty test doubles across six files stop compiling - each fake client now owes a method it has no use for. (b) The shutdown drain you are writing re-reads a worker registry each pass and stops when it is empty; the registry is one another part of the system can add to while the drain runs. Your test of it recurses forever, because the fake registry pushes a new worker every pass. What do you do about each?",
+      "expected_output": "(a) Do not fix the twenty files. Twenty independent call sites objecting to the same seam is a signal about where the boundary was drawn, and it is the cheapest one available - it arrives before review does. The clock is a property of the process's relationship to the service, not of a client, so re-site it as a standalone module; that removes all twenty diffs and is the better design. Fixing the doubles is what a worker optimising for a green suite does, and it ships the design defect. (b) The fake is faithful, not broken: it models a hazard that is real. Where another party can extend the collection, termination is not a property of the loop, so the fix belongs in production code - an explicit pass bound and a log line on exhaustion, written because the loop needs it rather than because a test hung. Bound the fake as well so the test terminates, but the production bound is the real repair.",
+      "assertions": [
+        "the answer re-sites the change rather than fixing the twenty test doubles",
+        "the answer names the double churn as evidence about the abstraction boundary",
+        "the answer puts the pass bound in production code rather than only fixing the fake",
+        "the answer requires a log line on exhaustion"
+      ]
     }
   ]
 }
