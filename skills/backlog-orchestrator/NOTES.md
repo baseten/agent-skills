@@ -18,6 +18,8 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 ## Releasing a worker
 
+**Why the ask does not satisfy condition 2 (round 1, Sept 2026):** the first version made the branch existing the success criterion, which is the cheap half of exactly the rule it cites — a stale branch from an earlier push passes instantly, and a plain push can create a branch from an already-committed head while the staged edits stay in the container. Checking the head moved fixes that. What it does not fix is completeness: the parent cannot see the worktree, so "everything is committed" is another claim with no carrier, and the worker is still not releasable. The lever is worth having anyway because it moves the captured work from zero to most of it, but it had to stop claiming to close the gap.
+
 **Why the push ask is verified against the remote and not against the reply (Sept 2026):** a worker's "pushed" is an assertion about state, in the class the settles-column rule already covers — the same shape as a `fixed in <sha>` naming no reachable commit. The observed session reported staged files for four weeks with no remote branch of any kind. The verification is one `ls-remote` and it is the difference between capturing that work and archiving it. The ask itself sits before archival rather than after, because archival destroys the only copy.
 
 **Why the lever is conditioned on the caller-side channel:** asking requires sending. Where this session cannot address that worker, there is nothing to ask and no reply to wait for — and the run has to say that, because an absent reply is otherwise read as an absent problem.
