@@ -33,6 +33,8 @@ Checks, in order:
 9. distinguish an external prerequisite from an authorized implementation issue;
 10. report whether the graph is safe to execute without guessing.
 
+A ticket's prose is its author's claim about a codebase, checkable now (`references/establish-do-not-assume.md`): where an issue cites a `file:line` or a call-site count, a deep pass re-reads it against that repository's current default branch and flags what no longer holds — an audit found eight call sites where the issue named six, three of them naming a different function.
+
 Structured dependency metadata is authoritative when present; textual descriptions remain a secondary consistency signal. A textual blocker absent from structured metadata is flagged as a likely missing dependency, never silently ignored.
 
 ### GitHub dependency reads depend on where you are running

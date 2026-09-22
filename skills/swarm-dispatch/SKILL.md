@@ -254,11 +254,12 @@ insists the decision is not the worker's.
 
 ## Verifying what workers report
 
-**A worker's report is a claim about its own environment**, which may be
-misconfigured in ways the worker cannot see. Before relaying a worker's check
-results, or acting on them, verify against durable evidence: the state the work
-actually reached, or a re-run outside that worker's environment. Never escalate a
-worker-reported mass failure to the user unverified.
+**A worker's report is a claim** (`references/establish-do-not-assume.md` states the general case and what settles
+each kind). It describes an environment the worker may not be able to see
+correctly, so before relaying its check results or acting on them, verify against
+durable evidence: the state the work actually reached, or a re-run outside that
+worker's environment. Never escalate a worker-reported mass failure to the user
+unverified.
 
 **Assume the checkpoint instruction will not land.** Across observed runs,
 workers hold completed work locally at a high rate — including workers whose

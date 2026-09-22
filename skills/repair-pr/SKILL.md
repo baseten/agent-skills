@@ -62,7 +62,7 @@ Never chase multiple unrelated failures speculatively in one cycle unless they s
 The evidence is a settle-time finding — an `IN_FLIGHT_FIX` action point from `summarize-tranche`, which is also where a prose reviewer's findings arrive after `summarize-tranche` classifies them, or a recorded `settle-outstanding-decisions` ruling that requires this PR's code to change — supplied verbatim, the way `ci` supplies logs and `review` supplies threads. It names actionable work on this PR that no failing check and no reviewer's review thread carries (NOTES; the caller's budget is its own counter, `finding-repair-cycles`).
 
 1. read the supplied finding and its durable site;
-2. verify it still holds against the current head — a later push may already have fixed or mooted it. Where it no longer applies → return `NO_CODE_CHANGE` with the reason; change nothing; no cycle is consumed;
+2. verify it still holds against the current head — a later push may already have fixed or mooted it, and the finding as supplied is a claim until that read (`references/establish-do-not-assume.md`). Any assertion this pass then makes about existing code, in a reply or a PR body, needs the same treatment before it is posted: a grep behind it, not a memory. Where it no longer applies → return `NO_CODE_CHANGE` with the reason; change nothing; no cycle is consumed;
 3. make one coherent targeted repair scoped to the finding — for a ruling, the change the owner's answer implies, never a reopening of the question they ruled on;
 4. run the smallest relevant local verification;
 5. commit only issue-owned changes; push;

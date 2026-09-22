@@ -378,6 +378,31 @@
         "(c) the gate does NOT open on one of two required reviews completing",
         "(c) the per-PR review state is held per review convention, not as a single set"
       ]
+    },
+    {
+      "id": 30,
+      "name": "a-next-step-in-a-report-is-not-a-performed-one",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are writing the checkpoint output for four PRs. All four have had repairs pushed and need a fresh review on their new heads. You have not triggered those reviews. Questions: (a) may the output say 'all four now need a fresh review on their new heads — checking threads first'? (b) what must the per-PR row carry for a PR blocked on an action you own? (c) a worker reports 'all pre-PR gates passed' on one of them — does that satisfy the gate?",
+      "expected_output": "(a) No. That sentence describes an intention in a form a reader takes as an action, and in a table where every other row is an observation it renders identically to one. Either trigger the reviews before reporting, or state explicitly that they are not yet triggered and why. (b) The action's observable status, not prose about what is needed: not triggered / triggered at <ts> / awaiting / findings / clean on <sha>. A PR blocked on a parent-owned action carries that action's state as part of its own. (c) No. A worker's report is a claim about an environment it may not see correctly; the gate evidence is CI on the pushed head. Observed: a worker reported all gates green on a PR already failing format:check.",
+      "assertions": [
+        "the answer refuses the sentence as readable-as-done and requires either performing it or marking it outstanding",
+        "the answer requires an observable status value per PR rather than a prose need",
+        "the answer refuses the worker's gate claim and names CI on the pushed head as the evidence",
+        "the answer treats the report's prose row and its evidence rows as different in kind"
+      ]
+    },
+    {
+      "id": 31,
+      "name": "what-triggers-a-review-is-observed-per-repository",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the gate opens for a draft PR, so the merge path publishes it to ready. The skill says publishing is not inert and the gate is re-evaluated on fresh post-publish evidence. In this repository no review provider acts on events at all — reviews happen only when mentioned. The repository's CLAUDE.md states that its reviewer re-reviews on publish. Questions: (a) do you wait for post-publish review evidence? (b) what do you do with the CLAUDE.md statement? (c) what should the run have done before reaching this point?",
+      "expected_output": "(a) No. What triggers a review is a property of a repository's configuration, not of the provider's name, and here nothing does. Waiting costs a timeout against an event that will never arrive and then a merge on evidence that was never invalidated. Where no event-driven review exists, skip the re-evaluation rather than timing out against it. (b) Treat it as a claim, not a fact: it was written by someone, at a time, about a configuration that can change. It is a reason to check once and record the observation, never a reason to skip checking. (c) Established it: assume nothing auto-triggers, trigger explicitly, verify per PR that the trigger took effect — which this skill already demands — and record what was observed to produce a review in this repository, beside the transport-visibility and posting-identity maps it already keeps.",
+      "assertions": [
+        "the answer refuses to wait for post-publish review evidence where no event-driven review exists",
+        "the answer treats the repository's documented claim as a claim to verify rather than a fact",
+        "the answer defaults to assuming nothing auto-triggers and triggering explicitly",
+        "the answer records the observation per repository beside the existing maps",
+        "the answer names the cost of the wrong assumption as a timeout and a merge on uninvalidated evidence"
+      ]
     }
   ]
 }
