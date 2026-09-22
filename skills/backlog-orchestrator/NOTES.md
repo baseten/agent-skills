@@ -178,6 +178,8 @@ Added with `review-docs` (Sept 2026). The confirmation step was written for an e
 
 **Why this is stated separately from invariant 1 (Sept 2026):** invariant 1 says where truth lives and was read as though that settled it. It does not say that truth moves while you read it, and with several sessions writing to the same remote it moves constantly — a PR read as open merged between two reads in one conversation. Everything downstream of a multi-item read is a composite of instants that never coexisted, which is a different failure from reading the wrong source and needs its own name.
 
+**Why a disagreement is settled by a third read rather than by precedence (round 1):** the first version made the API response authoritative over the checkout, which is right about the observed failure and wrong as a rule — a response held for an hour loses to a checkout fetched a minute ago, and a permanent precedence sends the worker on with the stale one in exactly that case. Both are observations with an age. A read taken at the moment of deciding is newer than either, so the disagreement resolves into the rule one paragraph above rather than into a ranking.
+
 **Why re-reading is scoped to the deciding facts:** re-reading everything before every action would cost more API budget than the read discipline allows, and the exposure is not uniform — a ranking computed from stale data is re-derivable, a merge performed on it is not. So the rule attaches to the acts that cannot be undone.
 
 ## Arming the wait when nothing is in flight
@@ -334,6 +336,8 @@ What landed instead is the trade stated where the preference is made, plus the o
 
 **Why the third collision kind is detected by running rather than by reading (Sept 2026):** the first two kinds leave a trace in the diffs — a shared added path, a shared claimed artifact — so a comparison can find them. The third leaves nothing: one branch renamed a string, another added code depending on it by name, no line in common, git merged cleanly and both PRs were green against a base containing neither change. The only artefact holding both changes at once is the merged tree, so the check is to build that tree and run the suite over it. There is no cheaper detector, because there is no signal to detect.
 
+**Why the third kind gets its own remedy (round 1, Sept 2026):** it was first written into a section whose resolution rule routes collisions to a merge-order decision, and ordering cannot resolve this one — whichever of the two names merges first, the final tree is identical and broken. Surfacing it for an ordering call spends the owner's decision on a question with no answer. One branch has to change, and the re-run afterwards is not ceremony: a repair that fixes one reference and misses another produces exactly the clean diffs that hid it the first time.
+
 **Why the input set is every open branch and not the run's members:** the check already existed in an observed tranche, over the branches it had dispatched, and it caught a genuine conflict. It missed this one because the colliding branch belonged to a concurrently running track. A run's own graph is not the repository. Naming the integrated branches in the output is what makes a partial set legible as partial — otherwise a clean result over the wrong set is indistinguishable from a clean result.
 
 ## Performing the renumber once a human decides
@@ -359,6 +363,8 @@ What landed instead is the trade stated where the preference is made, plus the o
 ## Merge behavior
 
 **Why the stale-green rule is not the rejected up-to-date requirement:** requiring every branch be current before merging prevents this and serialises every merge behind every other, which a handover rejected and rightly. What landed is narrower in three ways: it is paid at the gate rather than continuously, only on the PRs about to merge, and only where the base has actually moved. The formatter case is carved out because there the diff's size argues in the wrong direction — a one-line tool bump conflicting with nothing is exactly the PR whose green is most likely to describe a tree without the code the tool will process.
+
+**Why the integration result carries head SHAs (round 1):** the first version recorded which branches were integrated, which is enough to see a partial set and not enough to see a moved one. Another session opening or force-pushing a PR leaves the set of names unchanged while the trees change under it, so a cached clean result would let the gate merge a combination nobody ran — the check's own output becoming the thing that hides what the check exists to find.
 
 **Why what discharges a stale green is established rather than stated:** whether a repository's checks run against the branch or against the branch merged with its base decides whether a re-run means anything, and it differs by configuration. Asserting either would make the rule confidently wrong in half the repositories it runs in — a re-run that proves nothing, or a branch update nobody needed.
 
