@@ -93,6 +93,27 @@ The owner asked for the rule scoped to human comments and, when the asymmetry wa
 
 ## Implementation worker contract
 
+**Why the gate travels inline in the dispatch prompt (round 1, Sept 2026):** the
+proposal that introduced this suggested the parent write the derived set to a
+file and hand workers the path. On the tiers where a worker is a separate
+container that path resolves to nothing, and the failure is silent — the worker
+falls back to the `AGENTS.md` list the derivation existed to replace and reports
+success. The general form is `swarm-dispatch`'s: nothing a dispatcher computed
+may reach a worker as a reference.
+
+**Why an incomplete gate table is a rejection rather than a note:** it is the
+cheapest moment a skipped check can be caught. The alternative is CI finding it,
+which costs a round, or nothing finding it, which costs a merge. The table says
+which checks ran and is not a claim that they passed — that is CI on the pushed
+head, kept separate because a worker reported all gates green on a PR already
+failing `format:check`.
+
+**Why this section names no source for the derivation (round 2):** it did, and
+the source was the workflow file — a paraphrase of the rule `implement-issue-core`
+was in the middle of correcting, sitting one skill away from the correction. It
+now points at the owning section instead of restating it, which is the only shape
+that cannot drift.
+
 **The incident behind branch protection (step 7):** a worker dispatched with its `outcome_branch` correctly set pushed four commits of unreviewed implementation straight to the repository's default branch, noticed, and self-reverted — the tree was recovered exactly, the default branch's history permanently carries the five extra commits, and a sibling worker briefly cut its PR from the polluted base. The branch assignment does not imply the prohibition; it has to be stated.
 
 **The incident behind the question countermand (step 8):** a worker dispatched for one issue called `AskUserQuestion` four minutes in and held its container some twenty minutes until a check-in caught it, with nothing durable pushed, so the whole run was wasted.
@@ -301,18 +322,3 @@ What landed instead is the trade stated where the preference is made, plus the o
 **The removed decision docket (why the unattended decline's aggregation loss is accepted):** a second durable record written to close that gap is the decision docket this skill already carried and removed — it needed an in-place rewrite `permissions.json` cannot perform and stopped an unattended session on the prompt step 8 forbids. Re-deriving a lost aggregate costs one summary; the record that would have prevented it cost four review findings and could not run.
 
 **Why a code-changing ruling must not become a ranking constraint (the step-3 defect one step later):** choosing the other side of a decision a worker already implemented creates actionable work *after* step 3 processed the action points. Translating it into a ranking constraint would leave an orchestrator-owned fix undispatched and rank a PR that is not finished — the exact defect the `IN_FLIGHT_FIX` row guards against, arriving one step later.
-
-**Why the gate travels inline in the dispatch prompt (round 1, Sept 2026):** the
-proposal that introduced this suggested the parent write the derived set to a
-file and hand workers the path. On the tiers where a worker is a separate
-container that path resolves to nothing, and the failure is silent — the worker
-falls back to the `AGENTS.md` list the derivation existed to replace and reports
-success. The general form is `swarm-dispatch`'s: nothing a dispatcher computed
-may reach a worker as a reference.
-
-**Why an incomplete gate table is a rejection rather than a note:** it is the
-cheapest moment a skipped check can be caught. The alternative is CI finding it,
-which costs a round, or nothing finding it, which costs a merge. The table says
-which checks ran and is not a claim that they passed — that is CI on the pushed
-head, kept separate because a worker reported all gates green on a PR already
-failing `format:check`.

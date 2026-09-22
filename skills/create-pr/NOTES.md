@@ -56,9 +56,18 @@ The split governs what the workflow itself triggers, not what the review provide
 
 An implementation PR that cannot be linked to an exact issue would be an orphan the recovery and completion machinery cannot see — restart logic, completion semantics, and coverage reconciliation all key on the linkage. The ad-hoc exception exists only for directly-invoked PRs after the user confirms there is no issue.
 
+## Before creating the PR
+
 **Why this skill derives the gate the same way rather than reading the
 documentation list (round 1, Sept 2026):** a directly-invoked `create-pr`, or one
 whose caller omitted the gate, would otherwise build a table from
 `CLAUDE.md`/`AGENTS.md` — complete against a list that describes the gate and
 drifts from it. A table complete against the wrong source is worse than no table:
 it reads as evidence that the gate ran.
+
+**Why the derivation sits before the body and not in `# Output` (round 2):** it
+was first written where the table is described, which is after the checks have
+run, the body has been drafted and the PR has been created. A direct invocation
+therefore ran the documentation list, created the PR, and only then met the rule
+saying not to — so the rule was unreachable by the path it existed for. A
+derivation that decides what to run belongs where running is decided.
