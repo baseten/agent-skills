@@ -24,7 +24,12 @@ AUTHORED_WRITE_FORM="backlog-orchestrator create-pr normalize-github-dependencie
 # check_shared_rules.py reads these assignments to learn which skills are
 # declared consumers of which rule, so the spelling is load-bearing:
 # ABSENCE_IS_NOT_A_VERDICT <-> rules/absence-is-not-a-verdict.md.
-RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget"
+RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
+  establish-do-not-assume"
+
+# Skills that act on something asserted by an agent, or assumed about a provider.
+ESTABLISH_DO_NOT_ASSUME="backlog-orchestrator swarm-dispatch repair-pr
+  validate-backlog review-skill implement-issue-core"
 
 # The prose reviewers. Both terminate on the same budget; neither owns it.
 PROSE_REVIEW_ROUND_BUDGET="review-docs review-skill repair-pr"

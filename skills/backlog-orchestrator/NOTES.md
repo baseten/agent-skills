@@ -71,6 +71,33 @@ The `html_url` provenance rule is the one that is not obvious. A review-comment 
 
 The notification half is deliberately subordinate. A subscription dies with the session that armed it, so a notification is unobservable-in-principle from a later run: nothing may treat it as delivery, and the item is complete when it is *recorded*. Reporting whether one was sent is useful; depending on it having been seen is the failure mode.
 
+**Why publishing has three states rather than two (round 1, Sept 2026):** the
+first version of this said observed-to-trigger or not, and a review round pointed
+out that a first run and every restart begin in neither. Not having observed a
+trigger is not evidence that publishing is inert — which is this document's own
+rule about absence, arriving inside the fix for its sibling rule about
+assumption. Merging straight through on pre-publish evidence would land the PR
+before a run that publishing started could report, so unknown means establish
+rather than merge.
+
+**Why establishing it takes a pass rather than a read (round 2):** the first fix
+said publish, look once, record — and round 2 pointed out that the look lands
+before a queued run or review has to exist, so it distinguishes *nothing was
+triggered* from *nothing has appeared yet* only by luck. That is the same absence
+rule again, one layer further in: a read with no lower bound on when the artifact
+could appear is not a read of the artifact. Worse than getting it wrong once, the
+answer is recorded and every later publish in the repository is decided by it. So
+unknown takes the un-settle branch and classifies on the next delivered pass,
+which is what `implement-issue` already requires of the draft→ready transition
+under *Evidence freshness* — the read is taken no earlier than the next check-in.
+The cost is one supervision cycle, once per repository, against a wrong answer
+that would persist.
+
+**Why the observation is recorded rather than re-derived:** it sits beside the
+transport-visibility and posting-identity maps for the same reason those exist —
+a fact about a repository that every later decision reads, established once by
+observation rather than assumed from a provider's name.
+
 ## Per-repository policy configuration
 
 **Why a config file and not prose or a skill override:** a `CLAUDE.md` paragraph gets interpreted, and interpretation must not decide whether a run may merge. A project-level skill override is not the mechanism either: `bootstrap.sh` installs these skills to `~/.claude/skills`, and a personal skill shadows a project skill of the same name, so a project copy would silently never load.
@@ -92,6 +119,27 @@ The owner asked for the rule scoped to human comments and, when the asymmetry wa
 **The observed case behind the evidence-based escalation trigger:** on one spec PR, three automated review passes returned two findings, then three, then one. The first two rounds were all-new territory and Sonnet was the right tool for both; the third's single finding was a gap in a paragraph the second round had itself written, and the strongest-model repair that answered it also caught a second, unreported defect of the same kind beside it. A count-based ladder (two rounds Sonnet, then one Opus) would have paid for depth on exactly the run that needed breadth.
 
 ## Implementation worker contract
+
+**Why the gate travels inline in the dispatch prompt (round 1, Sept 2026):** the
+proposal that introduced this suggested the parent write the derived set to a
+file and hand workers the path. On the tiers where a worker is a separate
+container that path resolves to nothing, and the failure is silent — the worker
+falls back to the `AGENTS.md` list the derivation existed to replace and reports
+success. The general form is `swarm-dispatch`'s: nothing a dispatcher computed
+may reach a worker as a reference.
+
+**Why an incomplete gate table is a rejection rather than a note:** it is the
+cheapest moment a skipped check can be caught. The alternative is CI finding it,
+which costs a round, or nothing finding it, which costs a merge. The table says
+which checks ran and is not a claim that they passed — that is CI on the pushed
+head, kept separate because a worker reported all gates green on a PR already
+failing `format:check`.
+
+**Why this section names no source for the derivation (round 2):** it did, and
+the source was the workflow file — a paraphrase of the rule `implement-issue-core`
+was in the middle of correcting, sitting one skill away from the correction. It
+now points at the owning section instead of restating it, which is the only shape
+that cannot drift.
 
 **The incident behind branch protection (step 7):** a worker dispatched with its `outcome_branch` correctly set pushed four commits of unreviewed implementation straight to the repository's default branch, noticed, and self-reverted — the tree was recovered exactly, the default branch's history permanently carries the five extra commits, and a sibling worker briefly cut its PR from the polluted base. The branch assignment does not imply the prohibition; it has to be stated.
 

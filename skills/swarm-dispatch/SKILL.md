@@ -91,6 +91,14 @@ that moment. Do not read a workflow's completion as its PRs being watched.
 other's state in ways that surface as unreproducible test failures, and the
 cost of diagnosing that once exceeds the cost of always isolating.
 
+**Everything the dispatcher computed travels inline in the prompt, and no prompt
+names a dispatcher-side path.** On the tiers where a worker is a separate
+container the dispatcher's filesystem is not the worker's, so a path resolves to
+nothing there — and the failure is silent, because a worker that cannot read what
+it was pointed at falls back to whatever it can find and reports success. Where
+the thing is large, that is an argument for computing less, not for passing a
+reference to it.
+
 **The base branch is a parameter, and it defaults to the repository's default
 branch** — `main` or `master`, whichever the remote has. Three rules:
 
@@ -254,11 +262,12 @@ insists the decision is not the worker's.
 
 ## Verifying what workers report
 
-**A worker's report is a claim about its own environment**, which may be
-misconfigured in ways the worker cannot see. Before relaying a worker's check
-results, or acting on them, verify against durable evidence: the state the work
-actually reached, or a re-run outside that worker's environment. Never escalate a
-worker-reported mass failure to the user unverified.
+**A worker's report is a claim** (`references/establish-do-not-assume.md` states the general case and what settles
+each kind). It describes an environment the worker may not be able to see
+correctly, so before relaying its check results or acting on them, verify against
+durable evidence: the state the work actually reached, or a re-run outside that
+worker's environment. Never escalate a worker-reported mass failure to the user
+unverified.
 
 **Assume the checkpoint instruction will not land.** Across observed runs,
 workers hold completed work locally at a high rate — including workers whose
