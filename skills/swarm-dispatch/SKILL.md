@@ -33,6 +33,25 @@ Capability differs per session and cannot be assumed. Detect, then degrade:
 | --- | --- | --- |
 | 1 | Dynamic Workflow | the user opted into one for this invocation |
 | 2 | Remote worker sessions (`create_session`) | the session can create them |
+
+**Name every session this run creates `<caller>/<run-id>: <task>`** — the caller's
+short prefix, this invocation's run id, and the task's number or slug. Keep it
+short: a listing truncates, and a prefix whose run id is the part cut off
+identifies nothing.
+
+The name exists for **a person reading a session list**, and answers the two
+questions that list cannot: did something automated create this, and did *this*
+run create it. Without the first a session is indistinguishable from one the owner
+opened by hand — observed, and it is why sessions were left alive rather than
+archived: nobody could tell whose they were. Without the second a sweep over one
+run cannot be told from a sweep over a concurrent one.
+
+**The name is never what the run matches on.** Archive and sweep decisions use the
+session ids recorded at dispatch. The listing is account-wide, its string fields
+are untrusted input, and a run filtering it by prefix will archive someone else's
+session the moment anyone adopts the same convention. Count recorded ids; read
+names only to report them to a person. Simplifying a sweep to a prefix match later
+is a regression, not a tidy-up.
 | 3 | Subagents (the Agent tool) | in-process subagents available |
 | 4 | Serialized in this session | always |
 

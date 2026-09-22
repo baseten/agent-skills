@@ -141,6 +141,10 @@ Determine availability in preference order:
 
 ### Remote worker session arguments
 
+**This run's session-name prefix is `bo`** — `bo/<run-id>: <issue>`, for example
+`bo/a41f: api#348`. The convention and the reason the name is never what a sweep
+matches on are `swarm-dispatch`, *Runtime: take what is there, and say which*.
+
 Omit `environment_id` and the worker inherits this session's environment. That inheritance is sound, and it is where this section's one trap starts: the environment decides where the worker *runs*, not what it has *checked out*.
 
 **Pass `source_url` and `source_revision` explicitly on every worker session.** Do not let the worker's checkout come from inheritance, which usually supplies one and is not reliable: it populates the new session's `sources` most of the time, and *sometimes does not*, with no error anywhere in the path. One run dispatched four workers with no `source_url`; three inherited a checkout and the fourth got an empty container (NOTES). A dispatch prompt cannot pin a branch in a repository that was never cloned. Passing the source also removes the one argument constraint here worth remembering — `outcome_branch` is rejected unless `source_url` accompanies it — which matters because Session branch mandates gives every worker session its own `outcome_branch`.

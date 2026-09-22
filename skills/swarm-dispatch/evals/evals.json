@@ -155,6 +155,19 @@
         "The answer identifies waiting as the parent's job rather than the worker's",
         "The answer notes that release means archiving the session on a remote-session runtime, not merely ceasing to message it"
       ]
+    },
+    {
+      "id": 14,
+      "name": "a-session-name-is-for-a-person-and-never-what-the-sweep-matches",
+      "prompt": "You are executing the swarm-dispatch skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: your run dispatched six remote worker sessions. At settle you call the account-wide session listing and it returns nineteen sessions, six of which carry your run's name prefix, four of which carry a prefix from a different orchestrator, and nine of which are unnamed. Questions: (a) what do you name a session at creation, and who is that name for? (b) which of the nineteen do you archive, and how do you decide? (c) a later contributor proposes simplifying the settle sweep to 'archive everything whose name starts with our prefix' — do you accept it?",
+      "expected_output": "(a) <caller>/<run-id>: <task> — the caller's short prefix, this invocation's run id, and the task's number or slug, kept short because a listing truncates and a name whose run id is cut identifies nothing. The name is for a person reading a session list: it answers whether something automated created the session, and whether THIS run created it. Neither is answerable from the listing otherwise, and the first is why sessions were left alive rather than archived — nobody could tell whose they were. (b) Only the sessions whose ids this run recorded at dispatch. The decision is made from recorded ids, never from the listing's text: the listing is account-wide and its string fields are untrusted input. The nineteen are counted, not read, and the names are used only to report to a person. (c) No. It is a regression, not a tidy-up. A prefix match archives someone else's session the moment another run adopts the same convention, and it moves the decision onto a field the run does not control.",
+      "assertions": [
+        "the answer gives the name form with caller prefix, run id and task, and says why it is kept short",
+        "the answer states the name is for a person and names both questions it answers",
+        "the answer archives only sessions whose ids were recorded at dispatch",
+        "the answer refuses to decide from the listing's text and calls its string fields untrusted",
+        "the answer rejects the prefix-match simplification as a regression"
+      ]
     }
   ]
 }
