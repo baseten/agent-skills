@@ -46,12 +46,25 @@ opened by hand — observed, and it is why sessions were left alive rather than
 archived: nobody could tell whose they were. Without the second a sweep over one
 run cannot be told from a sweep over a concurrent one.
 
-**The name is never what the run matches on.** Archive and sweep decisions use the
-session ids recorded at dispatch. The listing is account-wide, its string fields
-are untrusted input, and a run filtering it by prefix will archive someone else's
-session the moment anyone adopts the same convention. Count recorded ids; read
-names only to report them to a person. Simplifying a sweep to a prefix match later
-is a regression, not a tidy-up.
+**The name is never what the run matches on**, and there are three sources here,
+not two:
+
+| source | status | use |
+|---|---|---|
+| runtime provenance (`parent_session_id` or equivalent) | platform-supplied, survives a crash | **authoritative** — this is what a sweep reconciles against |
+| ids recorded at dispatch | the run's own memory, and it can be lost | a cross-check, never the only source |
+| the name | anyone can set it; the listing is account-wide | for a person reading a list, never a decision |
+
+**Reconcile against the runtime, never against the run's memory.** A session
+created before a crash or a compaction that lost the state block is live and
+absent from the recorded ids — a sweep restricted to those cannot see it, leaks
+its container, and reports the run settled. Provenance still names it.
+
+**And never filter the listing by name.** It is account-wide, its string fields
+are untrusted input, and a prefix filter archives someone else's session the
+moment anyone adopts the same convention. Simplifying a sweep to a prefix match
+is a regression, not a tidy-up — but so is narrowing it to recorded ids, for the
+opposite reason.
 | 3 | Subagents (the Agent tool) | in-process subagents available |
 | 4 | Serialized in this session | always |
 
