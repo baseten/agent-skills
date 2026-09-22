@@ -184,6 +184,10 @@ Added with `review-docs` (Sept 2026). The confirmation step was written for an e
 
 ## Progress / checkpoint output
 
+**Why the gate condition is named per PR (Sept 2026):** a run reported its tranche as "awaiting merge authorisation" for four days and raised it to the owner three times. Both repositories had carried `"auto-merge": true` for a week; what actually held every PR was invariant 12's other conjunct, three outstanding `DECISION` items anywhere in the tranche. Nothing merged, which was correct, and every account of why was wrong. "Awaiting merge" is compatible with every condition and with none, so it cannot be checked against the truth by the owner reading it or by the run writing it — naming the first unmet condition makes the error visible on day one to both.
+
+**Why the two merge routes are distinguished here:** the run collapsed `merge-stack`'s user authorisation with the gate's repository opt-in and defaulted to asking. That is the same failure *Autonomy and interactive prompts* names at the dispatch end — a run that asks before doing the thing it promised — arriving at the merge end, where the document had not named it.
+
 **The convention that lapsed:** both leaking runs used to print the state block mid-run — while the fan-out made the numbers interesting — and stopped once they narrowed to a one-PR supervision tail. Nothing removed the block; nothing had ever required it. The tail is the long part of a run and the part a compaction lands in, so both runs reported their worker-session count exactly zero times, and the line that would have exposed the leak ("N created / N archived") never appeared. That is why emission is now a numbered loop step with an actor and a moment rather than an example.
 
 **Why the per-PR record carries the session id:** the recovery that cleaned up the leaks had to match sessions to PRs by fuzzy-matching session titles with a script over a truncated tool result. A session id and archived flag on the record the run already keeps makes the reconciliation a lookup.

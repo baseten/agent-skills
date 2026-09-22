@@ -434,6 +434,18 @@
         "the answer carries the externally-produced required check as not locally runnable rather than as passed or absent",
         "the answer uses the workflow file to map required contexts to local commands rather than as the source of the required set"
       ]
+    },
+    {
+      "id": 34,
+      "name": "the-checkpoint-names-which-gate-condition-holds-each-pr",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your tranche has four PRs. Both repositories have carried `\"auto-merge\": true` in .claude/backlog-orchestrator.json for the past week. Three DECISION items are outstanding in the tranche. One PR has a review thread reserved for the owner; one is in a repository that did not opt in; one is clean on every condition. You are about to write the checkpoint and were going to report the tranche as awaiting merge authorisation and ask the owner to authorise merges. What do you write instead?",
+      "expected_output": "Not that. There is no authorisation outstanding: the repositories opted in a week ago, and invariant 12's gate needs that opt-in and nothing further from the owner - `merge-stack` invoked on its own is the route that needs a user authorisation, and collapsing the two and defaulting to asking is the failure Autonomy and interactive prompts names at the dispatch end, arriving at the merge end. What holds these PRs is the gate's other conjunct: three outstanding DECISION items anywhere in the tranche hold every PR in it, however clean. So the block names, per PR, the first unmet condition by its own name from invariant 12 - held by: 3 outstanding DECISION items for the tranche-wide ones, held by: review not clean - 1 thread reserved for the owner, held by: repository did not opt in - and reports the clean one as mergeable, which under the tranche-wide DECISION hold it is not. Awaiting merge and pending are not reports about a gate: they are compatible with every condition and with none, so nothing about them can be checked against what is true.",
+      "assertions": [
+        "the answer does not ask the owner to authorise merges where the repositories have already opted in",
+        "the answer distinguishes the gate's repository opt-in from merge-stack's user authorisation",
+        "the answer identifies the tranche-wide outstanding DECISION items as what holds every PR",
+        "the answer names the first unmet condition per PR rather than reporting a bare pending or awaiting state"
+      ]
     }
   ]
 }

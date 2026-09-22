@@ -1468,6 +1468,10 @@ If only external CI/review remains and the runtime cannot safely stay active, re
 
 **Emit the state block at the end of every supervision cycle.** It is a required step of the parent supervision loop with a named actor and moment — this run, each cycle — not a convention that holds while the numbers are interesting. The observed failure is exactly that convention lapsing: runs printed the block mid-fan-out and stopped once they narrowed to a one-PR supervision tail, which is the long part of a run and the part a context compaction lands in — so both runs that leaked sessions reported their session count zero times (NOTES). Emitting each cycle is also what carries budgets, worker state and PR state across a compaction: a count that re-enters the transcript survives; one held in run memory does not.
 
+**Every unmerged PR in the block names the gate condition holding it, by that condition's own name from invariant 12, or is reported mergeable.** One line each, and it names the *first* unmet condition rather than a summary of the situation: `held by: 3 outstanding DECISION items`, `held by: CI red on <check>`, `held by: repository did not opt in`, `held by: explicitly held draft`. **"Awaiting merge", "pending" and "awaiting authorisation" are not reports about a gate** — they are compatible with every condition and with none, so nothing about them can be checked against what is actually true. A run reported a tranche as awaiting merge authorisation for four days and raised it to the owner three times; both repositories had opted in a week earlier, and what actually held every PR was three outstanding `DECISION` items. The outcome was right and every account of it was wrong, and a field that cannot express the reason cannot be checked against the reason.
+
+**The two merge routes are not the same authorisation, and collapsing them is what produced those three interruptions.** `merge-stack` invoked on its own needs the user's authorisation; invariant 12's gate needs the repository's `auto-merge` opt-in and nothing else from the owner — and where that key is already `true`, there is no authorisation outstanding to ask about. Asking anyway is the failure *Autonomy and interactive prompts* names at the dispatch end of the run, arriving at the merge end instead.
+
 The block always carries: run budget, workers in flight by kind, worker sessions created / archived / alive, active PRs with CI and review state, repair budgets consumed, and the check-in state with its unproductive-wake count split by kind — plus, whenever reads were deferred under API budget and read discipline, which PRs went unread this cycle and when the allowance resets. For example:
 
 ```text
@@ -1480,6 +1484,10 @@ Implementation workers: 3
 Repair workers: 1
 Worker sessions: 9 created / 8 archived / 1 alive (blocked on a prompt — see below)
 Active PRs: 7
+  acme/api#381  held by: 3 outstanding DECISION items (tranche-wide)
+  acme/api#382  held by: review not clean — 1 thread reserved for the owner
+  acme/site#77  held by: repository did not opt in (auto-merge off)
+  acme/api#383  mergeable
 Check-in: armed (unproductive 2/8 — 2 no-op, 0 deferred; next in 80m)
 API budget: ok (reads deferred: none)
 Waiting CI/review: 4
