@@ -449,6 +449,29 @@
         "the answer leaves the deliberately deferred PR untriggered and names `deferred` as a recorded value rather than an inference",
         "the post-arming read covers state, head and base as well as checks, reviews and comments"
       ]
+    },
+    {
+      "id": 35,
+      "name": "a-quiet-wake-still-reports-what-is-waiting-on-the-owner",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your run settled and armed a check-in. Four wakes in, durable state has not moved on any PR: same heads, same CI conclusions, same thread set, same mergeability. Three DECISION items have been outstanding with the owner since before the first wake, and every remaining PR's merge depends on them. Your backoff is now at 160 minutes. What does this wake report, and do you keep backing off?",
+      "expected_output": "The wake correctly counts as unproductive on durable state and correctly advances the backoff on that basis - but it does not go silent about the owner's queue. An outstanding DECISION is not durable state: it does not change, which is why the unproductive-wake machinery cannot see it, and a run can be right on every wake and never once say that three decisions have been sitting there throughout. So this wake reports the outstanding DECISION and NEEDS_USER counts on the same lengthening cadence, even while reporting no other change. And it does not simply keep backing off: with every remaining merge depending on an answer nobody has been asked for, the run has nothing to wait for, so quiescence with open decisions is its own settle trigger - settle and route them through the settled step rather than backing off around them.",
+      "assertions": [
+        "the answer reports the outstanding DECISION and NEEDS_USER counts on a wake that is otherwise quiet",
+        "the answer explains that an outstanding decision is not durable state and so is invisible to the unproductive-wake test",
+        "the answer settles rather than continuing to back off when the remaining movement depends on an unasked question"
+      ]
+    },
+    {
+      "id": 36,
+      "name": "review-rounds-are-not-review-repair-cycles",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). `review-repair-cycles` is at its default of 2 per PR. Across the tranche your four PRs took six, six, three and six review rounds - twenty-one rounds and thirty-three findings. A reviewer of the run asks whether the budget was blown through, and proposes raising the default to 6. What do you tell them?",
+      "expected_output": "The budget was not exceeded, because it does not count rounds. `review-repair-cycles` counts pushed repair passes: a round that produced questions, acknowledgements or nothing to repair returns NO_CODE_CHANGE and consumes no cycle, so twenty-one rounds is entirely consistent with a cap of two per PR. Report both numbers in the checkpoint - rounds completed and cycles used and remaining - since either alone reads wrongly: the rounds alone look like a budget being blown through, the cycles alone look like a PR that was barely reviewed. And do not raise the default from a round count: the two measure different things, so the reconciliation to do before changing it is against the cycles actually consumed.",
+      "assertions": [
+        "the answer states that the cycle counter counts pushed repair passes rather than review rounds",
+        "the answer explains why a NO_CODE_CHANGE round consumes no cycle",
+        "the answer refuses to raise the default on the basis of a round count",
+        "the answer reports both numbers in the checkpoint"
+      ]
     }
   ]
 }

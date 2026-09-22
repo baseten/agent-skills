@@ -428,7 +428,7 @@ Unless overridden (below):
 - maximum implementation attempts per issue (`implementation-attempts`): **2 total**;
 - maximum strongest-model *implementation* escalations per issue (`model-escalations`): **1**;
 - maximum CI repair cycles per PR (`ci-repair-cycles`): **2**;
-- maximum review-fix cycles per PR (`review-repair-cycles`): **2**;
+- maximum review-fix cycles per PR (`review-repair-cycles`): **2** — **counted in pushed repair passes, not in review rounds**; see below;
 - maximum settle-finding repair cycles per PR (`finding-repair-cycles`): **2**;
 - maximum strongest-model repair rounds per PR (`repair-model-escalations`): **1**;
 - maximum lost-worker redispatches per issue (`lost-worker-redispatches`): **1**;
@@ -444,6 +444,8 @@ The concurrency number is a ceiling, not a target. Derive the level you actually
 When the bounded scope exceeds the 12-new-issue limit, do not ask which issues to drop. Start the first 12 in scheduling order — DAG readiness first, then how much downstream work each unblocks — and defer the rest, naming the deferred issues in the checkpoint output so the next invocation adopts them. A user who wants a different cap says so in the invocation.
 
 When the 12-new-issue limit is reached, allow active workers/repairs to reach durable state, stop starting new issues, reconcile, and return a checkpoint. Restarting does not count already-adopted work as newly started.
+
+**`review-repair-cycles` counts pushed repair passes, and a PR can take many more review rounds than that without exceeding it.** Observed round counts across one tranche were six, six, three and six against a configured cap of two — twenty-one rounds and thirty-three findings over four PRs — and none of them exceeded the budget, because a round that produced questions, acknowledgements or nothing to repair returns `NO_CODE_CHANGE` and consumes no cycle. **Report both numbers in the checkpoint**, rounds and cycles consumed, because one without the other reads either as a budget being quietly blown through or as a PR that was barely reviewed. **And do not raise the default from a round count**: the two measure different things, and the reconciliation to do before changing it is against the cycles actually consumed.
 
 Budget exhaustion on a node -> `NEEDS_USER`, not another speculative attempt — as an **outcome** where a CI, finding or implementation budget is spent, and as **items** where a review budget is: a spent `review-repair-cycles` produces deferred-repair items under a `NO_CODE_CHANGE` round (see Merge policy and review feedback), never a `NEEDS_USER` outcome for the PR. Continue unrelated DAG branches safely.
 
@@ -823,7 +825,7 @@ review trigger: issued/verified/pending/deferred/unavailable } the PR's routing 
 first review round: pending/complete-with-findings/clean }
 draft state: as-created -> current
 CI repair cycles used/remaining
-review repair cycles used/remaining
+review rounds completed / review repair cycles used/remaining
 finding repair cycles used/remaining
 stack parent/children
 event subscription: armed/unavailable
@@ -1006,6 +1008,7 @@ Both, not either. The subscription is the fast path; the check-in is what makes 
 - **budget: 8 consecutive unproductive wakes**, then stop re-arming. **A wake is unproductive whether it read and found nothing or could not read at all** — one counter over both, because both spend money to learn nothing and a watch that alternates between them is as pointless as one that does either (NOTES: why this was two counters and is now one);
 - **backoff: start at 20 minutes, double on each unproductive wake, cap at 4 hours.** Eight at that shape (20m, 40m, 80m, 160m, then 4h × 4) spans roughly 21 hours — long enough to wait out a night and a working day for a human reviewer, short enough that a forgotten watch dies in single-digit dollars. **Where the wake was deferred under API budget and read discipline, it goes at whichever is later: the backoff's next step, or that rule's reset/`Retry-After` floor, where the deferral has one** (that rule also defines when it has none) — waking before the reset is refused again, and waking before the backoff would have is the frequency the backoff exists to cut. The budget is one; the schedule is still per cause;
 - **only an observed delta clears the count, and "nothing changed" means durable state only** — PR head, CI conclusions, the review-thread set and each thread's resolved state, mergeability, tracker status. Any delta resets it to zero, including a delta the run has no budget left to act on: a red CI it cannot fix is a change observed, never a no-op. **The test is what the wake observed, not how it ended** — a wake that saw a delta on one PR and was then refused reading another has observed a delta and clears the count, while a wake that observed none counts against the budget whether it read and found nothing or could not read at all;
+- **a quiet wake is silent about state and never silent about what is waiting on the owner.** The unproductive-wake rules above are about *durable* state, and an outstanding `DECISION` or `NEEDS_USER` item is not durable state — it does not change, which is exactly the problem: a run can back off to four-hourly wakes, correctly report no delta each time, and never once say that three decisions have been sitting with the owner throughout. So every wake reports the outstanding `DECISION` and `NEEDS_USER` counts, on the same lengthening cadence as the wake itself, even when it reports nothing else. **And quiescence with open decisions is its own settle trigger**: a run whose only remaining movement depends on an answer nobody has been asked for has nothing to wait for, so it settles and routes them through the settled step rather than continuing to back off around them;
 - **write the count into the wake's own prompt.** The session's context does not survive between firings, and a compaction can drop it mid-run; a counter kept in memory resets silently and the budget never binds. Each re-armed prompt carries the consecutive-unproductive count and the durable state the next firing compares against;
 - **stopping is reported, never silent**: which watch stopped, on which PRs, after how many unproductive wakes, **which kind they were**, and what would restart it — a new event, a fresh invocation, or the owner acting on the PR. A watch that expired against a contended allowance and one that expired on a quiet PR call for different remedies, so the report must not collapse them;
 - **this is a cost guard, not a verdict on the PR.** An expired watch says nothing about the work: the PR it watched is still an open item in the closing report, and its expiry must never be read as settled, merged, or finished.
@@ -1493,6 +1496,7 @@ Active PRs: 7
 Check-in: armed (unproductive 2/8 — 2 no-op, 0 deferred; next in 80m)
 API budget: ok (reads deferred: none)
 Waiting CI/review: 4
+Review rounds / repair cycles: 21 rounds, 5/8 cycles used
 Unreviewed (trigger pending/unavailable): 0
 Unresolved review findings: 0
 Review threads reserved for the owner: 1
