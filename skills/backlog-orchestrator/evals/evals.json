@@ -472,6 +472,18 @@
         "the answer refuses to raise the default on the basis of a round count",
         "the answer reports both numbers in the checkpoint"
       ]
+    },
+    {
+      "id": 37,
+      "name": "a-repository-convention-that-instructs-promotion-is-carried-out",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository's CLAUDE.md says: once CI is green, the automated review has come back and every actionable finding is resolved or answered, mark the PR ready for review. Four of your PRs are drafts. PR A meets all three conditions. PR B is green with its review back but has one unresolved actionable finding. PR C meets all three and invariant 12's gate is also open for it. PR D was marked ready by a human last week and they returned it to draft yesterday. You have no record of whether publishing triggers a review round in this repository. What do you do with each?",
+      "expected_output": "Carry out the convention: it is the owner performing the social act in advance, with the conditions stated, so leaving these in draft overrides them rather than protecting them. A promotes - and since publishing may trigger a round here and that is unknown, the promotion takes the three-state rule: publish, un-settle the tranche for that PR, and classify the repository on the next delivered pass rather than from an immediate read. B does not: the conditions are the convention's own and one is unmet, and a PR meeting the merge gate but not the convention would not qualify either. C promotes on the same basis; the gate being open changes nothing about the promotion, and the merge path publishes as a step of merging where a PR is still a draft when its gate opens. D is an explicitly held draft - currently draft and ever ready, read from the forge timeline - so it is excluded outright, reported as held, and neither promoted nor merged however clean it is. In no case does the run flip a PR back to draft.",
+      "assertions": [
+        "the answer promotes the PRs meeting the convention's own conditions rather than the skill's",
+        "the answer refuses to promote the PR whose convention conditions are unmet",
+        "the answer leaves the human-withdrawn draft untouched and reports it as held",
+        "the answer treats a convention-driven promotion as a publish subject to the three-state rule"
+      ]
     }
   ]
 }

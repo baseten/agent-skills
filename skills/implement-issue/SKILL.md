@@ -124,7 +124,7 @@ A pass that returns `NO_CODE_CHANGE` — the classification left it no repair to
 
 ## Draft state
 
-- **Outside the merge path, this run never changes draft state, in either direction**: never mark a PR ready, never flip one back to draft. The merge path's publish — a step of merging an open-gate PR (see Merge) — and the owner acting themselves are the only two promotion sites; `backlog-orchestrator`, *Draft state*, owns the contract. There is deliberately no policy knob for this (NOTES: why promote-on-clean-review was deleted, not made configurable).
+- **This run never flips a PR back to draft, and promotes only where the repository's own convention instructs it** — on that convention's conditions and no others, which is the owner having performed the social act in advance. With no such convention, the merge path's publish (a step of merging an open-gate PR, see Merge) and the owner acting themselves are the only promotion sites. `backlog-orchestrator`, *Draft state*, owns the contract, including that a convention-driven promotion is a publish and takes the three-state rule. There is still deliberately no policy knob (NOTES: why promote-on-clean-review was deleted rather than made configurable, and why deferring to a written convention is not that knob).
 - **Explicitly held draft discriminator**: currently a draft AND ever ready = held. Read the transition from the forge's own timeline immediately before the gate — never from this run's state block, which is a cache (NOTES).
 
 # Settle
@@ -203,7 +203,7 @@ Return:
 - the merge, where one happened: the gate conditions it passed on, whether the PR was published from draft on the way, and the tracker reconciliation;
 - the `summarize-tranche` summary and action points, and the `settle-outstanding-decisions` report — rulings recorded, its one-line decline, or that `auto-request-settle` was off;
 - final CI/review state;
-- draft state as created and current, and any transition observed with who performed it — the owner, or the merge path's publish; this run never promotes;
+- draft state as created and current, and any transition observed with who performed it — the owner, the merge path's publish, or this run carrying out the repository's own promotion convention; a ready-to-draft transition is never this run's;
 - the run's **full posting-identity map** — every entry observed by core, each repair pass, the walkthrough, and a gate-authorized `merge-stack` invocation, under its `(transport, credential)` key; carry all entries, `unestablished` where no authored write was read back (NOTES: why nothing may be collapsed);
 - whether the blocker set's completeness was backed or left unproven, and on what boundary;
 - the routed documentation review's result, exactly as core reported it — round, status, and any findings with their evidence. It reaches `summarize-tranche` through this line and nowhere else, and **no routed review** is a different state from **a routed review that found nothing**;
