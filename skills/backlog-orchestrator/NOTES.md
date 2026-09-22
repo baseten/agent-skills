@@ -77,8 +77,21 @@ out that a first run and every restart begin in neither. Not having observed a
 trigger is not evidence that publishing is inert — which is this document's own
 rule about absence, arriving inside the fix for its sibling rule about
 assumption. Merging straight through on pre-publish evidence would land the PR
-before a run that publishing started could report, so unknown means establish:
-publish, look once, record. The read is cheap and it is paid once per repository.
+before a run that publishing started could report, so unknown means establish
+rather than merge.
+
+**Why establishing it takes a pass rather than a read (round 2):** the first fix
+said publish, look once, record — and round 2 pointed out that the look lands
+before a queued run or review has to exist, so it distinguishes *nothing was
+triggered* from *nothing has appeared yet* only by luck. That is the same absence
+rule again, one layer further in: a read with no lower bound on when the artifact
+could appear is not a read of the artifact. Worse than getting it wrong once, the
+answer is recorded and every later publish in the repository is decided by it. So
+unknown takes the un-settle branch and classifies on the next delivered pass,
+which is what `implement-issue` already requires of the draft→ready transition
+under *Evidence freshness* — the read is taken no earlier than the next check-in.
+The cost is one supervision cycle, once per repository, against a wrong answer
+that would persist.
 
 **Why the observation is recorded rather than re-derived:** it sits beside the
 transport-visibility and posting-identity maps for the same reason those exist —

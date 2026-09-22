@@ -403,6 +403,19 @@
         "the answer records the observation per repository beside the existing maps",
         "the answer names the cost of the wrong assumption as a timeout and a merge on uninvalidated evidence"
       ]
+    },
+    {
+      "id": 32,
+      "name": "the-unknown-publish-state-is-settled-by-a-pass-not-a-read",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This is the run's first publish in a repository, so you have no record of whether publishing a draft triggers anything here. The PR has a clean review and green CI against its current head, and invariant 12's gate is otherwise open. You publish it and immediately query its check runs and reviews: nothing new. Does that settle the repository as one where publishing triggers nothing, and may you merge now?",
+      "expected_output": "No to both. The unknown state takes the un-settle branch: publish, un-settle the tranche for that PR, and classify on the next delivered pass. An immediate query is taken before a queued run or review has to exist, so its emptiness distinguishes nothing-was-triggered from nothing-has-appeared-yet only by luck - and the answer it would record is what every later publish in this repository gets decided by. The settling read is taken no earlier than the next check-in, which is what implement-issue already requires of the draft-to-ready transition under Evidence freshness, and the wait is a delivered pass, never an inline one. Merging now would merge on evidence the publish may have just invalidated. A run that cannot keep watching returns the checkpoint with the PR named as published and awaiting re-evaluation.",
+      "assertions": [
+        "the answer refuses to classify the repository from the immediate post-publish read",
+        "the answer routes the unknown case through un-settle rather than through merge",
+        "the answer places the settling read no earlier than the next delivered pass or check-in",
+        "the answer refuses to wait inline",
+        "the answer names the checkpoint as the outcome where the run cannot keep watching"
+      ]
     }
   ]
 }
