@@ -158,7 +158,7 @@ where that is unreadable, fall back to the workflow's check steps and **say that
 the gate set is unproven** rather than presenting it as established. A check
 failing on the default branch across untouched files may gate nothing — one such
 was classified a merge risk and would have held a clean merge — and a name that
-sounds required is not one until a source says so.
+sounds required is not one until a source says so (`references/establish-do-not-assume.md`, of which the gate is the configuration case).
 
 **Where a caller supplied the gate, use it and do not re-derive.** A parent that
 resolved it once per repository has already paid for the read, and two
