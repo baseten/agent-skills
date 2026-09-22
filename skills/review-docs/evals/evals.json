@@ -166,6 +166,19 @@
         "the answer classifies the mismatch as NOT REVIEWED rather than a stale clean verdict",
         "the answer explains that a codebase-commit-only record would keep matching across prose pushes and let an old pass satisfy the gate"
       ]
+    },
+    {
+      "id": 13,
+      "name": "on-a-mixed-pr-the-code-review-budget-governs",
+      "prompt": "You are executing the review-docs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a mixed PR changes `src/pricing.ts` and `docs/specs/pricing.md`. You have run both your rounds over the prose and have one finding still open after round 2. The automated code reviewer is on its fourth round over the code and has open threads. The author asks whether the PR can merge now that your review is finished. Questions: (a) can it? (b) does your budget cap the code reviewer at two rounds? (c) what happens to your open finding?",
+      "expected_output": "(a) No. This reviewer finishing does not make the PR ready. On a mixed PR the code review's budget governs the pull request; this ceiling bounds this reviewer's own rounds and nothing else. The PR waits on the code review, which has open threads. (b) No, and applying it there would be the inversion of the reason it exists: code review has a terminator of its own — a check passes — and cutting it short ships a defect. This budget exists because prose has no such terminator. (c) It is handed to the author with its evidence and reaches the merge decision through the recorder, as any other finding does. It does not hold the PR on its own, and it does not earn a third round: a reviewer holding a PR open for its own residue is a third round wearing a gate's clothes.",
+      "assertions": [
+        "the answer refuses to call the PR ready on the strength of the prose review finishing",
+        "the answer states the code review's budget governs a mixed PR",
+        "the answer refuses to cap the code reviewer, and gives the oracle asymmetry as the reason",
+        "the answer routes the open finding to the author and through the recorder rather than holding the PR",
+        "the answer refuses a third round for the residue"
+      ]
     }
   ]
 }

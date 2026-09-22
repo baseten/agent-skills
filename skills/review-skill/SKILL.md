@@ -38,7 +38,7 @@ verification cannot reach.
 `NOTES.md` beside them. Never the scripts, never the evals as code.
 
 On a contract-only PR it **replaces** automated code review, which has no oracle
-here and grinds. On a mixed PR it runs **alongside** one, over the contract paths
+here and grinds. On a mixed PR it runs **alongside** one, over the contract paths The code review's budget governs the PR, not this reviewer's (`references/prose-review-round-budget.md`, *On a pull request that also carries code*).
 only — a contract that contradicts the script landing beside it is the finding a
 diff-scoped reviewer misses.
 

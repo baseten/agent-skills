@@ -40,6 +40,25 @@ invoking a third time gets a **declined pass naming the residue** — the declin
 is the deliverable, not an error, and it posts nothing. A decline is a completed
 outcome, not a pass that failed to happen.
 
+## On a pull request that also carries code
+
+A prose reviewer runs **alongside** a code review on a mixed PR, and then two
+budgets are live at once. **The code review's governs the pull request.** This
+ceiling bounds the prose reviewer's own rounds and nothing else: it never shortens
+a code review, and a PR is not ready to merge because the prose reviewer has
+finished.
+
+The asymmetry is the point. Code review has a terminator of its own and stopping
+it early ships a defect; this budget exists precisely because prose has none, so
+applying it to code would be borrowing a ceiling to replace an oracle that
+already works.
+
+So on a mixed PR: the prose reviewer takes its two rounds over the prose paths,
+reports, and stops. If the code review is still running, the PR waits on the code
+review. If the prose reviewer has residue after round 2, that residue is handed to
+the author and does not hold the PR on its own — it reaches the merge decision the
+way any other finding does, through the recorder.
+
 ## What makes the budget hold
 
 **Count the round off the pull request, never off run state.** No prior comment
