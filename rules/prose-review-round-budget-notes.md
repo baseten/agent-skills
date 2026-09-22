@@ -45,3 +45,16 @@ cost is counted.
 unbounded review look like diligence — 28 threads reads as thoroughness and was
 one reviewer with no stopping rule. It also makes the round countable, which the
 budget depends on.
+
+**Why the code review's budget governs a mixed pull request.** Two budgets live
+at once there and the question is which one the PR waits on. Borrowing this
+ceiling for the code review would replace an oracle that works with a number,
+which is the inversion of the reason this rule exists at all: prose needs a
+ceiling *because* it has no terminator, and code has one. So this budget bounds
+its own reviewer's rounds and nothing else, and a prose reviewer finishing does
+not make a PR ready.
+
+The residue clause follows from it. A prose reviewer that still has open findings
+after round 2 hands them to the author, and those reach the merge decision through
+the recorder like any other finding — not by the reviewer holding the PR itself,
+which would be a third round wearing a gate's clothes.
