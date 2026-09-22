@@ -158,6 +158,18 @@ goes back to the user.
 under-assignment costs a silently wrong result that nothing in the run will
 catch.
 
+**Context capacity is a second gate, and it does not correlate with the first.**
+Before assigning a small-context model, ask what the worker will *load* before it
+reaches the task — the repository's agent-instruction file and everything that
+file pulls in. Where that surface is large, a small-context model is excluded
+whatever the task looks like: the most mechanical item in an observed fan-out, a
+three-line guard, was its only outright failure, because the repository's
+instruction set pulled in roughly fifteen specification documents and exhausted a
+200K window before the worker reached any code. **Measure the instruction
+surface, not the diff**, and treat capacity as a veto on the tier the first gate
+chose rather than as an input to it — a task can be genuinely mechanical and
+still not fit.
+
 **Escalate on evidence, not on exhaustion.** Selection happens twice, and the
 second time matters more. Dispatch a repair or retry on the strongest available
 model when the failure about to be re-attempted sits on **something an earlier

@@ -116,6 +116,10 @@ The owner asked for the rule scoped to human comments and, when the asymmetry wa
 
 ## Model and skill policy
 
+**Why selection moved in front of the ladder (Sept 2026):** the ladder catches a worker that keeps failing, and the observed losses were workers that did not fail. One patched the single site its ticket named where the defect was restated at three — a green PR fixing a third of the bug. Another declined its own ticket's preferred option, correctly, by reading the spec over the issue text; a cheaper worker doing what the ticket said would have looked exactly as successful. No trigger that keys on repeated failure can reach either, which is why the assignment is made up front and the ladder is the floor under it rather than the mechanism.
+
+**Why the axes live in `swarm-dispatch` and not here:** that skill already owned model selection by failure visibility, and a second copy of the tiers in this file is the drift this repository keeps finding. What is genuinely this skill's is the escalation ladder, the repair-escalation evidence trigger and the cycle interaction — those stay.
+
 **The observed case behind the evidence-based escalation trigger:** on one spec PR, three automated review passes returned two findings, then three, then one. The first two rounds were all-new territory and Sonnet was the right tool for both; the third's single finding was a gap in a paragraph the second round had itself written, and the strongest-model repair that answered it also caught a second, unreported defect of the same kind beside it. A count-based ladder (two rounds Sonnet, then one Opus) would have paid for depth on exactly the run that needed breadth.
 
 ## Implementation worker contract
