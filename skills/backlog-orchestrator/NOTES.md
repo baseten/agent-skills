@@ -71,6 +71,20 @@ The `html_url` provenance rule is the one that is not obvious. A review-comment 
 
 The notification half is deliberately subordinate. A subscription dies with the session that armed it, so a notification is unobservable-in-principle from a later run: nothing may treat it as delivery, and the item is complete when it is *recorded*. Reporting whether one was sent is useful; depending on it having been seen is the failure mode.
 
+**Why publishing has three states rather than two (round 1, Sept 2026):** the
+first version of this said observed-to-trigger or not, and a review round pointed
+out that a first run and every restart begin in neither. Not having observed a
+trigger is not evidence that publishing is inert — which is this document's own
+rule about absence, arriving inside the fix for its sibling rule about
+assumption. Merging straight through on pre-publish evidence would land the PR
+before a run that publishing started could report, so unknown means establish:
+publish, look once, record. The read is cheap and it is paid once per repository.
+
+**Why the observation is recorded rather than re-derived:** it sits beside the
+transport-visibility and posting-identity maps for the same reason those exist —
+a fact about a repository that every later decision reads, established once by
+observation rather than assumed from a provider's name.
+
 ## Per-repository policy configuration
 
 **Why a config file and not prose or a skill override:** a `CLAUDE.md` paragraph gets interpreted, and interpretation must not decide whether a run may merge. A project-level skill override is not the mechanism either: `bootstrap.sh` installs these skills to `~/.claude/skills`, and a personal skill shadows a project skill of the same name, so a project copy would silently never load.

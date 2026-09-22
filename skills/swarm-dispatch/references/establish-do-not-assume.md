@@ -13,11 +13,14 @@ A report is a claim about a world the reporter may not be able to see, and it is
 a claim whoever wrote it believed. That is not a reason to distrust the author;
 it is a reason to name what would settle it.
 
+*Settling a claim means checking the state it asserts, not that some object
+exists.* Existence is the cheap half and the one that reads as done.
+
 | the claim | what settles it |
 |---|---|
 | a worker: *all gates passed* | CI on the pushed head — observed on a PR already red on `format:check` |
-| a worker: *pushed* | the remote branch existing |
-| a reviewer: *fixed in `<sha>`* | resolving the ref — observed three times naming commits that did not exist |
+| a worker: *pushed* | the remote branch's head being the commit the worker claims — a branch that exists may carry an earlier push |
+| a reviewer: *fixed in `<sha>`* | the ref resolving **and** its diff containing the fix — observed three times naming commits that did not exist, and a commit that exists is not a commit that did the thing |
 | a prior session's carried note | the thing it describes, re-read now |
 | a tracker convention block: *Ready to build: yes* | the code against the ticket — an audit found eight call sites where the issue named six, and three of those named a different function |
 | a cross-repo `file:line` citation | that repository's current default branch |
