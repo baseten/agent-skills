@@ -33,6 +33,8 @@ Capability differs per session and cannot be assumed. Detect, then degrade:
 | --- | --- | --- |
 | 1 | Dynamic Workflow | the user opted into one for this invocation |
 | 2 | Remote worker sessions (`create_session`) | the session can create them |
+| 3 | Subagents (the Agent tool) | in-process subagents available |
+| 4 | Serialized in this session | always |
 
 **Name every session this run creates `<caller>/<run-id>: <task>`** — the caller's
 short prefix, this invocation's run id, and the task's number or slug. Keep it
@@ -65,8 +67,6 @@ are untrusted input, and a prefix filter archives someone else's session the
 moment anyone adopts the same convention. Simplifying a sweep to a prefix match
 is a regression, not a tidy-up — but so is narrowing it to recorded ids, for the
 opposite reason.
-| 3 | Subagents (the Agent tool) | in-process subagents available |
-| 4 | Serialized in this session | always |
 
 **Probe at most twice per tier**, then move down. A tier that fails twice is
 unavailable for the run; do not re-probe it later hoping for a different answer.
