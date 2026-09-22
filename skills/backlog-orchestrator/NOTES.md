@@ -184,6 +184,8 @@ Added with `review-docs` (Sept 2026). The confirmation step was written for an e
 
 ## Progress / checkpoint output
 
+**Why the live-session report is per session and not a count (Sept 2026):** "8 live sessions" is compatible with eight warm containers mid-turn and with eight containers holding a month of unpushed work, and the check exists entirely to tell those apart. The session that prompted this had been `IDLE` and unarchived for four weeks, chartered for a single issue, its branch absent from the remote while it reported staged files — and it surfaced because the owner asked whether it was ours, not because any count moved. Three fields settle it: charter, remote branch, staged files. An unread field is named as unread rather than omitted, because omission reads as clean.
+
 **The convention that lapsed:** both leaking runs used to print the state block mid-run — while the fan-out made the numbers interesting — and stopped once they narrowed to a one-PR supervision tail. Nothing removed the block; nothing had ever required it. The tail is the long part of a run and the part a compaction lands in, so both runs reported their worker-session count exactly zero times, and the line that would have exposed the leak ("N created / N archived") never appeared. That is why emission is now a numbered loop step with an actor and a moment rather than an example.
 
 **Why the per-PR record carries the session id:** the recovery that cleaned up the leaks had to match sessions to PRs by fuzzy-matching session titles with a script over a truncated tool result. A session id and archived flag on the record the run already keeps makes the reconciliation a lookup.
