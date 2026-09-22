@@ -46,7 +46,10 @@ diff-scoped reviewer misses.
 
 **Take the arms from git, never a copy in the tree.** `scripts/run_evals.py
 prepare` materialises the base contract into a scratch directory and emits reader
-packets carrying only the contract and the prompt. A reader that has seen
+packets carrying only the contract and the prompt. Its file set is the **union of
+both revisions**, so a companion the change deletes or renames still reaches the
+base arm — enumerating the checkout alone drops it from both, and the base arm
+then carries a contract the base never had. A reader that has seen
 `expected_output` or the assertions is grading its own answer.
 
 ## Which corpora to run
