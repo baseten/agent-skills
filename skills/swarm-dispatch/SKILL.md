@@ -91,6 +91,14 @@ that moment. Do not read a workflow's completion as its PRs being watched.
 other's state in ways that surface as unreproducible test failures, and the
 cost of diagnosing that once exceeds the cost of always isolating.
 
+**Everything the dispatcher computed travels inline in the prompt, and no prompt
+names a dispatcher-side path.** On the tiers where a worker is a separate
+container the dispatcher's filesystem is not the worker's, so a path resolves to
+nothing there — and the failure is silent, because a worker that cannot read what
+it was pointed at falls back to whatever it can find and reports success. Where
+the thing is large, that is an argument for computing less, not for passing a
+reference to it.
+
 **The base branch is a parameter, and it defaults to the repository's default
 branch** — `main` or `master`, whichever the remote has. Three rules:
 

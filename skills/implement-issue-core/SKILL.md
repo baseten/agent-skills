@@ -137,12 +137,51 @@ Implement only the issue scope; run required local checks.
 
 ## 5. Final local verification
 
-Commit and push the implementation first, then run the repository-required typecheck/lint/format/tests. Fix in-scope failures within budget, committing each fix as it lands. Push the final implementation commit.
+**The gate is not the list in `AGENTS.md` or `CLAUDE.md`.** Those describe it and
+drift from it: a repository's workflow carried an OpenAPI drift check that
+appeared in neither, and two PRs reached CI red on a step no worker had been
+told to run. They are prose about a configuration, written once, by someone, and
+never revalidated against it.
+
+**Two different questions, two different sources, and only the second is about
+merging:**
+
+- **What runs** comes from `.github/workflows/*.yml` — the jobs and steps that
+  execute on a pull request.
+- **What gates** comes from the branch's protection or ruleset — the required
+  status checks. A workflow file cannot answer this: a repository may require a
+  subset of its jobs, or require a check produced by an integration that has no
+  workflow at all, and neither is visible in the YAML.
+
+Read the protection or ruleset for the base branch and take its required checks;
+where that is unreadable, fall back to the workflow's check steps and **say that
+the gate set is unproven** rather than presenting it as established. A check
+failing on the default branch across untouched files may gate nothing — one such
+was classified a merge risk and would have held a clean merge — and a name that
+sounds required is not one until a source says so (`references/establish-do-not-assume.md`, of which the gate is the configuration case).
+
+**Where a caller supplied the gate, use it and do not re-derive.** A parent that
+resolved it once per repository has already paid for the read, and two
+derivations that disagree is a defect nobody will notice.
+
+**A required check is a status context, not a command.** Protection and rulesets
+name contexts — `ci / typecheck`, `coverage/project` — and nothing in them says
+how to produce one locally, so the derived set is not a runnable list. Map each
+required context to the local command that produces it, using the workflow file
+as the map: the job or step whose run reports that context is what to run. A
+required context with **no local equivalent** — an external integration's check,
+anything that needs the PR to exist — is not a gap in the derivation and is not
+silently dropped: carry it with the outcome `not locally runnable`, which is a
+different claim from `passed` and from `failed`, and forward it as that.
+
+Commit and push the implementation first, then run the locally runnable part of
+that set. Fix in-scope failures within budget, committing each fix as it lands. Push the final implementation commit.
 
 ## 6. Create and verify PR
 
 Invoke `create-pr` with:
 
+- **the gate: the derived check set, each check's outcome — including `not locally runnable` where that is the honest one — and where the set came from** — protection or ruleset, or the workflow fallback with its unproven marker. `create-pr` builds the body's gate table from this and cannot construct it from data it was never given;
 - canonical full issue URL; exact required base; tracker identity when useful; draft/full preference when supplied;
 - **any coverage finding this implementation carried** — a declared dependency satisfied on paper whose capability was absent, and the acceptance criteria left unmet. `create-pr` decides the linkage form from this and cannot decide correctly unseen: the default is a closing keyword, so silence auto-closes an issue you knowingly did not finish (NOTES);
 - **the posting-identity map as this skill holds it** — every entry, as received or `unestablished`. An invocation is read literally: a map left out is a map `create-pr` does not have, and its writes need different entries (agent-authored for the PR; invoking-user for the review trigger), so omitting it degrades both (NOTES).

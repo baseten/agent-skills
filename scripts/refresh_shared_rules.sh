@@ -29,7 +29,7 @@ RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
 
 # Skills that act on something asserted by an agent, or assumed about a provider.
 ESTABLISH_DO_NOT_ASSUME="backlog-orchestrator swarm-dispatch repair-pr
-  validate-backlog review-skill"
+  validate-backlog review-skill implement-issue-core"
 
 # The prose reviewers. Both terminate on the same budget; neither owns it.
 PROSE_REVIEW_ROUND_BUDGET="review-docs review-skill repair-pr"
