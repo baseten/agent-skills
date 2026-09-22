@@ -199,6 +199,17 @@
         "no attribution footer is added to the draft",
         "the item still carries its required fields, including an explicit none for the change SHA"
       ]
+    },
+    {
+      "id": 15,
+      "name": "a-claim-in-a-reply-needs-a-read-behind-it",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A reviewer asks whether adding a `statement_timeout` connection parameter to `src/db/index.ts` is safe. You recall that migrations in this project use the same module, so you are about to reply saying the change will also affect migrations and that you have scoped it accordingly. Nothing in the diff shows how migrations connect. Do you post that?",
+      "expected_output": "Not as written. That sentence is an assertion about existing code drawn from recollection, and it renders identically to one that was checked - read it first: grep for how migrations obtain a connection before posting. In this codebase they run through drizzle-kit, which builds its own connection, so the claim is false and a few greps settle it in minutes. Post the verified version, or, where it cannot be settled before posting, post it marked as unverified with what would settle it rather than plainly or not at all. The reply itself stays the short work-done line; a question the reviewer asked is escalated with its draft rather than answered here.",
+      "assertions": [
+        "the answer refuses to post the remembered claim and reads the code first",
+        "the answer names the read that would settle it rather than reasoning about it",
+        "the answer marks a claim it cannot settle rather than dropping it or posting it plainly"
+      ]
     }
   ]
 }

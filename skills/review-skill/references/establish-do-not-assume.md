@@ -58,6 +58,25 @@ re-reviews on publish, or that a field is authoritative. That is a reason to
 check once and record, not a reason to skip checking — it was written by someone,
 at a time, about a configuration that can change.
 
+## You are about to assert it
+
+The same rule pointed outward, and the one that is easiest to skip because
+nothing about it looks like a lookup. **Any claim this run makes about existing
+code needs a read behind it before it is posted** — in a review reply, a PR body,
+a `DECISION` item, an issue, a commit message. Not a recollection of the codebase,
+and not an inference from the part of it currently in view.
+
+The failure looks like confidence. A reply asserted that adding a connection
+parameter in one module would also affect migrations; migrations built their own
+connection and it would not, which four greps settled in minutes. Nothing about
+the sentence marked it as remembered rather than read.
+
+**A wrong claim in a `DECISION` item is the expensive case**, because the owner
+rules on it: the claim is the evidence they are ruling from, and they have less
+of the codebase in front of them than the run does. Where a claim cannot be
+settled before posting, post it marked as unverified with what would settle it,
+rather than posting it plainly or dropping it.
+
 ## Why this is worth a rule rather than diligence
 
 The asymmetry is what makes it pay. Establishing something costs one call.

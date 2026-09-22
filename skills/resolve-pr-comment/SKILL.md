@@ -160,6 +160,8 @@ true only where the person was actually shown the reply and confirmed or edited
 it — invoking the skill is not that, and neither is being in the session. The
 placeholder in the templates above is where it goes when it applies.
 
+**Where a reply does say something about the codebase, read it first.** The one-line form above rarely leaves room for a claim, and the escalation drafts and question items this skill composes do. Any assertion about what some other part of the codebase does needs a read behind it before it is posted, never a recollection (`references/establish-do-not-assume.md`, *You are about to assert it*) — a reply asserting a blast radius from memory was wrong about it, and four greps would have settled it in minutes.
+
 **A reply reports work done and never answers a query.** Where the comment asked
 for prose, no reply of any kind carries the answer — see *Handling queries*,
 which is absolute across modes. Where a comment asked for both, this reply says

@@ -297,7 +297,12 @@ length, what a body is for, what must never be in it, the attribution footer and
 its approval test, and the precedence of required contents over brevity.
 
 Posting identity decides which **author** a write carries; that rule decides
-**what the write looks like** once it is authored. Every skill that
+**what the write looks like** once it is authored; and
+`references/establish-do-not-assume.md`, *You are about to assert it*, decides
+what may be **claimed** in one — every assertion this run makes about existing
+code needs a read behind it before it is posted, in a `DECISION` item most of
+all, since the owner rules from it and holds less of the codebase than the run
+does. Every skill that
 applies it carries a generated copy at that path, which is why the rule is
 stated once outside this file rather than here: a partial copy naming some of its exclusions and not its budget is
 how the rule drifts.
