@@ -55,3 +55,10 @@ The split governs what the workflow itself triggers, not what the review provide
 ## Why an unlinkable PR stops rather than ships
 
 An implementation PR that cannot be linked to an exact issue would be an orphan the recovery and completion machinery cannot see — restart logic, completion semantics, and coverage reconciliation all key on the linkage. The ad-hoc exception exists only for directly-invoked PRs after the user confirms there is no issue.
+
+**Why this skill derives the gate the same way rather than reading the
+documentation list (round 1, Sept 2026):** a directly-invoked `create-pr`, or one
+whose caller omitted the gate, would otherwise build a table from
+`CLAUDE.md`/`AGENTS.md` — complete against a list that describes the gate and
+drifts from it. A table complete against the wrong source is worse than no table:
+it reads as evidence that the gate ran.

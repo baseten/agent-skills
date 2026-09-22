@@ -137,17 +137,27 @@ Implement only the issue scope; run required local checks.
 
 ## 5. Final local verification
 
-**The gate is what CI runs, derived from `.github/workflows/*.yml` — not the list
-in `AGENTS.md` or `CLAUDE.md`.** Those describe the gate and drift from it: a
-repository's workflow carried an OpenAPI drift check that appeared in neither,
-and two PRs reached CI red on a step no worker had been told to run. Read the
-workflow files, take every check step that gates a merge, and run those.
+**The gate is what CI runs, not the list in `AGENTS.md` or `CLAUDE.md`.** Those
+describe the gate and drift from it: a repository's workflow carried an OpenAPI
+drift check that appeared in neither, and two PRs reached CI red on a step no
+worker had been told to run.
 
-**Establish which checks actually gate**, rather than inferring it from a name.
-A check failing on the default branch across untouched files may gate nothing —
-one such was classified a merge risk and would have held a clean merge, and
-another predicted breakage passed. The workflow file says which are required;
-a name that sounds required is not one until it does.
+**Two different questions, two different sources, and only the second is about
+merging:**
+
+- **What runs** comes from `.github/workflows/*.yml` — the jobs and steps that
+  execute on a pull request.
+- **What gates** comes from the branch's protection or ruleset — the required
+  status checks. A workflow file cannot answer this: a repository may require a
+  subset of its jobs, or require a check produced by an integration that has no
+  workflow at all, and neither is visible in the YAML.
+
+Read the protection or ruleset for the base branch and take its required checks;
+where that is unreadable, fall back to the workflow's check steps and **say that
+the gate set is unproven** rather than presenting it as established. A check
+failing on the default branch across untouched files may gate nothing — one such
+was classified a merge risk and would have held a clean merge — and a name that
+sounds required is not one until a source says so.
 
 **Where a caller supplied the gate, use it and do not re-derive.** A parent that
 resolved it once per repository has already paid for the read, and two
@@ -159,6 +169,7 @@ Commit and push the implementation first, then run that derived set. Fix in-scop
 
 Invoke `create-pr` with:
 
+- **the gate: the derived check set, each check's outcome, and where the set came from** — protection or ruleset, or the workflow fallback with its unproven marker. `create-pr` builds the body's gate table from this and cannot construct it from data it was never given;
 - canonical full issue URL; exact required base; tracker identity when useful; draft/full preference when supplied;
 - **any coverage finding this implementation carried** — a declared dependency satisfied on paper whose capability was absent, and the acceptance criteria left unmet. `create-pr` decides the linkage form from this and cannot decide correctly unseen: the default is a closing keyword, so silence auto-closes an issue you knowingly did not finish (NOTES);
 - **the posting-identity map as this skill holds it** — every entry, as received or `unestablished`. An invocation is read literally: a map left out is a map `create-pr` does not have, and its writes need different entries (agent-authored for the PR; invoking-user for the review trigger), so omitting it degrades both (NOTES).

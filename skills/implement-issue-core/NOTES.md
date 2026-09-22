@@ -65,3 +65,22 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 **Why "no longer holds" rather than "was wrong" for availability mismatches:** the claim may have been true when made and overtaken since — a revert landed, a branch was force-pushed, a release rolled back. The caller cannot tell those apart from its own error; report what you observed and when, and leave the diagnosis to the side that knows what it claimed. Direction matters because the resolutions differ — a stale base needs fixing; an obsolete constraint needs retiring — and a caller that cannot tell which way the mismatch went cannot act on either. Never collapse the two kinds into one label: a caller that cannot tell them apart must treat a stale base as a possible transport failure, a far more expensive response than the situation needs.
 
 **Why the `NEEDS_USER` kind is stated rather than inferred:** the two kinds demand opposite things of a caller — a question to put to a person versus transport evidence that invalidates a visibility proof and holds every sibling dispatched through the same read — and leaving the caller to infer the kind from whether the blocker list is empty is how the expensive one gets handled as the cheap one.
+
+**Why the gate has two sources and not one (round 1, Sept 2026):** the first
+version of this derived the gate from `.github/workflows/*.yml`, which answers
+*what runs* and cannot answer *what gates*. A repository may require a subset of
+its jobs, or require a check from an integration with no workflow at all, and
+neither is visible in the YAML — the required set lives in the branch's
+protection or ruleset. Reading the wrong source produces a gate that is confidently
+wrong in both directions: steps the worker runs for nothing, and a required check
+nobody ran.
+
+The fallback says *unproven* rather than presenting the workflow's steps as the
+gate, because a gate set asserted without its source is the thing this section
+exists to stop.
+
+**Why the derived set travels to `create-pr`:** that skill is a separate literal
+contract and its body table is built from what it is given. Deriving here and not
+forwarding leaves it constructing the table from the documentation list this
+change exists to replace — complete against the wrong thing, which reads as
+compliance.
