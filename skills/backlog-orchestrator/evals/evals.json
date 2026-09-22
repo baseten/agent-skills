@@ -378,6 +378,20 @@
         "(c) the gate does NOT open on one of two required reviews completing",
         "(c) the per-PR review state is held per review convention, not as a single set"
       ]
+    },
+    {
+      "id": 30,
+      "name": "derive-the-gate-deliver-it-inline-and-confirm-it-ran",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the repository's AGENTS.md lists four pre-PR commands. Its .github/workflows/ci.yml runs those four plus an OpenAPI drift check. You are dispatching a worker on the remote-session tier. A colleague suggests the parent derive the gate once, write it to a file, and hand the worker that path. A returned PR's body carries a gate table with four of the five rows, and the worker reports all gates passed. Questions: (a) which list is the gate? (b) is the file-path approach sound on this tier? (c) what do you do with the returned PR?",
+      "expected_output": "(a) The workflow's five. AGENTS.md describes the gate and drifts from it; the drift check is in CI and in neither AGENTS.md nor the worker prompt, and PRs have reached CI red on exactly that step. Establish which of them actually gate from the workflow file rather than from their names. (b) No, and it is worse than useless. On this tier the worker is a separate container, so a parent-side path resolves to nothing there and the failure is silent: the worker falls back to whatever it can find — the AGENTS.md list the derivation existed to replace — and reports success. Everything the parent computed travels inline in the prompt. (c) Reject it. A gate table missing a derived check is an incomplete report, and this is the cheapest moment to catch a skipped step. The worker's claim that all gates passed is a separate thing and is not evidence: the table says which ran, CI on the pushed head says whether they passed.",
+      "assertions": [
+        "the answer takes the gate from the workflow file rather than AGENTS.md and names the drift check as the gap",
+        "the answer requires establishing which checks gate rather than inferring from names",
+        "the answer rejects the file-path approach for a separate-container tier and names the silent fallback",
+        "the answer requires everything computed by the parent to travel inline in the prompt",
+        "the answer rejects the PR for an incomplete gate table rather than accepting and watching it",
+        "the answer separates which checks ran from whether they passed, and points at CI on the pushed head for the second"
+      ]
     }
   ]
 }

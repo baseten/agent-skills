@@ -137,7 +137,23 @@ Implement only the issue scope; run required local checks.
 
 ## 5. Final local verification
 
-Commit and push the implementation first, then run the repository-required typecheck/lint/format/tests. Fix in-scope failures within budget, committing each fix as it lands. Push the final implementation commit.
+**The gate is what CI runs, derived from `.github/workflows/*.yml` — not the list
+in `AGENTS.md` or `CLAUDE.md`.** Those describe the gate and drift from it: a
+repository's workflow carried an OpenAPI drift check that appeared in neither,
+and two PRs reached CI red on a step no worker had been told to run. Read the
+workflow files, take every check step that gates a merge, and run those.
+
+**Establish which checks actually gate**, rather than inferring it from a name.
+A check failing on the default branch across untouched files may gate nothing —
+one such was classified a merge risk and would have held a clean merge, and
+another predicted breakage passed. The workflow file says which are required;
+a name that sounds required is not one until it does.
+
+**Where a caller supplied the gate, use it and do not re-derive.** A parent that
+resolved it once per repository has already paid for the read, and two
+derivations that disagree is a defect nobody will notice.
+
+Commit and push the implementation first, then run that derived set. Fix in-scope failures within budget, committing each fix as it lands. Push the final implementation commit.
 
 ## 6. Create and verify PR
 
