@@ -434,6 +434,42 @@
         "the answer carries the externally-produced required check as not locally runnable rather than as passed or absent",
         "the answer uses the workflow file to map required contexts to local commands rather than as the source of the required set"
       ]
+    },
+    {
+      "id": 34,
+      "name": "green-is-about-a-tree-not-about-a-pr",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository opted into auto-merge and invariant 12's gate is otherwise open on three PRs. All three are based on commit 46838e3, three merges behind the current default branch head; the forge reports all three mergeable with green checks and none of them touches a file the intervening merges touched. Two of the three bump formatters whose output is a required check, each a one-line manifest change. Do you merge them on that green?",
+      "expected_output": "No. Green is a statement about a tree, not about a PR: the head is unchanged and the tree that green described no longer exists, because the base moved under it. Compare each PR's base to the current head of its base branch; where they differ the green is stale and does not discharge invariant 12's green-CI condition. What discharges it depends on what the checks run against, which is a property of this repository's CI configuration and is established rather than assumed - where checks run against the PR merged with its base, a re-run is enough; where they run against the branch alone, a re-run proves exactly what the stale one did and the branch must be updated. Record that observation per repository. The two formatter bumps need a fresh run regardless: a formatter verified against a tree that does not contain the code it will format has verified nothing, and the tiny diff argues in the wrong direction here. This is not a requirement that every branch be up to date before merging - that serialises every merge; the check is paid at the gate, on the PRs about to open, only where the base actually moved.",
+      "assertions": [
+        "the answer refuses to merge on the existing green because the base has moved",
+        "the answer establishes whether checks run against the branch or against the branch merged with its base rather than assuming one",
+        "the answer treats the formatter bumps as always needing a fresh run despite the trivial diff",
+        "the answer distinguishes this from a blanket requirement that branches be up to date before merging"
+      ]
+    },
+    {
+      "id": 35,
+      "name": "a-collision-with-no-textual-overlap-and-the-wrong-input-set",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your tranche dispatched four PRs in one repository and you ran a cross-branch integration check over those four: merged into a scratch branch, whole suite run, one real conflict found and surfaced. Separately, another team's session is running its own track in the same repository with two open PRs you did not dispatch. One of your PRs adds tests querying the string `Center`; one of theirs renames it to `Centre`. Neither touches a line the other touches. Did your check cover this, and what do you change?",
+      "expected_output": "No. This is a third collision kind: no shared added path, no shared claimed artifact, no line in common, so git merges cleanly and no conflict signal exists anywhere - and neither PR's CI could catch it, since each was green against a base containing neither change. The only artefact holding both changes at once is the merged tree, which is what the integration check builds, so the check itself was right. Its input set was wrong: it spanned the run's own members rather than every open branch targeting the same base, and a track this run did not dispatch is not in its graph at all. Widen the set to every open branch on that base, and state in the run's output which branches were integrated, so a partial set is visible as partial instead of reading as a clean result.",
+      "assertions": [
+        "the answer identifies a collision class with no textual overlap and no conflict signal",
+        "the answer says the merged tree is the only artefact that shows it, so the detector is running the suite rather than comparing diffs",
+        "the answer widens the integration set to every open branch targeting the base, not just the run's own",
+        "the answer requires the run's output to name which branches were integrated"
+      ]
+    },
+    {
+      "id": 36,
+      "name": "a-multi-read-composite-is-not-a-state",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Several sessions are active in this repository. At 14:02 you read the tracked PR set, computed the merge ranking and produced a checkpoint reporting zero open PRs outside the ranking. At 14:31 you begin merging in that order. Meanwhile a worker reports that its local `origin/main` shows a base commit different from the one the API returned for its PR minutes earlier. What is wrong with the 14:02 picture, and which of the two does the worker believe?",
+      "expected_output": "The 14:02 picture is a composite of instants that never coexisted. Invariant 1 says where truth lives, not that it holds still, and with several sessions writing the same remote it moves constantly - a PR can merge between two reads in one conversation. So re-read the facts the decision turns on immediately before acting on them: at 14:31 the ranking's deciding facts are re-read rather than the whole world, because a ranking computed from stale data is re-derivable and a merge performed on it is not. The checkpoint carries the instant it describes; zero open PRs is only ever true as of a time. The worker believes the API response: a local checkout is a cache of unknown age, the response is the observation, and where they disagree the response wins and the checkout is refreshed. That instruction belongs in the dispatch prompt, since a worker has less to check it against.",
+      "assertions": [
+        "the answer identifies the report as a composite of instants rather than a state",
+        "the answer re-reads only the deciding facts immediately before the irreversible act",
+        "the answer requires state reports to carry a timestamp",
+        "the answer prefers the API response over the local checkout and puts that in the dispatch prompt"
+      ]
     }
   ]
 }
