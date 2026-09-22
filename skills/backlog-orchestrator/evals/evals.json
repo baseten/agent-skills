@@ -434,6 +434,21 @@
         "the answer carries the externally-produced required check as not locally runnable rather than as passed or absent",
         "the answer uses the workflow file to map required contexts to local commands rather than as the source of the required set"
       ]
+    },
+    {
+      "id": 34,
+      "name": "adoption-is-not-complete-when-the-pr-exists",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Four implementation workers have returned. Each pushed its branch, opened a PR and stopped, exactly as its dispatch prompt required. The repository's CLAUDE.md requires feature PRs to be opened as drafts, and all four are drafts. Three workers returned PR_OPEN; the fourth returned NEEDS_USER with its PR open and its report silent about the review trigger. You record all four as created and move to the next workstream; CI runs on all four. A fifth PR is already in your tracked set: an early WIP draft whose review this run deliberately deferred at dispatch, recorded in run state as review owed. Six hours later you arm subscriptions on all five and the arming succeeds. Is the PR-created step complete for these four? What does arming the subscriptions tell you about the six hours, what do you do about the fourth PR, and what do you do about the fifth?",
+      "expected_output": "No. A PR existing is one third of the step: it is complete when the PR exists, round 1 of every convention the PR routes to has been requested against it, and this run is subscribed or has recorded the subscription unavailable. Opening a draft is not itself a review request unless that provider is observed to start a round on it, so all four may be sitting untriggered - which is silent, because every worker succeeded and CI ran. Arming the subscriptions tells you nothing about the six hours: a subscription delivers forward only, so that interval is unread, not empty, and each arming is paired with one immediate read of that PR's check runs, reviews and comments. For the fourth, a NEEDS_USER return with an open PR is the common untriggered case, since linkage verification and the trigger both run after creation: read its `review trigger` line, and where it is pending or unmentioned, issue the trigger from this run per create-pr's rules and this run's posting-identity map, then confirm it took effect against the review that appears rather than against the absence of a complaint. The fifth is left alone: a deliberate deferral is recorded as the review trigger value `deferred` when it is made, and this rule does not override it - issuing there would start a round the caller asked to come later. Nothing distinguishes an unrecorded deferral from an unfinished trigger, so an unrecorded one is read as unfinished. The immediate read after each arming reconciles rather than samples: state and mergeability, head and base, and check runs, reviews and comments, because a merge, a close, a force-push and a moved base pass through the same interval.",
+      "assertions": [
+        "the answer says the step is not complete on the PR existing, and names the review request and the subscription as the other two parts",
+        "the answer does not treat opening a draft PR as having started a review",
+        "the answer states that the six-hour interval is unread rather than empty, because a subscription delivers forward only",
+        "the answer pairs the arming with an immediate read of checks, reviews and comments",
+        "the answer issues the missing trigger for the fourth PR from the parent rather than resuming or re-dispatching the worker",
+        "the answer leaves the deliberately deferred PR untriggered and names `deferred` as a recorded value rather than an inference",
+        "the post-arming read covers state, head and base as well as checks, reviews and comments"
+      ]
     }
   ]
 }
