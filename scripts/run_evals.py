@@ -67,17 +67,38 @@ def _git_show(ref: str, path: str) -> str | None:
     return r.stdout if r.returncode == 0 else None
 
 
-def _contract_files(skill: str) -> list[str]:
-    """The files a reader is given: the contract and its companions, never evals."""
+def _contract_files(skill: str, base: str | None = None) -> list[str]:
+    """The files a reader is given: the contract and its companions, never evals.
+
+    The union of both revisions, not the working tree alone. A change that
+    deletes or renames a NOTES.md or a reference leaves that file out of the
+    checkout, so enumerating only what is present now drops it from BOTH arms -
+    and the base arm then carries a contract the base never had, usually an old
+    SKILL.md citing a reference that is not beside it. The comparison reports
+    agreement against a baseline that was never real.
+    """
+    out: set[str] = set()
     d = ROOT / "skills" / skill
-    out = []
     for rel in ("SKILL.md", "NOTES.md"):
         if (d / rel).exists():
-            out.append(f"skills/{skill}/{rel}")
+            out.add(f"skills/{skill}/{rel}")
     refs = d / "references"
     if refs.is_dir():
-        out += [f"skills/{skill}/references/{p.name}" for p in sorted(refs.glob("*.md"))]
-    return out
+        out |= {f"skills/{skill}/references/{p.name}" for p in refs.glob("*.md")}
+
+    if base is not None:
+        listing = subprocess.run(
+            ["git", "ls-tree", "-r", "--name-only", base, f"skills/{skill}/"],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        for rel in listing.stdout.split("\n"):
+            rel = rel.strip()
+            if not rel or "/evals/" in rel or not rel.endswith(".md"):
+                continue
+            tail = rel[len(f"skills/{skill}/"):]
+            if tail in ("SKILL.md", "NOTES.md") or tail.startswith("references/"):
+                out.add(rel)
+    return sorted(out)
 
 
 def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path) -> int:
@@ -91,10 +112,11 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
         print("no scenarios selected", file=sys.stderr)
         return 1
 
-    files = _contract_files(skill)
+    files = _contract_files(skill, base)
     arms: dict[str, dict[str, str]] = {"new": {}}
     for rel in files:
-        arms["new"][rel] = (ROOT / rel).read_text(encoding="utf-8")
+        if (ROOT / rel).exists():
+            arms["new"][rel] = (ROOT / rel).read_text(encoding="utf-8")
 
     single_arm_reason = None
     if base is None:

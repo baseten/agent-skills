@@ -17,21 +17,24 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # rule source  ->  skills that apply it
 AUTHORED_WRITE_FORM="backlog-orchestrator create-pr normalize-github-dependencies
   npm-dependency-upgrade-orchestrator implement-issue
-  merge-stack repair-pr resolve-pr-comment review-docs settle-outstanding-decisions
+  merge-stack repair-pr resolve-pr-comment review-docs review-skill settle-outstanding-decisions
   summarize-tranche upgrade-npm-dependency validate-backlog"
 
 # One variable per rule, named for the rule file in upper snake case.
 # check_shared_rules.py reads these assignments to learn which skills are
 # declared consumers of which rule, so the spelling is load-bearing:
 # ABSENCE_IS_NOT_A_VERDICT <-> rules/absence-is-not-a-verdict.md.
-RULES="authored-write-form absence-is-not-a-verdict"
+RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget"
+
+# The prose reviewers. Both terminate on the same budget; neither owns it.
+PROSE_REVIEW_ROUND_BUDGET="review-docs review-skill repair-pr"
 # Skills that make a decision on the result of a lookup, where an empty result
 # and a clean result are the same bytes.
 ABSENCE_IS_NOT_A_VERDICT="backlog-orchestrator implement-issue repair-pr
   resolve-pr-comment merge-stack plan-merge-order validate-backlog
   normalize-github-dependencies swarm-dispatch
   upgrade-npm-dependency npm-dependency-upgrade-orchestrator implement-issue-core
-  review-docs"
+  review-docs review-skill summarize-tranche"
 
 
 echo "Refreshing shared rules..."

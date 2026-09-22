@@ -92,22 +92,19 @@ On a **mixed** PR the two reviews are independent and both are owed. A clean pas
 
 # 4. The rounds, and why there are two
 
-**Round 1** — the full pass above: extract, verify, classify, report.
+**The budget is `references/prose-review-round-budget.md`**, which states it once
+for every prose reviewer: round 1 is the full pass, round 2 reports each round 1
+finding's outcome and raises nothing new about text round 1 read, there is no
+round 3, and the round is counted off the PR rather than off run state. Apply it
+from there.
 
-**Round 2** — reads **only round 1's findings** and the diff since, and says of each: fixed, not fixed, or fixed wrongly. It raises **no new findings** about text round 1 already read. Re-reading a rewritten section is a fresh unbounded reading, and that is the loop this skill exists to break; a section that got better in a way nobody asked about is not an occasion to say so.
+What that rule leaves to this skill is the name of its failure class. **The new
+instance a fix may introduce is a `FALSE_CLAIM` or a `FALSE_PREMISE`** — the
+thing this reviewer exists to catch — and the revision marker whose certification
+the rule governs is this skill's `Reviewed commit:` line, which records the
+documentation head the prose was read at (*The report is one comment*).
 
-- **Claims the author *added* since round 1 are the exception, and they are not optional.** Round 2's comment records the current head as `Reviewed commit:`, and a consumer reads that line as *this document has been reviewed*. Certifying a head carrying claims nobody checked is the failure this skill exists to prevent, arriving through the marker meant to prevent it. So round 2 extracts and verifies the claims in the diff since round 1 — **that delta only**, never a re-pass over the whole document — and reports them in its own claims table beside the finding outcomes.
-- Where the delta is too large to check inside one bounded pass, **do not certify it**: report the outcomes, omit `Reviewed commit:`, and say the additions were not reviewed. A missing marker leaves the gate shut, which is the safe direction; a present one on unread prose opens it.
-
-- **The one exception**: a fix that introduces a new `FALSE_CLAIM` or `FALSE_PREMISE`. That is the failure class the whole skill is for, and the fix created it, so it is reported — inside the finding whose fix created it, never as a new finding of its own, and it **earns no additional round.**
-
-**There is no round 3.** Whatever is unresolved after round 2 is named and handed to the author: the findings still open, with their evidence, and the statement that the review is over. A caller invoking a third time gets a **declined pass naming the residue** — the decline is the deliverable, not an error, and it posts nothing. **A decline is a completed outcome, not a pass that failed to happen**, and a caller confirming that a routed review took effect reads it as one (`backlog-orchestrator`, *Implementation worker contract*, says so at the confirmation step): the residue it returns is the review's result, already reported in round 2's comment.
-
-**The round is read off the PR, not off run state**: no prior `review-docs` comment → round 1; exactly one → round 2; two → declined. A restarted session, a different worker, and a person invoking by hand all count the same rounds, because the count lives where the comments do (NOTES).
-
-The budget is **per PR, not per document.** A document that comes back as a new PR gets its own two rounds — a new PR is a new decision to review, and the loop this bounds is the one inside a single PR.
-
-**This budget is a contract rule, not a policy key, and it is deliberately not configurable** (NOTES: a budget is a ceiling, and the run that spent nine rounds would have spent any ceiling it was given).
+The rule's **declined pass** is a completed outcome here specifically: a caller confirming that a routed review took effect reads a decline as one (`backlog-orchestrator`, *Implementation worker contract*, says so at the confirmation step). The residue it returns is the review's result, already reported in round 2's comment — a caller that reads a decline as a failed invocation re-triggers, which is the third round the budget exists to refuse.
 
 # 5. The report is one comment
 

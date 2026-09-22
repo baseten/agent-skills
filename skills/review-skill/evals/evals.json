@@ -1,0 +1,56 @@
+{
+  "skill_name": "review-skill",
+  "description": "Decision scenarios for reviewing a change to a prose contract.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "a-shape-finding-is-one-finding-with-loci",
+      "prompt": "You are executing the review-skill skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a PR moves a rule out of one skill into rules/. Your pass finds the rule's reasoning left behind in the old skill's NOTES.md, a cross-reference in the extracted file that resolved only inside the old skill, and a consumer that restates the rule in its own words without citing it. Questions: (a) how many findings do you report? (b) what does round 2 do if the author fixes only the first? (c) the PR author asks you to also fix the wording of a paragraph you noticed reads awkwardly — is that a finding?",
+      "expected_output": "(a) One. These are three loci of one assumption — that moving a rule moves only its text — so it is a SHAPE finding reported once with its loci enumerated: the orphaned reasoning, the dangling cross-reference, and the uncited restatement. Reporting them separately is how one defect becomes three rounds, and the axis is every consumer x every thing the move should have carried. (b) Round 2 reports that finding's outcome as not fixed, naming the two loci still open, and raises nothing new about text round 1 read. It does not re-report them as fresh findings and it earns no additional round. (c) No. Phrasing is not a finding at any round.",
+      "assertions": [
+        "the answer reports one SHAPE finding rather than three",
+        "the answer enumerates the loci within that single finding",
+        "the answer states the axis as every consumer against everything the move should have carried",
+        "round 2 reports the outcome as not fixed without re-raising the loci as new findings",
+        "the answer refuses the phrasing request, citing that phrasing is not a finding at any round"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "ungraded-scenarios-are-not-passes-and-a-missing-scenario-is-a-finding",
+      "prompt": "You are executing the review-skill skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you run twelve scenarios over both arms. Nine grade cleanly and agree. Three could not be graded — the reader returned nothing usable. Separately, the change alters what the contract says about retry behaviour, and no scenario covers retries. Questions: (a) what does your report say about the twelve? (b) is the retry change a finding? (c) the author says the three ungraded ones 'obviously would have passed, they're trivial' — do you accept that?",
+      "expected_output": "(a) Nine graded and agreeing, three ungraded, reported as a count of unknowns and never folded into either arm. A review that ran twelve and graded nine has three unknowns, not nine passes. (b) Yes — UNPINNED. It is not a defect in the change but in the evidence: changed behaviour with no scenario covering it cannot enter the bug-to-failing-eval-to-repair ordering at step one. Report the scenario that should exist. (c) No. An ungraded scenario is not a passing one, however confident anyone is about which way it would have gone; the reason it is reported separately is precisely that the confident guess is free to make and impossible to check.",
+      "assertions": [
+        "the answer reports three ungraded as unknowns and refuses to count them as passes",
+        "the answer classifies the uncovered retry change as UNPINNED and explains it is a defect in the evidence",
+        "the answer requires naming the scenario that should exist",
+        "the answer rejects the author's assertion that the ungraded ones would have passed"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "a-single-arm-run-is-not-a-review",
+      "prompt": "You are executing the review-skill skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the base contract is large and running both arms is slow, so a caller suggests running only the changed arm and reporting whether the scenarios pass. They point out that all the scenarios pass on the changed arm. Questions: (a) do you accept that as the review? (b) what would the single-arm run have shown if the change had silently reversed a rule? (c) where does the base arm come from?",
+      "expected_output": "(a) No. The information is entirely in the disagreement between arms; a single-arm run returns a clean sweep and teaches nothing, and it fails in the flattering direction, which is why it is tempting. Every scenario passing on the changed arm is consistent with the change having broken nothing and with it having broken something no scenario distinguishes. (b) The same thing: a clean sweep. A reversed rule produces answers the assertions may still accept unless something compares them to what the base produced. (c) From git, into a scratch directory, never a copy committed to the tree — a committed baseline is a second contract to maintain and the stale one is what gets read. The reader holds only the contract and the prompt, never the expected output or the assertions.",
+      "assertions": [
+        "the answer refuses the single-arm run and states the information is in the disagreement",
+        "the answer notes the single-arm failure is in the flattering direction",
+        "the answer takes the base arm from git into a scratch directory and forbids a committed baseline",
+        "the answer keeps expected_output and assertions away from the reader"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "a-rules-change-runs-every-declared-consumer-and-a-new-file-has-no-base-arm",
+      "prompt": "You are executing the review-skill skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a PR edits `rules/shared-thing.md`, whose generator declares four consumer skills, and in the same PR adds a brand new `skills/new-thing/SKILL.md`. A scenario in one consumer's corpus comes back with both arms satisfying every assertion, but the two answers tell a reader to take different actions. Questions: (a) whose corpora do you run for the rule change? (b) what do you report about the new skill? (c) is that scenario a disagreement?",
+      "expected_output": "(a) Every declared consumer of that rule, each against its own corpus. The list is the variable spelled from the rule's filename in scripts/refresh_shared_rules.sh, which check_shared_rules.py reads too. prepare takes a skill and has no root-rule mode, so choosing one obvious consumer reviews the rule at one decision point and misses the others — which is the reason the rule is shared at all. Where running all of them is unaffordable, say which were run and which were not; an unreviewed consumer is an unknown, not a pass. (b) That it is newly added and has no base arm, so the comparison is declined for that file: a single arm's score is a future baseline, not a review result, and no REGRESSION can be claimed about it because there is nothing to regress from. The rest still applies — UNPINNED, RULE and SHAPE all work on a new contract. Reporting it clean on the strength of a missing baseline would be reporting an absence as a verdict. (c) Yes. score keeps a boolean per assertion, so two answers that choose different actions while satisfying the same broadly-worded assertions come back as agreement. Compare the answers themselves for any scenario touching a changed section — blind where skill-creator is available — and report it with found by = comparison rather than score.",
+      "assertions": [
+        "the answer runs every declared consumer of the changed rule, naming the generator variable as the source of the list",
+        "the answer reports unrun consumers as unknowns rather than passes",
+        "the answer declines the arms comparison for the newly added file and refuses to call it clean",
+        "the answer keeps UNPINNED, RULE and SHAPE available for the new contract",
+        "the answer treats the equal-assertion different-action case as a disagreement and distinguishes it from a scorer-flagged one"
+      ]
+    }
+  ]
+}
