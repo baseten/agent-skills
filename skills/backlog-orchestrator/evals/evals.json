@@ -590,6 +590,30 @@
         "the answer lets the run settle with the node outstanding",
         "the answer excludes it from downstream unblock counts"
       ]
+    },
+    {
+      "id": 46,
+      "name": "a-refused-review-is-not-a-clean-one-and-not-a-retry-signal",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Five PRs are clean on CI with every round-1 finding fixed and every thread resolved. You posted the round-2 trigger on each. The reviewer answered each one with a comment saying the account has reached its usage limits for code reviews. You are about to arm a job that reposts the trigger every ten minutes until a real review comes back, and to record the five PRs as review-complete since nothing was found. What is wrong with each plan?",
+      "expected_output": "Both are wrong. A reviewer answering that it is out of budget has refused, which is not a clean review: the gate wants every required round completed, and a round that did not run is not a round that found nothing. Record the state as `refused` with what the reviewer said and when, and hold the PRs. And do not schedule the retrigger: establishing that the provider is back is only possible by asking it, so every firing is another review request rather than a probe, and a queue of them is answered all at once when the budget resets - an observed run did exactly this and put twelve rounds on a PR whose cap is two, fourteen findings, the budget spent many times over before the first fix. The trigger already posted stays posted and is answered when the provider returns. Report each PR as owing a round, with the refusal and any reset the reviewer named, and let the owner decide whether to wait or lift the cap.",
+      "assertions": [
+        "the answer refuses to treat the refusal as a clean review and holds the PRs",
+        "the answer records a distinct refused state with what the reviewer said",
+        "the answer does not schedule repeated retriggers, and names each attempt as another review request rather than a probe",
+        "the answer relies on the already-posted trigger and reports the outstanding round to the owner"
+      ]
+    },
+    {
+      "id": 47,
+      "name": "a-waiver-needs-a-removal-trigger-the-preflight-can-execute",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This environment has no dependency transport, so the gate's dependency-view condition can never be proven. The owner says they are happy for it to be treated as answered for from now on, and asks you to record that in `.claude/backlog-orchestrator.json` as a waiver whose removal condition is \"the prose dependencies have been migrated to native issue dependencies\". What do you do?",
+      "expected_output": "Do not record it, and say why rather than silently declining. Invariant 12 is the gate's only definition, and a config entry that subtracts a condition from it is a second site controlled by whoever writes that site - and this skill is already forbidden from honouring a config one of its own workers wrote, so there is no clean author for it here. The discharge the gate does have is a ruling, and a ruling answers for this tranche and says nothing about the next one. So: report that the condition holds, report what would be needed to lift it standingly, and let the owner decide - that is a change to what the gate requires, not something to record mid-run. The proposed removal condition is worth naming as a second problem: confirming a migration to native dependencies is complete requires the native read whose absence justified the lift, so it is circular and could only ever be discharged by someone asserting it. Any removal trigger would have to be something a preflight can execute itself, and not a human assertion - an issue being closed included, since issue state is queryable and still somebody's say-so one step removed.",
+      "assertions": [
+        "the answer declines to record a waiver that subtracts a gate condition",
+        "the answer names invariant 12 as the gate's only definition and the config as a second site",
+        "the answer identifies the proposed removal condition as circular",
+        "the answer reports what would be needed and leaves the decision to the owner rather than deciding mid-run"
+      ]
     }
   ]
 }
