@@ -864,6 +864,8 @@ worker session: <session id, or none on tiers without one> — archived: yes/no
 
 **Where no charter line is recoverable, say so and do not invent one.** A PR this run did not create, or one whose body was rewritten without it, has no charter, and the ratchet comparison is **unavailable** for that PR rather than performed against a guess. Record it as unavailable in the block and report it that way: an unavailable check is a known blind spot, and a check performed against a reconstructed charter is a clean result that means nothing.
 
+**A worker that sees the seam first reports it rather than crossing the charter** (`implement-issue-core`, *Implement with remote checkpoints*): test-double churn is the cheapest signal that an abstraction boundary is wrong, and it arrives before review does — so the same finding can reach this run as a design report from the worker or as a refused adoption here, and the first is cheaper for both sides.
+
 **Before adopting any repair worker's push, compare its diff against that charter.** A fix that introduces a **new module**, a **new build or CI step**, or a **new cross-cutting invariant** is a `DECISION` item — split or absorb — and not an adoption. The parent already inspects the pushed head, so this is a predicate on an inspection that happens anyway. Adopt everything else as usual: the test is the kind of thing added, not its size.
 
 **And where a repair reverses or materially changes a behaviour the PR body asserts, the body is part of the repair.** A body written at round 0 can spend six rounds arguing for a design that no longer exists — one kept making the case for enabling network-error retries after review had caused that exact default to be reverted — and it is the first artifact a human reviewer reads. `repair-pr` adopts a head, merges identity entries, increments counters and may re-trigger; nothing in that re-reads the body. **Re-read it against the current diff before any promote or merge step**, which is the same comparison the charter check already has open.
@@ -942,6 +944,8 @@ On an actionable CI failure:
 5. **compare the pushed diff against the PR's chartered scope** (see the per-PR block) — a new module, build/CI step or cross-cutting invariant is a `DECISION`, not an adoption — then adopt its pushed remote head, **and merge every posting-identity entry it returned into the run's transport-and-credential-keyed map** (see Posting identity) — a repair runs on its own transports, so this is the run's only evidence about them;
 6. increment the CI repair cycle;
 7. release the repair worker (see Releasing a worker) and resume event supervision.
+
+**A mass failure across unrelated files is not classified external here without confirming it.** This step decides attribution *before* `repair-pr` is dispatched, so a parent that calls it environmental and stops has spent the decision the pass-side rule was written to bound — and the PR that broke connection setup gets the free pass, having never been looked at. The tell in the error raises the hypothesis; the service's own health, or unrelated branches and the default branch failing the same job, confirms it (`repair-pr`, *CI repair*, owns what counts). **Unconfirmed, dispatch rather than classify**: the pass has the diff in front of it and is the cheaper place to be wrong.
 
 External/flaky failure with no justified code change does not consume a repair cycle.
 

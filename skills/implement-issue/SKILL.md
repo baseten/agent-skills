@@ -99,6 +99,8 @@ State: waiting | repairing-ci | repairing-review | repairing-finding | healthy |
 5. wait for the next CI result, event-driven where available;
 6. budget exhausted → `NEEDS_USER`, no further attempts.
 
+**Where the failure is a mass one across unrelated files, confirm before classifying it external.** This step decides attribution before `repair-pr` sees anything, so classifying here on the error signature alone gives a PR that changed connection setup a free pass on the failure it caused — the signature is identical and so is the breadth. Confirm against something outside this branch, as `repair-pr`, *CI repair* defines; unconfirmed, invoke the pass rather than classifying.
+
 Unrelated/external/flaky failure with no justified code change: report and monitor; no cycle consumed.
 
 ## Review feedback
