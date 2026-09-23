@@ -437,7 +437,7 @@ What is missing is **coverage**: the closed issue's deliverable does not include
 Unless overridden (below):
 
 - maximum concurrent implementation workers (`concurrent-workers`): **4**;
-- maximum PRs this run may hold open at once (`concurrent-open-prs`): **12**;
+- maximum of this run's PRs open at once (`concurrent-open-prs`): **12**;
 - maximum newly started issues per invocation (`new-issue-budget`): **12**;
 - maximum implementation attempts per issue (`implementation-attempts`): **2 total**;
 - maximum strongest-model *implementation* escalations per issue (`model-escalations`): **1**;
@@ -455,13 +455,13 @@ Dynamic Workflows do not override these limits. Do not increase concurrency mere
 
 The concurrency number is a ceiling, not a target. Derive the level you actually run from machine capacity at startup — available CPUs, free disk against the container's fixed allowance, and whether each worker needs its own dependency install or test toolchain — and take the lower of the two. Decide that yourself and report it; do not ask.
 
-**The two budgets bound different things and both apply.** `concurrent-open-prs` is **flow control**: how many of this run's PRs may be open at one time. That is the constraint that actually bites — reviewer load, merge-order complexity, conflict surface — and thirteen open across two repositories was the number that hurt. `new-issue-budget` is the **spend ceiling**: how much work one invocation is authorized to pay for, at roughly one worker's cost per issue. A single number cannot be both, and using cumulative starts as a proxy for how many PRs are open is what made invariant 13 inert — a run that started twelve and merged all twelve had its frontier advance onto work it was no longer permitted to begin.
+**The two budgets bound different things and both apply.** `concurrent-open-prs` is **flow control**: how many of this run's PRs are open at one time. That is the constraint that actually bites — reviewer load, merge-order complexity, conflict surface — and thirteen open across two repositories was the number that hurt. `new-issue-budget` is the **spend ceiling**: how much work one invocation is authorized to pay for, at roughly one worker's cost per issue. A single number cannot be both, and using cumulative starts as a proxy for how many PRs are open is what made invariant 13 inert — a run that started twelve and merged all twelve had its frontier advance onto work it was no longer permitted to begin.
 
-**A merge restores flow-control capacity, and it does so only after the settle sequence has run for the tranche that produced it.** Merging alone must not reopen the budget: invariant 12's gate needs `summarize-tranche`'s `DECISION`/`MERGE_RISK` inputs before any merge is legal, so a rule where merges always reopen capacity lets a run keep dispatching and never settle, which means nothing merges, which means nothing reopens — circular, and it costs the run the owner rulings the gate itself required. Routing the reset through settle makes one invocation *wave → settle → wave → settle* rather than one wave and stop. `new-issue-budget` is untouched by any of it: a merge is not authorization to spend more.
+**`concurrent-open-prs` is a count of what is open, not a ledger of what was spent.** A slot is held while a PR of this run's is open and released the moment it is not — **merged, or closed unmerged; the reason is irrelevant to flow control**, which bounds outstanding load rather than outcomes. That makes it observable rather than derived: any pass, including a restarted one, recomputes it by counting this run's open PRs, so nothing about it can be lost to a checkpoint or laundered by a restart. Nothing is deferred to settle. **What stops a run dispatching forever is `new-issue-budget`**, which no merge and no close ever restores — so the invocation is bounded whatever the open-PR count does, and flow control does not need a second mechanism to make it terminate.
 
-When the bounded scope exceeds `new-issue-budget`, do not ask which issues to drop. Start the first 12 in scheduling order — DAG readiness first, then how much downstream work each unblocks — and defer the rest, naming the deferred issues in the checkpoint output so the next invocation adopts them. A user who wants a different cap says so in the invocation. **State the spend in the checkpoint in cost terms**, not only as a count, since that is what the ceiling is for.
+When the bounded scope exceeds `new-issue-budget`, do not ask which issues to drop. Start the first 12 in scheduling order — DAG readiness first, then how much downstream work each unblocks — and defer the rest, naming the deferred issues in the checkpoint output so the next invocation adopts them. A user who wants a different cap says so in the invocation.
 
-When either budget is reached, allow active workers/repairs to reach durable state, stop starting new issues, reconcile, and return a checkpoint — **and say which of the two stopped the run**, since one is resumable within this invocation by settling and the other is not. Restarting does not count already-adopted work as newly started.
+When either budget is reached, allow active workers/repairs to reach durable state, stop starting new issues, reconcile, and return a checkpoint — **and say which of the two stopped the run**, since `concurrent-open-prs` clears within the invocation as PRs close or merge and `new-issue-budget` does not. Restarting does not count already-adopted work as newly started.
 
 Budget exhaustion on a node -> `NEEDS_USER`, not another speculative attempt — as an **outcome** where a CI, finding or implementation budget is spent, and as **items** where a review budget is: a spent `review-repair-cycles` produces deferred-repair items under a `NO_CODE_CHANGE` round (see Merge policy and review feedback), never a `NEEDS_USER` outcome for the PR. Continue unrelated DAG branches safely.
 
@@ -1097,7 +1097,7 @@ Holding is not idling. Name the outstanding item, the node it holds, and what an
 Nothing about the advance relaxes the safeguards it dispatches under:
 
 - **invariant 12 still holds.** Auto-advance is triggered by observing a merge — whoever performed it, a merge invariant 12's gate authorized included — never by deciding one should happen. The advance itself merges nothing.
-- **both budgets are consumed like any other dispatch.** If `new-issue-budget` is exhausted, do not dispatch: report the newly-READY frontier in the checkpoint output as the resume frontier, so a resumed invocation adopts it instead of rediscovering it. If `concurrent-open-prs` is the one exhausted, the frontier is reachable within this invocation — settle the tranche, which is what restores the capacity the merges earned, and then dispatch into it. Silently dropping newly-unblocked work is the failure this step exists to prevent.
+- **both budgets are consumed like any other dispatch.** If `new-issue-budget` is exhausted, do not dispatch: report the newly-READY frontier in the checkpoint output as the resume frontier, so a resumed invocation adopts it instead of rediscovering it. If `concurrent-open-prs` is the one exhausted, the frontier is reachable within this invocation without settling anything — the merge that just advanced it also released its slot — so dispatch into the freed capacity. Silently dropping newly-unblocked work is the failure this step exists to prevent.
 - **`NEEDS_USER` is not cleared by a merge.** A node whose only remaining blocker is a question a human was asked to decide stays blocked, and auto-advance must not resume that path (above). Only the blockers the merge actually satisfied are retired.
 - 4 concurrent workers, attempt/repair caps, per-issue model selection, one issue per worker, and isolated checkouts apply to resumed dispatch unchanged.
 
@@ -1478,7 +1478,7 @@ A re-review that finds something is the system working: that PR is no longer cle
 
 A run is **settled** when no further implementation can start and every open PR is individually finished:
 
-- **nothing in scope is dispatchable** — each unstarted issue is either blocked by work that is implemented but unmerged, or **READY and held only by an exhausted `concurrent-open-prs`**. The second case counts as non-dispatchable here on purpose: settling is what restores that budget, so a predicate requiring an empty READY set would make the run unable to reach the step that unblocks it — flow control deadlocking the wave instead of pacing it. A READY issue held by `new-issue-budget` counts the same way, and is the case that then ends the invocation rather than starting another wave. Say which, per issue, in the checkpoint;
+- **nothing in scope is dispatchable** — each unstarted issue is either blocked by work that is implemented but unmerged, or **READY and held by an exhausted budget**. The second case counts as non-dispatchable here on purpose: a predicate requiring an empty READY set would leave a budget-bound run unable to settle at all, and so unable to reach the merges that would release it. Say which budget holds each such issue in the checkpoint — `concurrent-open-prs` clears the moment one of this run's PRs closes or merges, and `new-issue-budget` does not clear within the invocation;
 - no implementation or repair worker is in flight — and a worker blocked on a permission prompt is in flight, not absent (see Blocked workers): it reads as quiet from every angle the other conditions look from, which is how a run declares itself settled over a worker stopped mid-issue;
 - every open PR from this run has had **every** automated review round its routing requires **completed**, not merely a trigger issued — where the routing requires two, one completing is not this condition met (`create-pr` owns the routing);
 - every actionable review finding on every open PR is resolved or answered — a thread reserved for the owner — by the kind test or on budget grounds (see Merge policy and review feedback) — counts here as surfaced, not outstanding: it blocks that PR's merge, never settlement;
@@ -1523,10 +1523,6 @@ Settled means the run has nothing it can start *right now*, not that the run is 
 
 A settled run has no events of its own, so reaching settled is also the point at which it must arm its wake — a PR-activity subscription plus a scheduled check-in, or an honest restartable checkpoint if it can arm neither (see Arming the wait when nothing is in flight). Everything below assumes that happened; without it the run is not resting, it is asleep.
 
-**A merge whose tranche has already settled credits on observation.** The routing through settle exists to stop a run dispatching its way past settling; it has nothing to say about a merge that arrives afterwards, and holding that credit until some later settle is what makes the capacity unreachable — the newly unblocked issue is READY, and under the predicate above a READY issue held by the budget is exactly what the run then has to settle *again* to clear. Credit it when it is observed, and let the frontier advance re-enter the dispatch loop as *Frontier advance on merge* already requires.
-
-**Reaching settled is what restores `concurrent-open-prs` capacity for the merges this tranche produced.** A merge does not restore it on its own — the reset is routed through here precisely so a run cannot dispatch its way past settling, which is the deadlock the split exists to avoid: the gate needs the summary before any merge is legal, so a budget that reopened on merge alone would keep the run dispatching, keep it from settling, and keep anything from merging. Credit the merges the settle sequence covered; a merge performed after it credits on observation, per the paragraph above. `new-issue-budget` does not move here — a merge is not authorization to spend more, and a run out of spend settles and stops whatever its open-PR count says.
-
 After the ranking is delivered, supervision continues for merge/close events and for the restack work a merge triggers — and a merge that advances the frontier re-enters the dispatch loop automatically, under Frontier advance on merge, within the same run and with no new user prompt. Automatic continuation is the default; it yields only where this tranche left a genuine ask outstanding that bears on the next wave, and then only for the paths that ask reaches. The run un-settles itself: recompute readiness, re-run the preflight at the mode the escalation rules select, dispatch into free slots, and settle again when the frontier is empty. A tranche can settle, advance, and settle again several times in one invocation.
 
 Re-run `plan-merge-order` when merges change the graph enough that the previous ordering is stale, and again when a resumed dispatch produces new PRs that the delivered ranking does not cover.
@@ -1538,7 +1534,7 @@ What "stop spending tokens re-deriving the same state" forbids is idle re-deriva
 Stop starting new implementation work when:
 
 - every in-scope issue reached its requested durable state;
-- `new-issue-budget` is exhausted — `concurrent-open-prs` alone is not a stop condition, since settling restores it;
+- `new-issue-budget` is exhausted — `concurrent-open-prs` alone is not a stop condition, since any of this run's PRs closing or merging releases a slot;
 - every remaining path is `BLOCKED`/`NEEDS_USER` **and no merge is pending that could clear it**;
 - the user asks to stop;
 - safety approval is required;
@@ -1564,8 +1560,8 @@ Runtime: Dynamic Workflow
 Manifest: <full URL>
 Validation: PASS
 Scope: 18 issues
-Run budget: 9/12 newly started (~$63 of ~$84 authorized)
-Open PRs: 7/12 concurrent (capacity restored at settle)
+Run budget: 9/12 newly started
+Open PRs: 7/12 concurrent
 Implementation workers: 3
 Repair workers: 1
 Worker sessions: 9 created / 8 archived / 1 alive
