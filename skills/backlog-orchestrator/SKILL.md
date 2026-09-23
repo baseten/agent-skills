@@ -1,6 +1,6 @@
 ---
 name: backlog-orchestrator
-description: Autonomously executes a bounded dependency-linked implementation tranche from GitHub Issues, Linear, or another supported tracker. Can fan the implementation phase out onto a Claude Code Dynamic Workflow when the user opts into one, while preserving a validated issue DAG, Sonnet workers, isolated worktrees, durable remote checkpoints, stacked PR topology, centralized PR supervision, bounded repairs, and restart-safe tracker/GitHub state.
+description: Autonomously executes a bounded dependency-linked implementation tranche from GitHub Issues, Linear, or another supported tracker. Can fan the implementation phase out onto a Claude Code Dynamic Workflow when the user opts into one, while preserving a validated issue DAG, per-issue model selection, isolated worktrees, durable remote checkpoints, stacked PR topology, centralized PR supervision, bounded repairs, and restart-safe tracker/GitHub state.
 ---
 
 # Backlog Orchestrator
@@ -57,7 +57,7 @@ Reusable worker skills:
 3. **A run is bounded.** Never turn one build-order ticket into an open-ended project crawl.
 4. **One implementation worker = one issue = one isolated checkout/worktree.**
 5. **In-flight implementation is remotely checkpointed.** Significant completed work must not exist only in an ephemeral container. **What enforces this differs by runtime, and on one tier the parent cannot:** where it can reach a worker's checkout it verifies and captures (Checkpoint compliance), and where it cannot — the remote-session tier, normally — the invariant rests on the worker's own pushes, with the dispatch prompt and the observable remote head as the only levers. Say which of those a run is relying on rather than reporting the invariant as satisfied by machinery that was never available.
-6. **Sonnet is the default implementation/repair model.** Use the strongest available reasoning model for orchestration when appropriate.
+6. **The model is selected per issue, and Sonnet is the default where the selection does not say otherwise** (see Model and skill policy, which owns the assignment, the capacity check and the escalation ladder). Use the strongest available reasoning model for orchestration when appropriate.
 7. **Only validated READY work is dispatched.**
 8. **Execution dependency is not automatically Git ancestry.** Stack only where code ancestry requires it.
 9. **The parent/orchestration layer owns long-lived PR state.** Implementation and repair workers are bounded and short-lived.
@@ -113,7 +113,7 @@ A Dynamic Workflow is a JavaScript orchestration script that fans plain subagent
 
 When the user has opted into a workflow for this invocation (see Invocation above), use it **only for the implementation fan-out**:
 
-- write the workflow script yourself so each `agent()` call's prompt/model explicitly encodes: exact authorized issue set and normalized dependency DAG (as separate fan-out stages honoring the DAG's ordering), Sonnet worker model, one issue per worker, isolated checkout/worktree per worker, exact calculated branch/base, remote checkpoint rules, retry budget;
+- write the workflow script yourself so each `agent()` call's prompt/model explicitly encodes: exact authorized issue set and normalized dependency DAG (as separate fan-out stages honoring the DAG's ordering), the model selected for that issue (see Model and skill policy — per issue, not one model for the fan-out), one issue per worker, isolated checkout/worktree per worker, exact calculated branch/base, remote checkpoint rules, retry budget;
 - make the checkpoint push a **pipeline stage of its own** rather than only a rule inside the implementation prompt. The parent cannot reach into a running fan-out to enforce it (see Where the parent cannot reach), so the script's control flow is the only thing that can guarantee the push happens;
 - do **not** give the workflow permission to redefine the product backlog — it must execute the already validated bounded DAG supplied by this skill;
 - treat the workflow purely as an **execution substrate** for that one fan-out run, not as the source of truth for issue/PR state.
@@ -526,9 +526,14 @@ A thread classified `NEEDS_USER` is **reserved for the owner**: never resolved a
 
 The orchestration/lead context may use the strongest available reasoning model.
 
-Normal implementation and repair workers must use **Sonnet explicitly** when the runtime supports per-worker model selection. Do not accidentally inherit the lead's stronger model.
+**Select a model per issue, and select it before dispatch.** `swarm-dispatch`, *Model: the caller chooses, by how failure shows*, owns both gates — the tier, chosen on failure visibility rather than task size, and the context-capacity veto over it. Apply them from there; do not restate them here. Never accidentally inherit the lead's model, and where a runtime has no per-worker model selection, every worker runs whatever it gives.
 
-At most one strongest-model implementation escalation is allowed per issue for a reasoning-heavy repeated failure (`model-escalations`).
+**Sonnet is this skill's default**, and it is where that skill's mid tier lands for implementation and repair work.
+
+**Deciding in advance is what this section adds**, because the ladder below catches thrashing and cannot catch **confidently wrong** — the more expensive shape here. A worker that patches the single site the ticket named, where the defect was restated at three, returns a green PR fixing a third of the bug; a worker that does exactly what a ticket got wrong looks successful. Neither trips a repeated-failure trigger, because neither fails, and no escalation rule that keys on failure ever will.
+
+
+At most one strongest-model implementation escalation is allowed per issue for a reasoning-heavy repeated failure (`model-escalations`). **The ladder is a floor under the selection above, not the primary mechanism** — it recovers a worker that is visibly failing, and an assignment made up front is what covers the worker that is not.
 
 **Repair escalates on evidence, not on exhaustion** (`repair-model-escalations`, per PR). Dispatch a repair round on the strongest available model when the round about to be dispatched carries a finding on a **locus an earlier repair on this PR already wrote** — a reshaped version of a finding an earlier round addressed, or a new finding in text an earlier repair authored. That is the signal that the previous repair was shallow and the root was never understood, and it is the one place in the repair path where model strength is the binding constraint. Everything else about the round is unchanged, and Sonnet remains the default for all the others.
 
@@ -678,7 +683,7 @@ Before dispatch:
 The reason for the subtraction is empirical: four review rounds against an enumerated list each found a different item missing from it, and every one of them was something a **clean** run still has to say (NOTES: the four omissions, kept there as the shape to watch for).
 
 Any terminal outcome reached before a PR exists writes nothing and simply returns — investigating it, and recording anything that comes of it, is this run's job, not the worker's;
-12. dispatch Sonnet worker with `implement-issue-core`.
+12. dispatch the worker with `implement-issue-core`, on the model selected for this issue (see Model and skill policy).
 
 A dispatch prompt that enumerates a required process is followed literally: a default left out of that enumeration is a default skipped, and the worker will accurately report that the task never asked for it. The same literalism decides what the worker does with instructions this run did not write (see Countermanding the worker's ambient supervision posture, below). Every dispatched prompt must therefore carry the automated review trigger instruction — `create-pr` owns the trigger rules, do not restate them here — unless this run explicitly defers review. Deferral is a conscious choice recorded in run state, naming what review is owed and on which PRs; it is never an omission. **Record it as the per-PR `review trigger` value `deferred`** — that field is what *Adopting a PR is three things, not one* reads, and a deferral left at `pending` is issued there as an unfinished trigger.
 
@@ -1086,7 +1091,7 @@ Nothing about the advance relaxes the safeguards it dispatches under:
 - **invariant 12 still holds.** Auto-advance is triggered by observing a merge — whoever performed it, a merge invariant 12's gate authorized included — never by deciding one should happen. The advance itself merges nothing.
 - **the 12-new-issue budget is consumed like any other dispatch.** If the budget is exhausted, do not dispatch: report the newly-READY frontier in the checkpoint output as the resume frontier, so a resumed invocation adopts it instead of rediscovering it. Silently dropping newly-unblocked work is the failure this step exists to prevent.
 - **`NEEDS_USER` is not cleared by a merge.** A node whose only remaining blocker is a question a human was asked to decide stays blocked, and auto-advance must not resume that path (above). Only the blockers the merge actually satisfied are retired.
-- 4 concurrent workers, attempt/repair caps, Sonnet workers, one issue per worker, and isolated checkouts apply to resumed dispatch unchanged.
+- 4 concurrent workers, attempt/repair caps, per-issue model selection, one issue per worker, and isolated checkouts apply to resumed dispatch unchanged.
 
 Edge cases:
 

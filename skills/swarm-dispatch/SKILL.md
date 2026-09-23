@@ -158,6 +158,18 @@ goes back to the user.
 under-assignment costs a silently wrong result that nothing in the run will
 catch.
 
+**Context capacity is a second gate, and it does not correlate with the first.**
+Before assigning a small-context model, ask what the worker will *load* before it
+reaches the task — the repository's agent-instruction file and everything that
+file pulls in. Where that surface is large, a small-context model is excluded
+whatever the task looks like: the most mechanical item in an observed fan-out, a
+three-line guard, was its only outright failure, because the repository's
+instruction set pulled in roughly fifteen specification documents and exhausted a
+200K window before the worker reached any code. **Measure the instruction
+surface, not the diff**, and treat capacity as a veto on the tier the first gate
+chose rather than as an input to it — a task can be genuinely mechanical and
+still not fit.
+
 **Escalate on evidence, not on exhaustion.** Selection happens twice, and the
 second time matters more. Dispatch a repair or retry on the strongest available
 model when the failure about to be re-attempted sits on **something an earlier
@@ -284,7 +296,10 @@ State, for the run:
 - the **runtime tier** that ran, and any tier probed and rejected;
 - the **base branch** every worker was created from;
 - per task: the **model** assigned and the failure-visibility reason in a clause,
-  plus any escalation and what triggered it;
+  plus any escalation and what triggered it — and **where the capacity veto moved
+  the task off the tier that reason chose, say so and name what it measured**,
+  since the failure-visibility reason alone then reads as an argument for a tier
+  the task did not get, and the assignment cannot be audited from it;
 - per task: the **watch state**, and for polled tasks when they were last read;
 - every task whose watch state is unrecorded, named as a blind spot;
 - what was **not** covered — tasks deferred, reads skipped, a tier's guarantee
