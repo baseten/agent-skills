@@ -296,7 +296,10 @@ State, for the run:
 - the **runtime tier** that ran, and any tier probed and rejected;
 - the **base branch** every worker was created from;
 - per task: the **model** assigned and the failure-visibility reason in a clause,
-  plus any escalation and what triggered it;
+  plus any escalation and what triggered it — and **where the capacity veto moved
+  the task off the tier that reason chose, say so and name what it measured**,
+  since the failure-visibility reason alone then reads as an argument for a tier
+  the task did not get, and the assignment cannot be audited from it;
 - per task: the **watch state**, and for polled tasks when they were last read;
 - every task whose watch state is unrecorded, named as a blind spot;
 - what was **not** covered — tasks deferred, reads skipped, a tier's guarantee
