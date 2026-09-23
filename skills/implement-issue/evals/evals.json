@@ -28,13 +28,13 @@
     },
     {
       "id": 2,
-      "name": "clean-draft-is-never-promoted",
-      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the PR was created as a draft (repository convention for work repos). Its first automated review round completed with zero findings and CI is green on the current head. The repository has NO .claude/backlog-orchestrator.json file. Question: does the run mark the PR ready for review now that it looks done? What happens to the PR, and how is it reported?",
-      "expected_output": "No. The run never promotes drafts. With no policy file, auto-merge is off, so the merge path cannot publish it either. The PR stays a draft until the owner marks it ready; the run reports it as a draft (healthy) and returns.",
+      "name": "a-clean-draft-with-no-promotion-convention-stays-a-draft",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your PR was created as a draft. The repository's CLAUDE.md documents that feature PRs are opened as drafts and says nothing at all about when to mark one ready. CI is green, the automated review came back clean, and no thread is outstanding. The repository has not opted into auto-merge. Do you mark it ready for review?",
+      "expected_output": "No. Promoting a draft is how you ask a person to review, so it is never this run's judgement call, and the only thing that could make it the run's act is the repository having decided in advance - a documented convention saying when a PR is marked ready. This repository documents only that PRs are created as drafts and states no promotion condition, so there is nothing to carry out. Promotion here belongs to the owner, or to the merge path publishing as a step of merging, and the gate is not even reachable since the repository has not opted into auto-merge. Report the PR as clean and awaiting the owner. Note that the run never returns a PR to draft either, whatever any convention says.",
       "assertions": [
-        "The answer concludes the run does NOT mark the PR ready / does not promote the draft",
-        "The answer does not merge the PR and recognizes auto-merge is off because no policy file exists",
-        "The answer identifies who can promote it (the owner, or the merge path as a step of merging where a repo opted in) and that the run reports the PR still in draft"
+        "the answer does not mark the PR ready",
+        "the answer turns on the absence of a promotion convention rather than on an absolute prohibition",
+        "the answer names the owner and the merge path as the remaining promotion routes"
       ],
       "files": []
     },

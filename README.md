@@ -118,7 +118,9 @@ announces itself** — see `CLAUDE.md`, *Using this repository's own automation 
 repository*, which names them and what to do about each. They are why this repository's
 `.claude/backlog-orchestrator.json` raises `review-repair-cycles` and
 `repair-model-escalations` above their defaults; budgets are policy and live only in that
-file.
+file. `review-repair-cycles` counts **pushed repair passes, not review rounds** — a round
+that repairs nothing consumes no cycle — so a high observed round count is not by itself a
+reason to raise it.
 
 ## Checks
 
@@ -565,7 +567,7 @@ When first-class PR events are unavailable, the parent falls back to other subsc
 
 A **mechanical** push — a restack, or a renumber/regeneration of a claimed artifact such as a migration number or a lockfile — moves identity or ordering rather than behavior. It consumes no review cycle, re-triggers no review, and does not reset a PR's reviewed state; the repository's deterministic checks validate it instead. This matters right after a sibling merges, when descendants restack for reasons unrelated to their own diffs. Where no such check exists, the push is substantive like any other.
 
-The orchestrator does not promote drafts: marking a PR ready is how you ask a person to review — a social act, never an autonomous decision. A draft is published in exactly two ways: the owner does it themselves, or the invariant 12 merge path publishes it as a step of merging it. A draft held by an explicit instruction, a repository convention, or a caller's draft preference is excluded from the gate entirely — neither published nor merged, reported as held. `repair-pr` reports how many actionable threads remain but never changes draft state, and `implement-issue` applies the same contract to the one PR it supervises: it never promotes, so its PR stays a draft until the owner publishes it or the gate merges it.
+The orchestrator does not promote drafts on its own judgement: marking a PR ready is how you ask a person to review — a social act, never an autonomous decision. It does defer where a repository's own documented convention instructs promotion, which is the owner performing that act in advance, and then only on that convention's stated conditions. So a draft is published in three ways: the owner does it themselves, the run carries out such a convention, or the invariant 12 merge path publishes it as a step of merging it. The run never returns a PR to draft. A draft held by an explicit instruction, a repository convention **that says to keep it in draft**, or a caller's draft preference is excluded from the gate entirely — neither published nor merged, reported as held. `repair-pr` reports how many actionable threads remain but never changes draft state, and `implement-issue` applies the same contract to the one PR it supervises.
 
 ## Settled tranches
 

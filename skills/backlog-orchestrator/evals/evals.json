@@ -614,6 +614,43 @@
         "the answer identifies the proposed removal condition as circular",
         "the answer reports what would be needed and leaves the decision to the owner rather than deciding mid-run"
       ]
+    },
+    {
+      "id": 48,
+      "name": "a-quiet-wake-still-reports-what-is-waiting-on-the-owner",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your run settled and armed a check-in. Four wakes in, durable state has not moved on any PR: same heads, same CI conclusions, same thread set, same mergeability. Three DECISION items have been outstanding with the owner since before the first wake, and every remaining PR's merge depends on them. Your backoff is now at 160 minutes. What does this wake report, and do you keep backing off? This wake is a scheduled one; nobody is attending the session.",
+      "expected_output": "The wake correctly counts as unproductive on durable state and correctly advances the backoff on that basis - but it does not go silent about the owner's queue. An outstanding DECISION is not durable state: it does not change, which is why the unproductive-wake machinery cannot see it, and a run can be right on every wake and never once say that three decisions have been sitting there throughout. So this wake reports the outstanding DECISION and NEEDS_USER counts on the same lengthening cadence, even while reporting no other change. And it does not re-run the settle sequence here. Quiescence with open decisions is a settle trigger on an attended turn or a real state change, and this is neither: settle-outstanding-decisions declines on a scheduled wake for want of anybody to ask, and step 8 forbids re-deriving settled state that has not changed, so re-running would recompute a summary, a walkthrough and a ranking, ask nobody, change nothing, and repeat until the wake budget died. Report the counts, advance the backoff, and leave the sequence for an attended turn or an actual delta.",
+      "assertions": [
+        "the answer reports the outstanding DECISION and NEEDS_USER counts on a wake that is otherwise quiet",
+        "the answer explains that an outstanding decision is not durable state and so is invisible to the unproductive-wake test",
+        "the answer does not re-run the settle sequence from an unattended quiet wake, and says why"
+      ]
+    },
+    {
+      "id": 49,
+      "name": "review-rounds-are-not-review-repair-cycles",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). `review-repair-cycles` is at its default of 2 per PR. Across the tranche your four PRs took six, six, three and six review rounds - twenty-one rounds and thirty-three findings. A reviewer of the run asks whether the budget was blown through, and proposes raising the default to 6. What do you tell them?",
+      "expected_output": "The budget was not exceeded, because it does not count rounds. `review-repair-cycles` counts pushed repair passes: a round that produced questions, acknowledgements or nothing to repair returns NO_CODE_CHANGE and consumes no cycle, so twenty-one rounds is entirely consistent with a cap of two per PR. Report both numbers in the checkpoint - rounds completed and cycles used and remaining - since either alone reads wrongly: the rounds alone look like a budget being blown through, the cycles alone look like a PR that was barely reviewed. And do not raise the default from a round count: the two measure different things, so the reconciliation to do before changing it is against the cycles actually consumed.",
+      "assertions": [
+        "the answer states that the cycle counter counts pushed repair passes rather than review rounds",
+        "the answer explains why a NO_CODE_CHANGE round consumes no cycle",
+        "the answer refuses to raise the default on the basis of a round count",
+        "the answer reports both numbers in the checkpoint"
+      ]
+    },
+    {
+      "id": 50,
+      "name": "a-repository-convention-that-instructs-promotion-is-carried-out",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository's CLAUDE.md says: once CI is green, the automated review has come back and every actionable finding is resolved or answered, mark the PR ready for review. Four of your PRs are drafts. PR A meets all three conditions. PR B is green with its review back but has one unresolved actionable finding. PR C meets all three and invariant 12's gate is also open for it. PR D was marked ready by a human last week and they returned it to draft yesterday — but your session restarted this morning and the per-PR block was rebuilt, so it records only `as-created draft -> current draft`. You have no record of whether publishing triggers a review round in this repository. What do you do with each?",
+      "expected_output": "Carry out the convention: it is the owner performing the social act in advance, with the conditions stated, so leaving these in draft overrides them rather than protecting them. A promotes - and since publishing may trigger a round here and that is unknown, the promotion takes the three-state rule: publish, un-settle the tranche for that PR, and classify the repository on the next delivered pass rather than from an immediate read. B does not: the conditions are the convention's own and one is unmet, and a PR meeting the merge gate but not the convention would not qualify either. C promotes on the same basis - and promoting it un-settles the tranche for C exactly as the merge path's own publish would, since publishing may trigger a round here and that is unknown. So C does not merge in this pass: the gate re-evaluates on post-publish evidence on a later one. Merging it now would be merging on evidence the promotion may have just invalidated. D is an explicitly held draft, and the rebuilt block cannot show that: read the ready-to-draft transition from the forge's own timeline before any promotion, exactly as the gate does. Promoting it would not merely re-request a review the owner withdrew - it would erase the evidence, since the discriminator is currently-draft-and-ever-ready and a promoted PR is neither, after which the gate merges it. Excluded outright, reported as held, and neither promoted nor merged however clean it is. In no case does the run flip a PR back to draft.",
+      "assertions": [
+        "the answer promotes the PRs meeting the convention's own conditions rather than the skill's",
+        "the answer refuses to promote the PR whose convention conditions are unmet",
+        "the answer leaves the human-withdrawn draft untouched and reports it as held",
+        "the answer treats a convention-driven promotion as a publish subject to the three-state rule",
+        "the answer refuses to merge PR C in the same pass on pre-publish evidence",
+        "the answer reads the draft transition from the forge timeline rather than the rebuilt block before promoting"
+      ]
     }
   ]
 }
