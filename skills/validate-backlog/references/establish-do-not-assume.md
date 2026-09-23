@@ -5,7 +5,7 @@ not evidence. An assumption is not evidence. A default is not evidence. Each
 arrives as a sentence that reads exactly like a finding, and the remedy is always
 the same shape: name the artifact that would settle it, and look at that.
 
-Two kinds, and runs get caught by both.
+Three kinds, and runs get caught by all of them — two where a claim arrives, one where the run makes it.
 
 ## Someone asserted it
 
@@ -57,6 +57,29 @@ until it is wrong.
 re-reviews on publish, or that a field is authoritative. That is a reason to
 check once and record, not a reason to skip checking — it was written by someone,
 at a time, about a configuration that can change.
+
+## You are about to assert it
+
+The same rule pointed outward, and the one that is easiest to skip because
+nothing about it looks like a lookup. **Any claim this run makes about existing
+code needs a read behind it before it is posted** — in a review reply, a PR body,
+a `DECISION` item, an issue, a commit message. Not a recollection of the codebase,
+and not an inference from the part of it currently in view.
+
+The failure looks like confidence. A reply asserted that adding a connection
+parameter in one module would also affect migrations; migrations built their own
+connection and it would not, which four greps settled in minutes. Nothing about
+the sentence marked it as remembered rather than read.
+
+**The check belongs at the point the artifact is composed, not at the skill that happens to carry this file.** A reference present in a skill directory and cited nowhere near the write is a reference nobody reads: wire it at each site that authors one of these — the reply *and* the escalation draft, the PR body *and* its title, the `DECISION` item, the issue body a rewrite produces, the ruling comment, the commit message — and into the dispatch prompt of any worker that will author one on the run's behalf, since a prompt that omits a requirement gets a worker that skips it.
+
+**Where the run did verify something it could have assumed, the verification belongs in the returned output**, naming the artifact read. The body or the reply carries the claim and not the audit trail — that is the write-form rule — so without an output field the read leaves no durable record and the next session either re-does it or trusts it.
+
+**A wrong claim in a `DECISION` item is the expensive case**, because the owner
+rules on it: the claim is the evidence they are ruling from, and they have less
+of the codebase in front of them than the run does. Where a claim cannot be
+settled before posting, post it marked as unverified with what would settle it,
+rather than posting it plainly or dropping it.
 
 ## Why this is worth a rule rather than diligence
 

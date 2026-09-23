@@ -449,6 +449,123 @@
         "the answer leaves the deliberately deferred PR untriggered and names `deferred` as a recorded value rather than an inference",
         "the post-arming read covers state, head and base as well as checks, reviews and comments"
       ]
+    },
+    {
+      "id": 35,
+      "name": "green-is-about-a-tree-not-about-a-pr",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository opted into auto-merge and invariant 12's gate is otherwise open on three PRs. All three are based on commit 46838e3, three merges behind the current default branch head; the forge reports all three mergeable with green checks and none of them touches a file the intervening merges touched. Two of the three bump formatters whose output is a required check, each a one-line manifest change. Do you merge them on that green?",
+      "expected_output": "No. Green is a statement about a tree, not about a PR: the head is unchanged and the tree that green described no longer exists, because the base moved under it. Compare each PR's base to the current head of its base branch; where they differ the green is stale and does not discharge invariant 12's green-CI condition. What discharges it depends on what the checks run against, which is a property of this repository's CI configuration and is established rather than assumed - where checks run against the PR merged with its base, a re-run is enough; where they run against the branch alone, a re-run proves exactly what the stale one did and the branch must be updated. Record that observation per repository. The two formatter bumps need a fresh run regardless: a formatter verified against a tree that does not contain the code it will format has verified nothing, and the tiny diff argues in the wrong direction here. This is not a requirement that every branch be up to date before merging - that serialises every merge; the check is paid at the gate, on the PRs about to open, only where the base actually moved.",
+      "assertions": [
+        "the answer refuses to merge on the existing green because the base has moved",
+        "the answer establishes whether checks run against the branch or against the branch merged with its base rather than assuming one",
+        "the answer treats the formatter bumps as always needing a fresh run despite the trivial diff",
+        "the answer distinguishes this from a blanket requirement that branches be up to date before merging"
+      ]
+    },
+    {
+      "id": 36,
+      "name": "a-collision-with-no-textual-overlap-and-the-wrong-input-set",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your tranche dispatched four PRs in one repository and you ran a cross-branch integration check over those four: merged into a scratch branch, whole suite run, one real conflict found and surfaced. Separately, another team's session is running its own track in the same repository with two open PRs you did not dispatch. One of your PRs adds tests querying the string `Center`; one of theirs renames it to `Centre`. Neither touches a line the other touches. Did your check cover this, and what do you change? What do you surface, and does a merge order exist that resolves it?",
+      "expected_output": "No. This is a third collision kind: no shared added path, no shared claimed artifact, no line in common, so git merges cleanly and no conflict signal exists anywhere - and neither PR's CI could catch it, since each was green against a base containing neither change. The only artefact holding both changes at once is the merged tree, which is what the integration check builds, so the check itself was right. Its input set was wrong: it spanned the run's own members rather than every open branch targeting the same base, and a track this run did not dispatch is not in its graph at all. Widen the set to every open branch on that base, and state in the run's output which branches were integrated, so a partial set is visible as partial instead of reading as a clean result. No merge order resolves it: whichever name merges first the final tree is the same and broken, so this class does not take the merge-order remedy the first two kinds do. Surface it as NEEDS_USER naming both PRs, the symbol, and that ordering cannot decide it, so the owner's decision is not spent on ordering. One branch changes, as an ordinary finding repair, and the integration check is re-run afterwards - a repair that fixes one reference and misses another produces the same clean diffs that hid it. Record each integrated branch with the head SHA it was integrated at, and re-run at the gate where the set or any tip has moved.",
+      "assertions": [
+        "the answer identifies a collision class with no textual overlap and no conflict signal",
+        "the answer says the merged tree is the only artefact that shows it, so the detector is running the suite rather than comparing diffs",
+        "the answer widens the integration set to every open branch targeting the base, not just the run's own",
+        "the answer requires the run's output to name which branches were integrated",
+        "the answer states that no merge order resolves this class and does not route it to an ordering decision",
+        "the answer records integrated head SHAs and re-runs the check when a tip has moved"
+      ]
+    },
+    {
+      "id": 37,
+      "name": "a-multi-read-composite-is-not-a-state",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Several sessions are active in this repository. At 14:02 you read the tracked PR set, computed the merge ranking and produced a checkpoint reporting zero open PRs outside the ranking. At 14:31 you begin merging in that order. Meanwhile a worker reports that its local `origin/main` shows a base commit different from the one the API returned for its PR minutes earlier. What is wrong with the 14:02 picture, and which of the two does the worker believe?",
+      "expected_output": "The 14:02 picture is a composite of instants that never coexisted. Invariant 1 says where truth lives, not that it holds still, and with several sessions writing the same remote it moves constantly - a PR can merge between two reads in one conversation. So re-read the facts the decision turns on immediately before acting on them: at 14:31 the ranking's deciding facts are re-read rather than the whole world, because a ranking computed from stale data is re-derivable and a merge performed on it is not. The checkpoint carries the instant it describes; zero open PRs is only ever true as of a time. Neither wins by precedence. Both are observations with an age - a checkout is as old as its last fetch, a held response as old as when it was issued - so a rule making the response authoritative fails whenever the response is the older one. Where they disagree about something the worker is about to act on, it re-reads the forge at that moment, which is newer than both, and refreshes the checkout to match. That instruction belongs in the dispatch prompt, since a worker has less to check it against.",
+      "assertions": [
+        "the answer identifies the report as a composite of instants rather than a state",
+        "the answer re-reads only the deciding facts immediately before the irreversible act",
+        "the answer requires state reports to carry a timestamp",
+        "the answer settles the checkout-versus-response disagreement with a fresh read rather than by assigning precedence",
+        "the answer puts that instruction in the dispatch prompt"
+      ]
+    },
+    {
+      "id": 38,
+      "name": "available-is-the-far-end-of-the-channel",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A worker session you created four weeks ago is still IDLE and unarchived. Its `external_metadata.cross_session_inbound` reads exactly `available`. It reports `staged_files: true`, and `git ls-remote --heads origin 'fe-24*'` returns nothing. This session has no cross-session send tool, and a peer listing resolves no agents at all. Is the channel established, is the worker releasable, and what do you do? Suppose instead the channel did exist, you asked, the worker replied `pushed`, and `fe-24/review-panel-analysis` now appears on the remote at the same commit it held before the ask. Releasable?",
+      "expected_output": "The channel is not established: `available` reports the target's willingness to receive, and whether anything can be sent is a property of this session's toolset. The two are independent, so the field is necessary and never sufficient - establish the caller's half from the caller's own side, a send tool present and a listing that resolves the target, and here both are absent. The worker is not releasable. Condition 2 is unsatisfied: staged files with no remote branch means nothing is checkpointed and the container is the only copy, and its own claim would not settle it anyway - a worker's `pushed` is an assertion about state, the same class as a `fixed in <sha>` naming no reachable commit, and the criterion is the remote branch existing, verified by this parent. The one lever that could satisfy it is asking the worker to push, before any archival, and that ask needs a send channel this session does not have. So there is no lever: raise NEEDS_USER naming the session, what it returned, that the ask could not be made, and what the remote showed. Keep the container - do not read the absent reply as an absent problem, and do not archive. And no in that variant either. The branch existing proves nothing - a stale branch from an earlier push passes an existence test immediately, and a plain push can create a branch from an already-committed head while every staged edit stays in the container - so the check is on the head moving to the commit the worker named, compared against what was recorded before the ask. Here it did not move, so the push captured nothing. Even a moved head would not satisfy condition 2: that condition is that nothing is stranded, and with no view of the worktree the parent cannot tell a complete commit from a partial one. The worker stays unreleasable, the container is kept, and the NEEDS_USER records the head before and after and that completeness is unestablished.",
+      "assertions": [
+        "the answer treats `available` as the target's half only and checks the caller's own send capability",
+        "the answer refuses to release the worker and keeps the container",
+        "the answer names the remote branch existing as the success criterion rather than the worker's claim",
+        "the answer places the push ask before archival and reports plainly that it could not be made",
+        "the answer checks that the remote head moved rather than that the branch exists",
+        "the answer states that even a successful push does not satisfy the nothing-stranded condition"
+      ]
+    },
+    {
+      "id": 39,
+      "name": "a-decision-item-is-the-expensive-place-for-a-remembered-claim",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are composing a DECISION item asking the owner whether to split a repair that grew past its charter. You are about to write, as the `why`, that the new module duplicates logic already present in the scheduler - you recall seeing something like it there, and you have not looked. You are also about to dispatch two repair workers who will author their own PR reports and commit messages. What do you do about each?",
+      "expected_output": "Read it first. A DECISION item is the expensive place for a remembered claim: the owner rules from it and holds less of the codebase than the run does, so the claim is the evidence they decide from. Grep the scheduler before writing the `why`; where it cannot be settled before the item goes out, write it marked unverified with the read that would settle it, rather than plainly or not at all. For the workers, carry the outbound claim check in the dispatch prompt alongside the write-form rule and the identity map: a worker authors the PR body, the report comment and the commit messages, and this document's own literalism means a requirement left out of the prompt is a requirement skipped - the worker will accurately report that the task never asked for it. Constraining only the writes made here would leave most of the run's claims about the codebase unchecked.",
+      "assertions": [
+        "the answer reads the scheduler before writing the DECISION item's why",
+        "the answer explains why a DECISION item is the expensive case",
+        "the answer carries the claim check into the dispatch prompt rather than only applying it to its own writes",
+        "the answer invokes prompt literalism as the reason the dispatch prompt must state it"
+      ]
+    },
+    {
+      "id": 40,
+      "name": "the-scope-ratchet-and-the-body-that-argues-for-a-reverted-design",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A PR was chartered from its issue as 'guard the closed flag on candle upsert' - a one-clause setWhere guard. It is now in review round five. The repair worker's latest push fixes the finding it was dispatched for and, to do so, adds src/services/binance/clock.ts: offset tracking, memoised sync, latency correction and a retry cooldown. Every previous round's finding was real and every previous fix was right for its finding. Separately, round three reverted the network-error retry default to false, and the PR body still makes the case for enabling it. What do you do with this push, and what do you do before the PR is promoted or merged? Also: your session restarted between rounds three and four, and a second PR in the tranche was opened by a previous run whose body carries no `Chartered scope:` line.",
+      "expected_output": "Do not adopt the push. Compare the diff against the chartered scope recorded at creation: a new module is one of the three shapes that make a fix a DECISION item - split or absorb - rather than an adoption, alongside a new build or CI step and a new cross-cutting invariant. That every round was individually justified is not a reason to adopt; it is the hazard, since a ratchet has no step at which it is wrong - the reviewer finds problems in what it is shown and each fix enlarges what it is shown next. Nothing else in the document bounds one PR's diff: invariant 3 bounds the run, the frontier rule bounds what starts, dispatch authority bounds what may be worked on. The test is the kind of thing added, not its size, and the charter has to have been recorded at creation, from the issue, because one written now would be written from the diff and could only agree with it. Before any promote or merge step, re-read the body against the current diff: it argues for a default round three reverted, nothing in the repair path re-reads it, and it is the first artifact a human reviewer reads. That comparison is the one the charter check already has open. On the restart: the per-PR block is a cache under invariant 1, so the charter is not recovered from it - it is read back from the PR body's `Chartered scope:` line, which create-pr writes at creation as a required content precisely so a session boundary cannot lose it. Never rebuild it from the issue as it now stands: that is after the diff expanded and possibly after the issue was edited to match, and a charter reconstructed there agrees with anything. For the second PR, no charter line is recoverable, so record and report the ratchet check as unavailable for it rather than performing it against a guess - an unavailable check is a known blind spot, a check against a reconstructed charter is a clean result that means nothing.",
+      "assertions": [
+        "the answer refuses to adopt the push and raises it as a DECISION item",
+        "the answer names the new module as the trigger and the kind of addition rather than its size as the test",
+        "the answer explains that every round being justified is the hazard rather than a defence",
+        "the answer re-reads the PR body against the current diff before promote or merge",
+        "the answer recovers the charter from the PR body rather than from run state or the current issue",
+        "the answer reports the check as unavailable where no charter line exists instead of reconstructing one"
+      ]
+    },
+    {
+      "id": 41,
+      "name": "the-escalation-ladder-cannot-see-a-confidently-wrong-worker",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are about to dispatch three issues. One is a defect whose ticket names a single call site, and you have no evidence either way about whether that is the root. One is a known problem needing careful work around a hazard the ticket states. One is a fully-specified mechanical change in a repository whose CLAUDE.md pulls in fifteen specification documents. You have model-escalations available per issue. Do you dispatch all three on the default and let the ladder handle it?",
+      "expected_output": "No. The ladder catches a worker that keeps failing and cannot catch one that is confidently wrong, which is the expensive shape here: a worker that patches the one site the ticket named, where the defect is restated at three, returns a green PR fixing a third of the bug and trips no repeated-failure trigger, because it did not fail. So the model is selected per issue before dispatch, by swarm-dispatch's Model section, which owns both the failure-visibility tiers and the context-capacity veto - apply them from there rather than restating them. The first issue is a diagnosis problem and takes the strongest model. The second is careful execution against a stated hazard and takes the default. The third is mechanical, and its tier is nonetheless vetoed by capacity: what the worker loads before reaching the code is what exhausts the window, so it does not go to a small-context model whatever the diff looks like. The ladder stays as the floor under all three.",
+      "assertions": [
+        "the answer selects per issue before dispatch rather than relying on the escalation ladder",
+        "the answer names confidently-wrong as invisible to a trigger that keys on repeated failure",
+        "the answer defers to swarm-dispatch for the tiers rather than restating them",
+        "the answer applies the capacity veto to the mechanical issue"
+      ]
+    },
+    {
+      "id": 42,
+      "name": "the-checkpoint-names-which-gate-condition-holds-each-pr",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your tranche has four PRs across two repositories, both of which have carried `\"auto-merge\": true` in .claude/backlog-orchestrator.json for the past week. The settle sequence has run: summarize-tranche produced three DECISION items, none of them ruled on. One PR additionally has a review thread reserved for the owner; one is additionally an explicitly held draft; the other two have clean CI and clean reviews. You were about to report the tranche as awaiting merge authorisation and ask the owner to authorise merges. What do you write instead? And on a supervision cycle before the summary had run, what would the block say for the two clean PRs and for a fifth PR whose CI is red?",
+      "expected_output": "Not that. There is no authorisation outstanding: both repositories opted in a week ago, and invariant 12's gate needs that opt-in and nothing further from the owner - merge-stack invoked on its own is the route that needs a user authorisation, and collapsing the two and defaulting to asking is the failure Autonomy and interactive prompts names at the dispatch end, arriving at the merge end. What holds these PRs is the gate's other conjunct: three outstanding DECISION items anywhere in the tranche hold every PR in it, however clean. So the block names, per PR, the first unmet condition by its own name from invariant 12 - `held by: 3 outstanding DECISION items (tranche-wide)` for all four, since that condition bites first and bites everywhere. None is reported mergeable. The held draft is additionally reported as held and is excluded from the gate outright. Before the summary has run, none of this is knowable: the gate's DECISION and MERGE_RISK inputs do not exist yet, so a PR with clean CI and a clean review is neither held by a known condition nor demonstrably mergeable - it is reported `gate not yet evaluated`. The fifth is different: red CI is a condition that is true now, actionable now, and the summary cannot make it untrue, so it is named as `held by: CI red` even pre-summary. Only `mergeable` genuinely needs the inputs that do not exist yet. Reporting it mergeable there would be the same false account with the sign flipped. Awaiting merge and pending are not reports about a gate at all: they are compatible with every condition and with none.",
+      "assertions": [
+        "the answer does not ask the owner to authorise merges where the repositories have already opted in",
+        "the answer distinguishes the gate's repository opt-in from merge-stack's user authorisation",
+        "the answer reports the tranche-wide outstanding DECISION items as holding every PR, including the otherwise-clean ones",
+        "the answer uses `gate not yet evaluated` for a pre-summary cycle rather than mergeable",
+        "the answer rejects a bare pending or awaiting state as a report about a gate",
+        "the answer still names a known blocker such as red CI on a pre-summary cycle rather than hedging it as not-yet-evaluated"
+      ]
+    },
+    {
+      "id": 43,
+      "name": "a-live-session-count-cannot-distinguish-warm-from-stranded",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Step 11's reconciliation against the runtime leaves three sessions alive that this run created. One is mid-turn on its issue. One has been IDLE for four weeks, was chartered for a single issue, reports `staged_files: true`, and `git ls-remote --heads origin` returns nothing for its branch. A fourth pushed its branch on day one, has committed seven times since without pushing, and reports no staged or uncommitted files. For the fifth, the runtime does not expose a staged-files field at all. What does the checkpoint say about them?",
+      "expected_output": "Not `3 alive`. That count is compatible with three warm containers and with three containers holding weeks of unpushed work, and telling those apart is the whole reason the check exists. Report per session: the issue it was chartered for, how far its remote head has got, and whether it carries staged or uncommitted files. Branch existence is not progress - the fourth session has a branch and a clean worktree and seven stranded commits, which is the `clean | local ahead` case Checkpoint compliance already names, so a branch-exists field would report it as healthy. Compare local head against remote where the worktree is reachable; where it is not, record the remote head and how long since it last advanced. The mid-turn one reads as ordinary. The four-week one is the case this exists for - charter, branch absent from the remote, staged files true - and it is also what the capture lever under Releasing a worker turns on, so the remote reading is needed in this pass anyway. For the third, name the field and say it is unread: an unread field is not a clean one, and omitting it reads as clean.",
+      "assertions": [
+        "the answer replaces the bare count with per-session charter, remote-head progress and staged-files fields",
+        "the answer flags the four-week session as stranded work rather than as a live worker",
+        "the answer reports the unreadable field as unread rather than omitting it",
+        "the answer reports remote-head progress rather than branch existence and catches the local-ahead session"
+      ]
     }
   ]
 }
