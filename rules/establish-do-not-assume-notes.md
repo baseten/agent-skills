@@ -44,3 +44,18 @@ day they diverge.
 not compound: the next session repeats the call, or worse, repeats the
 assumption. A recorded observation is the only artifact that turns this from a
 per-run discipline into a property of the repository.
+
+**Why the outbound direction is a third section rather than a line in the first
+(Sept 2026).** The remedy is identical — name what settles it and read that — but
+the trigger is not, and the trigger is what a rule has to be reachable from. The
+first two sections fire when something arrives or when a step is about to run;
+this one fires at the moment of writing a sentence, which is exactly when nothing
+feels like a lookup. Folded into *Someone asserted it* it would have been read as
+being about other people's claims, which is how the docs-only version of this
+check sat next to a review reply carrying a false premise and did not catch it.
+
+**Why an unverified claim is marked rather than dropped.** Dropping it loses
+information the owner may need and cannot recover; posting it plainly launders a
+recollection into evidence. Marking it costs a clause and keeps the reader's
+ability to weigh it — and where they do have the codebase in front of them, they
+settle it in seconds.

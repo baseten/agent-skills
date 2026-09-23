@@ -181,9 +181,13 @@ whole task spec rather than a step list.
 
 The skills here can drive their own repository's PRs, with three known mismatches.
 
-**1. The review budget.** `review-repair-cycles` bounds unattended review rounds per PR.
-Its built-in default — stated in `backlog-orchestrator`'s own defaults list, and not
-repeated here — is far below the observed round count for documentation changes. Exhaustion degrades safely rather than failing — rounds past the cap return as
+**1. The review budget.** `review-repair-cycles` bounds unattended **pushed repair passes**
+per PR — not review rounds. A round that produced questions, acknowledgements or nothing to
+repair returns `NO_CODE_CHANGE` and consumes no cycle, so a PR can take many more rounds
+than the cap without exceeding it: observed counts of six, six, three and six against a cap
+of two exceeded nothing. **Do not raise the key from a round count**; reconcile it against
+the cycles actually consumed. Its built-in default is stated in `backlog-orchestrator`'s own
+defaults list and not repeated here. Exhaustion degrades safely rather than failing — rounds past the cap return as
 deferred-repair `NEEDS_USER` **items** under a `NO_CODE_CHANGE` round, holding that PR's
 merge gate and reaching the owner at settle, never as a `NEEDS_USER` outcome for the PR. So
 the symptom is a stall that hands you the work, not a crash. This repository raises the key
