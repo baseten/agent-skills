@@ -96,8 +96,11 @@ action.
 to find out whether a read works costs a read and changes nothing, so it is a
 probe and a fine thing to build a decision on. Writing to find out whether a
 write works leaves the write behind. Triggering a review to find out whether the
-reviewer is answering *is* a review request. Ask what the attempt leaves behind
-and what budget it draws on; where the answer is nothing and none, probe freely.
+reviewer is answering *is* a review request. Ask what the attempt leaves behind:
+**a probe leaves no durable artifact and no side effect anyone else observes.** It
+may still cost a metered read, so it stays inside whatever read budget the
+consuming skill governs — cheap is not free, and a probe against a refused
+allowance is deferred like any other read rather than retried.
 
 Observed: a run out of review budget armed a job to retry the review trigger
 every ten minutes until the provider answered. The provider answered all twelve
