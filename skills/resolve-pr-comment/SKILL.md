@@ -97,6 +97,8 @@ Explain the batching decision before touching any files.
 
 ### 3. Apply the fix(es)
 
+**Where the requested change is a test, or adds one, run the four-defeat checklist against it** (`references/a-passing-test-is-not-a-verified-fix.md`). A reviewer asking for a regression test is asking for one that would have caught the defect, and a test written in the same pass as its fix satisfies fail-first trivially.
+
 **Skipped entirely on a classify-only invocation** (below), along with steps 4-6.
 
 - Make the minimal change needed to address each comment.
@@ -117,7 +119,11 @@ git push -u origin <branch>
 
 For separate commits, repeat per concern. Commit messages should describe the
 fix, not reference the review comment ("Fix off-by-one in pagination", not
-"Address PR comment").
+"Address PR comment"). **A commit message that asserts something about existing
+code needs the same read behind it as a reply does**
+(`references/establish-do-not-assume.md`, *You are about to assert it*) — a
+message is a durable claim nobody re-reads later, and a wrong one about why a
+change is safe outlives every thread on the PR.
 
 After pushing, capture the SHA(s):
 
@@ -159,6 +165,8 @@ and classify-only that is never true, so those replies carry it. Attended it is
 true only where the person was actually shown the reply and confirmed or edited
 it — invoking the skill is not that, and neither is being in the session. The
 placeholder in the templates above is where it goes when it applies.
+
+**Where a reply does say something about the codebase, read it first.** The one-line form above rarely leaves room for a claim, and the escalation drafts and question items this skill composes do. Any assertion about what some other part of the codebase does needs a read behind it before it is posted, never a recollection (`references/establish-do-not-assume.md`, *You are about to assert it*) — a reply asserting a blast radius from memory was wrong about it, and four greps would have settled it in minutes.
 
 **A reply reports work done and never answers a query.** Where the comment asked
 for prose, no reply of any kind carries the answer — see *Handling queries*,
@@ -500,6 +508,12 @@ After completing all steps, summarize:
 - Which comments were resolved
 - The commit SHA(s) applied
 - Confirmation that replies were posted and threads marked resolved
+- **For each claim about existing code carried in a reply, an escalation draft or
+  a commit message, the artifact read to settle it** — or that it went out marked
+  unverified, with what would settle it. The reply carries the claim and never
+  the audit trail, so this output is the only durable record of the read, and
+  without it a supervising or later session cannot tell the observation from the
+  recollection this exists to prevent
 - **Any thread classified no-action**, one entry each: the thread's API
   `html_url` (*What a question item must contain*, row 1) and why it wants
   nothing. No draft. This is what lets the caller mark it handled so it is not

@@ -24,3 +24,12 @@ behaviour and is actually about the measurement apparatus. It also defeats the
 same fallback — the unfixed code passes it most of the time — so a reader who has
 just been told that running it again is not the method needs the case where
 running it 400 times is.
+
+**Why the sentinel rule is scoped to positional and value comparisons (round 1,
+Sept 2026).** Stated unconditionally it broke the legitimate case it most
+resembles: `expect(items.indexOf(x)).toBe(-1)` is a test whose *subject* is the
+absence, and demanding a presence assertion first contradicts the behaviour under
+test. The defect is not the sentinel appearing in an assertion; it is the sentinel
+being silently accepted as an answer to the comparison being made. That
+distinction is still decidable by reading the test, which is the bar every entry
+here has to clear.

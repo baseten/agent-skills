@@ -121,6 +121,18 @@
         "the question item forwards all five required fields verbatim, including the API html_url unrebuilt",
         "the draft itself is not given a footer"
       ]
+    },
+    {
+      "id": 9,
+      "name": "a-repair-that-adds-a-regression-test-runs-the-checklist",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given) with repair type = finding. The settle-time finding asks for a regression test covering a drain that dropped an item. You write the fix and, in the same commit, a test asserting `expect(processed.indexOf('b')).toBeGreaterThan(processed.indexOf('a'))`, with one item of each kind in the fixture. It fails before your fix and passes after. Is that enough to return REPAIRED?",
+      "expected_output": "Not yet. Fail-first is satisfied here for the wrong reason - the fix and the test were written in the same pass - so run the four-defeat checklist against the test first, on this branch as much as on the CI branch, since a finding asking for a regression test is exactly where a new test enters. Two defeats are present. The comparison treats a not-found sentinel as a position: indexOf returns -1 when absent, which is greater than nothing and less than everything, so a dropped item and an out-of-order item are indistinguishable - assert presence before comparing positions. And the sample cannot express the property: with one item of each kind the ordering holds under implementations that do not order at all, so it needs enough elements that a wrong implementation gives a different answer, and enough repetitions where the failure is probabilistic. Fix the test, then return.",
+      "assertions": [
+        "the answer runs the checklist on the finding-repair branch rather than treating it as CI-only",
+        "the answer identifies the sentinel comparison and requires a presence assertion",
+        "the answer identifies the sample size as unable to discriminate",
+        "the answer does not accept fail-first as sufficient when fix and test were written together"
+      ]
     }
   ]
 }

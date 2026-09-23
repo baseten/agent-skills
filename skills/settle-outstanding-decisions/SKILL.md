@@ -99,6 +99,8 @@ The test for every question: **can the owner answer it without opening another t
 - where it lives — the canonical URL;
 - the cost of leaving it unanswered.
 
+**Anything the question asserts about existing code is read before the question is put** (`references/establish-do-not-assume.md`, *You are about to assert it*). *What the run assumed in the meantime*, *what is already built on that assumption* and *what materially changes per option* are all claims about a codebase, carried into the one artifact whose whole purpose is that the owner decides from it — and the same applies to a recorded ruling comment. Where a claim cannot be settled before asking, say so in the question with what would settle it: an owner ruling on an unmarked recollection is the failure this costs most.
+
 Where the run declined a finding or picked a default, lead with the evidence and the choice already made: "the run checked X, found Y, and did Z; ratify or overturn" — never a cold "what do you want?".
 
 ### `AskUserQuestion`'s constraints shape the mechanics

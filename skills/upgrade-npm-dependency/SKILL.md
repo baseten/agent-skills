@@ -116,7 +116,7 @@ Also establish: version-pinned patches against this package (they will fail to a
 
 ## Characterization tests
 
-Write tests against the **current** version, prove them green there, commit them alone, then apply that commit **unmodified** to the upgrade branch and run it.
+Write tests against the **current** version, prove them green there, commit them alone, then apply that commit **unmodified** to the upgrade branch and run it. **Run the four-defeat checklist against each one first** (`references/a-passing-test-is-not-a-verified-fix.md`): green-on-current is this step's whole premise, and a test that is green for the wrong reason — a not-found sentinel read as a position, a sample too small to discriminate, an assertion naming the fixture — stays green across the upgrade and certifies nothing.
 
 ```
 adopted PR        baseline = that PR's merge base, in its own worktree

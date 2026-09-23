@@ -14,9 +14,13 @@ Run this against every new or changed test, before the fix is accepted.
 **A sentinel that reads as a valid answer.** An ordering assertion used
 `indexOf(a) < indexOf(b)`. With `a` absent, `indexOf` returns `-1`, which is less
 than everything — so *never happened* and *happened first* are the same
-assertion. *Assert presence before asserting order.* Any comparison against a
-lookup that can return a not-found sentinel needs the presence assertion above
-it.
+assertion. *Assert presence before comparing positions.* The rule is about
+comparisons that treat the sentinel as a **position or a value** — `<`, `>`,
+ordering, arithmetic, a range check. **It does not touch a test whose subject is
+the absence**: `expect(items.indexOf(x)).toBe(-1)` is asserting exactly the thing
+the sentinel means, and requiring a presence assertion there would contradict the
+behaviour under test. The question to ask is whether the sentinel could be
+silently accepted as an answer to the comparison being made.
 
 **A sample size that cannot express the property.** A per-symbol ordering test
 used one symbol, and one element is in order under every possible

@@ -27,12 +27,15 @@ AUTHORED_WRITE_FORM="backlog-orchestrator create-pr normalize-github-dependencie
 RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
   establish-do-not-assume a-passing-test-is-not-a-verified-fix"
 
-# Skills that act on something asserted by an agent, or assumed about a provider.
+# Skills that act on something asserted by an agent, assumed about a provider,
+# or that author a write making claims about existing code.
 ESTABLISH_DO_NOT_ASSUME="backlog-orchestrator swarm-dispatch repair-pr
-  validate-backlog review-skill implement-issue-core"
+  validate-backlog review-skill implement-issue-core create-pr resolve-pr-comment
+  summarize-tranche settle-outstanding-decisions"
 
 # Skills that write or change a test as part of their work.
-A_PASSING_TEST_IS_NOT_A_VERIFIED_FIX="implement-issue-core repair-pr"
+A_PASSING_TEST_IS_NOT_A_VERIFIED_FIX="implement-issue-core repair-pr
+  upgrade-npm-dependency resolve-pr-comment"
 
 # The prose reviewers. Both terminate on the same budget; neither owns it.
 PROSE_REVIEW_ROUND_BUDGET="review-docs review-skill repair-pr"
