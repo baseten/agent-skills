@@ -186,6 +186,12 @@ Added with `review-docs` (Sept 2026). The confirmation step was written for an e
 
 **The $33.45 and $59.60 sessions — why the risk ordering was corrected:** an earlier version of this section treated the worker that *can* disarm its own wake as the benign branch, because it leaves nothing blocked behind. Two leaked sessions proved the opposite: each woke hourly, re-read a merged PR, found nothing, re-armed, and billed $33.45 and $59.60 respectively before the user found them in a session list. The disarming worker is the expensive branch precisely because it is unblocked — no handler ever sees it. The countermand was present in both placements on both runs and did not hold, which is why the section now points at the reconciliation step rather than at stronger wording.
 
+## Shared environment
+
+**Why workers are told the environment hypothesis comes first (Sept 2026):** the repository that produced this had already absorbed the lesson — a script ensures the service is up before the suite, and its `CLAUDE.md` documents the tell. A worker has none of that context. It sees thirty unrelated files red, concludes its own change broke everything, and either thrashes against a codebase that is fine or returns `FAILED` on one. The instruction costs a sentence in the dispatch prompt.
+
+**Why raising the hypothesis is separated from confirming it (round 1):** a PR that changes connection configuration or client setup produces refused connections across every unrelated test file, with the same error and the same breadth as a dead service. Treating the signature as conclusive hands that PR a free pass on exactly the failure it caused. The confirmation lives in `repair-pr` rather than here because that is where a pass has the diff and the branch comparison in front of it.
+
 ## Every read is a snapshot
 
 **Why this is stated separately from invariant 1 (Sept 2026):** invariant 1 says where truth lives and was read as though that settled it. It does not say that truth moves while you read it, and with several sessions writing to the same remote it moves constantly — a PR read as open merged between two reads in one conversation. Everything downstream of a multi-item read is a composite of instants that never coexisted, which is a different failure from reading the wrong source and needs its own name.

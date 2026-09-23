@@ -793,6 +793,8 @@ For each enumerated resource, either give every worker its own namespace/instanc
 
 Pass the resolved access details explicitly in each dispatch prompt so no worker has to guess them. A worker that guesses wrong reports failures that are not real.
 
+**Carry the environment-hypothesis rule in every dispatch prompt** — `implement-issue-core`, *Final local verification*, states it and this run does not restate it. A worker inherits none of the repository's own context about a service that dies mid-session, and a prompt that omits the rule gets a worker that thrashes against a healthy codebase or returns a bare `FAILED` on one (NOTES).
+
 Standing rule in every dispatch prompt: never stop, reset, reconfigure, or clean up a concurrently shared resource — a sibling worker may be using it. A worker holding serialized exclusive access may perform the lifecycle operations the repository's own configuration sanctions, since nothing else holds the resource during its turn.
 
 ## Remote checkpoint requirement
@@ -861,6 +863,8 @@ worker session: <session id, or none on tiers without one> — archived: yes/no
 **And it is written where a restart can find it, which this block is not.** Invariant 1 classifies the per-PR block as a cache, so a run that recorded the charter only here loses it at the session boundary and a resumed run would rebuild one from the issue as it now stands — after the diff expanded, and quite possibly after the issue was edited to match. A charter reconstructed at that point agrees with anything. So `create-pr` writes it into the PR body at creation as a **`Chartered scope:` line** — a required content under the write-form rule, one or two sentences, surviving the budget as the linkage lines do — and adoption recovers it from there.
 
 **Where no charter line is recoverable, say so and do not invent one.** A PR this run did not create, or one whose body was rewritten without it, has no charter, and the ratchet comparison is **unavailable** for that PR rather than performed against a guess. Record it as unavailable in the block and report it that way: an unavailable check is a known blind spot, and a check performed against a reconstructed charter is a clean result that means nothing.
+
+**A worker that sees the seam first reports it rather than crossing the charter** (`implement-issue-core`, *Implement with remote checkpoints*), and it arrives as a **design finding on that worker's return**. Record it as a `DECISION` item — split or absorb — which is the disposition this gate would reach anyway, and hold the path it bears on. The same finding reaching this run before the work rather than after a refused adoption is cheaper for both sides, and the only thing that makes the early route real is that the return carries it.
 
 **Before adopting any repair worker's push, compare its diff against that charter.** A fix that introduces a **new module**, a **new build or CI step**, or a **new cross-cutting invariant** is a `DECISION` item — split or absorb — and not an adoption. The parent already inspects the pushed head, so this is a predicate on an inspection that happens anyway. Adopt everything else as usual: the test is the kind of thing added, not its size.
 
@@ -940,6 +944,8 @@ On an actionable CI failure:
 5. **compare the pushed diff against the PR's chartered scope** (see the per-PR block) — a new module, build/CI step or cross-cutting invariant is a `DECISION`, not an adoption — then adopt its pushed remote head, **and merge every posting-identity entry it returned into the run's transport-and-credential-keyed map** (see Posting identity) — a repair runs on its own transports, so this is the run's only evidence about them;
 6. increment the CI repair cycle;
 7. release the repair worker (see Releasing a worker) and resume event supervision.
+
+**Step 2 decides attribution, so a mass failure across unrelated files is not classified external here without confirmation as `repair-pr`, *CI repair*, defines it. Unconfirmed, dispatch rather than classify** — the pass has the diff in front of it and is the cheaper place to be wrong (NOTES).
 
 External/flaky failure with no justified code change does not consume a repair cycle.
 
