@@ -97,6 +97,8 @@ Explain the batching decision before touching any files.
 
 ### 3. Apply the fix(es)
 
+**Where the requested change is a test, or adds one, run the checklist in `references/a-passing-test-is-not-a-verified-fix.md`, the time rule included against it** (`references/a-passing-test-is-not-a-verified-fix.md`). A reviewer asking for a regression test is asking for one that would have caught the defect, and a test written in the same pass as its fix satisfies fail-first trivially.
+
 **Skipped entirely on a classify-only invocation** (below), along with steps 4-6.
 
 - Make the minimal change needed to address each comment.

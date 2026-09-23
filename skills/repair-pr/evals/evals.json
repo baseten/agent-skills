@@ -121,6 +121,30 @@
         "the question item forwards all five required fields verbatim, including the API html_url unrebuilt",
         "the draft itself is not given a footer"
       ]
+    },
+    {
+      "id": 9,
+      "name": "a-mass-failure-is-an-environment-hypothesis-first",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given) with repair type = ci. The PR changed two files in one module - one of them the shared database client's connection setup. CI is red across thirty test files with nothing in common, including files this branch never touched. The report shows the first failing test's assertion, a plain equality check on a returned row, and further down the run summary shows `ECONNREFUSED 127.0.0.1:5432`. What do you establish before attributing the failure, and where does that leave the pass?",
+      "expected_output": "Read the error, not the assertion. The equality check is the visible failure and says nothing about cause; what discriminates is the connection refusal appearing across failures that share nothing else, which is the tell that the suite never reached the code. That raises an environment hypothesis and does not settle it: this PR changed connection setup, which produces the same signature at the same breadth, so attributing on the signature alone would hand it a free pass on the failure it caused. Confirm against something outside this branch - the service's own health, or whether unrelated branches and the default branch fail the same job. Confirmed, this is step 3, unrelated or external with no justified code change: report it and change nothing. Unconfirmed, it is not grounds for step 3 - step 3's other grounds, a flaky failure or a pre-existing unrelated one, are unaffected and need no confirmation - so the hypothesis points back at the connection-setup change and that is where to look.",
+      "assertions": [
+        "the answer takes the tell from the error text rather than from the failing assertion",
+        "the answer refuses to settle attribution on the error signature alone",
+        "the answer confirms independently, by service health or a comparison against unrelated and default branches",
+        "the answer does not route to the no-code-change branch on an unconfirmed hypothesis, and does not claim that is step 3's only ground"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "a-repair-that-adds-a-regression-test-runs-the-checklist",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given) with repair type = finding. The settle-time finding is that a drain dropped an item. You write the fix and, in the same commit, a regression test asserting `expect(processed.indexOf('b')).toBeGreaterThan(processed.indexOf('a'))`, with one item of each kind in the fixture. It fails before your fix and passes after. Is that enough to return REPAIRED?",
+      "expected_output": "Not yet. Fail-first is satisfied here for the wrong reason - the fix and the test were written in the same pass - so run the four-defeat checklist against the test, on this branch as much as on the CI branch, since a finding asking for a regression test is where a new test enters. The sentinel defeat is present and it is precise: if 'a' is dropped, indexOf('a') is -1 and indexOf('b') is 0, so 0 > -1 passes - the test is green on a dropped item, which is the exact defect it was written for. A dropped 'b' and an out-of-order pair both fail, so the masking is one-sided and easy to miss. Assert presence of both before comparing positions. Fix the test, confirm it now fails on the unfixed drain, then return.",
+      "assertions": [
+        "the answer runs the checklist on the finding-repair branch rather than treating it as CI-only",
+        "the answer works out that a dropped first item makes the comparison pass",
+        "the answer requires a presence assertion before the positional comparison",
+        "the answer does not accept fail-first as sufficient when fix and test were written together"
+      ]
     }
   ]
 }
