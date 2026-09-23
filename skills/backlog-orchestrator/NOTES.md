@@ -122,6 +122,10 @@ The owner asked for the rule scoped to human comments and, when the asymmetry wa
 
 **Why `auto-merge` is one grant rather than per-consumer keys:** splitting the key per consumer would gate which skill happened to open the PR, which is not a security property, and would leave the real boundary — the gate — unchanged.
 
+## Default usage safeguards
+
+**Why the cycle keys are never called round caps (Sept 2026):** they count pushed repair passes, and a round producing questions, acknowledgements or nothing to repair consumes none. Calling them round caps in the one section that talks about them as limits is what makes a run at its sixth review round conclude the budget is spent when zero cycles are consumed and repairs are still authorised — the exact misread the counting rule exists to prevent, surviving beside it.
+
 ## Model and skill policy
 
 **Why selection moved in front of the ladder (Sept 2026):** the ladder catches a worker that keeps failing, and the observed losses were workers that did not fail. One patched the single site its ticket named where the defect was restated at three — a green PR fixing a third of the bug. Another declined its own ticket's preferred option, correctly, by reading the spec over the issue text; a cheaper worker doing what the ticket said would have looked exactly as successful. No trigger that keys on repeated failure can reach either, which is why the assignment is made up front and the ladder is the floor under it rather than the mechanism.
@@ -195,6 +199,10 @@ Added with `review-docs` (Sept 2026). The confirmation step was written for an e
 **Why re-reading is scoped to the deciding facts:** re-reading everything before every action would cost more API budget than the read discipline allows, and the exposure is not uniform — a ranking computed from stale data is re-derivable, a merge performed on it is not. So the rule attaches to the acts that cannot be undone.
 
 ## Draft state
+
+**Why the convention is read at adoption and evaluated each cycle (round 1, Sept 2026):** the first version said what to do with a promotion convention and never said when the run looks or where the answer lives — so the rule was inert, or worse, re-derived at an arbitrary moment, which makes the same PR merge or not depending on when the run happened to glance. Adoption is where the run already records a PR's head, base and trigger state; the supervision cycle is where it already re-reads CI, review and threads, so a PR that becomes eligible mid-run is promoted when it becomes eligible. The per-PR block carries the conditions so no later pass has to re-derive them from prose.
+
+**Why the trigger comment stayed unconditional:** scoping it to "where promotion is withheld" implies its converse — that promoting asks for the review — and whether a provider acts on a publish is exactly what this document refuses to assume. A run in a promote-convention repository would promote four PRs, treat that as having requested review, and sit on four PRs nobody reads: the seven-hour failure *Adopting a PR is three things* exists to prevent, re-opened through the section next to it.
 
 **Why the repository's convention wins (Sept 2026):** the skill said the run does not promote drafts; two repositories' `CLAUDE.md` said to mark a PR ready once CI is green, the review is back and every actionable finding is resolved. Not a tension — a contradiction, with no tiebreak anywhere in the precedence machinery, which resolves budgets and merge policy from `.claude/backlog-orchestrator.json` and says nothing about prose conventions. A run reading both promoted one PR and left three in draft, and was right either way.
 

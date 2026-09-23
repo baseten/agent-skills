@@ -187,7 +187,7 @@ repair returns `NO_CODE_CHANGE` and consumes no cycle, so a PR can take many mor
 than the cap without exceeding it: observed counts of six, six, three and six against a cap
 of two exceeded nothing. **Do not raise the key from a round count**; reconcile it against
 the cycles actually consumed. Its built-in default is stated in `backlog-orchestrator`'s own
-defaults list and not repeated here. Exhaustion degrades safely rather than failing — rounds past the cap return as
+defaults list and not repeated here. Exhaustion degrades safely rather than failing — repairs past the cap return as
 deferred-repair `NEEDS_USER` **items** under a `NO_CODE_CHANGE` round, holding that PR's
 merge gate and reaching the owner at settle, never as a `NEEDS_USER` outcome for the PR. So
 the symptom is a stall that hands you the work, not a crash. This repository raises the key
