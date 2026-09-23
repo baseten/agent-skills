@@ -9,7 +9,7 @@ directly.
 
 Run this against every new or changed test, before the fix is accepted.
 
-## The four defeats
+## The defeats
 
 **A sentinel that reads as a valid answer.** An ordering assertion used
 `indexOf(a) < indexOf(b)`. With `a` absent, `indexOf` returns `-1`, which is less
@@ -35,8 +35,13 @@ is whether the sample can distinguish the decision under test from its absence.
 **The assertion names the premise rather than the behaviour.** A "rejects a
 poisoned batch" test constructed a poisoned batch and asserted the batch was
 poisoned. It passed on every implementation, including no implementation at all.
-*The assertion must name something the code under test decided.* **If it would
-still hold with the module deleted, it is testing the fixture.**
+*The test's own assertion must name something the code under test decided.* **If
+the only assertion would still hold with the module deleted, the test is testing
+its fixture.** A guard *beside* a real assertion is a different thing and is the
+remedy the fixture defeat below asks for — `expect(leads.some(l => l.archived))`
+standing in front of an assertion about what `filter` returned proves the fixture
+is well-formed, and deleting it removes the check that catches a shared factory
+quietly dropping the poisoned row.
 
 **The fixture supplies the condition the test exists to detect.** A "late stream,
 no workers" test pushed a fake worker into the registry, so the stream-only path —
@@ -47,7 +52,7 @@ construction, and a default that happens to contain it is the defect. A name
 carrying *no X* or *only Y* is a useful flag, not the test — the same defect in
 one called *stream-only path* reads no differently.
 
-## Time is not an assertion target
+## The fifth: time is not an assertion target
 
 **A test may assert that a bound fired** — the timeout result, the named pending
 work. **It must not assert that elapsed wall-clock met or exceeded that bound**

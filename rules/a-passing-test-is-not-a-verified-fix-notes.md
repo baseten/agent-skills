@@ -50,3 +50,12 @@ exceptions is as unusable as one that over-reaches.
 only because that case happened to be called "Late stream, no workers". The same
 defect in one called *stream-only path* passed the checklist untouched. The name
 is a flag; the subject is the test.
+
+**Why the premise entry gained a scoping clause after all (round 2).** The claim
+that no legitimate test falls foul of it was wrong, and the counterexample is the
+remedy the *fixture* entry asks for: a guard asserting the fixture is well-formed,
+standing in front of an assertion about what the code decided. It holds with the
+module deleted, and deleting it removes the only check that catches a shared
+factory quietly dropping the row the test needs. So the defect is a test whose
+*only* assertion would survive the deletion. The rule already assumes a test can
+carry more than one assertion — the sentinel entry mandates a second one.
