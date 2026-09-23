@@ -122,6 +122,14 @@ The owner asked for the rule scoped to human comments and, when the asymmetry wa
 
 **Why `auto-merge` is one grant rather than per-consumer keys:** splitting the key per consumer would gate which skill happened to open the PR, which is not a security property, and would leave the real boundary — the gate — unchanged.
 
+## Default usage safeguards
+
+**Why one budget became two (Sept 2026):** `new-issue-budget` was doing two jobs and only one of them well. What actually hurt was the number of PRs open at once — reviewer load, merge-order complexity, conflict surface, thirteen across two repositories — and cumulative starts is a poor proxy for that. Worse, it made invariant 13 inert: a run that started twelve and merged all twelve watched its frontier advance onto work it was no longer permitted to begin, which is the opposite of a run advancing off merges.
+
+**Why the reset is not routed through settle (revised, Sept 2026).** The first version restored flow-control capacity only once the settle sequence had run, to stop a run dispatching its way past settling. Review found two deadlocks in it and a third problem underneath them: a budget that withholds capacity from merged PRs is no longer a count of what is open, it is a hidden ledger of slots consumed since the last settle — unobservable, divergent from the checkpoint's own number, and lost on restart, which made restarting a free bypass. A closed-unmerged PR also never returned its slot, wedging the run with no exit.
+
+**Why a released slot is itself a dispatch trigger (round 2):** removing the settle-routing made the release real and left nothing acting on it. Every re-entry rule was keyed on the frontier *advancing*, so a run settled against the cap would watch its PRs merge as leaves that unblock nothing, each ending at a step that forbids dispatch, and hand off with spend unused and dispatchable work never started — the same wedge a third time, in the one place the simplification had not looked. The axis was every statement written on "settled means the frontier is empty", which the new predicate had made false by construction.
+
 ## Model and skill policy
 
 **Why selection moved in front of the ladder (Sept 2026):** the ladder catches a worker that keeps failing, and the observed losses were workers that did not fail. One patched the single site its ticket named where the defect was restated at three — a green PR fixing a third of the bug. Another declined its own ticket's preferred option, correctly, by reading the spec over the issue text; a cheaper worker doing what the ticket said would have looked exactly as successful. No trigger that keys on repeated failure can reach either, which is why the assignment is made up front and the ladder is the floor under it rather than the mechanism.
@@ -420,9 +428,7 @@ What landed instead is the trade stated where the preference is made, plus the o
 
 ## Settled tranche
 
-**Why one budget became two, and why the reset is routed through settle (Sept 2026):** `new-issue-budget` was doing two jobs and only one of them well. What actually hurt was the number of PRs open at once — reviewer load, merge-order complexity, conflict surface, thirteen across two repositories — and cumulative starts is a poor proxy for that. Worse, it made invariant 13 inert: a run that started twelve and merged all twelve watched its frontier advance onto work it was no longer permitted to begin, which is the opposite of a run advancing off merges.
-
-**Why the reset is not routed through settle (revised, Sept 2026).** The first version restored flow-control capacity only once the settle sequence had run, to stop a run dispatching its way past settling. Review found two deadlocks in it and a third problem underneath them: a budget that withholds capacity from merged PRs is no longer a count of what is open, it is a hidden ledger of slots consumed since the last settle — unobservable, divergent from the checkpoint's own number, and lost on restart, which made restarting a free bypass. A closed-unmerged PR also never returned its slot, wedging the run with no exit.
+**Why the predicate admits budget-held READY work (Sept 2026):** a run whose only remaining work is held by a budget can do nothing, and a predicate demanding an empty READY set would leave it unable to settle and therefore unable to reach the merges that release the budget. Settled means nothing is dispatchable *now*, not that nothing remains. A future editor reading "settled = nothing can start" is the reason this is written down.
 
 The simpler shape has none of that. A slot is held while one of this run's PRs is open and released when it is not, whatever the reason, so any pass recomputes it by counting and nothing can be lost or laundered. The circularity the routing feared does not need it: `new-issue-budget` is the spend ceiling, no merge or close ever restores it, and it is what bounds the invocation. Flow control did not need a second mechanism to make it terminate — it needed to stop pretending to be one.
 

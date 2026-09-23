@@ -1,6 +1,6 @@
 ---
 name: plan-merge-order
-description: Rank the open PRs of a settled implementation tranche (backlog-orchestrator owns what settled means) by how much downstream work each one unblocks, and emit a review order, a merge batching plan, and the hard sequencing constraints as a table. Use when a tranche is settled — no further work can start until existing PRs merge — or whenever asked what to review or merge first to unblock a backlog.
+description: Rank the open PRs of a settled implementation tranche (backlog-orchestrator owns what settled means) by how much downstream work each one unblocks, and emit a review order, a merge batching plan, and the hard sequencing constraints as a table. Use when a tranche is settled  — or whenever asked what to review or merge first to unblock a backlog.
 ---
 
 # Plan Merge Order
