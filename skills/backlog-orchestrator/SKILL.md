@@ -390,6 +390,7 @@ That prohibition is about re-planning, not about evidence. A worker reporting a 
 Results:
 
 - `PASS` -> proceed;
+- a node carrying `PREMISE_LIKELY_RESOLVED` -> **never dispatch it**, whatever the result value alongside it. Its cited defect is absent on another repository's current default branch with the replacement positively present, so dispatching produces a PR, review rounds and eventually a conflict over work already done. It is **not** `DONE` — that needs completion evidence this pass does not have — so classify it `NEEDS_USER`, which the settled predicate, the stop conditions and the closing report already handle: surfaced to the owner with the evidence and the revision it was read at, and it keeps its edges. `CITATION_UNREAD` and `CITATION_STALE` are warnings and change nothing about dispatch;
 - `PASS_WITH_WARNINGS` -> proceed only where warnings do not make ordering unsafe;
 - `FAIL` -> stop affected paths; continue only validator-confirmed independent safe branches.
 
@@ -414,8 +415,6 @@ Shallow mode reads declared dependency metadata and issue text. It reads code in
 - **a cross-repository consumer edge** — an in-scope issue in one repository depends on an issue in another. This is the primary trigger. A frontend consuming a backend built in an earlier tranche is the canonical case, and the earlier tranche having merged is precisely what makes shallow mode confident and wrong;
 - **an issue whose text hedges about its inputs** — "may require", "additional providers may be needed", "assuming X exists" — or an acceptance criterion naming a capability no in-scope issue delivers;
 - **a dependency satisfied by an issue that closed in an earlier tranche**, where nothing in this run verified what that issue actually exposes.
-
-**`PREMISE_LIKELY_RESOLVED` is not a warning to read past.** A node `validate-backlog` returns with that disposition is out of the dispatchable set: its cited defect is absent on the other repository's current default branch, so dispatching it produces a PR, review rounds and eventually a conflict over a bug that no longer exists. It is not `DONE` either — that needs completion evidence this pass does not have — so it is held and reported for the owner, with the evidence, and it keeps its edges in the graph.
 
 Scope the escalation to the affected subgraph rather than the whole DAG. The cost objection to deep mode is about breadth, and this does not have to be all-or-nothing: escalate the triggering node and the dependencies it consumes, and leave unrelated branches shallow.
 
@@ -559,6 +558,7 @@ Classify in-scope issues from tracker + GitHub remote evidence:
 
 - `DONE`
 - `PR_OPEN`
+- `NEEDS_USER` — including a node `validate-backlog` returned `PREMISE_LIKELY_RESOLVED`, which a restart re-derives from a fresh validation rather than from run state
 - `CI_RUNNING`
 - `CI_FAILED`
 - `IN_REVIEW`
@@ -1474,7 +1474,7 @@ A re-review that finds something is the system working: that PR is no longer cle
 
 A run is **settled** when no further implementation can start and every open PR is individually finished:
 
-- no in-scope issue is READY — each unstarted issue is blocked by work that is implemented but unmerged;
+- no in-scope issue is READY — each unstarted issue is either blocked by work that is implemented but unmerged, or classified `NEEDS_USER` because `validate-backlog` returned it `PREMISE_LIKELY_RESOLVED` (surfaced, not outstanding: it holds nothing and waits for the owner);
 - no implementation or repair worker is in flight — and a worker blocked on a permission prompt is in flight, not absent (see Blocked workers): it reads as quiet from every angle the other conditions look from, which is how a run declares itself settled over a worker stopped mid-issue;
 - every open PR from this run has had **every** automated review round its routing requires **completed**, not merely a trigger issued — where the routing requires two, one completing is not this condition met (`create-pr` owns the routing);
 - every actionable review finding on every open PR is resolved or answered — a thread reserved for the owner — by the kind test or on budget grounds (see Merge policy and review feedback) — counts here as surfaced, not outstanding: it blocks that PR's merge, never settlement;
@@ -1585,7 +1585,7 @@ Posting identity: (github-mcp, tok-a1b2) -> baseten (invoking user); (linear-cli
 Auto-merged (invariant 12 gate): 0
 Ready: 3
 Blocked: 2
-Needs user: 1
+Needs user: 1 (1 premise likely resolved — acme/api#144, evidence in the validation report)
 Resume frontier: <full URL(s)>
 ```
 

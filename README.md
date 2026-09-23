@@ -35,7 +35,7 @@ Reasoning for a rule lives beside it as `rules/<name>-notes.md`, and is delibera
 
 ## Backlog / orchestration skills
 
-- `validate-backlog` — validates a bounded issue DAG. Shallow mode checks tracker hierarchy/structured dependencies/text consistency; deep mode inspects implementation/spec reality for missing or incorrect dependencies.
+- `validate-backlog` — validates a bounded issue DAG. Shallow and deep differ in how far they read; `validate-backlog` states the split and its one cross-repository exception for missing or incorrect dependencies.
 - `normalize-github-dependencies` — converts high-confidence description-based GitHub dependencies into native blocked-by/blocking relationships where GitHub write capabilities are available.
 - `backlog-orchestrator` — policy layer for a bounded build-order/parent issue or issue set. It validates the DAG, fans out isolated workers via `implement-issue-core` on a model selected per issue (onto a Claude Code **Dynamic Workflow** when the user explicitly opts into one for this invocation, otherwise onto native/background sessions or ordinary supervised subagents), consumes platform-surfaced PR events on its own parent-level supervision loop, dispatches bounded `repair-pr` workers, and enforces stack/budget/recovery rules.
 - `summarize-tranche` — writes a short plain-language summary of what a settled tranche actually did, plus the action points a human still has to manage: follow-up issues to open, verified bugs left unfixed, decisions waiting, scope deliberately cut. Read-only by default; it proposes issues rather than opening them. `backlog-orchestrator` invokes it per settled tranche, before ranking; `implement-issue` invokes it when its one issue reaches a terminal state, a tranche of one.
