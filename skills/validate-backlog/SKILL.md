@@ -33,11 +33,11 @@ Checks, in order:
 9. distinguish an external prerequisite from an authorized implementation issue;
 10. report whether the graph is safe to execute without guessing.
 
-A ticket's prose is its author's claim about a codebase, checkable now (`references/establish-do-not-assume.md`): where an issue cites a `file:line` or a call-site count, re-read it against that repository's current default branch and flag what no longer holds — an audit found eight call sites where the issue named six, three of them naming a different function.
+A ticket's prose is its author's claim about a codebase, checkable now (`references/establish-do-not-assume.md`): where an issue cites a `file:line` or a call-site count, **a deep pass** re-reads it against that repository's current default branch and flags what no longer holds — an audit found eight call sites where the issue named six, three of them naming a different function.
 
-**A citation into another repository is re-checked at every mode, not only in a deep pass.** Deep mode is where the whole-prose audit belongs; a cross-repo citation is a different case, because the thing that invalidates it is a merge in a repository this backlog does not watch. An issue whose blocker merged elsewhere still reads as a live bug from inside its own repo: one such — Urgent, filed a week before its dependency landed — was still being carried as a blocker ten days after the fix shipped, with every field it named already converted at the boundary. The cost of missing it is not a wasted look: it is a dispatched worker, a PR, review rounds and eventually a conflict, for a bug that no longer exists. One grep per citation is cheap enough to pay every time.
+**A citation into another repository is the one exception, re-checked at every mode including shallow.** Deep mode is where the whole-prose audit belongs, and shallow mode otherwise reads only declared metadata and issue text; this narrow carve-out is a code read and is named as one, because the thing that invalidates a cross-repo citation is a merge in a repository this backlog does not watch. An issue whose blocker merged elsewhere still reads as a live bug from inside its own repo: one such — Urgent, filed a week before its dependency landed — was still being carried as a blocker ten days after the fix shipped, with every field it named already converted at the boundary. The cost of missing it is not a wasted look: it is a dispatched worker, a PR, review rounds and eventually a conflict, for a bug that no longer exists. One grep per citation is cheap enough to pay every time.
 
-**Where the citations no longer hold, say which way.** An issue whose cited code has *changed* is flagged for a human to re-read. An issue whose cited defect is *absent* — the premise fixed rather than moved — is **downgraded and reported as likely already done**, with the evidence that says so, rather than left at its recorded priority. Never close it: the backlog is the owner's, and a premise that reads as fixed is a strong claim this pass makes from outside the issue's own history.
+**Where the citations no longer hold, say which way, and say it in a form the scheduler can act on.** An issue whose cited code has *changed* is a **warning** flagged for a human to re-read; the node stays dispatchable. An issue whose cited defect is *absent* — the premise fixed rather than moved — carries the disposition **`PREMISE_LIKELY_RESOLVED`**, with the evidence that says so, and **is removed from the dispatchable set in the returned DAG** while remaining in the graph for its edges. Reporting it in prose alone leaves an unfinished-looking node that the scheduler will still hand to a worker, which is the whole failure. Never close it: the backlog is the owner's, and a premise that reads as fixed is a strong claim this pass makes from outside the issue's own history — so the node is held for them, not retired by this pass.
 
 Structured dependency metadata is authoritative when present; textual descriptions remain a secondary consistency signal. A textual blocker absent from structured metadata is flagged as a likely missing dependency, never silently ignored.
 
@@ -158,6 +158,9 @@ Errors:
 
 Warnings:
 - <canonical issue URL> text says it depends on <URL>, but no structured blocker link exists
+
+Premise likely resolved (non-dispatchable, held for the owner):
+- <canonical issue URL> — cited defect absent on <repo>@<default branch>: <evidence>
 
 Suggested dependency changes (deep mode only):
 - Add <A URL> -> <B URL> — confidence high — reason ...

@@ -409,11 +409,13 @@ Do not automatically mutate dependency metadata. GitHub normalization is handled
 
 ## Escalating to deep validation
 
-Shallow mode reads declared dependency metadata and issue text. It never reads code, so it can establish that an edge is *satisfied* and nothing about whether the deliverable behind it covers what the consumer needs. Escalate the preflight from shallow to deep **automatically** — this is a documented default applied and reported, not a question for the user — when the bounded scope shows any of:
+Shallow mode reads declared dependency metadata and issue text. It reads code in exactly one place — an issue's citations into *another* repository, which a merge there can invalidate without anything in this one changing (`validate-backlog` owns that carve-out) — and otherwise never, so it can establish that an edge is *satisfied* and nothing about whether the deliverable behind it covers what the consumer needs. Escalate the preflight from shallow to deep **automatically** — this is a documented default applied and reported, not a question for the user — when the bounded scope shows any of:
 
 - **a cross-repository consumer edge** — an in-scope issue in one repository depends on an issue in another. This is the primary trigger. A frontend consuming a backend built in an earlier tranche is the canonical case, and the earlier tranche having merged is precisely what makes shallow mode confident and wrong;
 - **an issue whose text hedges about its inputs** — "may require", "additional providers may be needed", "assuming X exists" — or an acceptance criterion naming a capability no in-scope issue delivers;
 - **a dependency satisfied by an issue that closed in an earlier tranche**, where nothing in this run verified what that issue actually exposes.
+
+**`PREMISE_LIKELY_RESOLVED` is not a warning to read past.** A node `validate-backlog` returns with that disposition is out of the dispatchable set: its cited defect is absent on the other repository's current default branch, so dispatching it produces a PR, review rounds and eventually a conflict over a bug that no longer exists. It is not `DONE` either — that needs completion evidence this pass does not have — so it is held and reported for the owner, with the evidence, and it keeps its edges in the graph.
 
 Scope the escalation to the affected subgraph rather than the whole DAG. The cost objection to deep mode is about breadth, and this does not have to be all-or-nothing: escalate the triggering node and the dependencies it consumes, and leave unrelated branches shallow.
 
