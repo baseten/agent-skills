@@ -108,6 +108,8 @@ observation rather than assumed from a provider's name.
 
 ## Per-repository policy configuration
 
+**Why a resolved-premise node is `NEEDS_USER` and not a new state (Sept 2026):** it has to be somewhere the existing machinery already reaches, or it wedges the run — a node that is neither READY nor blocked-by-unmerged-work satisfies no settled condition, no stop condition and no restart classification, so the run can neither settle nor stop and a reader resolving that the cheap way dispatches it. `NEEDS_USER` is already surfaced in the closing output rather than asked mid-run, already handled by the settled predicate and the stop conditions, and already the right meaning: a person decides whether the issue is done, because this pass concluded it from outside the issue's own history.
+
 **Why an issue being closed is not a trigger:** issue state is queryable, which is exactly why it slips through as a fact. It is still someone's assertion one step removed, and a waiver discharged by an assertion is a gate removed by whoever closed a ticket. The tracking issue is a coordination point the removal closes.
 
 **Why a config file and not prose or a skill override:** a `CLAUDE.md` paragraph gets interpreted, and interpretation must not decide whether a run may merge. A project-level skill override is not the mechanism either: `bootstrap.sh` installs these skills to `~/.claude/skills`, and a personal skill shadows a project skill of the same name, so a project copy would silently never load.
@@ -189,6 +191,12 @@ Added with `review-docs` (Sept 2026). The confirmation step was written for an e
 **The two costs of a worker-armed watcher, and the one observed:** a second watcher duplicates supervision the parent already owns and can act on a PR the parent is mid-repair on. And a worker that arms a wake it is not permitted to disarm — the trigger tools are routinely outside a worker session's allowlist — blocks on a permission prompt with nobody watching, holding a container for hours after its own work merged. The implementation succeeded; the deadlock was entirely in the cleanup.
 
 **The $33.45 and $59.60 sessions — why the risk ordering was corrected:** an earlier version of this section treated the worker that *can* disarm its own wake as the benign branch, because it leaves nothing blocked behind. Two leaked sessions proved the opposite: each woke hourly, re-read a merged PR, found nothing, re-armed, and billed $33.45 and $59.60 respectively before the user found them in a session list. The disarming worker is the expensive branch precisely because it is unblocked — no handler ever sees it. The countermand was present in both placements on both runs and did not hold, which is why the section now points at the reconciliation step rather than at stronger wording.
+
+## Shared environment
+
+**Why workers are told the environment hypothesis comes first (Sept 2026):** the repository that produced this had already absorbed the lesson — a script ensures the service is up before the suite, and its `CLAUDE.md` documents the tell. A worker has none of that context. It sees thirty unrelated files red, concludes its own change broke everything, and either thrashes against a codebase that is fine or returns `FAILED` on one. The instruction costs a sentence in the dispatch prompt.
+
+**Why raising the hypothesis is separated from confirming it (round 1):** a PR that changes connection configuration or client setup produces refused connections across every unrelated test file, with the same error and the same breadth as a dead service. Treating the signature as conclusive hands that PR a free pass on exactly the failure it caused. The confirmation lives in `repair-pr` rather than here because that is where a pass has the diff and the branch comparison in front of it.
 
 ## Every read is a snapshot
 
