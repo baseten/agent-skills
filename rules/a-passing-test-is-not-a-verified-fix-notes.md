@@ -33,3 +33,20 @@ test. The defect is not the sentinel appearing in an assertion; it is the sentin
 being silently accepted as an answer to the comparison being made. That
 distinction is still decidable by reading the test, which is the bar every entry
 here has to clear.
+
+**Why two of the four carry explicit carve-outs and two do not (round 1, Sept
+2026).** The sentinel and sample-size entries each condemn, on a literal reading,
+the legitimate test they most resemble — an assertion whose subject is the
+absence, and one whose subject is the degenerate input. Both are exactly the right
+test for their defect, and a worker optimising for a green suite reads a rule
+literally. The premise and fixture entries have no such neighbour: an assertion
+that would hold with the module deleted is never the right test, and a fixture
+containing the thing the test says is absent is never deliberate. Carve-outs where
+a false positive exists, none where it does not — a rule padded with unnecessary
+exceptions is as unusable as one that over-reaches.
+
+**Why the fixture entry stopped keying on the test's name.** It was written as
+"a test whose name contains *no X* or *only Y*", which reaches the motivating case
+only because that case happened to be called "Late stream, no workers". The same
+defect in one called *stream-only path* passed the checklist untouched. The name
+is a flag; the subject is the test.

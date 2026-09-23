@@ -23,10 +23,14 @@ behaviour under test. The question to ask is whether the sentinel could be
 silently accepted as an answer to the comparison being made.
 
 **A sample size that cannot express the property.** A per-symbol ordering test
-used one symbol, and one element is in order under every possible
-implementation. *A test of an ordering, a grouping or a dedup needs enough
-elements that a wrong implementation gives a different answer* — and, where the
-failure is probabilistic, enough repetitions. That test only discriminated at 200.
+used one symbol, and a single element comes out in order under every
+implementation that returns it at all. *A test of an ordering, a grouping or a
+dedup needs enough elements that a wrong implementation gives a different answer*
+— and, where the failure is probabilistic, enough repetitions; that test only
+discriminated at 200 repetitions. **It does not touch a test whose subject is the
+degenerate input**: `dedupe([])`, or a singleton list that used to crash, is
+asserting exactly the n=0 or n=1 case and is the right test for it. The question
+is whether the sample can distinguish the decision under test from its absence.
 
 **The assertion names the premise rather than the behaviour.** A "rejects a
 poisoned batch" test constructed a poisoned batch and asserted the batch was
@@ -36,9 +40,12 @@ still hold with the module deleted, it is testing the fixture.**
 
 **The fixture supplies the condition the test exists to detect.** A "late stream,
 no workers" test pushed a fake worker into the registry, so the stream-only path —
-the subject — was never reached. *State the negative in the fixture.* A test whose
-name contains *no X* or *only Y* constructs that absence explicitly rather than
-relying on the default fixture happening to lack it.
+the subject — was never reached. *State the negative in the fixture.* Where a
+test's subject is the absence or the exclusivity of something, the fixture
+constructs that condition; a default fixture that happens to lack it is not
+construction, and a default that happens to contain it is the defect. A name
+carrying *no X* or *only Y* is a useful flag, not the test — the same defect in
+one called *stream-only path* reads no differently.
 
 ## Time is not an assertion target
 
