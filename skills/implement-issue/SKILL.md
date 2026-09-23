@@ -125,7 +125,7 @@ A pass that returns `NO_CODE_CHANGE` — the classification left it no repair to
 ## Draft state
 
 - **This run never flips a PR back to draft, and promotes only where the repository's own convention instructs it** — on that convention's conditions and no others, which is the owner having performed the social act in advance. With no such convention, the merge path's publish (a step of merging an open-gate PR, see Merge) and the owner acting themselves are the only promotion sites. `backlog-orchestrator`, *Draft state*, owns the contract, including that a convention-driven promotion is a publish and takes the three-state rule. There is still deliberately no policy knob (NOTES: why promote-on-clean-review was deleted rather than made configurable, and why deferring to a written convention is not that knob).
-- **Explicitly held draft discriminator**: currently a draft AND ever ready = held. Read the transition from the forge's own timeline immediately before the gate — never from this run's state block, which is a cache (NOTES).
+- **Explicitly held draft discriminator**: currently a draft AND ever ready = held. Read the transition from the forge's own timeline immediately before the gate, and before any draft-state change this run makes — never from this run's state block, which is a cache (NOTES).
 
 # Settle
 
