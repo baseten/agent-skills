@@ -124,6 +124,10 @@ The owner asked for the rule scoped to human comments and, when the asymmetry wa
 
 ## Model and skill policy
 
+**Why selection moved in front of the ladder (Sept 2026):** the ladder catches a worker that keeps failing, and the observed losses were workers that did not fail. One patched the single site its ticket named where the defect was restated at three — a green PR fixing a third of the bug. Another declined its own ticket's preferred option, correctly, by reading the spec over the issue text; a cheaper worker doing what the ticket said would have looked exactly as successful. No trigger that keys on repeated failure can reach either, which is why the assignment is made up front and the ladder is the floor under it rather than the mechanism.
+
+**Why the axes live in `swarm-dispatch` and not here:** that skill already owned model selection by failure visibility, and a second copy of the tiers in this file is the drift this repository keeps finding. What is genuinely this skill's is the escalation ladder, the repair-escalation evidence trigger and the cycle interaction — those stay.
+
 **The observed case behind the evidence-based escalation trigger:** on one spec PR, three automated review passes returned two findings, then three, then one. The first two rounds were all-new territory and Sonnet was the right tool for both; the third's single finding was a gap in a paragraph the second round had itself written, and the strongest-model repair that answered it also caught a second, unreported defect of the same kind beside it. A count-based ladder (two rounds Sonnet, then one Opus) would have paid for depth on exactly the run that needed breadth.
 
 ## Implementation worker contract
@@ -199,6 +203,14 @@ Added with `review-docs` (Sept 2026). The confirmation step was written for an e
 **Why the counter lives in the wake's prompt:** the run that leaked one session was compacted twice mid-run. A counter held in session memory does not survive a compaction or the gap between firings, so it resets silently and the budget never binds. The re-armed prompt is the only storage that provably reaches the next firing.
 
 ## Progress / checkpoint output
+
+**Why the gate condition is named per PR (Sept 2026):** a run reported its tranche as "awaiting merge authorisation" for four days and raised it to the owner three times. Both repositories had carried `"auto-merge": true` for a week; what actually held every PR was invariant 12's other conjunct, three outstanding `DECISION` items anywhere in the tranche. Nothing merged, which was correct, and every account of why was wrong. "Awaiting merge" is compatible with every condition and with none, so it cannot be checked against the truth by the owner reading it or by the run writing it — naming the first unmet condition makes the error visible on day one to both.
+
+**Why the third state is narrow (round 2):** written as "report it as not-yet-evaluated, naming anything already known to hold it" it said two things at once, and a reader taking the second clause would emit `gate not yet evaluated` over a PR that is red — losing an actionable, currently-true blocker behind a hedge. Only `mergeable` genuinely needs the summary's inputs. A known condition is true before the summary and the summary cannot make it untrue, so it is named.
+
+**Why there is a third state and not two (round 1, Sept 2026):** the first version gave every unmerged PR either a named unmet condition or `mergeable`, and the parent loop emits this block on every cycle — including cycles before `summarize-tranche` has produced the gate's `DECISION` and `MERGE_RISK` inputs. A clean-looking PR there has neither a known unmet condition nor the evidence to be called mergeable, and reporting it mergeable would be the same false account this section exists to stop, with the sign flipped. `gate not yet evaluated` says which of the three it is.
+
+**Why the two merge routes are distinguished here:** the run collapsed `merge-stack`'s user authorisation with the gate's repository opt-in and defaulted to asking. That is the same failure *Autonomy and interactive prompts* names at the dispatch end — a run that asks before doing the thing it promised — arriving at the merge end, where the document had not named it.
 
 **Why the field is remote-head progress and not branch existence (round 1, Sept 2026):** a branch-exists field plus a clean worktree reports the `clean | local ahead` case as healthy — the worker pushed once, committed more since, staged nothing — which `Checkpoint compliance` already names as the unpushed-commit case. That is the same cheap-half mistake as testing a push by whether the branch exists, arriving in the diagnostic that was supposed to catch it. What discriminates is the head: local against remote where the worktree is reachable, and where it is not, the remote head with how long since it last advanced, which says the same thing from outside.
 
