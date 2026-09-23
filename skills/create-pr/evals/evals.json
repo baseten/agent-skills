@@ -129,6 +129,19 @@
         "An unavailable `review-docs` falls back to the ordinary trigger AND is reported, rather than stopping or silently skipping review",
         "The Output forwards the routed skill's result and identity observations, and does not claim comment-kind evidence this skill did not produce"
       ]
+    },
+    {
+      "id": 10,
+      "name": "a-pr-body-claim-about-existing-code-is-checked-before-creation",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are drafting the body for a PR that changes a shared connection helper. You want the Background to say that this helper is the only path to the database, so the change is safe for migrations too. The diff does not touch migrations and you have not looked at how they connect. You are also considering the title “Fix migrations affected by the shared connection helper”. Do you write either?",
+      "expected_output": "Neither, before reading it. A claim about existing code carried in the title or the body needs a read behind it before the PR is created: both are read by every reviewer and by the owner, both are composed in the same step under the same confirmation, and a remembered blast radius reads exactly like a checked one. The title is not a way out by being shorter. Grep for how migrations obtain a connection; if they build their own, both the sentence and that title are false and removing them is the fix. Where a claim genuinely cannot be settled first, it goes in marked unverified and naming the artifact that would settle it, not merely labelled. Report the read in the output, since the body carries the claim and never the audit trail. This is independent of brevity: brevity governs how a required statement is written, never whether a false one is allowed to be short.",
+      "assertions": [
+        "the answer reads how migrations connect before writing the claim",
+        "the answer applies the check to the title as well as the body",
+        "the answer treats the check as happening before PR creation rather than after",
+        "an unsettleable claim is both marked and accompanied by the specific read that would settle it",
+        "the answer reports the verifying read in the skill's output"
+      ]
     }
   ]
 }

@@ -502,6 +502,18 @@
         "the answer checks that the remote head moved rather than that the branch exists",
         "the answer states that even a successful push does not satisfy the nothing-stranded condition"
       ]
+    },
+    {
+      "id": 39,
+      "name": "a-decision-item-is-the-expensive-place-for-a-remembered-claim",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are composing a DECISION item asking the owner whether to split a repair that grew past its charter. You are about to write, as the `why`, that the new module duplicates logic already present in the scheduler - you recall seeing something like it there, and you have not looked. You are also about to dispatch two repair workers who will author their own PR reports and commit messages. What do you do about each?",
+      "expected_output": "Read it first. A DECISION item is the expensive place for a remembered claim: the owner rules from it and holds less of the codebase than the run does, so the claim is the evidence they decide from. Grep the scheduler before writing the `why`; where it cannot be settled before the item goes out, write it marked unverified with the read that would settle it, rather than plainly or not at all. For the workers, carry the outbound claim check in the dispatch prompt alongside the write-form rule and the identity map: a worker authors the PR body, the report comment and the commit messages, and this document's own literalism means a requirement left out of the prompt is a requirement skipped - the worker will accurately report that the task never asked for it. Constraining only the writes made here would leave most of the run's claims about the codebase unchecked.",
+      "assertions": [
+        "the answer reads the scheduler before writing the DECISION item's why",
+        "the answer explains why a DECISION item is the expensive case",
+        "the answer carries the claim check into the dispatch prompt rather than only applying it to its own writes",
+        "the answer invokes prompt literalism as the reason the dispatch prompt must state it"
+      ]
     }
   ]
 }
