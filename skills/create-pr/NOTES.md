@@ -58,6 +58,10 @@ An implementation PR that cannot be linked to an exact issue would be an orphan 
 
 ## Before creating the PR
 
+**Why the claim check is applied here and not left to the bundled reference (round 12, Sept 2026):** a reference sitting in a skill directory and cited nowhere near the write is a reference nobody reads. This skill composes the two artifacts every reviewer and the owner read first, in one step, under one confirmation — so the check is stated at that step. The **title** is included on purpose: it is composed in the same breath as the body and shown for the same confirmation, and a claim moved into it would otherwise escape by getting shorter.
+
+**Why the verification goes in the output rather than in the body:** the write-form rule keeps the audit trail out of the body, correctly, which means a read performed here leaves no trace anywhere unless the output carries it. Without that field the caller either repeats the read or trusts the claim, and the rule's own requirement — say so where you verified what you could have assumed — has nowhere to land.
+
 **Why this skill derives the gate the same way rather than reading the
 documentation list (round 1, Sept 2026):** a directly-invoked `create-pr`, or one
 whose caller omitted the gate, would otherwise build a table from
