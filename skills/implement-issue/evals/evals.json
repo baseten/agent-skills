@@ -101,6 +101,18 @@
         "the answer names the silent failure as the consequence of footering the trigger"
       ],
       "files": []
+    },
+    {
+      "id": 8,
+      "name": "the-body-comparison-before-merge-is-unconditional",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your PR went through three review repairs. In round two, repair-pr returned that its fix reversed a behaviour the PR body asserts; you adopted the head and carried on. The session then checkpointed and a fresh invocation resumed it, ran round three, and has now reached the merge gate with the repository opted into auto-merge and every other condition clean. Your recorded state carries the head SHA, the cycle counts and the thread records. Do you merge?",
+      "expected_output": "Not before reconciling the PR body against the current diff, and that read is unconditional rather than conditional on the round-two flag. The flag is a useful prompt and cannot be a precondition here: this skill records selected fields from each repair return and checkpoints a fixed schema, so a flag raised in round two is not in the state a resumed invocation holds - a comparison that depended on recovering it would pass precisely when the state was lost, which is the whole failure. So read the body now against the diff: the body is the first artifact a human reviewer reads, nothing in the repair path re-reads it, and one spent six rounds arguing for a default that review had already reverted. Update it, or hold the PR and say why - a body contradicting its own diff is not a clean PR whatever CI says. repair-pr correctly did not edit it, since a PR with rounds left does not need its body correct yet.",
+      "assertions": [
+        "the answer performs the body comparison without depending on the round-two flag surviving the checkpoint",
+        "the answer explains that a conditional read would pass exactly when the state was lost",
+        "the answer offers update-or-hold rather than merging over a contradicting body",
+        "the answer does not fault repair-pr for leaving the body alone"
+      ]
     }
   ]
 }
