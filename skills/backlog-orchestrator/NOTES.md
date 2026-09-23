@@ -108,6 +108,8 @@ observation rather than assumed from a provider's name.
 
 ## Per-repository policy configuration
 
+**Why a resolved-premise node is `NEEDS_USER` and not a new state (Sept 2026):** it has to be somewhere the existing machinery already reaches, or it wedges the run — a node that is neither READY nor blocked-by-unmerged-work satisfies no settled condition, no stop condition and no restart classification, so the run can neither settle nor stop and a reader resolving that the cheap way dispatches it. `NEEDS_USER` is already surfaced in the closing output rather than asked mid-run, already handled by the settled predicate and the stop conditions, and already the right meaning: a person decides whether the issue is done, because this pass concluded it from outside the issue's own history.
+
 **Why a config file and not prose or a skill override:** a `CLAUDE.md` paragraph gets interpreted, and interpretation must not decide whether a run may merge. A project-level skill override is not the mechanism either: `bootstrap.sh` installs these skills to `~/.claude/skills`, and a personal skill shadows a project skill of the same name, so a project copy would silently never load.
 
 **Why the kind test stays author-blind, including for the escalation (confirmed by the owner, Sept 2026):** the rule reads the same for a bot's question as for a human's — a thread needing intent, design, rationale or a decision is `NEEDS_USER`, reserved, and answered by nobody but the owner. This is worth writing down because it looks like an oversight and invites a "fix" back to an author-keyed rule, and that fix has already been made and reverted once here. Three reasons it is deliberate:

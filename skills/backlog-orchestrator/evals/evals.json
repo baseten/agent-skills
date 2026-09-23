@@ -578,6 +578,18 @@
         "the answer separates raising the hypothesis from confirming it",
         "the answer refuses to classify the failure external on the signature alone"
       ]
+    },
+    {
+      "id": 45,
+      "name": "a-resolved-premise-node-is-not-dispatched-and-does-not-wedge-the-run",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your validation preflight returns PASS_WITH_WARNINGS and a DAG in which one node carries `disposition: PREMISE_LIKELY_RESOLVED` with evidence and the revision it was read at. That node's blockers have all merged, so it would otherwise compute READY, and you have two free worker slots. Every other PR in the tranche is finished. Do you dispatch it, and can the run settle?",
+      "expected_output": "Do not dispatch it. The disposition is on the node, not in the report, and it means the cited defect is absent on another repository's current default branch with its replacement positively present - so a worker would produce a PR, review rounds and eventually a conflict over work already done. It is not DONE either: that needs completion evidence this pass does not have. Classify it NEEDS_USER, which is what stops it wedging the run - a node that is neither READY nor blocked by implemented-unmerged work satisfies no settled condition, no stop condition and no restart classification, so the run could neither settle nor stop and a reader resolving that cheaply would dispatch it. As NEEDS_USER it is surfaced, not outstanding: the run settles, the node is reported to the owner with the evidence and the revision, it keeps its edges, and plan-merge-order does not count it as downstream work a PR unblocks. A restart re-derives it from a fresh validation rather than from run state.",
+      "assertions": [
+        "the answer refuses to dispatch the node despite its blockers being merged",
+        "the answer classifies it NEEDS_USER rather than DONE or a new state",
+        "the answer lets the run settle with the node outstanding",
+        "the answer excludes it from downstream unblock counts"
+      ]
     }
   ]
 }
