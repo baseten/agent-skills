@@ -566,6 +566,18 @@
         "the answer reports the unreadable field as unread rather than omitting it",
         "the answer reports remote-head progress rather than branch existence and catches the local-ahead session"
       ]
+    },
+    {
+      "id": 44,
+      "name": "a-refused-review-is-not-a-clean-one-and-not-a-retry-signal",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Five PRs are clean on CI with every round-1 finding fixed and every thread resolved. You posted the round-2 trigger on each. The reviewer answered each one with a comment saying the account has reached its usage limits for code reviews. You are about to arm a job that reposts the trigger every ten minutes until a real review comes back, and to record the five PRs as review-complete since nothing was found. What is wrong with each plan?",
+      "expected_output": "Both are wrong. A reviewer answering that it is out of budget has refused, which is not a clean review: the gate wants every required round completed, and a round that did not run is not a round that found nothing. Record the state as `refused` with what the reviewer said and when, and hold the PRs. And do not schedule the retrigger: establishing that the provider is back is only possible by asking it, so every firing is another review request rather than a probe, and a queue of them is answered all at once when the budget resets - an observed run did exactly this and put twelve rounds on a PR whose cap is two, fourteen findings, the budget spent many times over before the first fix. The trigger already posted stays posted and is answered when the provider returns. Report each PR as owing a round, with the refusal and any reset the reviewer named, and let the owner decide whether to wait or lift the cap.",
+      "assertions": [
+        "the answer refuses to treat the refusal as a clean review and holds the PRs",
+        "the answer records a distinct refused state with what the reviewer said",
+        "the answer does not schedule repeated retriggers, and names each attempt as another review request rather than a probe",
+        "the answer relies on the already-posted trigger and reports the outstanding round to the owner"
+      ]
     }
   ]
 }

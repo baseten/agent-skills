@@ -701,6 +701,8 @@ A dispatch prompt that enumerates a required process is followed literally: a de
 
 Issuing the trigger is not the end of that step. Confirm it took effect — and confirm it against the artifact, not against the absence of one (`references/absence-is-not-a-verdict.md`): a review from the repository's automated reviewer materializes within a bounded window, and the reviewer does not instead answer indicating it is not configured or not authorized. Verify per attempt, on every PR — one review arriving elsewhere in the run is not evidence the trigger works. A trigger that silently no-ops is worse than one that fails loudly, because the run then reports PRs as reviewed and clean when nothing reviewed them.
 
+**A reviewer that answers saying it is out of budget has refused, and a refusal is neither a clean review nor a trigger to reissue.** Record it as `refused` with what the reviewer said and when — a quota, a window, a reset — and hold the PR: the gate wants every required round *completed*, and a round that did not run is not a round that found nothing (`references/absence-is-not-a-verdict.md`). **Do not put the retrigger on a schedule.** Establishing that the provider is back is only possible by asking it, so each attempt is another review request, and a queued run of them is answered all at once when the budget resets — one observed run put twelve rounds on a PR whose cap is two, that way (`references/establish-do-not-assume.md`, *Establishing it by trying it costs what the attempt costs*). A trigger already posted stays posted and is answered when the provider returns; report the PR as owing a round and let the owner decide whether to wait or to lift the cap.
+
 ### Establishing that a review is clean
 
 **A verdict attaches to the commit it was computed on, not to the PR**, and the
@@ -842,7 +844,7 @@ remote head SHA
 chartered scope: one or two sentences, from the issue — written into the PR body at creation, cached here
 CI state
 review state                                  } one set per review convention
-review trigger: issued/verified/pending/deferred/unavailable } the PR's routing requires
+review trigger: issued/verified/pending/deferred/refused/unavailable } the PR's routing requires
 first review round: pending/complete-with-findings/clean }
 draft state: as-created -> current
 CI repair cycles used/remaining

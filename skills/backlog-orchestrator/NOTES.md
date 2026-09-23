@@ -132,6 +132,8 @@ The owner asked for the rule scoped to human comments and, when the asymmetry wa
 
 ## Implementation worker contract
 
+**Why a refused review is its own state, and why the retrigger is not scheduled (Sept 2026):** a reviewer answering "out of budget" has told the run something — the capability exists and is currently unavailable — which is more than silence and different from a failure, and the natural response to a failure is another attempt. That response is what has to be blocked here: establishing that the provider is back is only possible by asking, so every retry is another review request, and a queue of them is answered all at once when the budget resets. An observed run scheduled one every ten minutes and put twelve rounds on a PR whose cap is two, with fourteen findings, the budget spent many times over before the first fix landed. The already-posted trigger is enough; what the run owes is an honest report that a round is outstanding.
+
 **Why the gate travels inline in the dispatch prompt (round 1, Sept 2026):** the
 proposal that introduced this suggested the parent write the derived set to a
 file and hand workers the path. On the tiers where a worker is a separate

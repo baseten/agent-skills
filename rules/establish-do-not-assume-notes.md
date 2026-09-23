@@ -59,3 +59,13 @@ information the owner may need and cannot recover; posting it plainly launders a
 recollection into evidence. Marking it costs a clause and keeps the reader's
 ability to weigh it — and where they do have the codebase in front of them, they
 settle it in seconds.
+
+**Why attempting-as-establishing gets its own section (Sept 2026).** The rest of
+the rule assumes there is something to look at, and its whole economy — one call
+against a wasted pass — depends on that. Where the only way to know is to do the
+thing, the economy inverts: the attempt costs what the action costs and may
+consume a budget the run is trying to protect. A rule that said only *establish
+it* would keep being followed by re-attempting on a timer, which is how twelve
+review rounds landed on a two-round PR. Naming the refusal as an answer is the
+other half: without it, a refusal reads as a failed attempt and the natural
+response to a failed attempt is another attempt.

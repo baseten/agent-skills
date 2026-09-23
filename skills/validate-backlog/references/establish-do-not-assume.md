@@ -81,6 +81,31 @@ of the codebase in front of them than the run does. Where a claim cannot be
 settled before posting, post it marked as unverified with what would settle it,
 rather than posting it plainly or dropping it.
 
+## Establishing it by trying it costs what the attempt costs
+
+Most of this rule is about reading an artifact, which is cheap. Some things have
+no artifact to read and can only be established by attempting the thing: whether
+a credential can write, whether a provider will answer, whether a channel
+delivers. **There the probe is not a probe — it is the action, with the action's
+cost, its side effects and its budget.** So: attempt it once, record what came
+back, and act on the record. Never put such an attempt on a schedule to find out
+when it starts working, because every firing is another performance of the
+action.
+
+Observed: a run out of review budget armed a job to retry the review trigger
+every ten minutes until the provider answered. The provider answered all twelve
+queued triggers at once when the budget reset — twelve review rounds on a PR with
+a two-round cap, fourteen findings, and a budget spent many times over before the
+first fix. The job was correct about wanting to know and wrong about how to find
+out.
+
+**A refusal is an answer and is recorded as one.** *Refused, with a reason* is a
+third state beside *succeeded* and *no response*: it establishes the capability
+exists and is currently unavailable, which is more than silence tells you and
+different from failure. Where the refusal names a condition that will lift —
+a quota, a window, a reset — the record carries it, and the run waits for the
+condition rather than re-attempting to discover it.
+
 ## Why this is worth a rule rather than diligence
 
 The asymmetry is what makes it pay. Establishing something costs one call.
