@@ -199,6 +199,18 @@
         "no attribution footer is added to the draft",
         "the item still carries its required fields, including an explicit none for the change SHA"
       ]
+    },
+    {
+      "id": 15,
+      "name": "a-claim-in-a-reply-needs-a-read-behind-it",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A reviewer asks whether adding a `statement_timeout` connection parameter to `src/db/index.ts` is safe. You recall that migrations in this project use the same module, and you are about to put in your escalation draft that the change will also affect migrations and has been scoped accordingly. Nothing in the diff shows how migrations connect, and you have not looked. What do you do?",
+      "expected_output": "Do not write that sentence yet. It is an assertion about existing code drawn from recollection, and it renders identically to one that was checked - so read it first: grep for how migrations obtain a connection, and put what that read shows into the draft. Where it cannot be settled before the draft goes out, say so in the draft with what would settle it - naming the read, not just labelling the claim unverified - rather than stating it plainly or dropping it. The read itself is reported in this skill's output, since the draft carries the claim and never the audit trail. None of this is posted to the thread as an answer: the reviewer asked a question, no reply of any kind carries the answer, so the thread gets the work-done reply or nothing and the question is escalated as a NEEDS_USER item with its draft.",
+      "assertions": [
+        "the answer refuses to state the remembered claim and reads the code first",
+        "the answer names the specific read that would settle it rather than only labelling the claim unverified",
+        "the answer keeps the claim out of any substantive reply posted to the thread and escalates the question with its draft",
+        "the answer reports the verifying read in the skill's output"
+      ]
     }
   ]
 }

@@ -5,6 +5,10 @@ never overrides.
 
 ## Handling queries
 
+**Why the check covers the escalation draft and the commit message, not just the reply (round 12, Sept 2026):** the one-line work-done reply rarely has room for a claim about the codebase, so a rule aimed only at it would almost never fire. The drafts this skill composes are where claims actually live, and they are read by the owner as the basis for a decision. The commit message is the other one: the most durable thing written here and the one nobody re-reads, so a wrong account of why a change is safe outlives every thread on the PR.
+
+**Why the verification is returned:** the reply carries the claim and never the audit trail, so the output is the only durable record that a read happened. Without it a supervising or later session cannot tell the observation from the recollection.
+
 These four notes moved here from `rules/authored-write-form-notes.md` when the
 write-form rule was extracted. They explain the question item, whose contract
 lives in this skill — *What a question item must contain* — and not the shared
