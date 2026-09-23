@@ -65,7 +65,7 @@ The evidence is a settle-time finding — an `IN_FLIGHT_FIX` action point from `
 2. verify it still holds against the current head — a later push may already have fixed or mooted it, and the finding as supplied is a claim until that read (`references/establish-do-not-assume.md`). Any assertion this pass then makes about existing code, in a reply or a PR body, needs the same treatment before it is posted: a grep behind it, not a memory. Where it no longer applies → return `NO_CODE_CHANGE` with the reason; change nothing; no cycle is consumed;
 3. make one coherent targeted repair scoped to the finding — for a ruling, the change the owner's answer implies, never a reopening of the question they ruled on;
 4. run the smallest relevant local verification;
-5. commit only issue-owned changes; push;
+5. commit only issue-owned changes; push. **A commit message asserting something about existing code takes the outbound claim check** (`references/establish-do-not-assume.md`, *You are about to assert it*), exactly as a reply or a PR body does — the nearby rule names those two and the message is the one nobody re-reads;
 6. return immediately with the new head SHA and checks run.
 
 Never widen into other action points or findings the caller did not supply, and never resolve or reply to review threads here — a finding is not a thread; where a **reviewer's** thread carries the same work, the caller dispatches `review` instead. A ruling recorded as a reply inside a review thread is still a finding: its site is the thread, but the work comes from the owner's ruling rather than from the root comment, and the reviewer's question is already answered by it.

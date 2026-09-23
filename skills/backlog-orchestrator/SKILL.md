@@ -305,7 +305,12 @@ length, what a body is for, what must never be in it, the attribution footer and
 its approval test, and the precedence of required contents over brevity.
 
 Posting identity decides which **author** a write carries; that rule decides
-**what the write looks like** once it is authored. Every skill that
+**what the write looks like** once it is authored; and
+`references/establish-do-not-assume.md`, *You are about to assert it*, decides
+what may be **claimed** in one — every assertion this run makes about existing
+code needs a read behind it before it is posted, in a `DECISION` item most of
+all, since the owner rules from it and holds less of the codebase than the run
+does. Every skill that
 applies it carries a generated copy at that path, which is why the rule is
 stated once outside this file rather than here: a partial copy naming some of its exclusions and not its budget is
 how the rule drifts.
@@ -682,6 +687,8 @@ A dispatch prompt that enumerates a required process is followed literally: a de
 **Every dispatched prompt carries the pre-PR gate, derived once per repository and written out in full.** The parent derives it at preflight as `implement-issue-core`, *Final local verification* defines — the base branch's required status checks, mapped to the commands that produce them, with its fallback and its `not locally runnable` outcome; that skill owns the derivation and this one does not restate it — and puts the resulting set in the prompt, with each entry's outcome vocabulary and where the set came from. Not a path to it, and not a pointer to `AGENTS.md`, which describes the gate and drifts from it (`swarm-dispatch`, *Isolation*, on why a path is worse than useless here). Deriving it once is also what stops two workers disagreeing about what the gate is.
 
 **Every dispatched prompt states how a worker settles a checkout against an API response.** Both are observations with an age — `origin/main` is as old as its last fetch, which on a container tier can be the moment the container was built, and a held response is as old as when it was issued. Left unsaid, a worker believes whichever it looked at last, which is how a redundant PR gets opened against a base that had already moved (see *Every read is a snapshot*). Where the two disagree about something the worker is about to act on, it re-reads the forge at that moment and refreshes the checkout to match.
+
+**And every dispatched prompt carries the outbound claim check alongside the write-form rule** (`references/establish-do-not-assume.md`, *You are about to assert it*). A worker authors the writes this run is most likely to be judged by — its PR body, its report comment, its commit messages — and this section's own literalism decides the outcome: a requirement left out of the prompt is a requirement skipped, and the worker will accurately report that the task never asked for it. Constraining only the writes this orchestrator makes itself leaves every remembered claim a worker states about the codebase unchecked, which is most of them.
 
 **By the same literalism, every dispatched prompt carries the run's whole posting-identity map** — every (transport, credential) entry, not one selected pair, plus the instruction to read the worker's own first authored write back and report what it observed (see Posting identity). Passing one entry is not a smaller version of this: the worker's `create-pr` may need an agent-authored entry to create the PR and an invoking-user entry for the author-sensitive review trigger, so selecting here either gives the PR the wrong author or leaves a valid trigger path unavailable, and the worker cannot recover what it was not sent. The worker's report is itself an authored write, normally a PR comment, and it is the most common one this run causes: enumerate the requirement to report while omitting the identity to report under, and the worker posts it as the invoking user, correctly, because the prompt never asked otherwise. A distinct identity observed at `create-pr` does not reach that write on its own.
 
