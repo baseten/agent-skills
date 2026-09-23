@@ -133,6 +133,7 @@ Implement only the issue scope; run required local checks.
 - Checkpoint after meaningful coherent milestones (schema/API portion, component/service, tests added, before a long debugging phase). Goal: bounded loss — at most the work since the last checkpoint.
 - Never checkpoint secrets, generated junk, or unrelated files; commit only issue-owned paths; push each checkpoint to the issue branch; no heartbeat commits for every tiny edit; never enter a long check or debugging phase with completed edits uncommitted. WIP history is fine — squash-merge removes it.
 - Under an orchestrator, expect the parent to inspect this worktree and commit on your behalf where completed work is held back (NOTES).
+- **A commit message that asserts something about existing code takes the outbound claim check** (`references/establish-do-not-assume.md`, *You are about to assert it*). A message is the most durable claim this skill writes and the one nobody re-reads: a wrong account of why a change is safe outlives every thread on the PR.
 - A retry uses only the caller's remaining budget. Return a reasoning-heavy repeated failure to the caller — never escalate models autonomously.
 
 ## 5. Final local verification

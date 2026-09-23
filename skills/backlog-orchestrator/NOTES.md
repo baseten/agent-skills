@@ -60,6 +60,8 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 ## Authored write form
 
+**Why the outbound claim check is stated at this decision point and in the dispatch prompt (round 12, Sept 2026):** the shared rule explains the general case; what belongs here is why this orchestrator's own writes need it and why the workers' do too. The orchestrator's expensive artifact is the `DECISION` item — the owner rules from it, holding less of the codebase than the run does — and the workers author almost everything else this run is judged by. This section's own literalism settles the second half: a requirement left out of a dispatch prompt is a requirement skipped, and the worker will accurately report that the task never asked for it, so constraining only the writes made here leaves most of the run's claims unchecked.
+
 The rule moved to `rules/authored-write-form.md` and its reasoning to
 `rules/authored-write-form-notes.md`. What remains here is the reasoning for the
 parts that did **not** move: the interaction with *Posting identity* — identity

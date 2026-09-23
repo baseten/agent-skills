@@ -117,7 +117,11 @@ git push -u origin <branch>
 
 For separate commits, repeat per concern. Commit messages should describe the
 fix, not reference the review comment ("Fix off-by-one in pagination", not
-"Address PR comment").
+"Address PR comment"). **A commit message that asserts something about existing
+code needs the same read behind it as a reply does**
+(`references/establish-do-not-assume.md`, *You are about to assert it*) — a
+message is a durable claim nobody re-reads later, and a wrong one about why a
+change is safe outlives every thread on the PR.
 
 After pushing, capture the SHA(s):
 
@@ -502,6 +506,12 @@ After completing all steps, summarize:
 - Which comments were resolved
 - The commit SHA(s) applied
 - Confirmation that replies were posted and threads marked resolved
+- **For each claim about existing code carried in a reply, an escalation draft or
+  a commit message, the artifact read to settle it** — or that it went out marked
+  unverified, with what would settle it. The reply carries the claim and never
+  the audit trail, so this output is the only durable record of the read, and
+  without it a supervising or later session cannot tell the observation from the
+  recollection this exists to prevent
 - **Any thread classified no-action**, one entry each: the thread's API
   `html_url` (*What a question item must contain*, row 1) and why it wants
   nothing. No draft. This is what lets the caller mark it handled so it is not
