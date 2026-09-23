@@ -81,6 +81,36 @@ of the codebase in front of them than the run does. Where a claim cannot be
 settled before posting, post it marked as unverified with what would settle it,
 rather than posting it plainly or dropping it.
 
+## Establishing it by trying it costs what the attempt costs
+
+Most of this rule is about reading an artifact, which is cheap. Some things have
+no artifact to read and can only be established by attempting the thing: whether
+a credential can write, whether a provider will answer, whether a channel
+delivers. **There the probe is not a probe — it is the action, with the action's
+cost, its side effects and its budget.** So: attempt it once, record what came
+back, and act on the record. Never put such an attempt on a schedule to find out
+when it starts working, because every firing is another performance of the
+action.
+
+**What separates a probe from the action is consequences, not intent.** Reading
+to find out whether a read works costs a read and changes nothing, so it is a
+probe and a fine thing to build a decision on. Writing to find out whether a
+write works leaves the write behind. Triggering a review to find out whether the
+reviewer is answering *is* a review request. Ask what the attempt leaves behind:
+**a probe leaves no durable artifact and no side effect anyone else observes — and the test is over everything the attempt *causes*, not over what remains afterwards. A write undone is still a write**: posting a comment and deleting it queued the reviewer, mailed the subscribers and kept the audit entry. It
+may still cost a metered read, so it stays inside whatever read budget the
+consuming skill governs — cheap is not free, and a probe against a refused
+allowance is deferred like any other read rather than retried.
+
+Observed: a run out of review budget retried the trigger every ten minutes until the provider answered, and it answered all twelve queued requests at once — twelve rounds on a pull request capped at two (notes). The job was right to want to know and wrong about how to find out.
+
+**A refusal is an answer and is recorded as one.** *Refused, with a reason* is a
+third state beside *succeeded* and *no response*: it establishes the capability
+exists and is currently unavailable, which is more than silence tells you and
+different from failure. Where the refusal names a condition that will lift —
+a quota, a window, a reset — the record carries it, and the run waits for the
+condition rather than re-attempting to discover it.
+
 ## Why this is worth a rule rather than diligence
 
 The asymmetry is what makes it pay. Establishing something costs one call.

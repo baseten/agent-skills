@@ -10,6 +10,10 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 **Why the posting-identity selection comes from the caller's map for this pass's own pair:** the caller's transports may not be this pass's, so a matching caller entry answers *selection* only; the read-back the Output contract requires still happens and is what the caller merges. Passing the selection into `resolve-pr-comment` (rather than letting it resolve one of its own) keeps one answer per pass. The full rule is `backlog-orchestrator`, *Posting identity*.
 
+## CI repair
+
+**Why the infrastructure tell raises the hypothesis rather than settling it (round 1, Sept 2026):** the error signature — refused connection, missing socket, absent container — is produced identically by a dead service and by this PR changing connection configuration, and at the same breadth, since both hit every test that needs a connection. Routing on the signature alone gives the second case a `NO_CODE_CHANGE` and leaves the defect on the branch. What discriminates is something outside this branch: the service's own health, or whether unrelated branches and the default branch fail the same job, which `npm-dependency-upgrade-orchestrator` already required for its own case and this one was contradicting.
+
 ## Finding repair
 
 The `finding` type exists because `summarize-tranche` can derive an `IN_FLIGHT_FIX` from durable evidence that is neither CI- nor review-shaped — a worker's documented caveat, the diff itself, a coverage finding — and a code-changing walkthrough ruling arrives the same way. Neither `ci` nor `review` has a compliant invocation for it, and this skill is required (improvising is forbidden), so the documented action point used to force the run to block or improvise. `backlog-orchestrator`, *A settle finding is the third repair shape*, owns the budget key (`finding-repair-cycles`), the argument for it being its own counter, and the caller-side outcome branching.

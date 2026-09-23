@@ -13,6 +13,7 @@ The `SKILL.md` files are dense and not easily human readable. That is deliberate
 - `rules/absence-is-not-a-verdict.md` — a query that returned nothing is evidence about the query. An empty review endpoint is not a clean review, an ungraded scenario is not a passing one, and an enabled automation is not a performed action.
 - `rules/establish-do-not-assume.md` — a claim is not evidence and neither is an assumption. What a worker, a reviewer, a previous session or a convention block asserts is checkable; so is what an automated reviewer actually triggers on.
 - `rules/prose-review-round-budget.md` — prose has no oracle, so a reviewer of it terminates on a ceiling fixed in advance: one pass, one re-check, no third round, counted off the pull request.
+- `rules/a-passing-test-is-not-a-verified-fix.md` — what defeats "make the test fail first", as a checklist against a new or changed test.
 - `rules/authored-write-form.md` — the shape of any write an agent authors on a forge: length, what a body is for, what must never be in it, the attribution footer and its approval test, and the precedence of required contents over brevity. Every skill that writes to a forge applies it, each carrying a generated copy under its own `references/`. Extracted from `backlog-orchestrator` so that a skill needing the rule does not have to carry a 41,000-word orchestrator, nor a paraphrase of the one section it uses — which that section names as the way the rule drifts.
 
 A shared rule cannot simply sit at the repo root and be read from an installed skill: `bootstrap.sh` copies `skills/<name>/` and nothing else, so `../../rules/x.md` does not exist on a machine that installed one skill. Nor can it live inside one skill, because whichever skill owned it would become a dependency the others carry for a rule they only read.
@@ -35,7 +36,7 @@ Reasoning for a rule lives beside it as `rules/<name>-notes.md`, and is delibera
 
 ## Backlog / orchestration skills
 
-- `validate-backlog` — validates a bounded issue DAG. Shallow mode checks tracker hierarchy/structured dependencies/text consistency; deep mode inspects implementation/spec reality for missing or incorrect dependencies.
+- `validate-backlog` — validates a bounded issue DAG. Shallow and deep differ in how far they read; `validate-backlog` states the split and its one cross-repository exception for missing or incorrect dependencies.
 - `normalize-github-dependencies` — converts high-confidence description-based GitHub dependencies into native blocked-by/blocking relationships where GitHub write capabilities are available.
 - `backlog-orchestrator` — policy layer for a bounded build-order/parent issue or issue set. It validates the DAG, fans out isolated workers via `implement-issue-core` on a model selected per issue (onto a Claude Code **Dynamic Workflow** when the user explicitly opts into one for this invocation, otherwise onto native/background sessions or ordinary supervised subagents), consumes platform-surfaced PR events on its own parent-level supervision loop, dispatches bounded `repair-pr` workers, and enforces stack/budget/recovery rules.
 - `summarize-tranche` — writes a short plain-language summary of what a settled tranche actually did, plus the action points a human still has to manage: follow-up issues to open, verified bugs left unfixed, decisions waiting, scope deliberately cut. Read-only by default; it proposes issues rather than opening them. `backlog-orchestrator` invokes it per settled tranche, before ranking; `implement-issue` invokes it when its one issue reaches a terminal state, a tranche of one.
@@ -117,7 +118,9 @@ announces itself** — see `CLAUDE.md`, *Using this repository's own automation 
 repository*, which names them and what to do about each. They are why this repository's
 `.claude/backlog-orchestrator.json` raises `review-repair-cycles` and
 `repair-model-escalations` above their defaults; budgets are policy and live only in that
-file.
+file. `review-repair-cycles` counts **pushed repair passes, not review rounds** — a round
+that repairs nothing consumes no cycle — so a high observed round count is not by itself a
+reason to raise it.
 
 ## Checks
 
@@ -564,7 +567,7 @@ When first-class PR events are unavailable, the parent falls back to other subsc
 
 A **mechanical** push — a restack, or a renumber/regeneration of a claimed artifact such as a migration number or a lockfile — moves identity or ordering rather than behavior. It consumes no review cycle, re-triggers no review, and does not reset a PR's reviewed state; the repository's deterministic checks validate it instead. This matters right after a sibling merges, when descendants restack for reasons unrelated to their own diffs. Where no such check exists, the push is substantive like any other.
 
-The orchestrator does not promote drafts: marking a PR ready is how you ask a person to review — a social act, never an autonomous decision. A draft is published in exactly two ways: the owner does it themselves, or the invariant 12 merge path publishes it as a step of merging it. A draft held by an explicit instruction, a repository convention, or a caller's draft preference is excluded from the gate entirely — neither published nor merged, reported as held. `repair-pr` reports how many actionable threads remain but never changes draft state, and `implement-issue` applies the same contract to the one PR it supervises: it never promotes, so its PR stays a draft until the owner publishes it or the gate merges it.
+The orchestrator does not promote drafts on its own judgement: marking a PR ready is how you ask a person to review — a social act, never an autonomous decision. It does defer where a repository's own documented convention instructs promotion, which is the owner performing that act in advance, and then only on that convention's stated conditions. So a draft is published in three ways: the owner does it themselves, the run carries out such a convention, or the invariant 12 merge path publishes it as a step of merging it. The run never returns a PR to draft. A draft held by an explicit instruction, a repository convention **that says to keep it in draft**, or a caller's draft preference is excluded from the gate entirely — neither published nor merged, reported as held. `repair-pr` reports how many actionable threads remain but never changes draft state, and `implement-issue` applies the same contract to the one PR it supervises.
 
 ## Settled tranches
 

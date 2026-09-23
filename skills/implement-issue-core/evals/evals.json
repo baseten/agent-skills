@@ -73,6 +73,55 @@
         "The answer refuses to subscribe to PR events or arm any watcher before returning — monitoring is neither performed nor delegated; the caller supervises"
       ],
       "files": []
+    },
+    {
+      "id": 6,
+      "name": "test-double-churn-and-an-unbounded-drain",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two things happen while implementing. (a) You add a `now()` method to the REST client class, since the server-time call lives there, and twenty test doubles across six files stop compiling - each fake client now owes a method it has no use for. (b) The shutdown drain you are writing re-reads a worker registry each pass and stops when it is empty; the registry is one another part of the system can add to while the drain runs. Your test of it recurses forever, because the fake registry pushes a new worker every pass. What do you do about each?",
+      "expected_output": "(a) Do not fix the twenty files. Twenty independent call sites objecting to the same seam is a signal about where the boundary was drawn, and it is the cheapest one available - it arrives before review does. The clock is a property of the process's relationship to the service, not of a client, so re-site it as a standalone module; that removes all twenty diffs and is the better design. Fixing the doubles is what a worker optimising for a green suite does, and it ships the design defect. (b) The fake is faithful, not broken: it models a hazard that is real. Where another party can extend the collection, termination is not a property of the loop, so the fix belongs in production code - an explicit pass bound and a log line on exhaustion, written because the loop needs it rather than because a test hung. Bound the fake as well so the test terminates, but the production bound is the real repair.",
+      "assertions": [
+        "the answer re-sites the change rather than fixing the twenty test doubles",
+        "the answer names the double churn as evidence about the abstraction boundary",
+        "the answer puts the pass bound in production code rather than only fixing the fake",
+        "the answer requires a log line on exhaustion"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "four-tests-that-pass-on-unfixed-code",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You wrote four tests alongside your fixes. Two of them - (a) and (d) - fail before their fix and pass after it. (a) Drain ordering, asserted with `expect(order.indexOf('a')).toBeLessThan(order.indexOf('b'))`. (b) Per-symbol ordering, run with one symbol; it passed before the fix as well as after, and you did not notice. (c) 'Engine rejects a poisoned batch': it builds a poisoned batch and asserts the batch is poisoned. This one passed before the fix as well as after, and you accepted it because it was written in the same commit and nobody ran it in isolation. (d) 'Late stream, no workers': the fixture pushes a fake worker into the registry. You also added an assertion that the bounded drain took at least its 100ms timeout, measured with `Date.now()`. A fifth test asserts `expect(dedupe([])).toEqual([])`, written for a crash on an empty batch. A sixth asserts `expect(removed.indexOf(id)).toBe(-1)` after a deletion. Which of these are verified, and what do you do about the fifth?",
+      "expected_output": "None of the four, and fail-first did not discriminate on the two that showed it, because each fix and its test were written together. (a) indexOf returns -1 when absent, which is less than everything, so never-happened and happened-first are the same assertion: assert presence before comparing positions. (b) A single element comes out in order under every implementation that returns it at all, which is why it never failed; an ordering, grouping or dedup test needs enough elements that a wrong implementation gives a different answer, and enough repetitions where the failure is probabilistic. (c) The assertion names the premise rather than a decision the code made - it would hold with the module deleted, so it is testing the fixture, and its passing before the fix is the tell that was there to be seen. (d) The fixture supplies the condition the test exists to detect, so the stream-only path is never reached; the negative has to be constructed explicitly. The timing assertion is not a legitimate target at all: assert that the bound fired - the timeout result, the named pending work - never that elapsed wall-clock met or exceeded it without an explicit skew tolerance, since timers fire against a cached loop time that can sit behind a clock read and a monotonic clock does not remove the skew. The fifth is fine: its subject is the degenerate input, so an empty sample is exactly the case being asserted rather than a sample too small to discriminate a decision. The sixth is fine too: its subject is the absence, so -1 is exactly the thing being asserted rather than a sentinel being read as a position. Requiring a presence assertion there would contradict the behaviour under test.",
+      "assertions": [
+        "the answer identifies all four defeats by mechanism",
+        "the answer states that fail-first was satisfied trivially because each fix and its test were written together",
+        "the answer treats (b) and (c) passing before their fixes as the available tell",
+        "the answer rejects the elapsed-wall-clock assertion while allowing an assertion that the bound fired",
+        "the answer leaves the absence assertion alone rather than demanding a presence check before it",
+        "the answer leaves the empty-input test alone rather than demanding a larger sample"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "a-new-exported-field-names-its-consumer",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your fix adds a `missingPeriodTypes` field to an exported result type so callers can see which period types a backfill skipped. You wrote it, the type compiles, the tests pass, and the change feels complete. The type compiles, the suite is green, and you are about to report the issue implemented. Are you done?",
+      "expected_output": "No. Adding a field to an exported result type is not done at the return statement: name the call site that consumes it, or declare it observability-only and consumed by nothing. Neither has happened - nothing outside this file has been opened, so the field is a signal that may well be read by nobody. This recurred three times in one tranche and the cause is not carelessness about the signal: the signal is born in the file being edited and the consumer is a separate navigation nobody takes while the change still feels complete. It is answerable by grep, so grep for the callers of this result type and follow the value to whatever acts on a gap like this - then either wire that consumer or state in the report that the field is observability-only.",
+      "assertions": [
+        "the answer refuses to call the change done at the return statement",
+        "the answer requires the consumer to be named or the field declared observability-only",
+        "the answer resolves it by searching for the callers rather than by reasoning about it"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "a-contained-failure-must-not-read-as-a-success",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are writing `stopStreams()`, which loops over active streams calling `stop()` on each inside a try/catch that logs and continues so one bad stream cannot abort the shutdown. It returns the number of streams it iterated. The shutdown drain calls it and, on a non-zero return, records 'streams' as complete and moves on. Is this finished?",
+      "expected_output": "No. The catch does not rethrow, so it either returns a value distinguishing completed from contained, or carries a comment saying why the caller does not need to know - and here the caller plainly does need to know, because it reads the number as an outcome. A stream that failed to stop contributes to that count identically to one that stopped, so containment is being reported as success. The count is a perfectly reasonable return value on its own; it becomes a lie at the moment something downstream treats a number as a verdict, which is why nothing looks wrong at either end and why the requirement sits on the catch - it is the only place that knows containment happened. Return the two figures separately, stopped and failed, and have the drain record 'streams' as incomplete where any failed.",
+      "assertions": [
+        "the answer identifies the non-rethrowing catch as reporting containment as completion",
+        "the answer changes the return value to distinguish the two rather than only adding a log",
+        "the answer places the requirement on the catch rather than on the caller",
+        "the answer fixes the drain's reading of the result"
+      ]
     }
   ]
 }

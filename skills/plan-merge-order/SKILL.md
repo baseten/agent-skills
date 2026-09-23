@@ -1,6 +1,6 @@
 ---
 name: plan-merge-order
-description: Rank the open PRs of a settled implementation tranche (backlog-orchestrator owns what settled means) by how much downstream work each one unblocks, and emit a review order, a merge batching plan, and the hard sequencing constraints as a table. Use when a tranche is settled  — or whenever asked what to review or merge first to unblock a backlog.
+description: Rank the open PRs of a settled implementation tranche (backlog-orchestrator owns what settled means) by how much downstream work each one unblocks, and emit a review order, a merge batching plan, and the hard sequencing constraints as a table. Use when a tranche is settled — or whenever asked what to review or merge first to unblock a backlog.
 ---
 
 # Plan Merge Order
@@ -32,11 +32,14 @@ Supplied action points are **hard constraints on the ordering**, not commentary:
 
 When given a manifest, derive the PR set from it. Work the caller did not open is context, not a candidate.
 
+- **the held issue set**: issues the caller classified `NEEDS_USER` for a resolved premise. Without it the exclusion below cannot fire, and a PR's rank is inflated by a consumer nobody will implement.
+
 ## Hard constraints
 
 - Never merge, never enable auto-merge, never mark a PR ready, never change a base branch.
 - Never report a ranking as approval, and never imply the top PR is safe to merge.
 - Never silently drop a candidate PR. A PR that unblocks nothing still appears, with a count of zero.
+- **An issue the caller passed as held — `NEEDS_USER` for a resolved premise — does not count as downstream work.** Nobody will implement it, so counting it inflates the rank of a PR whose only consumer is already done. Exclude it from every unblocks count and say so where a PR's count changed because of one.
 - Distinguish evidence from inference everywhere: a dependency read from the tracker's native relationships and one inferred from issue prose are not interchangeable.
 
 # Method
