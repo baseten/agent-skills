@@ -133,6 +133,18 @@
         "the answer confirms independently, by service health or a comparison against unrelated and default branches",
         "the answer does not route to the no-code-change branch on an unconfirmed hypothesis, and does not claim that is step 3's only ground"
       ]
+    },
+    {
+      "id": 10,
+      "name": "a-repair-that-adds-a-regression-test-runs-the-checklist",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given) with repair type = finding. The settle-time finding is that a drain dropped an item. You write the fix and, in the same commit, a regression test asserting `expect(processed.indexOf('b')).toBeGreaterThan(processed.indexOf('a'))`, with one item of each kind in the fixture. It fails before your fix and passes after. Is that enough to return REPAIRED?",
+      "expected_output": "Not yet. Fail-first is satisfied here for the wrong reason - the fix and the test were written in the same pass - so run the four-defeat checklist against the test, on this branch as much as on the CI branch, since a finding asking for a regression test is where a new test enters. The sentinel defeat is present and it is precise: if 'a' is dropped, indexOf('a') is -1 and indexOf('b') is 0, so 0 > -1 passes - the test is green on a dropped item, which is the exact defect it was written for. A dropped 'b' and an out-of-order pair both fail, so the masking is one-sided and easy to miss. Assert presence of both before comparing positions. Fix the test, confirm it now fails on the unfixed drain, then return.",
+      "assertions": [
+        "the answer runs the checklist on the finding-repair branch rather than treating it as CI-only",
+        "the answer works out that a dropped first item makes the comparison pass",
+        "the answer requires a presence assertion before the positional comparison",
+        "the answer does not accept fail-first as sufficient when fix and test were written together"
+      ]
     }
   ]
 }
