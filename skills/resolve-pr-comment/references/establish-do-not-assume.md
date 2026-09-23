@@ -97,17 +97,12 @@ to find out whether a read works costs a read and changes nothing, so it is a
 probe and a fine thing to build a decision on. Writing to find out whether a
 write works leaves the write behind. Triggering a review to find out whether the
 reviewer is answering *is* a review request. Ask what the attempt leaves behind:
-**a probe leaves no durable artifact and no side effect anyone else observes.** It
+**a probe leaves no durable artifact and no side effect anyone else observes — and the test is over everything the attempt *causes*, not over what remains afterwards. A write undone is still a write**: posting a comment and deleting it queued the reviewer, mailed the subscribers and kept the audit entry. It
 may still cost a metered read, so it stays inside whatever read budget the
 consuming skill governs — cheap is not free, and a probe against a refused
 allowance is deferred like any other read rather than retried.
 
-Observed: a run out of review budget armed a job to retry the review trigger
-every ten minutes until the provider answered. The provider answered all twelve
-queued triggers at once when the budget reset — twelve review rounds on a PR with
-a two-round cap, fourteen findings, and a budget spent many times over before the
-first fix. The job was correct about wanting to know and wrong about how to find
-out.
+Observed: a run out of review budget retried the trigger every ten minutes until the provider answered, and it answered all twelve queued requests at once — twelve rounds on a pull request capped at two (notes). The job was right to want to know and wrong about how to find out.
 
 **A refusal is an answer and is recorded as one.** *Refused, with a reason* is a
 third state beside *succeeded* and *no response*: it establishes the capability
