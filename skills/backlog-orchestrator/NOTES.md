@@ -108,6 +108,12 @@ observation rather than assumed from a provider's name.
 
 ## Per-repository policy configuration
 
+**Why a waiver's removal trigger has to be a probe (Sept 2026):** a waiver is a promise to re-examine something, and the promise is only worth what the thing that would act on it can observe. Two attempts failed in the same way at different depths. The first recorded a bare boolean with the justification and the removal condition in the PR body — and a preflight reads the config, never a pull request, so the workaround would have outlived the tooling gap silently. The second attached a condition that read as checkable and was circular: *migrate the prose dependencies to native ones* cannot be confirmed complete without the native read the waiver exists because the run lacks. That one is worse than the boolean, because it looks like it has been handled.
+
+**Why an issue being closed is not a trigger:** issue state is queryable, which is exactly why it slips through as a fact. It is still someone's assertion one step removed, and a waiver discharged by an assertion is a gate removed by whoever closed a ticket. The tracking issue is a coordination point the removal closes.
+
+**Why the probes run at preflight rather than when someone remembers:** a waiver nobody re-tests is a gate quietly removed, on a timescale nobody notices. Running each probe once per run costs a read and makes the discharge automatic, which is the only version of this that survives the person who granted it moving on.
+
 **Why a config file and not prose or a skill override:** a `CLAUDE.md` paragraph gets interpreted, and interpretation must not decide whether a run may merge. A project-level skill override is not the mechanism either: `bootstrap.sh` installs these skills to `~/.claude/skills`, and a personal skill shadows a project skill of the same name, so a project copy would silently never load.
 
 **Why the kind test stays author-blind, including for the escalation (confirmed by the owner, Sept 2026):** the rule reads the same for a bot's question as for a human's — a thread needing intent, design, rationale or a decision is `NEEDS_USER`, reserved, and answered by nobody but the owner. This is worth writing down because it looks like an oversight and invites a "fix" back to an author-keyed rule, and that fix has already been made and reverted once here. Three reasons it is deliberate:

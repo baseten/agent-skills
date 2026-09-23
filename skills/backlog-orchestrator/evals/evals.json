@@ -578,6 +578,19 @@
         "the answer does not schedule repeated retriggers, and names each attempt as another review request rather than a probe",
         "the answer relies on the already-posted trigger and reports the outstanding round to the owner"
       ]
+    },
+    {
+      "id": 45,
+      "name": "a-waiver-needs-a-removal-trigger-the-preflight-can-execute",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This environment has no dependency transport, so the gate's dependency-view condition can never be proven and the owner has waived it as a standing decision. You are recording that waiver. Three candidate forms: (a) `\"dependency-view-waiver\": true` in the policy config, with the justification and the removal condition written into the PR body that added it; (b) an object carrying reason, granted date and tracking issue, with `remove-when` reading \"the orchestrator can read native GitHub issue dependencies, OR this backlog's prose dependencies have been migrated to native issue dependencies\"; (c) the same object with `remove-when` reading \"the tracking issue is closed\". Which do you store, and what do you do with it on later runs?",
+      "expected_output": "None of the three as written. (a) fails because a preflight reads the config and never reads a pull request, so the justification and the condition are invisible to the only thing that could act on them - the workaround outlives the gap silently and becomes a permanent bypass. (b) fails on its second branch, which is circular: confirming that a migration to native dependencies is complete requires the native dependency read whose absence justified the waiver, so that branch can only be discharged by someone asserting it. It is worse than (a) because it reads as checkable. (c) fails because issue state, though queryable, is still a human assertion one step removed - a waiver discharged by whoever closed a ticket is a gate removed by them. The tracking issue is closed BY the removal and never authorises it. Store the object with `remove-when` as a capability probe this run can execute itself - a native blocked-by read returning for an in-scope issue - which is legitimate precisely because the attempt is a read that leaves nothing behind and draws on no budget. Then run every waiver's probe at the first preflight: where one now succeeds the waiver is spent, so stop honouring it for this run, report it discharged with what the probe returned, and say the tracking issue can be closed.",
+      "assertions": [
+        "the answer rejects recording the condition anywhere a preflight does not read",
+        "the answer identifies the migration branch as circular because it needs the waived capability",
+        "the answer rejects a closed issue as a trigger and keeps the tracking issue as something the removal closes",
+        "the answer stores a capability probe the preflight executes itself",
+        "the answer re-runs each waiver's probe at preflight and discharges a waiver whose probe now succeeds"
+      ]
     }
   ]
 }

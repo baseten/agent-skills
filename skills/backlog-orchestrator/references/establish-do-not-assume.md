@@ -92,6 +92,13 @@ back, and act on the record. Never put such an attempt on a schedule to find out
 when it starts working, because every firing is another performance of the
 action.
 
+**What separates a probe from the action is consequences, not intent.** Reading
+to find out whether a read works costs a read and changes nothing, so it is a
+probe and a fine thing to build a decision on. Writing to find out whether a
+write works leaves the write behind. Triggering a review to find out whether the
+reviewer is answering *is* a review request. Ask what the attempt leaves behind
+and what budget it draws on; where the answer is nothing and none, probe freely.
+
 Observed: a run out of review budget armed a job to retry the review trigger
 every ten minutes until the provider answered. The provider answered all twelve
 queued triggers at once when the budget reset — twelve review rounds on a PR with
