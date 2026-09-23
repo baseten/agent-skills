@@ -99,6 +99,8 @@ State: waiting | repairing-ci | repairing-review | repairing-finding | healthy |
 5. wait for the next CI result, event-driven where available;
 6. budget exhausted → `NEEDS_USER`, no further attempts.
 
+**Step 2 decides attribution, so a mass failure across unrelated files is not classified external here without confirmation as `repair-pr`, *CI repair*, defines it. Unconfirmed, invoke the pass rather than classifying.**
+
 Unrelated/external/flaky failure with no justified code change: report and monitor; no cycle consumed.
 
 ## Review feedback
@@ -199,6 +201,7 @@ Return:
 - outcome: `PR_OPEN` | `MERGED` | `BLOCKED` | `BLOCKED_EXTERNAL` | `FAILED` | `NEEDS_USER`;
 - branch/base; PR URL/number; remote head SHA;
 - issue linkage verified, and the form emitted — closing keyword, or non-closing `Part of:` because a coverage finding was reported;
+- **any design finding core returned in place of a re-siting**, forwarded whole — the value, the objecting call sites and where it belongs; a caller that does not carry it is the only reader it would have had;
 - implementation attempts used; CI, review, and finding repair cycles used; strongest-model repair rounds used against the limit, with the locus evidence that triggered each;
 - the resolved policy actually applied — budgets, `auto-merge` — each with its source (caller, repo config, built-in default), plus any policy file present but unhonourable (an unreadable file is authority the owner meant to grant and did not);
 - review threads reserved for the owner: count and, **per item kind** — a question item's required fields verbatim (`resolve-pr-comment`, *What a question item must contain*), a deferred-repair item's API `html_url` and requested change with no draft (`repair-pr`). For a question those fields are the point of reporting it, so a run that drops it has escalated without handing over the work it already did; for a deferred repair there is no draft to drop, and demanding one would make the budget-exhaustion case unsatisfiable;

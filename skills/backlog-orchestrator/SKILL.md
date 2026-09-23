@@ -390,6 +390,7 @@ That prohibition is about re-planning, not about evidence. A worker reporting a 
 Results:
 
 - `PASS` -> proceed;
+- a node carrying `PREMISE_LIKELY_RESOLVED` -> **never dispatch it**, whatever the result value alongside it. Its cited defect is absent on another repository's current default branch with the replacement positively present, so dispatching produces a PR, review rounds and eventually a conflict over work already done. It is **not** `DONE` — that needs completion evidence this pass does not have — so classify it `NEEDS_USER`, which the settled predicate, the stop conditions and the closing report already handle: surfaced to the owner with the evidence and the revision it was read at, and it keeps its edges. `CITATION_UNVERIFIED` is a warning and changes nothing about dispatch;
 - `PASS_WITH_WARNINGS` -> proceed only where warnings do not make ordering unsafe;
 - `FAIL` -> stop affected paths; continue only validator-confirmed independent safe branches.
 
@@ -409,7 +410,7 @@ Do not automatically mutate dependency metadata. GitHub normalization is handled
 
 ## Escalating to deep validation
 
-Shallow mode reads declared dependency metadata and issue text. It never reads code, so it can establish that an edge is *satisfied* and nothing about whether the deliverable behind it covers what the consumer needs. Escalate the preflight from shallow to deep **automatically** — this is a documented default applied and reported, not a question for the user — when the bounded scope shows any of:
+Shallow mode reads declared dependency metadata and issue text. It reads code in exactly one place — an issue's citations into *another* repository, which a merge there can invalidate without anything in this one changing (`validate-backlog` owns that carve-out) — and otherwise never, so it can establish that an edge is *satisfied* and nothing about whether the deliverable behind it covers what the consumer needs. Escalate the preflight from shallow to deep **automatically** — this is a documented default applied and reported, not a question for the user — when the bounded scope shows any of:
 
 - **a cross-repository consumer edge** — an in-scope issue in one repository depends on an issue in another. This is the primary trigger. A frontend consuming a backend built in an earlier tranche is the canonical case, and the earlier tranche having merged is precisely what makes shallow mode confident and wrong;
 - **an issue whose text hedges about its inputs** — "may require", "additional providers may be needed", "assuming X exists" — or an acceptance criterion naming a capability no in-scope issue delivers;
@@ -564,7 +565,7 @@ Classify in-scope issues from tracker + GitHub remote evidence:
 - `READY`
 - `BLOCKED`
 - `BLOCKED_EXTERNAL`
-- `NEEDS_USER`
+- `NEEDS_USER` — including a node `validate-backlog` returned `PREMISE_LIKELY_RESOLVED`, which a restart re-derives from a fresh validation rather than from run state
 - `NOT_READY`
 
 Prefer durable evidence in this order:
@@ -793,6 +794,8 @@ For each enumerated resource, either give every worker its own namespace/instanc
 
 Pass the resolved access details explicitly in each dispatch prompt so no worker has to guess them. A worker that guesses wrong reports failures that are not real.
 
+**Carry the environment-hypothesis rule in every dispatch prompt** — `implement-issue-core`, *Final local verification*, states it and this run does not restate it. A worker inherits none of the repository's own context about a service that dies mid-session, and a prompt that omits the rule gets a worker that thrashes against a healthy codebase or returns a bare `FAILED` on one (NOTES).
+
 Standing rule in every dispatch prompt: never stop, reset, reconfigure, or clean up a concurrently shared resource — a sibling worker may be using it. A worker holding serialized exclusive access may perform the lifecycle operations the repository's own configuration sanctions, since nothing else holds the resource during its turn.
 
 ## Remote checkpoint requirement
@@ -861,6 +864,8 @@ worker session: <session id, or none on tiers without one> — archived: yes/no
 **And it is written where a restart can find it, which this block is not.** Invariant 1 classifies the per-PR block as a cache, so a run that recorded the charter only here loses it at the session boundary and a resumed run would rebuild one from the issue as it now stands — after the diff expanded, and quite possibly after the issue was edited to match. A charter reconstructed at that point agrees with anything. So `create-pr` writes it into the PR body at creation as a **`Chartered scope:` line** — a required content under the write-form rule, one or two sentences, surviving the budget as the linkage lines do — and adoption recovers it from there.
 
 **Where no charter line is recoverable, say so and do not invent one.** A PR this run did not create, or one whose body was rewritten without it, has no charter, and the ratchet comparison is **unavailable** for that PR rather than performed against a guess. Record it as unavailable in the block and report it that way: an unavailable check is a known blind spot, and a check performed against a reconstructed charter is a clean result that means nothing.
+
+**A worker that sees the seam first reports it rather than crossing the charter** (`implement-issue-core`, *Implement with remote checkpoints*), and it arrives as a **design finding on that worker's return**. Record it as a `DECISION` item — split or absorb — which is the disposition this gate would reach anyway, and hold the path it bears on. The same finding reaching this run before the work rather than after a refused adoption is cheaper for both sides, and the only thing that makes the early route real is that the return carries it.
 
 **Before adopting any repair worker's push, compare its diff against that charter.** A fix that introduces a **new module**, a **new build or CI step**, or a **new cross-cutting invariant** is a `DECISION` item — split or absorb — and not an adoption. The parent already inspects the pushed head, so this is a predicate on an inspection that happens anyway. Adopt everything else as usual: the test is the kind of thing added, not its size.
 
@@ -940,6 +945,8 @@ On an actionable CI failure:
 5. **compare the pushed diff against the PR's chartered scope** (see the per-PR block) — a new module, build/CI step or cross-cutting invariant is a `DECISION`, not an adoption — then adopt its pushed remote head, **and merge every posting-identity entry it returned into the run's transport-and-credential-keyed map** (see Posting identity) — a repair runs on its own transports, so this is the run's only evidence about them;
 6. increment the CI repair cycle;
 7. release the repair worker (see Releasing a worker) and resume event supervision.
+
+**Step 2 decides attribution, so a mass failure across unrelated files is not classified external here without confirmation as `repair-pr`, *CI repair*, defines it. Unconfirmed, dispatch rather than classify** — the pass has the diff in front of it and is the cheaper place to be wrong (NOTES).
 
 External/flaky failure with no justified code change does not consume a repair cycle.
 
@@ -1472,7 +1479,7 @@ A re-review that finds something is the system working: that PR is no longer cle
 
 A run is **settled** when no further implementation can start and every open PR is individually finished:
 
-- no in-scope issue is READY — each unstarted issue is blocked by work that is implemented but unmerged;
+- no in-scope issue is READY — each unstarted issue is blocked by work that is implemented but unmerged, **or is classified `NEEDS_USER`** (surfaced, not outstanding: it waits for the owner and holds nothing), **or has no remaining blocker but such an issue**. State the class rather than enumerating its causes: a resolved premise and an unrunnable deep validation both land here, and an issue whose only blocker is one of them is stranded by the same gap one hop out — nothing will implement its blocker, so it is neither READY nor waiting on unmerged work, and the run would never settle over it. The owner's ruling on the held issue is what releases it;
 - no implementation or repair worker is in flight — and a worker blocked on a permission prompt is in flight, not absent (see Blocked workers): it reads as quiet from every angle the other conditions look from, which is how a run declares itself settled over a worker stopped mid-issue;
 - every open PR from this run has had **every** automated review round its routing requires **completed**, not merely a trigger issued — where the routing requires two, one completing is not this condition met (`create-pr` owns the routing);
 - every actionable review finding on every open PR is resolved or answered — a thread reserved for the owner — by the kind test or on budget grounds (see Merge policy and review feedback) — counts here as surfaced, not outstanding: it blocks that PR's merge, never settlement;
@@ -1487,7 +1494,7 @@ On reaching settled:
 2. invoke `summarize-tranche` with the manifest/scope, this run's PR set, and the worker/review findings it produced;
 3. **act on its action points before ranking anything** (below);
 4. request `settle-outstanding-decisions`, passing the summary as its seed **and the run's posting-identity map — its recorded rulings are authored writes, and the map is what they select from** (see Posting identity) — unless `auto-request-settle` was turned off for this invocation. The gate covers only the request; whether the walkthrough may actually ask is that skill's call — its *Attendance is the precondition* section governs, and a run settling on a scheduled wake gets a one-line decline. **The decline relies on the decisions being durable at their own sites, not in the summary**: the summary and this run's closing report are cached run state by invariant 1, while the worker records, review threads and tracker comments they were read *from* survive and are what the walkthrough's own discovery reads later; what is lost is the aggregation and run-context enrichment — **the draft reply attached to a reserved thread is exactly that**, so a later walkthrough regenerates it from the thread — reading any rejected-draft record there first — rather than treating its absence as work nobody did (`settle-outstanding-decisions`, *What qualifies as an outstanding decision*) — a real cost, accepted deliberately (NOTES: the removed decision docket and what it cost). **Merge every posting-identity entry it returns into the run's map before continuing** — all of them, not the first: one walkthrough can rule at sites needing different transports, a ruling can be the first authored write through a transport this run has not used, and the observation can re-open a review trigger marked provisionally unavailable — which matters immediately, since step 6 and any later frontier advance issue further writes under whatever identity the map then holds. This step sits between summary and ranking because a ruling changes what the ranking is computed from: it can retire a `DECISION`, reshape a `MERGE_RISK`, or reverse which of two PRs should merge;
-5. invoke `plan-merge-order` with the manifest/scope, this run's PR set, and every summary item with an ordering consequence — the `MERGE_RISK` and `DECISION` items as the walkthrough left them, and any other class that also carries one. **Translate each ruling back into an action point before invoking** — `plan-merge-order` accepts summary action points and nothing else, and a raw ruling's likely readings are both wrong: keep ranking a PR the owner just rejected, or hold a merge behind a gate they just opened. A settled decision either drops out as a constraint, or becomes the constraint its answer implies — a `MERGE_RISK` carrying the consequence, an ordering requirement stated on the item. **A ruling that requires code to change is neither: it is an `IN_FLIGHT_FIX`, and the tranche is no longer settled.** Take that row — return to supervision, dispatch the `finding` repair within the finding budget, and re-test the settled conditions before ranking anything (NOTES: why translating it into a ranking constraint is the step-3 defect arriving one step later) — so the ranking is computed against answers where answers exist and against the open constraint where they do not;
+5. invoke `plan-merge-order` with the manifest/scope, this run's PR set, **the held issue set — anything classified `NEEDS_USER` for a resolved premise, which that skill excludes from its unblock counts** — and every summary item with an ordering consequence — the `MERGE_RISK` and `DECISION` items as the walkthrough left them, and any other class that also carries one. **Translate each ruling back into an action point before invoking** — `plan-merge-order` accepts summary action points and nothing else, and a raw ruling's likely readings are both wrong: keep ranking a PR the owner just rejected, or hold a merge behind a gate they just opened. A settled decision either drops out as a constraint, or becomes the constraint its answer implies — a `MERGE_RISK` carrying the consequence, an ordering requirement stated on the item. **A ruling that requires code to change is neither: it is an `IN_FLIGHT_FIX`, and the tranche is no longer settled.** Take that row — return to supervision, dispatch the `finding` repair within the finding budget, and re-test the settled conditions before ranking anything (NOTES: why translating it into a ranking constraint is the step-3 defect arriving one step later) — so the ranking is computed against answers where answers exist and against the open constraint where they do not;
 6. evaluate invariant 12's gate for each open PR whose repository opted into `auto-merge`, and merge the PRs it passes (see Merge behavior). This step exists here and not earlier because the walkthrough's rulings and the ranking are its inputs; each merge it performs is consumed as a frontier-advancing event like any other;
 7. surface the summary and action points first, then the walkthrough's report where one was requested — rulings recorded, or its one-line decline — then the ranking table, as the run's closing output, with every gate-authorized merge and every explicitly held draft named beside it, and name the still-unruled `DECISION` and decision-shaped `NEEDS_USER` items as the set the owner can settle by running `settle-outstanding-decisions` themselves: it is idempotent, so running it after a declined or interrupted walkthrough re-asks nothing already ruled;
 8. stop dispatching work, and stop spending tokens re-deriving the same state, for as long as the frontier stays empty.
@@ -1583,7 +1590,7 @@ Posting identity: (github-mcp, tok-a1b2) -> baseten (invoking user); (linear-cli
 Auto-merged (invariant 12 gate): 0
 Ready: 3
 Blocked: 2
-Needs user: 1
+Needs user: 1 (1 premise likely resolved — acme/api#144, evidence in the validation report)
 Resume frontier: <full URL(s)>
 ```
 

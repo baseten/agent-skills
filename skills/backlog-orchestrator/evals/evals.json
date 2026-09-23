@@ -566,6 +566,30 @@
         "the answer reports the unreadable field as unread rather than omitting it",
         "the answer reports remote-head progress rather than branch existence and catches the local-ahead session"
       ]
+    },
+    {
+      "id": 44,
+      "name": "the-dispatch-prompt-carries-the-environment-hypothesis",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your dispatch prompt for an implementation worker carries the issue, the base, the branch, the gate, the posting-identity map, the write-form rule and the countermands. The repository runs its suite against a shared Postgres instance that has been observed to die mid-session. A worker you dispatched last week hit that, read one failing test, concluded its own change had broken everything, thrashed against a healthy codebase and returned FAILED. What is missing from the prompt, and whose defect is that worker's report?",
+      "expected_output": "The prompt is missing the instruction that a mass failure across unrelated files is an environment hypothesis first and a code hypothesis second, and that the infrastructure precondition is checked before a single test is read - with the tell in the error rather than the assertion. The defect is the prompt's, not the worker's: a dispatched prompt is followed literally, so a requirement left out is a requirement skipped, and the worker will accurately report that the task never asked for it. The repository had absorbed this lesson in its own tooling and documentation, and a worker inherits none of that context. Add it to every dispatched prompt. Note also that raising the hypothesis is not confirming it: the same signature is produced by a PR that changed connection setup, so the confirmation comes from outside the branch - service health, or unrelated branches and the default branch failing the same job - and an unconfirmed hypothesis is not grounds to classify the failure external or to withhold a repair cycle.",
+      "assertions": [
+        "the answer names the missing dispatch-prompt instruction",
+        "the answer attributes the worker's wrong report to the prompt rather than to the worker, on prompt literalism",
+        "the answer separates raising the hypothesis from confirming it",
+        "the answer refuses to classify the failure external on the signature alone"
+      ]
+    },
+    {
+      "id": 45,
+      "name": "a-resolved-premise-node-is-not-dispatched-and-does-not-wedge-the-run",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your validation preflight returns PASS_WITH_WARNINGS and a DAG in which one node carries `disposition: PREMISE_LIKELY_RESOLVED` with evidence and the revision it was read at. That node's blockers have all merged, so it would otherwise compute READY, and you have two free worker slots. Every other PR in the tranche is finished. Do you dispatch it, and can the run settle?",
+      "expected_output": "Do not dispatch it. The disposition is on the node, not in the report, and it means the cited defect is absent on another repository's current default branch with its replacement positively present - so a worker would produce a PR, review rounds and eventually a conflict over work already done. It is not DONE either: that needs completion evidence this pass does not have. Classify it NEEDS_USER, which is what stops it wedging the run - a node that is neither READY nor blocked by implemented-unmerged work satisfies no settled condition, no stop condition and no restart classification, so the run could neither settle nor stop and a reader resolving that cheaply would dispatch it. As NEEDS_USER it is surfaced, not outstanding: the run settles, the node is reported to the owner with the evidence and the revision, it keeps its edges, and plan-merge-order does not count it as downstream work a PR unblocks. A restart re-derives it from a fresh validation rather than from run state.",
+      "assertions": [
+        "the answer refuses to dispatch the node despite its blockers being merged",
+        "the answer classifies it NEEDS_USER rather than DONE or a new state",
+        "the answer lets the run settle with the node outstanding",
+        "the answer excludes it from downstream unblock counts"
+      ]
     }
   ]
 }

@@ -15,7 +15,7 @@ This skill is **issue-source agnostic**. Supported trackers include GitHub Issue
 
 ### Shallow mode — default for orchestration
 
-Use structured issue metadata plus issue text to verify that the declared graph is internally coherent. Do not deeply inspect implementation code unless required to resolve an obvious ambiguity.
+Use structured issue metadata plus issue text to verify that the declared graph is internally coherent. Do not deeply inspect implementation code, with **one exception**: an issue's citations into *another* repository are re-checked here (check 11), because what invalidates one is a merge in a repository this backlog does not watch, so nothing inside its own repo ever changes. Otherwise inspect implementation code only where required to resolve an obvious ambiguity.
 
 Checks, in order:
 
@@ -31,9 +31,26 @@ Checks, in order:
 7. compare structured dependencies against text-described dependencies;
 8. detect cycles, missing issue targets, contradictory ordering, closed/cancelled prerequisite inconsistencies, orphaned children, duplicates, and links outside the authorized scope;
 9. distinguish an external prerequisite from an authorized implementation issue;
-10. report whether the graph is safe to execute without guessing.
+10. report whether the graph is safe to execute without guessing;
+11. **re-check every citation an issue makes into another repository** — this is the one code read a shallow pass performs, and the disposition rules under *Shallow mode* decide what each outcome means.
 
-A ticket's prose is its author's claim about a codebase, checkable now (`references/establish-do-not-assume.md`): where an issue cites a `file:line` or a call-site count, a deep pass re-reads it against that repository's current default branch and flags what no longer holds — an audit found eight call sites where the issue named six, three of them naming a different function.
+A ticket's prose is its author's claim about a codebase, checkable now (`references/establish-do-not-assume.md`): where an issue cites a `file:line` or a call-site count, **a deep pass** re-reads it against that repository's current default branch and classifies the result by the table below, as every citation re-read does — an audit found eight call sites where the issue named six, three of them naming a different function.
+
+**A citation into another repository is the one exception, re-checked at every mode including shallow.** Deep mode is where the whole-prose audit belongs, and shallow mode otherwise reads only declared metadata and issue text; this narrow carve-out is a code read and is named as one, because the thing that invalidates a cross-repo citation is a merge in a repository this backlog does not watch. An issue whose blocker merged elsewhere still reads as a live bug from inside its own repo: one such — Urgent, filed a week before its dependency landed — was still being carried as a blocker ten days after the fix shipped, with every field it named already converted at the boundary. The cost of missing it is not a wasted look: it is a dispatched worker, a PR, review rounds and eventually a conflict, for a bug that no longer exists. One grep per citation is cheap enough to pay every time.
+
+**Establish the read before drawing any conclusion from it.** A grep that found nothing and a grep that never ran return the same emptiness (`references/absence-is-not-a-verdict.md`, whose second claim has no exceptions: absence of a record is never a positive verdict). A read counts only where the repository was reachable and the exact revision is recorded with the finding.
+
+**Then classify what the read showed. This applies to any citation re-read, at any mode** — the cross-repository rule below decides *when* a read is performed, never what its outcome means:
+
+| what the read established | disposition | dispatchable |
+|---|---|---|
+| the citation still holds | none | yes |
+| the read could not be performed, or the cited code changed, or nothing positively shows the defect gone | `CITATION_UNVERIFIED`, carrying what was read and what remains unknown | yes — a warning, and a person re-reads the issue |
+| **read established, revision recorded, and the defect's replacement positively present** — the converted value, the corrected guard, the fix itself | `PREMISE_LIKELY_RESOLVED` | **no** |
+
+**The strong disposition needs the positive half.** *I did not find the defect* becomes *it is not there* only once the read is established, and *the work is done* only on seeing what replaced it. A renamed serializer and a fixed serializer produce the same empty grep; only the replacement tells them apart. Everything short of that is `CITATION_UNVERIFIED` and stays dispatchable, which is the fail-safe direction: a worker dispatched onto finished work costs a look, one withheld from live work costs the fix.
+
+**A disposition is a field on the node, not a sentence in the report.** Reporting it in prose alone leaves an ordinary node in the DAG that the scheduler will still hand to a worker, which is the whole failure this replaces. Never close the issue either: the backlog is the owner's, and a premise that reads as fixed is a strong claim made from outside the issue's own history — the node is held for them, not retired by this pass.
 
 Structured dependency metadata is authoritative when present; textual descriptions remain a secondary consistency signal. A textual blocker absent from structured metadata is flagged as a likely missing dependency, never silently ignored.
 
@@ -155,11 +172,14 @@ Errors:
 Warnings:
 - <canonical issue URL> text says it depends on <URL>, but no structured blocker link exists
 
+Premise likely resolved (non-dispatchable, held for the owner):
+- <canonical issue URL> — replacement present at <repo>@<revision>: <evidence>
+
 Suggested dependency changes (deep mode only):
 - Add <A URL> -> <B URL> — confidence high — reason ...
 ```
 
-Also return a normalized DAG using canonical full issue URLs as node identities.
+Also return a normalized DAG using canonical full issue URLs as node identities. **Each node carries its `disposition` where this pass assigned one** — `CITATION_UNVERIFIED` or `PREMISE_LIKELY_RESOLVED` — with the evidence and the `<repo>@<revision>` the read was taken at. **A `PREMISE_LIKELY_RESOLVED` node keeps its edges and is not in the dispatchable set**, and the result value that accompanies it is `PASS_WITH_WARNINGS`: the graph is safe to execute, and one node in it is not work. A consumer that reads only node ids and edges gets the pre-change behaviour, which is why the field is named here rather than left to the report.
 
 `FAIL` means the orchestrator must not dispatch affected work until corrected. `PASS_WITH_WARNINGS` may proceed if warnings do not make execution order unsafe — which is why unproven relationship visibility over dispatchable scope is never one of those warnings: its safety is exactly what cannot be established. It is a `FAIL`. **The single exception is the named `dependency transport unavailable` class**, where no transport available in this environment exposes a dependency read: uniform, permanent, precisely known — `PASS_WITH_WARNINGS` carrying that class (NOTES: why `FAIL` there would make this contract unsatisfiable on GitHub).
 
