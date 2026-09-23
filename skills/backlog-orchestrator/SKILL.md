@@ -1,6 +1,6 @@
 ---
 name: backlog-orchestrator
-description: Autonomously executes a bounded dependency-linked implementation tranche from GitHub Issues, Linear, or another supported tracker. Can fan the implementation phase out onto a Claude Code Dynamic Workflow when the user opts into one, while preserving a validated issue DAG, Sonnet workers, isolated worktrees, durable remote checkpoints, stacked PR topology, centralized PR supervision, bounded repairs, and restart-safe tracker/GitHub state.
+description: Autonomously executes a bounded dependency-linked implementation tranche from GitHub Issues, Linear, or another supported tracker. Can fan the implementation phase out onto a Claude Code Dynamic Workflow when the user opts into one, while preserving a validated issue DAG, per-issue model selection, isolated worktrees, durable remote checkpoints, stacked PR topology, centralized PR supervision, bounded repairs, and restart-safe tracker/GitHub state.
 ---
 
 # Backlog Orchestrator
@@ -57,7 +57,7 @@ Reusable worker skills:
 3. **A run is bounded.** Never turn one build-order ticket into an open-ended project crawl.
 4. **One implementation worker = one issue = one isolated checkout/worktree.**
 5. **In-flight implementation is remotely checkpointed.** Significant completed work must not exist only in an ephemeral container. **What enforces this differs by runtime, and on one tier the parent cannot:** where it can reach a worker's checkout it verifies and captures (Checkpoint compliance), and where it cannot — the remote-session tier, normally — the invariant rests on the worker's own pushes, with the dispatch prompt and the observable remote head as the only levers. Say which of those a run is relying on rather than reporting the invariant as satisfied by machinery that was never available.
-6. **Sonnet is the default implementation/repair model.** Use the strongest available reasoning model for orchestration when appropriate.
+6. **The model is selected per issue, and Sonnet is the default where the selection does not say otherwise** (see Model and skill policy, which owns the assignment, the capacity check and the escalation ladder). Use the strongest available reasoning model for orchestration when appropriate.
 7. **Only validated READY work is dispatched.**
 8. **Execution dependency is not automatically Git ancestry.** Stack only where code ancestry requires it.
 9. **The parent/orchestration layer owns long-lived PR state.** Implementation and repair workers are bounded and short-lived.
@@ -113,7 +113,7 @@ A Dynamic Workflow is a JavaScript orchestration script that fans plain subagent
 
 When the user has opted into a workflow for this invocation (see Invocation above), use it **only for the implementation fan-out**:
 
-- write the workflow script yourself so each `agent()` call's prompt/model explicitly encodes: exact authorized issue set and normalized dependency DAG (as separate fan-out stages honoring the DAG's ordering), Sonnet worker model, one issue per worker, isolated checkout/worktree per worker, exact calculated branch/base, remote checkpoint rules, retry budget;
+- write the workflow script yourself so each `agent()` call's prompt/model explicitly encodes: exact authorized issue set and normalized dependency DAG (as separate fan-out stages honoring the DAG's ordering), the model selected for that issue (see Model and skill policy — per issue, not one model for the fan-out), one issue per worker, isolated checkout/worktree per worker, exact calculated branch/base, remote checkpoint rules, retry budget;
 - make the checkpoint push a **pipeline stage of its own** rather than only a rule inside the implementation prompt. The parent cannot reach into a running fan-out to enforce it (see Where the parent cannot reach), so the script's control flow is the only thing that can guarantee the push happens;
 - do **not** give the workflow permission to redefine the product backlog — it must execute the already validated bounded DAG supplied by this skill;
 - treat the workflow purely as an **execution substrate** for that one fan-out run, not as the source of truth for issue/PR state.
@@ -532,9 +532,14 @@ A thread classified `NEEDS_USER` is **reserved for the owner**: never resolved a
 
 The orchestration/lead context may use the strongest available reasoning model.
 
-Normal implementation and repair workers must use **Sonnet explicitly** when the runtime supports per-worker model selection. Do not accidentally inherit the lead's stronger model.
+**Select a model per issue, and select it before dispatch.** `swarm-dispatch`, *Model: the caller chooses, by how failure shows*, owns both gates — the tier, chosen on failure visibility rather than task size, and the context-capacity veto over it. Apply them from there; do not restate them here. Never accidentally inherit the lead's model, and where a runtime has no per-worker model selection, every worker runs whatever it gives.
 
-At most one strongest-model implementation escalation is allowed per issue for a reasoning-heavy repeated failure (`model-escalations`).
+**Sonnet is this skill's default**, and it is where that skill's mid tier lands for implementation and repair work.
+
+**Deciding in advance is what this section adds**, because the ladder below catches thrashing and cannot catch **confidently wrong** — the more expensive shape here. A worker that patches the single site the ticket named, where the defect was restated at three, returns a green PR fixing a third of the bug; a worker that does exactly what a ticket got wrong looks successful. Neither trips a repeated-failure trigger, because neither fails, and no escalation rule that keys on failure ever will.
+
+
+At most one strongest-model implementation escalation is allowed per issue for a reasoning-heavy repeated failure (`model-escalations`). **The ladder is a floor under the selection above, not the primary mechanism** — it recovers a worker that is visibly failing, and an assignment made up front is what covers the worker that is not.
 
 **Repair escalates on evidence, not on exhaustion** (`repair-model-escalations`, per PR). Dispatch a repair round on the strongest available model when the round about to be dispatched carries a finding on a **locus an earlier repair on this PR already wrote** — a reshaped version of a finding an earlier round addressed, or a new finding in text an earlier repair authored. That is the signal that the previous repair was shallow and the root was never understood, and it is the one place in the repair path where model strength is the binding constraint. Everything else about the round is unchanged, and Sonnet remains the default for all the others.
 
@@ -684,7 +689,7 @@ Before dispatch:
 The reason for the subtraction is empirical: four review rounds against an enumerated list each found a different item missing from it, and every one of them was something a **clean** run still has to say (NOTES: the four omissions, kept there as the shape to watch for).
 
 Any terminal outcome reached before a PR exists writes nothing and simply returns — investigating it, and recording anything that comes of it, is this run's job, not the worker's;
-12. dispatch Sonnet worker with `implement-issue-core`.
+12. dispatch the worker with `implement-issue-core`, on the model selected for this issue (see Model and skill policy).
 
 A dispatch prompt that enumerates a required process is followed literally: a default left out of that enumeration is a default skipped, and the worker will accurately report that the task never asked for it. The same literalism decides what the worker does with instructions this run did not write (see Countermanding the worker's ambient supervision posture, below). Every dispatched prompt must therefore carry the automated review trigger instruction — `create-pr` owns the trigger rules, do not restate them here — unless this run explicitly defers review. Deferral is a conscious choice recorded in run state, naming what review is owed and on which PRs; it is never an omission. **Record it as the per-PR `review trigger` value `deferred`** — that field is what *Adopting a PR is three things, not one* reads, and a deferral left at `pending` is issued there as an unfinished trigger.
 
@@ -1015,7 +1020,9 @@ Each cycle performs real work:
 8. inspect stack ancestry changes;
 9. inspect every in-flight worktree for uncommitted work and enforce checkpoints (see Checkpoint compliance — this is a mandatory step, and the parent commits on the worker's behalf when a nudge has already failed) — **mandatory wherever worktrees are reachable, and inapplicable where the run established they are not**, in which case this step is the remote-head reading and the report saying so, never a skipped step recorded as a passed one;
 10. read every worker's runtime state, not only its work state — release the finished (see Releasing a worker) and act on the blocked (see Blocked workers);
-11. **reconcile released-vs-alive against the runtime, never against the run's memory** (`swarm-dispatch`, *Runtime: take what is there, and say which*, states the three sources and which is authoritative).** On a runtime with a session list, list the sessions whose provenance marks them as created by this run (`parent_session_id` on Claude Code Remote — never "sessions that look like workers"), and compare against the per-PR records. Three outcomes, and only three: **mine and archived** — done; **mine and still alive** — act on it this cycle: the releasable test, a Blocked workers branch, or `NEEDS_USER` — and where its worktree cannot be inspected from here, never archive it (*cannot verify* is not *verified clean*) and raise it as `NEEDS_USER` instead, because a live session this run created is this run's cost and stays this run's problem; **not mine** — a session whose provenance proves it belongs to another run or to the user: report it and never reclaim it, whether or not its worktree is inspectable. The comparison must read the runtime because the run's own record of releasing is not evidence: of the two runs that leaked sessions, one never reached step 10, and the other wrote "archived" into its notes and never called the tool. Reporting an action is not performing it (NOTES: the two mechanisms);
+11. **reconcile released-vs-alive against the runtime, never against the run's memory** (`swarm-dispatch`, *Runtime: take what is there, and say which*, states the three sources and which is authoritative).** On a runtime with a session list, list the sessions whose provenance marks them as created by this run (`parent_session_id` on Claude Code Remote — never "sessions that look like workers"), and compare against the per-PR records. Three outcomes, and only three: **mine and archived** — done; **mine and still alive** — act on it this cycle: the releasable test, a Blocked workers branch, or `NEEDS_USER` — and where its worktree cannot be inspected from here, never archive it (*cannot verify* is not *verified clean*) and raise it as `NEEDS_USER` instead, because a live session this run created is this run's cost and stays this run's problem; **not mine** — a session whose provenance proves it belongs to another run or to the user: report it and never reclaim it, whether or not its worktree is inspectable. **For every session this step leaves alive, the report is diagnostic rather than a count.** Name, per session: the issue it was chartered for, **how far its remote head has got**, and whether it carries staged or uncommitted files. **Branch existence is not progress** — `Checkpoint compliance` already names the `clean | local ahead` case, where the worker pushed once, committed more since, and left nothing staged, so a branch-exists field plus a clean worktree reports four weeks of stranded commits as healthy. Where the worktree is reachable, compare its local head against the remote's. Where it is not, record the remote head and **how long since it last advanced**: a head that has not moved in days, against a session still alive, is the same signal from the outside. "1 alive" cannot distinguish a warm container mid-turn from four weeks of unpushed work, and that distinction is the whole reason the check exists — an observed session sat `IDLE` and unarchived for four weeks, chartered for one issue, its branch absent from the remote and `staged_files` true, and it surfaced only because the owner asked whether it was ours. Where a field cannot be read from here, say which one and that it is unread; an unread field is not a clean one. The remote-branch reading is also what the capture lever under *Releasing a worker* turns on, so it is needed in this pass regardless.
+
+The comparison must read the runtime because the run's own record of releasing is not evidence: of the two runs that leaked sessions, one never reached step 10, and the other wrote "archived" into its notes and never called the tool. Reporting an action is not performing it (NOTES: the two mechanisms);
 12. **emit the state block** (see Progress / checkpoint output) — every cycle, including the long one-PR supervision tail, not only in closing output;
 13. re-check disk/slot capacity;
 14. check sibling branches for colliding added or modified claimed artifacts;
@@ -1092,7 +1099,7 @@ Nothing about the advance relaxes the safeguards it dispatches under:
 - **invariant 12 still holds.** Auto-advance is triggered by observing a merge — whoever performed it, a merge invariant 12's gate authorized included — never by deciding one should happen. The advance itself merges nothing.
 - **both budgets are consumed like any other dispatch.** If `new-issue-budget` is exhausted, do not dispatch: report the newly-READY frontier in the checkpoint output as the resume frontier, so a resumed invocation adopts it instead of rediscovering it. If `concurrent-open-prs` is the one exhausted, the frontier is reachable within this invocation — settle the tranche, which is what restores the capacity the merges earned, and then dispatch into it. Silently dropping newly-unblocked work is the failure this step exists to prevent.
 - **`NEEDS_USER` is not cleared by a merge.** A node whose only remaining blocker is a question a human was asked to decide stays blocked, and auto-advance must not resume that path (above). Only the blockers the merge actually satisfied are retired.
-- 4 concurrent workers, attempt/repair caps, Sonnet workers, one issue per worker, and isolated checkouts apply to resumed dispatch unchanged.
+- 4 concurrent workers, attempt/repair caps, per-issue model selection, one issue per worker, and isolated checkouts apply to resumed dispatch unchanged.
 
 Edge cases:
 
@@ -1545,6 +1552,10 @@ If only external CI/review remains and the runtime cannot safely stay active, re
 
 **Emit the state block at the end of every supervision cycle.** It is a required step of the parent supervision loop with a named actor and moment — this run, each cycle — not a convention that holds while the numbers are interesting. The observed failure is exactly that convention lapsing: runs printed the block mid-fan-out and stopped once they narrowed to a one-PR supervision tail, which is the long part of a run and the part a context compaction lands in — so both runs that leaked sessions reported their session count zero times (NOTES). Emitting each cycle is also what carries budgets, worker state and PR state across a compaction: a count that re-enters the transcript survives; one held in run memory does not.
 
+**Every unmerged PR in the block names the gate condition holding it, by that condition's own name from invariant 12 — or is reported mergeable, or `gate not yet evaluated`.** That third state is not a hedge: before `summarize-tranche` runs, the gate's `DECISION` and `MERGE_RISK` inputs do not exist, so a PR with clean CI and a clean review has neither a known unmet condition nor the evidence to be called mergeable — the summary can still produce an item that holds it. **`gate not yet evaluated` is for a PR whose status actually turns on the missing summary outputs, and for nothing else.** Where a condition is already known to hold a PR before the summary — red CI, a conflict, an unresolved finding, an explicitly held draft, a repository that never opted in — name that condition, because it is true now and actionable now, and the summary cannot make it untrue. Only `mergeable` is genuinely unavailable pre-summary, since only it requires the inputs that do not exist yet. Reporting such a PR as mergeable would be the same false account this section exists to stop, with the sign flipped. One line each, and it names the *first* unmet condition rather than a summary of the situation: `held by: 3 outstanding DECISION items`, `held by: CI red on <check>`, `held by: repository did not opt in`, `held by: explicitly held draft`. **"Awaiting merge", "pending" and "awaiting authorisation" are not reports about a gate** — they are compatible with every condition and with none, so nothing about them can be checked against what is actually true. A run reported a tranche as awaiting merge authorisation for four days and raised it to the owner three times; both repositories had opted in a week earlier, and what actually held every PR was three outstanding `DECISION` items. The outcome was right and every account of it was wrong, and a field that cannot express the reason cannot be checked against the reason.
+
+**The two merge routes are not the same authorisation, and collapsing them is what produced those three interruptions.** `merge-stack` invoked on its own needs the user's authorisation; invariant 12's gate needs the repository's `auto-merge` opt-in and nothing else from the owner — and where that key is already `true`, there is no authorisation outstanding to ask about. Asking anyway is the failure *Autonomy and interactive prompts* names at the dispatch end of the run, arriving at the merge end instead.
+
 The block always carries: **the instant it describes**, as a UTC timestamp on its first line — the state below is a composite of reads taken around that moment and not a fact about now (see *Every read is a snapshot*) — run budget, workers in flight by kind, worker sessions created / archived / alive, active PRs with CI and review state, repair budgets consumed, and the check-in state with its unproductive-wake count split by kind — plus, whenever reads were deferred under API budget and read discipline, which PRs went unread this cycle and when the allowance resets. For example:
 
 ```text
@@ -1557,8 +1568,15 @@ Run budget: 9/12 newly started (~$63 of ~$84 authorized)
 Open PRs: 7/12 concurrent (capacity restored at settle)
 Implementation workers: 3
 Repair workers: 1
-Worker sessions: 9 created / 8 archived / 1 alive (blocked on a prompt — see below)
+Worker sessions: 9 created / 8 archived / 1 alive
+  session_01U9… charter acme/api#24 · fe-24/panel: no remote head (branch absent) · staged files: yes · blocked on a prompt
+  session_02Kf… charter acme/api#31 · fe-31/table: remote head 4f2a1c, unmoved 26d; local ahead by 7 · staged files: no
 Active PRs: 7
+  acme/api#381  held by: 3 outstanding DECISION items (tranche-wide)
+  acme/api#382  held by: review not clean — 1 thread reserved for the owner
+  acme/site#77  held by: repository did not opt in (auto-merge off)
+  acme/api#383  gate not yet evaluated (clean so far; summary has not run)
+  acme/site#78  held by: CI red on typecheck
 Check-in: armed (unproductive 2/8 — 2 no-op, 0 deferred; next in 80m)
 API budget: ok (reads deferred: none)
 Waiting CI/review: 4
