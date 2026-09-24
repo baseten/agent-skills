@@ -140,6 +140,8 @@ The owner asked for the rule scoped to human comments and, when the asymmetry wa
 
 ## Implementation worker contract
 
+**Why a recorded design choice names its failure paths (Sept 2026):** a run ruled that a submit path should create a plan and then submit against its id — right on the reason it beat the alternative, and silent on what persists when the submit fails after the plan exists, or what a retry does to it. The worker implemented the ruling as given, which is what a ruling is for, so the one party positioned to check the shape's failure paths was the one that chose it.
+
 **Why a refused review is its own state here:** the shared rule explains why a refusal is an answer; what is skill-specific is that this run's remedy — report the PR as owing a round — is only reachable from a state that does not block settlement, and that every re-trigger path had to be closed for the rule to mean anything.
 
 **Why the gate travels inline in the dispatch prompt (round 1, Sept 2026):** the
