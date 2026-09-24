@@ -23,6 +23,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -30,14 +31,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def _load(withheld=None):
-    """Load run_evals fresh, optionally with the leak guard neutered."""
+def _load(withheld=None, companion_files=None):
+    """Load run_evals fresh, optionally with one guard neutered."""
     spec = importlib.util.spec_from_file_location(
-        f"run_evals_{id(withheld)}", ROOT / "scripts" / "run_evals.py")
+        f"run_evals_{id(withheld)}_{id(companion_files)}", ROOT / "scripts" / "run_evals.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     if withheld is not None:
         mod.WITHHELD = withheld
+    if companion_files is not None:
+        mod.COMPANION_FILES = companion_files
     return mod
 
 
@@ -141,10 +144,100 @@ def guard_single_arm_is_labelled() -> list[str]:
     return failures
 
 
+def _git(tmp: Path, *args: str) -> None:
+    subprocess.run(
+        ["git", "-c", "user.name=fixture", "-c", "user.email=fixture@example.invalid",
+         "-c", "commit.gpgsign=false", *args],
+        cwd=tmp, check=True, capture_output=True)
+
+
+def _companion_fixture(tmp: Path) -> None:
+    """A skill citing two companions: one present at the base, one added since.
+
+    Committed state is the base: the skill, and `early-companion` at v1. The
+    working tree then moves `early-companion` to v2 and adds `late-companion`,
+    which the base never had.
+    """
+    skill = _fixture(tmp)
+    data = json.loads((skill / "evals" / "evals.json").read_text())
+    data["companions"] = ["early-companion", "late-companion"]
+    (skill / "evals" / "evals.json").write_text(json.dumps(data), encoding="utf-8")
+    early = tmp / "skills" / "early-companion"
+    early.mkdir(parents=True)
+    (early / "SKILL.md").write_text("early v1\n", encoding="utf-8")
+    (early / "NOTES.md").write_text("early notes v1\n", encoding="utf-8")
+    _git(tmp, "init", "-q")
+    _git(tmp, "add", "-A")
+    _git(tmp, "commit", "-q", "-m", "base")
+    (early / "SKILL.md").write_text("early v2\n", encoding="utf-8")
+    late = tmp / "skills" / "late-companion"
+    late.mkdir(parents=True)
+    (late / "SKILL.md").write_text("late v2\n", encoding="utf-8")
+    (late / "NOTES.md").write_text("late notes v2\n", encoding="utf-8")
+
+
+def guard_companions_join_the_contract() -> list[str]:
+    """Each arm carries its own revision of every companion, and the reader is told.
+
+    A contract that defers a rule to another skill reads, without that skill's
+    files beside it, as a contract that lost the rule - so a moved rule would
+    score as a regression in the new arm and the old arm alike.
+    """
+    failures = []
+    for label, companion_files, expect_files in (
+        ("intact", None, True),
+        ("guard neutered", (), False),
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            mod = _load(companion_files=companion_files)
+            mod.ROOT = tmp
+            _companion_fixture(tmp)
+            with contextlib.redirect_stdout(io.StringIO()):
+                rc = mod.prepare("fixture-skill", "HEAD", None, tmp / "round")
+            if rc != 0:
+                failures.append(f"{label}: prepare returned {rc}")
+                continue
+            new_c = tmp / "round" / "new" / "contract"
+            old_c = tmp / "round" / "old" / "contract"
+
+            def read(p: Path) -> str | None:
+                return p.read_text() if p.exists() else None
+
+            got = {
+                "new early": read(new_c / "early-companion-SKILL.md"),
+                "new early notes": read(new_c / "early-companion-NOTES.md"),
+                "new late": read(new_c / "late-companion-SKILL.md"),
+                "old early": read(old_c / "early-companion-SKILL.md"),
+                "old early notes": read(old_c / "early-companion-NOTES.md"),
+            }
+            want = {
+                "new early": "early v2\n", "new early notes": "early notes v1\n",
+                "new late": "late v2\n", "old early": "early v1\n",
+                "old early notes": "early notes v1\n",
+            }
+            if expect_files:
+                for k, v in want.items():
+                    if got[k] != v:
+                        failures.append(f"{label}: {k} is {got[k]!r}, expected {v!r}")
+                if (old_c / "late-companion-SKILL.md").exists():
+                    failures.append(
+                        f"{label}: old arm carries a companion the base never had")
+                packet = json.loads((tmp / "round" / "new" / "eval-00" / "packet.json").read_text())
+                if "late-companion-SKILL.md" not in packet.get("contract_note", ""):
+                    failures.append(f"{label}: the reader packet does not say the companion files are contract")
+            elif any(v is not None for v in got.values()):
+                failures.append(
+                    "guard neutered but companion files still reached the contract — "
+                    "COMPANION_FILES is not what puts them there, so this case pins nothing")
+    return failures
+
+
 GUARDS = (
     ("packet withholds the answer", guard_packet_withholds_the_answer),
     ("ungraded is not passing", guard_ungraded_is_not_passing),
     ("single arm is labelled", guard_single_arm_is_labelled),
+    ("companions join the contract", guard_companions_join_the_contract),
 )
 
 

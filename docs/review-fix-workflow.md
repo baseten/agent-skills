@@ -21,7 +21,7 @@ that the skill between it and its recorder never forwarded." A rule in the wrong
 reads as correct to a reviewer and to a grep, and is inert when executed.
 
 **2. Restated rules drift, and the fix for one round introduces the next.**
-`skills/backlog-orchestrator/NOTES.md`, *Releasing a worker*: "restating it in situ is how
+`skills/swarm/NOTES.md`, *Releasing a worker*: "restating it in situ is how
 successive versions of it came to disagree about the same worker — every review round the
 section has had found one such disagreement, each introduced by the fix for the last." That
 sentence is the ten-round phenomenon, diagnosed, in the repository's own words.
@@ -103,7 +103,7 @@ is how the scopes come apart, which is what this document is about.
 **Why collapsing beats reconciling.** Restatement is mechanism 2's fuel, and a rule stated
 once cannot disagree with itself — reconciling two copies leaves both, so it buys agreement
 today and the next round's finding tomorrow. The repository already settled this for one of
-its own rules: `NOTES.md`, *Releasing a worker*, "Why the releasable test is stated once."
+its own rules: `skills/swarm/NOTES.md`, *Releasing a worker*, "Why the releasable test is stated once."
 
 **Why a recurring shape earns a guard.** A mechanical assertion or an eval scenario is the
 only tier that binds without being read, so it is the one thing a later round cannot skip
