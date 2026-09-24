@@ -161,7 +161,7 @@
     {
       "id": 13,
       "name": "frontier-holds-are-per-path",
-      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the owner merges three PRs. The recompute makes nodes X, Y, Z READY. Outstanding items: a DECISION whose answer changes how X gets built; a NEW_ISSUE follow-up with no ordering consequence; and the 12-new-issue budget has room for Y and Z but the run also notices the owner's merge chose between the two approaches an earlier DECISION had asked about. Question: (a) which nodes dispatch and which hold? (b) what does the merge itself settle? (c) mid-scenario variant — if the budget were exhausted instead, what happens to the newly READY nodes?",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the owner merges three PRs. The recompute makes nodes X, Y, Z READY. Outstanding items: a DECISION whose answer changes how X gets built; a NEW_ISSUE follow-up with no ordering consequence; and the `new-issue-budget` has room for Y and Z but the run also notices the owner's merge chose between the two approaches an earlier DECISION had asked about. Question: (a) which nodes dispatch and which hold? (b) what does the merge itself settle? (c) mid-scenario variant — if the budget were exhausted instead, what happens to the newly READY nodes?",
       "expected_output": "(a) X holds (the DECISION bears on what/how X gets built — dispatching commits the run to an answer); Y and Z dispatch in the same pass — holding one path never holds the others, and the NEW_ISSUE holds nothing it has no bearing on. (b) The merge is evidence: a user asked to choose between two approaches who merged one has answered — that question no longer holds work. (c) With budget exhausted, do not dispatch: report the newly READY frontier as the resume frontier so a resumed invocation adopts it — silently dropping newly unblocked work is the failure the step exists to prevent.",
       "assertions": [
         "The answer holds only X (the node the DECISION bears on) and dispatches Y and Z in the same pass",
@@ -705,6 +705,33 @@
         "the answer does not count another session's report on the same PR as the repair session's own",
         "the answer does not treat a found head as delivered for an outcome that claims a code change",
         "the answer keeps the containers of (a) and (b), asking each to push where a channel exists and otherwise raising NEEDS_USER, rather than archiving them"
+      ]
+    },
+    {
+      "id": 51,
+      "name": "two-budgets-one-a-count-and-one-a-ceiling",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). `concurrent-open-prs` is 6 and `new-issue-budget` is 12. Your invocation has started 6 issues and holds 6 open PRs; three more in-scope issues are READY with nothing blocking them but the open-PR cap. Nothing has settled. Then the owner merges two of the PRs and closes a third unmerged, rejecting the approach. (a) Can you dispatch now, and how many slots do you have? (b) Suppose instead all six PRs were still open and none of the three READY issues could start — can the run settle? (c) Different case: the run settles holding three READY issues against the cap, then the owner merges one PR that unblocks nothing new and closes another unmerged. What happens? (d) Different again: the cap is 12, ten PRs are open, two implementation workers are in flight with their PRs not yet created, and two worker slots are free. How many issues may you dispatch? (e) Later the invocation has started all 12 issues and every PR has merged. Three more issues are READY. What now?",
+      "expected_output": "(a) Yes, three slots. `concurrent-open-prs` counts this run's PRs that are open, and a slot is released the moment a PR is not open - merged or closed unmerged alike, since flow control bounds outstanding load rather than outcomes, and reviewer load and conflict surface fell by three either way. It is recomputed by counting, not tracked as a ledger, so a restart or a checkpoint cannot lose it. Dispatch three, `new-issue-budget` now at 9 of 12. (b) Yes. A READY issue held only by an exhausted budget counts as non-dispatchable for settling - a predicate demanding an empty READY set would leave a budget-bound run unable to settle and so unable to reach the merges that release it. The checkpoint says which budget holds each issue, because `concurrent-open-prs` clears within the invocation as PRs close or merge and `new-issue-budget` does not. (c) Two slots are released and that release is itself a dispatch trigger, even though the frontier did not advance and a close advances nothing at all: recompute capacity and fill it from the READY set the cap was holding, within new-issue-budget. Waiting for a frontier advance would leave the run settled forever with spend unused and dispatchable work never started. (d) None. Ten open plus two in flight is twelve slots held: an implementation worker holds a slot from dispatch until its PR exists, because counting open PRs alone lets two dispatches target the same future slot - with four concurrent workers that is three PRs over the cap. The free worker slots are not the binding constraint here. (e) Nothing more starts. Flow control is wide open - no PRs are held - but the spend ceiling is exhausted, and no merge or close ever restores it: merging work already paid for is not authorization to pay for more. Settle, and report the three as the resume frontier so a later invocation adopts them.",
+      "assertions": [
+        "the answer releases a slot for the closed-unmerged PR as well as the merged ones",
+        "the answer treats the open-PR count as recomputed by counting rather than as a ledger that a restart could lose",
+        "the answer lets a budget-bound run settle",
+        "the answer refuses to start more work once new-issue-budget is spent, whatever the open-PR count",
+        "the answer dispatches into the slots freed by a merge that unblocked nothing and by an unmerged close",
+        "the answer counts in-flight implementation workers against the open-PR cap",
+        "the answer dispatches on a close that advanced no frontier rather than staying settled"
+      ]
+    },
+    {
+      "id": 52,
+      "name": "a-budget-held-issue-with-a-child-still-lets-the-run-settle",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). `concurrent-open-prs` is 6 and six of this run's PRs are open. Issue A is READY with every blocker merged, held only because the cap is full. Issue B is unstarted and blocked by A. Issue C is classified NEEDS_USER, and issue D is blocked only by C. No worker is in flight, and every open PR has completed its review rounds with no outstanding findings. Can the run settle, and what does the checkpoint say about A, B, C and D?",
+      "expected_output": "Yes, it settles. The predicate is that nothing in scope is dispatchable, where work is dispatchable when this run could start it this cycle: READY, held for no human, and within every budget and capacity check's headroom. A is READY but outside the open-PR headroom, so not dispatchable. B is not READY, since its blocker is unimplemented. C is NEEDS_USER. D is not READY. None is dispatchable, so the run settles - and it must, because settling is what reaches the ranking and the gated merges that would free a slot. A reading that lists the kinds of issue allowed to remain gets B wrong: B is not blocked by implemented-but-unmerged work, not NEEDS_USER, not blocked only by a NEEDS_USER issue, and not READY, so an enumeration of those four would refuse to settle over it, which is the wedge. The checkpoint names the budget holding A - concurrent-open-prs, which clears when any of this run's PRs closes or merges - and reports C with what the owner needs to answer.",
+      "assertions": [
+        "the answer lets the run settle",
+        "the answer treats the child of a budget-held issue as not dispatchable because it is not READY",
+        "the answer applies a positive definition of dispatchable rather than a list of acceptable remainders",
+        "the answer names concurrent-open-prs as the budget holding A in the checkpoint"
       ]
     }
   ]

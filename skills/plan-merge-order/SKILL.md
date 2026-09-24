@@ -1,6 +1,6 @@
 ---
 name: plan-merge-order
-description: Rank the open PRs of a settled implementation tranche by how much downstream work each one unblocks, and emit a review order, a merge batching plan, and the hard sequencing constraints as a table. Use when a tranche is settled — no further work can start until existing PRs merge — or whenever asked what to review or merge first to unblock a backlog.
+description: Rank the open PRs of a settled implementation tranche (backlog-orchestrator owns what settled means) by how much downstream work each one unblocks, and emit a review order, a merge batching plan, and the hard sequencing constraints as a table. Use when a tranche is settled — or whenever asked what to review or merge first to unblock a backlog.
 ---
 
 # Plan Merge Order
@@ -15,7 +15,7 @@ It is tracker-agnostic (GitHub Issues, Linear, or another supported tracker) and
 
 ## When to run
 
-Run when a tranche is **settled**: every remaining unstarted issue is blocked by work that is implemented but not merged, and the open PRs are individually finished. `backlog-orchestrator` invokes this at that point. A user may also invoke it directly at any time — answer with whatever state exists rather than refusing because the tranche is not formally settled (NOTES).
+Run when a tranche is **settled**. `backlog-orchestrator`, *Settled tranche*, owns that predicate; do not restate it here, because a copy drifts the moment the predicate changes and this one did.
 
 NOT a merge readiness gate: top of this ranking says nothing about whether a PR is correct.
 
