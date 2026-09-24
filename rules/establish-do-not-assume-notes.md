@@ -78,3 +78,14 @@ spent many times over before the first fix landed. Nothing about the job was
 lazy — it wanted to know when the provider returned, which is the right question.
 What it got wrong is that there was no way to ask that did not consume the thing
 it was waiting for.
+
+**Why claims about state were folded into the outbound section rather than given
+their own (Sept 2026).** The remedy is identical — a read behind the sentence —
+and so is the trigger: the moment of writing it. What differs is the object, and
+a separate section would have implied a separate rule. The status summary is
+named because it is where the failure concentrates: a report is written to be
+believed, so a sentence recalled rather than read carries the full weight of an
+observation. Both owner-caught instances were in summaries, and neither was
+load-bearing at the moment it was written, which is exactly why neither was
+checked. The recalled-example case is included because it is the same failure
+with a longer half-life, and the example given is this repository's own.
