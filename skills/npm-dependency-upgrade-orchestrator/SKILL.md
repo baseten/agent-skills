@@ -1,6 +1,6 @@
 ---
 name: npm-dependency-upgrade-orchestrator
-description: Take a set of dependency upgrades, triage each against its changelog and the codebase's usage, establish coupling and viability, select a model per upgrade by failure mode, then dispatch isolated subagents — one per upgrade or coupled group running `upgrade-npm-dependency`, plus one batched task for the routine bumps triage cleared, which need no migration workflow. Supervises CI and separates infrastructure failure from real failure. Use for a batch; use `upgrade-npm-dependency` directly for one.
+description: Take a set of dependency upgrades, triage each against its changelog and the codebase's usage, establish coupling and viability, select a model per upgrade by failure mode, then dispatch isolated subagents — one per upgrade or coupled group running `upgrade-npm-dependency`, plus one batched task for the routine bumps triage cleared, which need no migration workflow. Supervises CI and separates infrastructure failure from real failure, and merges where the repository opted in with `auto-merge-dependencies`. Use for a batch; use `upgrade-npm-dependency` directly for one.
 ---
 
 # npm Dependency Upgrade Orchestrator
@@ -112,12 +112,12 @@ Constrain each agent explicitly:
 
 Gate "green" on **every** check the repository actually requires having concluded successfully — an empty or partial rollup is not a green one (`references/absence-is-not-a-verdict.md`) **on the current head** — enumerate what is required rather than gating on whichever check you happened to read. Two false passes share one root here, and closing only the second leaves the first: a rollup that is empty or barely populated means checks have not registered, and where several checks are required, one concluding successfully while another is still pending or failing satisfies any singular reading of this gate. Neither is a pass.
 
-**Two checks are carried here from Dispatch, and this is the section that performs them.** Both were handed over because this run occupies the passes and the merge moment belongs to nobody here; a rule stated only where it was assigned is one no pass executes.
+**Two checks are carried here from Dispatch, and this is the section that performs them.** Both were handed over because this run occupies the passes and, unless the repository opted in (see Merge), the merge moment belongs to nobody here; a rule stated only where it was assigned is one no pass executes.
 
 - **Compare each open PR's recorded lockfile base against the current base**, and name every PR whose lockfile has gone stale. A stale one is redispatched for a re-resolution pass, never merged on the strength of the handoff check.
 - **Re-check every batched routine candidate's target against the one triage cleared.** Where one moved, its clearance and the model selection it implied are void: pull it out **together with its coupled siblings** (see Dispatch), re-triage against the new target, and dispatch it like any uncleared bump. The unrelated rest of the batch stands.
 
-Both run again at close-out, which hands them to the merger (see Close out).
+Both run again at close-out, which hands them to the merger for every PR this run did not merge (see Close out), and Merge runs them once more immediately before each merge it makes.
 
 Emit only state **changes**, and only actionable ones. A value that varies for reasons unrelated to state — a count, a timestamp — re-emits every unchanged entry on every tick.
 
@@ -127,18 +127,18 @@ Read a **changed** failure signature carefully. A signature that narrows after a
 
 ## Merge
 
-**This run merges only where the repository opted in with `auto-merge-dependencies`** in `.claude/agent-policy.json`, resolved as `backlog-orchestrator`, *Per-repository policy configuration*, resolves its keys: once, at run start, from the head of the default branch, never a version a worker wrote; an invocation argument can switch it off, never on. Absent or `false`, the run merges nothing and the close-out hands the checks below to the merger.
+**This run merges only where the repository opted in with `auto-merge-dependencies`** in `.claude/agent-policy.json` (or the file's old name), resolved as `backlog-orchestrator`, *Per-repository policy configuration*, resolves its keys: once, at run start, from the head of the default branch, never a version a worker wrote; an invocation argument can switch it off, never on. Absent or `false`, the run merges nothing and the close-out hands the checks below to the merger.
 
 Where it is `true`, a PR merges once all of these hold on its current head:
 
 - **green** — every required check concluded successfully (see Supervise);
-- **current** — its lockfile is resolved against the current base, and every batched candidate's target is the one triage cleared (the two checks Supervise performs);
+- **current** — its lockfile is resolved against the current base, and **every candidate's version on the current head is the target triage assessed** — for both kinds below, since an adopted bot PR can advance in place to a release nobody triaged;
 - **no open review thread**;
-- **and it is one of two kinds:**
-  - **cleared** — every candidate on it is a minor or patch that triage cleared (no breaking change in any version in the range, no affected call site), and it changes nothing but manifests and lockfiles. It merges on the checks above; no review round is spent on a bump that changes no code;
-  - **reviewed** — it carries any major, or a minor or patch whose upgrade needed application changes. Request the repository's automated review round once it is green (`create-pr` owns the routing and the trigger), and merge only once that round has completed clean on the current head.
+- **and it passes the gate for its kind — one kind per route** (see Dispatch):
+  - **the routine batch PR** — every candidate on it triage cleared. It merges on the checks above **only while its diff is those candidates' version specifiers in the manifests plus the lockfile**, and the lockfile moves no other package across a major and adds none. Anything else in the diff — `scripts`, `overrides` or `resolutions`, patches, `packageManager`, `.npmrc` or `.yarnrc.yml`, any source file — or a lockfile change beyond that, makes it the reviewed kind. No review round is spent on a bump that changes nothing a reviewer would read;
+  - **every other PR** — an `upgrade-npm-dependency` task's, carrying a major or a bump triage did not clear — merges only once an automated review round has completed clean on its current head. Post that round's trigger yourself once the PR is green, following `create-pr`'s routing and trigger rules for which convention, what text and from which account, since the PR may be a bot's and never passed through `create-pr`; skip it where `create-pr` already triggered on this head. A review counts for a later head only where every push since is mechanical by `create-pr`'s test — a bot's rebase is — and otherwise the round is requested again.
 
-Anything else — a check pending or red, a stale lockfile, an open thread, a review with findings, a candidate triage did not clear — is reported, not merged. Merge with the repository's configured method, and a stacked or dependent PR through `merge-stack`. **Each merge moves the base**, so re-run the lockfile check on the next PR before merging it rather than trusting the result from before the first.
+Anything else — a check pending or red, a stale lockfile, a moved target, an open thread, a review with findings — is reported, not merged. Merge through `merge-stack`, which this gate authorizes for the PRs it passes exactly as invariant 12 does for `backlog-orchestrator`; where it is unavailable, report the gate unreachable for this run rather than merging another way. **Each merge moves the base**, so re-run the lockfile check on the next PR before merging it rather than trusting the result from before the first.
 
 ## Close out
 
