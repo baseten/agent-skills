@@ -128,7 +128,7 @@
     {
       "id": 11,
       "name": "a-handoff-lockfile-check-is-not-a-merge-time-one",
-      "prompt": "You are executing the npm-dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: five PRs from your batch are open and awaiting human review. Each agent re-resolved its lockfile before pushing and recorded the base commit it resolved against. Two hours ago one of the five merged, moving the base. A colleague asks for the batch status and notes that every PR is green and every lockfile was re-resolved. Question: what do you report, and what do you do?",
+      "prompt": "You are executing the npm-dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: five PRs from your batch are open and awaiting human review. Each agent re-resolved its lockfile before pushing and recorded the base commit it resolved against. Two hours ago one of the five merged, moving the base. A colleague asks for the batch status and notes that every PR is green and every lockfile was re-resolved. Question: what do you report, and what do you do? The repository's .claude/agent-policy.json does not set auto-merge-dependencies.",
       "expected_output": "Those re-resolutions are handoff results and the base has moved since. Compare each open PR's recorded base against the current base, name the ones now stale, and redispatch those for a re-resolution pass — do not report them green on the strength of the handoff check. This run merges nothing, so it cannot perform the check at merge time; it carries it, and the remaining check is named as the merger's to repeat.",
       "assertions": [
         "The answer compares each PR's recorded base against the current base rather than trusting the completed re-resolutions",
@@ -177,7 +177,7 @@
     {
       "id": 15,
       "name": "the-routine-target-recheck-names-an-actor-that-exists",
-      "prompt": "You are executing the npm-dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: six routine bumps are batched into one task. A clearance is about one release, so a candidate whose target advances into a breaking release would ride the batch past upgrade-npm-dependency entirely. A colleague drafts the rule as: re-check every batched candidate's target immediately before that task lands. Questions: (a) what is wrong with that rule? (b) where does the check actually go? (c) what does close-out say about it?",
+      "prompt": "You are executing the npm-dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: six routine bumps are batched into one task. A clearance is about one release, so a candidate whose target advances into a breaking release would ride the batch past upgrade-npm-dependency entirely. A colleague drafts the rule as: re-check every batched candidate's target immediately before that task lands. Questions: (a) what is wrong with that rule? (b) where does the check actually go? (c) what does close-out say about it? The repository's .claude/agent-policy.json does not set auto-merge-dependencies.",
       "expected_output": "It names a moment this run does not occupy. This layer merges nothing, so nothing here reaches the point where the task lands, and a rule keyed to that moment has no actor to run it — the same defect the shared-lockfile rule had before it was rewritten to carry its check rather than hold it.\n\nSo the check is carried to actors that exist. The batch agent re-checks immediately before it writes anything, which is a moment it does occupy. This run re-checks on every supervision pass and again at close-out. Where a batched candidate's target moved, its clearance is void: pull it out, re-triage against the new target, and dispatch it like any uncleared bump, because the move also invalidates the model selection the clearance implied.\n\nClose-out reports whether any batched candidate's target moved since it was cleared, and names that check as the merger's to repeat — the same handoff the lockfile check gets, for the same reason.",
       "assertions": [
         "The answer identifies that the drafted rule names a moment this layer does not occupy",
@@ -198,6 +198,20 @@
         "the rule is applied to this layer's own writes as well as the dispatched agent's"
       ],
       "id": 16
+    },
+    {
+      "id": 17,
+      "name": "dependency-prs-merge-by-kind-under-their-own-opt-in",
+      "prompt": "You are executing the npm-dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository's .claude/agent-policy.json on its default branch sets \"auto-merge-dependencies\": true and \"auto-merge\": false. Five PRs, each with every required check green on its current head, lockfile resolved against the current base, and no open review thread: (a) the routine batch PR, whose three candidates triage cleared, changing only their version specifiers in package.json and the lockfile, which moves no other package across a major and adds none; (b) a PR from an upgrade-npm-dependency task upgrading a library one major version, with a small code change the migration needed; (c) a PR from an upgrade-npm-dependency task for a minor bump triage did not clear, whose upgrade changed two call sites; (d) a second routine batch PR identical to (a) except that one candidate's adopted Dependabot PR has since advanced to a newer release than the one triage cleared; (e) a third routine batch PR whose diff also adds an `overrides` entry to package.json. Which do you merge now, which wait, and what do you do next for each?",
+      "expected_output": "(a) Merge it: the routine batch PR is the cleared kind, and its diff is only the candidates' version specifiers plus the lockfile, so it merges on green, current and no open thread, with no review round spent. `auto-merge-dependencies` is the opt-in here; `auto-merge: false` governs implementation PRs. (b) and (c) are the reviewed kind: post the repository's automated review trigger once green, following create-pr's routing and trigger rules since the run may not have created the PR, and merge each only once that round completes clean on its current head. (d) Do not merge: 'current' requires that no candidate has moved past its triaged target, and for a batched candidate that includes the superseded bot PR's head, which Supervise's target re-check reads - one moved, so its clearance is void - pull it out with its coupled siblings and re-triage; the rest stands. (e) Not the cleared kind: an `overrides` entry is outside version specifiers and the lockfile, so it becomes the reviewed kind and waits for a clean automated review. After merging (a), re-run the lockfile check on the next PR before merging it, since the merge moved the base. Merges go through merge-stack. Report which PRs merged and under which kind.",
+      "assertions": [
+        "the answer merges the routine batch PR without requesting a review round",
+        "the answer treats auto-merge-dependencies, not auto-merge, as the opt-in for these PRs",
+        "the answer requests an automated review for the major and for the uncleared minor, and merges each only after it completes clean",
+        "the answer holds the batch PR whose adopted Dependabot PR advanced past the triaged target",
+        "the answer treats the batch PR with an overrides entry as the reviewed kind",
+        "the answer re-runs the lockfile check on the next PR after a merge moves the base"
+      ]
     }
   ]
 }

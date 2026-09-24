@@ -47,7 +47,7 @@ Reasoning for a rule lives beside it as `rules/<name>-notes.md`, and is delibera
 ## Dependency upgrade skills
 
 - `upgrade-npm-dependency` — upgrades one package, or one coupled group of them, across any version whose breaking-change risk has not been ruled out: viability gate, research verified against the published artifact, usage audit, then characterization tests written and proven green on the current version and re-run unmodified after the bump.
-- `npm-dependency-upgrade-orchestrator` — triages a batch of upgrades, establishes coupling and viability, selects a model per upgrade by failure mode, and dispatches bounded-concurrency subagents: one per upgrade or coupled group running `upgrade-npm-dependency`, plus a single batched task for the routine bumps triage cleared, which need no migration workflow. Supervises CI while separating infrastructure failure from real failure. It merges nothing.
+- `npm-dependency-upgrade-orchestrator` — triages a batch of upgrades, establishes coupling and viability, selects a model per upgrade by failure mode, and dispatches bounded-concurrency subagents: one per upgrade or coupled group running `upgrade-npm-dependency`, plus a single batched task for the routine bumps triage cleared, which need no migration workflow. Supervises CI while separating infrastructure failure from real failure. It merges only where the repository opted in with `auto-merge-dependencies`, and then only through its dependency gate.
 
 ## Repository layout
 
@@ -116,7 +116,7 @@ history. `docs/invariant-12-gate-audit.md` is the worked example of the axis wal
 Running these skills against this repository has **three known mismatches, none of which
 announces itself** — see `CLAUDE.md`, *Using this repository's own automation on this
 repository*, which names them and what to do about each. They are why this repository's
-`.claude/backlog-orchestrator.json` raises `review-repair-cycles` and
+`.claude/agent-policy.json` raises `review-repair-cycles` and
 `repair-model-escalations` above their defaults; budgets are policy and live only in that
 file. `review-repair-cycles` counts **pushed repair passes, not review rounds** — a round
 that repairs nothing consumes no cycle — so a high observed round count is not by itself a
@@ -504,9 +504,10 @@ named tool that stopped, not a default.
 
 Nothing here grants merge authority: `merge_pull_request` is allowed because
 `merge-stack` is an explicitly invoked skill, and `backlog-orchestrator` and
-`implement-issue` merge only through the invariant 12 gate — off by default,
-opt-in per repository via `.claude/backlog-orchestrator.json` — which is a skill
-rule, not a permission boundary.
+`implement-issue` merge only through the invariant 12 gate, and
+`npm-dependency-upgrade-orchestrator` only through its own dependency gate — each
+off by default, opt-in per repository via `.claude/agent-policy.json` — which are
+skill rules, not a permission boundary.
 
 ## Local Codex usage
 
@@ -546,7 +547,7 @@ Invoking the skill is itself the authorization to dispatch workers, so a session
 
 ## Per-repository policy
 
-A repository can tune `backlog-orchestrator` for its own PRs with `.claude/backlog-orchestrator.json` — the same defaults the skill documents (concurrency, budgets, repair cycles, `auto-request-settle`) plus one permission: `auto-merge`, whether the invariant 12 merge gate may open at all (a gate-authorized merge publishes a still-draft PR as a step of merging it — a merge never happens on a draft — and never touches an explicitly held draft). The file is entirely optional and absence is the common case.
+A repository can tune the agent workflows for its own PRs with `.claude/agent-policy.json`. [`schemas/agent-policy.schema.json`](schemas/agent-policy.schema.json) lists every key, its default and which skills read it; point the file at it with `"$schema"` and an editor shows the same. For `backlog-orchestrator` that is the defaults the skill documents (concurrency, budgets, repair cycles, `auto-request-settle`) plus one permission: `auto-merge`, whether the invariant 12 merge gate may open at all (a gate-authorized merge publishes a still-draft PR as a step of merging it — a merge never happens on a draft — and never touches an explicitly held draft). `npm-dependency-upgrade-orchestrator` reads a second permission, `auto-merge-dependencies`: triage-cleared minor and patch bumps merge on CI, and majors or bumps needing application changes merge after a clean automated review. The file was `.claude/backlog-orchestrator.json` before it was shared, and that name is still read where the new one is absent. It is entirely optional and absence is the common case.
 
 **There is no reviewer-identity option, and a repository needs no file to get safe review behaviour.** What the run may auto-fix is decided by the comment, not its author: a thread asking for a code change the pass can make and verify is repaired, whoever rooted it; a thread needing intent, design, rationale or a decision is `NEEDS_USER` — reserved for the owner, never answered on the run's own authority, and holding the merge gate shut. **An escalated thread comes back with a draft reply**, because the pass that read the thread and the surrounding code should not hand the owner a blank page: a question answerable from the work gets the answer and its evidence, a question only the owner can decide gets the options and their costs and deliberately no pick, and assumptions are marked inline. The draft is material for a person and is never posted by the resolver, on any path; `settle-outstanding-decisions` carries it into the walkthrough so an intent question can be answered on the spot, and posts the text the owner approved or edited there, marked as their ruling — the single path on which a drafted answer ever reaches a thread. **Nor does invoking the resolver by hand change that**: attended on a named comment it still hands the drafted answer to the person who invoked it rather than posting it, so a reviewer never reads an answer in the owner's voice that the owner has not seen. Everything the skills post is short, and a write **nobody read before it was posted** carries a `Generated by Claude Code` footer — the reader then knows which comments have had no human eye on them, which GitHub's own avatar badge cannot tell them: it appears or not depending on which connection authored the write. A write a person approved or edited carries none, and neither does the review-trigger comment, which must read exactly as the convention expects. An `auto-fix-reviewers` key used to gate this on the author, tested against a vetted bot allowlist. It was removed rather than re-defaulted, because author identity is a poor proxy for the only thing that matters: automated reviewers raise design questions no run should answer, and human reviewers file one-line nits any run can fix, so the key erred in both directions at once. The kind test the repair path already applied was doing the real work.
 

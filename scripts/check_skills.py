@@ -109,6 +109,83 @@ def check_skill(d: Path) -> None:
 
 
 
+def check_policy_schema() -> None:
+    """schemas/agent-policy.schema.json against the skills that read each key.
+
+    The schema restates defaults a skill documents, so it can drift from them;
+    this compares files and tests literal tokens, never prose. It checks that
+    every key names readers that exist and that each reader mentions the key,
+    and that backlog-orchestrator's documented defaults block and the schema
+    agree key for key and value for value.
+    """
+    path = ROOT / "schemas" / "agent-policy.schema.json"
+    where = rel(path)
+    if not path.exists():
+        error(where, "missing")
+        return
+    try:
+        props = json.loads(path.read_text(encoding="utf-8"))["properties"]
+    except (json.JSONDecodeError, KeyError) as exc:
+        error(where, f"does not parse as a schema with properties: {exc}")
+        return
+    for key, spec in props.items():
+        if key == "$schema":
+            continue
+        readers = spec.get("x-read-by") or []
+        if not readers:
+            error(where, f"{key} names no reader in x-read-by")
+        if "default" not in spec:
+            error(where, f"{key} has no default")
+        # A merge permission defaulting to on would publish "merging is on unless
+        # you say otherwise" in the one place people look it up.
+        if key.startswith("auto-merge") and spec.get("default") is not False:
+            error(where, f"{key} is a merge permission and must default to false")
+        expected = f"Read by: {', '.join(readers)}."
+        if not str(spec.get("description", "")).endswith(expected):
+            error(where, f"{key}: description must end with {expected!r}, matching x-read-by")
+        for skill in readers:
+            skill_md = ROOT / "skills" / skill / "SKILL.md"
+            if not skill_md.exists():
+                error(where, f"{key} is read by {skill}, which does not exist")
+            elif f"`{key}`" not in skill_md.read_text(encoding="utf-8"):
+                error(where, f"{key} is read by {skill}, whose SKILL.md never names `{key}`")
+
+    # implement-issue lists what it reads on one line; a key it names only to
+    # ignore must not pass for one it reads.
+    ii = (ROOT / "skills" / "implement-issue" / "SKILL.md").read_text(encoding="utf-8")
+    consumed_line = next((l for l in ii.splitlines() if "Keys consumed:" in l), "")
+    consumed = set(re.findall(r"`([a-z-]+)`", consumed_line.split("Ignore")[0]))
+    for key, spec in props.items():
+        if "implement-issue" in spec.get("x-read-by", []) and key not in consumed:
+            error(where, f"{key} lists implement-issue as a reader, but its 'Keys consumed' line does not")
+    for key in consumed:
+        if key in props and "implement-issue" not in props[key].get("x-read-by", []):
+            error(where, f"implement-issue consumes {key}, but the schema does not list it as a reader")
+
+    bo = (ROOT / "skills" / "backlog-orchestrator" / "SKILL.md").read_text(encoding="utf-8")
+    anchor = bo.find("## Per-repository policy configuration")
+    start = bo.find("```json", anchor)
+    end = bo.find("```", start + 7)
+    if anchor < 0 or start < 0 or end < 0:
+        error(where, "cannot find backlog-orchestrator's policy defaults block")
+        return
+    try:
+        documented = json.loads(bo[start + 7:end])
+    except json.JSONDecodeError as exc:
+        error(where, f"backlog-orchestrator's policy defaults block does not parse: {exc}")
+        return
+    for key, value in documented.items():
+        if key not in props:
+            error(where, f"backlog-orchestrator documents {key}, which the schema lacks")
+        elif props[key].get("default") != value:
+            error(where, f"{key}: schema default {props[key].get('default')!r}, backlog-orchestrator documents {value!r}")
+        elif "backlog-orchestrator" not in props[key].get("x-read-by", []):
+            error(where, f"{key}: backlog-orchestrator documents it but is not in its x-read-by")
+    for key, spec in props.items():
+        if "backlog-orchestrator" in spec.get("x-read-by", []) and key not in documented:
+            error(where, f"{key} lists backlog-orchestrator as a reader, but its defaults block omits it")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--strict", action="store_true", help="treat warnings as failures")
@@ -124,6 +201,8 @@ def main() -> int:
 
     for d in dirs:
         check_skill(d)
+
+    check_policy_schema()
 
     perms = ROOT / "permissions.json"
     if perms.exists():
