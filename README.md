@@ -38,7 +38,7 @@ Reasoning for a rule lives beside it as `rules/<name>-notes.md`, and is delibera
 
 - `validate-backlog` — validates a bounded issue DAG. Shallow and deep differ in how far they read; `validate-backlog` states the split and its one cross-repository exception for missing or incorrect dependencies.
 - `normalize-github-dependencies` — converts high-confidence description-based GitHub dependencies into native blocked-by/blocking relationships where GitHub write capabilities are available.
-- `backlog-orchestrator` — policy layer for a bounded build-order/parent issue or issue set. It validates the DAG, fans out isolated workers via `implement-issue-core` on a model selected per issue (onto a Claude Code **Dynamic Workflow** when the user explicitly opts into one for this invocation, otherwise onto native/background sessions or ordinary supervised subagents), consumes platform-surfaced PR events on its own parent-level supervision loop, dispatches bounded `repair-pr` workers, and enforces stack/budget/recovery rules.
+- `backlog-orchestrator` — policy layer for a bounded build-order/parent issue or issue set. It validates the DAG, fans out isolated workers via `implement-issue-core` on a model selected per issue, through `swarm`'s worker mechanics, (onto a Claude Code **Dynamic Workflow** when the user explicitly opts into one for this invocation, otherwise onto native/background sessions or ordinary supervised subagents), consumes platform-surfaced PR events on its own parent-level supervision loop, dispatches bounded `repair-pr` workers, and enforces stack/budget/recovery rules.
 - `summarize-tranche` — writes a short plain-language summary of what a settled tranche actually did, plus the action points a human still has to manage: follow-up issues to open, verified bugs left unfixed, decisions waiting, scope deliberately cut. Read-only by default; it proposes issues rather than opening them. `backlog-orchestrator` invokes it per settled tranche, before ranking; `implement-issue` invokes it when its one issue reaches a terminal state, a tranche of one.
 - `plan-merge-order` — ranks a settled tranche's open PRs by how much downstream work each unblocks, and emits a review order, a merge batching plan, and the hard sequencing constraints as a table. Read-only; it never merges. `backlog-orchestrator` invokes it when a run settles.
 - `settle-outstanding-decisions` — walks the owner through the human-only decisions a settled run left outstanding, one at a time via `AskUserQuestion` with enough context to answer on the spot, and records each ruling durably where the decision lives. Run it yourself after a tranche, or let a settled step request it — `backlog-orchestrator` between summary and ranking, `implement-issue` between summary and merge gate — on by default, gated by `auto-request-settle`. Either way it refuses to prompt where nobody is present: a run settling on a scheduled wake gets a one-line decline, and the decisions stay in the summary's action points. Collect-and-record only; acting on the rulings stays with their owners.
@@ -48,7 +48,7 @@ Reasoning for a rule lives beside it as `rules/<name>-notes.md`, and is delibera
 
 - `upgrade-npm-dependency` — upgrades one package, or one coupled group of them, across any version whose breaking-change risk has not been ruled out: viability gate, research verified against the published artifact, usage audit, then characterization tests written and proven green on the current version and re-run unmodified after the bump.
 - `npm-dependency-upgrade-orchestrator` — triages a batch of upgrades, establishes coupling and viability, selects a model per upgrade by failure mode, and dispatches bounded-concurrency subagents: one per upgrade or coupled group running `upgrade-npm-dependency`, plus a single batched task for the routine bumps triage cleared, which need no migration workflow. Supervises CI while separating infrastructure failure from real failure. It merges only where the repository opted in with `auto-merge-dependencies`, and then only through its dependency gate.
-- `swarm` — fans a set of independent tasks out to parallel isolated workers and supervises them: picks the runtime that is actually available, one worktree per worker off a stated base, a model per task by how its failure would show, and one watcher, the parent. `backlog-orchestrator` and `npm-dependency-upgrade-orchestrator` use it for their dispatch phase.
+- `swarm` — fans a set of independent tasks out to parallel isolated workers and supervises them: picks the runtime that is actually available, one worktree per worker off a stated base, a model per task by how its failure would show, one watcher, the parent, and a default cap on how many run at once that a caller overrides. It also owns what every remote worker session needs whoever dispatched it: the arguments it is created with, the countermand to its inherited habit of watching its own PR, how its report reaches the parent, when it is released, checkpoint compliance and what to do with one that blocks. `backlog-orchestrator` and `npm-dependency-upgrade-orchestrator` use it for their dispatch phase, and cite it for all of that.
 
 ## Repository layout
 
@@ -205,6 +205,15 @@ splits each scenario in two: `packet.json` for a reader, carrying the prompt and
 contract path, and `key.json` for a grader, carrying `expected_output` and the assertions.
 The split is the point — a reader that has seen either is grading its own answer — and
 `name` is withheld too, because a scenario name telegraphs its verdict in three words.
+
+**A skill that cites another's rules as its own names it in `"companions"`** at the top
+of its `evals.json` — `backlog-orchestrator` and `npm-dependency-upgrade-orchestrator`
+name `swarm`, which holds the worker mechanics both apply. `prepare` then puts each
+companion's `SKILL.md` and `NOTES.md` into both arms' contract directories, as
+`<companion>-SKILL.md` and `<companion>-NOTES.md`, each arm's taken from its own revision,
+and the reader's packet says they are part of the contract. That is what lets a rule
+move between skills and be compared: without it, the new arm reads a pointer to a rule it
+was never given, and a behaviour-preserving move scores as a deletion.
 
 `score` reads the `grading.json` files and reports the pass rate per arm, then the
 disagreements, which is the only part that carries information. It marks an ungraded

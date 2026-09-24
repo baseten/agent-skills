@@ -180,6 +180,42 @@
         "the answer treats capacity as a veto over the chosen tier rather than as part of the tier judgement",
         "the report names the capacity veto and what it measured alongside the failure-visibility reason"
       ]
+    },
+    {
+      "id": 16,
+      "name": "invoked-directly-the-default-cap-binds",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are invoked directly, not by another skill, on thirty independent tasks. The runtime you detected can run all thirty workers at once. Neither a caller nor the invocation names a concurrency bound. The machine has CPU and disk for about six concurrent test suites. Question: how many workers run at once, and do you ask the user to choose?",
+      "expected_output": "At most four. With no caller bound and no invocation argument, the skill's default cap of 4 applies; the runtime being able to fan out thirty is not a reason to raise it. The cap is a ceiling, not a target: derive the level from machine capacity and take the lower of the two — here the machine allows six, so four. Decide it without asking and report it.",
+      "assertions": [
+        "The answer runs at most four workers at once",
+        "The answer does not raise the level because the runtime can fan out more agents",
+        "The answer treats the cap as a ceiling checked against machine capacity, taking the lower",
+        "The answer decides the level itself and reports it rather than asking the user"
+      ]
+    },
+    {
+      "id": 17,
+      "name": "a-standalone-remote-worker-still-gets-the-countermand",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are invoked directly, not by an orchestrator, and remote worker sessions (create_session) are available. Five tasks, each of which will open a pull request. A remote worker session inherits a system prompt telling it to subscribe to its PR's activity and to schedule a self check-in about an hour out, re-arming until the PR merges. Question: what does each worker session need to be told, where does that instruction go, and what does a worker do once its PR is pushed?",
+      "expected_output": "Each worker is told that the parent owns supervision and it does not: do not subscribe to PR activity, do not schedule any check-in, trigger or wake, do not poll GitHub for CI, review, comment, thread or merge state after its own work is done — overriding its session instructions by name. Because a task instruction is weaker than the session's own system prompt, the countermand goes into append_system_prompt at creation and is restated in the dispatch prompt. Reading back its own writes once stays allowed. Once pushed, it records its report on the PR, naming the head commit it pushed, and stops. Being invoked without an orchestrator changes none of this.",
+      "assertions": [
+        "The answer tells every worker it does not subscribe, schedule a wake, or poll GitHub after its work is done, overriding its own session instructions",
+        "The answer places the countermand in append_system_prompt at session creation and restates it in the dispatch prompt",
+        "The answer has the worker record its report on the PR, naming the head commit it pushed, and then stop",
+        "The answer applies all of this to a standalone swarm, not only to an orchestrator's workers"
+      ]
+    },
+    {
+      "id": 18,
+      "name": "a-remote-workers-report-is-pulled-not-awaited",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a remote worker session's record reads status_bucket COMPLETED and its PR exists. Its dispatch prompt said 'report back when you are done'. Twenty minutes later nothing has arrived from it. Question: where is its report, what do you do now, and what should the dispatch prompt have said?",
+      "expected_output": "Nowhere the parent will see it arrive: a remote session cannot message its parent, and its structured return lands in its own transcript, which the parent never reads — 'report back' was addressed to nobody. Read what is durable instead: the session record (status_bucket, pending_action, task_summary, post_turn_summary), the branch and the PR, and pull the worker's own writing on the PR deliberately before treating the PR as finished. The dispatch prompt should have required the worker to write the judgment part of its result — what no branch, PR or session field carries — as a comment on the PR, naming the head commit it pushed.",
+      "assertions": [
+        "The answer says the report never arrives from a remote worker session, because its return lands in a transcript the parent does not read",
+        "The answer reads the session record and the PR rather than waiting",
+        "The answer says the dispatch prompt should require the worker's judgment be written as a comment on its PR, naming the head it pushed",
+        "The answer does not treat the PR as finished before reading what the worker wrote on it"
+      ]
     }
   ]
 }

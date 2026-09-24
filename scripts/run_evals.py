@@ -28,6 +28,17 @@ answer back beside it.
 A new skill has no old arm. `prepare` says so and emits one arm; its scores are
 a baseline for the next round rather than a result, because there is nothing to
 disagree with.
+
+A skill whose contract cites another skill's rules as its own - an orchestrator
+that defers its worker mechanics to `swarm` - names that skill in a top-level
+`"companions": ["swarm"]` array in its evals.json. `prepare` then puts each
+companion's SKILL.md and NOTES.md into both arms' contract directories as
+`<companion>-SKILL.md` and `<companion>-NOTES.md`, the old arm's read from git at
+the base, and tells the reader they are part of the contract. Without it a
+reader holds a contract that says "apply it from there" with nothing there, and
+a rule moved between skills reads as a rule deleted. A companion that does not
+exist at the base contributes nothing to the old arm, which is the truth about
+that base.
 """
 from __future__ import annotations
 
@@ -45,6 +56,9 @@ ROOT = Path(__file__).resolve().parent.parent
 # Fields a reader must never see. `expected_output` and `assertions` are the
 # answer; `name` telegraphs it in three words.
 WITHHELD = ("expected_output", "assertions", "name")
+
+# What a companion skill contributes to a contract directory, per arm.
+COMPANION_FILES = ("SKILL.md", "NOTES.md")
 
 
 def _disp(p: Path) -> str:
@@ -102,13 +116,49 @@ def _contract_files(skill: str, base: str | None = None) -> list[str]:
     return sorted(out)
 
 
+def _cited_refs(text: str) -> set[str]:
+    return set(re.findall(r"`references/([a-z0-9-]+\.md)`", text))
+
+
+def _ref_text(arm: str, base: str | None, name: str, owner: str) -> str | None:
+    """A generated reference for one arm: rules/ at that arm's revision."""
+    if arm == "new":
+        src = ROOT / "rules" / name
+        return src.read_text(encoding="utf-8") if src.exists() else None
+    return _git_show(base, f"rules/{name}") or _git_show(base, f"skills/{owner}/references/{name}")
+
+
+def _companion_files(arm: str, base: str | None, companion: str) -> dict[str, str]:
+    """A companion's contract files for one arm, keyed by the name a reader sees.
+
+    Empty where the companion has no SKILL.md at that arm's revision: a skill
+    that did not exist at the base is not part of the base's contract.
+    """
+    out: dict[str, str] = {}
+    for name in COMPANION_FILES:
+        rel = f"skills/{companion}/{name}"
+        if arm == "new":
+            path = ROOT / rel
+            text = path.read_text(encoding="utf-8") if path.exists() else None
+        else:
+            text = _git_show(base, rel)
+        if text is not None:
+            out[f"{companion}-{name}"] = text
+    if f"{companion}-SKILL.md" not in out:
+        return {}
+    return out
+
+
 def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path) -> int:
     evals_path = ROOT / "skills" / skill / "evals" / "evals.json"
     if not evals_path.exists():
         print(f"no evals at {_disp(evals_path)}", file=sys.stderr)
         return 1
     data = json.loads(evals_path.read_text(encoding="utf-8"))
-    cases = [c for c in data["evals"] if ids is None or c["id"] in ids]
+    # Both shapes are accepted: {"evals": [...], "companions": [...]} or a bare list.
+    all_cases = data if isinstance(data, list) else data["evals"]
+    companions = [] if isinstance(data, list) else list(data.get("companions") or [])
+    cases = [c for c in all_cases if ids is None or c["id"] in ids]
     if not cases:
         print("no scenarios selected", file=sys.stderr)
         return 1
@@ -136,23 +186,38 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
     # before the copies stopped being committed falls back to its copy.
     for arm, contents in arms.items():
         skill_text = contents.get(f"skills/{skill}/SKILL.md", "")
-        for name in sorted(set(re.findall(r"`references/([a-z0-9-]+\.md)`", skill_text))):
-            rel = f"skills/{skill}/references/{name}"
-            if arm == "new":
-                src = ROOT / "rules" / name
-                text = src.read_text(encoding="utf-8") if src.exists() else None
-            else:
-                text = _git_show(base, f"rules/{name}") or _git_show(base, rel)
+        for name in sorted(_cited_refs(skill_text)):
+            text = _ref_text(arm, base, name, skill)
             if text is not None:
-                contents[rel] = text
+                contents[f"skills/{skill}/references/{name}"] = text
+
+    # Companion skills, per arm, and the references their own SKILL.md cites.
+    # Kept apart from `arms` because their names are prefixed in the contract dir.
+    extra: dict[str, dict[str, str]] = {arm: {} for arm in arms}
+    present: dict[str, list[str]] = {arm: [] for arm in arms}
+    for arm in arms:
+        for comp in companions:
+            files = _companion_files(arm, base, comp)
+            if not files:
+                continue
+            present[arm].append(comp)
+            extra[arm].update(files)
+            for name in sorted(_cited_refs(files.get(f"{comp}-SKILL.md", ""))):
+                if f"skills/{skill}/references/{name}" in arms[arm] or name in extra[arm]:
+                    continue
+                text = _ref_text(arm, base, name, comp)
+                if text is not None:
+                    extra[arm][name] = text
 
     if round_dir.exists():
         shutil.rmtree(round_dir)
     round_dir.mkdir(parents=True)
 
     for arm, contents in arms.items():
-        for rel, text in contents.items():
-            dest = round_dir / arm / "contract" / Path(rel).name
+        named = {Path(rel).name: text for rel, text in contents.items()}
+        named.update(extra[arm])
+        for name, text in named.items():
+            dest = round_dir / arm / "contract" / name
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_text(text, encoding="utf-8")
 
@@ -162,6 +227,15 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
             pdir.mkdir(parents=True, exist_ok=True)
             packet = {k: v for k, v in c.items() if k not in WITHHELD}
             packet["contract_dir"] = _disp(round_dir / arm / "contract")
+            if present[arm]:
+                names = [f"`{c}-{f}`" for c in present[arm] for f in COMPANION_FILES
+                         if f"{c}-{f}" in extra[arm]]
+                packet["contract_note"] = (
+                    "Every file in contract_dir is part of the contract you are executing. "
+                    f"Besides the skill's own files it holds {', '.join(names)}: the contract "
+                    f"of {', '.join(f'`{c}`' for c in present[arm])}, which this skill cites for "
+                    "rules it applies as its own. Where the contract says a rule lives in that "
+                    "skill, it is in those files and binds you exactly as the skill's own text does.")
             (pdir / "packet.json").write_text(
                 json.dumps(packet, indent=2) + "\n", encoding="utf-8")
             # The grading key sits beside the packet, not inside it. A reader is
@@ -173,6 +247,7 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
 
     (round_dir / "round.json").write_text(json.dumps({
         "skill": skill, "base": base, "arms": sorted(arms),
+        "companions": {arm: present[arm] for arm in sorted(arms)},
         "scenarios": [c["id"] for c in cases],
         "prepared_at": datetime.now(timezone.utc).isoformat(),
         "single_arm_reason": single_arm_reason,
@@ -182,6 +257,9 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
     print(f"  skill      {skill}")
     print(f"  arms       {', '.join(sorted(arms))}")
     print(f"  scenarios  {len(cases)}")
+    for arm in sorted(arms):
+        if companions:
+            print(f"  companions {arm}: {', '.join(present[arm]) or 'none at this revision'}")
     print(f"  packets    {len(cases) * len(arms)}  (each: packet.json for a reader, key.json for a grader)")
     if single_arm_reason:
         print(f"\n  ONE ARM ONLY - {single_arm_reason}.")

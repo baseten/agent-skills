@@ -92,9 +92,25 @@ def check_skill(d: Path) -> None:
         except json.JSONDecodeError as exc:
             error(rel(evals), f"does not parse: {exc}")
         else:
-            if data.get("skill_name") != name:
-                error(rel(evals), f'skill_name "{data.get("skill_name")}" != directory "{name}"')
-            cases = data.get("evals")
+            if isinstance(data, list):
+                cases = data
+            else:
+                if data.get("skill_name") != name:
+                    error(rel(evals), f'skill_name "{data.get("skill_name")}" != directory "{name}"')
+                cases = data.get("evals")
+                # A companion is a skill name, so it is a token: it names a
+                # directory that exists, or the eval runner silently gives the
+                # reader a contract without the rules it defers to.
+                companions = data.get("companions")
+                if companions is not None:
+                    if not isinstance(companions, list) or not all(isinstance(c, str) for c in companions):
+                        error(rel(evals), "companions must be a list of skill names")
+                    else:
+                        for c in companions:
+                            if c == name:
+                                error(rel(evals), f'companion "{c}" is the skill itself')
+                            elif not (SKILLS / c / "SKILL.md").exists():
+                                error(rel(evals), f'companion "{c}" is not a skill in skills/')
             if not isinstance(cases, list) or not cases:
                 error(rel(evals), "no evals array, or it is empty")
             else:
