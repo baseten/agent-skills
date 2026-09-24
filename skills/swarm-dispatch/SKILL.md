@@ -194,6 +194,15 @@ that means archiving the session, not merely stopping messaging it. Never keep a
 worker alive only to wait: waiting is the parent's job and costs nothing, while
 an idle worker holds a slot the queue needs.
 
+On that tier the worker's worktree is never reachable, so **durable is read off
+the remote**, not off its container. An uninspectable worktree is not a reason to keep a finished
+worker; a mismatch between what it reported and what the remote shows is.
+`backlog-orchestrator`, *Releasing a worker*, owns the full test for pull-request
+work and states the residual risk it accepts; apply it from there rather than
+restating it. Release is also driven by the session list rather than by the
+run's memory, and belongs in the prompt the run writes for its own check-in,
+since that is what survives compaction.
+
 **Arm the watch when the task enters the tracked set, not when the run settles.**
 Whatever the mechanism — an event subscription, a platform watch, or a deliberate
 poll — start it as part of adopting the output, and record per task which one is

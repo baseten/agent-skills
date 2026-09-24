@@ -62,16 +62,35 @@ at a time, about a configuration that can change.
 
 The same rule pointed outward, and the one that is easiest to skip because
 nothing about it looks like a lookup. **Any claim this run makes about existing
-code needs a read behind it before it is posted** — in a review reply, a PR body,
-a `DECISION` item, an issue, a commit message. Not a recollection of the codebase,
-and not an inference from the part of it currently in view.
+code, or about current state, needs a read behind it before it is posted** — in
+a review reply, a PR body, a `DECISION` item, an issue, a commit message, a
+status summary. Not a recollection of the codebase, and not an inference from
+the part of it currently in view.
 
 The failure looks like confidence. A reply asserted that adding a connection
 parameter in one module would also affect migrations; migrations built their own
 connection and it would not, which four greps settled in minutes. Nothing about
 the sentence marked it as remembered rather than read.
 
-**The check belongs at the point the artifact is composed, not at the skill that happens to carry this file.** A reference present in a skill directory and cited nowhere near the write is a reference nobody reads: wire it at each site that authors one of these — the reply *and* the escalation draft, the PR body *and* its title, the `DECISION` item, the issue body a rewrite produces, the ruling comment, the commit message — and into the dispatch prompt of any worker that will author one on the run's behalf, since a prompt that omits a requirement gets a worker that skips it.
+**Claims about state need the same, and a status summary most of all.** What a
+PR, an issue, a branch or a session *is right now* is as much a claim as what code
+does, and it changes underneath the run between turns. **The tell is a sentence
+about current state with no read behind it.** Either read it, or say when it was
+last read: state carried from an earlier read and reported with that time is
+honest and is the normal form for a cached record, so this is not a demand to
+re-read everything before every report. What fails is the present tense with no
+read at all.
+
+Two such claims were caught by the owner in one day: a PR reported as having every
+review thread resolved, with four still open — answered with fixes and never
+marked resolved — and a tranche's worker sessions reported as done and archived,
+all four idle and holding containers, with the session list never read. A status
+summary is where this concentrates, because it is written to be believed, in the
+register of a report. A motivating example recalled rather than re-read is the
+same claim with a longer life: one session was cited in several places as four
+weeks of unpushed work, and its PR had merged the day it was created.
+
+**The check belongs at the point the artifact is composed, not at the skill that happens to carry this file.** A reference present in a skill directory and cited nowhere near the write is a reference nobody reads: wire it at each site that authors one of these — the reply *and* the escalation draft, the PR body *and* its title, the `DECISION` item, the issue body a rewrite produces, the ruling comment, the commit message, the status summary and checkpoint report — and into the dispatch prompt of any worker that will author one on the run's behalf, since a prompt that omits a requirement gets a worker that skips it.
 
 **Where the run did verify something it could have assumed, the verification belongs in the returned output**, naming the artifact read. The body or the reply carries the claim and not the audit trail — that is the write-form rule — so without an output field the read leaves no durable record and the next session either re-does it or trusts it.
 
