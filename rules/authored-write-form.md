@@ -7,7 +7,7 @@ This is the rule other skills mean when they cite *authored write form*.
 `scripts/refresh_shared_rules.sh`. A skill reads its own
 `references/authored-write-form.md`, which works after `bootstrap.sh` has
 installed only that skill's directory, and travels with the skill if it is
-moved into a plugin. Edit the source, never a copy; CI fails if they diverge.
+moved into a plugin. Edit the source, never a copy; check_shared_rules.py fails if a generated copy diverges.
 
 `backlog-orchestrator`, *Posting identity*, decides which **author** a write
 carries. This decides **what the write looks like** once it is authored, and the
