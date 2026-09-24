@@ -23,6 +23,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Each skill's references/ is generated from rules/ and never committed,
+      # so the checks run against the tree an install would produce.
+      - name: Generate shared-rule references
+        run: bash scripts/refresh_shared_rules.sh
+
       - name: Skill structure and schema
         run: python3 scripts/check_skills.py
 

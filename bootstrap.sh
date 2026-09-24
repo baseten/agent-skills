@@ -25,6 +25,10 @@ CLAUDE_DIR="$HOME/.claude"
 # So this deletes nothing, and a retired skill is reported for you to remove.
 mkdir -p "$CLAUDE_DIR/skills"
 
+# Each skill carries copies of the shared rules it cites, generated here from
+# rules/ rather than committed, so an installed skill is self-contained.
+bash "$SCRIPT_DIR/scripts/refresh_shared_rules.sh" >/dev/null
+
 echo "Installing skills..."
 installed=""
 for skill_path in "$SCRIPT_DIR"/skills/*/; do

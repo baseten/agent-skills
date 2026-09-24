@@ -1,2 +1,6 @@
 __pycache__/
 *.pyc
+
+# Generated at install by scripts/refresh_shared_rules.sh from rules/. Never
+# committed: the source is rules/, and a committed copy is a second one.
+skills/*/references/
