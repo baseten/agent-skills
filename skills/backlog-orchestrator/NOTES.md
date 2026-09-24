@@ -140,6 +140,8 @@ The owner asked for the rule scoped to human comments and, when the asymmetry wa
 
 ## Implementation worker contract
 
+**Why a recorded design choice names its failure paths (Sept 2026):** a run ruled that a submit path should create a plan and then submit against its id — right on the reason it beat the alternative, and silent on what persists when the submit fails after the plan exists, or what a retry does to it. The worker implemented the ruling as given, which is what a ruling is for, so the one party positioned to check the shape's failure paths was the one that chose it.
+
 **Why a refused review is its own state here:** the shared rule explains why a refusal is an answer; what is skill-specific is that this run's remedy — report the PR as owing a round — is only reachable from a state that does not block settlement, and that every re-trigger path had to be closed for the rule to mean anything.
 
 **Why the gate travels inline in the dispatch prompt (round 1, Sept 2026):** the
@@ -183,8 +185,6 @@ Added with `review-docs` (Sept 2026). The confirmation step was written for an e
 **Why the per-PR block holds its review lines per convention.** A routed repository can owe two independent reviews on one PR, and invariant 12 asks whether *every* round the routing requires has completed. A single-valued block cannot express "one of two", so the gate would read the first completion as the answer and open over a review still pending. This is the same defect the invariant's own parenthetical had, found in the same pass.
 
 ## Countermanding the worker's ambient supervision posture
-
-**Why a recorded design choice names its failure paths (Sept 2026):** a run ruled that a submit path should create a plan and then submit against its id — right on the reason it beat the alternative, and silent on what persists when the submit fails after the plan exists, or what a retry does to it. The worker implemented the ruling as given, which is what a ruling is for, so the one party positioned to check the shape's failure paths was the one that chose it.
 
 **The blocked-worker incident in full:** the worker that stopped on `AskUserQuestion` was unreachable in every direction. The runtime's own fields disagreed about its state — `session_status` read `SESSION_STATUS_REQUIRES_ACTION` while `status_bucket` read `SESSION_STATUS_BUCKET_BLOCKED`, with the pending tool named only in a third field — a second sighting of the disagreement *Blocked workers* instructs on. It could not be steered out: interrupting the session left the prompt pending, and no message channel reaches a remote worker session mid-prompt, so the only recovery was archive and redispatch — which is why that is a branch of *Blocked workers* in its own right. What made the redispatch succeed was the substitute, not the prohibition: told what to do instead of asking, the replacement worker returned four documented assumptions — one flagged as the thing it most wanted confirmed — which were worth more than the blocked session they replaced. A documented assumption is recoverable; a deadlocked worker is not.
 

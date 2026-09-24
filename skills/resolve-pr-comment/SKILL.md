@@ -115,9 +115,10 @@ Explain the batching decision before touching any files.
   checks (typecheck, lint, format, test, or equivalent) and run/fix them
   before committing. **Where lint rejects the same fix twice, redesign the fix
   rather than suppress the rule**; where the requested behaviour cannot be had
-  without the suppression, leave it unfixed and treat the thread as needing a
-  human (step 2's classification), naming the rule. A suppression the reviewer
-  asked for is the one exception.
+  without the suppression, revert what you tried for that comment, leave it
+  unfixed, and treat it as a query needing the owner's choice (*Handling
+  queries*) — keep the behaviour and suppress the named rule, or drop the
+  behaviour. A suppression the reviewer asked for is the one exception.
 
 ### 4. Commit and push
 
@@ -170,9 +171,11 @@ gh api repos/<owner>/<repo>/pulls/<PR>/comments/<comment_id>/replies \
 acted on and where to look; the diff is the explanation and the thread already
 holds the request. Do not restate the comment back, justify the approach, or
 narrate what else was considered. The one addition is how step 3 found a
-value's readers, where it walked them — "readers found by grepping `a` and
-`b`; anything reached only transitively is unchecked" — because a stated method
-is something a reviewer can attack, where a bare result only invites agreement.
+value's readers, where it walked them — "readers: followed `isStale` through
+its call sites and the props and memos derived from it to what each renders or
+gates; not followed past the `alerts` package" — because a stated method, with
+where it stopped, is something a reviewer can attack, where a bare result only
+invites agreement.
 
 **The footer goes on unless the person approved this reply text**
 (`references/authored-write-form.md`, the approval test). Unattended
