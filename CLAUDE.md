@@ -85,8 +85,8 @@ reasoning and adds no step of its own.
 cases look alike and are not. A rule needed at two **decision points** belongs at both: that
 is sweep step 4, and the repository's practice is to carry a pointer to the exception
 alongside the absolute rather than let the two copies drift silently
-(`backlog-orchestrator/NOTES.md`, *Remote worker session arguments*, on why `SKILL.md` line
-198 carries one). A **summary** of a rule in a second document is the other case: it serves
+(`backlog-orchestrator/NOTES.md`, *Remote worker session arguments*, on why *Releasing
+a worker*'s "Two things are never archived" paragraph carries one). A **summary** of a rule in a second document is the other case: it serves
 no decision point of its own, it is where a condition gets quietly dropped, and it is what
 collapsing is for — delete it, leave a pointer. So when a fix would make two summaries
 agree, delete one instead; when it would make two decision points agree, keep both and
