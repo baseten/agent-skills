@@ -9,7 +9,7 @@
 # they only read.
 #
 # So the rule is held once under rules/ and copied into each applying skill's
-# references/ at install time - bootstrap.sh, the local installer, the eval
+# references/ at install time - bootstrap.sh, ai-alex's update-local-claude-skills, the eval
 # runner and CI all run this first. The copies are gitignored, never committed:
 # rules/ is the only copy in the repository.
 set -euo pipefail
