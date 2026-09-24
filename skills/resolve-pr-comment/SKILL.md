@@ -539,12 +539,9 @@ After completing all steps, summarize:
 - **Every `NEEDS_USER` item, one entry each — items, not threads**, and then by
   item kind, because the kinds carry different things and one shape cannot hold
   both:
-  - a **question item** carries **all five fields of *What a question item must
-    contain***, in that order and none omitted — API `html_url`, the ask quoted
-    to at most 2 lines, the recommended reply with no footer — paste-ready, or
-    labelled `decision — not for posting` where the draft is decision-only — the
-    SHA of any code change for this thread or an explicit `none`, and the
-    one-clause reason it was not posted. Report the root author alongside them.
+  - a **question item** carries **every field of *What a question item must
+    contain***, in that order, none omitted, and labelled as that list says.
+    Report the root author alongside them.
     **A count, a summary, or four of the five is not this entry**: the person
     receiving it posts the reply themselves, and every field they have to go and
     find is a field this pass already had. That holds **in every mode, because

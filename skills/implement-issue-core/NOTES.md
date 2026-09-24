@@ -60,7 +60,7 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 **Why commit-before-check:** checks take minutes, and those minutes are exactly when an ephemeral container is most likely to disappear — running a full suite over uncommitted work is the single most expensive habit available here. A commit is a save, not a claim of correctness: green is not a precondition, and neither is coherence — a checkpoint that exists and is imperfect always beats a perfect one that was never made. WIP history is fine; squash-merge removes it.
 
-**Why the parent is expected to commit on your behalf:** observed across runs, workers reliably hold completed work uncommitted despite instructions, so the orchestrator inspects worktrees and captures. Holding a change until it is tidy does not keep it tidy — it hands the commit to something with less context about what you were doing.
+**Why the parent is expected to commit on your behalf:** observed across runs, workers reliably hold completed work uncommitted despite instructions, so the orchestrator inspects worktrees and captures — where it can reach them. On a remote session nobody can, and your own pushes are the only durability your work has. Holding a change until it is tidy does not keep it tidy — it hands the commit to something with less context about what you were doing.
 
 **Why the gate has two sources and not one (round 1, Sept 2026):** the first
 version of this derived the gate from `.github/workflows/*.yml`, which answers
