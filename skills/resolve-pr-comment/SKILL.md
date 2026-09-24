@@ -97,15 +97,28 @@ Explain the batching decision before touching any files.
 
 ### 3. Apply the fix(es)
 
-**Where the requested change is a test, or adds one, run the checklist in `references/a-passing-test-is-not-a-verified-fix.md`, the time rule included against it** (`references/a-passing-test-is-not-a-verified-fix.md`). A reviewer asking for a regression test is asking for one that would have caught the defect, and a test written in the same pass as its fix satisfies fail-first trivially.
+**Where the requested change is a test, or adds one, run the checklist in `references/a-passing-test-is-not-a-verified-fix.md` against it, the time rule included**. A reviewer asking for a regression test is asking for one that would have caught the defect, and a test written in the same pass as its fix satisfies fail-first trivially.
 
 **Skipped entirely on a classify-only invocation** (below), along with steps 4-6.
 
 - Make the minimal change needed to address each comment.
-- Do not refactor, clean up, or change anything not mentioned in the comment.
+- **Where the comment is about what a value means or when it becomes true** —
+  not about how one surface presents it — **the other readers whose behaviour
+  that changes are part of the comment.** Follow the value through its call
+  sites and anything derived from it (a prop, a memo, a cache) to where it is
+  rendered or gates an action, fix at the definition where you can, and ask
+  what a user can still do that the value was meant to prevent. Only readers
+  the fix changes; other findings stay out (NOTES).
+- Do not refactor, clean up, or change anything not mentioned in the comment —
+  those readers count as mentioned.
 - Check this repo's contribution doc (`CLAUDE.md`/`AGENTS.md`) for pre-commit
   checks (typecheck, lint, format, test, or equivalent) and run/fix them
-  before committing.
+  before committing. **Where lint rejects the same fix twice, redesign the fix
+  rather than suppress the rule**; where the requested behaviour cannot be had
+  without the suppression, revert what you tried for that comment, leave it
+  unfixed, and treat it as a query needing the owner's choice (*Handling
+  queries*) — keep the behaviour and suppress the named rule, or drop the
+  behaviour. A suppression the reviewer asked for is the one exception.
 
 ### 4. Commit and push
 
@@ -157,7 +170,12 @@ gh api repos/<owner>/<repo>/pulls/<PR>/comments/<comment_id>/replies \
 **That one line is the whole reply.** The reviewer wants to know the comment was
 acted on and where to look; the diff is the explanation and the thread already
 holds the request. Do not restate the comment back, justify the approach, or
-narrate what else was considered.
+narrate what else was considered. The one addition is how step 3 found a
+value's readers, where it walked them — "readers: followed `isStale` through
+its call sites and the props and memos derived from it to what each renders or
+gates; not followed past the `alerts` package" — because a stated method, with
+where it stopped, is something a reviewer can attack, where a bare result only
+invites agreement.
 
 **The footer goes on unless the person approved this reply text**
 (`references/authored-write-form.md`, the approval test). Unattended
