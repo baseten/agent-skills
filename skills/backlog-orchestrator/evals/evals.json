@@ -733,6 +733,30 @@
         "the answer applies a positive definition of dispatchable rather than a list of acceptable remainders",
         "the answer names concurrent-open-prs as the budget holding A in the checkpoint"
       ]
+    },
+    {
+      "id": 57,
+      "name": "interacting-migrations-still-go-to-the-owner",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two open PRs in one API repository each claim migration 0031. PR A adds a column `plan_id` to `invoices`. PR B creates a table `plans` and adds a foreign key from `invoices.plan_id` to it. Both are green. Do you order them yourself, or ask the owner, and why?",
+      "expected_output": "Ask the owner: this is a collision that interacts. B's foreign key reaches into the column A adds, so the order decides the outcome, and the owner's ruling to follow the ranking without asking covers only migrations shown independent from both bodies. Raise NEEDS_USER naming both PR URLs and the colliding paths, and do not renumber either pre-emptively. The shared journal and snapshot files the generator rewrites are not what makes this interacting; the foreign key is.",
+      "assertions": [
+        "the answer raises NEEDS_USER rather than ordering the migrations itself",
+        "the answer identifies the foreign key into the other migration's column as the interaction",
+        "the answer does not renumber either migration pre-emptively"
+      ]
+    },
+    {
+      "id": 58,
+      "name": "a-reply-releases-a-hold-only-when-it-is-the-owners-answer",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your run is settled, and a scheduled check-in fires. Three NEEDS_USER items this run raised are open, each on its own issue with two options put to the owner. Since the last wake: on issue 1, a comment from the owner's account that is the review-trigger comment this run posted on the linked PR's issue thread (its id is in your posting-identity map); on issue 2, the owner wrote 'go with option B'; on issue 3, the owner wrote 'hmm, what about a third option?'. What do you do with each, and is this wake productive?",
+      "expected_output": "Issue 1: not an answer - it is one of this run's own writes, posted under the owner's account, so the hold stays. Issue 2: the owner's reply chooses one of the options put, so release what the item held, re-test dispatch, and report the release with the reply's URL; write nothing claiming a ruling, since this wake is unattended and an interactive ruling is settle-outstanding-decisions' to record. Issue 3: a reply that answers something else is reported and the hold stays. The wake is productive: it found new replies at open items' sites, which resets the unproductive-wake count.",
+      "assertions": [
+        "the answer does not treat the run's own write as the owner's answer",
+        "the answer releases issue 2's hold and re-tests dispatch",
+        "the answer records no ruling and reports the release with the reply URL",
+        "the answer keeps issue 3's hold and reports the reply",
+        "the answer counts the wake as productive"
+      ]
     }
   ]
 }
