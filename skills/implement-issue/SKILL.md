@@ -1,6 +1,6 @@
 ---
 name: implement-issue
-description: Single-issue orchestrator for one tracked issue from its canonical full URL. Composes implement-issue-core for issue→code→checks→durable PR, then supervises bounded CI/review activity and dispatches repair-pr as needed until the PR is healthy, merged where its repository opted into auto-merge, blocked, or needs user input. Budgets and review/merge policy come from the repository's .claude/backlog-orchestrator.json. Useful standalone and as a one-issue workflow.
+description: Single-issue orchestrator for one tracked issue from its canonical full URL. Composes implement-issue-core for issue→code→checks→durable PR, then supervises bounded CI/review activity and dispatches repair-pr as needed until the PR is healthy, merged where its repository opted into auto-merge, blocked, or needs user input. Budgets and review/merge policy come from the repository's .claude/agent-policy.json. Useful standalone and as a one-issue workflow.
 ---
 
 # Implement Issue
@@ -25,7 +25,7 @@ This file is the contract. The reasoning behind each rule — incident history, 
 ## Authority
 
 - Invoking this skill authorizes implementation and PR creation for the supplied issue, unless the user says otherwise.
-- It authorizes a merge **only** where the PR's own repository opted in via `auto-merge` in `.claude/backlog-orchestrator.json`. The key is shared with `backlog-orchestrator` deliberately — scoped to invariant 12's gate, not to the skill evaluating it — so a config predating this skill grants it too (NOTES).
+- It authorizes a merge **only** where the PR's own repository opted in via `auto-merge` in `.claude/agent-policy.json`. The key is shared with `backlog-orchestrator` deliberately — scoped to invariant 12's gate, not to the skill evaluating it — so a config predating this skill grants it too (NOTES).
 - An invocation argument or caller can switch `auto-merge` off for a run, never on. Without the opt-in this skill merges nothing; everything else stays the user's separate `merge-stack` authorization.
 - The issue's **full URL is canonical identity** everywhere. Short keys are display only, never durable state.
 
@@ -34,7 +34,7 @@ This file is the contract. The reasoning behind each rule — incident history, 
 `backlog-orchestrator`, *Per-repository policy configuration*, owns the entire config contract — key list, per-PR resolution, fail-closed rules, and the kind test that decides what a run may auto-fix. Apply it from there; never restate it (NOTES: drift).
 
 - Preserve exactly any caller-supplied repository, worktree, branch, base, dependency context, tracker, and budgets.
-- Read `.claude/backlog-orchestrator.json` **once, at run start, from the head of the repository's default branch** — never from the worktree this run writes, and never again afterwards.
+- Read `.claude/agent-policy.json` **once, at run start, from the head of the repository's default branch** — never from the worktree this run writes, and never again afterwards.
 - Keys consumed: `implementation-attempts`, `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-merge`, `auto-request-settle`. Ignore `concurrent-workers`, `concurrent-open-prs` and `new-issue-budget` — no single-issue meaning.
 - **A caller's complete resolved policy suppresses the read**: use supplied keys as given; omitted keys take the built-in defaults — except `auto-merge`, which takes **`false`**: an unmentioned permission was not granted.
 - **A partial invocation override suppresses nothing**: read the file and merge the argument over it per key (`auto-merge`: off only). NOT: treating one argument as a resolved policy — that would hand a zero-repair-cycles repository two cycles because its owner narrowed something else (NOTES).

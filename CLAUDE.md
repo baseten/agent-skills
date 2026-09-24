@@ -213,7 +213,7 @@ this repository*, for the full reasoning.
   its own instructions mid-flight. Nothing in the contracts guards this. Make such changes
   in an ordinary session.
 
-**Repair budgets are policy and live in `.claude/backlog-orchestrator.json`, never here.**
+**Repair budgets are policy and live in `.claude/agent-policy.json`, never here.**
 `skills/backlog-orchestrator/SKILL.md`, *Per-repository policy configuration*, is explicit
 that policy which can authorize merges must be a config file and not prose, because prose
 gets interpreted. This file therefore names no budget values — read them from the config.

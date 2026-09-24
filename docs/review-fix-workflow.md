@@ -144,7 +144,7 @@ reads as preference rather than as a settled argument.
 configuration*: policy that can authorize merges "is a config file and not prose — never a
 `CLAUDE.md` paragraph", because "a `CLAUDE.md` paragraph gets interpreted, and interpretation
 must not decide whether a run may merge." Budgets live in
-`.claude/backlog-orchestrator.json` and their values are stated there only. `CLAUDE.md`
+`.claude/agent-policy.json` and their values are stated there only. `CLAUDE.md`
 naming a budget number would be mechanism 2 applied to this very workflow.
 
 ## Why the pre-flight round pays for itself
@@ -191,7 +191,7 @@ defaults list and not repeated here. Exhaustion degrades safely rather than fail
 deferred-repair `NEEDS_USER` **items** under a `NO_CODE_CHANGE` round, holding that PR's
 merge gate and reaching the owner at settle, never as a `NEEDS_USER` outcome for the PR. So
 the symptom is a stall that hands you the work, not a crash. This repository raises the key
-in `.claude/backlog-orchestrator.json`.
+in `.claude/agent-policy.json`.
 
 That observed round count is the count of a **code reviewer's** rounds on prose, and it is
 the measurement `review-docs` exists to make unnecessary rather than a target to budget for:

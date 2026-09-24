@@ -198,6 +198,19 @@
         "the rule is applied to this layer's own writes as well as the dispatched agent's"
       ],
       "id": 16
+    },
+    {
+      "id": 17,
+      "name": "dependency-prs-merge-by-kind-under-their-own-opt-in",
+      "prompt": "You are executing the npm-dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository's .claude/agent-policy.json on its default branch sets \"auto-merge-dependencies\": true and \"auto-merge\": false. Four PRs, each with every required check green on its current head, lockfile resolved against the current base, and no open review thread: (a) an adopted Dependabot PR bumping a patch release triage cleared, changing only package.json and the lockfile; (b) a PR upgrading a library one major version, with a small code change the migration needed; (c) a PR bumping a minor release whose upgrade needed changes to two call sites; (d) the batched routine PR, whose three candidates triage cleared, but one candidate's latest target has moved since triage. Which do you merge now, which wait, and what do you do next for each?",
+      "expected_output": "(a) Merge it: a triage-cleared patch that changes nothing but manifests and lockfiles is the cleared kind, and merges on green, current and no open thread, with no review round spent. `auto-merge-dependencies` is the opt-in that matters here; `auto-merge: false` governs implementation PRs, not these. (b) Do not merge yet: any major is the reviewed kind. Request the repository's automated review round (create-pr owns the routing), and merge only once it has completed clean on the current head. (c) Same as (b): a minor whose upgrade needed application changes is the reviewed kind, whatever its version number. (d) Do not merge: the moved target voids that candidate's clearance and the model selection it implied, so pull it out with its coupled siblings, re-triage it against the new target, and dispatch it like an uncleared bump; the rest of the batch stands. After merging (a), re-run the lockfile check on the next PR before merging it, since that merge moved the base. Report which PRs merged and under which kind.",
+      "assertions": [
+        "the answer merges the cleared patch PR without requesting a review round",
+        "the answer treats auto-merge-dependencies, not auto-merge, as the opt-in for these PRs",
+        "the answer requests an automated review for the major and for the code-changing minor, and merges each only after it completes clean",
+        "the answer holds the batched PR because a candidate's target moved, and re-triages that candidate with its coupled siblings",
+        "the answer re-runs the lockfile check on the next PR after a merge moves the base"
+      ]
     }
   ]
 }

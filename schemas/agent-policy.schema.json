@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/baseten/agent-skills/main/schemas/agent-policy.schema.json",
+  "title": "Agent policy (.claude/agent-policy.json)",
+  "description": "Per-repository policy for the agent workflows in baseten/agent-skills. Every key is optional; an absent key takes the default shown. Each key names the skills that read it, and each of those skills owns what the key means.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Points editors and agents at this schema."
+    },
+    "concurrent-workers": {
+      "type": "integer",
+      "default": 4,
+      "description": "Workers running at once. Read by: backlog-orchestrator.",
+      "x-read-by": [
+        "backlog-orchestrator"
+      ],
+      "minimum": 1
+    },
+    "concurrent-open-prs": {
+      "type": "integer",
+      "default": 12,
+      "description": "This run's open PRs plus implementation workers in flight; a count, freed on merge or close. Read by: backlog-orchestrator.",
+      "x-read-by": [
+        "backlog-orchestrator"
+      ],
+      "minimum": 1
+    },
+    "new-issue-budget": {
+      "type": "integer",
+      "default": 12,
+      "description": "New issues one invocation may start; a spend ceiling no merge restores. Read by: backlog-orchestrator.",
+      "x-read-by": [
+        "backlog-orchestrator"
+      ],
+      "minimum": 0
+    },
+    "implementation-attempts": {
+      "type": "integer",
+      "default": 2,
+      "description": "Attempts per issue before it goes to the owner. Read by: backlog-orchestrator, implement-issue.",
+      "x-read-by": [
+        "backlog-orchestrator",
+        "implement-issue"
+      ],
+      "minimum": 0
+    },
+    "model-escalations": {
+      "type": "integer",
+      "default": 1,
+      "description": "Strongest-model implementation escalations per issue. Read by: backlog-orchestrator.",
+      "x-read-by": [
+        "backlog-orchestrator"
+      ],
+      "minimum": 0
+    },
+    "ci-repair-cycles": {
+      "type": "integer",
+      "default": 2,
+      "description": "Pushed CI repair passes per PR. Read by: backlog-orchestrator, implement-issue.",
+      "x-read-by": [
+        "backlog-orchestrator",
+        "implement-issue"
+      ],
+      "minimum": 0
+    },
+    "review-repair-cycles": {
+      "type": "integer",
+      "default": 2,
+      "description": "Pushed review repair passes per PR; review rounds are not counted. Read by: backlog-orchestrator, implement-issue.",
+      "x-read-by": [
+        "backlog-orchestrator",
+        "implement-issue"
+      ],
+      "minimum": 0
+    },
+    "finding-repair-cycles": {
+      "type": "integer",
+      "default": 2,
+      "description": "Pushed settle-finding repair passes per PR. Read by: backlog-orchestrator, implement-issue.",
+      "x-read-by": [
+        "backlog-orchestrator",
+        "implement-issue"
+      ],
+      "minimum": 0
+    },
+    "repair-model-escalations": {
+      "type": "integer",
+      "default": 1,
+      "description": "Repair rounds per PR that may run on the strongest model. Read by: backlog-orchestrator, implement-issue.",
+      "x-read-by": [
+        "backlog-orchestrator",
+        "implement-issue"
+      ],
+      "minimum": 0
+    },
+    "lost-worker-redispatches": {
+      "type": "integer",
+      "default": 1,
+      "description": "Redispatches per issue after a worker is lost. Read by: backlog-orchestrator.",
+      "x-read-by": [
+        "backlog-orchestrator"
+      ],
+      "minimum": 0
+    },
+    "auto-request-settle": {
+      "type": "boolean",
+      "default": true,
+      "description": "Offer the settle-outstanding-decisions walkthrough when a run settles. Read by: backlog-orchestrator, implement-issue.",
+      "x-read-by": [
+        "backlog-orchestrator",
+        "implement-issue"
+      ]
+    },
+    "auto-merge": {
+      "type": "boolean",
+      "default": false,
+      "description": "Let implementation PRs merge through backlog-orchestrator's invariant 12 gate. Only this file can turn it on. Read by: backlog-orchestrator, implement-issue.",
+      "x-read-by": [
+        "backlog-orchestrator",
+        "implement-issue"
+      ]
+    },
+    "auto-merge-dependencies": {
+      "type": "boolean",
+      "default": false,
+      "description": "Let dependency PRs merge: triage-cleared minor/patch bumps on CI alone; majors and bumps needing application changes after a clean automated review. Only this file can turn it on. Read by: npm-dependency-upgrade-orchestrator.",
+      "x-read-by": [
+        "npm-dependency-upgrade-orchestrator"
+      ]
+    }
+  }
+}
