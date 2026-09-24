@@ -18,7 +18,7 @@ purpose. Dispatch the packets yourself, one reader per packet, and write each
 answer back beside it.
 
   # 1. scaffold both arms
-  python3 scripts/run_evals.py prepare --skill swarm-dispatch --base origin/main
+  python3 scripts/run_evals.py prepare --skill swarm --base origin/main
   # 2. dispatch one reader per packet; save its answer to <packet-dir>/answer.md
   # 3. grade each answer against that scenario's assertions, writing
   #    grading.json with expectations[{text, passed, evidence}]

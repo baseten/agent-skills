@@ -170,7 +170,7 @@ The spend ceiling deliberately does not move on a merge. Merging work already pa
 
 **Why selection moved in front of the ladder (Sept 2026):** the ladder catches a worker that keeps failing, and the observed losses were workers that did not fail. One patched the single site its ticket named where the defect was restated at three — a green PR fixing a third of the bug. Another declined its own ticket's preferred option, correctly, by reading the spec over the issue text; a cheaper worker doing what the ticket said would have looked exactly as successful. No trigger that keys on repeated failure can reach either, which is why the assignment is made up front and the ladder is the floor under it rather than the mechanism.
 
-**Why the axes live in `swarm-dispatch` and not here:** that skill already owned model selection by failure visibility, and a second copy of the tiers in this file is the drift this repository keeps finding. What is genuinely this skill's is the escalation ladder, the repair-escalation evidence trigger and the cycle interaction — those stay.
+**Why the axes live in `swarm` and not here:** that skill already owned model selection by failure visibility, and a second copy of the tiers in this file is the drift this repository keeps finding. What is genuinely this skill's is the escalation ladder, the repair-escalation evidence trigger and the cycle interaction — those stay.
 
 **The observed case behind the evidence-based escalation trigger:** on one spec PR, three automated review passes returned two findings, then three, then one. The first two rounds were all-new territory and Sonnet was the right tool for both; the third's single finding was a gap in a paragraph the second round had itself written, and the strongest-model repair that answered it also caught a second, unreported defect of the same kind beside it. A count-based ladder (two rounds Sonnet, then one Opus) would have paid for depth on exactly the run that needed breadth.
 
@@ -185,7 +185,7 @@ proposal that introduced this suggested the parent write the derived set to a
 file and hand workers the path. On the tiers where a worker is a separate
 container that path resolves to nothing, and the failure is silent — the worker
 falls back to the `AGENTS.md` list the derivation existed to replace and reports
-success. The general form is `swarm-dispatch`'s: nothing a dispatcher computed
+success. The general form is `swarm`'s: nothing a dispatcher computed
 may reach a worker as a reference.
 
 **Why an incomplete gate table is a rejection rather than a note:** it is the

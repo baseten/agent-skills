@@ -1,9 +1,9 @@
 ---
-name: swarm-dispatch
+name: swarm
 description: Fan a set of independent tasks out to parallel isolated workers and supervise them — select the execution runtime from what is actually available, give each worker its own worktree off a stated base, choose a model per task by how its failure would show, and hold policy at the parent. Use when asked to work through several independent tasks at once, to parallelise, to fan out, to swarm, or to dispatch subagents over a list. Also used by backlog-orchestrator and npm-dependency-upgrade-orchestrator for their dispatch phase, which is why the mechanics live here once rather than in each.
 ---
 
-# Swarm Dispatch
+# Swarm
 
 Four mechanics that every parallel run needs and that are wrong in the same ways
 each time they are rebuilt: **which runtime**, **where each worker works**,

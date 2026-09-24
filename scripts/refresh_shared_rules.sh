@@ -29,7 +29,7 @@ RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
 
 # Skills that act on something asserted by an agent, assumed about a provider,
 # or that author a write making claims about existing code or current state.
-ESTABLISH_DO_NOT_ASSUME="backlog-orchestrator swarm-dispatch repair-pr
+ESTABLISH_DO_NOT_ASSUME="backlog-orchestrator swarm repair-pr
   validate-backlog review-skill implement-issue-core create-pr resolve-pr-comment
   summarize-tranche settle-outstanding-decisions implement-issue"
 
@@ -43,7 +43,7 @@ PROSE_REVIEW_ROUND_BUDGET="review-docs review-skill repair-pr"
 # and a clean result are the same bytes.
 ABSENCE_IS_NOT_A_VERDICT="backlog-orchestrator implement-issue repair-pr
   resolve-pr-comment merge-stack plan-merge-order validate-backlog
-  normalize-github-dependencies swarm-dispatch
+  normalize-github-dependencies swarm
   upgrade-npm-dependency npm-dependency-upgrade-orchestrator implement-issue-core
   review-docs review-skill summarize-tranche"
 
