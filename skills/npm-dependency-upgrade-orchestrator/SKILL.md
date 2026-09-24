@@ -37,7 +37,7 @@ Order production dependencies before development ones.
 
 ## Model selection
 
-`swarm-dispatch` owns the general rule and the tiers, including the cheapest
+`swarm` owns the general rule and the tiers, including the cheapest
 tier this skill does not use. What follows is the same rule stated over this
 domain, which is where the judgement actually is: the failure modes below are
 specific to dependency work and are not derivable from the general form.
@@ -54,7 +54,7 @@ Where the estimate is uncertain, over-assign. Over-assignment costs budget; unde
 
 ## Dispatch
 
-**`swarm-dispatch` owns the dispatch mechanics**, and this skill does not restate
+**`swarm` owns the dispatch mechanics**, and this skill does not restate
 them: which runtime is available and how to degrade when the preferred one is
 not, one worker per task in its own worktree created from a stated base, and the
 supervision rules under *Supervise* below — including the preflight that stops a
