@@ -1,0 +1,7 @@
+{
+  "$schema": "https://raw.githubusercontent.com/baseten/agent-skills/main/schemas/agent-policy.schema.json",
+  "auto-merge": true,
+  "review-repair-cycles": 6,
+  "repair-model-escalations": 2,
+  "auto-merge-dependencies": true
+}
