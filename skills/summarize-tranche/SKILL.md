@@ -43,6 +43,8 @@ Anything that still needs an owner and an action — human **or** orchestrator. 
 
 Each one states: **what** (one line) · **where** (issue URL, PR URL, or `path:line`) · **why it is not already done** (out of scope, needs a decision, needs authority this run lacked) · **the next step**, concrete enough to act on without re-deriving it.
 
+**A merged change to anything that runs on a clock is an owner action item, even when the change is right**: a schedule, a cron, a worker's cadence, a timeout, a healthcheck's ping period. Name the old and new values. Monitoring and people tuned to the old cadence live outside the diff — a scanner moved from manual to hourly pings left a five-minute healthcheck flapping every hour for a day.
+
 **Every claim these items make about existing code or current state needs a read behind it before the item is written** (`references/establish-do-not-assume.md`, *You are about to assert it*). The `where` and the `why` are exactly where a recollection gets stated as a fact, and a `DECISION` is the expensive place for one: the owner rules from it, holding less of the codebase than the run does. A claim that cannot be settled first is written with that said and with what would settle it, rather than plainly or not at all.
 
 | class | meaning |

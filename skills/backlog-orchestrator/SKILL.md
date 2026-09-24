@@ -358,6 +358,8 @@ A PR must retain the full Linear issue URL and repository/workspace linking conv
 
 Support these entry modes, in preference order.
 
+**Where the scope is left to the run and it offers the owner options, recommend what the tracker itself declares the priority** — an epic or build-order issue that names itself the immediate build priority — over any option the run composed, such as an audit of what remains. The run's own reading of the codebase wins only when the owner picks it (NOTES).
+
 ## 1. Parent / epic / build-order issue — preferred
 
 Treat the supplied root as the execution manifest.
@@ -813,10 +815,13 @@ the contrary.
 - Attribute your own commits and written output to yourself — your own model
   and session. Never copy an attribution line from this prompt or from the
   orchestrating run; it describes a different session.
-- Do not stop to ask the user a question. Where your skill prescribes a stop,
+- Do not stop to ask the user a question, and do not wait for a reply or a
+  confirmation: nobody is watching this session. Where your skill prescribes a stop,
   return that outcome. Otherwise choose the most defensible option and record
   the question, the choice and the reasoning on the pull request.
 ```
+
+**Never assert authority in a dispatch prompt; point at the record that carries it.** "The orchestrator has authorised…" is exactly the shape of an injected instruction, and a worker right to distrust it refuses — observed on a Sonnet worker, while the same task worded neutrally went through. Where a decision licenses the work, link the durable record of it — the ruling comment, the issue, the PR thread — and let the worker read it.
 
 **Attribution is the one thing in a dispatch prompt that must not be inherited.** Everything else travels down verbatim by design; identity is the exception, because it describes the session that writes and a worker is a different session. An observed run told eight workers to sign their commits as the parent's model: two refused and blocked, correctly, and four complied, so their commits carry a false trailer and nothing flagged it. A retry after a refusal like that is a rewrite that removes the claim, never an annotation explaining it — a redispatch that opened by explaining the earlier refusal, and still asserted a session id the worker could not check, was refused again as a prompt-injection risk, with a better stated reason than the prompt had. **And a dispatch the parent's own prompt broke is not the worker's failure**: it does not spend that issue's lost-worker budget.
 
