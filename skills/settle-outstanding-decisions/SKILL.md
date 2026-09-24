@@ -90,9 +90,10 @@ Chunk boundaries preserve this order, so an owner who walks away after the first
 
 ## The question
 
-The test for every question: **can the owner answer it without opening another tab or scrolling back through the run?** The parts that pass it:
+The test for every question: **can the owner answer it without opening another tab or scrolling back through the run?** So everything they need goes in the question itself or the final message: text written between tool calls may never reach them — a healthcheck's values were asked four times because they were stated only there. The parts that pass it:
 
-- what the decision is, in one sentence;
+- **a concrete worked example in product terms, first** — "a £200 plan, rescheduled to £300, then edited to £250: which one bills?", not the rule's name. The jargon-first version of that question was asked back for explanation; the worked example was answered at once;
+- what the decision is, in one sentence, in the same product terms;
 - why it needs a human — what the run could not derive;
 - what the run assumed in the meantime, and what is already built on that assumption;
 - what materially changes per option;
