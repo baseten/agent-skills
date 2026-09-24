@@ -195,9 +195,7 @@ worker alive only to wait: waiting is the parent's job and costs nothing, while
 an idle worker holds a slot the queue needs.
 
 On that tier the worker's worktree is never reachable, so **durable is read off
-the remote**: the output is durable when the remote shows what the worker
-reported — the commit it named reachable on the remote, or the review it posted
-present on the pull request. An uninspectable worktree is not a reason to keep a finished
+the remote**, not off its container. An uninspectable worktree is not a reason to keep a finished
 worker; a mismatch between what it reported and what the remote shows is.
 `backlog-orchestrator`, *Releasing a worker*, owns the full test for pull-request
 work and states the residual risk it accepts; apply it from there rather than
