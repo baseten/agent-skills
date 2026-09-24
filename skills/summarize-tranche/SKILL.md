@@ -29,7 +29,7 @@ Derive everything from **durable evidence** — tracker state, PR bodies, diffs 
 
 # 1. The summary
 
-One paragraph, or up to six bullets. **Hard ceiling.**
+One paragraph, or up to six bullets. **Hard ceiling.** It is a status summary, so every sentence in it about what a PR, a thread or a session *is now* needs a read behind it, or says when it was last read (`references/establish-do-not-assume.md`, *You are about to assert it*).
 
 Say what changed and what it means. NOT: restating each PR's description in turn — the PRs are already that record, and a per-PR recap is the failure mode this skill exists to avoid. One coherent thing across twelve PRs is one sentence.
 

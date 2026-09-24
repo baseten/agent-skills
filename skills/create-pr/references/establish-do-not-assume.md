@@ -62,9 +62,10 @@ at a time, about a configuration that can change.
 
 The same rule pointed outward, and the one that is easiest to skip because
 nothing about it looks like a lookup. **Any claim this run makes about existing
-code, or about current state, needs a read behind it before it is posted** — in a review reply, a PR body,
-a `DECISION` item, an issue, a commit message. Not a recollection of the codebase,
-and not an inference from the part of it currently in view.
+code, or about current state, needs a read behind it before it is posted** — in
+a review reply, a PR body, a `DECISION` item, an issue, a commit message, a
+status summary. Not a recollection of the codebase, and not an inference from
+the part of it currently in view.
 
 The failure looks like confidence. A reply asserted that adding a connection
 parameter in one module would also affect migrations; migrations built their own
