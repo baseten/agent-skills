@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Scaffold and score an eval round, per CLAUDE.md's comparison method.
 
+Companions (an evals.json's top-level "companions") are read from the new
+revision's evals.json for both arms: the list says which skills a reader needs
+today, and each arm then gets those skills' files as they stood at that arm's
+revision.
+
 The method is not this script's invention and it is not negotiable here:
 
   * two arms, the old contract and the new, graded against the same assertions;
