@@ -670,14 +670,14 @@
     {
       "id": 55,
       "name": "four-workers-claim-one-migration-number",
-      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are about to dispatch four independent issues into one API repository; each names a table or column it changes, and the repository generates migrations with a tool that numbers them sequentially and chains each snapshot to its predecessor by id. What do you tell the workers, and when their PRs exist - each claiming migration 0025, each green including a migration-consistency check - how are the three later ones renumbered?",
-      "expected_output": "Expect the collision at dispatch rather than discover it at merge: each worker branches from the same base, runs the generator and correctly takes the next free number, so all four will claim 0025 and all four will pass CI, because each is consistent with the base in isolation. Tell each worker that siblings exist and that its number is provisional, so no PR body presents it as final. Once the PRs exist, record the expected renumbers; the merge order they depend on is the owner's decision, raised as NEEDS_USER, not one to pick. The renumbers are strictly sequential, one per merge: the snapshots chain by predecessor id, so the second must be regenerated against a schema that includes the first's change and the third against both - batching them against one base reproduces the collision a layer down. Each pass uses the repository's own generator, never a hand edit, and regenerates only the identity - snapshot, journal entry, number - carrying the reviewed SQL body across verbatim, since a regenerated body may not reproduce an expression index or partial WHERE. Verify it: the body differs only in number and filename, the new snapshot's predecessor id equals the base's latest snapshot id, and a fresh apply and the tests pass - then CI. Whether the push needs another review round is the mechanical-push rule's call.",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are about to dispatch four independent issues into one API repository; each names a different table or column it changes, and none depends on another's change, and the repository generates migrations with a tool that numbers them sequentially and chains each snapshot to its predecessor by id. What do you tell the workers, and when their PRs exist - each claiming migration 0025, each green including a migration-consistency check - how are the three later ones renumbered?",
+      "expected_output": "Expect the collision at dispatch rather than discover it at merge: each worker branches from the same base, runs the generator and correctly takes the next free number, so all four will claim 0025 and all four will pass CI, because each is consistent with the base in isolation. Tell each worker that siblings exist and that its number is provisional, so no PR body presents it as final. Once the PRs exist, record the expected renumbers. The four touch different tables and none depends on another's change, so they are independent: they merge in plan-merge-order's ranking without asking the owner, and the report names the order taken. The renumbers are strictly sequential, one per merge: the snapshots chain by predecessor id, so the second must be regenerated against a schema that includes the first's change and the third against both - batching them against one base reproduces the collision a layer down. Each pass uses the repository's own generator, never a hand edit, and regenerates only the identity - snapshot, journal entry, number - carrying the reviewed SQL body across verbatim, since a regenerated body may not reproduce an expression index or partial WHERE. Verify it: the body differs only in number and filename, the new snapshot's predecessor id equals the base's latest snapshot id, and a fresh apply and the tests pass - then CI. Whether the push needs another review round is the mechanical-push rule's call.",
       "assertions": [
         "the answer anticipates the collision at dispatch and tells workers their numbers are provisional",
         "the answer renumbers strictly one at a time, each against the base after the previous merge",
         "the answer keeps the reviewed SQL body verbatim and regenerates only identity",
         "the answer verifies by the predecessor-id chain and a fresh apply rather than by CI alone",
-        "the answer leaves the merge order to the owner rather than choosing it"
+        "the answer follows the ranking for independent migrations rather than asking the owner to order them"
       ]
     },
     {
@@ -732,6 +732,30 @@
         "the answer treats the child of a budget-held issue as not dispatchable because it is not READY",
         "the answer applies a positive definition of dispatchable rather than a list of acceptable remainders",
         "the answer names concurrent-open-prs as the budget holding A in the checkpoint"
+      ]
+    },
+    {
+      "id": 57,
+      "name": "interacting-migrations-still-go-to-the-owner",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two open PRs in one API repository each claim migration 0031. PR A adds a column `plan_id` to `invoices`. PR B creates a table `plans` and adds a foreign key from `invoices.plan_id` to it. Both are green. Do you order them yourself, or ask the owner, and why?",
+      "expected_output": "Ask the owner: this is a collision that interacts. B's foreign key reaches into the column A adds, so the order decides the outcome, and the owner's ruling to follow the ranking without asking covers only migrations shown independent from both bodies. Raise NEEDS_USER naming both PR URLs and the colliding paths, and do not renumber either pre-emptively. The shared journal and snapshot files the generator rewrites are not what makes this interacting; the foreign key is.",
+      "assertions": [
+        "the answer raises NEEDS_USER rather than ordering the migrations itself",
+        "the answer identifies the foreign key into the other migration's column as the interaction",
+        "the answer does not renumber either migration pre-emptively"
+      ]
+    },
+    {
+      "id": 58,
+      "name": "a-reply-releases-a-hold-only-when-it-is-the-owners-answer",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your run is settled, and a scheduled check-in fires. Three NEEDS_USER items this run raised are open, each on its own issue with two options put to the owner. Since the last wake: on issue 1, a comment from the owner's account that is the review-trigger comment this run posted on the linked PR's issue thread (its id is in your posting-identity map); on issue 2, the owner wrote 'go with option B'; on issue 3, the owner wrote 'hmm, what about a third option?'. What do you do with each, and is this wake productive?",
+      "expected_output": "Issue 1: not an answer - it is one of this run's own writes, posted under the owner's account, so the hold stays. Issue 2: the owner's reply chooses one of the options put, so release what the item held, re-test dispatch, and report the release with the reply's URL; write nothing claiming a ruling, since this wake is unattended and an interactive ruling is settle-outstanding-decisions' to record. Issue 3: a reply that answers something else is reported and the hold stays. The wake is productive: it found new replies at open items' sites, which resets the unproductive-wake count.",
+      "assertions": [
+        "the answer does not treat the run's own write as the owner's answer",
+        "the answer releases issue 2's hold and re-tests dispatch",
+        "the answer records no ruling and reports the release with the reply URL",
+        "the answer keeps issue 3's hold and reports the reply",
+        "the answer counts the wake as productive"
       ]
     }
   ]

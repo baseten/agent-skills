@@ -90,7 +90,7 @@ Scope the claim to the group and no further: a member can still unblock other is
 Independent of leverage, identify constraints that force an order:
 
 - **Stack ancestry** — a child PR cannot merge before its parent.
-- **Claimed artifacts** — two branches that each add or amend an artifact whose identity or ordering is claimed rather than derived (a numbered migration, a generated manifest, a lockfile, a registry or index). Name the colliding paths, both PR URLs, and what must be renumbered or regenerated once the order is fixed (NOTES: these collide only on the second merge).
+- **Claimed artifacts** — two branches that each add or amend an artifact whose identity or ordering is claimed rather than derived (a numbered migration, a generated manifest, a lockfile, a registry or index). Name the colliding paths, both PR URLs, and what must be renumbered or regenerated once the order is fixed (NOTES: these collide only on the second merge). **A collision the caller marks independent** — sequence-numbered migrations shown not to interact (`backlog-orchestrator`, *Cross-branch artifact collisions*) — is not an order constraint: rank those PRs by leverage like any other and list each later one's renumber as a follow-on of the one ranked before it. Unmarked means interacting.
 - **Anything the orchestrator surfaced as `NEEDS_USER`** on a candidate PR.
 
 A hard constraint outranks every leverage number. Say so where it applies, never buried in a note.
