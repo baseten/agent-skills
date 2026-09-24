@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -127,6 +128,23 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
             single_arm_reason = f"{skill} does not exist at {base} - it is new"
         else:
             arms["old"] = {rel: text for rel, text in old.items() if text is not None}
+
+    # references/ is generated from rules/ and not committed, so neither arm can
+    # read it off the tree or out of git. Rebuild it for each arm from that
+    # arm's own rules/ - the working tree for new, the base revision for old -
+    # for exactly the references that arm's SKILL.md cites. An old base from
+    # before the copies stopped being committed falls back to its copy.
+    for arm, contents in arms.items():
+        skill_text = contents.get(f"skills/{skill}/SKILL.md", "")
+        for name in sorted(set(re.findall(r"`references/([a-z0-9-]+\.md)`", skill_text))):
+            rel = f"skills/{skill}/references/{name}"
+            if arm == "new":
+                src = ROOT / "rules" / name
+                text = src.read_text(encoding="utf-8") if src.exists() else None
+            else:
+                text = _git_show(base, f"rules/{name}") or _git_show(base, rel)
+            if text is not None:
+                contents[rel] = text
 
     if round_dir.exists():
         shutil.rmtree(round_dir)

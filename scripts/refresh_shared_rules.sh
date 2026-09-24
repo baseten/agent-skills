@@ -9,8 +9,9 @@
 # they only read.
 #
 # So the rule is held once under rules/ and copied into each applying skill's
-# references/. The copies are generated: edit the source. check_shared_rules.py
-# fails the build if a copy diverges.
+# references/ at install time - bootstrap.sh, the local installer, the eval
+# runner and CI all run this first. The copies are gitignored, never committed:
+# rules/ is the only copy in the repository.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 

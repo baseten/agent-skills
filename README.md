@@ -18,7 +18,7 @@ The `SKILL.md` files are dense and not easily human readable. That is deliberate
 
 A shared rule cannot simply sit at the repo root and be read from an installed skill: `bootstrap.sh` copies `skills/<name>/` and nothing else, so `../../rules/x.md` does not exist on a machine that installed one skill. Nor can it live inside one skill, because whichever skill owned it would become a dependency the others carry for a rule they only read.
 
-So `scripts/refresh_shared_rules.sh` copies each rule into `skills/<name>/references/` for every skill that applies it. **Edit the source, never a copy.** The copies travel with a skill that is installed alone or moved into a plugin, and `scripts/check_shared_rules.py` fails the build when a copy diverges from its source, when a skill cites a reference it does not carry, when a rule is cited by nothing, when a bundle is left behind with no `SKILL.md` beside it, when a source is deleted while its copies remain, when a skill the generator declares a consumer does not exist, does not cite the rule, or does not carry it, and when the generator stops naming a consumer list the check can read at all. Every one is file-level; none reads the prose.
+So `scripts/refresh_shared_rules.sh` copies each rule into `skills/<name>/references/` for every skill that applies it, **at install time**: `bootstrap.sh` and the local installer run it before copying, the eval runner rebuilds each arm's references from that revision's `rules/`, and CI runs it before the checks. The copies are gitignored and never committed, so `rules/` is the only copy in the repository; run the script yourself to see them in a checkout. The copies travel with a skill that is installed alone or moved into a plugin, and `scripts/check_shared_rules.py` fails the build when a copy diverges from its source, when a skill cites a reference it does not carry, when a rule is cited by nothing, when a bundle is left behind with no `SKILL.md` beside it, when a source is deleted while its copies remain, when a skill the generator declares a consumer does not exist, does not cite the rule, or does not carry it, and when the generator stops naming a consumer list the check can read at all. Every one is file-level; none reads the prose.
 
 The check reads the generator rather than the tree for which bundles are generated and which skills consume each, precisely so that a deleted source with its copies left behind is still detectable. `scripts/test_shared_rules.py` holds a broken repository per failure it claims to catch, and asserts each is rejected by the guard that names it rather than by a neighbour — without which the check stays green over a guard someone deleted, because the tree it runs against in CI is always already correct.
 
@@ -53,7 +53,7 @@ Reasoning for a rule lives beside it as `rules/<name>-notes.md`, and is delibera
 
 ```
 skills/           every directory with a SKILL.md ships
-skills/*/references/  style inputs and other material a skill reads at run time
+skills/*/references/  generated at install from rules/ (gitignored)
 CLAUDE.md         how to change a skill, and what a complete fix means here
 AGENTS.md         pointer to CLAUDE.md, for agents whose convention looks for it
 docs/             audits and workflows that outlive one PR
@@ -129,6 +129,7 @@ deterministic — no model calls, no API key, no cost — and every check is
 runnable locally:
 
 ```bash
+bash scripts/refresh_shared_rules.sh                  # generate references/ first; they are not committed
 python3 scripts/check_skills.py
 python3 scripts/check_shared_rules.py                # bundled rules match rules/, and no skill cites one it lacks
 python3 scripts/test_shared_rules.py                  # and each of those guards can actually fail
