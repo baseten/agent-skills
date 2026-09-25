@@ -13,7 +13,7 @@ This file is the contract; the reasoning and incident history behind its rules l
 
 ## Callers and inputs
 
-"Tranche" below means the set of PRs the caller passes. A one-issue run is a tranche of one.
+"Tranche" below means the set of PRs the caller passes. A one-issue run is a tranche of one. This skill uses the policy its caller resolved and never reads `.claude/agent-policy.json` itself (`references/agent-policy.md`, *Resolution*).
 
 | input | `backlog-orchestrator` | `implement-issue` |
 | --- | --- | --- |

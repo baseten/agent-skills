@@ -9,17 +9,18 @@ machine that installed only that skill, and the failure is silent - the model
 simply proceeds without the rule.
 
 A rule can cite another rule the same way a skill does, as a literal
-`references/<name>.md` token, and the skill carrying the first then reads the
-second from its own references/ too. So what a skill *reaches* is the closure:
-its SKILL.md's citations, plus every rule those rules cite, transitively. The
-checks below run on that closure, and the generator must declare a skill a
-consumer of every generated rule its declared rules cite (the transitive-
-consumer guard). A declared consumer must reach the rule it is declared for,
-but need not cite it in its own SKILL.md: carriage through a rule it does cite
-is exempt from the must-cite requirement, because the citation that makes the
-copy load-bearing is there - in the carried rule - and demanding a second one in
-the SKILL.md would only be text added to satisfy this check. A rule's citation
-of itself (its intro names its own bundled path) is not an edge.
+`references/<name>.md` token, and a skill carrying the first then needs the
+second beside it. The generator's consumer lists name only the skills that
+*apply* a rule, and each of those must cite it in its own SKILL.md, exactly as
+before rules cited rules. refresh_shared_rules.sh derives the rest: for each
+skill, every generated rule its declared rules cite, transitively, is copied
+too. This check computes the same closure and exempts only that *derived*
+carriage from the must-cite requirement - a declared consumer that stops citing
+its rule still fails, however many rules would reach it. The transitive-
+consumer guard is that what a skill carries of the generated rules is exactly
+its declared rules plus their derived closure: a derived copy missing, or a
+generated copy the generator neither declares nor derives. A rule's citation of
+itself (its intro names its own bundled path) is not an edge.
 """
 from __future__ import annotations
 
@@ -92,30 +93,47 @@ def main() -> int:
             todo.extend(rule_cites.get(ref, ()))
         return seen
 
-    reach: dict[str, set[str]] = {}
-    for skill_md in sorted(ROOT.glob("skills/*/SKILL.md")):
-        reach[skill_md.parent.name] = closure(
-            set(CITATION.findall(skill_md.read_text(encoding="utf-8"))))
+    # What the generator carries into each skill: the rules declared for it,
+    # and - derived, not declared - every generated rule those cite.
+    declared_for: dict[str, set[str]] = {}
+    for rule, names in declared.items():
+        for name in names:
+            declared_for.setdefault(name, set()).add(rule)
+    derived: dict[str, set[str]] = {
+        name: (closure(rules) & generated) - rules for name, rules in declared_for.items()}
 
-    # The generator must copy what a declared rule cites into the same skill,
-    # or that skill carries a pointer to a file it was never given. A stale
-    # gitignored copy from an earlier refresh hides this locally and nowhere
-    # else, which is why it is checked against the declarations and not the tree.
-    for rule in sorted(generated):
-        for name in sorted(declared.get(rule, ())):
-            for needed in sorted(closure(rule_cites.get(rule, set())) & generated):
-                if needed != rule and name not in declared.get(needed, set()):
-                    errors.append(
-                        f"skills/{name} is declared a consumer of {rule}, which cites "
-                        f"{needed}, but is not declared a consumer of {needed}")
+    # Derived carriage is the generator's to get right, and the tree is where it
+    # shows: a derived copy missing means the skill holds a pointer to a file it
+    # was never given; a generated copy nobody declared or derived is stale, and
+    # a stale copy is what hides the first failure locally.
+    expected_carriage = {
+        skill_md.parent.name: declared_for.get(skill_md.parent.name, set())
+        | derived.get(skill_md.parent.name, set())
+        for skill_md in ROOT.glob("skills/*/SKILL.md")}
+    for skill_name, expected in sorted(expected_carriage.items()):
+        refs = ROOT / "skills" / skill_name / "references"
+        carried = {p.name for p in refs.glob("*.md")} & generated if refs.is_dir() else set()
+        for name in sorted(derived.get(skill_name, set()) - carried):
+            errors.append(
+                f"skills/{skill_name} carries a rule that cites {name}, but not {name} "
+                "itself — run scripts/refresh_shared_rules.sh")
+        # A rule with no readable consumer list is the unreadable-consumers
+        # guard's to report; every copy of it would otherwise land here too.
+        for name in sorted((carried - expected) & {r for r, s in declared.items() if s}):
+            errors.append(
+                f"skills/{skill_name}/references/{name} is a generated rule the generator "
+                "neither declares nor derives for this skill — stale; run "
+                "scripts/refresh_shared_rules.sh")
 
     for skill_md in sorted(ROOT.glob("skills/*/SKILL.md")):
         skill_dir = skill_md.parent
-        cited = reach[skill_dir.name]
-        for ref in sorted(cited):
+        cited = set(CITATION.findall(skill_md.read_text(encoding="utf-8")))
+        for ref in sorted(cited | derived.get(skill_dir.name, set())):
             checked += 1
             bundled = skill_dir / "references" / ref
             rel = bundled.relative_to(ROOT)
+            if ref not in cited and not bundled.is_file():
+                continue  # a missing derived copy is reported above
             if not bundled.is_file():
                 errors.append(f"{rel} is cited by {skill_dir.name} but not present")
                 continue
@@ -149,8 +167,8 @@ def main() -> int:
             continue
         consumers = [
             b for b in ROOT.glob(f"skills/*/references/{source.name}")
-            if (b.parent.parent / "SKILL.md").is_file()
-            and source.name in reach.get(b.parent.parent.name, set())
+            if (skill := b.parent.parent / "SKILL.md").is_file()
+            and source.name in CITATION.findall(skill.read_text(encoding="utf-8"))
         ]
         if not consumers:
             errors.append(
@@ -170,10 +188,10 @@ def main() -> int:
                     f"{source.name} but skills/{name}/SKILL.md does not exist"
                 )
                 continue
-            if source.name not in reach.get(name, set()):
+            if source.name not in CITATION.findall(skill_md.read_text(encoding="utf-8")):
                 errors.append(
                     f"skills/{name} is declared a consumer of {source.name} "
-                    "but does not cite it, directly or through a rule it cites"
+                    "but does not cite it"
                 )
             if not (ROOT / "skills" / name / "references" / source.name).is_file():
                 errors.append(
