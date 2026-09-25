@@ -1155,7 +1155,7 @@ After each PR reaches durable state, compare it against the other open branches 
 
 **The third kind has no conflict signal of any sort, and only the merged tree shows it.** One branch added tests querying the string `Center`; another renamed it to `Centre`. No line was shared, git merged cleanly, and neither PR's CI could have caught it — each was green against a base that did not yet contain the other. The default branch's own CI found it, after both had landed. So this kind is not detected by reading diffs: it is detected by merging the branches into a scratch branch and running the suite whole, which is the only artefact that contains both changes at once.
 
-**The comparison set is every open branch targeting that base, not this run's own members.** An observed tranche ran exactly this integration check, over the branches it had dispatched, and caught a real conflict with it — and missed this one, because the colliding branch belonged to a different track running concurrently in the same repository. The check was right and its input set was wrong. **State in the run's output which branches were integrated, each with the head SHA it was integrated at**, so a set that turned out to be partial is visible as partial rather than as a clean result — and so the gate can tell whether the tips have moved since (see *Merge behavior*).
+**The comparison set is every open branch targeting that base, not this run's own members.** An observed tranche ran exactly this integration check, over the branches it had dispatched, and caught a real conflict with it — and missed this one, because the colliding branch belonged to a different track running concurrently in the same repository. The check was right and its input set was wrong. **State in the run's output which branches were integrated, each with the head SHA it was integrated at**, so a set that turned out to be partial is visible as partial rather than as a clean result — and so the gate can tell whether the tips have moved since (see `settle-and-merge`, *Merge behavior*).
 
 Two chains cut from the same base can each be internally consistent and both pass CI while colliding, because neither can see the other; the conflict only materializes when the second one merges. Dependency edges and stack ancestry do not detect this — the branches are siblings, not ancestors — and concurrency makes it worse rather than differently: a track this run did not dispatch is not in its graph at all.
 
@@ -1308,7 +1308,6 @@ Settled is not the same as finished. The run has produced everything it can **fo
 On reaching settled:
 
 1–7. run `settle-and-merge`'s sequence over this run's PR set (`settle-and-merge`, *The settle sequence*), passing the inputs its *Callers and inputs* names for this skill; at its step 1, **run step 11's release reconciliation in the same pass** — read the session list, archive every finished session the releasable test passes — so a run never settles, and possibly hands off, holding containers for work that is already on the remote;
-
 8. stop dispatching work, and stop spending tokens re-deriving the same state, for as long as nothing is dispatchable.
 
 ## The summary can un-settle the run

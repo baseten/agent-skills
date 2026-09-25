@@ -10,7 +10,7 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 ## The settle sequence
 
-**The removed decision docket (why the unattended decline's aggregation loss is accepted):** a second durable record written to close that gap is the decision docket this skill already carried and removed — it needed an in-place rewrite `permissions.json` cannot perform and stopped an unattended session on the prompt step 8 forbids. Re-deriving a lost aggregate costs one summary; the record that would have prevented it cost four review findings and could not run.
+**The removed decision docket (why the unattended decline's aggregation loss is accepted):** a second durable record written to close that gap is the decision docket this skill already carried and removed — it needed an in-place rewrite `permissions.json` cannot perform and stopped an unattended session on the prompt `backlog-orchestrator`'s step 8 forbids. Re-deriving a lost aggregate costs one summary; the record that would have prevented it cost four review findings and could not run.
 
 **Why a code-changing ruling must not become a ranking constraint (the step-3 defect one step later):** choosing the other side of a decision a worker already implemented creates actionable work *after* step 3 processed the action points. Translating it into a ranking constraint would leave an orchestrator-owned fix undispatched and rank a PR that is not finished — the exact defect the `IN_FLIGHT_FIX` row guards against, arriving one step later.
 
@@ -27,3 +27,30 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 **Why what discharges a stale green is established rather than stated:** whether a repository's checks run against the branch or against the branch merged with its base decides whether a re-run means anything, and it differs by configuration. Asserting either would make the rule confidently wrong in half the repositories it runs in — a re-run that proves nothing, or a branch update nobody needed.
 
 **Why the merge goes through `merge-stack` and passes the map:** the stack rules require that skill for any merge or restack, and a raw forge call is exactly what the required-skills rule exists to prevent. Its merges, retargetings, and body edits are authored writes — easy to miss because it is invoked as an operation on the graph rather than as a worker that reports — and its identity observations are the last ones the structured result's map can carry.
+
+**Why publishing has three states rather than two (round 1, Sept 2026):** the
+first version of this said observed-to-trigger or not, and a review round pointed
+out that a first run and every restart begin in neither. Not having observed a
+trigger is not evidence that publishing is inert — which is this document's own
+rule about absence, arriving inside the fix for its sibling rule about
+assumption. Merging straight through on pre-publish evidence would land the PR
+before a run that publishing started could report, so unknown means establish
+rather than merge.
+
+**Why establishing it takes a pass rather than a read (round 2):** the first fix
+said publish, look once, record — and round 2 pointed out that the look lands
+before a queued run or review has to exist, so it distinguishes *nothing was
+triggered* from *nothing has appeared yet* only by luck. That is the same absence
+rule again, one layer further in: a read with no lower bound on when the artifact
+could appear is not a read of the artifact. Worse than getting it wrong once, the
+answer is recorded and every later publish in the repository is decided by it. So
+unknown takes the un-settle branch and classifies on the next delivered pass,
+which is what `implement-issue` already requires of the draft→ready transition
+under *Evidence freshness* — the read is taken no earlier than the next check-in.
+The cost is one supervision cycle, once per repository, against a wrong answer
+that would persist.
+
+**Why the observation is recorded rather than re-derived:** it sits beside the
+transport-visibility and posting-identity maps for the same reason those exist —
+a fact about a repository that every later decision reads, established once by
+observation rather than assumed from a provider's name.

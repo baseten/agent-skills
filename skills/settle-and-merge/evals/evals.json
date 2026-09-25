@@ -41,13 +41,13 @@
     },
     {
       "id": 3,
-      "name": "a-single-pr-invocation-skips-the-ranking-and-reads-the-tranche-as-one-issue",
-      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue invoked you over its one PR after its issue reached a terminal state. Its repository opted into auto-merge. summarize-tranche returned one DECISION about this PR, and the walkthrough recorded the owner's ruling to hold the PR until a partner team signs off. CI is green, the review is clean and nothing else is outstanding. Question: (a) do you invoke plan-merge-order? (b) does the PR merge?",
-      "expected_output": "(a) No. implement-issue does not run the ranking step: one PR has no ordering to rank. It translates its rulings into gate consequences in place of that step. (b) No. The ruling retires the DECISION as an outstanding item but changes this PR's disposition, so it holds the gate exactly as a MERGE_RISK would. The run performs no disposition itself and returns with the gate held, the ruling and its next owner in the result. A ruling can hold or retire a constraint, never open the gate. The tranche-wide outstanding-item clause reads as this issue's own items.",
+      "name": "a-single-pr-invocation-skips-the-ranking",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue invoked you over its one PR after its issue reached a terminal state. Its repository opted into auto-merge. summarize-tranche returned one DECISION about this PR, and the walkthrough recorded the owner's ruling to hold the PR until a partner team signs off. CI is green, the review is clean and nothing else is outstanding. Question: do you invoke plan-merge-order before evaluating the gate?",
+      "expected_output": "No. implement-issue does not run the ranking step: one PR has no ordering to rank. It translates its rulings into gate consequences in place of that step (implement-issue owns that translation), and the gate is then evaluated for its one PR, with the tranche-wide outstanding-item clause read as this issue's own items.",
       "assertions": [
         "The answer does not invoke plan-merge-order for the single-PR caller",
-        "The answer holds the gate on the disposition ruling rather than treating the recorded ruling as clean",
-        "The answer does not perform the hold or any other disposition itself; it returns with the ruling and its next owner"
+        "The answer places implement-issue's ruling translation where step 5 would have run, before the gate",
+        "The answer reads the tranche-wide outstanding-item clause as this issue's own items"
       ]
     }
   ]

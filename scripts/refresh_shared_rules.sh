@@ -16,7 +16,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # rule source  ->  skills that apply it
-AUTHORED_WRITE_FORM="backlog-orchestrator create-pr normalize-github-dependencies
+AUTHORED_WRITE_FORM="backlog-orchestrator settle-and-merge create-pr normalize-github-dependencies
   npm-dependency-upgrade-orchestrator implement-issue
   merge-stack repair-pr resolve-pr-comment review-docs review-skill settle-outstanding-decisions
   summarize-tranche upgrade-npm-dependency validate-backlog"
@@ -42,7 +42,7 @@ A_PASSING_TEST_IS_NOT_A_VERIFIED_FIX="implement-issue-core repair-pr
 PROSE_REVIEW_ROUND_BUDGET="review-docs review-skill repair-pr"
 # Skills that make a decision on the result of a lookup, where an empty result
 # and a clean result are the same bytes.
-ABSENCE_IS_NOT_A_VERDICT="backlog-orchestrator implement-issue repair-pr
+ABSENCE_IS_NOT_A_VERDICT="backlog-orchestrator settle-and-merge implement-issue repair-pr
   resolve-pr-comment merge-stack plan-merge-order validate-backlog
   normalize-github-dependencies swarm
   upgrade-npm-dependency npm-dependency-upgrade-orchestrator implement-issue-core
