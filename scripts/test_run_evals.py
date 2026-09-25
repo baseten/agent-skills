@@ -31,16 +31,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def _load(withheld=None, companion_files=None):
+def _load(withheld=None, companion_files=None, follow=None):
     """Load run_evals fresh, optionally with one guard neutered."""
     spec = importlib.util.spec_from_file_location(
-        f"run_evals_{id(withheld)}_{id(companion_files)}", ROOT / "scripts" / "run_evals.py")
+        f"run_evals_{id(withheld)}_{id(companion_files)}_{follow}", ROOT / "scripts" / "run_evals.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     if withheld is not None:
         mod.WITHHELD = withheld
     if companion_files is not None:
         mod.COMPANION_FILES = companion_files
+    if follow is not None:
+        mod.FOLLOW_RULE_CITATIONS = follow
     return mod
 
 
@@ -233,11 +235,75 @@ def guard_companions_join_the_contract() -> list[str]:
     return failures
 
 
+def _chain_fixture(tmp: Path) -> None:
+    """The skill cites rule a, which cites b; its companion cites c, which cites d.
+
+    No references/ directory exists, as on a clean checkout: every reference has
+    to be rebuilt from rules/, per arm. Committed as the base so both arms have it.
+    """
+    skill = _fixture(tmp)
+    (skill / "SKILL.md").write_text(
+        "---\nname: fixture-skill\ndescription: fixture\n---\n\nApply `references/a.md`.\n",
+        encoding="utf-8")
+    data = json.loads((skill / "evals" / "evals.json").read_text())
+    data["companions"] = ["chain-companion"]
+    (skill / "evals" / "evals.json").write_text(json.dumps(data), encoding="utf-8")
+    comp = tmp / "skills" / "chain-companion"
+    comp.mkdir(parents=True)
+    (comp / "SKILL.md").write_text("Apply `references/c.md`.\n", encoding="utf-8")
+    rules = tmp / "rules"
+    rules.mkdir()
+    (rules / "a.md").write_text("# a\n\nDefers to `references/b.md`.\n", encoding="utf-8")
+    (rules / "b.md").write_text("# b\n", encoding="utf-8")
+    (rules / "c.md").write_text("# c\n\nDefers to `references/d.md`.\n", encoding="utf-8")
+    (rules / "d.md").write_text("# d\n", encoding="utf-8")
+    _git(tmp, "init", "-q")
+    _git(tmp, "add", "-A")
+    _git(tmp, "commit", "-q", "-m", "base")
+
+
+def guard_rule_citations_join_the_contract() -> list[str]:
+    """A rule cited by a rule reaches the reader, for the skill and its companions.
+
+    Without it a reader holds rule a's pointer to b and no b, in both arms, so
+    the comparison agrees on a contract no installed skill actually has.
+    """
+    failures = []
+    for label, follow, expect_chain in (("intact", None, True), ("guard neutered", False, False)):
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            mod = _load(follow=follow)
+            mod.ROOT = tmp
+            _chain_fixture(tmp)
+            with contextlib.redirect_stdout(io.StringIO()):
+                rc = mod.prepare("fixture-skill", "HEAD", None, tmp / "round")
+            if rc != 0:
+                failures.append(f"{label}: prepare returned {rc}")
+                continue
+            for arm in ("new", "old"):
+                c = tmp / "round" / arm / "contract"
+                for direct in ("a.md", "c.md"):
+                    if not (c / direct).exists():
+                        failures.append(f"{label}: {arm} arm lacks directly cited {direct}")
+                chained = [n for n in ("b.md", "d.md") if (c / n).exists()]
+                if expect_chain and len(chained) != 2:
+                    failures.append(
+                        f"{label}: {arm} arm carries {chained} of the rule-cited b.md "
+                        "(skill) and d.md (companion)")
+                if not expect_chain and chained:
+                    failures.append(
+                        "guard neutered but rule-cited references still reached the "
+                        "contract — FOLLOW_RULE_CITATIONS is not what puts them there, "
+                        "so this case pins nothing")
+    return failures
+
+
 GUARDS = (
     ("packet withholds the answer", guard_packet_withholds_the_answer),
     ("ungraded is not passing", guard_ungraded_is_not_passing),
     ("single arm is labelled", guard_single_arm_is_labelled),
     ("companions join the contract", guard_companions_join_the_contract),
+    ("rule citations join the contract", guard_rule_citations_join_the_contract),
 )
 
 

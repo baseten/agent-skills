@@ -65,6 +65,12 @@ WITHHELD = ("expected_output", "assertions", "name")
 # What a companion skill contributes to a contract directory, per arm.
 COMPANION_FILES = ("SKILL.md", "NOTES.md")
 
+# Whether a reference a rule cites joins the contract too. A shared rule that
+# cites `references/<x>.md` is carried with <x> beside it (refresh_shared_rules.sh
+# derives that closure), so a reader holding only the first rule is holding a
+# pointer to a file it was never given.
+FOLLOW_RULE_CITATIONS = True
+
 
 def _disp(p: Path) -> str:
     """A path to show a human: repo-relative inside the tree, absolute outside.
@@ -123,6 +129,23 @@ def _contract_files(skill: str, base: str | None = None) -> list[str]:
 
 def _cited_refs(text: str) -> set[str]:
     return set(re.findall(r"`references/([a-z0-9-]+\.md)`", text))
+
+
+def _reached_refs(arm: str, base: str | None, text: str, owner: str) -> dict[str, str]:
+    """The references `text` cites, and those rules' own citations, transitively."""
+    out: dict[str, str] = {}
+    todo = sorted(_cited_refs(text))
+    while todo:
+        name = todo.pop()
+        if name in out:
+            continue
+        ref = _ref_text(arm, base, name, owner)
+        if ref is None:
+            continue
+        out[name] = ref
+        if FOLLOW_RULE_CITATIONS:
+            todo.extend(sorted(_cited_refs(ref) - set(out)))
+    return out
 
 
 def _ref_text(arm: str, base: str | None, name: str, owner: str) -> str | None:
@@ -187,16 +210,16 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
     # references/ is generated from rules/ and not committed, so neither arm can
     # read it off the tree or out of git. Rebuild it for each arm from that
     # arm's own rules/ - the working tree for new, the base revision for old -
-    # for exactly the references that arm's SKILL.md cites. An old base from
-    # before the copies stopped being committed falls back to its copy.
+    # for exactly the references that arm's SKILL.md reaches: what it cites,
+    # plus what those rules cite in turn, as check_shared_rules.py defines it.
+    # An old base from before the copies stopped being committed falls back to
+    # its copy.
     for arm, contents in arms.items():
         skill_text = contents.get(f"skills/{skill}/SKILL.md", "")
-        for name in sorted(_cited_refs(skill_text)):
-            text = _ref_text(arm, base, name, skill)
-            if text is not None:
-                contents[f"skills/{skill}/references/{name}"] = text
+        for name, text in _reached_refs(arm, base, skill_text, skill).items():
+            contents[f"skills/{skill}/references/{name}"] = text
 
-    # Companion skills, per arm, and the references their own SKILL.md cites.
+    # Companion skills, per arm, and the references their own SKILL.md reaches.
     # Kept apart from `arms` because their names are prefixed in the contract dir.
     extra: dict[str, dict[str, str]] = {arm: {} for arm in arms}
     present: dict[str, list[str]] = {arm: [] for arm in arms}
@@ -207,12 +230,11 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
                 continue
             present[arm].append(comp)
             extra[arm].update(files)
-            for name in sorted(_cited_refs(files.get(f"{comp}-SKILL.md", ""))):
+            reached = _reached_refs(arm, base, files.get(f"{comp}-SKILL.md", ""), comp)
+            for name, text in sorted(reached.items()):
                 if f"skills/{skill}/references/{name}" in arms[arm] or name in extra[arm]:
                     continue
-                text = _ref_text(arm, base, name, comp)
-                if text is not None:
-                    extra[arm][name] = text
+                extra[arm][name] = text
 
     if round_dir.exists():
         shutil.rmtree(round_dir)

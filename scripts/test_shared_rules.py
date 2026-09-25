@@ -120,6 +120,10 @@ GUARDS = {
         "        if not declared.get(name):",
         "        if False:",
     ),
+    "transitive-consumer": (
+        "    for skill_name, expected in sorted(expected_carriage.items()):",
+        "    for skill_name, expected in sorted(()):",
+    ),
 }
 
 
@@ -170,6 +174,63 @@ def declared_consumer_drops_rule(tree: pathlib.Path) -> None:
     (tree / "skills" / "beta" / "references" / RULE).unlink()
 
 
+def add_rule(tree: pathlib.Path, stem: str, cites: tuple[str, ...] = (),
+             declared_for: tuple[str, ...] = (), carried_by: tuple[str, ...] = (),
+             cited_by: tuple[str, ...] = ()) -> None:
+    """Add a generated rule citing `cites` (rule stems), declared for, carried
+    by and cited in the SKILL.md of the skills named. `stem` may be the fixture's
+    own shared rule, which is then rewritten in place."""
+    text = f"# {stem}\n" + "".join(f"\nDefers to `references/{c}.md`.\n" for c in cites)
+    (tree / "rules" / f"{stem}.md").write_text(text, encoding="utf-8")
+    for skill in carried_by:
+        bundle(tree, skill, f"{stem}.md", text)
+    for skill in cited_by:
+        md = tree / "skills" / skill / "SKILL.md"
+        md.write_text(md.read_text(encoding="utf-8")
+                      + f"\nApply `references/{stem}.md`.\n", encoding="utf-8")
+    gen = (tree / REFRESH).read_text(encoding="utf-8")
+    var = stem.upper().replace("-", "_")
+    if f'\n{var}="' in gen:
+        gen = gen.replace(f'{var}="{" ".join(CONSUMERS)}"', f'{var}="{" ".join(declared_for)}"')
+    else:
+        stems = gen.split('RULES="', 1)[1].split('"', 1)[0]
+        gen = gen.replace(f'RULES="{stems}"', f'RULES="{stems} {stem}"')
+        gen = gen.replace("\nfor rule in $RULES;",
+                          f'\n{var}="{" ".join(declared_for)}"\n\nfor rule in $RULES;')
+    (tree / REFRESH).write_text(gen, encoding="utf-8")
+
+
+SHARED = RULE[:-3]
+
+
+def derived_copy_missing(tree: pathlib.Path) -> None:
+    """The shared rule cites cited-rule, which only alpha applies. beta carries
+    the shared rule, so the generator derives cited-rule for it - and beta has no
+    copy: the pointer in its shared rule leads nowhere on an install."""
+    add_rule(tree, SHARED, cites=("cited-rule",), declared_for=CONSUMERS, carried_by=CONSUMERS)
+    add_rule(tree, "cited-rule", declared_for=("alpha",), carried_by=("alpha",),
+             cited_by=("alpha",))
+
+
+def generated_copy_neither_declared_nor_derived(tree: pathlib.Path) -> None:
+    """beta holds a copy of a rule nothing declares or derives for it - the stale
+    copy that would hide a missing derivation on the machine that made it."""
+    add_rule(tree, "other-rule", declared_for=("alpha",), carried_by=("alpha", "beta"),
+             cited_by=("alpha",))
+
+
+def linked_rules_do_not_excuse_a_dropped_citation(tree: pathlib.Path) -> None:
+    """Three rules cite one another in a ring, all declared for and cited by both
+    consumers. beta then stops citing one of them. Every rule still reaches the
+    one it dropped, which is exactly why reach cannot stand in for citation: a
+    declared consumer must cite what it applies."""
+    add_rule(tree, SHARED, cites=("second-rule",), declared_for=CONSUMERS, carried_by=CONSUMERS)
+    add_rule(tree, "second-rule", cites=("third-rule",), declared_for=CONSUMERS,
+             carried_by=CONSUMERS, cited_by=("alpha",))
+    add_rule(tree, "third-rule", cites=(SHARED,), declared_for=CONSUMERS,
+             carried_by=CONSUMERS, cited_by=CONSUMERS)
+
+
 def generator_names_no_source(tree: pathlib.Path) -> None:
     text = (tree / REFRESH).read_text(encoding="utf-8")
     (tree / REFRESH).write_text(
@@ -203,6 +264,11 @@ BROKEN = [
      generator_names_no_source),
     ("the generator renames the consumer list", "unreadable-consumers",
      generator_renames_the_consumer_list),
+    ("a derived copy is missing", "transitive-consumer", derived_copy_missing),
+    ("a generated copy is neither declared nor derived", "transitive-consumer",
+     generated_copy_neither_declared_nor_derived),
+    ("a declared consumer drops a citation among three linked rules", "declared-consumer",
+     linked_rules_do_not_excuse_a_dropped_citation),
 ]
 
 
@@ -219,9 +285,18 @@ def notes_beside_the_rule(tree: pathlib.Path) -> None:
     (tree / "rules" / f"{RULE[:-3]}-notes.md").write_text("# Why\n", encoding="utf-8")
 
 
+def derived_carriage_uncited(tree: pathlib.Path) -> None:
+    """Derived carriage - and only derived carriage - is exempt from must-cite:
+    beta carries cited-rule because its shared rule cites it, and never cites it."""
+    add_rule(tree, SHARED, cites=("cited-rule",), declared_for=CONSUMERS, carried_by=CONSUMERS)
+    add_rule(tree, "cited-rule", declared_for=("alpha",), carried_by=CONSUMERS,
+             cited_by=("alpha",))
+
+
 GOOD = [
     ("a skill-local reference with no shared source", skill_local_reference),
     ("a rules/*-notes.md that nothing bundles", notes_beside_the_rule),
+    ("a derived rule carried and not cited", derived_carriage_uncited),
 ]
 
 

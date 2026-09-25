@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail if a bundled shared rule diverges from its source, or a skill cites a
+"""Fail if a bundled shared rule diverges from its source, or a skill reaches a
 rule it does not carry.
 
 Both checks are file-level and exact. Neither reads the prose: the first is a
@@ -7,6 +7,20 @@ byte comparison against the source, the second is whether a path a skill names
 exists inside it. A skill that cites a rule it has no copy of is broken on any
 machine that installed only that skill, and the failure is silent - the model
 simply proceeds without the rule.
+
+A rule can cite another rule the same way a skill does, as a literal
+`references/<name>.md` token, and a skill carrying the first then needs the
+second beside it. The generator's consumer lists name only the skills that
+*apply* a rule, and each of those must cite it in its own SKILL.md, exactly as
+before rules cited rules. refresh_shared_rules.sh derives the rest: for each
+skill, every generated rule its declared rules cite, transitively, is copied
+too. This check computes the same closure and exempts only that *derived*
+carriage from the must-cite requirement - a declared consumer that stops citing
+its rule still fails, however many rules would reach it. The transitive-
+consumer guard is that what a skill carries of the generated rules is exactly
+its declared rules plus their derived closure: a derived copy missing, or a
+generated copy the generator neither declares nor derives. A rule's citation of
+itself (its intro names its own bundled path) is not an edge.
 """
 from __future__ import annotations
 
@@ -61,13 +75,65 @@ def main() -> int:
             "this check cannot tell a generated bundle from a skill-local one"
         )
 
+    # Rule-to-rule citations, read off the sources as literal tokens.
+    rule_cites: dict[str, set[str]] = {}
+    for source in RULES.glob("*.md"):
+        if source.name.endswith("-notes.md"):
+            continue
+        rule_cites[source.name] = (
+            set(CITATION.findall(source.read_text(encoding="utf-8"))) - {source.name})
+
+    def closure(start: set[str]) -> set[str]:
+        seen, todo = set(), list(start)
+        while todo:
+            ref = todo.pop()
+            if ref in seen:
+                continue
+            seen.add(ref)
+            todo.extend(rule_cites.get(ref, ()))
+        return seen
+
+    # What the generator carries into each skill: the rules declared for it,
+    # and - derived, not declared - every generated rule those cite.
+    declared_for: dict[str, set[str]] = {}
+    for rule, names in declared.items():
+        for name in names:
+            declared_for.setdefault(name, set()).add(rule)
+    derived: dict[str, set[str]] = {
+        name: (closure(rules) & generated) - rules for name, rules in declared_for.items()}
+
+    # Derived carriage is the generator's to get right, and the tree is where it
+    # shows: a derived copy missing means the skill holds a pointer to a file it
+    # was never given; a generated copy nobody declared or derived is stale, and
+    # a stale copy is what hides the first failure locally.
+    expected_carriage = {
+        skill_md.parent.name: declared_for.get(skill_md.parent.name, set())
+        | derived.get(skill_md.parent.name, set())
+        for skill_md in ROOT.glob("skills/*/SKILL.md")}
+    for skill_name, expected in sorted(expected_carriage.items()):
+        refs = ROOT / "skills" / skill_name / "references"
+        carried = {p.name for p in refs.glob("*.md")} & generated if refs.is_dir() else set()
+        for name in sorted(derived.get(skill_name, set()) - carried):
+            errors.append(
+                f"skills/{skill_name} carries a rule that cites {name}, but not {name} "
+                "itself — run scripts/refresh_shared_rules.sh")
+        # A rule with no readable consumer list is the unreadable-consumers
+        # guard's to report; every copy of it would otherwise land here too.
+        for name in sorted((carried - expected) & {r for r, s in declared.items() if s}):
+            errors.append(
+                f"skills/{skill_name}/references/{name} is a generated rule the generator "
+                "neither declares nor derives for this skill — stale; run "
+                "scripts/refresh_shared_rules.sh")
+
     for skill_md in sorted(ROOT.glob("skills/*/SKILL.md")):
         skill_dir = skill_md.parent
         cited = set(CITATION.findall(skill_md.read_text(encoding="utf-8")))
-        for ref in sorted(cited):
+        for ref in sorted(cited | derived.get(skill_dir.name, set())):
             checked += 1
             bundled = skill_dir / "references" / ref
             rel = bundled.relative_to(ROOT)
+            if ref not in cited and not bundled.is_file():
+                continue  # a missing derived copy is reported above
             if not bundled.is_file():
                 errors.append(f"{rel} is cited by {skill_dir.name} but not present")
                 continue

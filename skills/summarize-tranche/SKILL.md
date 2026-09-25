@@ -60,7 +60,7 @@ The first three say **who owns the follow-up**; `MERGE_RISK` says the merge deci
 
 **A reserved review thread with nothing able to dispatch it is never `IN_FLIGHT_FIX`** —
 a question item, or a repair deferred because `review-repair-cycles` was spent
-(`backlog-orchestrator`, *Merge policy and review feedback*). For those two the
+(`references/review-feedback.md`, *Reserved for the owner*). For those two the
 orchestrator already holds that PR's merge and has no compliant dispatch: the review path
 refuses the thread on budget and re-admits it only on new content, and the finding path
 exists for work no thread carries
@@ -80,7 +80,7 @@ is `IN_FLIGHT_FIX`, and the finding path takes it — a recorded ruling requirin
 code to change is exactly what that path's evidence is (`repair-pr`, *Finding repair (`repair type = finding`)*). It
 must be emitted, because after a restart nothing else will. **What survives is the ruling,
 not the reservation** — a reservation is run state that a later invocation does not carry
-(`backlog-orchestrator`, *Merge policy and review feedback*), so the recoverable fact is
+(`references/review-feedback.md`, *Reserved for the owner*), so the recoverable fact is
 the ruling recorded on the thread with its change still unpushed. Nothing else reaches it:
 the walkthrough's already-ruled test retires the question rather than re-emitting it
 (`settle-outstanding-decisions`, *What qualifies as an outstanding decision*), and the

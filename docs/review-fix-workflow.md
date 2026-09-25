@@ -140,8 +140,7 @@ reads as preference rather than as a settled argument.
    on round one of the PR that added this document, against the commit before `AGENTS.md`
    landed.)
 
-**Policy is not in this ladder.** `backlog-orchestrator/SKILL.md`, *Per-repository policy
-configuration*: policy that can authorize merges "is a config file and not prose — never a
+**Policy is not in this ladder.** `rules/agent-policy.md`, *The policy file*: policy that can authorize merges "is a config file and not prose — never a
 `CLAUDE.md` paragraph", because "a `CLAUDE.md` paragraph gets interpreted, and interpretation
 must not decide whether a run may merge." Budgets live in
 `.claude/agent-policy.json` and their values are stated there only. `CLAUDE.md`

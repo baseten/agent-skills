@@ -86,7 +86,7 @@ This skill is deliberately a one-issue orchestrator that composes primitives rat
 
 ## Posting identity (recurring rule)
 
-Every "merge the returned identity entries into the map" step exists because a repair, walkthrough, or merge can run on transports core never used, and an observation is the only evidence the run will ever have about them — there is no orchestrator here to hold it instead. Entries stay keyed by `(transport, credential)` and are merged, never replaced, and never collapsed to one pair: `create-pr` deliberately routes the PR and the review trigger through different paths, and re-triggering review from a pre-repair map is what makes a trigger silently fail (the trigger must be authored by the invoking user or the convention does not fire). The full rule is `backlog-orchestrator`, *Posting identity*.
+Every "merge the returned identity entries into the map" step exists because a repair, walkthrough, or merge can run on transports core never used, and an observation is the only evidence the run will ever have about them — there is no orchestrator here to hold it instead. Entries stay keyed by `(transport, credential)` and are merged, never replaced, and never collapsed to one pair: `create-pr` deliberately routes the PR and the review trigger through different paths, and re-triggering review from a pre-repair map is what makes a trigger silently fail (the trigger must be authored by the invoking user or the convention does not fire). The full rule is `rules/posting-identity.md`.
 
 ## Structured result
 

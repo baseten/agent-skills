@@ -129,7 +129,7 @@ Read a **changed** failure signature carefully. A signature that narrows after a
 
 ## Merge
 
-**This run merges only where the repository opted in with `auto-merge-dependencies`** in the repository's policy file, resolved exactly as `backlog-orchestrator`, *Per-repository policy configuration*, resolves its keys — its precedence rule included: an invocation can switch this key off, never on. Absent or `false`, the run merges nothing and the close-out hands the checks below to the merger.
+**This run merges only where the repository opted in with `auto-merge-dependencies`** in the repository's policy file, resolved exactly as `references/agent-policy.md` resolves every key — its *Precedence* included: an invocation can switch this key off, never on. Absent or `false`, the run merges nothing and the close-out hands the checks below to the merger.
 
 Where it is `true`, a PR merges once all of these hold on its current head:
 
