@@ -9,8 +9,6 @@ This is the rule other skills mean when they cite *review feedback*: what a run 
 installed only that skill's directory, and travels with the skill if it is
 moved into a plugin. Edit the source, never a copy; check_shared_rules.py fails if a generated copy diverges.
 
-The repository's opt-in to merging is not here: `auto-merge` and its gate are `references/agent-policy.md`, *Merge permissions*.
-
 ## What may be auto-fixed
 
 **What the run may auto-fix is decided by the comment, not by its author.** A review thread is **repairable** when what it asks for is a code change this pass can make and verify: a rename, a missing guard, an off-by-one, a test, a lint fix, a bounded refactor the comment itself specifies. A thread is **`NEEDS_USER`** when answering it requires something other than a code change — a question about intent, a design or product judgment, a request for rationale, an objection needing a decision, or anything whose correct response is prose rather than a diff. The run fixes the first kind and escalates the second, whoever wrote it: a human reviewer's typo fix is repaired, an automated reviewer's architecture question is escalated. **There is no bot test and no reviewer allowlist.** Author identity predicts the *kind* of comment only loosely — automated reviewers ask design questions and humans file one-line nits — so gating on it reserved work the run could safely do while admitting work it could not. The judgment rule under `backlog-orchestrator`, *CI/review repair*, is the same rule stated for the repair path, not a second gate: a thread that needs judgment is `NEEDS_USER` there for the same reason it is here.

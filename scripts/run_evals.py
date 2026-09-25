@@ -187,14 +187,22 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
     # references/ is generated from rules/ and not committed, so neither arm can
     # read it off the tree or out of git. Rebuild it for each arm from that
     # arm's own rules/ - the working tree for new, the base revision for old -
-    # for exactly the references that arm's SKILL.md cites. An old base from
-    # before the copies stopped being committed falls back to its copy.
+    # for exactly the references that arm's SKILL.md reaches: what it cites,
+    # plus what those rules cite in turn, as check_shared_rules.py defines it.
+    # An old base from before the copies stopped being committed falls back to
+    # its copy.
     for arm, contents in arms.items():
-        skill_text = contents.get(f"skills/{skill}/SKILL.md", "")
-        for name in sorted(_cited_refs(skill_text)):
+        todo = sorted(_cited_refs(contents.get(f"skills/{skill}/SKILL.md", "")))
+        seen: set[str] = set()
+        while todo:
+            name = todo.pop()
+            if name in seen:
+                continue
+            seen.add(name)
             text = _ref_text(arm, base, name, skill)
             if text is not None:
                 contents[f"skills/{skill}/references/{name}"] = text
+                todo.extend(sorted(_cited_refs(text) - seen))
 
     # Companion skills, per arm, and the references their own SKILL.md cites.
     # Kept apart from `arms` because their names are prefixed in the contract dir.

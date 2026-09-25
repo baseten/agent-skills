@@ -120,6 +120,10 @@ GUARDS = {
         "        if not declared.get(name):",
         "        if False:",
     ),
+    "transitive-consumer": (
+        "                if needed != rule and name not in declared.get(needed, set()):",
+        "                if False:",
+    ),
 }
 
 
@@ -170,6 +174,38 @@ def declared_consumer_drops_rule(tree: pathlib.Path) -> None:
     (tree / "skills" / "beta" / "references" / RULE).unlink()
 
 
+CITED = "cited-rule.md"
+CITED_TEXT = "# Cited rule\n\nRead by every skill that carries the shared rule.\n"
+
+
+def rule_citing_a_rule(tree: pathlib.Path, declared_for: tuple[str, ...],
+                       carried_by: tuple[str, ...]) -> None:
+    """Make the shared rule cite a second generated rule, declare the second for
+    `declared_for`, and leave a copy of it in each of `carried_by`. No SKILL.md
+    cites the second rule: every consumer reaches it only through the first."""
+    text = RULE_TEXT + f"\nIt defers to `references/{CITED}` for the rest.\n"
+    (tree / "rules" / RULE).write_text(text, encoding="utf-8")
+    for skill in CONSUMERS:
+        bundle(tree, skill, RULE, text)
+    (tree / "rules" / CITED).write_text(CITED_TEXT, encoding="utf-8")
+    for skill in carried_by:
+        bundle(tree, skill, CITED, CITED_TEXT)
+    gen = (tree / REFRESH).read_text(encoding="utf-8")
+    gen = gen.replace(f'RULES="{RULE[:-3]}"', f'RULES="{RULE[:-3]} {CITED[:-3]}"')
+    gen = gen.replace("\nfor rule in $RULES;",
+                      f'\n{CITED[:-3].upper().replace("-", "_")}="{" ".join(declared_for)}"\n'
+                      "\nfor rule in $RULES;")
+    (tree / REFRESH).write_text(gen, encoding="utf-8")
+
+
+def cited_rule_not_declared_for_a_consumer(tree: pathlib.Path) -> None:
+    """beta carries the shared rule, which cites cited-rule, but the generator
+    copies cited-rule into alpha only. beta's copy is a stale one from an earlier
+    refresh - present locally, absent on any clean install - so only a check
+    against the declarations can see it."""
+    rule_citing_a_rule(tree, declared_for=("alpha",), carried_by=("alpha", "beta"))
+
+
 def generator_names_no_source(tree: pathlib.Path) -> None:
     text = (tree / REFRESH).read_text(encoding="utf-8")
     (tree / REFRESH).write_text(
@@ -203,6 +239,8 @@ BROKEN = [
      generator_names_no_source),
     ("the generator renames the consumer list", "unreadable-consumers",
      generator_renames_the_consumer_list),
+    ("a rule cites a rule the generator does not copy into one of its consumers",
+     "transitive-consumer", cited_rule_not_declared_for_a_consumer),
 ]
 
 
@@ -219,9 +257,16 @@ def notes_beside_the_rule(tree: pathlib.Path) -> None:
     (tree / "rules" / f"{RULE[:-3]}-notes.md").write_text("# Why\n", encoding="utf-8")
 
 
+def rule_reached_through_a_rule(tree: pathlib.Path) -> None:
+    """Carriage through a cited rule is exempt from the must-cite requirement."""
+    rule_citing_a_rule(tree, declared_for=CONSUMERS, carried_by=CONSUMERS)
+
+
 GOOD = [
     ("a skill-local reference with no shared source", skill_local_reference),
     ("a rules/*-notes.md that nothing bundles", notes_beside_the_rule),
+    ("a rule reached only through another rule, declared and carried, uncited",
+     rule_reached_through_a_rule),
 ]
 
 

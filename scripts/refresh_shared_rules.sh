@@ -19,7 +19,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 AUTHORED_WRITE_FORM="backlog-orchestrator settle-and-merge create-pr normalize-github-dependencies
   npm-dependency-upgrade-orchestrator implement-issue
   merge-stack repair-pr resolve-pr-comment review-docs review-skill settle-outstanding-decisions
-  summarize-tranche upgrade-npm-dependency validate-backlog"
+  summarize-tranche upgrade-npm-dependency validate-backlog
+  swarm implement-issue-core"
 
 # One variable per rule, named for the rule file in upper snake case.
 # check_shared_rules.py reads these assignments to learn which skills are
@@ -29,11 +30,21 @@ RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
   establish-do-not-assume a-passing-test-is-not-a-verified-fix
   posting-identity agent-policy review-feedback"
 
+# A rule that cites another rule (`references/<x>.md` in its own text) makes
+# every consumer of the first a consumer of the second, transitively, and
+# check_shared_rules.py enforces it. authored-write-form, posting-identity and
+# review-feedback cite one another, so the three lists below are the same set;
+# agent-policy cites review-feedback, so its consumers are in it too. A skill
+# here that cites none of the three directly carries them through the one it
+# does cite.
+#
 # Skills that make an authored forge/tracker write and select its author, or
 # that pass or merge the run's posting-identity map.
 POSTING_IDENTITY="backlog-orchestrator settle-and-merge swarm create-pr implement-issue
   implement-issue-core merge-stack repair-pr resolve-pr-comment review-docs
-  settle-outstanding-decisions"
+  settle-outstanding-decisions
+  normalize-github-dependencies npm-dependency-upgrade-orchestrator review-skill
+  summarize-tranche upgrade-npm-dependency validate-backlog"
 
 # Skills that read .claude/agent-policy.json, or gate on what it grants.
 AGENT_POLICY="backlog-orchestrator settle-and-merge implement-issue
@@ -41,7 +52,10 @@ AGENT_POLICY="backlog-orchestrator settle-and-merge implement-issue
 
 # Skills that classify, repair, report or gate on review threads.
 REVIEW_FEEDBACK="backlog-orchestrator implement-issue repair-pr resolve-pr-comment
-  review-docs summarize-tranche"
+  review-docs summarize-tranche
+  settle-and-merge swarm create-pr implement-issue-core merge-stack
+  settle-outstanding-decisions normalize-github-dependencies
+  npm-dependency-upgrade-orchestrator review-skill upgrade-npm-dependency validate-backlog"
 
 # Skills that act on something asserted by an agent, assumed about a provider,
 # or that author a write making claims about existing code or current state.
