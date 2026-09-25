@@ -2,6 +2,8 @@
 
 Deliverable of [issue #29](https://github.com/baseten/agent-skills/issues/29), part 2. Audited 2026-08-28, against the repository state after PR #27 and PR #28 merged.
 
+Since #132 the gate's definition, the settled step's sequence and *Merge behavior* live in `settle-and-merge`, which both consumers invoke. The section names and step numbers below are as they stood when the audit was made.
+
 ## Why this audit exists
 
 Seven Codex review rounds on [PR #27](https://github.com/baseten/agent-skills/pull/27) produced thirteen findings, ten of them on the merge path, and all ten the same shape: an assumption the gate's author could make for `backlog-orchestrator` that silently does not hold standalone. The gate was written for a world with a validated DAG, a preflight, a ranking step, and a tranche-wide view; `implement-issue` has none of those. Each round discovered one more missing supplier reactively. This audit walks the whole gate once instead.

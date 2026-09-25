@@ -117,7 +117,7 @@
     "auto-merge": {
       "type": "boolean",
       "default": false,
-      "description": "Let implementation PRs merge through backlog-orchestrator's invariant 12 gate. Only this file can turn it on. Read by: backlog-orchestrator, implement-issue.",
+      "description": "Let implementation PRs merge through the invariant 12 merge gate, which settle-and-merge defines. Only this file can turn it on. Read by: backlog-orchestrator, implement-issue.",
       "x-read-by": [
         "backlog-orchestrator",
         "implement-issue"
