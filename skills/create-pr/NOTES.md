@@ -14,7 +14,7 @@ On Linear and other trackers, the same rule holds through a different mechanism 
 
 ## The review trigger's authorship
 
-The trigger comment is the one post exempted from the posting-identity rule because there its authorship is **functional, not cosmetic**: authored by anything but the invoking user, the repository's review convention silently does not fire — nothing refuses it, so the run waits out a review that was never going to arrive. `backlog-orchestrator`, *Posting identity*, states the rule once, including the bootstrap for a fresh run's first trigger; this skill carries only the exception, not a restatement.
+The trigger comment is the one post exempted from the posting-identity rule because there its authorship is **functional, not cosmetic**: authored by anything but the invoking user, the repository's review convention silently does not fire — nothing refuses it, so the run waits out a review that was never going to arrive. `references/posting-identity.md` states the rule once, including the bootstrap for a fresh run's first trigger; this skill carries only the exception, not a restatement.
 
 ## Routing documentation PRs to a review skill
 

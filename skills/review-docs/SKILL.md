@@ -14,7 +14,7 @@ Read-only over the PR and the repository: it verifies, it reports once, and it c
 ## Inputs
 
 - **the PR** — URL, or `owner/repo` and number;
-- **the run's posting-identity map**, where the caller has one (`backlog-orchestrator`, *Posting identity*): the comment below is an authored write and needs its author selected from that map like any other.
+- **the run's posting-identity map**, where the caller has one (`references/posting-identity.md`): the comment below is an authored write and needs its author selected from that map like any other.
 
 **Nothing else is supplied, and in particular the round number never is.** The documentation paths, the commit to check against, and the round are all derived from the PR itself — a caller that could assert the round could assert its way past the budget.
 
@@ -79,7 +79,7 @@ Where a claim's tense is genuinely ambiguous, check the premises and say which r
 | `NEEDS_AUTHOR` | **yes** |
 | `NOTE` | **never** |
 
-**These findings are not review-thread feedback, and the route they take to a merge decision is not the review path.** This skill's report is a timeline comment authored by the run, which `backlog-orchestrator`, *Merge policy and review feedback*, classifies as conversation by kind — that skill's discriminator, not an oversight here. So nothing groups these into a review round, and no `repair-pr` pass with `repair type = review` will ever see one.
+**These findings are not review-thread feedback, and the route they take to a merge decision is not the review path.** This skill's report is a timeline comment authored by the run, which `references/review-feedback.md`, *The thread-root test*, classifies as conversation by kind — that rule's discriminator, not an oversight here. So nothing groups these into a review round, and no `repair-pr` pass with `repair type = review` will ever see one.
 
 They travel the **finding** route instead, which exists for exactly this: work evidenced by something other than a thread. An actionable finding is **returned to the caller**, which carries it into the run's findings and so into `summarize-tranche` — a document change this PR still needs is an `IN_FLIGHT_FIX`, one that must not ship as it stands is also a `MERGE_RISK`, and a `NEEDS_AUTHOR` is a `DECISION`. Invariant 12's gate already refuses to open over any of the three, and `repair-pr` already accepts a finding as a repair type. **Nothing new is needed at the gate, and nothing here restates it** — a `NOTE` simply never becomes an item, whatever it says and however many there are.
 
@@ -108,7 +108,7 @@ The rule's **declined pass** is a completed outcome here specifically: a caller 
 
 # 5. The report is one comment
 
-One PR comment per round. **Never a thread per finding.** Two independent reasons, and the second is not this skill's to relax: 28 threads was not the review being thorough, it was the review being unreadable — a reader triaging a wall of threads cannot see that only two of them were about the code at all. And **the run never roots a review thread on a PR it is driving** (`backlog-orchestrator`, *Merge policy and review feedback*, states that prohibition and the discriminator that depends on it); a run-authored root would make this report indistinguishable from a reviewer's instruction.
+One PR comment per round. **Never a thread per finding.** Two independent reasons, and the second is not this skill's to relax: 28 threads was not the review being thorough, it was the review being unreadable — a reader triaging a wall of threads cannot see that only two of them were about the code at all. And **the run never roots a review thread on a PR it is driving** (`references/review-feedback.md`, *The thread-root test*, states that prohibition and the discriminator that depends on it); a run-authored root would make this report indistinguishable from a reviewer's instruction.
 
 ```text
 ## Documentation review — round <1|2> of 2
@@ -138,7 +138,7 @@ Round 2 is the last round; unresolved findings after it go to the author.
 
 **Round 2's comment carries the header, each round 1 finding's outcome — fixed, not fixed, or fixed wrongly — and the closing line.** It **re-states no table for text round 1 already read**, because a second full table is a second full pass wearing the budget's clothes. Where the author added documentation since round 1 it carries one further table, covering **those claims only** (*The rounds*), which is what makes its `Reviewed commit:` line true. No delta, no second table.
 
-**The comment follows the authored-write-form rule** (`references/authored-write-form.md`) and **carries the attribution footer**, because nobody read it before it was posted — that rule's approval test answers No for every comment this skill writes. Its brevity rule governs how each element is written and never whether it is written: in round 1 the claims table and each finding's evidence are the write's **required contents**, and a table cut to fit a word count is the review deleting its own evidence. Its author follows the posting-identity rule (`backlog-orchestrator`, *Posting identity*, states it once); this comment is **not** the review-trigger comment and carries none of that comment's exemptions.
+**The comment follows the authored-write-form rule** (`references/authored-write-form.md`) and **carries the attribution footer**, because nobody read it before it was posted — that rule's approval test answers No for every comment this skill writes. Its brevity rule governs how each element is written and never whether it is written: in round 1 the claims table and each finding's evidence are the write's **required contents**, and a table cut to fit a word count is the review deleting its own evidence. Its author follows the posting-identity rule (`references/posting-identity.md` states it once); this comment is **not** the review-trigger comment and carries none of that comment's exemptions.
 
 # Enabling it in a repository
 

@@ -26,7 +26,22 @@ AUTHORED_WRITE_FORM="backlog-orchestrator settle-and-merge create-pr normalize-g
 # declared consumers of which rule, so the spelling is load-bearing:
 # ABSENCE_IS_NOT_A_VERDICT <-> rules/absence-is-not-a-verdict.md.
 RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
-  establish-do-not-assume a-passing-test-is-not-a-verified-fix"
+  establish-do-not-assume a-passing-test-is-not-a-verified-fix
+  posting-identity agent-policy review-feedback"
+
+# Skills that make an authored forge/tracker write and select its author, or
+# that pass or merge the run's posting-identity map.
+POSTING_IDENTITY="backlog-orchestrator settle-and-merge swarm create-pr implement-issue
+  implement-issue-core merge-stack repair-pr resolve-pr-comment review-docs
+  settle-outstanding-decisions"
+
+# Skills that read .claude/agent-policy.json, or gate on what it grants.
+AGENT_POLICY="backlog-orchestrator settle-and-merge implement-issue
+  npm-dependency-upgrade-orchestrator"
+
+# Skills that classify, repair, report or gate on review threads.
+REVIEW_FEEDBACK="backlog-orchestrator implement-issue repair-pr resolve-pr-comment
+  review-docs summarize-tranche"
 
 # Skills that act on something asserted by an agent, assumed about a provider,
 # or that author a write making claims about existing code or current state.

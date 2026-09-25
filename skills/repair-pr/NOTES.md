@@ -12,7 +12,7 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 **Why the pass never selects or escalates its own model:** the caller chose this pass's model from the PR's own repair history (`backlog-orchestrator`, *Model and skill policy*, owns the trigger and caps). A pass that judges itself under-powered reports the locus evidence and returns — exactly as `implement-issue-core` returns a reasoning-heavy failure rather than escalating one — because the escalation evidence must be readable from durable state so a restarted caller evaluates the same trigger.
 
-**Why the posting-identity selection comes from the caller's map for this pass's own pair:** the caller's transports may not be this pass's, so a matching caller entry answers *selection* only; the read-back the Output contract requires still happens and is what the caller merges. Passing the selection into `resolve-pr-comment` (rather than letting it resolve one of its own) keeps one answer per pass. The full rule is `backlog-orchestrator`, *Posting identity*.
+**Why the posting-identity selection comes from the caller's map for this pass's own pair:** the caller's transports may not be this pass's, so a matching caller entry answers *selection* only; the read-back the Output contract requires still happens and is what the caller merges. Passing the selection into `resolve-pr-comment` (rather than letting it resolve one of its own) keeps one answer per pass. The full rule is `references/posting-identity.md`.
 
 ## CI repair
 

@@ -17,7 +17,7 @@ This file is the contract. The reasoning behind each rule — incident history, 
 - optional authorization membership — the run's bounded authorized set, or a per-blocker in/out flag;
 - implementation-attempt budget;
 - draft/full PR preference when supplied;
-- the caller's posting-identity map when one exists — every `(transport, credential)` entry with its per-kind observations, never a caller-selected pair. Invoked standalone with no map, every transport starts `unestablished` (degraded path per `backlog-orchestrator`, *Posting identity*).
+- the caller's posting-identity map when one exists — every `(transport, credential)` entry with its per-kind observations, never a caller-selected pair. Invoked standalone with no map, every transport starts `unestablished` (degraded path per `references/posting-identity.md`).
 
 ## Hard constraints
 

@@ -13,8 +13,7 @@ Determine `owner/repo` from the current git remote (`git remote get-url
 origin`) rather than assuming a fixed repo.
 
 Replies and thread resolutions are authored writes, so they follow the
-posting-identity rule stated once in `backlog-orchestrator` (*Posting
-identity*): post as the distinct agent identity where the calling workflow
+posting-identity rule stated once in `references/posting-identity.md`: post as the distinct agent identity where the calling workflow
 has established one, and as the invoking user where it has not — the common
 case, and what the local `gh` path below always does, since it runs on the
 user's own credential.
@@ -365,7 +364,7 @@ footer is decided there, by the approval test asked of the complete comment, and
 **that answer can be yes**: approving the answer inside a record settles nothing
 about the record around it. Do not read this section as promising otherwise.
 
-`backlog-orchestrator`, *Per-repository policy configuration*, owns the rule
+`references/review-feedback.md`, *What may be auto-fixed*, owns the rule
 that separates the two kinds. Apply it from there rather than inventing a
 second test. Its short form: a thread asking for a code change this pass can
 make and verify is repairable, whoever wrote it; a thread needing intent,
@@ -487,8 +486,8 @@ question.** "Could you add a null check here?" is a change request wearing a
 question mark: it is repairable, and routing it here on its punctuation would
 reserve a straightforward fix and hold the merge gate shut over it. Conversely a
 comment with no question mark at all ("I don't follow why this needs a second
-pass") wants prose. The kind test is the intent (`backlog-orchestrator`,
-*Per-repository policy configuration*).
+pass") wants prose. The kind test is the intent (`references/review-feedback.md`,
+*What may be auto-fixed*).
 
 **No mode posts that reply** — the thread comes back as a `NEEDS_USER` item with
 its draft, to the caller unattended and to the invoking person attended (see

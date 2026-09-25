@@ -179,7 +179,7 @@ def check_policy_schema() -> None:
             error(where, f"implement-issue consumes {key}, but the schema does not list it as a reader")
 
     bo = (ROOT / "skills" / "backlog-orchestrator" / "SKILL.md").read_text(encoding="utf-8")
-    anchor = bo.find("## Per-repository policy configuration")
+    anchor = bo.find("## Policy keys and defaults")
     start = bo.find("```json", anchor)
     end = bo.find("```", start + 7)
     if anchor < 0 or start < 0 or end < 0:

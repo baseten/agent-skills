@@ -32,7 +32,7 @@ Remote branches and GitHub PR state are the durable record; a resumed session's 
 
 ## Output
 
-**Why the identity read-back is per write kind through each pair:** a merge, a base retarget, and a body edit are distinct write kinds a platform may author differently, and one stack operation routinely performs several through the same (transport, credential) pair. Reading back only a pair's first write would return the merge author while silently losing the retarget or body-edit author — and later operations would then consume the wrong kind's evidence. The full rule lives in `backlog-orchestrator`, *Posting identity*.
+**Why the identity read-back is per write kind through each pair:** a merge, a base retarget, and a body edit are distinct write kinds a platform may author differently, and one stack operation routinely performs several through the same (transport, credential) pair. Reading back only a pair's first write would return the merge author while silently losing the retarget or body-edit author — and later operations would then consume the wrong kind's evidence. The full rule lives in `references/posting-identity.md`.
 
 ## Why the form rule reaches only the body edit
 
