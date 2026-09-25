@@ -5,7 +5,7 @@ description: Single-issue orchestrator for one tracked issue from its canonical 
 
 # Implement Issue
 
-Orchestrate exactly one tracked issue end-to-end: implement it to a durable PR, supervise that PR's CI and review — reading each verdict off the artifact and never off an empty lookup (`references/absence-is-not-a-verdict.md`), repair within budgets, and merge only through invariant 12's gate where the repository opted in.
+Orchestrate exactly one tracked issue end-to-end: implement it to a durable PR, supervise that PR's CI and review — reading each verdict off the artifact and never off an empty lookup (`references/absence-is-not-a-verdict.md`), repair within budgets, and merge only through invariant 12's gate (`settle-and-merge`, *The merge gate*) where the repository opted in.
 
 This file is the contract. The reasoning behind each rule — incident history, arguments, and answers to "why not the obvious other reading?" — lives in `NOTES.md` beside it, keyed by these section names. Read a section's note before changing its rules or when applying them to a case the contract does not obviously cover. NOTES.md explains; it never overrides.
 
@@ -15,7 +15,7 @@ This file is the contract. The reasoning behind each rule — incident history, 
 |---|---|
 | `implement-issue-core`, `create-pr` | implementation |
 | `repair-pr` (+ `resolve-pr-comment` for review fixes) | one bounded repair pass: `ci`, `review`, or `finding` |
-| `summarize-tranche`, then `settle-outstanding-decisions` (while `auto-request-settle` is on) | settle, in that order |
+| `settle-and-merge`, composing `summarize-tranche`, then `settle-outstanding-decisions` (while `auto-request-settle` is on) | settle, in that order, then the merge gate |
 | `merge-stack` | any merge this run performs — required whenever the resolved `auto-merge` leaves the gate reachable; check at preflight where policy resolves, never discover at the gate |
 
 - A required skill unavailable → return `BLOCKED` naming it. Never improvise a replacement workflow. A repository that never opted into `auto-merge` imposes no `merge-stack` requirement.
@@ -131,13 +131,13 @@ A pass that returns `NO_CODE_CHANGE` — the classification left it no repair to
 
 # Settle
 
-The run settles when its one issue reaches a terminal state: the PR individually finished — a completed review round; every actionable finding resolved, answered, or reserved for the owner; CI green; no repair left to attempt — or `BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`. **Every terminal outcome settles, including one Phase 1 returned before supervision began** (NOTES: the failure outcomes carry the most decision-shaped material; the empty case gets `summarize-tranche`'s one line). Then, in order:
+The run settles when its one issue reaches a terminal state: the PR individually finished — a completed review round; every actionable finding resolved, answered, or reserved for the owner; CI green; no repair left to attempt — or `BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`. **Every terminal outcome settles, including one Phase 1 returned before supervision began** (NOTES: the failure outcomes carry the most decision-shaped material; the empty case gets `summarize-tranche`'s one line). Then run `settle-and-merge`, *The settle sequence*, over this one PR, passing the inputs its *Callers and inputs* names for this skill. Its steps, in order, as this skill reads them:
 
-1. **reconcile** tracker and remote state — everything after computes from durable truth, not this session's cache;
-2. **invoke `summarize-tranche`** (canonical issue URL, this PR, the worker and review findings) and **act on its action points before anything below**. A one-issue run is a tranche of one; nothing in that skill reads differently at this size;
-3. **request `settle-outstanding-decisions`**, seeded with the summary and passed the run's posting-identity map, unless `auto-request-settle` resolved off — and **merge every identity entry it returns into the map, all of them**: a ruling can be the first authored write through a transport this run never used, and step 4's merge reads the map. The option gates only the request; attendance is that skill's own precondition — an unattended settle gets its one-line decline, and the decisions stay at their durable sites;
-4. **translate rulings into gate consequences** (below), then evaluate the merge gate where the repository opted in (see Merge);
-5. **return** — the summary and action points first, then the rulings or the decline.
+1. **reconcile** tracker and remote state — everything after computes from durable truth, not this session's cache (its step 1);
+2. **invoke `summarize-tranche`** (canonical issue URL, this PR, the worker and review findings) and **act on its action points before anything below** (its steps 2–3). A one-issue run is a tranche of one; nothing in that skill reads differently at this size;
+3. **request `settle-outstanding-decisions`**, seeded with the summary and passed the run's posting-identity map, unless `auto-request-settle` resolved off — and **merge every identity entry it returns into the map, all of them**: a ruling can be the first authored write through a transport this run never used, and step 4's merge reads the map. The option gates only the request; attendance is that skill's own precondition — an unattended settle gets its one-line decline, and the decisions stay at their durable sites (its step 4);
+4. **translate rulings into gate consequences** (below) in place of its step 5, then evaluate the merge gate where the repository opted in (its step 6; see Merge);
+5. **return** — the summary and action points first, then the rulings or the decline (its step 7).
 
 **Re-entry rule: settle consumes terminal outcomes but never re-enters on one of its own.** An outcome the settle phase itself produced — a missing-skill `BLOCKED`, a spent-budget `NEEDS_USER` — **returns directly**, naming the step it stopped at, carrying everything the completed steps produced, and pointing at the durable sites for what the missing step would have covered. Provenance decides, not outcome type: a `BLOCKED` from Phase 1 settles; the same value from a settle step does not, and a settle-phase failure invented later inherits the test (NOTES: the two loops this breaks). Settling again *from step 1* after a repair is the phase's own instruction, not the loop — each pass consumes budget, so it terminates.
 
@@ -163,18 +163,18 @@ The run settles when its one issue reaches a terminal state: the PR individually
 
 ## Merge
 
-Where the repository opted in through `auto-merge`, evaluate **invariant 12's gate exactly as `backlog-orchestrator` defines it** — apply it as written, carry no copy. Two tranche-phrased clauses read for one issue: "no `DECISION`/`MERGE_RISK`/`NEEDS_USER` outstanding anywhere in the tranche" resolves to this issue's own items; the ordering after summary, walkthrough, and ranking lands as step 4 of Settle, with no ranking in between. A gate evaluated before the summary has no `DECISION`/`MERGE_RISK` inputs to test — a guess wearing the gate's name.
+Where the repository opted in through `auto-merge`, evaluate **invariant 12's gate exactly as `settle-and-merge`, *The merge gate*, defines it** — apply it as written, carry no copy. Two tranche-phrased clauses read for one issue: "no `DECISION`/`MERGE_RISK`/`NEEDS_USER` outstanding anywhere in the tranche" resolves to this issue's own items; the ordering after summary, walkthrough, and ranking lands as step 4 of Settle, with no ranking in between. A gate evaluated before the summary has no `DECISION`/`MERGE_RISK` inputs to test — a guess wearing the gate's name.
 
-**Before publishing or merging, reconcile the PR body against the current diff — unconditionally, not only where a repair reported drift.** `repair-pr` returns that flag and it is useful as a prompt, but it is not a precondition here and must not become one: this skill records selected fields from each repair return and checkpoints a fixed schema, so a flag raised in round two is gone by the time the gate is evaluated after a checkpoint or a re-entry. A comparison that depends on recovering it would pass precisely when the state was lost. The unconditional read costs one look at a body this skill already has, and `repair-pr` does not edit it, because a PR with rounds left does not need its body correct yet. This is the last point at which it is cheap, and the body is the first artifact a human reviewer reads — one spent six rounds arguing for a default that review had already reverted. Update it, or hold the PR and say why: a body that contradicts its own diff is not a clean PR, whatever CI says.
+**Before publishing or merging, reconcile the PR body against the current diff (`settle-and-merge`, *Merge behavior*) — unconditionally, not only where a repair reported drift.** `repair-pr` returns that flag and it is useful as a prompt, but it is not a precondition here and must not become one: this skill records selected fields from each repair return and checkpoints a fixed schema, so a flag raised in round two is gone by the time the gate is evaluated after a checkpoint or a re-entry. A comparison that depends on recovering it would pass precisely when the state was lost. The unconditional read costs one look at a body this skill already has, and `repair-pr` does not edit it, because a PR with rounds left does not need its body correct yet. This is the last point at which it is cheap, and the body is the first artifact a human reviewer reads — one spent six rounds arguing for a default that review had already reverted. Update it, or hold the PR and say why: a body that contradicts its own diff is not a clean PR, whatever CI says.
 
-**Dependency-view condition — supplied here by core's completeness report** (the orchestrator's preflight is its supplier there; a standalone run has none of that machinery):
+**Dependency-view condition — supplied here by core's completeness report** (`settle-and-merge`, *Merge behavior*, names each caller's supplier — the orchestrator's preflight there; a standalone run has none of that machinery):
 
 - core reported completeness **unproven**, on any boundary → the condition holds the gate exactly as a `MERGE_RISK`. The PR does not merge; return naming the boundary and the discharge.
 - The discharge must answer for the **whole view**: a re-run whose dependency transport can read the graph and prove the boundary, or the owner explicitly answering for the view itself — a decision-shaped hold the walkthrough can put to them and record, the recorded ruling retiring the hold as any translated constraint, never opening the gate. NOT: one confirmed edge — a targeted answer proves no omissions, and the known-true-case proof needs a working transport (`implement-issue-core`, *Back the completeness of the set*).
 - NOT: routing the hold through `summarize-tranche`'s classification — its bar treats the caveat as reportable, not as a mandatory `MERGE_RISK` (NOTES).
 - A **proven** view discharges the condition; nothing to hold.
 
-**Evidence freshness across draft→ready.** The gate accepts no evidence older than this PR's latest draft→ready transition, whichever site performed it — the owner at any moment (re-read the forge before the gate), or the merge path's own publish, which is the rule's next instance rather than a separate step:
+**Evidence freshness across draft→ready.** The gate accepts no evidence older than this PR's latest draft→ready transition, whichever site performed it — the owner at any moment (re-read the forge before the gate), or the merge path's own publish (`settle-and-merge`, *Merge behavior*), which is the rule's next instance rather than a separate step:
 
 - the transition returns the PR to ordinary supervision: settle again on the next delivered pass (the PR's subscription and check-ins), **never an inline wait**;
 - a review round or CI run the transition triggered must complete and come back clean like any other;
@@ -183,7 +183,7 @@ Where the repository opted in through `auto-merge`, evaluate **invariant 12's ga
 - a re-review that finds something: the PR is not clean, does not merge, and takes the ordinary repair path as a ready PR;
 - an **explicitly held draft** reaches none of this: excluded from the gate outright — neither published nor merged, reported as held.
 
-**Executing the merge**: through `merge-stack` only — the gate is itself the authorization that skill needs, scoped to exactly this PR; never a raw forge call. Pass it the run's posting-identity map and merge every observation it returns (its merges, retargetings, and body edits are authored writes). A merge ends supervision: reconcile tracker completion, then return the merge with the gate conditions it passed on.
+**Executing the merge** follows `settle-and-merge`, *Merge behavior*, which scopes the gate's `merge-stack` authorization to exactly this PR. A merge ends supervision: reconcile tracker completion, then return the merge with the gate conditions it passed on.
 
 # Completion
 

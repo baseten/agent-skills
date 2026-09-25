@@ -1,6 +1,7 @@
 {
   "skill_name": "implement-issue",
   "description": "Decision-scenario regression evals. Each prompt describes a run state and asks what the skill requires next; assertions check the decision, not the wording. Run them against any rewrite of SKILL.md before merging it: the rewrite passes only if every scenario still resolves the same way.",
+  "companions": ["backlog-orchestrator", "settle-and-merge"],
   "evals": [
     {
       "id": 0,
