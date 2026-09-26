@@ -60,7 +60,9 @@ not, one worker per task in its own worktree created from a stated base, and the
 supervision rules under *Supervise* below — including the preflight that stops a
 no-change result being reported over a task nothing was watching — and, where a
 worker is a remote session, the countermand its session carries, how its report
-reaches this run, when it is released and what happens to one that blocks. Invoke it for
+reaches this run, when it is released and what happens to one that blocks or is lost —
+and, wherever this run can reach a worker's worktree, checkpoint compliance and the
+capture of work left uncommitted in it. Invoke it for
 the fan-out rather than assembling one here. What stays here is the task set and
 what each worker is told to do.
 
@@ -136,6 +138,7 @@ Where it is `true`, a PR merges once all of these hold on its current head:
 - **green** — every required check concluded successfully (see Supervise);
 - **current** — its lockfile is resolved against the current base, and **no candidate has moved past the target triage assessed** — neither its version on the current head, which an adopted bot PR the run carries can advance in place, nor, for a batched candidate, the head of the superseded bot PR that Supervise's target re-check reads;
 - **no open review thread**;
+- **no recovery ref outstanding for its branch** (`swarm`, *The recovery ref's lifecycle*);
 - **and it passes the gate for its kind — one kind per route** (see Dispatch):
   - **the routine batch PR** — every candidate on it triage cleared. It merges on the checks above **only while its diff is those candidates' version specifiers in the manifests plus the lockfile**, and the lockfile moves no other package across a major and adds none. Anything else in the diff — `scripts`, `overrides` or `resolutions`, patches, `packageManager`, `.npmrc` or `.yarnrc.yml`, any source file — or a lockfile change beyond that, makes it the reviewed kind. No review round is spent on a bump that changes nothing a reviewer would read;
   - **every other PR, and a batch PR that fails the diff test above** — an `upgrade-npm-dependency` task's carries a major or a bump triage did not clear — merges only once an automated review round has completed clean on its current head. Post that round's trigger yourself once the PR is green, following `create-pr`'s routing and trigger rules for which convention, what text and from which account, since the PR may be a bot's and never passed through `create-pr`; skip it where `create-pr` already triggered on this head. A review counts for a later head only where every push since is mechanical by `create-pr`'s test, conditions included, and otherwise the round is requested again.

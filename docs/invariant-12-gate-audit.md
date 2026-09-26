@@ -2,7 +2,7 @@
 
 Deliverable of [issue #29](https://github.com/baseten/agent-skills/issues/29), part 2. Audited 2026-08-28, against the repository state after PR #27 and PR #28 merged.
 
-Since #132 the gate's definition, the settled step's sequence and *Merge behavior* live in `settle-and-merge`, which both consumers invoke. Since #134 *Posting identity* is `rules/posting-identity.md`, and *Per-repository policy configuration* — with the precedence rule once under *Default usage safeguards* — is `rules/agent-policy.md`, its review-feedback half `rules/review-feedback.md`. The section names and step numbers below are as they stood when the audit was made.
+Since #132 the gate's definition, the settled step's sequence and *Merge behavior* live in `settle-and-merge`, which both consumers invoke. Since #134 *Posting identity* is `rules/posting-identity.md`, and *Per-repository policy configuration* — with the precedence rule once under *Default usage safeguards* — is `rules/agent-policy.md`, its review-feedback half `rules/review-feedback.md`. Since #136 the capture, the recovery-ref naming and the ref's generic lifecycle live in `swarm`, *Checkpoint compliance*, and lost-worker recovery in `swarm`, *Lost workers*; the four-state ender and the classification override stay in `backlog-orchestrator`. The section names and step numbers below are as they stood when the audit was made.
 
 ## Why this audit exists
 

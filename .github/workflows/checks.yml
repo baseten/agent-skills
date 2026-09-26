@@ -73,7 +73,7 @@ jobs:
 
 
       - name: Checkpoint capture tests
-        run: bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
+        run: bash skills/swarm/scripts/test-checkpoint-capture.sh
 
       # Warning-and-above deliberately. Info/style findings vary by shellcheck
       # build — SC2015 is reported by 0.9.0 and 0.10.0 and not by 0.11.0 — so

@@ -54,7 +54,7 @@ Reasoning for a rule lives beside it as `rules/<name>-notes.md`, and is delibera
 
 - `upgrade-npm-dependency` — upgrades one package, or one coupled group of them, across any version whose breaking-change risk has not been ruled out: viability gate, research verified against the published artifact, usage audit, then characterization tests written and proven green on the current version and re-run unmodified after the bump.
 - `npm-dependency-upgrade-orchestrator` — triages a batch of upgrades, establishes coupling and viability, selects a model per upgrade by failure mode, and dispatches bounded-concurrency subagents: one per upgrade or coupled group running `upgrade-npm-dependency`, plus a single batched task for the routine bumps triage cleared, which need no migration workflow. Supervises CI while separating infrastructure failure from real failure. It merges only where the repository opted in with `auto-merge-dependencies`, and then only through its dependency gate.
-- `swarm` — fans a set of independent tasks out to parallel isolated workers and supervises them: picks the runtime that is actually available, one worktree per worker off a stated base, a model per task by how its failure would show, one watcher, the parent, and a default cap on how many run at once that a caller overrides. It also owns what every remote worker session needs whoever dispatched it: the arguments it is created with, the countermand to its inherited habit of watching its own PR, how its report reaches the parent, when it is released, checkpoint compliance and what to do with one that blocks. `backlog-orchestrator` and `npm-dependency-upgrade-orchestrator` use it for their dispatch phase, and cite it for all of that.
+- `swarm` — fans a set of independent tasks out to parallel isolated workers and supervises them: picks the runtime that is actually available, one worktree per worker off a stated base, a model per task by how its failure would show, one watcher, the parent, and a default cap on how many run at once that a caller overrides. It also owns what every remote worker session needs whoever dispatched it: the arguments it is created with, the countermand to its inherited habit of watching its own PR, how its report reaches the parent, when it is released, checkpoint compliance — including the parent-side capture of a worker's uncommitted work, with its tested script — and what to do with one that blocks or is lost. `backlog-orchestrator` and `npm-dependency-upgrade-orchestrator` use it for their dispatch phase, and cite it for all of that.
 
 ## Repository layout
 
@@ -143,7 +143,7 @@ python3 scripts/test_shared_rules.py                  # and each of those guards
 python3 scripts/check_permissions.py                  # the shape of permissions.json, and the README's claims
 python3 scripts/check_no_machine_paths.py             # no skill depends on one machine's filesystem
 python3 scripts/test_no_machine_paths.py              # and that detector can actually fail
-bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
+bash skills/swarm/scripts/test-checkpoint-capture.sh
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
 bash scripts/eval_reminder.sh origin/main             # advisory, never fails
 ```
