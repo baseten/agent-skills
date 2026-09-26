@@ -40,11 +40,22 @@
       "id": 3,
       "name": "a-single-pr-invocation-skips-the-ranking",
       "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue invoked you over its one PR after its issue reached a terminal state. Its repository opted into auto-merge. It passed: ranking - none, with its own ruling translation to run in step 5's place (a ruling that changes the PR's disposition holds the gate exactly as a MERGE_RISK would; one requiring nothing to change retires its decision; one requiring code to change un-settles the run); dependency view - proven, from its worker's completeness report; freshness checks - none apply; publish rule - its own draft-to-ready evidence-freshness rule. summarize-tranche returned one DECISION about this PR, and the walkthrough recorded the owner's ruling to hold the PR until a partner team signs off. CI is green, the review is clean and nothing else is outstanding. Question: do you invoke plan-merge-order before evaluating the gate?",
-      "expected_output": "No. implement-issue does not run the ranking step: one PR has no ordering to rank. It translates its rulings into gate consequences in place of that step (implement-issue owns that translation), and the gate is then evaluated for its one PR, with the tranche-wide outstanding-item clause read as this issue's own items.",
+      "expected_output": "No. The caller passed ranking: none, so step 5 does not run — one PR has no ordering to rank. The ruling translation the caller passed runs in its place, before the gate: the hold ruling changes the PR's disposition, so it holds the gate exactly as a MERGE_RISK would and the PR does not merge, and the gate is then evaluated for its one PR, with the tranche-wide outstanding-item clause read as this issue's own items.",
       "assertions": [
-        "The answer does not invoke plan-merge-order for the single-PR caller",
-        "The answer places implement-issue's ruling translation where step 5 would have run, before the gate",
+        "The answer does not invoke plan-merge-order, because the caller passed no ranking",
+        "The answer runs the caller's ruling translation where step 5 would have run, before the gate, and holds the gate on the hold ruling",
         "The answer reads the tranche-wide outstanding-item clause as this issue's own items"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "an-absent-input-takes-its-default-not-the-callers-identity",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A new orchestrator invokes you over its one PR. It passes the PR set and scope, its findings, its posting-identity map, and resolved policy (the repository opted into auto-merge), and a dependency view proven complete. It passes nothing about ranking, freshness checks, a publish rule or un-settling. Since the PR has been reviewed clean against a base that has since moved by two merges, a teammate says: it is a single-PR run like implement-issue's, so skip the ranking and the stale-green re-check the way implement-issue does. Question: which of the settle steps and gate-time checks run?",
+      "expected_output": "Not as the teammate says. An absent input takes its stated default, never a value inferred from which skill the caller resembles. With no ranking input, step 5 runs: a caller that does not rank must pass its own ruling translation, and without one an untranslated ruling would read as clean at the gate. With no freshness input, the stale-green re-check and the tool-bump rule apply (absent is not 'none apply'); the base has moved, so the existing green is stale and does not discharge the CI condition until re-established as the repository's CI configuration requires. No integration result was passed, so there is none to compare, and the report says so. With no publish rule, the three-state rule governs any publish; with no un-settle rule, an un-settling step returns to the caller with the finding, having ranked and merged nothing.",
+      "assertions": [
+        "The answer runs step 5 because no ranking input (and no ruling translation) was passed",
+        "The answer applies the stale-green re-check because the freshness input was absent, and treats the green as stale since the base moved",
+        "The answer does not infer any input from the caller resembling implement-issue"
       ]
     }
   ]

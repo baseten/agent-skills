@@ -141,6 +141,7 @@ The run settles when its one issue reaches a terminal state: the PR individually
 - **dependency view**: core's completeness report, read as Merge says;
 - **freshness checks**: none apply — this skill runs no integration check and has no authority to update a branch, so the stale-green re-check and the tool-bump rule do not apply;
 - **publish rule**: its own — Merge, *Evidence freshness across draft→ready*, governs the merge path's publish in place of the three-state rule;
+- **recovery-ref ender**: none of its own — this skill captures nothing, so `swarm`'s generic lifecycle stands;
 - **un-settling**: Un-settling below, with the re-entry rule.
 
 Its steps, in order, as this skill reads them:
