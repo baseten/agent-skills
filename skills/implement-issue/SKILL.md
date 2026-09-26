@@ -126,12 +126,24 @@ A pass that returns `NO_CODE_CHANGE` — the classification left it no repair to
 
 ## Draft state
 
-- **This run never flips a PR back to draft, and promotes only where the repository's own convention instructs it** — on that convention's conditions and no others, which is the owner having performed the social act in advance. With no such convention, the merge path's publish (a step of merging an open-gate PR, see Merge) and the owner acting themselves are the only promotion sites. `backlog-orchestrator`, *Draft state*, owns the contract, including that a convention-driven promotion is a publish and takes the three-state rule. There is still deliberately no policy knob (NOTES: why promote-on-clean-review was deleted rather than made configurable, and why deferring to a written convention is not that knob).
-- **Explicitly held draft discriminator**: currently a draft AND ever ready = held. Read the transition from the forge's own timeline immediately before the gate, and before any draft-state change this run makes — never from this run's state block, which is a cache (NOTES).
+- **This run never flips a PR back to draft, and promotes only where the repository's own convention instructs it** — on that convention's conditions and no others, which is the owner having performed the social act in advance. With no such convention, the merge path's publish (a step of merging an open-gate PR, see Merge) and the owner acting themselves are the only promotion sites. `references/draft-state.md` owns the contract, including that a convention-driven promotion is a publish and takes the three-state rule. There is still deliberately no policy knob (NOTES: why promote-on-clean-review was deleted rather than made configurable, and why deferring to a written convention is not that knob).
+- **Explicitly held draft discriminator** (`references/draft-state.md`, *Explicitly held drafts*): currently a draft AND ever ready = held. Read the transition from the forge's own timeline immediately before the gate, and before any draft-state change this run makes — never from this run's state block, which is a cache (NOTES).
 
 # Settle
 
-The run settles when its one issue reaches a terminal state: the PR individually finished — a completed review round; every actionable finding resolved, answered, or reserved for the owner; CI green; no repair left to attempt — or `BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`. **Every terminal outcome settles, including one Phase 1 returned before supervision began** (NOTES: the failure outcomes carry the most decision-shaped material; the empty case gets `summarize-tranche`'s one line). Then run `settle-and-merge`, *The settle sequence*, over this one PR, passing the inputs its *Callers and inputs* names for this skill. Its steps, in order, as this skill reads them:
+The run settles when its one issue reaches a terminal state: the PR individually finished — a completed review round; every actionable finding resolved, answered, or reserved for the owner; CI green; no repair left to attempt — or `BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`. **Every terminal outcome settles, including one Phase 1 returned before supervision began** (NOTES: the failure outcomes carry the most decision-shaped material; the empty case gets `summarize-tranche`'s one line). Then run `settle-and-merge`, *The settle sequence*, over this one PR, passing it every input its *Inputs* names, as this skill supplies them:
+
+- **PR set and scope**: the canonical issue URL and its one PR;
+- **findings**: the worker and review findings the run produced;
+- **posting-identity map**: the run's map;
+- **resolved policy**: `auto-merge` and `auto-request-settle`, resolved for its one PR (Policy and budgets);
+- **ranking**: none — step 5 does not run, since one PR has no ordering to rank; the ruling translation below runs in its place;
+- **dependency view**: core's completeness report, read as Merge says;
+- **freshness checks**: none apply — this skill runs no integration check and has no authority to update a branch, so the stale-green re-check and the tool-bump rule do not apply;
+- **publish rule**: its own — Merge, *Evidence freshness across draft→ready*, governs the merge path's publish in place of the three-state rule;
+- **un-settling**: Un-settling below, with the re-entry rule.
+
+Its steps, in order, as this skill reads them:
 
 1. **reconcile** tracker and remote state — everything after computes from durable truth, not this session's cache (its step 1);
 2. **invoke `summarize-tranche`** (canonical issue URL, this PR, the worker and review findings) and **act on its action points before anything below** (its steps 2–3). A one-issue run is a tranche of one; nothing in that skill reads differently at this size;
@@ -167,14 +179,14 @@ Where the repository opted in through `auto-merge`, evaluate **invariant 12's ga
 
 **Before publishing or merging, reconcile the PR body against the current diff (`settle-and-merge`, *Merge behavior*) — unconditionally, not only where a repair reported drift.** `repair-pr` returns that flag and it is useful as a prompt, but it is not a precondition here and must not become one: this skill records selected fields from each repair return and checkpoints a fixed schema, so a flag raised in round two is gone by the time the gate is evaluated after a checkpoint or a re-entry. A comparison that depends on recovering it would pass precisely when the state was lost. The unconditional read costs one look at a body this skill already has, and `repair-pr` does not edit it, because a PR with rounds left does not need its body correct yet. This is the last point at which it is cheap, and the body is the first artifact a human reviewer reads — one spent six rounds arguing for a default that review had already reverted. Update it, or hold the PR and say why: a body that contradicts its own diff is not a clean PR, whatever CI says.
 
-**Dependency-view condition — supplied here by core's completeness report** (`settle-and-merge`, *Merge behavior*, names each caller's supplier — the orchestrator's preflight there; a standalone run has none of that machinery):
+**Dependency-view condition — supplied here by core's completeness report** (passed as `settle-and-merge`'s per-PR dependency-view input, Settle; its *Merge behavior* says what discharges the condition — a standalone run has no preflight to answer it):
 
 - core reported completeness **unproven**, on any boundary → the condition holds the gate exactly as a `MERGE_RISK`. The PR does not merge; return naming the boundary and the discharge.
 - The discharge must answer for the **whole view**: a re-run whose dependency transport can read the graph and prove the boundary, or the owner explicitly answering for the view itself — a decision-shaped hold the walkthrough can put to them and record, the recorded ruling retiring the hold as any translated constraint, never opening the gate. NOT: one confirmed edge — a targeted answer proves no omissions, and the known-true-case proof needs a working transport (`implement-issue-core`, *Back the completeness of the set*).
 - NOT: routing the hold through `summarize-tranche`'s classification — its bar treats the caveat as reportable, not as a mandatory `MERGE_RISK` (NOTES).
 - A **proven** view discharges the condition; nothing to hold.
 
-**Evidence freshness across draft→ready.** The gate accepts no evidence older than this PR's latest draft→ready transition, whichever site performed it — the owner at any moment (re-read the forge before the gate), or the merge path's own publish (`settle-and-merge`, *Merge behavior*), which is the rule's next instance rather than a separate step:
+**Evidence freshness across draft→ready.** The gate accepts no evidence older than this PR's latest draft→ready transition, whichever site performed it — the owner at any moment (re-read the forge before the gate), or the merge path's own publish (`settle-and-merge`, *Merge behavior*), which is the rule's next instance rather than a separate step. This is the publish rule Settle passes, so it governs that publish in place of the three-state rule:
 
 - the transition returns the PR to ordinary supervision: settle again on the next delivered pass (the PR's subscription and check-ins), **never an inline wait**;
 - a review round or CI run the transition triggered must complete and come back clean like any other;

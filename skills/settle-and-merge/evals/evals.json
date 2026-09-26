@@ -1,15 +1,12 @@
 {
   "skill_name": "settle-and-merge",
   "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it, and after any change that moves prose between this skill and a caller that cites it.",
-  "companions": [
-    "backlog-orchestrator",
-    "implement-issue"
-  ],
+  "companions": [],
   "evals": [
     {
       "id": 0,
       "name": "the-sequence-runs-summary-walkthrough-ranking-then-gate",
-      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). backlog-orchestrator has found its tranche settled and invoked you over its eight open PRs. Two repositories opted into auto-merge. To save time, a teammate proposes: rank the PRs with plan-merge-order first so merges can start while summarize-tranche is still running, then do the summary and the decision walkthrough afterwards for the report. Question: in what order do the steps run, and why?",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). backlog-orchestrator has found its tranche settled and invoked you over its eight open PRs. It passed its resolved policy (two repositories opted into auto-merge; auto-request-settle is on) and asked for a ranking, with its cross-branch collisions and held issue set. To save time, a teammate proposes: rank the PRs with plan-merge-order first so merges can start while summarize-tranche is still running, then do the summary and the decision walkthrough afterwards for the report. Question: in what order do the steps run, and why?",
       "expected_output": "No. Reconcile tracker and remote state first, then summarize-tranche, then act on its action points, then request the settle-outstanding-decisions walkthrough (while auto-request-settle is on), then plan-merge-order with the rulings translated into action points, then the gate and the merges, then surface the summary, the walkthrough's report and the ranking. The summary comes before the ranking because an action point can change whether something should merge at all, and the walkthrough sits between summary and ranking because a ruling changes what the ranking is computed from. Ranking first gives the user an order they may start acting on before an action point or ruling invalidates it.",
       "assertions": [
         "The answer rejects ranking or merging before the summary",
@@ -31,7 +28,7 @@
     {
       "id": 2,
       "name": "publish-then-merge-waits-for-a-later-pass",
-      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). At step 6 the gate passes for PR-4, which is still a draft nobody has ever marked ready. Its repository opted into auto-merge, and the run has already observed on an earlier PR in this repository that publishing a draft starts an automated review round. Question: what happens to PR-4 in this pass, and when may it merge?",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). At step 6 the gate passes for PR-4, which is still a draft nobody has ever marked ready. Its repository opted into auto-merge, the caller passed no publish rule of its own, and the run has already observed on an earlier PR in this repository that publishing a draft starts an automated review round. Question: what happens to PR-4 in this pass, and when may it merge?",
       "expected_output": "It is published, not skipped: publishing is part of the merge path, so a draft whose gate opens is published by the act of merging it. Because publishing is observed to trigger in this repository, publishing un-settles the tranche for that PR: the clean-review and green-CI evidence the gate just accepted describes the PR one moment before it changed. It does not merge in this pass and the merge is not awaited inline. It merges on a later delivered pass, once the review round the publish triggered has completed clean; if that re-review finds something, the PR is not clean and returns to ordinary repair as a ready PR.",
       "assertions": [
         "The answer publishes PR-4 rather than skipping it for being a draft",
@@ -42,7 +39,7 @@
     {
       "id": 3,
       "name": "a-single-pr-invocation-skips-the-ranking",
-      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue invoked you over its one PR after its issue reached a terminal state. Its repository opted into auto-merge. summarize-tranche returned one DECISION about this PR, and the walkthrough recorded the owner's ruling to hold the PR until a partner team signs off. CI is green, the review is clean and nothing else is outstanding. Question: do you invoke plan-merge-order before evaluating the gate?",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue invoked you over its one PR after its issue reached a terminal state. Its repository opted into auto-merge. It passed: ranking - none, with its own ruling translation to run in step 5's place (a ruling that changes the PR's disposition holds the gate exactly as a MERGE_RISK would; one requiring nothing to change retires its decision; one requiring code to change un-settles the run); dependency view - proven, from its worker's completeness report; freshness checks - none apply; publish rule - its own draft-to-ready evidence-freshness rule. summarize-tranche returned one DECISION about this PR, and the walkthrough recorded the owner's ruling to hold the PR until a partner team signs off. CI is green, the review is clean and nothing else is outstanding. Question: do you invoke plan-merge-order before evaluating the gate?",
       "expected_output": "No. implement-issue does not run the ranking step: one PR has no ordering to rank. It translates its rulings into gate consequences in place of that step (implement-issue owns that translation), and the gate is then evaluated for its one PR, with the tranche-wide outstanding-item clause read as this issue's own items.",
       "assertions": [
         "The answer does not invoke plan-merge-order for the single-PR caller",
