@@ -60,7 +60,9 @@ not, one worker per task in its own worktree created from a stated base, and the
 supervision rules under *Supervise* below — including the preflight that stops a
 no-change result being reported over a task nothing was watching — and, where a
 worker is a remote session, the countermand its session carries, how its report
-reaches this run, when it is released and what happens to one that blocks. Invoke it for
+reaches this run, when it is released and what happens to one that blocks or is lost —
+and, wherever this run can reach a worker's worktree, checkpoint compliance and the
+capture of work left uncommitted in it. Invoke it for
 the fan-out rather than assembling one here. What stays here is the task set and
 what each worker is told to do.
 

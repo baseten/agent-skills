@@ -185,7 +185,7 @@ bash scripts/refresh_shared_rules.sh                 # generate references/ firs
 python3 scripts/check_shared_rules.py                # and that every bundled rule matches its source
 python3 scripts/test_shared_rules.py                 # and that each of that check's guards can fail
 python3 scripts/check_permissions.py
-bash skills/backlog-orchestrator/scripts/test-checkpoint-capture.sh
+bash skills/swarm/scripts/test-checkpoint-capture.sh
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
 bash scripts/eval_reminder.sh origin/main
 ```

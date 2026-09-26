@@ -216,6 +216,19 @@
         "The answer says the dispatch prompt should require the worker's judgment be written as a comment on its PR, naming the head it pushed",
         "The answer does not treat the PR as finished before reading what the worker wrote on it"
       ]
+    },
+    {
+      "id": 19,
+      "name": "a-standalone-local-tier-capture-follows-this-skill",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you were invoked directly, not by an orchestrator, over six independent tasks, and dispatched them as subagents, each in a worktree you created. You can read every worker's worktree and message every worker. Worker W is still running; its worktree shows five finished files uncommitted, its local branch is level with its remote branch, and last cycle you told it to commit and push. This cycle nothing has changed. Question: what do you do now, exactly how, and what becomes of whatever you create?",
+      "expected_output": "Capture now rather than nudging again: with both a channel and a path the escalation is nudge, then capture, and a second nudge is evidence the instruction is not landing. Capture without racing the live worker: never git add in its index, never commit or push onto its branch; build the commit ref-neutrally with the tested scripts/checkpoint-capture.sh beside this skill (scratch index seeded from the worker's head, only the task-owned paths overlaid, validated against its parent before the push and failing closed) and push it to the single force-replaced recovery ref for that branch, refs/checkpoints/<branch encoded % before />. The ref is redundant once the worker's own pushed commits cover the work; if the worker is released without pushing, the parent reconciles the capture into the worker's branch at release; with no PR gate the ref ends once every commit on it is reachable on the remote, and is reported, never deleted, until then. Lost-worker recovery reads it if W disappears.",
+      "assertions": [
+        "The answer captures this cycle rather than nudging a second time",
+        "The answer rejects git add or a commit in the live worker's index and any advance of its branch, capturing ref-neutrally to a recovery ref via the tested script instead",
+        "The answer names at least three capture constraints: seed from the worker's head first, validate before the push and fail closed, one force-replaced ref per branch, the %-before-/ encoding",
+        "The answer ends the ref by reachability of its commits on the remote (or redundancy once the worker pushes), reporting it and never deleting it before then",
+        "The answer takes all of this from the swarm contract and does not say the capture procedure is unavailable to a standalone caller"
+      ]
     }
   ],
   "companions": [
