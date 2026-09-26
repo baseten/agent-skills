@@ -44,7 +44,7 @@ The PR's creation and the trigger comment are distinct write kinds a platform ma
 
 ## Why the as-created draft state is reported
 
-No supervising workflow promotes a draft on its own judgement (`backlog-orchestrator`, *Draft state*, owns that rule, including where a repository's own convention instructs promotion), but each tracks as-created beside current state, and the held-draft and publish-as-step-of-merging rules need the distinction this field carries: a workflow cannot tell a PR this run drafted from one a human drafted unless this skill says so. This skill itself ends at creation and never changes draft state.
+No supervising workflow promotes a draft on its own judgement (`rules/draft-state.md` owns that rule, including where a repository's own convention instructs promotion), but each tracks as-created beside current state, and the held-draft and publish-as-step-of-merging rules need the distinction this field carries: a workflow cannot tell a PR this run drafted from one a human drafted unless this skill says so. This skill itself ends at creation and never changes draft state.
 
 ## Substantive vs mechanical pushes
 
