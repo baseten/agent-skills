@@ -868,8 +868,7 @@ This matters most right after a sibling merges. Descendants restack and claimed 
 
 `references/draft-state.md` owns draft state — promotion, including where a repository's own convention instructs it and that such a promotion is a publish; that the run never flips a PR back to draft; and the only definition of an **explicitly held draft**, with its discriminator — and applies here as written. What is this run's own:
 
-- **the convention is recorded at adoption, on the PR**: the per-repository record the rule requires is read at the run's first preflight and referenced from the per-PR block by the PR's own repository, and its conditions are evaluated on each supervision cycle (Parent supervision loop);
-- **the per-PR block is the run's record of the PR**, which the rule treats as a cache (invariant 1): as-created and current draft state are tracked there for reporting (`create-pr` reports the as-created state), and it never answers the held-draft question — the rule's timeline read does;
+- **the convention is recorded at adoption, on the PR**: the per-repository record the rule requires is referenced from the per-PR block by the PR's own repository, and its conditions are evaluated where the run re-reads each PR's CI, review and thread state every cycle, as the rule states;
 - **a repair worker never touches draft state**: `repair-pr` reports how many actionable threads remain unresolved, and what happens to the PR stays with this parent layer;
 - an explicitly held draft is reported in the checkpoint output as held, awaiting the owner.
 
@@ -1211,16 +1210,16 @@ Settled is not the same as finished. The run has produced everything it can **fo
 On reaching settled:
 
 1–7. run `settle-and-merge`'s sequence over this run's PR set (`settle-and-merge`, *The settle sequence*), passing it every input its *Inputs* names, as this run supplies them:
-   - **PR set and scope**: the manifest/scope and this run's PR set;
+   - **PR set and scope**: the manifest/scope, and this run's PR set — which may be empty, where every issue blocked before creating a PR;
    - **findings**: the worker and review findings the run produced;
    - **posting-identity map**: the run's map (`references/posting-identity.md`);
    - **resolved policy**: `auto-merge` per PR and `auto-request-settle` for the run, as this run's preflight resolved them (`references/agent-policy.md`) — `auto-merge` off wherever *Model and skill policy* made the gate unreachable;
-   - **ranking**: step 5 runs, with each cross-branch collision this run found, marked independent where *Cross-branch artifact collisions* showed it, and the held issue set — anything classified `NEEDS_USER` for a resolved premise;
+   - **ranking**: step 5 ranks, with each cross-branch collision this run found, marked independent where *Cross-branch artifact collisions* showed it, and the held issue set — anything classified `NEEDS_USER` for a resolved premise;
    - **dependency view, per PR**: the validated preflight's. An unproven relationship boundary over dispatchable scope is a `FAIL` that never reaches dispatch, a proof invalidated mid-run raises the *unproven dependency view* `NEEDS_USER` that the gate's outstanding-item test already refuses, and a frontier advance re-validates before anything new dispatches — so for boundaries with a working dependency transport the condition costs the gate nothing it was not already paying. The one case the preflight deliberately accepts, `dependency transport unavailable`, is passed as unproven on that boundary: proceedable for dispatch, not discharged for merge;
-   - **freshness checks**: the stale-green re-check and its tool-bump rule apply; and the integration check under *Cross-branch artifact collisions*, passed with its result, the head SHA of every branch it integrated, and the check itself, so the gate can re-run it where a tip has moved;
-   - **publish rule**: none of its own — the three-state rule governs the merge path's publish;
-   - **recovery-ref ender**: the four-state ender under *Checkpoint compliance*;
-   - **un-settling**: *The summary can un-settle the run*, and *A settle finding is the third repair shape*;
+   - **freshness checks**: the stale-green re-check and its tool-bump rule apply, with authority to update a branch where the repository's checks run against the branch alone; and the integration check under *Cross-branch artifact collisions*, passed with its result, the head SHA of every branch it integrated, and the check itself, so the gate can re-run it where a tip has moved;
+   - **publish rule**: `three-state`;
+   - **outstanding recovery refs, per PR**: those the four-state ender under *Checkpoint compliance* leaves outstanding;
+   - **un-settling**: nothing to pass; on a hand-back, *The summary can un-settle the run* and *A settle finding is the third repair shape* govern;
 
    at its step 1, **run step 11's release reconciliation in the same pass** — read the session list, archive every finished session the releasable test passes — so a run never settles, and possibly hands off, holding containers for work that is already on the remote; and take each merge it reports as a frontier-advancing event (Frontier advance on merge);
 8. stop dispatching work, and stop spending tokens re-deriving the same state, for as long as nothing is dispatchable.
