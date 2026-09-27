@@ -800,7 +800,7 @@ On an actionable CI failure:
 1. retrieve the smallest useful failure context;
 2. decide whether it belongs to this PR;
 3. if repair is justified and budget remains, allocate an isolated checkout of the current PR branch;
-4. dispatch one `repair-pr` worker with `repair type = ci` — Sonnet, or the strongest available model where the non-convergence trigger has fired and an escalation remains (see Model and skill policy);
+4. dispatch one `repair-pr` worker with `repair type = ci` — Sonnet, or the strongest available model where *Escalation on evidence* has fired and an escalation remains (`references/repair-rounds.md`; see Model and skill policy);
 5. **compare the pushed diff against the PR's chartered scope** (see the per-PR block) — a new module, build/CI step or cross-cutting invariant is a `DECISION`, not an adoption — then adopt its pushed remote head, **and merge every posting-identity entry it returned into the run's transport-and-credential-keyed map** (see `references/posting-identity.md`) — a repair runs on its own transports, so this is the run's only evidence about them;
 6. increment the CI repair cycle;
 7. release the repair worker (see `swarm`, *Releasing a worker*) and resume event supervision.
@@ -846,17 +846,10 @@ A finding that no longer holds against the current head — a later push already
 
 ## Mechanical pushes do not consume review
 
-A restack, or a renumber/regeneration of a claimed artifact, moves identity or ordering rather than behavior. Such a push:
+Whether a push is mechanical is `references/mechanical-pushes.md`'s test — apply it from there, conditions included, and do not restate it here. What a mechanical push means for this run's own records:
 
-- does not consume a review repair cycle;
-- does not re-trigger automated review;
-- does not reset the PR's reviewed state.
-
-The repository's deterministic checks are what validate it. Where the repository has no check that would catch a bad renumber, treat the push as substantive instead — `references/mechanical-pushes.md` carries the full test for which is which.
-
-A renumber earns the mechanical label only once its regeneration has been **verified to apply** (see Performing the renumber). "Moves identity or ordering rather than behavior" describes what a *correct* renumber does; the hazard is that a botched one is indistinguishable from it in the diff while changing whether the artifact runs at all. So an unverified renumber is not a mechanical push, it is an unvalidated one, and skipping review over it is the shortcut that makes the failure invisible. Verify first, then claim the exemption.
-
-This matters most right after a sibling merges. Descendants restack and claimed artifacts renumber for reasons that have nothing to do with their own diffs, and re-reviewing every one of them spends the review budget on code that did not change.
+- it does not consume a review repair cycle;
+- it does not reset the PR's reviewed state.
 
 ## Draft state
 

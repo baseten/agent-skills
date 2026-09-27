@@ -93,7 +93,7 @@ State: waiting | repairing-ci | repairing-review | repairing-finding | healthy |
 ## CI failure
 
 1. inspect enough check/log context to identify the relevant failure;
-2. attributable to this PR and CI budget remains → invoke `repair-pr` once with `repair type = ci` — Sonnet, or the strongest model where the non-convergence trigger fired and an escalation remains (`references/repair-rounds.md` owns the trigger and caps, *Escalation on evidence* and *The cycle cap*; an escalated round still consumes its cycle);
+2. attributable to this PR and CI budget remains → invoke `repair-pr` once with `repair type = ci` — Sonnet, or the strongest model where *Escalation on evidence* fired and an escalation remains (`references/repair-rounds.md` owns the trigger and caps, *Escalation on evidence* and *The cycle cap*; an escalated round still consumes its cycle);
 3. pass the exact failure context, remaining budget, and the run's posting-identity map as it stands — the budget read off this PR's recorded cycles, never recalled, and not raised by a repository instruction to keep repairing (`references/repair-rounds.md`, *The remaining budget*); say the count against the cap in any status that mentions a repair round;
 4. adopt the returned head SHA **and merge every identity entry the pass observed into the map** — never replace it;
 5. wait for the next CI result, event-driven where available;
@@ -168,9 +168,10 @@ Its steps, in order, as this skill reads them:
 **Un-settling** — a summary `IN_FLIGHT_FIX`, or a code-changing ruling; identical handling from either source, and **never a thread reserved for the owner with nothing able to dispatch it — questions and deferred repairs** (`summarize-tranche`, *2. Action points*, which never emits one as an `IN_FLIGHT_FIX`). A thread carrying a recorded code-changing ruling un-settles as it always did: the ruling is the evidence and the finding path takes it:
 
 - dispatch `repair-pr` once with `repair type = finding` — the finding **verbatim** (the action point, or the recorded ruling with its site URL) plus the map, on the same model rule as CI and review;
-- a **pushed** repair consumes a `finding-repair-cycles` cycle and retriggers review where convention requires (substantive, never mechanical — `references/mechanical-pushes.md`); **`NO_CODE_CHANGE`** consumes no cycle and triggers no review. Merge returned identity entries whatever the outcome. `repair-pr`, *Finding repair (`repair type = finding`)*, owns the type, `references/repair-rounds.md`, *The finding budget*, owns the budget, and this list is the branching;
+- a **pushed** repair consumes a `finding-repair-cycles` cycle and retriggers review where convention requires (substantive, never mechanical — `references/mechanical-pushes.md`); **`NO_CODE_CHANGE`** consumes no cycle and triggers no review. Merge returned identity entries whatever the outcome. `repair-pr`, *Finding repair (`repair type = finding`)*, owns the type, `references/repair-rounds.md`, *The finding budget*, owns the budget, and this list is the branching, every outcome included;
 - then settle again **from step 1** — the re-run recomputes the summary, so the gate never sees evidence the repair invalidated, and re-asks nothing (a recorded ruling retires its question at discovery);
 - finding budget already spent → `NEEDS_USER` carrying the finding beside the summary in hand; that is a settle-phase outcome and returns directly.
+- the pass returns **`FAILED` or `NEEDS_USER`** → that is the outcome, carrying the finding and the pass's report beside the summary in hand, exactly as for a CI or review repair that returns one. It is a settle-phase outcome and returns directly: never settle again on it, so a failed finding repair is never re-dispatched.
 - A draft→ready transition also un-settles the run, whoever performed it — the rule lives in Merge.
 
 ## Merge

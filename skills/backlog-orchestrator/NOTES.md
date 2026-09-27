@@ -264,7 +264,6 @@ The note on why the remaining budget is read off the block at dispatch moved to 
 
 The argument for `finding-repair-cycles` being its own counter moved to `rules/repair-rounds-notes.md` with the rule it explains (#140).
 
-
 ## Frontier advance on merge
 
 **Why the resumed dispatch needs the escalation most:** nobody is watching it — the run resumed on an event, not on a human's attention — and the merge that triggered it is itself the event that makes a stale cross-tranche dependency look satisfied. The preflight at the selected mode is the only check between that illusion and a dispatched worker.
