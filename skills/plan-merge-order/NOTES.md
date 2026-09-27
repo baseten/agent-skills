@@ -4,6 +4,8 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 ## When to run
 
+**Why the settled predicate is the caller's rather than a pointer (#140):** this section pointed at `backlog-orchestrator`, *Settled tranche*, for the predicate — a skill that reaches this one only through `settle-and-merge`, and one a direct invocation never runs under. Invoking the skill over a tranche is now the caller's statement that the tranche is settled, and the orchestrator's section is named only as where that run's predicate lives. The collision independence marks the orchestrator computes are likewise an input, listed with the others, as `settle-and-merge` already passed them.
+
 Direct invocation answers with whatever state exists — rather than refusing because the tranche is not formally settled — because the user asking "what should I merge first?" mid-run deserves the best available ordering, not a lecture about lifecycle. The settled-tranche timing is the orchestrator's contract, not a precondition on the analysis being useful.
 
 ## Collect the PR set and stack topology

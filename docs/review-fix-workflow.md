@@ -164,7 +164,7 @@ and `NOTES.md` at once — in view while reasoning about consequences, not the e
 worth stating rather than leaving to judgement.
 
 The escalation signal already exists in the repository and is well chosen:
-`backlog-orchestrator`, *Repair escalates on evidence, not on exhaustion*, fires on "a
+`rules/repair-rounds.md`, *Escalation on evidence*, fires on "a
 finding on a locus an earlier repair on this PR already wrote ... the signal that the
 previous repair was shallow and the root was never understood." In a prose contract that
 signal fires often — it fired three rounds running on the PR that added this document, both
