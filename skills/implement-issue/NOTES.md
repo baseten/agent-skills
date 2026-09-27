@@ -46,6 +46,8 @@ This skill is deliberately a one-issue orchestrator that composes primitives rat
 
 ## Review feedback
 
+**Why the repair-round and unhandled-feedback rules are cited rather than pointed at (#140):** this skill applied `backlog-orchestrator`'s repair escalation trigger, its remaining-budget read and its unhandled-feedback predicate, and pointed up into that orchestrator for each — a skill it never runs under. They are now `rules/repair-rounds.md` and `rules/review-feedback.md`, *Unhandled feedback*, which both supervising runs cite; the finding path's type is `repair-pr`'s and its budget the repair-rounds rule's, and the reserved-thread exclusion is `summarize-tranche`'s, which this skill composes.
+
 **Why this skill never roots a review thread on the PR it supervises:** the actionability discriminator is thread-rootness — a thread the invoking user rooted is their instruction — and on the degraded posting-identity path this run's own comments carry the invoking user's login. A run-authored root comment would be indistinguishable from an instruction to itself, silently breaking the test. Replying in threads and posting timeline comments keeps the discriminator true by construction.
 
 **Why a reserved thread blocks the gate but not settlement:** the run cannot be required to resolve what policy forbids it touching, so it can still finish and return — but the thread is an unresolved actionable finding wherever that concept is consumed, so its round is not clean and the merge gate stays shut.
@@ -72,7 +74,7 @@ This skill is deliberately a one-issue orchestrator that composes primitives rat
 
 **Why a free-text ruling defaults to the disposition row:** the misreadings are not symmetric. Filed there wrongly, a mergeable PR waits for a person; filed anywhere else wrongly, the run does or permits something the owner just refused.
 
-**Why a code-changing ruling hides better than a summary `IN_FLIGHT_FIX`:** the summary case leaves an action point in view, while an owner answering "no, do it the other way" leaves a PR whose decision reads *ruled* while the code still says what they rejected — only the translation stands between the gate and merging the very PR the ruling was against. The finding-repair budget being its own counter, the outcome branching (`NO_CODE_CHANGE` consumes nothing), and the argument against drawing on `review-repair-cycles` are all owned by `backlog-orchestrator`, *A settle finding is the third repair shape*.
+**Why a code-changing ruling hides better than a summary `IN_FLIGHT_FIX`:** the summary case leaves an action point in view, while an owner answering "no, do it the other way" leaves a PR whose decision reads *ruled* while the code still says what they rejected — only the translation stands between the gate and merging the very PR the ruling was against. The finding-repair budget being its own counter, and the argument against drawing on `review-repair-cycles`, are `rules/repair-rounds.md`'s (*The finding budget*, with its notes); the outcome branching (`NO_CODE_CHANGE` consumes nothing) is this skill's own, under *Un-settling*.
 
 ## Merge
 

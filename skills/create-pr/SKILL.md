@@ -34,7 +34,7 @@ A parent PR must be in the same repository — cross-repository dependencies are
 
 Read `CLAUDE.md`/`AGENTS.md` for branch conventions, PR templates, draft/full rules, tracker linkage, and review-trigger conventions.
 
-**That read does not supply the gate.** Where the caller supplied the check set and its outcomes, use them and do not re-derive. Where no caller did — a direct invocation — derive the set here, before running anything and before drafting the body, the way `implement-issue-core`, *Final local verification* does: the base branch's required status checks, falling back to the workflow's check steps and marking the set unproven, mapping each required context to the local command that produces it, and carrying a context with no local equivalent as `not locally runnable`. **Never from the `CLAUDE.md`/`AGENTS.md` list read above** — that list describes the gate and drifts from it, so a run built on it is complete against the wrong thing and the body's table then reports that completeness as compliance. Run the locally runnable part before opening the PR unless the caller explicitly documents that final verification was already completed by `implement-issue-core`, and hold the set and its outcomes for the body's gate table below.
+**That read does not supply the gate.** Where the caller supplied the check set and its outcomes, use them and do not re-derive. Where no caller did — a direct invocation — derive the set here, before running anything and before drafting the body: the base branch's required status checks, falling back to the workflow's check steps and marking the set unproven, mapping each required context to the local command that produces it, and carrying a context with no local equivalent as `not locally runnable` (where the caller is `implement-issue-core`, it derives the set the same way in its *Final local verification*, and passes it). **Never from the `CLAUDE.md`/`AGENTS.md` list read above** — that list describes the gate and drifts from it, so a run built on it is complete against the wrong thing and the body's table then reports that completeness as compliance. Run the locally runnable part before opening the PR unless the caller explicitly documents that final verification was already completed by `implement-issue-core`, and hold the set and its outcomes for the body's gate table below.
 
 **Branch naming**: follow documented repo convention; otherwise preserve the current branch — never invent a convention.
 
@@ -82,7 +82,7 @@ Then a blank line and the normal description/template. `Depends on:` always mean
 # Creating and verifying the PR
 
 - Draft/full behavior follows repo docs; otherwise work repos default to draft and personal repos to full. Explicit caller/user preference wins.
-- **The `Chartered scope:` line is what makes a later ratchet check possible, and it is only truthful now.** One or two sentences from the issue, written at creation while the scope is still uncontested. A supervising run compares each repair push against it (`backlog-orchestrator`, *PR promotion and central supervision*); recorded later it would be written from the diff and could only agree with it, and the body is where it survives a session boundary that a run's own state does not.
+- **The `Chartered scope:` line is what makes a later ratchet check possible, and it is only truthful now.** One or two sentences from the issue, written at creation while the scope is still uncontested. A supervising run compares each repair push against it (where the run is `backlog-orchestrator`'s, its *PR promotion and central supervision*); recorded later it would be written from the diff and could only agree with it, and the body is where it survives a session boundary that a run's own state does not.
 - **Report the as-created draft state** — supervising workflows need it to tell a run-drafted PR from a human-drafted one, and this skill never changes draft state after creation (NOTES).
 - Use GitHub MCP in remote/web environments; `gh pr create --base <pr-base>` locally when available.
 - Directly invoked by a user → show proposed title/body and confirm before creation. Chained from an authorized implementation workflow → no second confirmation.
@@ -108,20 +108,7 @@ By default, implementation workflows expect this skill to trigger the repository
 
 ## Substantive vs mechanical pushes
 
-Re-trigger review after a **substantive** push; never after a **mechanical** one. A push is mechanical when it changes identity, location, or formatting and nothing else:
-
-- a restack/rebase onto a new base whose conflict resolutions reproduce both sides' original intent rather than picking between them;
-- a renumber/regeneration of a claimed artifact (migration number + index entry, lockfile, generated manifest or client) where content is unchanged apart from the identity or ordering that had to move;
-- formatter-only output.
-
-Everything else is substantive — including a conflict resolution that chose between behaviors, and a regeneration whose output differs beyond identity/ordering. **Cannot tell → substantive.**
-
-Qualifying as mechanical also requires the repository's deterministic checks to validate the push — those, not another review round, are what stand behind it:
-
-- no check exists that would catch a bad renumber or dropped hunk → the push is **not mechanical**; it needs review;
-- for a renumbered/regenerated artifact, "passes the checks" means **verified to apply** — regenerate through the repository's own generator (never hand-edit identity fields) and exercise the apply path (migrate a scratch database, install from the lockfile, regenerate-and-diff). Unverified → substantive (NOTES: the silently-skipped-migration failure).
-
-This governs what the workflow triggers, not what the review provider does on its own events (e.g. re-reviewing a draft marked ready) — neither a reason to suppress a due trigger nor to issue one that is not due.
+Re-trigger review after a **substantive** push; never after a **mechanical** one. `references/mechanical-pushes.md` is the test for which is which; apply it from there, and do not restate it here.
 
 # Boundaries
 

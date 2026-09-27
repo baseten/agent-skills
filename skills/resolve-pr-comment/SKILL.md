@@ -272,8 +272,8 @@ the failure loud here, not what makes it a failure.
 ### Classify-only invocations
 
 A caller may invoke this skill to **classify and draft only**. It says so by
-passing a classify-only context; `repair-pr` passes it whenever its remaining
-repair budget is zero (`repair-pr`, *Review repair (`repair type = review`)*, step 2).
+passing a classify-only context — where the caller is `repair-pr`, it passes one
+whenever its remaining repair budget is zero.
 
 In that mode **steps 3-6 of the workflow do not run**: make no correction, run
 no verification, commit nothing, push nothing, reply to nothing and resolve
@@ -291,8 +291,8 @@ A caller that wants classification without repair and does not say so gets the
 mutation workflow anyway — the first branch above applies, commits and pushes a
 fix. That is how a caller's repair cap is exceeded by the callee: `repair-pr`
 skipping its own steps 3-5 constrains `repair-pr`, not the skill it invoked
-(`repair-pr`, *Review repair (`repair type = review`)*, step 2 states the same
-requirement from the caller's side).
+(where the caller is `repair-pr`, its *Review repair (`repair type = review`)*,
+step 2, states the same requirement from the caller's side).
 
 ### What a question item must contain
 
@@ -423,8 +423,8 @@ not the run's to state. Handing over the draft costs one paste and keeps the
 answer attributable to whoever actually stands behind it.
 
 **One path posts an answer this skill drafted, and it is not this skill**:
-`settle-outstanding-decisions`, *Recording the ruling*, posts the approved or
-edited text after the owner has read it, marked as their ruling. That is the
+`settle-outstanding-decisions` posts the approved or edited text after the
+owner has read it, marked as their ruling. That is the
 negation this rule is written on — not that the answer never reaches the thread,
 but that it never reaches it on this pass's authority.
 

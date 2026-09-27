@@ -48,9 +48,7 @@ No supervising workflow promotes a draft on its own judgement (`rules/draft-stat
 
 ## Substantive vs mechanical pushes
 
-The re-trigger split exists because restacks and renumbers happen for reasons unrelated to a PR's own diff — most often right after a sibling merges — and re-reviewing every one spends review budget on code that did not change. The hazard is that a *botched* renumber is indistinguishable in the diff from a correct one while changing whether the artifact runs at all: a migration whose identity fields went stale in a hand-rename is **silently skipped** — it compiles, CI is green, and the schema change never happens. That is why "passes the checks" means **verified to apply** (regenerate through the repository's own generator, then exercise the artifact's apply path), why an unverified renumber is substantive, and why a repository with no deterministic check that would catch a bad renumber gets no mechanical exemption at all.
-
-The split governs what the workflow itself triggers, not what the review provider does on its own events (e.g. re-reviewing when a draft is marked ready) — provider behavior is neither a reason to suppress a due trigger nor to issue one that is not due.
+The test and its reasoning moved to `rules/mechanical-pushes.md` and `rules/mechanical-pushes-notes.md` (#140), because `review-docs` applies it too and pointed up into this skill for it.
 
 ## Why an unlinkable PR stops rather than ships
 

@@ -14,3 +14,7 @@ was reasoning about a section that no longer lives there.
 - **Author is not reliably knowable anyway.** A bot posting through an integration, a human using a bot account, an account that changes hands — the test would key on the least stable field available, and `rules/posting-identity.md` already documents that authorship reads differently per transport.
 
 The owner asked for the rule scoped to human comments and, when the asymmetry was put to them, confirmed author-blind. Do not narrow it without a new ruling.
+
+## Unhandled feedback
+
+**Why the unhandled-feedback predicate moved here (#140):** it was stated in full in `backlog-orchestrator`, *CI/review repair*, and `implement-issue` applied it too — restating the predicate in condensed form and pointing up into `backlog-orchestrator` for the rest ("states the rule"), an orchestrator it never runs under. Both supervising runs apply it on every supervision cycle, and it is the thread-root test's carve-out applied to re-admission, so it belongs beside that test. The text moved verbatim except for role nouns and self-citations: "this run" and "the parent" became "the supervising run", "step 5's mechanism sentence" became the step that records a pass's returned threads (each consumer numbers its steps differently), and citations of `references/review-feedback.md` became in-file section references.

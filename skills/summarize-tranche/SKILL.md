@@ -64,11 +64,11 @@ a question item, or a repair deferred because `review-repair-cycles` was spent
 orchestrator already holds that PR's merge and has no compliant dispatch: the review path
 refuses the thread on budget and re-admits it only on new content, and the finding path
 exists for work no thread carries
-(`backlog-orchestrator`, *A settle finding is the third repair shape*).
+(where the run is `backlog-orchestrator`'s, its *A settle finding is the third repair shape*).
 Classing one as `IN_FLIGHT_FIX` un-settles the tranche with nothing able to act on it. So
 report a **deferred repair as `MERGE_RISK`** — the requested change, the thread's
 API `html_url` as the orchestrator recorded it and never rebuilt
-(`resolve-pr-comment`, *What a question item must contain*), that the review repair
+(`references/review-feedback.md`, *Reserved for the owner*), that the review repair
 budget was spent, and that the next step is to apply it or lift the budget. A
 **question** thread is not an action point of its own: the walkthrough reads it from
 the question item the run recorded, which is what spares the owner opening the
@@ -77,13 +77,12 @@ thread at all.
 **The test is the absence of a dispatch, not the reservation.** One reserved thread has
 one: a thread carrying a **recorded code-changing ruling whose change has not been pushed**
 is `IN_FLIGHT_FIX`, and the finding path takes it — a recorded ruling requiring this PR's
-code to change is exactly what that path's evidence is (`repair-pr`, *Finding repair (`repair type = finding`)*). It
+code to change is exactly what that path's evidence is. It
 must be emitted, because after a restart nothing else will. **What survives is the ruling,
 not the reservation** — a reservation is run state that a later invocation does not carry
 (`references/review-feedback.md`, *Reserved for the owner*), so the recoverable fact is
 the ruling recorded on the thread with its change still unpushed. Nothing else reaches it:
-the walkthrough's already-ruled test retires the question rather than re-emitting it
-(`settle-outstanding-decisions`, *What qualifies as an outstanding decision*), and the
+the walkthrough's already-ruled test retires the question rather than re-emitting it, and the
 same-run route from the walkthrough's own output is gone with the run. Excluding it would
 leave the change with no dispatch path and the merge gate shut for good.
 

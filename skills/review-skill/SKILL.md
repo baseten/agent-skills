@@ -20,8 +20,8 @@ skill does not make.
 (`references/establish-do-not-assume.md`). A contract citing another as saying
 something is making a claim about that file, and it is checkable in one read —
 observed: an orchestrator cited `create-pr` as *naming a provider that
-re-reviews*, where `create-pr` says *(e.g. re-reviewing a draft marked ready)*,
-names nobody, and is explicitly scoping away from provider behaviour. Resolve
+re-reviews*, where `create-pr` said *(e.g. re-reviewing a draft marked ready)*,
+named nobody, and was explicitly scoping away from provider behaviour. Resolve
 every citation a change adds or leans on.
 
 **Adjudication is not exhaustiveness, and the difference is why the budget still

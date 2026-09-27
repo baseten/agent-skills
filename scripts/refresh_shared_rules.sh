@@ -27,7 +27,8 @@ AUTHORED_WRITE_FORM="backlog-orchestrator settle-and-merge create-pr normalize-g
 # ABSENCE_IS_NOT_A_VERDICT <-> rules/absence-is-not-a-verdict.md.
 RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
   establish-do-not-assume a-passing-test-is-not-a-verified-fix
-  posting-identity agent-policy review-feedback draft-state"
+  posting-identity agent-policy review-feedback draft-state
+  repair-rounds mechanical-pushes"
 
 # Each list names only the skills that APPLY the rule, and every one of them
 # must cite it in its own SKILL.md (check_shared_rules.py). A rule that cites
@@ -48,6 +49,13 @@ AGENT_POLICY="backlog-orchestrator settle-and-merge implement-issue
 
 # Skills that promote a draft, decline to, or gate on the drafts it defines as held.
 DRAFT_STATE="backlog-orchestrator settle-and-merge implement-issue"
+
+# Skills that dispatch a repair-pr pass, choose its model and count its cycles.
+REPAIR_ROUNDS="backlog-orchestrator implement-issue"
+
+# Skills that decide whether a push re-triggers review, or is re-reviewed.
+MECHANICAL_PUSHES="create-pr review-docs backlog-orchestrator implement-issue
+  npm-dependency-upgrade-orchestrator"
 
 # Skills that classify, repair, report or gate on review threads.
 REVIEW_FEEDBACK="backlog-orchestrator implement-issue repair-pr resolve-pr-comment
