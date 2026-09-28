@@ -258,7 +258,8 @@ The tool-name entries are different, because several tools **decline to approve
 themselves in auto mode**. Their own permission hook returns `passthrough` with
 a message such as *"Scheduling a cron prompt requires classifier review"*, and
 the permission pipeline converts an unresolved `passthrough` into **`ask`**. In
-an unattended fan-out an `ask` is a deadlock, not a delay.
+an unattended fan-out an `ask` stops the worker until a human answers it
+(`swarm`, *Blocked workers*): a stall, not a delay.
 
 A matched whole-tool allow rule is evaluated **before** that conversion, so the
 rule is what keeps the tool from asking. The only tools that ignore a whole-tool
@@ -469,7 +470,9 @@ The fifth round is the one that settles the question. `Bash(git commit*)` and
 all — yet compose into `git commit -F <secret>` followed by a push, which writes
 an arbitrary local file into remote history. **No single rule is wrong there.**
 Closing it means gating every commit or every push, and in an unattended fan-out
-a worker stopped on a permission prompt is a deadlock, not a delay.
+a worker stopped on a permission prompt holds its slot until a human answers it
+(`swarm`, *Blocked workers*), and gating every commit puts every worker there:
+a stall, not a delay.
 
 So: any rule set broad enough to let an agent commit and push unattended is
 broad enough to exfiltrate a file. Narrowing relocates the hole; it does not

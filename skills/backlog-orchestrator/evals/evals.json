@@ -759,6 +759,18 @@
         "the answer keeps issue 3's hold and reports the reply",
         "the answer counts the wake as productive"
       ]
+    },
+    {
+      "id": 59,
+      "name": "a-surfaced-held-worker-does-not-keep-the-tranche-from-settling",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a tranche of five issues on remote worker sessions. Four have open PRs whose automated review rounds completed, every finding is resolved, CI is green, and every other worker session this run created is archived. The fifth issue's implementation worker W stopped on a permission request for `mcp__sentry__search_issues`; last cycle you raised it as a NEEDS_USER item naming the task, the session, its URL and that tool string. Nothing else is dispatchable. Questions: (a) Is the run settled — does W's live session or W being in flight prevent it? (b) What do the settled report and state block say about W? (c) What happens if, on a later scheduled check-in, W's session is found running again?",
+      "expected_output": "(a) Settled. A worker blocked on a permission prompt is ordinarily in flight and a live session this run created ordinarily blocks settlement, but a worker held on the owner's authority and already raised as a NEEDS_USER item counts as surfaced, exactly as a reserved thread does: it holds its own work unit, not the rest of the tranche, so the settle sequence (summary, walkthrough, ranking, merge gate) runs over the four PRs. W is not archived — it is never archived on the run's authority. (b) Both name W's session as alive, with its URL and the literal tool string it is waiting on, so no live session is omitted from the output. (c) The check-in re-reads held sessions; W resuming is an observed delta that clears the unproductive-wake count and un-settles the run, which resumes supervising W.",
+      "assertions": [
+        "The answer declares the run settled despite W, because a held worker already raised as NEEDS_USER counts as surfaced like a reserved thread, and runs the settle sequence over the other four PRs",
+        "The answer does not archive W on the run's own authority",
+        "The answer names W as alive in the settled report and state block, with its URL and the literal tool string",
+        "The answer treats W resuming, seen on a check-in, as a delta that un-settles the run"
+      ]
     }
   ]
 }

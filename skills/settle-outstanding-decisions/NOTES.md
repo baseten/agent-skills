@@ -8,7 +8,7 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 ## Attendance is the precondition
 
-**Why this skill and the orchestrator's `AskUserQuestion` prohibition are one rule, not a conflict:** nobody watches an unattended worker's permission prompts — the call does not pause the worker, it deadlocks it, and a deadlocked worker's run is wasted. This skill exists to occupy a human's attention with the same tool. Both positions follow from *ask only where someone is watching to answer*; the distinguishing property is attendance, never the tool.
+**Why this skill and the orchestrator's `AskUserQuestion` prohibition are one rule, not a conflict:** nobody is there to answer an unattended worker's prompts — the parent can surface one but never answer it (`swarm`, *Blocked workers*) — so the call does not pause the worker, it stops it until a human happens to look, and the run spends that time holding a slot. This skill exists to occupy a human's attention with the same tool. Both positions follow from *ask only where someone is watching to answer*; the distinguishing property is attendance, never the tool.
 
 **Why the frontmatter no longer forbids model invocation:** the orchestrator's settled-step request is a model invocation, so a flag forbidding those would forbid an intended caller. The description now carries the scoping the flag used to. What bounds the cost of a stray selection is the rest of the skill — unattended it asks nothing, and attended the qualifying bar keeps the questions scarce and the zero case one line.
 
