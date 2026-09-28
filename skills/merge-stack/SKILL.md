@@ -85,7 +85,7 @@ For `merge through` or `merge entire stack`, always process the graph in parent-
 
 ## Readiness before each merge
 
-Immediately before merging a PR, refresh its GitHub state. **A verdict attaches to the commit it was computed on, and the head moves** (`references/ci-and-review-verdicts.md`, *A verdict attaches to a commit*, and *CI is green*): a review or a CI result naming a SHA other than the current head is no signal, and an empty rollup is not a green (`references/absence-is-not-a-verdict.md`).
+Immediately before merging a PR, refresh its GitHub state. **A verdict attaches to the commit it was computed on, and the head moves** (`references/ci-and-review-verdicts.md`, *A verdict attaches to a commit*, and *CI is green*): a review or a CI result naming a SHA other than the current head is no signal, and an empty rollup is not a green (`references/absence-is-not-a-verdict.md`). This skill applies that rule's CI-green and verdict-attaches-to-a-commit halves only; its review half is not a condition here — whether a merge needs a review is the repository's protection to decide — so a user-authorized merge is never refused for lack of an automated-review summary.
 
 Never bypass repository protection. Stop that PR if it is:
 
