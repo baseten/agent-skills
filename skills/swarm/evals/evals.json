@@ -229,6 +229,32 @@
         "The answer ends the ref by the single rule — once its content is on the remote, either its commits reachable or the worker's own pushed head carrying the same content for every captured path — reporting it and never deleting it before then",
         "The answer takes all of this from the swarm contract and does not say the capture procedure is unavailable to a standalone caller"
       ]
+    },
+    {
+      "id": 20,
+      "name": "a-permission-blocked-worker-holds-its-slot-and-is-reported-as-held",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are supervising four workers at the ceiling of 4 on remote worker sessions, and the run established at startup that it can reach each worker's checkout. Worker W has been running for fifty minutes and has pushed two checkpoints; its session now reports it stopped, awaiting a human, and the pending action names the tool `mcp__linear-server__save_comment`. It fails the releasable test, the parent cannot perform that write itself, its `sources` carry the repository it was given, and two more tasks are waiting for a free slot. Question: what do you do with W and with its slot, what do you schedule into it, and what ends the situation — including if the owner, instead of answering, asks for the slot back?",
+      "expected_output": "This is a permission request (case 4), not a decision prompt: raise NEEDS_USER naming the task, the session, where to answer it (the session's URL) and the literal tool string `mcp__linear-server__save_comment`, untidied. The empty-sources carve-out does not apply — its sources are populated and the request is not a search for its own files. Do not archive-and-redispatch W as case 3's reachable path would: the next worker would stop on the same tool unless the allowlist changed, so recovery discards fifty minutes of context for an identical block, while the owner can allow the request in that session and W continues. Keep the session and hold the slot, counted as occupied and reported as blocked, so neither waiting task is dispatched into it. That is not the 'still waiting' the section forbids, which bans a silently held slot, not a named and counted one. The owner ends the hold: answered either way (a denial included), W resumes and the slot is live. If the owner asks for the slot back, capture W's uncommitted work to a remote recovery ref by step 3's reachable path, then archive; redispatch the same work unit only if the owner allowlisted the tool or asked for a redispatch — otherwise the work unit stays NEEDS_USER with no worker and the slot is free for a waiting task.",
+      "assertions": [
+        "The answer resolves W as NEEDS_USER naming the task, the session, the session's URL and the literal tool string, and does not treat it as the empty-sources carve-out",
+        "The answer keeps W's session and does not archive or redispatch it on the run's own authority",
+        "The answer gives the reason for holding: a redispatch would stop on the same tool unless the allowlist changed, and the owner can allow the request in place",
+        "The answer counts W's slot as held or blocked rather than free and dispatches neither waiting task into it",
+        "The answer says holding a named, counted slot is not the forbidden 'still waiting'",
+        "The answer ends the hold on the owner's answer either way, and on a request for the slot back captures before archiving and redispatches only where the owner allowlisted the tool or asked for it, otherwise leaving the work unit NEEDS_USER with no worker and the slot free"
+      ]
+    },
+    {
+      "id": 21,
+      "name": "a-held-worker-is-watched-on-a-bound-then-returned-alive-in-a-restartable-checkpoint",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you were invoked directly, not by an orchestrator, over three tasks on remote worker sessions. Two finished and were released. The third, worker W, stopped on a permission request for `Bash(pnpm publish:*)`; you raised it as NEEDS_USER with the session URL and the tool string two and a half hours ago, and have observed it several times since — it is still stopped, the owner has not answered, and nothing else is in flight. Question: do you keep waiting, archive W, or stop — and if you stop, what exactly does your output say about W?",
+      "expected_output": "Stop, and do not archive. The hold bounds the work, not the watch: invoked directly, the parent supervises a held worker on the elapsed-time observations the stalled-head rule defines, measured from when the hold was raised, and with nothing else in flight the bound is spent at the two-hour threshold — two and a half hours across several observations is past it. Archiving is not the run's to do: the slot is held on the owner's authority, and a redispatch would stop on the same tool. So return a restartable checkpoint that names W's session as alive, gives its URL and the literal tool string `Bash(pnpm publish:*)`, and states it is never archived on the run's authority — the owner or the next invocation picks it up. It is reported as held and left to the owner, not failed and not clean; silently ending with W unmentioned, or waiting on indefinitely, are both the forbidden 'still waiting'.",
+      "assertions": [
+        "The answer stops supervising because the bound is spent, citing the elapsed-time observations measured from when the hold was raised, rather than waiting indefinitely",
+        "The answer does not archive or redispatch W on the run's own authority",
+        "The answer returns a restartable checkpoint naming W's session as alive with its URL and the literal tool string",
+        "The answer states the session is never archived on the run's authority and is left to the owner or the next invocation"
+      ]
     }
   ],
   "companions": []
