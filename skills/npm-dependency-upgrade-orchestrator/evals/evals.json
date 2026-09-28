@@ -1,7 +1,7 @@
 {
   "skill_name": "npm-dependency-upgrade-orchestrator",
   "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it.",
-  "companions": ["swarm"],
+  "companions": ["swarm", "create-pr"],
   "evals": [
     {
       "id": 0,
@@ -204,7 +204,7 @@
       "id": 17,
       "name": "dependency-prs-merge-by-kind-under-their-own-opt-in",
       "prompt": "You are executing the npm-dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository's .claude/agent-policy.json on its default branch sets \"auto-merge-dependencies\": true and \"auto-merge\": false. Five PRs, each with every required check green on its current head, lockfile resolved against the current base, and no open review thread: (a) the routine batch PR, whose three candidates triage cleared, changing only their version specifiers in package.json and the lockfile, which moves no other package across a major and adds none; (b) a PR from an upgrade-npm-dependency task upgrading a library one major version, with a small code change the migration needed; (c) a PR from an upgrade-npm-dependency task for a minor bump triage did not clear, whose upgrade changed two call sites; (d) a second routine batch PR identical to (a) except that one candidate's adopted Dependabot PR has since advanced to a newer release than the one triage cleared; (e) a third routine batch PR whose diff also adds an `overrides` entry to package.json. Which do you merge now, which wait, and what do you do next for each?",
-      "expected_output": "(a) Merge it: the routine batch PR is the cleared kind, and its diff is only the candidates' version specifiers plus the lockfile, so it merges on green, current and no open thread, with no review round spent. `auto-merge-dependencies` is the opt-in here; `auto-merge: false` governs implementation PRs. (b) and (c) are the reviewed kind: post the repository's automated review trigger once green, following create-pr's routing and trigger rules since the run may not have created the PR, and merge each only once that round completes clean on its current head. (d) Do not merge: 'current' requires that no candidate has moved past its triaged target, and for a batched candidate that includes the superseded bot PR's head, which Supervise's target re-check reads - one moved, so its clearance is void - pull it out with its coupled siblings and re-triage; the rest stands. (e) Not the cleared kind: an `overrides` entry is outside version specifiers and the lockfile, so it becomes the reviewed kind and waits for a clean automated review. After merging (a), re-run the lockfile check on the next PR before merging it, since the merge moved the base. Merges go through merge-stack. Report which PRs merged and under which kind.",
+      "expected_output": "(a) Merge it: the routine batch PR is the cleared kind, and its diff is only the candidates' version specifiers plus the lockfile, so it merges on green, current and no open thread, with no review round spent. `auto-merge-dependencies` is the opt-in here; `auto-merge: false` governs implementation PRs. (b) and (c) are the reviewed kind: post the repository's automated review trigger once green, following the review-trigger rule since the run may not have created the PR, and merge each only once that round completes clean on its current head. (d) Do not merge: 'current' requires that no candidate has moved past its triaged target, and for a batched candidate that includes the superseded bot PR's head, which Supervise's target re-check reads - one moved, so its clearance is void - pull it out with its coupled siblings and re-triage; the rest stands. (e) Not the cleared kind: an `overrides` entry is outside version specifiers and the lockfile, so it becomes the reviewed kind and waits for a clean automated review. After merging (a), re-run the lockfile check on the next PR before merging it, since the merge moved the base. Merges go through merge-stack. Report which PRs merged and under which kind.",
       "assertions": [
         "the answer merges the routine batch PR without requesting a review round",
         "the answer treats auto-merge-dependencies, not auto-merge, as the opt-in for these PRs",
@@ -212,6 +212,20 @@
         "the answer holds the batch PR whose adopted Dependabot PR advanced past the triaged target",
         "the answer treats the batch PR with an overrides entry as the reviewed kind",
         "the answer re-runs the lockfile check on the next PR after a merge moves the base"
+      ]
+    },
+    {
+      "id": 18,
+      "name": "trigger-on-a-bot-pr-follows-the-review-trigger-rule",
+      "prompt": "You are executing the npm-dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository opted in with \"auto-merge-dependencies\": true. An adopted Renovate PR carries a semver-major bump; it is the reviewed kind, every required check is now green on its current head, and nothing has triggered a review on it. The repository's CLAUDE.md documents no review trigger and no documentation-review convention; `@codex review` is supported here. The run has two ways to post a comment: a GitHub App token whose comments have been read back authored as 'acme-deps[bot]', and `gh` under the invoking user's own credential. Questions: (a) what exactly does the trigger comment say? (b) which of the two paths posts it, and what happens if the other one does? (c) does it carry the attribution footer your other unattended comments carry? (d) later a flaky check is re-run on the same head and goes green again — do you post the trigger again?",
+      "expected_output": "(a) `@codex review` and nothing else: with no documented convention the default applies where it is supported. (b) `gh`, under the invoking user's own account — the trigger is the one comment exempt from posting as a distinct identity. Posted as 'acme-deps[bot]' the convention silently does not fire: nothing refuses it, and the run waits for a review that never arrives. This holds although the PR is a bot's and never went through create-pr. Read the trigger comment back at once to confirm it posted as the invoking user: no comment has been read back through `gh` yet, so this is the bootstrap's establishing write, and any other author means the trigger did not fire. (c) No footer. The reason is functional: the comment must read exactly as the convention expects, and that exemption overrides the approval test, which would otherwise ask for one on an unattended write. (d) No. A CI run is not a reason to re-trigger, and the head did not change.",
+      "assertions": [
+        "the trigger text is `@codex review` alone, taken as the default because the repository documents none",
+        "the trigger is posted through the invoking user's own credential, not the app token observed authoring as the bot",
+        "the answer names the silent non-firing of the convention as the consequence of posting it as the bot",
+      "the answer reads the trigger comment back after posting to confirm it was authored as the invoking user",
+        "the trigger carries no attribution footer, for the functional reason rather than because someone read it",
+        "the answer does not re-trigger review because a CI check re-ran on an unchanged head"
       ]
     }
   ]

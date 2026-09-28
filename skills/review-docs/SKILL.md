@@ -142,7 +142,7 @@ Round 2 is the last round; unresolved findings after it go to the author.
 
 # Enabling it in a repository
 
-A repository routes documentation-only PRs here by documenting it in its own `CLAUDE.md`/`AGENTS.md`, which `create-pr` already reads for review-trigger conventions (where the caller is `create-pr`, its *Automated review trigger* owns the routing):
+A repository routes documentation-only PRs here by documenting it in its own `CLAUDE.md`/`AGENTS.md`, which `create-pr` already reads for review-trigger conventions (the routing itself is the *review trigger* shared rule's, *Documentation-review routing*, applied by whichever skill issues the trigger):
 
 ```text
 Documentation-only PRs (every changed path is prose) are reviewed by the
@@ -158,7 +158,7 @@ documentation paths, alongside the code review, which still runs in full.
 
 **Mixed routing is opt-in and off by default, while a hand invocation on a mixed PR always works.** A one-line README touch-up on a feature PR does not need a claims audit, and a second review comment on every PR that grazes a `docs/` path is how a useful report becomes something people scroll past — the cost this skill is otherwise spent avoiding (NOTES).
 
-**Installed is not enabled.** Until a repository states the documentation-only line above, `create-pr` has no convention to read there and keeps triggering ordinary code review, silently — the skill is present and inert. Enabling it is a change in that repository, never here, which is also why this contract names no repository: nothing here has to change when the next one adopts it, or stops.
+**Installed is not enabled.** Until a repository states the documentation-only line above, whichever skill issues the trigger has no convention to read there and keeps triggering ordinary code review, silently — the skill is present and inert. Enabling it is a change in that repository, never here, which is also why this contract names no repository: nothing here has to change when the next one adopts it, or stops.
 
 # Boundaries
 

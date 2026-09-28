@@ -28,7 +28,7 @@ AUTHORED_WRITE_FORM="backlog-orchestrator settle-and-merge create-pr normalize-g
 RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
   establish-do-not-assume a-passing-test-is-not-a-verified-fix
   posting-identity agent-policy review-feedback draft-state
-  repair-rounds mechanical-pushes"
+  repair-rounds mechanical-pushes review-trigger"
 
 # Each list names only the skills that APPLY the rule, and every one of them
 # must cite it in its own SKILL.md (check_shared_rules.py). A rule that cites
@@ -54,8 +54,13 @@ DRAFT_STATE="backlog-orchestrator settle-and-merge implement-issue"
 REPAIR_ROUNDS="backlog-orchestrator implement-issue"
 
 # Skills that decide whether a push re-triggers review, or is re-reviewed.
-MECHANICAL_PUSHES="create-pr review-docs backlog-orchestrator implement-issue
+MECHANICAL_PUSHES="review-docs backlog-orchestrator implement-issue
   npm-dependency-upgrade-orchestrator"
+
+# Skills that issue or re-trigger an automated review, or gate on the rounds
+# its routing requires.
+REVIEW_TRIGGER="create-pr backlog-orchestrator implement-issue
+  npm-dependency-upgrade-orchestrator settle-and-merge"
 
 # Skills that classify, repair, report or gate on review threads.
 REVIEW_FEEDBACK="backlog-orchestrator implement-issue repair-pr resolve-pr-comment
