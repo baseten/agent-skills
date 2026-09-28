@@ -59,4 +59,4 @@ scoped deliberately: it is the wrong source for what a review found and the only
 source for whether one happened, and a rule that forbade it outright misfired in
 the opposite direction once already.
 
-**Where the routed convention is a review skill invoked rather than a reviewer triggered** — `review-docs` is the case that exists — existence is that skill's completed pass and the review comment it posts, whose `Reviewed commit:` line is the one item 1 reads. A pass that declines because that skill's own round budget is spent has completed: the review happened, and its answer is that it is over.
+**Where the routed convention is a review skill invoked rather than a reviewer triggered** — `review-docs` is the case that exists — existence is that skill's completed pass and the review comment it posts, whose `Reviewed commit:` line is the one item 1 reads. What its decline means is the *review trigger* shared rule's (*Documentation-review routing*).

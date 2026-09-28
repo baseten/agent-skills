@@ -28,7 +28,7 @@ Added with `review-docs` (Sept 2026). The routing was placed in `create-pr` rath
 
 ## Confirming a trigger took effect, and a refused round
 
-Moved here from `backlog-orchestrator`, *Implementation worker contract* — the confirmation step, the write-refusal path and the refused round — with the note on confirming a skill invocation (#144). Every skill that issues a trigger under this rule needs to know whether it took effect, and `implement-issue` re-triggered after a repair with no refusal exception at all: a provider out of budget would have been asked again on every wake.
+Moved here from `backlog-orchestrator`, *Implementation worker contract* — the confirmation step, the write-refusal path and the refused round — with the note on confirming a skill invocation (#144). Every skill that issues a trigger under this rule needs to know whether it took effect, and `implement-issue` re-triggered after a repair with no refusal exception at all: a provider that had answered it was out of budget would have been asked again after every later pushed repair.
 
 Added with `review-docs` (Sept 2026). The confirmation step was written for an external reviewer and its whole vocabulary assumes one: an arrival window, a not-configured refusal, a reissue through a second write path, and an unreviewed-pending state for a reviewer that is merely slow. None of those exist when the routed convention is a skill this run invokes — it either ran or it did not, and there is no queue to wait out. The paragraph directly above *An elapsed window is not a refusal* is placed there deliberately: that sentence is the negation-class hazard, and a reader reaching it without the carve-out would park a PR as unreviewed-pending against a reviewer that was never coming.
 

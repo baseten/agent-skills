@@ -72,6 +72,7 @@ This skill owns supervision **only as the standalone single-issue orchestrator**
 
 - Use platform-promoted PR events when present; never build a duplicate monitor. Source order: first-class promoted events → other event notifications → bounded polling. No frequent no-change polling; no child agent kept alive only to wait.
 - The platform observes; this skill remains the **policy owner** — whether a repair is appropriate, and within which budget.
+- **Confirm the round-1 trigger `create-pr` issued took effect**, as `references/review-trigger.md`, *Confirming a trigger took effect*, requires of whichever skill supervises the PR — the same confirmation every later re-trigger gets.
 - If the platform's own auto-merge (a forge setting, not the policy key) is enabled, it merges outside the gate: confirm it is off, or report its merges as outside this skill's control.
 
 Maintain explicit state:
@@ -83,7 +84,7 @@ Review repair cycles: <used>/<limit>
 Finding repair cycles: <used>/<limit>
 Strongest-model repair rounds: <used>/<limit>
 Current remote head: <SHA>
-First review round: pending | refused (reason, reset) | complete-with-findings | clean
+Review rounds, one line per round: pending | refused (reason, reset) | complete-with-findings | clean
 Threads reserved for the owner: <count> (question items: api html_url, ask quoted, recommended reply (paste-ready, or labelled decision-not-for-posting), change SHA or none, why not posted; deferred repairs: api html_url, requested change, no draft)
 Draft state: <as-created> -> <current>
 Policy: budgets <source>; auto-merge <on|off> (<source>)
@@ -130,7 +131,7 @@ A pass that returns `NO_CODE_CHANGE` — the classification left it no repair to
 
 # Settle
 
-The run settles when its one issue reaches a terminal state: the PR individually finished — a completed review round, or one recorded `refused`, which is surfaced: it holds the merge gate and never stops the run settling (`references/review-trigger.md`, *A refused round*); every actionable finding resolved, answered, or reserved for the owner; CI green (`references/ci-and-review-verdicts.md`), or every red check attributed elsewhere and reported; no repair left to attempt — or `BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`. **Every terminal outcome settles, including one Phase 1 returned before supervision began** (NOTES: the failure outcomes carry the most decision-shaped material; the empty case gets `summarize-tranche`'s one line). Then run `settle-and-merge`, *The settle sequence*, over this one PR, passing it every input its *Inputs* names, as this skill supplies them:
+The run settles when its one issue reaches a terminal state: the PR individually finished — a completed review round, or one recorded `refused`, which is surfaced: it holds the merge gate and never stops the run settling (`references/review-trigger.md`, *A refused round*); every actionable finding resolved, answered, or reserved for the owner; CI green (`references/ci-and-review-verdicts.md`), or every red check confirmed expected-red after a producer merge and reported (`references/ci-attribution.md`, *A producer merge*); no repair left to attempt — or `BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`. **Every terminal outcome settles, including one Phase 1 returned before supervision began** (NOTES: the failure outcomes carry the most decision-shaped material; the empty case gets `summarize-tranche`'s one line). Then run `settle-and-merge`, *The settle sequence*, over this one PR, passing it every input its *Inputs* names, as this skill supplies them:
 
 - **PR set and scope**: scope, the canonical issue URL; PR set, its one PR — or none, where Phase 1 returned before creating one;
 - **findings**: the worker and review findings the run produced;

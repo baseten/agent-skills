@@ -9,7 +9,7 @@ This is the rule other skills mean when they cite *wake budget*: what a supervis
 installed only that skill's directory, and travels with the skill if it is
 moved into a plugin. Edit the source, never a copy; check_shared_rules.py fails if a generated copy diverges.
 
-It binds whichever party arms the wake — one per run, whatever that wake watches. That party names the durable state its wake compares, and what it does on a wake that found something; this rule says how often it may wake and when it must stop.
+It binds the supervising skill that applies it, wherever that skill's run arms a wake — one per run, whatever that wake watches. That party names the durable state its wake compares, and what it does on a wake that found something; this rule says how often it may wake and when it must stop.
 
 ## A subscription and a check-in, both
 
@@ -22,7 +22,7 @@ Both, not either. The subscription is the fast path; the check-in is what makes 
 
 ## The budget and the backoff
 
-**Every recurring check-in carries one unproductive-wake budget and a backoff**, whichever party arms it:
+**Every recurring check-in that skill's runs arm — parent-side or worker-side — carries one unproductive-wake budget and a backoff**:
 
 - **budget: 8 consecutive unproductive wakes**, then stop re-arming. **A wake is unproductive whether it read and found nothing or could not read at all** — one counter over both, because both spend money to learn nothing and a watch that alternates between them is as pointless as one that does either;
 - **backoff: start at 20 minutes, double on each unproductive wake, cap at 4 hours.** Eight at that shape (20m, 40m, 80m, 160m, then 4h × 4) spans roughly 21 hours — long enough to wait out a night and a working day for a human reviewer, short enough that a forgotten watch dies in single-digit dollars. **Where the wake was deferred on a refused or exhausted allowance, it goes at whichever is later: the backoff's next step, or the reset/`Retry-After` floor, where the deferral has one** (the *watch and read* shared rule also defines when it has none) — waking before the reset is refused again, and waking before the backoff would have is the frequency the backoff exists to cut. The budget is one; the schedule is still per cause. A wake that defers draws on this same budget and carries none of its own; on exhausting it that way, stop re-arming and report the watch as blocked on the allowance, naming the contention — never as settled or quiet;

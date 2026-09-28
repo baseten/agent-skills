@@ -65,11 +65,12 @@ REVIEW_TRIGGER="create-pr backlog-orchestrator implement-issue
 
 # Skills that gate on, or supervise a PR toward, green CI or a clean review.
 CI_AND_REVIEW_VERDICTS="backlog-orchestrator implement-issue
-  npm-dependency-upgrade-orchestrator settle-and-merge"
+  npm-dependency-upgrade-orchestrator settle-and-merge merge-stack"
 
-# Skills that decide whether a red check is the PR's own failure.
+# Skills that decide whether a red check - on CI or in a local run - is the
+# change's own failure.
 CI_ATTRIBUTION="backlog-orchestrator implement-issue
-  npm-dependency-upgrade-orchestrator repair-pr"
+  npm-dependency-upgrade-orchestrator repair-pr implement-issue-core"
 
 # Skills that supervise what they track: arm its watch, report no-change
 # results, and read its state within the credential's allowances.

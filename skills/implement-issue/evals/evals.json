@@ -144,14 +144,14 @@
     },
     {
       "id": 11,
-      "name": "a-red-check-the-default-branch-also-fails-is-not-this-prs",
-      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). CI on your PR is red: the e2e job fails with 'connection refused' across forty unrelated test files, and the unit job fails one assertion in a module your diff changed. You check: the default branch's latest run fails the same e2e job with the same error; your diff touches no connection or client configuration. CI repair budget is 2 with 0 used. What do you do about each job, and how many cycles are consumed?",
-      "expected_output": "Attribute per check, not per PR. The e2e failure is the environment's: its signature raised the hypothesis and the default branch failing the same job confirms it, and the diff does not touch what the error names — report it (and, being repository-wide, escalate to whoever owns the service rather than re-running) and consume no cycle for it. The unit failure is this PR's, so invoke repair-pr once with repair type ci for it, passing the failure context and remaining budget 2; that pass consumes one cycle if it pushes a repair.",
+      "name": "attribution-is-per-check-and-the-hypothesis-is-confirmed-before-it-counts",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). CI on your PR is red: the e2e job fails with 'connection refused' across forty test files your diff never touched, and the unit job fails one assertion in a module your diff changed. Your diff touches no connection or client configuration. CI repair budget is 2 with 0 used. Readable if you want them: the latest runs of the default branch and of two unrelated open branches, and the test service's health endpoint. (a) Before dispatching anything, what do you do about each job? (b) You read the other runs: the default branch and both unrelated branches fail the same e2e job with the same error. What now, and how many cycles are consumed? (c) Suppose instead all three of those runs pass e2e and you could not reach the health endpoint. What now?",
+      "expected_output": "(a) Attribute per check, not per PR. The unit failure is this PR's. The e2e signature raises an environment hypothesis but does not settle it, because a PR can produce the same error at the same breadth, so confirm it independently before treating it as anything but this PR's — read the other branches' runs or the service's health. (b) Confirmed: the e2e failure is the environment's; report it and consume no cycle for it. Invoke repair-pr once with repair type ci for the unit failure only, passing its context and remaining budget 2; a pushed repair consumes one cycle. (c) Unconfirmed: the hypothesis is not an attribution, so the e2e failure is treated as this PR's — invoke the pass for it rather than classifying it external here.",
       "assertions": [
         "the answer attributes the two jobs separately",
-        "the answer treats the e2e failure as environmental because the default branch fails the same job",
-        "the answer dispatches a CI repair for the unit failure only",
-        "the answer consumes no cycle for the environmental failure"
+        "the answer does not treat the e2e failure as environmental on its error signature alone",
+        "in (b) the answer treats the e2e failure as environmental because the other branches fail the same job, and consumes no cycle for it",
+        "in (c) the answer treats the unconfirmed e2e failure as this PR's and invokes the repair pass rather than classifying it external"
       ]
     }
   ]
