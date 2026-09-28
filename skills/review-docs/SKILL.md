@@ -142,7 +142,7 @@ Round 2 is the last round; unresolved findings after it go to the author.
 
 # Enabling it in a repository
 
-A repository routes documentation-only PRs here by documenting it in its own `CLAUDE.md`/`AGENTS.md`, which `create-pr` already reads for review-trigger conventions (where the caller is `create-pr`, its *Automated review trigger* owns the routing):
+A repository routes documentation-only PRs here by documenting it in its own `CLAUDE.md`/`AGENTS.md`, which `create-pr` already reads for review-trigger conventions (the routing itself is `rules/review-trigger.md`'s, *Documentation-review routing*, applied by whichever skill issues the trigger):
 
 ```text
 Documentation-only PRs (every changed path is prose) are reviewed by the

@@ -1,0 +1,27 @@
+# Notes — review-trigger
+
+Reasoning for `rules/review-trigger.md`. Deliberately *not* bundled into
+each skill: a copy of this per consumer would be design history with no reader,
+and the audience for it is a person editing the rule, who has this checkout.
+
+Moved here with the rule itself, from `create-pr/NOTES.md` — *The review trigger's authorship*, *Routing documentation PRs to a review skill* and the trigger half of *The PR body's brevity, and the trigger's second exemption* — when the rule was split out of `create-pr` (#142). "This skill" and "this step" in the moved entries are `create-pr` and its *Automated review trigger*, as they stood when the entry was written.
+
+**Why this is a shared rule (#142):** four skills issue a trigger under it. `create-pr` issues the first one after creation. `backlog-orchestrator` and `implement-issue` re-trigger after a repair "where repo convention requires it", and `backlog-orchestrator` also issues an untriggered PR's trigger at adoption. `npm-dependency-upgrade-orchestrator` posts one on PRs that never went through `create-pr`, such as a bot's. `create-pr` said as much itself — every caller that re-triggers inherits it — so three of the four applied a rule that lived in the fourth, and the npm orchestrator's pointer into it ran into a skill it does not compose for that PR at all. `settle-and-merge` gates on every round the PR's routing requires, so it reads the routing too and carries the rule for it. What stayed in `create-pr` is what only it does: the first trigger after creation, and the deferred trigger a caller can ask it for.
+
+**Why the general rules name this file as `rules/review-trigger.md` rather than cite `references/review-trigger.md`.** `rules/posting-identity.md`, `rules/authored-write-form.md` and `rules/review-feedback.md` mention the trigger convention's owner in passing, and each is carried by skills that never trigger a review — `create-pr` said it owned the convention, and each of them said so too. A `references/` citation there would make every one of those skills carry this rule, and the mechanical-push test it cites, by derivation — nearly every skill in the repository, for a pointer none of them needs in order to act. Every skill that does trigger carries this rule itself.
+
+## The convention and the account
+
+The trigger comment is the one post exempted from the posting-identity rule because there its authorship is **functional, not cosmetic**: authored by anything but the invoking user, the repository's review convention silently does not fire — nothing refuses it, so the run waits out a review that was never going to arrive. `rules/posting-identity.md` states the rule once, including the bootstrap for a fresh run's first trigger; this rule carries only the exception, not a restatement.
+
+The trigger comment's exemption from the footer is the same argument as its exemption from the posting-identity rule: the comment must match what the convention matches on, and a convention that does not fire fails silently. Two exemptions, one cause — which is why they are stated together.
+
+Under the approval test that now governs the footer (`rules/authored-write-form.md`), the trigger has **two** independent reasons to carry none, and only one of them is worth stating. The functional one — it must read exactly as the convention expects — is the one that fails silently and the one a reader has to know. The approval test on its own would ask for a footer here, since nobody reads a trigger comment before it is posted; the exemption overrides it. Stating both would invite someone to satisfy the weaker reason and think the rule met.
+
+## Documentation-review routing
+
+Added with `review-docs` (Sept 2026). The routing was placed in `create-pr` rather than in a repository list inside `review-docs` because `create-pr` already reads `CLAUDE.md`/`AGENTS.md` for review-trigger conventions — the decision point existed, and a list of repository names inside a general skill would be a second place to maintain, invisible to the repositories it governed. The rule still reads the convention from the repository's own docs, which is why it names them.
+
+**Why the routing governs re-triggers explicitly rather than leaving them to the first sentence.** Four sites re-trigger review "where repo convention requires it" — two in `backlog-orchestrator`, two in `implement-issue` — and three of them additionally say to select the trigger's author from the posting-identity map. Under a routed convention there is no comment and therefore no author to select, and a reader finding a step it cannot perform will either improvise a comment or skip the re-trigger silently. Both are wrong and neither is visible. So the rule says what a re-trigger *is* under a routed convention, and those sites cite it.
+
+**Why an unavailable review skill falls back rather than stopping.** It is the same fail-safe direction as the cannot-tell rule beside it: a PR reviewed by the wrong instrument costs one reading, and a PR reviewed by nothing costs the review. Reported either way, because a silent fallback is how a repository discovers months later that its documentation convention never fired.
