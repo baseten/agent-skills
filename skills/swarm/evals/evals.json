@@ -229,6 +229,19 @@
         "The answer ends the ref by the single rule — once its content is on the remote, either its commits reachable or the worker's own pushed head carrying the same content for every captured path — reporting it and never deleting it before then",
         "The answer takes all of this from the swarm contract and does not say the capture procedure is unavailable to a standalone caller"
       ]
+    },
+    {
+      "id": 20,
+      "name": "a-permission-blocked-worker-holds-its-slot-and-is-reported-as-held",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are supervising four workers at the ceiling of 4 on remote worker sessions, and the run established at startup that it can reach each worker's checkout. Worker W has been running for fifty minutes and has pushed two checkpoints; its session now reports it stopped, awaiting a human, and the pending action names the tool `mcp__linear-server__save_comment`. It fails the releasable test, the parent cannot perform that write itself, its `sources` carry the repository it was given, and two more tasks are waiting for a free slot. Question: what do you do with W and with its slot, what do you schedule into it, and what ends the situation?",
+      "expected_output": "This is a permission request (case 4), not a decision prompt: raise NEEDS_USER naming the task, the session and the literal tool string `mcp__linear-server__save_comment`, untidied. The empty-sources carve-out does not apply — its sources are populated and the request is not a search for its own files. Do not archive-and-redispatch W as case 3's reachable path would: redispatch cures a question through the countermand, but the next worker would stop on the same tool unless the allowlist changed, so recovery discards fifty minutes of context for an identical block, while the person the report reaches can allow the request in that session and W simply continues. Keep the session and hold the slot, counted as occupied and reported as blocked, not free — so neither waiting task is dispatched into it and the run does not schedule against it. That is not the 'still waiting' the section forbids, which bans a silently held slot, not a named and counted one. The owner ends the hold: answered either way, W resumes and the slot is live; if the owner asks for the slot back, recover it by step 3's reachable path — capture uncommitted work to a remote recovery ref first, then archive and redispatch the same work unit.",
+      "assertions": [
+        "The answer resolves W as NEEDS_USER naming the task, the session and the literal tool string, and does not treat it as the empty-sources carve-out",
+        "The answer keeps W's session and does not archive or redispatch it on the run's own authority",
+        "The answer gives the reason for holding: a redispatch would stop on the same tool unless the allowlist changed, and the owner can allow the request in place",
+        "The answer counts W's slot as held or blocked rather than free and dispatches neither waiting task into it",
+        "The answer says holding a named, counted slot is not the forbidden 'still waiting', and that the owner's answer or request for the slot back is what ends the hold, the latter by step 3's capture-then-archive path"
+      ]
     }
   ],
   "companions": []
