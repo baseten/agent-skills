@@ -198,7 +198,7 @@ Invoke `create-pr` with:
 - **any coverage finding this implementation carried** — a declared dependency satisfied on paper whose capability was absent, and the acceptance criteria left unmet. `create-pr` decides the linkage form from this and cannot decide correctly unseen: the default is a closing keyword, so silence auto-closes an issue you knowingly did not finish (NOTES);
 - **the posting-identity map as this skill holds it** — every entry, as received or `unestablished`. An invocation is read literally: a map left out is a map `create-pr` does not have, and its writes need different entries (agent-authored for the PR; invoking-user for the review trigger), so omitting it degrades both (NOTES).
 
-`create-pr` owns tracker linkage, stack `Depends on:` metadata, review-trigger policy, and creation.
+`create-pr` owns tracker linkage, stack `Depends on:` metadata, and creation, and issues the first review trigger under the review-trigger rule.
 
 After creation verify durable state: PR exists; head/base correct; canonical linkage correct **and in the form the coverage finding required** (closing keyword only where fully implemented); remote head contains the final pushed state.
 

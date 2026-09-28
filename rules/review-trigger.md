@@ -9,7 +9,7 @@ This is the rule other skills mean when they cite *review trigger*: which conven
 installed only that skill's directory, and travels with the skill if it is
 moved into a plugin. Edit the source, never a copy; check_shared_rules.py fails if a generated copy diverges.
 
-It governs every trigger a skill issues — the first one after a PR is created, a re-trigger after a repair, and a trigger on a PR the run never created, such as a bot's. **Which of those a skill issues, and when, is that skill's own**; this rule says what each one is.
+It governs every trigger a skill issues — the first one after a PR is created, a re-trigger after a repair, and a trigger on a PR the run never created, such as a bot's. **Which of those a skill issues is that skill's own; what each one is, and the conditions every re-trigger is bounded by, are this rule's.**
 
 ## The convention
 

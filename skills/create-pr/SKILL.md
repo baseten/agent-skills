@@ -99,7 +99,7 @@ After creation, fetch/read the PR and verify:
 
 By default, implementation workflows expect this skill to trigger the repository's documented automated review after the PR is created and final implementation state is pushed. `references/review-trigger.md` decides which convention that is, what the trigger is and from which account — including a documentation-review convention invoked rather than posted, and the fallback when that skill is unavailable — and when review is triggered again; apply it from there, and do not restate it here.
 
-- Only the trigger comment is exempt there. Every other authored write this skill makes — the PR itself, its body, any other comment — follows `references/posting-identity.md`, its availability test included, and `references/authored-write-form.md`.
+- Every other authored write this skill makes — the PR itself, its body, any other comment — follows `references/posting-identity.md` (availability test included) and `references/authored-write-form.md` without exemption.
 - A caller may explicitly request a **deferred review trigger** (e.g. an intentionally early WIP draft): create/verify the PR but do not trigger until the caller later requests it.
 
 # Boundaries
