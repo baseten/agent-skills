@@ -1,7 +1,11 @@
 {
   "skill_name": "implement-issue",
   "description": "Decision-scenario regression evals. Each prompt describes a run state and asks what the skill requires next; assertions check the decision, not the wording. Run them against any rewrite of SKILL.md before merging it: the rewrite passes only if every scenario still resolves the same way.",
-  "companions": ["settle-and-merge", "create-pr"],
+  "companions": [
+    "settle-and-merge",
+    "create-pr",
+    "repair-pr"
+  ],
   "evals": [
     {
       "id": 0,
@@ -124,6 +128,30 @@
         "the answer does not settle again from step 1 after the FAILED finding repair",
         "the answer does not dispatch the finding repair a second time, even though finding budget remains",
         "the answer returns the FAILED outcome directly, carrying the finding and the pass's report"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "a-refused-round-after-a-repair-is-not-re-triggered-and-the-run-settles",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your PR's review round 1 had two findings; repair-pr fixed both and pushed. You re-triggered review. The automated reviewer answered with a comment saying the account has reached its usage limit for code reviews and will reset in 6 hours. CI is green on the head, no thread is unresolved, and every budget has room. Your supervision wakes again 40 minutes later. Do you post the trigger again? Is the review condition satisfied? Does the run settle, or keep waiting until the provider comes back?",
+      "expected_output": "Do not re-post the trigger, now or on any later wake: the reviewer refused the round, a refusal is neither a clean review nor a signal to reissue, and each re-post is another review request that is answered all at once when the budget resets. Record the round as refused with the reason and the 6-hour reset; the trigger itself stays verified. The review condition is not satisfied — a refused round is not a completed one — so the merge gate stays shut for this PR. But the refused round counts as surfaced for settling: the run settles, runs settle-and-merge, and reports the PR as owing a round, leaving the owner to wait or lift the cap.",
+      "assertions": [
+        "the answer does not re-post or schedule the review trigger",
+        "the answer records the round as refused, with the reason and reset",
+        "the answer treats the review condition of the merge gate as unmet",
+        "the answer lets the run settle rather than waiting for the provider to return"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "a-red-check-the-default-branch-also-fails-is-not-this-prs",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). CI on your PR is red: the e2e job fails with 'connection refused' across forty unrelated test files, and the unit job fails one assertion in a module your diff changed. You check: the default branch's latest run fails the same e2e job with the same error; your diff touches no connection or client configuration. CI repair budget is 2 with 0 used. What do you do about each job, and how many cycles are consumed?",
+      "expected_output": "Attribute per check, not per PR. The e2e failure is the environment's: its signature raised the hypothesis and the default branch failing the same job confirms it, and the diff does not touch what the error names — report it (and, being repository-wide, escalate to whoever owns the service rather than re-running) and consume no cycle for it. The unit failure is this PR's, so invoke repair-pr once with repair type ci for it, passing the failure context and remaining budget 2; that pass consumes one cycle if it pushes a repair.",
+      "assertions": [
+        "the answer attributes the two jobs separately",
+        "the answer treats the e2e failure as environmental because the default branch fails the same job",
+        "the answer dispatches a CI repair for the unit failure only",
+        "the answer consumes no cycle for the environmental failure"
       ]
     }
   ]

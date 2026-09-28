@@ -1,6 +1,6 @@
 # Review trigger
 
-This is the rule other skills mean when they cite *review trigger*: which convention a PR's automated review trigger follows, what it is and from which account, and when review is triggered again.
+This is the rule other skills mean when they cite *review trigger*: which convention a PR's automated review trigger follows, what it is and from which account, how its taking effect is confirmed, what a refused round is, and when review is triggered again.
 
 **It is not a skill and nobody invokes it.** It is a shared rule, held once at
 `rules/review-trigger.md` and copied into each skill that applies it by
@@ -9,7 +9,7 @@ This is the rule other skills mean when they cite *review trigger*: which conven
 installed only that skill's directory, and travels with the skill if it is
 moved into a plugin. Edit the source, never a copy; check_shared_rules.py fails if a generated copy diverges.
 
-It governs every trigger a skill issues — the first one after a PR is created, a re-trigger after a repair, and a trigger on a PR the run never created, such as a bot's. **Which of those a skill issues is that skill's own; what each one is, and the conditions every re-trigger is bounded by, are this rule's.**
+It governs every trigger a skill issues — the first one after a PR is created, a re-trigger after a repair, and a trigger on a PR the run never created, such as a bot's. **Which of those a skill issues is that skill's own; what each one is, how its taking effect is confirmed, and the conditions every re-trigger is bounded by, are this rule's.**
 
 ## The convention
 
@@ -20,6 +20,7 @@ Use the trigger the repository documents in its own `CLAUDE.md`/`AGENTS.md`; wit
 - **Where the repository documents a documentation-review convention and the PR's diff qualifies, that convention is the trigger** — that convention is the `review-docs` skill, **invoked on the PR rather than posted as a comment**, so confirmation that the trigger took effect is its completed pass and the review comment it posts, not a reviewer arriving. On a **documentation-only** diff it runs *instead of* the ordinary review trigger; on a **mixed** diff, only where the repository documented the mixed case as well, and then *in addition to* the ordinary trigger, which is still issued in full. `review-docs` owns the documentation test, its rounds, and what it reports — do not restate them here. Cannot tell whether a path is documentation → it is not, and the ordinary trigger stands alone.
   - **This governs re-triggers as much as the first trigger**: a routed convention is **re-invoked, not re-posted**, so there is no trigger comment and **no trigger author to select from the posting-identity map** — the selection step a re-triggering skill performs has nothing to select and is not skipped by oversight. `review-docs` bounds its own rounds and declines past them; **a decline is that convention's completed answer to a re-trigger**, not a trigger that failed.
   - **Skill unavailable → the ordinary trigger stands alone, and report that it did.** Same fail-safe direction as the cannot-tell rule above: a PR reviewed by the wrong instrument costs a reading, a PR reviewed by nothing costs the review.
+  - **There is no arrival window to wait out and no refusal path to reissue through**, so a routed pass that did not complete is an error to surface now — never a PR left unreviewed-pending against a reviewer that was never going to come.
 
 ## The trigger comment
 
@@ -29,3 +30,20 @@ Use the trigger the repository documents in its own `CLAUDE.md`/`AGENTS.md`; wit
 
 - **Do not re-trigger merely because subsequent CI checks run.**
 - **Re-trigger after a substantive review-fix round only where repository convention requires it, and never after a mechanical push.** `references/mechanical-pushes.md` is the test for which is which; apply it from there.
+- **Never re-trigger a round recorded `refused`** (*A refused round*), **nor in a repository where triggering was suppressed** (*Confirming a trigger took effect*).
+
+## Confirming a trigger took effect
+
+**Issuing the trigger is not the end of that step.** Whichever skill supervises the PR confirms it took effect — and confirms it against the artifact, not against the absence of one (`references/absence-is-not-a-verdict.md`): a review from the repository's automated reviewer materializes within a bounded window, and the reviewer does not instead answer indicating it is not configured or not authorized. Verify per attempt, on every PR — one review arriving elsewhere in the run is not evidence the trigger works. A trigger that silently no-ops is worse than one that fails loudly, because the run then reports PRs as reviewed and clean when nothing reviewed them.
+
+**An elapsed window is not a refusal.** A reviewer that is merely queued or slow leaves the PR unreviewed-pending, reconciled through ordinary supervision and visible as such in the run's output; only an explicit not-configured/not-authorized response marks the trigger unavailable.
+
+**A refusal of the write** is first evidence of the wrong write path, not of insufficient authority — this is about the comment failing to post, and it does not reach a reviewer's answer that it is out of budget, which is a successful write and a refused *review* (*A refused round*). Where the platform offers more than one way to perform the write, reissue the trigger once through a different available mechanism before drawing any conclusion. Where the platform exposes only one write mechanism, the available paths are already exhausted. Do not otherwise repeat the same write path: it will not start working on the next PR, and each failed attempt leaves trigger and refusal comments behind on the PR.
+
+Only once every available path has failed, record it as `NEEDS_USER`: surface once, with the affected PRs, that review could not be triggered, and stop issuing the trigger for the remainder of the run in that repository. One escalation per affected repository, not one per PR; suppression is scoped to the repository that refused, because review configuration is repository-specific. Never conclude from a refusal alone that review cannot be triggered from this run at all — that conclusion is cheap to draw, hard to disprove afterwards, and costs precisely the reviews it skips.
+
+## A refused round
+
+**A reviewer that is *triggered* — as against a review skill that is invoked — and answers saying it is out of budget has refused, and a refusal is neither a clean review nor a trigger to reissue.** An invoked skill declining because its own round budget is spent is the opposite case (*Documentation-review routing*): that review happened and its answer is that it is over. Record the round as `refused` with what the reviewer said and when — a quota, a window, a reset — and hold the PR: a merge gate wants every required round *completed*, and a round that did not run is not a round that found nothing (`references/absence-is-not-a-verdict.md`). The trigger write succeeded, so the trigger itself stays `verified`; the refusal is on the round.
+
+**Do not put the retrigger on a schedule, and do not reissue it on a later pass.** Establishing that the provider is back is only possible by asking it, so each attempt is another review request, and a queued run of them is answered all at once when the budget resets — one observed run put twelve rounds on a PR whose cap is two, that way (`references/establish-do-not-assume.md`, *Establishing it by trying it costs what the attempt costs*). Re-issuing on a supervision wake, at a re-adoption or at a restart is the same scheduled retry, arrived at without anyone arming a job. A trigger already posted stays posted and is answered when the provider returns; report the PR as owing a round and let the owner decide whether to wait or to lift the cap.

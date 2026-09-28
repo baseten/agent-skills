@@ -114,7 +114,7 @@ Constrain each agent explicitly:
 
 ## Supervise
 
-Gate "green" on **every** check the repository actually requires having concluded successfully — an empty or partial rollup is not a green one (`references/absence-is-not-a-verdict.md`) **on the current head** — enumerate what is required rather than gating on whichever check you happened to read. Two false passes share one root here, and closing only the second leaves the first: a rollup that is empty or barely populated means checks have not registered, and where several checks are required, one concluding successfully while another is still pending or failing satisfies any singular reading of this gate. Neither is a pass.
+Gate "green" on **every** check the repository actually requires having concluded successfully on the current head — `references/ci-and-review-verdicts.md`, *CI is green*, states it, and neither an empty or partial rollup nor one required check among several is a green one. Enumerate what is required rather than gating on whichever check you happened to read.
 
 **Two checks are carried here from Dispatch, and this is the section that performs them.** Both were handed over because this run occupies the passes and, unless the repository opted in (see Merge), the merge moment belongs to nobody here; a rule stated only where it was assigned is one no pass executes.
 
@@ -125,9 +125,9 @@ Both run again at close-out, which hands them to the merger for every PR this ru
 
 Emit only state **changes**, and only actionable ones. A value that varies for reasons unrelated to state — a count, a timestamp — re-emits every unchanged entry on every tick.
 
-**Separate infrastructure from code.** Builder timeouts, image-build transport errors and browser-harness teardown messages are not the change under test. Confirm by checking whether unrelated branches, and the default branch, fail the same job; where the failure is repository-wide, re-running is futile and escalation is the useful action.
+**Separate infrastructure from code, per check, by `references/ci-attribution.md`.** Builder timeouts, image-build transport errors and browser-harness teardown messages are not the change under test; confirm it the way that rule does — whether unrelated branches, and the default branch, fail the same job — and where the failure is repository-wide, re-running is futile and escalation is the useful action.
 
-Read a **changed** failure signature carefully. A signature that narrows after a fix indicates one defect with multiple sites, not a failed fix.
+Read a **changed** failure signature rather than retrying it (`references/ci-attribution.md`, *A narrowing signature*).
 
 ## Merge
 
@@ -135,13 +135,13 @@ Read a **changed** failure signature carefully. A signature that narrows after a
 
 Where it is `true`, a PR merges once all of these hold on its current head:
 
-- **green** — every required check concluded successfully (see Supervise);
+- **green** — every required check concluded successfully (`references/ci-and-review-verdicts.md`, *CI is green*);
 - **current** — its lockfile is resolved against the current base, and **no candidate has moved past the target triage assessed** — neither its version on the current head, which an adopted bot PR the run carries can advance in place, nor, for a batched candidate, the head of the superseded bot PR that Supervise's target re-check reads;
 - **no open review thread**;
 - **no recovery ref outstanding for its branch** (`swarm`, *The recovery ref's lifecycle*);
 - **and it passes the gate for its kind — one kind per route** (see Dispatch):
   - **the routine batch PR** — every candidate on it triage cleared. It merges on the checks above **only while its diff is those candidates' version specifiers in the manifests plus the lockfile**, and the lockfile moves no other package across a major and adds none. Anything else in the diff — `scripts`, `overrides` or `resolutions`, patches, `packageManager`, `.npmrc` or `.yarnrc.yml`, any source file — or a lockfile change beyond that, makes it the reviewed kind. No review round is spent on a bump that changes nothing a reviewer would read;
-  - **every other PR, and a batch PR that fails the diff test above** — an `upgrade-npm-dependency` task's carries a major or a bump triage did not clear — merges only once an automated review round has completed clean on its current head. Post that round's trigger yourself once the PR is green, by `references/review-trigger.md` for which convention, what text and from which account, since the PR may be a bot's and never passed through `create-pr`; skip it where `create-pr` already triggered on this head. A review counts for a later head only where every push since is mechanical by the test in `references/mechanical-pushes.md`, conditions included, and otherwise the round is requested again.
+  - **every other PR, and a batch PR that fails the diff test above** — an `upgrade-npm-dependency` task's carries a major or a bump triage did not clear — merges only once an automated review round has completed clean on its current head — clean as `references/ci-and-review-verdicts.md`, *A review is clean*, defines it. Post that round's trigger yourself once the PR is green, by `references/review-trigger.md` for which convention, what text and from which account, since the PR may be a bot's and never passed through `create-pr`; skip it where `create-pr` already triggered on this head. A review counts for a later head only where every push since is mechanical by the test in `references/mechanical-pushes.md`, conditions included, and otherwise the round is requested again.
 
 Anything else — a check pending or red, a stale lockfile, a moved target, an open thread, a review with findings — is reported, not merged. Merge through `merge-stack`, which this gate authorizes for the PRs it passes exactly as invariant 12 does for `backlog-orchestrator`; where it is unavailable, report the gate unreachable for this run rather than merging another way. **Each merge moves the base**, so re-run the lockfile check on the next PR before merging it rather than trusting the result from before the first.
 

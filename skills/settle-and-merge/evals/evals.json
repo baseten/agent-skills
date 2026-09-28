@@ -1,7 +1,9 @@
 {
   "skill_name": "settle-and-merge",
   "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it, and after any change that moves prose between this skill and a caller that cites it.",
-  "companions": ["create-pr"],
+  "companions": [
+    "create-pr"
+  ],
   "evals": [
     {
       "id": 0,
@@ -57,6 +59,17 @@
         "The answer runs step 5 because no ranking input (and no ruling translation) was passed",
         "The answer applies the stale-green re-check because the freshness input was absent, and treats the green as stale since the base moved",
         "The answer does not infer any input from the caller resembling implement-issue"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "green-is-every-required-check-concluded-on-the-head",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). At step 6 the gate is otherwise open for PR-4 (auto-merge on, nothing outstanding, review clean on its head). The base branch requires three checks: build, test and e2e. On PR-4's current head, build and test concluded successfully; e2e has not appeared in the check rollup at all. A second PR, PR-5, was pushed 20 seconds ago and its rollup is empty. Does either PR satisfy the CI condition?",
+      "expected_output": "Neither. Green means every check the repository requires has concluded successfully on the current head: PR-4 has one required check that has not concluded — not registering is not concluding — so one or two of three passing is not green; PR-5's empty rollup means its checks have not registered yet, and an empty rollup is not green either. Both are held on CI; neither merges in this pass.",
+      "assertions": [
+        "the answer does not treat PR-4 as green with e2e missing",
+        "the answer does not treat PR-5's empty rollup as green",
+        "the answer enumerates the required checks rather than gating on those it happened to read"
       ]
     }
   ]

@@ -5,7 +5,7 @@ description: Single-issue orchestrator for one tracked issue from its canonical 
 
 # Implement Issue
 
-Orchestrate exactly one tracked issue end-to-end: implement it to a durable PR, supervise that PR's CI and review — reading each verdict off the artifact and never off an empty lookup (`references/absence-is-not-a-verdict.md`), repair within budgets, and merge only through invariant 12's gate (`settle-and-merge`, *The merge gate*) where the repository opted in.
+Orchestrate exactly one tracked issue end-to-end: implement it to a durable PR, supervise that PR's CI and review — reading each verdict off the artifact and never off an empty lookup (`references/absence-is-not-a-verdict.md`), on the commit it describes (`references/ci-and-review-verdicts.md`), repair within budgets, and merge only through invariant 12's gate (`settle-and-merge`, *The merge gate*) where the repository opted in.
 
 This file is the contract. The reasoning behind each rule — incident history, arguments, and answers to "why not the obvious other reading?" — lives in `NOTES.md` beside it, keyed by these section names. Read a section's note before changing its rules or when applying them to a case the contract does not obviously cover. NOTES.md explains; it never overrides.
 
@@ -83,7 +83,7 @@ Review repair cycles: <used>/<limit>
 Finding repair cycles: <used>/<limit>
 Strongest-model repair rounds: <used>/<limit>
 Current remote head: <SHA>
-First review round: pending | complete-with-findings | clean
+First review round: pending | refused (reason, reset) | complete-with-findings | clean
 Threads reserved for the owner: <count> (question items: api html_url, ask quoted, recommended reply (paste-ready, or labelled decision-not-for-posting), change SHA or none, why not posted; deferred repairs: api html_url, requested change, no draft)
 Draft state: <as-created> -> <current>
 Policy: budgets <source>; auto-merge <on|off> (<source>)
@@ -99,9 +99,9 @@ State: waiting | repairing-ci | repairing-review | repairing-finding | healthy |
 5. wait for the next CI result, event-driven where available;
 6. budget exhausted → `NEEDS_USER`, no further attempts.
 
-**Step 2 decides attribution, so a mass failure across unrelated files is not classified external here without confirmation as `repair-pr`, *CI repair*, defines it. Unconfirmed, invoke the pass rather than classifying.**
+**Step 2 decides attribution, per check, by `references/ci-attribution.md` — so a mass failure across unrelated files is not classified external here without the confirmation that rule requires, and unconfirmed, invoke the pass rather than classifying.**
 
-Unrelated/external/flaky failure with no justified code change: report and monitor; no cycle consumed.
+Unrelated/external/flaky failure with no justified code change: report and monitor; no cycle consumed. A check that rule classifies **expected-red after a producer merge** is reported with the refresh it is waiting on and holds the merge gate; this skill has no authority to bring the PR onto the refresh, so it names the refresh rather than acting on it.
 
 ## Review feedback
 
@@ -118,7 +118,7 @@ On unhandled feedback, as `references/review-feedback.md`, *Unhandled feedback*,
 1. group one coherent review round;
 2. invoke `repair-pr` once with `repair type = review`, the threads, and the map, on the same model rule as CI. **The budget gates repairing, not classifying:** invoke it even with the review budget spent, since a classify-only pass consumes no cycle and an unclassified thread has no draft for the settlement path to clear its gate with. With the budget spent it classifies and drafts but repairs nothing, and threads that would have been repairable become `NEEDS_USER` on budget grounds;
 3. adopt the returned head **and merge every identity entry the pass observed** into the map, and **record every `NEEDS_USER` thread it returned — a question item with everything `resolve-pr-comment`, *What a question item must contain*, requires, verbatim and with its `html_url` forwarded rather than rebuilt; a deferred-repair item with the change it asks for and no draft — **and a thread that returned two items is recorded once per item and is handled only when both are in, since a mixed thread carries a deferred repair and a question at the same URL (`resolve-pr-comment`, *A comment can want both*)** — and every no-action thread it returned** — recording is what stops a thread being re-grouped into a later round, until new content arrives on it, and a no-action thread left unrecorded is re-dispatched on every cycle since a classify-only pass consumes none;
-4. **only where the pass pushed a repair**, retrigger review where repository convention requires it (`references/review-trigger.md`) — a `NO_CODE_CHANGE` pass left the head unchanged, so a retrigger asks for another review of identical code and its fresh threads would be dispatched again — selecting the trigger's author from the map **as updated in step 3**: the repair may have established the invoking-user path, and re-triggering from the pre-repair map is what makes a trigger silently fail;
+4. **only where the pass pushed a repair**, retrigger review where repository convention requires it (`references/review-trigger.md`) — never on a round recorded `refused`, nor in a repository where triggering was suppressed, and confirm it took effect as that rule's *Confirming a trigger took effect* requires — a `NO_CODE_CHANGE` pass left the head unchanged, so a retrigger asks for another review of identical code and its fresh threads would be dispatched again — selecting the trigger's author from the map **as updated in step 3**: the repair may have established the invoking-user path, and re-triggering from the pre-repair map is what makes a trigger silently fail;
 5. wait event-driven;
 6. budget exhausted → the pass still runs classify-only; what remains repairable comes back as **deferred-repair items**, recorded and reported, never a `NEEDS_USER` outcome for the PR (`repair-pr`, *Hard constraints*) — the rest is still classified and drafted.
 
@@ -130,7 +130,7 @@ A pass that returns `NO_CODE_CHANGE` — the classification left it no repair to
 
 # Settle
 
-The run settles when its one issue reaches a terminal state: the PR individually finished — a completed review round; every actionable finding resolved, answered, or reserved for the owner; CI green; no repair left to attempt — or `BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`. **Every terminal outcome settles, including one Phase 1 returned before supervision began** (NOTES: the failure outcomes carry the most decision-shaped material; the empty case gets `summarize-tranche`'s one line). Then run `settle-and-merge`, *The settle sequence*, over this one PR, passing it every input its *Inputs* names, as this skill supplies them:
+The run settles when its one issue reaches a terminal state: the PR individually finished — a completed review round, or one recorded `refused`, which is surfaced: it holds the merge gate and never stops the run settling (`references/review-trigger.md`, *A refused round*); every actionable finding resolved, answered, or reserved for the owner; CI green (`references/ci-and-review-verdicts.md`), or every red check attributed elsewhere and reported; no repair left to attempt — or `BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`. **Every terminal outcome settles, including one Phase 1 returned before supervision began** (NOTES: the failure outcomes carry the most decision-shaped material; the empty case gets `summarize-tranche`'s one line). Then run `settle-and-merge`, *The settle sequence*, over this one PR, passing it every input its *Inputs* names, as this skill supplies them:
 
 - **PR set and scope**: scope, the canonical issue URL; PR set, its one PR — or none, where Phase 1 returned before creating one;
 - **findings**: the worker and review findings the run produced;

@@ -28,7 +28,8 @@ AUTHORED_WRITE_FORM="backlog-orchestrator settle-and-merge create-pr normalize-g
 RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
   establish-do-not-assume a-passing-test-is-not-a-verified-fix
   posting-identity agent-policy review-feedback draft-state
-  repair-rounds mechanical-pushes review-trigger"
+  repair-rounds mechanical-pushes review-trigger ci-and-review-verdicts
+  ci-attribution watch-and-read wake-budget"
 
 # Each list names only the skills that APPLY the rule, and every one of them
 # must cite it in its own SKILL.md (check_shared_rules.py). A rule that cites
@@ -62,6 +63,21 @@ MECHANICAL_PUSHES="review-docs backlog-orchestrator implement-issue
 REVIEW_TRIGGER="create-pr backlog-orchestrator implement-issue
   npm-dependency-upgrade-orchestrator settle-and-merge"
 
+# Skills that gate on, or supervise a PR toward, green CI or a clean review.
+CI_AND_REVIEW_VERDICTS="backlog-orchestrator implement-issue
+  npm-dependency-upgrade-orchestrator settle-and-merge"
+
+# Skills that decide whether a red check is the PR's own failure.
+CI_ATTRIBUTION="backlog-orchestrator implement-issue
+  npm-dependency-upgrade-orchestrator repair-pr"
+
+# Skills that supervise what they track: arm its watch, report no-change
+# results, and read its state within the credential's allowances.
+WATCH_AND_READ="swarm backlog-orchestrator"
+
+# Skills that arm a recurring check-in and bound it.
+WAKE_BUDGET="backlog-orchestrator"
+
 # Skills that classify, repair, report or gate on review threads.
 REVIEW_FEEDBACK="backlog-orchestrator implement-issue repair-pr resolve-pr-comment
   review-docs summarize-tranche"
@@ -82,8 +98,8 @@ PROSE_REVIEW_ROUND_BUDGET="review-docs review-skill repair-pr"
 # and a clean result are the same bytes.
 ABSENCE_IS_NOT_A_VERDICT="backlog-orchestrator settle-and-merge implement-issue repair-pr
   resolve-pr-comment merge-stack plan-merge-order validate-backlog
-  normalize-github-dependencies swarm
-  upgrade-npm-dependency npm-dependency-upgrade-orchestrator implement-issue-core
+  normalize-github-dependencies
+  upgrade-npm-dependency implement-issue-core
   review-docs review-skill summarize-tranche"
 
 
