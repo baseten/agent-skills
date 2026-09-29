@@ -142,6 +142,19 @@
         "an unsettleable claim is both marked and accompanied by the specific read that would settle it",
         "the answer reports the verifying read in the skill's output"
       ]
+    },
+    {
+      "id": 11,
+      "name": "a-full-gate-report-never-reaches-the-body",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: implement-issue-core invokes you, unattended, for https://github.com/acme/web/issues/301. It passes the gate: the base branch's protection was unreadable, so the set is the workflow fallback, marked unproven — Lint passed, Typecheck passed, Vitest passed on the affected suites with the full suite not run, E2E not locally runnable, Coverage not locally runnable. The change adds a validation rule to a signup form, with a new unit test for the rule; the existing form test already covered submission. Questions: (a) write the testing part of the PR body exactly as you will post it; (b) where does the gate go, and in what form?",
+      "expected_output": "(a) No list or table of checks: no Lint/Typecheck/Vitest/E2E/Coverage rows, no passed or not-locally-runnable outcomes, no note of the set's provenance, and no list of test files. The forge's own checks report those. The testing summary is only what a reader must do by hand — e.g. submit the signup form with an invalid value and see the new message, then with a valid one — and a line on coverage, e.g. that a new unit test covers the rule and the existing form test covers submission. (b) Into this skill's returned result as the gate report: every check with its outcome, not locally runnable included, and that the set is the unproven workflow fallback — built from the set the caller passed and nothing else. It is never written into the PR body or any comment. The body carries the attribution footer because nobody read it before it was posted.",
+      "assertions": [
+        "the PR body contains no list or table of checks, lint, type checking, test suites or CI results, whatever their outcome",
+        "the PR body does not list test files",
+        "the testing summary gives manual steps and a line on what new or existing tests cover",
+        "the gate report, with every check's outcome including not locally runnable and the unproven provenance, is returned in the skill's result",
+        "the answer places the gate report in neither the body nor any comment"
+      ]
     }
   ]
 }

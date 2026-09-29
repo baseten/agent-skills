@@ -133,6 +133,18 @@
         "the answer confirms the hypothesis against the base/default branch rather than accepting the signature",
         "the answer does not return a bare FAILED or change code on the unconfirmed signature"
       ]
+    },
+    {
+      "id": 11,
+      "name": "the-gate-report-returns-to-the-caller-not-the-pr",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you derived the gate from the base branch's ruleset — build, unit and an external `security/scan` check — ran build and unit locally, both passed, and carried `security/scan` as not locally runnable. create-pr has opened the PR. Your caller is an orchestrator that rejects a PR whose gate report is missing a derived check. Questions: (a) where does the gate report go, and what does it contain? (b) may you post it on the PR as a comment, or add it to the PR body, so a reviewer can see what ran?",
+      "expected_output": "(a) Into this skill's structured result to its caller, exactly as create-pr returned it: every derived check — build, unit and security/scan — with its outcome, security/scan as not locally runnable rather than passed or absent, and where the set came from (the ruleset). (b) No. The gate report goes in the returned result and nowhere else — never the PR body and never a comment. A PR body carries no list or table of checks in any form; the forge's own checks show a reviewer what ran.",
+      "assertions": [
+        "the gate report is returned in the skill's structured result to the caller",
+        "the report carries every derived check, the externally-produced one as not locally runnable, and the set's source",
+        "the answer refuses to put the gate report in the PR body",
+        "the answer refuses to post the gate report as a PR comment"
+      ]
     }
   ]
 }

@@ -87,8 +87,8 @@ the set it re-creates the gap.
 ## Step 6 — create and verify PR
 
 **Why the derived set travels to `create-pr`:** that skill is a separate literal
-contract and its body table is built from what it is given. Deriving here and not
-forwarding leaves it constructing the table from the documentation list this
+contract and its gate report is built from what it is given. Deriving here and not
+forwarding leaves it constructing the report from the documentation list this
 change exists to replace — complete against the wrong thing, which reads as
 compliance.
 

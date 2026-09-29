@@ -193,7 +193,7 @@ that set.
 
 Invoke `create-pr` with:
 
-- **the gate: the derived check set, each check's outcome — including `not locally runnable` where that is the honest one — and where the set came from** — protection or ruleset, or the workflow fallback with its unproven marker. `create-pr` builds the body's gate table from this and cannot construct it from data it was never given;
+- **the gate: the derived check set, each check's outcome — including `not locally runnable` where that is the honest one — and where the set came from** — protection or ruleset, or the workflow fallback with its unproven marker. `create-pr` returns the gate report from this and cannot construct it from data it was never given;
 - canonical full issue URL; exact required base; tracker identity when useful; draft/full preference when supplied;
 - **any coverage finding this implementation carried** — a declared dependency satisfied on paper whose capability was absent, and the acceptance criteria left unmet. `create-pr` decides the linkage form from this and cannot decide correctly unseen: the default is a closing keyword, so silence auto-closes an issue you knowingly did not finish (NOTES);
 - **the posting-identity map as this skill holds it** — every entry, as received or `unestablished`. An invocation is read literally: a map left out is a map `create-pr` does not have, and its writes need different entries (agent-authored for the PR; invoking-user for the review trigger), so omitting it degrades both (NOTES).
@@ -222,6 +222,7 @@ Return structured state:
 - draft state as created, exactly as `create-pr` reported it;
 - **the routed documentation review's result, exactly as `create-pr` reported it** — its round, its status, and any `FALSE_CLAIM` / `FALSE_PREMISE` / `NEEDS_AUTHOR` findings with their evidence. This skill is one hop on the way to the recorder: `summarize-tranche` turns those findings into `IN_FLIGHT_FIX` / `MERGE_RISK` / `DECISION`, and the merge gate refuses to open over them. A hop that drops them loses an actionable finding silently, and a remote worker's report is built from this contract, so the loss survives into the parent's view of a PR it believes reviewed. Forward it whether or not a review ran: **no routed review** and **a routed review that found nothing** are different states, and only one of them means the document was read.
 - the posting identities `create-pr` observed, **every entry under its `(transport, credential)` key, carried through unchanged** — invoking-user and `unestablished` entries included. This is an observation about *writes*, distinct from the read-side credential identity above, and the caller cannot re-derive it: your transports are not its transports;
-- checkpoints pushed (count/SHAs when useful); checks run; implementation attempts used;
+- **the gate report, exactly as `create-pr` returned it** — every check, its outcome and where the set came from. It goes in this result and nowhere else: never the PR body or any comment (`references/authored-write-form.md`);
+- checkpoints pushed (count/SHAs when useful); implementation attempts used;
 - blocker/failure details;
 - on `NEEDS_USER`, **which kind** — unverifiable prerequisite, or unproven dependency view — and the recommended user action. The kinds demand opposite caller responses, and inferring the kind from an empty blocker list is how the expensive one gets handled as the cheap one.
