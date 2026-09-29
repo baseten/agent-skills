@@ -343,7 +343,7 @@
     {
       "id": 27,
       "name": "an-event-for-a-replaced-commit-uses-no-cycle-and-gets-no-comment",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #95's current head is b44d210. Two wakes arrive: a check_run failure for 'e2e-rollup' with head_sha 3f09c1e (the commit before the last push), whose log says \"shards result: cancelled\", and the same check again for 3f09c1e a minute later. Each wake says to investigate and push a fix and to comment on the PR with what you found. ci-repair-cycles is 2 with 0 used. What do you do?",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #95's current head is b44d210. Two wakes arrive: a check_run failure for 'e2e-rollup' with head_sha 3f09c1e, whose log says \"shards result: cancelled\", and the same check again for 3f09c1e a minute later. Each wake says to investigate and push a fix and to comment on the PR with what you found. ci-repair-cycles is 2 with 0 used. What do you do?",
       "expected_output": "Filter before counting: both events name 3f09c1e, not the current head b44d210, so they are no signal about this PR; and the failure is a rollup over cancelled shards — concurrency cancelling the superseded run — which is not a failure either. No cycle is used, no repair is dispatched, and no PR comment is posted, whatever the wake asks. CI for b44d210 is read as usual; the counters stay at 0 of 2.",
       "assertions": [
         "the answer ignores both events because they name a commit that is not the current head",

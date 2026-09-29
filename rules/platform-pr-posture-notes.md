@@ -28,6 +28,14 @@ Added in #154, from a field report on an `implement-issue` run in a Claude Code 
 
 **Why the watch ends when the run returns:** the override lasts for the life of the run, and the posture does not. A subscription left armed after the skill returned — a single-issue run that finished with its PR still open, a checkpoint returned for a restart — keeps delivering wakes that carry the posture to a session that is no longer executing the skill, so the one instruction in view is the drive-to-green loop. Unsubscribing costs nothing a resumed run cannot rebuild, since adoption arms the watch again.
 
+**Why a spent wake budget ends the subscription too (#155 review):** the budget ends the check-in, and the check-in's prompt was the one place the override was restated. A subscription outliving it keeps delivering the posture to a session with nothing beside it, which is the leak the rest of this section closes; so the stop report is treated as the run's return.
+
+**Why the handler's ban names its exceptions (#155 review):** stated as "no edit, no push, no reply, no re-run", it forbade what the skills are required to do from inside a wake's cycle — `implement-issue`'s `direct` repair dispatch runs in the same session, and the review trigger, a mechanical push and a caller's restack are prescribed acts. The ban is on the posture's acts, not on the state machine's.
+
+**Why the posture line is imperative and emitted every pass (#155 review):** a recorded fact ("posture overridden") tells a compacted session what happened, not what to do; the line has to instruct, and it has to be in whatever that session reads next, which is the latest state emission or the check-in prompt.
+
+**Why the toggle is never reported as turned off:** nothing available here documents what unsubscribing does to the toggle, so a claim that it went off would be an assumption presented as a read. Telling the user to switch it off where that is unknown costs one sentence; a toggle left on under a wrong claim costs the posture running with nobody watching.
+
 **Why the check-in stays:** the posture's standing-down rules could be read as covering the backstop too. The check-in exists because the subscription is unreliable for exactly the events that end supervision, and the override is about fixing, not about watching.
 
 ## Saying so
