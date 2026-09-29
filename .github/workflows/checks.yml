@@ -72,6 +72,15 @@ jobs:
       # passing means nothing if the detector has stopped detecting.
 
 
+      # A word count is a token count, not a reading of the prose, so this is
+      # inside the no-prose-grepping rule. The budgets only fall; see README,
+      # *Checks*. The fixtures run first for the same reason as the others.
+      - name: Word budget fixtures
+        run: python3 scripts/test_check_word_budgets.py
+
+      - name: Word budgets
+        run: python3 scripts/check_word_budgets.py --report
+
       - name: Checkpoint capture tests
         run: bash skills/swarm/scripts/test-checkpoint-capture.sh
 

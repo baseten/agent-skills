@@ -1,0 +1,150 @@
+{
+  "_about": "Read by scripts/check_word_budgets.py. Words are runs of raw bytes separated by ASCII whitespace (Python bytes.split(); macOS wc -w agrees, GNU wc skips a lone em dash). budget is enforced and only falls (--tighten); target is reported, not enforced: 3000 for a leaf skill, 8000 for an orchestrator, 1500 for a rule. Raising a budget: CLAUDE.md, *Checks*.",
+  "slack_percent": 2,
+  "files": {
+    "skills/backlog-orchestrator/SKILL.md": {
+      "budget": 31579,
+      "target": 8000
+    },
+    "skills/create-pr/SKILL.md": {
+      "budget": 2032,
+      "target": 3000
+    },
+    "skills/implement-issue/SKILL.md": {
+      "budget": 4312,
+      "target": 8000
+    },
+    "skills/implement-issue-core/SKILL.md": {
+      "budget": 4718,
+      "target": 3000
+    },
+    "skills/merge-stack/SKILL.md": {
+      "budget": 2194,
+      "target": 3000
+    },
+    "skills/normalize-github-dependencies/SKILL.md": {
+      "budget": 1935,
+      "target": 3000
+    },
+    "skills/npm-dependency-upgrade-orchestrator/SKILL.md": {
+      "budget": 5259,
+      "target": 8000
+    },
+    "skills/plan-merge-order/SKILL.md": {
+      "budget": 1718,
+      "target": 3000
+    },
+    "skills/repair-pr/SKILL.md": {
+      "budget": 3200,
+      "target": 3000
+    },
+    "skills/resolve-pr-comment/SKILL.md": {
+      "budget": 5680,
+      "target": 3000
+    },
+    "skills/review-docs/SKILL.md": {
+      "budget": 3180,
+      "target": 3000
+    },
+    "skills/review-skill/SKILL.md": {
+      "budget": 1922,
+      "target": 3000
+    },
+    "skills/settle-and-merge/SKILL.md": {
+      "budget": 4651,
+      "target": 8000
+    },
+    "skills/settle-outstanding-decisions/SKILL.md": {
+      "budget": 5046,
+      "target": 3000
+    },
+    "skills/summarize-tranche/SKILL.md": {
+      "budget": 2168,
+      "target": 3000
+    },
+    "skills/supervise-prs/SKILL.md": {
+      "budget": 4950,
+      "target": 8000
+    },
+    "skills/swarm/SKILL.md": {
+      "budget": 14985,
+      "target": 8000
+    },
+    "skills/upgrade-npm-dependency/SKILL.md": {
+      "budget": 4613,
+      "target": 3000
+    },
+    "skills/validate-backlog/SKILL.md": {
+      "budget": 3869,
+      "target": 3000
+    },
+    "rules/a-passing-test-is-not-a-verified-fix.md": {
+      "budget": 691,
+      "target": 1500
+    },
+    "rules/absence-is-not-a-verdict.md": {
+      "budget": 664,
+      "target": 1500
+    },
+    "rules/agent-policy.md": {
+      "budget": 1549,
+      "target": 1500
+    },
+    "rules/authored-write-form.md": {
+      "budget": 2233,
+      "target": 1500
+    },
+    "rules/ci-and-review-verdicts.md": {
+      "budget": 940,
+      "target": 1500
+    },
+    "rules/ci-attribution.md": {
+      "budget": 820,
+      "target": 1500
+    },
+    "rules/draft-state.md": {
+      "budget": 1044,
+      "target": 1500
+    },
+    "rules/establish-do-not-assume.md": {
+      "budget": 2173,
+      "target": 1500
+    },
+    "rules/mechanical-pushes.md": {
+      "budget": 339,
+      "target": 1500
+    },
+    "rules/platform-pr-posture.md": {
+      "budget": 1288,
+      "target": 1500
+    },
+    "rules/posting-identity.md": {
+      "budget": 1456,
+      "target": 1500
+    },
+    "rules/prose-review-round-budget.md": {
+      "budget": 794,
+      "target": 1500
+    },
+    "rules/repair-rounds.md": {
+      "budget": 686,
+      "target": 1500
+    },
+    "rules/review-feedback.md": {
+      "budget": 1980,
+      "target": 1500
+    },
+    "rules/review-trigger.md": {
+      "budget": 1600,
+      "target": 1500
+    },
+    "rules/wake-budget.md": {
+      "budget": 1130,
+      "target": 1500
+    },
+    "rules/watch-and-read.md": {
+      "budget": 1681,
+      "target": 1500
+    }
+  }
+}
