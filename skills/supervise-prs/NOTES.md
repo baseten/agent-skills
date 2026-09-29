@@ -58,6 +58,10 @@ The reasoning for the rule this section applies — why promotion is never the r
 
 **Why a promotion leaves the PR waiting rather than finished (#144 review):** publishing may start a review round in some repositories and not others, and an immediate read cannot tell *nothing was triggered* from *nothing has appeared yet*. So a promoted PR is not finished until a later delivered pass has classified the publish; what a caller's settle rule does with that is the caller's, which is why the rule itself now says so without naming a tranche.
 
+## Finding repairs
+
+**Why a ruling is a finding whatever check or thread it resolves (#148 review):** the owner's ruling on a `needs-user` PR is how that PR moves, and the commonest one — try again on a CI failure whose budget is spent — resolves a failing check. Read literally, "work no failing check carries" left that ruling with no dispatch: the CI budget refused it and the finding path excluded it, so the PR and everything behind it stayed stranded. The work comes from the ruling, not the check, so it takes the finding path and spends the finding budget; the CI budget stays spent, and where the finding budget is spent too the caller reports what would move it. This is a behaviour change: before it, a check-resolving ruling had no route at all.
+
 ## Adopting a head
 
 **Why a held push still consumes its cycle (#144 review):** the pass pushed — the budget bounds unattended churn, and a push that a head check refused is churn like any other. `backlog-orchestrator`'s CI and review branches compared the diff against the charter, recorded a `DECISION` in place of adopting, and incremented the cycle in the next step regardless; counting it here keeps that.

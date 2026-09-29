@@ -76,7 +76,7 @@ thread at all.
 
 **The test is the absence of a dispatch, not the reservation.** One reserved thread has
 one: a thread carrying a **recorded code-changing ruling whose change has not been pushed**
-is `IN_FLIGHT_FIX`, and the finding path takes it — a recorded ruling requiring this PR's
+is `IN_FLIGHT_FIX`, and the finding path takes it — unless that path already refused it (below) — a recorded ruling requiring this PR's
 code to change is exactly what that path's evidence is. It
 must be emitted, because after a restart nothing else will. **What survives is the ruling,
 not the reservation** — a reservation is run state that a later invocation does not carry
@@ -86,13 +86,16 @@ the walkthrough's already-ruled test retires the question rather than re-emittin
 same-run route from the walkthrough's own output is gone with the run. Excluding it would
 leave the change with no dispatch path and the merge gate shut for good.
 
-**The same test covers a PR carrying a `NEEDS_USER` item for a spent CI or finding budget, or
-for a finding repair that returned `FAILED` or `NEEDS_USER`**: nothing can dispatch it —
-its own budget refused it, and the finding path takes work no failing check carries — so its
-action point is a `DECISION` (lift the budget, take the fix over, close it), never
-`IN_FLIGHT_FIX`.
+**The same test covers work a spent budget or a failed repair already refused**, scoped to
+the work the `NEEDS_USER` item on the PR names: a spent CI budget refuses that PR's CI-shaped
+work; a spent finding budget refuses every finding on that PR, a recorded ruling's included;
+a finding repair that returned `FAILED` or `NEEDS_USER` refuses that finding. Refused work
+has no dispatch until the owner rules, so its action point is a `DECISION` — try again, which
+the caller runs as a finding repair within the finding budget; take the fix over; or close
+the PR — never `IN_FLIGHT_FIX`. A different finding on the same PR, with its own budget
+left, stays `IN_FLIGHT_FIX`.
 
-**An action point holding a PR that planned work waits on names that work.** Where issues in the tranche's scope that have not started are blocked — directly or through their blockers — by an open PR of this tranche held for the owner — a `DECISION` it waits on, a `NEEDS_USER` item raised on it, a charter hold — or by an issue whose worker is held on the owner's authority (the caller's partial-settle definition, where it has one), name them on that item by issue URL, read from the scope's durable dependency graph (*Sources*), and say in the summary that the tranche settled with that work still to come. The settle is then partial: the run resumes that work once the item is ruled and its PR moves. Without it, a tranche waiting on the owner's answer reads the same as one that is done.
+**An action point holding a PR that planned work waits on names that work.** Where issues in the tranche's scope that have not started are blocked — directly or through their blockers — by an open PR of this tranche held for the owner — a `DECISION` it waits on, a `NEEDS_USER` item raised on it, a charter hold — or by an issue whose worker is held on the owner's authority (the caller's partial-settle definition, where it has one), name them on that item by issue URL, read from the scope's durable dependency graph (*Sources*), and say in the summary that the tranche settled with that work still to come. The settle is then partial: the run resumes that work once the item is ruled and its PR moves — or, where the caller reports the ruling cannot move it, the item says what would. Without it, a tranche waiting on the owner's answer reads the same as one that is done.
 
 Drop the merely informational: "worth keeping an eye on" is not an action point.
 

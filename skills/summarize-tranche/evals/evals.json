@@ -112,6 +112,19 @@
         "the answer adds no action points for the four PRs that need nothing"
       ],
       "files": []
+    },
+    {
+      "id": 9,
+      "name": "a-refused-finding-is-a-decision-and-a-sibling-finding-stays-in-flight",
+      "prompt": "You are executing the summarize-tranche skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR-7 carries a NEEDS_USER item recorded on it: its CI repair budget is spent on a red integration test. The same PR also has a worker-documented caveat that a new config key is undocumented, which a repair could fix; PR-7's finding budget has cycles left and no finding repair has run on it. PR-8 carries a recorded code-changing ruling on a thread whose change is unpushed, but PR-8's NEEDS_USER item says its finding repair for that ruling returned FAILED. How do you classify each?",
+      "expected_output": "PR-7's red integration test is CI-shaped work the spent CI budget refused: a DECISION (try again — which the caller runs as a finding repair within the finding budget — take the fix over, or close the PR), never IN_FLIGHT_FIX. The undocumented config key is a different finding with its own budget left, so it stays IN_FLIGHT_FIX. PR-8's recorded ruling would ordinarily be IN_FLIGHT_FIX, but its finding repair already returned FAILED, so that finding is refused: a DECISION, never IN_FLIGHT_FIX.",
+      "assertions": [
+        "PR-7's CI failure is a DECISION, not IN_FLIGHT_FIX",
+        "the DECISION's try-again option is a finding repair within the finding budget",
+        "PR-7's undocumented-config caveat stays IN_FLIGHT_FIX",
+        "PR-8's recorded ruling whose finding repair returned FAILED is a DECISION, not IN_FLIGHT_FIX"
+      ],
+      "files": []
     }
   ]
 }

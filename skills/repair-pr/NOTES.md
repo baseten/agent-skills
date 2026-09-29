@@ -26,6 +26,8 @@ The `finding` type exists because `summarize-tranche` can derive an `IN_FLIGHT_F
 
 **Why a finding pass never touches review threads:** a finding is not a thread; where a thread carries the same work, the caller dispatches `review` instead, and thread mechanics (replies, resolution) belong to that path's `resolve-pr-comment` flow.
 
+**Why a ruling that resolves a failing check is a finding (#148 review):** an owner's "try again" on a CI failure whose budget is spent was otherwise undispatchable: the CI budget refused it and "no failing check carries" excluded it here, stranding the PR and its dependents. The ruling is the evidence, so it spends the finding budget and never re-opens the spent CI one. `supervise-prs/NOTES.md`, *Finding repairs*, has the rest.
+
 ## Review repair
 
 **Why draft state is never changed here:** promoting a draft once its first review round is resolved is a supervisor decision needing the whole-PR picture — which rounds completed, the as-created draft state, whether CI is green. This pass reports the remaining-thread count and leaves the decision with the caller, which is also why the count includes actionable threads *outside* the supplied round: the caller's promotion and settlement logic needs the whole number, not the round's.

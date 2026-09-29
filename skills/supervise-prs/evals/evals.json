@@ -301,6 +301,18 @@
         "the answer still merges the pass's identity entries",
         "the answer counts the pass's cycle as consumed, since it pushed"
       ]
+    },
+    {
+      "id": 24,
+      "name": "a-ruling-that-resolves-a-red-check-is-a-finding",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #52's ci-repair-cycles is spent on a red unit test and its outcome was needs-user. The caller now hands in, as a finding to repair, the owner's recorded ruling on that item: \"try again — the fixture is stale, regenerate it\". finding-repair-cycles is 2 with 0 used. Is this a finding you dispatch, which budget does it spend, and what happens if the pass returns FAILED?",
+      "expected_output": "Yes. A recorded ruling requiring the PR's code to change is a finding whatever check it resolves: the check is its site, the work comes from the ruling. Dispatch one repair-pr pass with repair type finding, the ruling verbatim with its site and the map. It spends finding-repair-cycles if it pushes, and never the CI budget, which stays spent. If it returns FAILED, the PR's outcome is needs-user carrying the finding and the pass's own result.",
+      "assertions": [
+        "the answer dispatches a finding repair for the ruling despite it resolving a failing check",
+        "the answer spends finding-repair-cycles, not the CI budget",
+        "a FAILED return makes the PR needs-user carrying the finding and the pass's result"
+      ],
+      "files": []
     }
   ]
 }

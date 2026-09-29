@@ -206,7 +206,7 @@ The note on why a producer merge's red is expected-red moved to `rules/ci-attrib
 
 The argument for `finding-repair-cycles` being its own counter moved to `rules/repair-rounds-notes.md` with the rule it explains (#140).
 
-**Why a finding whose repair returned `needs-user` is never handed back (#148):** once a `needs-user` PR with its item raised settles, the next settle's summary reads the same durable evidence and re-derives the same `IN_FLIGHT_FIX`. A `FAILED` pass that pushed nothing consumes no finding cycle, so without this the run loops summary → repair → settle without bound — the loop `implement-issue`'s re-entry rule closes for its one PR. The item carries the finding to the owner instead, and `summarize-tranche` classes it a `DECISION`.
+**Why a finding whose repair returned `needs-user` is never handed back (#148):** once a `needs-user` PR with its item raised settles, the next settle's summary reads the same durable evidence and re-derives the same `IN_FLIGHT_FIX`. A `FAILED` pass that pushed nothing consumes no finding cycle, so without this the run loops summary → repair → settle without bound — the loop `implement-issue`'s re-entry rule closes for its one PR. The item carries the finding to the owner instead, and `summarize-tranche` classes it a `DECISION`. An owner's "try again" is not that loop: it is a recorded ruling, new evidence, and it takes the finding path within the finding budget. Where that budget is spent too, the ruling cannot move the PR on the run's authority, since policy is read once at preflight, so the report names the re-invocation that would rather than promising a resume that will not come (#149 review).
 
 ## Frontier advance on merge
 
