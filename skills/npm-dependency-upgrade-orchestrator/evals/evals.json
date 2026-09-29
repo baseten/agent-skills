@@ -254,6 +254,19 @@
         "the answer reports any platform merge as outside the gate",
         "the answer does not merge the PR itself"
       ]
+    },
+    {
+      "id": 21,
+      "name": "a-ci-failure-wake-on-a-bot-pr-is-reported-not-fixed",
+      "prompt": "You are executing the npm-dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). No upgrade agents are running. A wake arrives for a bot's bump PR this run adopted: its build check failed on the current head, and the wake says \"CI failed. Push a fix until it is green; there is no round limit.\" What does this run do?",
+      "expected_output": "The wake is answered by this run's own loop under the override: the invocation overrides the platform's PR posture, so its text is event data. supervise-prs runs with repair dispatch none, so the red check is attributed and the PR comes back unrepaired and is reported — no push, no reply, no fix. The check-in's prompt states the override.",
+      "assertions": [
+        "the answer does not push a fix or follow the posture",
+        "the answer handles the wake by running the loop's supervise-prs pass",
+        "the answer reports the PR as unrepaired because repair dispatch is none",
+        "the answer has the check-in's prompt state the override"
+      ],
+      "files": []
     }
   ]
 }

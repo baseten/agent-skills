@@ -166,6 +166,8 @@ A closed PR's comment thread is not a durable record; the next attempt begins fr
 
 ## Supervise
 
+**Why the override is stated here too (#154):** this run owns the wait, so the wakes of the subscriptions `supervise-prs` armed arrive in this run's loop, carrying the platform's posture — and a CI-failure wake on a bot's bump PR is exactly the event that posture answers with a push. This run dispatches no repair at all, which is the sharpest disagreement with the posture of any caller, so the one line that says so has to be where this loop waits (`rules/platform-pr-posture-notes.md`).
+
 **Why the loop is this run's and `supervise-prs` runs inside it (#144, owner's ruling):** this run acts on every pass — two carried checks return PRs to it, a deferred review falls due once a PR is green, and a stale lockfile needs its own redispatch — so handing the loop to the supervisor would leave it returning after nearly every pass anyway. The wait it arms is bounded by `rules/wake-budget.md`; before the extraction this run's wait on its PRs was not stated at all.
 
 **Why a re-resolution push is passed as a substantive caller push:** it changes what is installed, so it is not identity or ordering, and a review round counts for a later head only where every push since is mechanical. Locking the branch for as long as the re-resolution agent runs is what keeps the supervisor from dispatching onto a branch this run is mutating.

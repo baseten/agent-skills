@@ -8,6 +8,8 @@ Extracted in #144 from the three skills that each supervised PRs in their own wo
 
 **Why a skill and not a rule (#144):** supervision is an active loop that dispatches, spends budgets and returns outcomes — the same shape as `swarm`, which callers invoke and hand inputs to. The stateless tests that fell out of it went to rules in #146 (`ci-and-review-verdicts`, `ci-attribution`, `watch-and-read`, `wake-budget`); what is left is procedure, and procedure a caller invokes is a skill. A fix made in one of the three copies reached neither of the other two: `implement-issue` re-triggered into a refused provider, lacked the post-arming read and the one-mutator rule, and settled on a predicate that could never be met with a refused round; the npm orchestrator had the only definition of green. One copy removes that class of drift.
 
+**Why the override is stated at the top as well as at *Adopt* (#154):** the posture arrives on the first wake after subscribing, and a session can reach a wake — after a compaction, or in a caller's loop — without having re-read *Adopt*. The top of the skill is what a reader has in view before any section, so the override is stated there once, briefly, and cited to the shared rule that holds it; the rule's reasoning, and why it is a shared rule rather than a section here, is `rules/platform-pr-posture-notes.md`.
+
 **Why it never merges:** merging is gated, and the gates differ by caller — `settle-and-merge`'s for tranches and single issues, the npm orchestrator's by kind. A supervisor that merged would need to hold every gate's conditions, which is what the gates were extracted to avoid.
 
 ## Inputs
@@ -44,6 +46,10 @@ Extracted in #144 from the three skills that each supervised PRs in their own wo
 
 **Why the platform's own auto-merge is called out:** it is a forge setting, not the `auto-merge` policy key, and it merges on CI state alone — outside the gate, whatever this run's policy resolved to. Its merges are not outcomes this skill produced.
 
+## CI failure
+
+**Why the head filter comes before step 1 (#154):** two failure wakes arrived for a commit that was no longer the head, whose end-to-end step had failed on purpose with "shards result: cancelled" because concurrency cancelled the superseded run. Read as failures of this PR, each would have drawn a repair pass against code that was already replaced, spent a cycle and — under the platform's posture — a comment. Retrieving context, attributing and budgeting all come after the filter because each of them is a cost the event did not earn. The filter itself is `rules/ci-and-review-verdicts.md`'s, since every skill that reads a verdict needs it.
+
 ## Review feedback
 
 **Why this skill never roots a review thread on the PR it supervises:** the actionability discriminator is thread-rootness — a thread the invoking user rooted is their instruction — and on the degraded posting-identity path this run's own comments carry the invoking user's login. A run-authored root comment would be indistinguishable from an instruction to itself, silently breaking the test. Replying in threads and posting timeline comments keeps the discriminator true by construction.
@@ -79,6 +85,8 @@ The reasoning for the rule this section applies — why promotion is never the r
 ## Wait
 
 **Why one loop and one wait (#144):** a caller that also supervises workers — `backlog-orchestrator` under `swarm` — already has a loop whose wait covers worker completions, and a second loop for PRs would be the second supervisor this skill exists to rule out, and a second wake budget the one-counter rule forbids. So under a caller the skill is the PR-side handler inside that loop, and the wake it would have armed is lines in the caller's. The subscription is still armed per PR at adoption either way, because it is part of adopting the PR, not of waiting.
+
+**Why the override is restated for a caller-owned wait (#154):** under `wait owner = caller` this skill arms the subscriptions and then runs no loop, so the wakes those subscriptions produce land in a loop whose contract is the caller's. Saying only that this skill is not following the posture would leave the session that actually answers the wake with no instruction at all. The caller carries the same shared rule and states it at its own wake; this sentence is the pointer from the side that armed it.
 
 ## Outcomes
 

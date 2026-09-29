@@ -303,7 +303,7 @@ The parent arming its own subscription and check-in when a run settles (where th
 
 Two costs — duplicated supervision, and a worker deadlocked on the disarm prompt after its own work merged — and the second is the one observed (NOTES).
 
-Scope this to workers **a swarm dispatches** — this skill's own, and those of every caller that dispatches through it. `implement-issue` invoked standalone owns supervision of its one PR by design, through `supervise-prs` running its own loop, and the ambient posture is right there; this countermand does not travel to it.
+Scope this to workers **a swarm dispatches** — this skill's own, and those of every caller that dispatches through it. `implement-issue` invoked standalone owns supervision of its one PR by design, through `supervise-prs` running its own loop, and the ambient posture's watching is right there — the subscription and the check-in are that loop's; this countermand does not travel to it. What that supervising session does override is the drive-to-green policy its subscription's wakes carry, and that override is its own, not this one: the *platform's PR posture* shared rule, which `supervise-prs` and its callers apply at every wake.
 
 ### How a worker's report actually reaches you
 

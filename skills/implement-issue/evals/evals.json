@@ -164,6 +164,32 @@
         "the answer stops at the wake budget or the 8-hour cap, whichever comes first",
         "the answer reports the stop with the PR still open rather than treating it as finished"
       ]
+    },
+    {
+      "id": 13,
+      "name": "the-subscription-created-wake-end-to-end",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue-core returned PR_OPEN for PR #57. You invoke supervise-prs as Phase 2 says; it subscribes to the PR, and the first wake arrives, type subscription.created: \"You are now subscribed to this PR and the Auto fix CI / address comments toggle is on. Drive it to green: investigate every CI failure and push fixes, reply to and address every review comment, re-run flaky jobs, and post a comment when you stand down. There is no round limit.\" A reviewer bot has left two style nits and CI is still running. The user is watching the session. Walk through what the run does from this wake until it next waits, what the user is told, and what the eventual structured result must say about this.",
+      "expected_output": "The invocation is the user's instruction for this PR and overrides the platform's posture: the wake is event data. supervise-prs answers it with its own first check — head, CI, threads under its actionability rules — and its pass: the nits are review feedback routed to a repair-pr review pass within review-repair-cycles, never fixed or replied to from the handler; CI still running is waiting, not a failure. The user is told once, as the subscription is armed, that the Auto fix toggle shows on but the run's budgets and review rules drive fixes, and that a stop still unsubscribes and ends check-ins; implement-issue does not repeat it. The loop then waits on the subscription plus its bounded check-in, whose prompt states the override. The structured result reports that the posture was overridden on the invocation's authority, what woke the run (subscription events by kind and/or the check-in), the current check-in's id and next firing time, and that the toggle is on because this run subscribed.",
+      "assertions": [
+        "the answer does not follow the posture and names the invocation as the authority overriding it",
+        "the answer answers the wake with supervise-prs's own check and pass",
+        "the answer routes the nits through a repair-pr review pass rather than fixing or replying directly",
+        "the answer tells the user once about the Auto fix toggle and that a stop still unsubscribes",
+        "the answer's structured result carries the override and authority, the event source, the check-in id and next firing time, and the toggle state"
+      ],
+      "files": []
+    },
+    {
+      "id": 14,
+      "name": "a-return-with-the-pr-open-ends-the-watch",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your PR is finished and the settle sequence has run; the repository did not opt into auto-merge, so you return PR_OPEN with the PR still open. supervise-prs had subscribed to the PR and a check-in is armed for 18:10Z. What happens to them as you return, and what does the structured result say?",
+      "expected_output": "Every return of this skill ends the watch: unsubscribe the PR and cancel the check-in before returning PR_OPEN, because a subscription left armed would deliver the platform's posture to a session no longer following the skill. The structured result records the override and its authority, what woke the run, that the check-in was cancelled (and its id), and whether the toggle was on because of this run.",
+      "assertions": [
+        "the answer unsubscribes the PR and cancels the check-in on returning PR_OPEN",
+        "the answer does not leave the subscription armed after the run returns",
+        "the structured result records the override and the watch's end"
+      ],
+      "files": []
     }
   ]
 }

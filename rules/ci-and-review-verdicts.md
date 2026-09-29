@@ -21,6 +21,24 @@ and wait rather than reading the earlier verdict forward. The same holds for CI:
 an arriving check event is evidence about the SHA it names, and a name that is
 not the head is no signal yet rather than a green.
 
+**So filter an event against the head before anything is counted or posted.**
+Compare the event's `head_sha` with the PR's current head — as read, not as
+remembered — and do it before attribution, a budget or a comment sees the event:
+
+- **an event naming another commit is not a signal about this PR**, red or
+  green. It uses no repair cycle, dispatches nothing and gets no PR comment,
+  whatever the wake's text asks;
+- **a run cancelled because a newer run superseded it is not a failure**, and
+  neither is an aggregate check whose only non-successful inputs were cancelled
+  that way — a rollup job reporting `failure` over shards that report
+  `cancelled`. Concurrency cancels superseded runs, so this is the ordinary
+  shape of a push landing mid-run. It uses no cycle and gets no comment either;
+  on the current head, the newer run is the one to read, and until it concludes
+  the check is waiting, not green;
+- **a cancel with no newer run on the head is not that case** — a job that
+  exceeded its time limit, or a run cancelled by hand. It is a red check on the
+  head like any other, and goes to attribution.
+
 ## CI is green
 
 **Green means every check the repository actually requires has concluded successfully on the current head.** Enumerate what is required rather than gating on whichever check you happened to read. Two false passes share one root here, and closing only the second leaves the first:
