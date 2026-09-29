@@ -75,6 +75,11 @@ jobs:
       - name: Checkpoint capture tests
         run: bash skills/swarm/scripts/test-checkpoint-capture.sh
 
+      # Runs bootstrap.sh for real, against a scratch HOME, because what the
+      # stamp records depends on git and the checkout's shape at install time.
+      - name: Install stamp tests
+        run: bash scripts/test_bootstrap_stamp.sh
+
       # Warning-and-above deliberately. Info/style findings vary by shellcheck
       # build — SC2015 is reported by 0.9.0 and 0.10.0 and not by 0.11.0 — so
       # gating on them makes redness depend on whichever version the runner
@@ -82,7 +87,7 @@ jobs:
       # (checkpoint-capture.sh's `A && B && C || { usage; }`) is intentional:
       # any missing argument must reach the usage block.
       - name: Shell scripts
-        run: shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
+        run: shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh scripts/test_bootstrap_stamp.sh
 
       - name: Eval coverage reminder
         if: github.event_name == 'pull_request'

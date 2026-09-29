@@ -153,7 +153,8 @@ python3 scripts/check_permissions.py                  # the shape of permissions
 python3 scripts/check_no_machine_paths.py             # no skill depends on one machine's filesystem
 python3 scripts/test_no_machine_paths.py              # and that detector can actually fail
 bash skills/swarm/scripts/test-checkpoint-capture.sh
-shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
+bash scripts/test_bootstrap_stamp.sh                  # bootstrap.sh's install stamp, against a scratch HOME
+shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh scripts/test_bootstrap_stamp.sh
 bash scripts/eval_reminder.sh origin/main             # advisory, never fails
 ```
 
@@ -645,6 +646,16 @@ the container, so nothing can read a second copy from `/tmp`.
 `SKILL.md`, so the install list never drifts from the repository, and it writes
 `permissions.json` into the container's `~/.claude/settings.json` as well — see
 [Where to install it](#where-to-install-it).
+
+To see which revision a container is running, `cat ~/.claude/.agent-skills-install`:
+it records the repository, the commit and its date, and when the install ran.
+Each installed skill carries the same record as `.source`, which matters because
+installing merges and never deletes: a skill whose `.source` differs from
+`~/.claude/.agent-skills-install` is left over from an earlier install and can
+be deleted. One with no `.source` came from an install older than the stamp or
+from somewhere else entirely, which this script cannot tell apart, so check it
+before deleting it. Whatever the install cannot read - no
+`.git`, no recognisable origin - is recorded as `unknown` rather than guessed.
 
 This is verified at the **Trusted** [network access
 level](https://code.claude.com/docs/en/cloud-environments#access-levels), which

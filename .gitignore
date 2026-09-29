@@ -4,3 +4,8 @@ __pycache__/
 # Generated at install by scripts/refresh_shared_rules.sh from rules/. Never
 # committed: the source is rules/, and a committed copy is a second one.
 skills/*/references/
+
+# The install stamp bootstrap.sh writes into each INSTALLED skill. Nothing
+# writes one into this checkout, but ~/.claude/skills can be a symlink into one,
+# and a committed stamp would claim a revision for every future install.
+skills/*/.source
