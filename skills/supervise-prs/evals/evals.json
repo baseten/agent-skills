@@ -1,0 +1,304 @@
+{
+  "skill_name": "supervise-prs",
+  "description": "Decision-scenario regression evals. Each prompt describes a supervision state and asks what the skill requires next; assertions check the decision, not the wording. Scenarios 0-13 moved from the callers that held the text before #144, reworded to no particular caller; the rest pin decision points only this skill has.",
+  "companions": [
+    "repair-pr",
+    "resolve-pr-comment"
+  ],
+  "evals": [
+    {
+      "id": 0,
+      "name": "repair-escalation-fires-on-locus-evidence",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR-7's review history: round 1 fixed two findings (all-new territory); round 2 fixed three more (also new). The incoming round 3 carries one finding — a gap inside a paragraph that round 2's repair itself wrote. review-repair-cycles has 1 left; repair-model-escalations has 1 left. Question: (a) what model runs round 3 and why? (b) does the escalated round consume the review cycle? (c) variant — if repair-model-escalations were exhausted, does repair stop?",
+      "expected_output": "(a) The strongest available model: the finding sits on a locus an earlier repair on this PR wrote — the evidence trigger, which fires on the earliest round where the evidence can exist, never on exhaustion; rounds 1–2 were breadth and Sonnet was right for them. (b) Yes — an escalated round still consumes its repair cycle; skipping the counter would make escalation a way to buy extra rounds, and at the cap the PR goes to the owner whatever model ran. (c) No — exhausting repair-model-escalations returns repairs to Sonnet; it does not end them.",
+      "assertions": [
+        "The answer escalates round 3 to the strongest model on the locus evidence (finding in text an earlier repair wrote), explicitly not on budget exhaustion",
+        "The escalated round still consumes the review repair cycle (escalation never buys extra rounds)",
+        "Exhausted escalations return repairs to Sonnet rather than stopping them"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a supervised PR has no .claude/agent-policy.json in its repository. Three review threads are open on the diff: (a) rooted by a human colleague, asking you to rename a variable for clarity; (b) rooted by close-spice-reviewer[bot], asking why you chose this caching strategy over an alternative; (c) rooted by you earlier in this run, a reply you posted in an existing thread. Question: for each thread, is it auto-fixed, escalated, or neither, and why?",
+      "expected_output": "(a) Auto-fixed. It roots on the diff and asks for a code change the pass can make and verify. That the author is a human is irrelevant — author identity decides nothing. (b) NEEDS_USER, reserved for the owner: it asks for rationale, not a diff, so it is escalated with its URL and what it asks, never answered on the run's own authority, and it holds the PR's merge. That the author is an automated reviewer does not make it repairable. (c) Neither: a comment this run authored is never feedback, which follows from the thread-root test rather than from any author test. No reviewer allowlist or bot test is consulted at any point.",
+      "name": "review-thread-kind-not-author",
+      "assertions": [
+        "the human-rooted rename is auto-fixed, and the answer states author identity does not decide repairability",
+        "the bot-rooted design question is NEEDS_USER and is not answered on the run's own authority",
+        "the run's own earlier comment is never feedback, via the thread-root test",
+        "no bot test or reviewer allowlist is applied anywhere"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "question-only-round-classifies-without-budget-or-retrigger",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a supervised PR gets a new review round containing exactly two threads, both rooted on the diff by a reviewer, and both asking questions rather than requesting changes — one asks why a caching strategy was chosen, the other asks whether failed webhooks should be dropped or dead-lettered. Nothing in the round looks repairable. The PR's review-repair budget is already fully spent. Questions: (a) do you dispatch a repair-pr pass for this round, or reserve both threads directly? (b) does this consume a review-repair cycle? (c) do you retrigger the repository's automated review convention afterwards? (d) if a later event brings no new content on those two threads, do you group them into another round?",
+      "expected_output": "(a) Dispatch. Reserving a thread is a conclusion, not a precondition: classification and the draft reply need the thread body and the surrounding code, which is the dispatched pass's context and not the supervisor's, and resolve-pr-comment owns both. A supervisor that triaged the round as question-only and skipped dispatch would reserve both threads with no draft — the one outcome the reservation exists to avoid. The spent budget is no obstacle: it gates repairing, not classifying, and an unclassified thread has no draft for the settlement path to clear its gate with. (b) No. The pass returns NO_CODE_CHANGE with both threads as NEEDS_USER items carrying every field a question item requires; it pushed nothing and consumed no repair attempt, so it consumes no cycle, exactly as an external CI failure does not. (c) No. The pass pushed nothing, so the head is unchanged and a retrigger would ask for another review of identical code, whose fresh threads would be dispatched again — matching the finding branch, which on NO_CODE_CHANGE triggers nothing. (d) No. Recording the returned items is what makes them no longer unhandled, so they are not grouped into a later round unless new content arrives on them.",
+      "assertions": [
+        "dispatches a pass for the question-only round rather than reserving the threads directly",
+        "dispatches despite the review-repair budget being spent, because the budget gates repairing rather than classifying",
+        "gives the reason as classification and draft creation needing the dispatched pass's context rather than the supervisor's",
+        "the NO_CODE_CHANGE pass consumes no review-repair cycle",
+        "does not retrigger automated review, because the pass pushed nothing and the head is unchanged",
+        "recorded reserved threads are not re-grouped into a later round absent new content"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "an-empty-review-endpoint-is-not-a-clean-review",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #412 is under supervision and CI is green on its current head. You call the reviews endpoint and it returns an empty list. You call the review-threads endpoint and it also returns nothing. The automated reviewer answered five sibling PRs in the same minute. Questions: (a) is its review round complete and clean — can the PR be reported finished? (b) which endpoint establishes that a review ran, and which establishes whether it found anything? (c) the run's earlier report said 'the reviewer is dropping requests' on this evidence — is that a sound conclusion?",
+      "expected_output": "(a) No. Neither endpoint returning rows is evidence of a clean review; it is evidence about the lookup. The round is not established as complete, so the PR is not finished and nothing may merge on it. (b) They split by question, and both are required. Existence is the summary comment and only the summary comment: a `Reviewed commit:` matching the current head. That read is never skipped, because a thread does not say which round produced it — a resolved, non-outdated thread from an earlier round or from a person would satisfy any existence test built on threads, and a new trigger that silently no-ops merges behind it. Severity is the threads and only the threads: any unresolved thread means not clean, whatever the summary's wording says. (c) No. 'The reviewer is dropping requests' is a claim about an external system; the evidence is that one endpoint returned no rows. Where sibling items processed normally in the same window, a reading error is the default hypothesis. Report 'I did not find a review at <endpoint>', not 'no review ran'.",
+      "assertions": [
+        "the answer refuses to treat an empty endpoint as a clean review and does not report the PR finished",
+        "the answer requires the summary's Reviewed commit to match the current head as the existence proof, and does not allow that read to be skipped",
+        "the answer gives the reason: a thread does not identify which round produced it, so thread presence cannot prove the required round ran",
+        "the answer uses unresolved threads for severity and never the summary's wording",
+        "the answer rejects the external-outage conclusion and distinguishes 'I did not find X at <place>' from 'X did not happen'"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "a-verdict-attaches-to-a-commit-not-to-a-pr",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #418 carries a reviewer summary reading 'no major issues, Reviewed commit: a1b2c3d'. The PR's current head is f9e8d7c — a repair pushed after that review. Separately a check_suite.completed event arrives naming SHA 4455667, which was the head before a rebase. Questions: (a) is #418's review clean? (b) what does the check_suite event establish?",
+      "expected_output": "(a) No. A clean review is a property of the commit it was computed on, not of the PR. The summary names a1b2c3d and the head is f9e8d7c, so for the current head there is no review at all — a mismatch is NOT REVIEWED, not a clean verdict. Re-trigger and wait; findings frequently exist only after a repair push. (b) Nothing about the PR. A CI event is evidence about the SHA it names. 4455667 is not the head, so this is no signal yet, not a green — merging on it would land code whose CI never ran against the current base. Re-read the PR's current head before acting on any CI event.",
+      "assertions": [
+        "the answer refuses to treat the review as clean because the review's Reviewed commit does not match the current head",
+        "the answer classifies a review/head mismatch as NOT REVIEWED rather than as a stale-but-clean verdict",
+        "the answer treats the check_suite event as evidence about the SHA it names and as no signal for the PR",
+        "the answer requires re-reading the current head before acting on a CI event"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "adoption-is-not-complete-when-the-pr-exists",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Four implementation workers have returned. Each pushed its branch, opened a PR and stopped, exactly as its dispatch prompt required. The repository's CLAUDE.md requires feature PRs to be opened as drafts, and all four are drafts. Three workers returned PR_OPEN; the fourth returned NEEDS_USER with its PR open and its report silent about the review trigger. You record all four as created and move to the next workstream; CI runs on all four. A fifth PR is already in your tracked set: an early WIP draft whose review this run deliberately deferred at dispatch, recorded in run state as review owed. Six hours later you arm subscriptions on all five and the arming succeeds. Is the PR-created step complete for these four? What does arming the subscriptions tell you about the six hours, what do you do about the fourth PR, and what do you do about the fifth?",
+      "expected_output": "No. A PR existing is one third of the step: it is complete when the PR exists, round 1 of every convention the PR routes to has been requested against it, and this skill is subscribed or has recorded the subscription unavailable. Opening a draft is not itself a review request unless that provider is observed to start a round on it, so all four may be sitting untriggered - which is silent, because every worker succeeded and CI ran. Arming the subscriptions tells you nothing about the six hours: a subscription delivers forward only, so that interval is unread, not empty, and each arming is paired with one immediate read of that PR's check runs, reviews and comments. For the fourth, a NEEDS_USER return with an open PR is the common untriggered case, since linkage verification and the trigger both run after creation: read its `review trigger` line, and where it is pending or unmentioned, issue the trigger from this skill per the review-trigger rule and the run's posting-identity map, then confirm it took effect against the review that appears rather than against the absence of a complaint. The fifth is left alone: a deliberate deferral is recorded as the review trigger value `deferred` when it is made, and this rule does not override it - issuing there would start a round the caller asked to come later. Nothing distinguishes an unrecorded deferral from an unfinished trigger, so an unrecorded one is read as unfinished. The immediate read after each arming reconciles rather than samples: state and mergeability, head and base, and check runs, reviews and comments, because a merge, a close, a force-push and a moved base pass through the same interval.",
+      "assertions": [
+        "the answer says the step is not complete on the PR existing, and names the review request and the subscription as the other two parts",
+        "the answer does not treat opening a draft PR as having started a review",
+        "the answer states that the six-hour interval is unread rather than empty, because a subscription delivers forward only",
+        "the answer pairs the arming with an immediate read of checks, reviews and comments",
+        "the answer issues the missing trigger for the fourth PR from the supervisor rather than resuming or re-dispatching the worker",
+        "the answer leaves the deliberately deferred PR untriggered and names `deferred` as a recorded value rather than an inference",
+        "the post-arming read covers state, head and base as well as checks, reviews and comments"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "a-refused-review-is-not-a-clean-one-and-not-a-retry-signal",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Five PRs are clean on CI with every round-1 finding fixed and every thread resolved. You posted the round-2 trigger on each. The reviewer answered each one with a comment saying the account has reached its usage limits for code reviews. You are about to arm a job that reposts the trigger every ten minutes until a real review comes back, and to record the five PRs as review-complete since nothing was found. What is wrong with each plan?",
+      "expected_output": "Both are wrong. A reviewer answering that it is out of budget has refused, which is not a clean review: a merge gate wants every required round completed, and a round that did not run is not a round that found nothing. Record the state as `refused` with what the reviewer said and when, and hold the PRs. And do not schedule the retrigger: establishing that the provider is back is only possible by asking it, so every firing is another review request rather than a probe, and a queue of them is answered all at once when the budget resets - an observed run did exactly this and put twelve rounds on a PR whose cap is two, fourteen findings, the budget spent many times over before the first fix. The trigger already posted stays posted and is answered when the provider returns. Report each PR as owing a round, with the refusal and any reset the reviewer named, and let the owner decide whether to wait or lift the cap.",
+      "assertions": [
+        "the answer refuses to treat the refusal as a clean review and holds the PRs",
+        "the answer records a distinct refused state with what the reviewer said",
+        "the answer does not schedule repeated retriggers, and names each attempt as another review request rather than a probe",
+        "the answer relies on the already-posted trigger and reports the outstanding round to the owner"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "review-rounds-are-not-review-repair-cycles",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). `review-repair-cycles` is at its default of 2 per PR. Across the set, your four supervised PRs took six, six, three and six review rounds - twenty-one rounds and thirty-three findings. A reviewer of the run asks whether the budget was blown through, and proposes raising the default to 6. What do you tell them?",
+      "expected_output": "The budget was not exceeded, because it does not count rounds. `review-repair-cycles` counts pushed repair passes: a round that produced questions, acknowledgements or nothing to repair returns NO_CODE_CHANGE and consumes no cycle, so twenty-one rounds is entirely consistent with a cap of two per PR. Report both numbers - rounds completed and cycles used and remaining - since either alone reads wrongly: the rounds alone look like a budget being blown through, the cycles alone look like a PR that was barely reviewed. And do not raise the default from a round count: the two measure different things, so the reconciliation to do before changing it is against the cycles actually consumed.",
+      "assertions": [
+        "the answer states that the cycle counter counts pushed repair passes rather than review rounds",
+        "the answer explains why a NO_CODE_CHANGE round consumes no cycle",
+        "the answer refuses to raise the default on the basis of a round count",
+        "the answer reports both numbers "
+      ]
+    },
+    {
+      "id": 8,
+      "name": "a-repository-convention-that-instructs-promotion-is-carried-out",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository's CLAUDE.md says: once CI is green, the automated review has come back and every actionable finding is resolved or answered, mark the PR ready for review. Four of your PRs are drafts. PR A meets all three conditions. PR B is green with its review back but has one unresolved actionable finding. PR C meets all three. PR D was marked ready by a human last week and they returned it to draft yesterday — but your session restarted this morning and the per-PR block was rebuilt, so it records only `as-created draft -> current draft`. You have no record of whether publishing triggers a review round in this repository. What do you do with each?",
+      "expected_output": "Carry out the convention: it is the owner performing the social act in advance, with the conditions stated, so leaving these in draft overrides them rather than protecting them. A promotes - and since publishing may trigger a round here and that is unknown, the promotion takes the three-state rule: publish, un-settle the tranche for that PR, and classify the repository on the next delivered pass rather than from an immediate read. B does not: the conditions are the convention's own and one is unmet, and a PR meeting the merge gate but not the convention would not qualify either. C promotes on the same basis - and promoting it un-settles the tranche for C exactly as the merge path's own publish would, since publishing may trigger a round here and that is unknown. So C does not merge in this pass: the gate re-evaluates on post-publish evidence on a later one. Merging it now would be merging on evidence the promotion may have just invalidated. D is an explicitly held draft, and the rebuilt block cannot show that: read the ready-to-draft transition from the forge's own timeline before any promotion, exactly as the gate does. Promoting it would not merely re-request a review the owner withdrew - it would erase the evidence, since the discriminator is currently-draft-and-ever-ready and a promoted PR is neither, after which the gate merges it. Excluded outright, reported as held, and neither promoted nor merged however clean it is. In no case does the run flip a PR back to draft.",
+      "assertions": [
+        "the answer promotes the PRs meeting the convention's own conditions rather than the skill's",
+        "the answer refuses to promote the PR whose convention conditions are unmet",
+        "the answer leaves the human-withdrawn draft untouched and reports it as held",
+        "the answer treats a convention-driven promotion as a publish subject to the three-state rule",
+        "the answer refuses to merge PR C in the same pass on pre-publish evidence",
+        "the answer reads the draft transition from the forge timeline rather than the rebuilt block before promoting"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "deferred-repair-item-is-reported-without-a-draft",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the review repair budget is spent. A repair pass dispatched at zero budget returns two NEEDS_USER items — a question item ('is this endpoint meant to be idempotent?') with a decision-only draft, and a deferred-repair item for a thread asking that a duplicated constant be extracted — plus one no-action entry. Questions: (a) what does each reserved thread carry in the report? (b) the output contract requires a question item to carry every field resolve-pr-comment specifies — what do you put in the draft field for the deferred-repair item? (c) does the no-action entry hold the merge gate?",
+      "expected_output": "(a) Both carry the thread's API html_url, forwarded rather than rebuilt, and what it asks. What accompanies them differs by item kind, and the kinds must not be merged: the question item carries its draft reply verbatim; the deferred-repair item carries the change it asks for and no draft. (b) Nothing — the field does not apply to that kind. Do not invent a question-shaped draft to satisfy the contract: the budget ran out on work that wants a diff, there is nothing to answer, and a fabricated draft would be put to the owner as though there were something to decide. The draft requirement is scoped to question items, so the budget-exhaustion case is satisfiable as written. Omitting the item entirely is also wrong — it would be re-dispatched. (c) No. A no-action thread wants nothing from anybody and is not an unresolved finding, so it never holds the gate; recording it is what stops it being re-dispatched, since a classify-only pass consumes no cycle.",
+      "assertions": [
+        "the question item is reported with every required field verbatim, not a draft alone",
+        "the deferred-repair item is reported with the requested change and explicitly no draft",
+        "no question-shaped draft is fabricated for the deferred-repair item",
+        "the deferred-repair item is not omitted from the output",
+        "states that the draft requirement is scoped to question items rather than to every reserved thread",
+        "the no-action entry does not hold the merge gate but is still recorded"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "a-refused-round-after-a-repair-is-not-re-triggered-and-the-run-settles",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your PR's review round 1 had two findings; repair-pr fixed both and pushed. You re-triggered review. The automated reviewer answered with a comment saying the account has reached its usage limit for code reviews and will reset in 6 hours. CI is green on the head, no thread is unresolved, and every budget has room. Your supervision wakes again 40 minutes later. Do you post the trigger again? Is the review condition satisfied? What outcome does the PR take — finished, or waiting until the provider comes back?",
+      "expected_output": "Do not re-post the trigger, now or on any later wake: the reviewer refused the round, a refusal is neither a clean review nor a signal to reissue, and each re-post is another review request that is answered all at once when the budget resets. Record the round as refused with the reason and the 6-hour reset; the trigger itself stays verified. The review condition is not satisfied — a refused round is not a completed one — so the merge gate stays shut for this PR. But the refused round counts as surfaced: with nothing else outstanding the PR is finished, reported as owing a round, and the owner decides whether to wait or lift the cap.",
+      "assertions": [
+        "the answer does not re-post or schedule the review trigger",
+        "the answer records the round as refused, with the reason and reset",
+        "the answer treats the review condition of the merge gate as unmet",
+        "the answer reports the PR finished rather than waiting for the provider to return"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "attribution-is-per-check-and-the-hypothesis-is-confirmed-before-it-counts",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). CI on your PR is red: the e2e job fails with 'connection refused' across forty test files your diff never touched, and the unit job fails one assertion in a module your diff changed. Your diff touches no connection or client configuration. CI repair budget is 2 with 0 used. Readable if you want them: the latest runs of the default branch and of two unrelated open branches, and the test service's health endpoint. (a) Before dispatching anything, what do you do about each job? (b) You read the other runs: the default branch and both unrelated branches fail the same e2e job with the same error. What now, and how many cycles are consumed? (c) Suppose instead all three of those runs pass e2e and you could not reach the health endpoint. What now?",
+      "expected_output": "(a) Attribute per check, not per PR. The unit failure is this PR's. The e2e signature raises an environment hypothesis but does not settle it, because a PR can produce the same error at the same breadth, so confirm it independently before treating it as anything but this PR's — read the other branches' runs or the service's health. (b) Confirmed: the e2e failure is the environment's; report it and consume no cycle for it. Invoke repair-pr once with repair type ci for the unit failure only, passing its context and remaining budget 2; a pushed repair consumes one cycle. (c) Unconfirmed: the hypothesis is not an attribution, so the e2e failure is treated as this PR's — invoke the pass for it rather than classifying it external here.",
+      "assertions": [
+        "the answer attributes the two jobs separately",
+        "the answer does not treat the e2e failure as environmental on its error signature alone",
+        "in (b) the answer treats the e2e failure as environmental because the other branches fail the same job, and consumes no cycle for it",
+        "in (c) the answer treats the unconfirmed e2e failure as this PR's and invokes the repair pass rather than classifying it external"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "empty-rollup-is-not-green",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you push a fix and check the PR moments later. The check rollup contains no failing checks and nothing pending. Question: do you report the PR as green?",
+      "expected_output": "No. An empty or barely-populated rollup means checks have not registered yet — commonly right after a push cancels an in-flight run. Green requires every check the repository requires to have concluded successfully on the current head, which an unpopulated rollup cannot show.",
+      "assertions": [
+        "The answer refuses to call it green",
+        "The answer identifies the unpopulated rollup as the cause rather than a genuine pass",
+        "The answer gates on every required check having concluded successfully, not on the absence of a failure"
+      ]
+    },
+    {
+      "id": 13,
+      "name": "an-unconfirmed-infrastructure-tell-is-reported-as-the-prs",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You were invoked with repair dispatch = none. A pass finds one PR red: its image-build job failed with a transport error, a signature you have seen from the shared build service before. You have not checked any other branch's runs, and the default branch has not built since yesterday. Is this infrastructure? Do you dispatch anything to fix it, and how do you report the PR?",
+      "expected_output": "Not yet. The transport error is an infrastructure tell, which raises the hypothesis and does not settle it — confirm it by whether unrelated branches and the default branch fail the same job before calling it infrastructure. Until that is established it is not an attribution: the check is treated as the PR's. With repair dispatch none it reports the check as this PR's failure — red, not merged — rather than as infrastructure; it does not invent a repair pass. If the confirmation then shows the failure is repository-wide, re-running is futile and escalating to the service's owner is the useful action.",
+      "assertions": [
+        "the answer does not classify the failure as infrastructure on the signature alone",
+        "the answer names the confirmation: other branches or the default branch failing the same job",
+        "the answer reports the unconfirmed check as the PR's and does not merge it",
+        "the answer does not dispatch a repair pass"
+      ]
+    },
+    {
+      "id": 14,
+      "name": "with-no-budgets-passed-the-run-classifies-and-pushes-nothing",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A person asks you to watch PR #51 through review. They pass the PR and nothing else — no budgets, no counters, no map. A review round arrives with one thread asking to rename a variable. What do you dispatch, what may it do, and what does the report say?",
+      "expected_output": "With no budgets passed every cap is 0: this skill never reads the policy file, and a repair is authority to push to someone's branch that nobody granted. Dispatch the review round anyway, because the budget gates repairing and not classifying — the pass runs classify-only, pushes nothing and consumes no cycle, and the rename comes back as a deferred-repair item on budget grounds with no draft, never a needs-user outcome for the PR. The map starts empty, every entry unestablished. The report says no budgets were passed.",
+      "assertions": [
+        "the answer treats absent budgets as zero rather than the built-in defaults",
+        "the answer still dispatches the round classify-only",
+        "the rename returns as a deferred-repair item, not a push and not a needs-user outcome",
+        "the report states that no budgets were passed"
+      ]
+    },
+    {
+      "id": 15,
+      "name": "a-rebuilt-record-reissues-nothing-and-counts-an-unknown-counter-as-spent",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). After a restart you adopt PR #88 with no counters passed. Its timeline shows the review trigger posted two days ago and the reviewer's answer that it is out of budget until tomorrow; two repair commits each with a repair report comment saying a review cycle was consumed; and one earlier force-push that erased whatever history the CI repairs left. review-repair-cycles is 3 and ci-repair-cycles is 2. What does adoption do about the trigger, and what does the record say for each counter?",
+      "expected_output": "Adoption rebuilds the record from durable evidence. The trigger was posted and the reviewer refused the round, so the trigger is verified and the round is recorded refused with its reset — it is never reissued, not at adoption and not at a restart. Review cycles: two consumed, rebuilt from the repair reports, so one remains. CI cycles cannot be recovered after the force-push: record the counter unknown and treat it as spent — the cap reached, not zero — and report it, because reading a lost cache as zero hands back budget the owner already spent. The subscription is armed and followed by a reconciling read.",
+      "assertions": [
+        "the answer does not reissue the trigger for the refused round",
+        "the answer rebuilds review cycles from the repair reports on the PR",
+        "the answer records the unrecoverable CI counter as unknown and treats it as spent, not as zero",
+        "the answer arms the subscription and follows it with a reconciling read"
+      ]
+    },
+    {
+      "id": 16,
+      "name": "an-every-pass-head-check-returns-to-its-caller",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You were passed a head check: every-pass, compare each PR's recorded lockfile base to the current base, disposition return to caller. This pass, PR #7's head is unchanged but its base moved two merges on, so the check fires. PR #7 also has one actionable review thread and budget remains. What do you do this pass?",
+      "expected_output": "Run the head check as passed and apply its disposition: return PR #7 to the caller, naming the stale lockfile base, because the check's result is the caller's to act on — this skill does not re-resolve a lockfile or decide what the caller's check means. Do not dispatch a review repair onto a branch whose next step the caller now owns; the thread stays unhandled for the next pass after the caller acts. A head check runs every pass whether or not the head moved, because the base can move under an unchanged head.",
+      "assertions": [
+        "the answer runs the every-pass check even though the head did not move",
+        "the answer returns the PR to the caller rather than acting on the lockfile itself",
+        "the answer does not dispatch a repair to that PR in the same pass"
+      ]
+    },
+    {
+      "id": 17,
+      "name": "a-caller-restack-is-mechanical-and-locks-the-branch",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The caller tells you it is about to restack PR #12 and holds its branch locked; next pass it reports the restack pushed, tagged mechanical. Meanwhile a review round arrived on #12 before the lock. Budget remains. What happens during the lock, and what does the pushed restack do to #12's record?",
+      "expected_output": "While the caller holds the lock, dispatch no repair pass to #12 — one mutator per branch. When the restack arrives tagged mechanical, adopt the new head: it consumes no review cycle, does not reset the PR's reviewed state, and re-triggers no review. Then the pending round is dispatched on the next pass against the new head, locating each finding by content rather than line number and confirming it still applies.",
+      "assertions": [
+        "the answer dispatches no repair while the caller holds the branch",
+        "the answer adopts the mechanical push without consuming a cycle or resetting reviewed state",
+        "the answer does not re-trigger review for the mechanical push",
+        "the answer locates the round's findings by content on the new head"
+      ]
+    },
+    {
+      "id": 18,
+      "name": "with-repair-dispatch-none-everything-is-reported",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You were invoked with repair dispatch = none. PR #3 has a unit test failing in a module its diff changed, and one actionable review thread asking for a null check. What do you dispatch, and what outcome does the PR take?",
+      "expected_output": "Nothing is dispatched. The unit failure is attributed to the PR and reported as its failure; the review round is recorded unhandled and reported. The PR is not finished — CI is red and a thread is unhandled — and the thread does not make it needs-user: a thread is never that outcome. The report names both so the caller can act.",
+      "assertions": [
+        "the answer dispatches no repair pass",
+        "the answer reports the red check as the PR's",
+        "the answer does not report the PR finished",
+        "the answer does not make the PR needs-user because of the review thread"
+      ]
+    },
+    {
+      "id": 19,
+      "name": "expected-red-and-a-refused-round-still-let-a-pr-finish",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #9: every required check is green except schema-diff, which fails on the consumer's default branch too after a producer merge in another repository — confirmed expected-red, refresh PR open. Its review round 2 was refused by the provider with a reset tomorrow. Every thread is resolved and no repair is in flight. What outcome does #9 take, and what does the report carry?",
+      "expected_output": "Finished. A confirmed expected-red check and a refused round both count as surfaced: each holds the PR's merge and never its finishing, because a PR that could never finish would never reach the step that reports it. The report names the expected-red check with the refresh it waits on, the refused round with its reason and reset, and that the PR owes a round.",
+      "assertions": [
+        "the answer reports #9 finished",
+        "the answer treats the expected-red check as surfaced, holding merge but not finish",
+        "the answer treats the refused round as surfaced, with its reason and reset reported",
+        "the answer does not re-trigger the refused round"
+      ]
+    },
+    {
+      "id": 20,
+      "name": "with-the-caller-owning-the-wait-no-check-in-is-armed",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You were invoked with wait owner = caller and return on = every-pass. A new PR enters the set. Nothing else is due. What do you arm, and what does the caller's wake need from you?",
+      "expected_output": "Arm the PR's subscription at adoption — that is part of adopting it, whoever owns the wait — and follow it with the reconciling read. Arm no scheduled check-in and keep no wake counter: one loop and one wait per session, and both are the caller's. Return after the pass; the caller's single wake re-runs the pass, and its prompt carries the PR set and each PR's durable state so a change on any PR is a delta on the caller's one counter.",
+      "assertions": [
+        "the answer arms the subscription at adoption",
+        "the answer arms no check-in of its own",
+        "the answer keeps no wake counter of its own",
+        "the answer states what the caller's wake prompt must carry for the comparison"
+      ]
+    },
+    {
+      "id": 21,
+      "name": "a-narrowing-signature-and-the-default-branch-on-one-pr",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #20's first CI repair fixed a blank-render defect; now 4 of 12 e2e shards fail one element lookup, and a separate lint job fails with 'ECONNRESET' fetching a plugin. The default branch's latest run passes lint. Budget: one CI cycle left. What do you do with each job?",
+      "expected_output": "Attribute per check. The e2e narrowing is not a failed fix: a signature that narrows after a fix is one defect with several sites, one now corrected, so read the new signature to locate the next site and dispatch one CI repair for it, consuming the last cycle if it pushes. The lint ECONNRESET raises an environment hypothesis, but the default branch passing lint does not confirm it, so it is not an attribution — treat it as the PR's and include it in the repair's evidence rather than classifying it external.",
+      "assertions": [
+        "the answer reads the narrowed e2e signature as a second site rather than a failed fix",
+        "the answer does not treat the lint error as environmental without confirmation",
+        "the answer dispatches a single CI repair with both failures as evidence"
+      ]
+    },
+    {
+      "id": 22,
+      "name": "a-finding-pass-merges-its-identity-entries-whatever-its-outcome",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The caller hands you an IN_FLIGHT_FIX finding on PR #30 with the run's map. The finding pass returns NO_CODE_CHANGE — the finding no longer holds — but it posted a reply through a transport the map had no entry for, and reports the author it read back. What do you adopt, count, trigger and return?",
+      "expected_output": "Adopt nothing, increment nothing, trigger nothing: the finding no longer held. But merge the identity entry the pass returned into the map anyway — a pass can author a write without pushing one, and it is the only evidence about that transport. Return the NO_CODE_CHANGE outcome, the finding and the updated map to the caller, whose own rule decides whether to settle again.",
+      "assertions": [
+        "the answer adopts nothing and consumes no finding cycle",
+        "the answer does not re-trigger review",
+        "the answer merges the returned identity entry into the map despite NO_CODE_CHANGE",
+        "the answer returns the updated map and outcome to the caller"
+      ]
+    },
+    {
+      "id": 23,
+      "name": "an-on-repair-head-check-that-holds-adopts-nothing",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You were passed an on-repair-head check stated in full: a fix that adds a new module, build or CI step, or cross-cutting invariant is hold as DECISION; otherwise adopt. A review repair on PR #40 fixed its finding by adding src/clock.ts, a new module. What happens to the pushed head and the PR?",
+      "expected_output": "Run the check before adopting: it fires, so adopt nothing — the PR's outcome is held, naming the check and what it found (the new module). Do not re-trigger review off an unadopted head. Merge the pass's identity entries into the map regardless, and return the held outcome so the caller records its DECISION.",
+      "assertions": [
+        "the answer runs the check before adopting the head",
+        "the answer does not adopt the pushed head",
+        "the answer reports the PR held, naming the check and the new module",
+        "the answer still merges the pass's identity entries"
+      ]
+    }
+  ]
+}

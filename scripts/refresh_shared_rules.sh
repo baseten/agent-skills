@@ -17,9 +17,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # rule source  ->  skills that apply it
 AUTHORED_WRITE_FORM="backlog-orchestrator settle-and-merge create-pr normalize-github-dependencies
-  npm-dependency-upgrade-orchestrator implement-issue
+  npm-dependency-upgrade-orchestrator
   merge-stack repair-pr resolve-pr-comment review-docs review-skill settle-outstanding-decisions
-  summarize-tranche upgrade-npm-dependency validate-backlog"
+  summarize-tranche upgrade-npm-dependency validate-backlog supervise-prs"
 
 # One variable per rule, named for the rule file in upper snake case.
 # check_shared_rules.py reads these assignments to learn which skills are
@@ -42,52 +42,52 @@ RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
 # that pass or merge the run's posting-identity map.
 POSTING_IDENTITY="backlog-orchestrator settle-and-merge swarm create-pr implement-issue
   implement-issue-core merge-stack repair-pr resolve-pr-comment review-docs
-  settle-outstanding-decisions"
+  settle-outstanding-decisions supervise-prs"
 
 # Skills that read .claude/agent-policy.json, or gate on what it grants.
 AGENT_POLICY="backlog-orchestrator settle-and-merge implement-issue
-  npm-dependency-upgrade-orchestrator"
+  npm-dependency-upgrade-orchestrator supervise-prs"
 
 # Skills that promote a draft, decline to, or gate on the drafts it defines as held.
-DRAFT_STATE="backlog-orchestrator settle-and-merge implement-issue"
+DRAFT_STATE="backlog-orchestrator settle-and-merge supervise-prs"
 
 # Skills that dispatch a repair-pr pass, choose its model and count its cycles.
-REPAIR_ROUNDS="backlog-orchestrator implement-issue"
+REPAIR_ROUNDS="supervise-prs"
 
 # Skills that decide whether a push re-triggers review, or is re-reviewed.
-MECHANICAL_PUSHES="review-docs backlog-orchestrator implement-issue
-  npm-dependency-upgrade-orchestrator"
+MECHANICAL_PUSHES="review-docs backlog-orchestrator
+  npm-dependency-upgrade-orchestrator supervise-prs"
 
 # Skills that issue or re-trigger an automated review, or gate on the rounds
 # its routing requires.
-REVIEW_TRIGGER="create-pr backlog-orchestrator implement-issue
-  npm-dependency-upgrade-orchestrator settle-and-merge"
+REVIEW_TRIGGER="create-pr backlog-orchestrator
+  npm-dependency-upgrade-orchestrator settle-and-merge supervise-prs"
 
 # Skills that gate on, or supervise a PR toward, green CI or a clean review.
-CI_AND_REVIEW_VERDICTS="backlog-orchestrator implement-issue
-  npm-dependency-upgrade-orchestrator settle-and-merge merge-stack"
+CI_AND_REVIEW_VERDICTS="
+  npm-dependency-upgrade-orchestrator settle-and-merge merge-stack supervise-prs"
 
 # Skills that decide whether a red check - on CI or in a local run - is the
 # change's own failure.
-CI_ATTRIBUTION="backlog-orchestrator implement-issue
-  npm-dependency-upgrade-orchestrator repair-pr implement-issue-core"
+CI_ATTRIBUTION="backlog-orchestrator
+  npm-dependency-upgrade-orchestrator repair-pr implement-issue-core supervise-prs"
 
 # Skills that supervise what they track: arm its watch, report no-change
 # results, and read its state within the credential's allowances.
-WATCH_AND_READ="swarm backlog-orchestrator"
+WATCH_AND_READ="swarm backlog-orchestrator supervise-prs"
 
 # Skills that arm a recurring check-in and bound it.
-WAKE_BUDGET="backlog-orchestrator"
+WAKE_BUDGET="backlog-orchestrator supervise-prs"
 
 # Skills that classify, repair, report or gate on review threads.
-REVIEW_FEEDBACK="backlog-orchestrator implement-issue repair-pr resolve-pr-comment
-  review-docs summarize-tranche"
+REVIEW_FEEDBACK="backlog-orchestrator repair-pr resolve-pr-comment
+  review-docs summarize-tranche supervise-prs"
 
 # Skills that act on something asserted by an agent, assumed about a provider,
 # or that author a write making claims about existing code or current state.
 ESTABLISH_DO_NOT_ASSUME="backlog-orchestrator swarm settle-and-merge repair-pr
   validate-backlog review-skill implement-issue-core create-pr resolve-pr-comment
-  summarize-tranche settle-outstanding-decisions implement-issue"
+  summarize-tranche settle-outstanding-decisions implement-issue supervise-prs"
 
 # Skills that write or change a test as part of their work.
 A_PASSING_TEST_IS_NOT_A_VERIFIED_FIX="implement-issue-core repair-pr
@@ -97,11 +97,11 @@ A_PASSING_TEST_IS_NOT_A_VERIFIED_FIX="implement-issue-core repair-pr
 PROSE_REVIEW_ROUND_BUDGET="review-docs review-skill repair-pr"
 # Skills that make a decision on the result of a lookup, where an empty result
 # and a clean result are the same bytes.
-ABSENCE_IS_NOT_A_VERDICT="backlog-orchestrator settle-and-merge implement-issue repair-pr
+ABSENCE_IS_NOT_A_VERDICT="backlog-orchestrator settle-and-merge repair-pr
   resolve-pr-comment merge-stack plan-merge-order validate-backlog
   normalize-github-dependencies
   upgrade-npm-dependency implement-issue-core
-  review-docs review-skill summarize-tranche"
+  review-docs review-skill summarize-tranche supervise-prs"
 
 
 is_rule() { case " $(echo $RULES) " in *" $1 "*) return 0 ;; esac; return 1; }

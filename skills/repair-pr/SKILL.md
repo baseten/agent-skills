@@ -1,6 +1,6 @@
 ---
 name: repair-pr
-description: Performs one bounded repair pass on an existing pull request for a CI failure, actionable review feedback, or a settle-time finding, using the PR's existing branch/worktree and returning immediately after pushing the repair. Use under implement-issue or backlog-orchestrator; it does not own long-lived monitoring.
+description: Performs one bounded repair pass on an existing pull request for a CI failure, actionable review feedback, or a settle-time finding, using the PR's existing branch/worktree and returning immediately after pushing the repair. Use under supervise-prs, which its callers run; it does not own long-lived monitoring.
 ---
 
 # Repair PR

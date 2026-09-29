@@ -4,8 +4,9 @@
   "companions": [
     "swarm",
     "settle-and-merge",
-    "create-pr",
-    "repair-pr"
+    "supervise-prs",
+    "repair-pr",
+    "resolve-pr-comment"
   ],
   "evals": [
     {
