@@ -3,8 +3,9 @@
   "description": "Decision-scenario regression evals. Each prompt describes a run state and asks what the skill requires next; assertions check the decision, not the wording. Run them against any rewrite of SKILL.md before merging it: the rewrite passes only if every scenario still resolves the same way.",
   "companions": [
     "settle-and-merge",
-    "create-pr",
-    "repair-pr"
+    "supervise-prs",
+    "repair-pr",
+    "resolve-pr-comment"
   ],
   "evals": [
     {
@@ -152,6 +153,18 @@
         "the answer does not treat the e2e failure as environmental on its error signature alone",
         "in (b) the answer treats the e2e failure as environmental because the other branches fail the same job, and consumes no cycle for it",
         "in (c) the answer treats the unconfirmed e2e failure as this PR's and invokes the repair pass rather than classifying it external"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "the-quiet-pr-check-in-backs-off-under-the-monitoring-cap",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your PR is waiting on a human reviewer; CI is green and nothing else is due. The first scheduled check-in fired 20 minutes after you armed it and found no change in the PR's head, CI, threads or mergeability. The run started 30 minutes ago with the 8-hour monitoring cap. When does the next check-in fire, what does its prompt carry, and when does watching stop?",
+      "expected_output": "The check-in is the one supervise-prs's own loop arms under the wake budget: that wake was unproductive, so the count is 1 of 8 and the backoff doubles — the next fires 40 minutes out, then 80, 160 and 4-hourly. The re-armed prompt carries the unproductive count and the durable state the next firing compares against, because session memory does not survive between firings. Watching stops at whichever comes first: 8 consecutive unproductive wakes, or the 8-hour cap — and either way it is reported, with the PR still open and a durable checkpoint returned, never read as finished.",
+      "assertions": [
+        "the answer schedules the next check-in at 40 minutes, doubling from 20",
+        "the answer writes the count and comparands into the wake's prompt",
+        "the answer stops at the wake budget or the 8-hour cap, whichever comes first",
+        "the answer reports the stop with the PR still open rather than treating it as finished"
       ]
     }
   ]

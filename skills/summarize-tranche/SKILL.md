@@ -64,7 +64,7 @@ a question item, or a repair deferred because `review-repair-cycles` was spent
 orchestrator already holds that PR's merge and has no compliant dispatch: the review path
 refuses the thread on budget and re-admits it only on new content, and the finding path
 exists for work no thread carries
-(where the run is `backlog-orchestrator`'s, its *A settle finding is the third repair shape*).
+(`supervise-prs`, *Finding repairs*).
 Classing one as `IN_FLIGHT_FIX` un-settles the tranche with nothing able to act on it. So
 report a **deferred repair as `MERGE_RISK`** — the requested change, the thread's
 API `html_url` as the orchestrator recorded it and never rebuilt

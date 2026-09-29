@@ -4,8 +4,9 @@
   "companions": [
     "swarm",
     "settle-and-merge",
-    "create-pr",
-    "repair-pr"
+    "supervise-prs",
+    "repair-pr",
+    "resolve-pr-comment"
   ],
   "evals": [
     {
@@ -775,6 +776,18 @@
         "The answer does not archive W on the run's own authority",
         "The answer names W as alive in the settled report and state block, with its URL and the literal tool string",
         "The answer treats W resuming, seen on a check-in, as a delta that un-settles the run"
+      ]
+    },
+    {
+      "id": 60,
+      "name": "a-charter-held-pr-with-its-decision-raised-does-not-block-settling",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Every other PR in the tranche is finished and nothing is dispatchable. PR-5's latest review repair added a new module, so supervise-prs returned it held: check by the chartered-scope check, and you raised the split-or-absorb DECISION as an item. No worker is in flight and no session is alive. Is the run settled? What happens to PR-5, and when is it released?",
+      "expected_output": "Settled. A PR held by the chartered-scope check whose DECISION has been raised as an item counts as surfaced, exactly as a refused round or a reserved thread does: it holds that PR's merge and never the settlement, otherwise the run could never reach the walkthrough that rules on it. PR-5 stays held — no dispatch and no adoption on its branch. The DECISION goes to the settled step's walkthrough; once it is ruled, this run passes supervise-prs a release with the ruling, and the held head is adopted as a head move — reverted separately if the ruling was to split.",
+      "assertions": [
+        "the answer treats the run as settled despite PR-5 being held",
+        "the answer counts the held PR with its DECISION raised as surfaced, holding its merge only",
+        "the answer keeps PR-5 held until a release is passed after the ruling",
+        "the answer does not dispatch or adopt on PR-5's branch meanwhile"
       ]
     }
   ]

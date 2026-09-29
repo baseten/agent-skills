@@ -1,11 +1,11 @@
 ---
 name: implement-issue
-description: Single-issue orchestrator for one tracked issue from its canonical full URL. Composes implement-issue-core for issue→code→checks→durable PR, then supervises bounded CI/review activity and dispatches repair-pr as needed until the PR is healthy, merged where its repository opted into auto-merge, blocked, or needs user input. Budgets and review/merge policy come from the repository's .claude/agent-policy.json. Useful standalone and as a one-issue workflow.
+description: Single-issue orchestrator for one tracked issue from its canonical full URL. Composes implement-issue-core for issue→code→checks→durable PR, then supervises the PR through supervise-prs, with bounded repair-pr passes, until it is healthy, merged where its repository opted into auto-merge, blocked, or needs user input. Budgets and review/merge policy come from the repository's .claude/agent-policy.json. Useful standalone and as a one-issue workflow.
 ---
 
 # Implement Issue
 
-Orchestrate exactly one tracked issue end-to-end: implement it to a durable PR, supervise that PR's CI and review — reading each verdict off the artifact and never off an empty lookup (`references/absence-is-not-a-verdict.md`), on the commit it describes (`references/ci-and-review-verdicts.md`), repair within budgets, and merge only through invariant 12's gate (`settle-and-merge`, *The merge gate*) where the repository opted in.
+Orchestrate exactly one tracked issue end-to-end: implement it to a durable PR, supervise that PR's CI and review through `supervise-prs`, repair within budgets, and merge only through invariant 12's gate (`settle-and-merge`, *The merge gate*) where the repository opted in.
 
 This file is the contract. The reasoning behind each rule — incident history, arguments, and answers to "why not the obvious other reading?" — lives in `NOTES.md` beside it, keyed by these section names. Read a section's note before changing its rules or when applying them to a case the contract does not obviously cover. NOTES.md explains; it never overrides.
 
@@ -14,7 +14,7 @@ This file is the contract. The reasoning behind each rule — incident history, 
 | skill | role |
 |---|---|
 | `implement-issue-core`, `create-pr` | implementation |
-| `repair-pr` (+ `resolve-pr-comment` for review fixes) | one bounded repair pass: `ci`, `review`, or `finding` |
+| `supervise-prs`, composing `repair-pr` (+ `resolve-pr-comment` for review fixes) | the PR's supervision, and its bounded repair passes: `ci`, `review`, or `finding` |
 | `settle-and-merge`, composing `summarize-tranche`, then `settle-outstanding-decisions` (while `auto-request-settle` is on) | settle, in that order, then the merge gate |
 | `merge-stack` | any merge this run performs — required whenever the resolved `auto-merge` leaves the gate reachable; check at preflight where policy resolves, never discover at the gate |
 
@@ -31,7 +31,7 @@ This file is the contract. The reasoning behind each rule — incident history, 
 
 ## Policy and budgets
 
-`references/agent-policy.md` owns the entire config contract — the file, per-PR resolution, precedence and fail-closed rules — and `references/review-feedback.md` owns the kind test that decides what a run may auto-fix. Apply them from there; never restate them (NOTES: drift).
+`references/agent-policy.md` owns the entire config contract — the file, per-PR resolution, precedence and fail-closed rules. Apply it from there; never restate it (NOTES: drift).
 
 - Preserve exactly any caller-supplied repository, worktree, branch, base, dependency context, tracker, and budgets.
 - Read the policy file (`references/agent-policy.md` names it, and *Fail-closed handling* its old-name fallback) **once, at run start, from the head of the repository's default branch** — never from the worktree this run writes, and never again afterwards.
@@ -68,70 +68,33 @@ On a terminal outcome (`BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`)
 
 # Phase 2 — single-issue PR supervision
 
-This skill owns supervision **only as the standalone single-issue orchestrator** — here, arming a subscription or scheduled check-in is its job. Under `backlog-orchestrator` the parent owns supervision; rules against self-monitoring in the worker skills are scoped there and do not reach this phase (NOTES).
+**This skill supervises its one PR through `supervise-prs`, and lets that skill run its own loop** — there is no parent here to own one, so arming the subscription and the bounded check-in is that loop's job (NOTES). Invoke it with:
 
-- Use platform-promoted PR events when present; never build a duplicate monitor. Source order: first-class promoted events → other event notifications → bounded polling. No frequent no-change polling; no child agent kept alive only to wait.
-- The platform observes; this skill remains the **policy owner** — whether a repair is appropriate, and within which budget.
-- **Confirm the round-1 trigger `create-pr` issued took effect**, as `references/review-trigger.md`, *Confirming a trigger took effect*, requires of whichever skill supervises the PR — the same confirmation every later re-trigger gets.
-- If the platform's own auto-merge (a forge setting, not the policy key) is enabled, it merges outside the gate: confirm it is off, or report its merges as outside this skill's control.
+- **PR set**: the one PR, with its repository, branch/base, remote head and the canonical issue URL — adopted on the first pass, which issues any owed trigger and arms the subscription at once;
+- **budgets**: `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles` and `repair-model-escalations`, as *Policy and budgets* resolved them, each with its source;
+- **counters**: 0 on a fresh run, since this run created the PR; on any later invocation, the counters in `supervise-prs`'s last returned record;
+- **posting-identity map**: the run's map, every entry core returned included; **merge** the map it returns into the run's, never replace it;
+- **review routing and trigger state**: as core's `create-pr` left them;
+- **repair dispatch**: `direct`; **head checks**: none;
+- **wait owner**: `self`; **monitoring cap**: 8 hours where persistent monitoring is supported, none otherwise; **return on**: `any-terminal`; **state emission**: `every-pass`;
+- **findings to repair**: none now — Settle hands one in when it un-settles (below).
 
-Maintain explicit state:
+**Every later invocation re-passes all of these**, with the counters and map `supervise-prs` last returned.
 
-```text
-PR: <URL>
-CI repair cycles: <used>/<limit>
-Review repair cycles: <used>/<limit>
-Finding repair cycles: <used>/<limit>
-Strongest-model repair rounds: <used>/<limit>
-Current remote head: <SHA>
-Review rounds, one line per round: pending | refused (reason, reset) | complete-with-findings | clean
-Threads reserved for the owner: <count> (question items: api html_url, ask quoted, recommended reply (paste-ready, or labelled decision-not-for-posting), change SHA or none, why not posted; deferred repairs: api html_url, requested change, no draft)
-Draft state: <as-created> -> <current>
-Policy: budgets <source>; auto-merge <on|off> (<source>)
-State: waiting | repairing-ci | repairing-review | repairing-finding | healthy | needs-user
-```
+Its outcome decides what happens next:
 
-## CI failure
+| `supervise-prs` returns | this skill |
+| --- | --- |
+| `finished` | settles |
+| `needs-user` | settles — every terminal outcome does. Its outcome is **the pass's own result where a pass produced it** — `FAILED` returns as `FAILED`, `NEEDS_USER` as `NEEDS_USER` — and `NEEDS_USER` otherwise |
+| `held`, `returned`, `unrepaired`, `merged` or `closed` | settles |
+| `waiting` or `repairing` at the monitoring cap, or `cannot-watch` | returns the durable checkpoint (Completion) |
 
-1. inspect enough check/log context to identify the relevant failure;
-2. attributable to this PR and CI budget remains → invoke `repair-pr` once with `repair type = ci` — Sonnet, or the strongest model where *Escalation on evidence* fired and an escalation remains (`references/repair-rounds.md` owns the trigger and caps, *Escalation on evidence* and *The cycle cap*; an escalated round still consumes its cycle);
-3. pass the exact failure context, remaining budget, and the run's posting-identity map as it stands — the budget read off this PR's recorded cycles, never recalled, and not raised by a repository instruction to keep repairing (`references/repair-rounds.md`, *The remaining budget*); say the count against the cap in any status that mentions a repair round;
-4. adopt the returned head SHA **and merge every identity entry the pass observed into the map** — never replace it;
-5. wait for the next CI result, event-driven where available;
-6. budget exhausted → `NEEDS_USER`, no further attempts.
-
-**Step 2 decides attribution, per check, by `references/ci-attribution.md` — so a mass failure across unrelated files is not classified external here without the confirmation that rule requires, and unconfirmed, invoke the pass rather than classifying.**
-
-Unrelated/external/flaky failure with no justified code change: report and monitor; no cycle consumed. A check that rule classifies **expected-red after a producer merge** is reported with the refresh it is waiting on and holds the merge gate; this skill has no authority to bring the PR onto the refresh, so it names the refresh rather than acting on it.
-
-## Review feedback
-
-Actionability — `references/review-feedback.md` owns these rules and the matching test; apply them from there:
-
-- a thread rooting on the diff and asking for a code change this pass can make: actionable, whoever wrote it;
-- a thread needing judgment rather than a diff — intent, design, rationale, a decision: `NEEDS_USER`, never answered on the run's own authority;
-- a comment this run authored: never.
-- Consequence: **never root a review thread on the supervised PR.** Reply inside existing threads; post timeline comments only (NOTES: the discriminator depends on it). Those comments and replies follow the authored-write-form rule (`references/authored-write-form.md`) as well as the posting-identity rule (`references/posting-identity.md`) — short, and carrying the attribution footer, because **supervision comments are unattended writes even on an attended run**: this skill posts them from its own event loop without showing them to anyone, so that rule's approval test answers No however the run was started. A person invoking the skill is not a person who read the comment. This skill is invoked directly by a person, so no dispatch prompt carries the rule to it; **the review re-trigger at step 4 below is the one write exempt from the footer**, and appending one to it makes the convention fail silently (`references/review-trigger.md`, *The trigger comment*).
-- A `NEEDS_USER` thread is **reserved for the owner**: never resolved, never answered on this run's own authority, and never repaired **in the part that wants an answer** — a comment asking for a diff *and* prose is repaired and still reserved (`resolve-pr-comment`, *A comment can want both*), reported as awaiting them with its URL and what it asks. **What accompanies it depends on the item kind, and the two must not be merged:** a question item carries **everything `resolve-pr-comment`, *What a question item must contain*, requires**, verbatim, with the API `html_url` forwarded rather than rebuilt; a deferred-repair item carries the change it asks for and **no draft**, because the budget ran out on work that wants a diff and there is nothing to answer (`repair-pr`). Requiring a draft of both forces a question-shaped draft to be invented for the second. It does not stop this skill returning, but its round is not clean — it keeps the merge gate shut.
-
-On unhandled feedback, as `references/review-feedback.md`, *Unhandled feedback*, defines it — which also says when a recorded thread is re-admitted, and that a settlement record never re-admits one — **dispatch on any such round, including one where nothing looks repairable from the outside:** classification and the draft need the thread body and the surrounding code, which is the pass's context, not this skill's.
-
-1. group one coherent review round;
-2. invoke `repair-pr` once with `repair type = review`, the threads, and the map, on the same model rule as CI. **The budget gates repairing, not classifying:** invoke it even with the review budget spent, since a classify-only pass consumes no cycle and an unclassified thread has no draft for the settlement path to clear its gate with. With the budget spent it classifies and drafts but repairs nothing, and threads that would have been repairable become `NEEDS_USER` on budget grounds;
-3. adopt the returned head **and merge every identity entry the pass observed** into the map, and **record every `NEEDS_USER` thread it returned — a question item with everything `resolve-pr-comment`, *What a question item must contain*, requires, verbatim and with its `html_url` forwarded rather than rebuilt; a deferred-repair item with the change it asks for and no draft — **and a thread that returned two items is recorded once per item and is handled only when both are in, since a mixed thread carries a deferred repair and a question at the same URL (`resolve-pr-comment`, *A comment can want both*)** — and every no-action thread it returned** — recording is what stops a thread being re-grouped into a later round, until new content arrives on it, and a no-action thread left unrecorded is re-dispatched on every cycle since a classify-only pass consumes none;
-4. **only where the pass pushed a repair**, retrigger review where repository convention requires it (`references/review-trigger.md`) — never on a round recorded `refused`, nor in a repository where triggering was suppressed, and confirm it took effect as that rule's *Confirming a trigger took effect* requires — a `NO_CODE_CHANGE` pass left the head unchanged, so a retrigger asks for another review of identical code and its fresh threads would be dispatched again — selecting the trigger's author from the map **as updated in step 3**: the repair may have established the invoking-user path, and re-triggering from the pre-repair map is what makes a trigger silently fail;
-5. wait event-driven;
-6. budget exhausted → the pass still runs classify-only; what remains repairable comes back as **deferred-repair items**, recorded and reported, never a `NEEDS_USER` outcome for the PR (`repair-pr`, *Hard constraints*) — the rest is still classified and drafted.
-
-A pass that returns `NO_CODE_CHANGE` — the classification left it no repair to make, whether the round was questions, acknowledgements or any mix of them (`repair-pr`, *Review repair (`repair type = review`)*, step 2) — consumes no review cycle, and its items and drafts are recorded exactly as a pushing pass's are. Never derive the classification or write the draft here instead of dispatching: `resolve-pr-comment` owns both, and a round this skill triaged as question-only and never dispatched would be reserved with no draft.
-
-## Draft state
-
-- `references/draft-state.md` governs this PR's draft state as written — promotion, the direction never taken, and the explicitly-held-draft discriminator, read from the forge's timeline and never from this run's state block. There is still deliberately no policy knob (NOTES: why promote-on-clean-review was deleted rather than made configurable, and why deferring to a written convention is not that knob).
+Keep the PR's policy line beside that skill's record: `Policy: budgets <source>; auto-merge <on|off> (<source>)`.
 
 # Settle
 
-The run settles when its one issue reaches a terminal state: the PR individually finished — a completed review round, or one recorded `refused`, which is surfaced: it holds the merge gate and never stops the run settling (`references/review-trigger.md`, *A refused round*); every actionable finding resolved, answered, or reserved for the owner; CI green (`references/ci-and-review-verdicts.md`), or every red check confirmed expected-red after a producer merge and reported (`references/ci-attribution.md`, *A producer merge*); no repair left to attempt — or `BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`. **Every terminal outcome settles, including one Phase 1 returned before supervision began** (NOTES: the failure outcomes carry the most decision-shaped material; the empty case gets `summarize-tranche`'s one line). Then run `settle-and-merge`, *The settle sequence*, over this one PR, passing it every input its *Inputs* names, as this skill supplies them:
+The run settles when its one issue reaches a terminal state: the PR `finished` as `supervise-prs`, *Outcomes*, defines it — a refused round, a reserved thread and an expected-red check counting as surfaced, holding the merge gate and never the settlement — or a terminal outcome: `BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`. **Every terminal outcome settles, including one Phase 1 returned before supervision began** (NOTES: the failure outcomes carry the most decision-shaped material; the empty case gets `summarize-tranche`'s one line). Then run `settle-and-merge`, *The settle sequence*, over this one PR, passing it every input its *Inputs* names, as this skill supplies them:
 
 - **PR set and scope**: scope, the canonical issue URL; PR set, its one PR — or none, where Phase 1 returned before creating one;
 - **findings**: the worker and review findings the run produced;
@@ -148,7 +111,7 @@ Its steps, in order, as this skill reads them:
 
 1. **reconcile** tracker and remote state — everything after computes from durable truth, not this session's cache (its step 1);
 2. **invoke `summarize-tranche`** (canonical issue URL, this PR, the worker and review findings) and **act on its action points before anything below** (its steps 2–3). A one-issue run is a tranche of one; nothing in that skill reads differently at this size;
-3. **request `settle-outstanding-decisions`**, seeded with the summary and passed the run's posting-identity map, unless `auto-request-settle` resolved off — and **merge every identity entry it returns into the map, all of them**: a ruling can be the first authored write through a transport this run never used, and step 4's merge reads the map. The option gates only the request; attendance is that skill's own precondition — an unattended settle gets its one-line decline, and the decisions stay at their durable sites (its step 4);
+3. **request `settle-outstanding-decisions`**, seeded with the summary and passed the run's posting-identity map, unless `auto-request-settle` resolved off — and **merge every identity entry it returns into the map, all of them** (`references/posting-identity.md`): a ruling can be the first authored write through a transport this run never used, and step 4's merge reads the map. The option gates only the request; attendance is that skill's own precondition — an unattended settle gets its one-line decline, and the decisions stay at their durable sites (its step 4);
 4. **translate rulings into gate consequences** (below) when its step 5 hands them back, passing back the translated action points, then evaluate the merge gate where the repository opted in (its step 6; see Merge);
 5. **return** — the summary and action points first, then the rulings or the decline (its step 7).
 
@@ -168,11 +131,9 @@ Its steps, in order, as this skill reads them:
 
 **Un-settling** — a summary `IN_FLIGHT_FIX`, or a code-changing ruling; identical handling from either source, and **never a thread reserved for the owner with nothing able to dispatch it — questions and deferred repairs** (`summarize-tranche`, *2. Action points*, which never emits one as an `IN_FLIGHT_FIX`). A thread carrying a recorded code-changing ruling un-settles as it always did: the ruling is the evidence and the finding path takes it:
 
-- dispatch `repair-pr` once with `repair type = finding` — the finding **verbatim** (the action point, or the recorded ruling with its site URL) plus the map, on the same model rule as CI and review;
-- a **pushed** repair consumes a `finding-repair-cycles` cycle and retriggers review where convention requires (`references/review-trigger.md`; substantive, never mechanical — `references/mechanical-pushes.md`); **`NO_CODE_CHANGE`** consumes no cycle and triggers no review. Merge returned identity entries whatever the outcome. `repair-pr`, *Finding repair (`repair type = finding`)*, owns the type, `references/repair-rounds.md`, *The finding budget*, owns the budget, and this list is the branching, every outcome included;
-- then settle again **from step 1** — the re-run recomputes the summary, so the gate never sees evidence the repair invalidated, and re-asks nothing (a recorded ruling retires its question at discovery);
-- finding budget already spent → `NEEDS_USER` carrying the finding beside the summary in hand; that is a settle-phase outcome and returns directly.
-- the pass returns **`FAILED` or `NEEDS_USER`** → that is the outcome, carrying the finding and the pass's report beside the summary in hand, exactly as for a CI or review repair that returns one. It is a settle-phase outcome and returns directly: never settle again on it, so a failed finding repair is never re-dispatched.
+- **re-invoke `supervise-prs` with every Phase 2 input and the finding as a finding to repair** — verbatim, the action point or the recorded ruling with its site URL — and merge the map it returns. That invocation returns as soon as the finding's pass has returned, whatever `return on` says; that skill dispatches the `finding` pass, counts the `finding-repair-cycles` cycle and re-triggers review where a pushed repair calls for it;
+- a **pushed** repair or a **`NO_CODE_CHANGE`** → settle again **from step 1** — the re-run recomputes the summary, so the gate never sees evidence the repair invalidated, and re-asks nothing (a recorded ruling retires its question at discovery);
+- **`needs-user`** — the finding budget already spent (`NEEDS_USER`), or the pass returned `FAILED` or `NEEDS_USER` (that result) → that is the outcome, carrying the finding and the pass's report beside the summary in hand. It is a settle-phase outcome and returns directly: never settle again on it, so a failed finding repair is never re-dispatched.
 - A draft→ready transition also un-settles the run, whoever performed it — the rule lives in Merge.
 
 ## Merge
@@ -203,9 +164,9 @@ Where the repository opted in through `auto-merge`, evaluate **invariant 12's ga
 
 - Return `PR_OPEN`/healthy when the PR is implemented, correctly linked, and has no known CI/review item a remaining budget could repair — a thread reserved for the owner, deferred repairs included, does not stop `PR_OPEN`; it holds the merge gate — after Settle, whose summary and walkthrough are the gate's own inputs.
 - Return `MERGED` where the gate's merge completed.
-- With persistent monitoring: continue until healthy, merge/close, user stop, budget exhaustion, or the monitoring cap.
-- If the runtime cannot stay active waiting only on external events, return a durable checkpoint — never pretend background monitoring continues.
-- Return `NEEDS_USER` with exact PR/issue URLs, the remaining failure, attempts performed, and the recommended next action. **A reserved thread is not a remaining failure** — a comment never yields this outcome (step 6 above; `repair-pr`, *Hard constraints*); it is reported and holds the merge gate.
+- With persistent monitoring, `supervise-prs`'s loop continues until the PR is finished or terminal, the user stops it, its wake budget is spent, or the monitoring cap elapses.
+- Where it returns `cannot-watch`, or stops with the PR still waiting, return a durable checkpoint — never pretend background monitoring continues.
+- Return `NEEDS_USER` with exact PR/issue URLs, the remaining failure, attempts performed, and the recommended next action. **A reserved thread is not a remaining failure** — a comment never yields this outcome (`supervise-prs`, *Outcomes*); it is reported and holds the merge gate.
 
 ## Structured result
 
@@ -218,13 +179,10 @@ Return:
 - branch/base; PR URL/number; remote head SHA;
 - issue linkage verified, and the form emitted — closing keyword, or non-closing `Part of:` because a coverage finding was reported;
 - **any design finding core returned in place of a re-siting**, forwarded whole — the value, the objecting call sites and where it belongs; a caller that does not carry it is the only reader it would have had;
-- implementation attempts used; review rounds completed, and CI, review and finding repair cycles used; strongest-model repair rounds used against the limit, with the locus evidence that triggered each;
+- implementation attempts used, and **`supervise-prs`'s report for the PR** (`supervise-prs`, *Report*) — review rounds and CI, review and finding repair cycles against their caps, strongest-model rounds with the locus evidence for each, every review thread reserved for the owner per item kind, final CI and review state, and draft state as created and current with any transition observed and who performed it (a ready-to-draft transition is never this run's);
 - the resolved policy actually applied — budgets, `auto-merge` — each with its source (caller, repo config, built-in default), plus any policy file present but unhonourable (an unreadable file is authority the owner meant to grant and did not);
-- review threads reserved for the owner: count and, **per item kind** — a question item's required fields verbatim (`resolve-pr-comment`, *What a question item must contain*), a deferred-repair item's API `html_url` and requested change with no draft (`repair-pr`). For a question those fields are the point of reporting it, so a run that drops it has escalated without handing over the work it already did; for a deferred repair there is no draft to drop, and demanding one would make the budget-exhaustion case unsatisfiable;
 - the merge, where one happened: the gate conditions it passed on, whether the PR was published from draft on the way, and the tracker reconciliation;
 - the `summarize-tranche` summary and action points, and the `settle-outstanding-decisions` report — rulings recorded, its one-line decline, or that `auto-request-settle` was off;
-- final CI/review state;
-- draft state as created and current, and any transition observed with who performed it — the owner, the merge path's publish, or this run carrying out the repository's own promotion convention; a ready-to-draft transition is never this run's;
 - the run's **full posting-identity map** — every entry observed by core, each repair pass, the walkthrough, and a gate-authorized `merge-stack` invocation, under its `(transport, credential)` key; carry all entries, `unestablished` where no authored write was read back (NOTES: why nothing may be collapsed);
 - whether the blocker set's completeness was backed or left unproven, and on what boundary;
 - the routed documentation review's result, exactly as core reported it — round, status, and any findings with their evidence. It reaches `summarize-tranche` through this line and nowhere else, and **no routed review** is a different state from **a routed review that found nothing**;

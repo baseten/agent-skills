@@ -116,7 +116,7 @@ that cannot drift.
 
 The notes on confirming a trigger that is a skill invocation, and why a declined pass is completed, moved to `rules/review-trigger-notes.md` with the confirmation step (#144).
 
-**Why the per-PR block holds its review lines per convention.** A routed repository can owe two independent reviews on one PR, and invariant 12 asks whether *every* round the routing requires has completed. A single-valued block cannot express "one of two", so the gate would read the first completion as the answer and open over a review still pending. This is the same defect the invariant's own parenthetical had, found in the same pass.
+The note on why the per-PR record holds its review lines per convention moved to `supervise-prs/NOTES.md` (#144).
 
 ## Shared environment
 
@@ -138,7 +138,7 @@ The notes on why every read is a snapshot moved to `rules/establish-do-not-assum
 
 The reasoning for the shared rule this section applies — the forge-timeline read, the scoped three-state reference, when the convention is read, and why the repository's convention wins — moved with the rule to `rules/draft-state-notes.md` (#138). What stays here is about what stays here.
 
-**Why the trigger comment stayed unconditional:** scoping it to "where promotion is withheld" implies its converse — that promoting asks for the review — and whether a provider acts on a publish is exactly what this document refuses to assume. A run in a promote-convention repository would promote four PRs, treat that as having requested review, and sit on four PRs nobody reads: the seven-hour failure *Adopting a PR is three things* exists to prevent, re-opened through the section next to it.
+The note on why the trigger comment stays unconditional moved to `supervise-prs/NOTES.md`, *Draft state* (#144).
 
 ## Arming the wait when nothing is in flight
 
@@ -180,19 +180,13 @@ The notes on what two unbounded check-ins cost, why a subscription is not free, 
 
 **Why the body re-read is placed before promote/merge rather than in the repair pass:** a repair that will be followed by four more rounds does not need its body correct yet, and requiring it each round spends a write per round on text that is about to change again. The last moment before a human is asked to read it is where it is both cheap and necessary — and the charter comparison is already open there.
 
-**Why the rule counts supervisors and not mechanisms:** written as "never two monitoring loops over one PR" it contradicted the section that requires a subscription *and* a bounded check-in over each PR — two mechanisms, one owner, which is the intended shape rather than a violation of it. What is actually forbidden is a second party watching: a worker that never stopped reading, or a supervision step reading on its own instead of consuming the parent's pass.
-
-**What the second monitoring loop costs:** the duplicate pass spends API budget on every cycle and decides nothing the first pass did not — it re-reads the same PR to reach the same conclusion, and where it does not, the two loops disagree about a PR one of them is mid-repair on. Writing the lifecycle out as a sequence exists because the failure is never a decision to run two loops; it is a worker that never stopped reading, or a supervision step that reads on its own rather than consuming the parent's pass.
+The notes on why supervisors are counted rather than mechanisms, and what a second monitoring loop costs, moved to `supervise-prs/NOTES.md` (#144).
 
 ## Adopting a PR is three things, not one
 
-**Why `deferred` is a recorded value rather than an inference (round 1, Sept 2026):** the first version classified every `pending` trigger as untriggered and issued it, which overrode the caller's explicit deferral — a WIP draft would get its round 1 at the moment the parent adopted it. There is no way to tell a deliberate deferral from an unfinished one by looking at the PR: both have no trigger. So the deferral writes itself down when it is made, and everything else that looks like it is treated as unfinished. That direction is chosen: an over-eager trigger on a WIP draft costs a review round, and a missed one costs the review.
+The notes on adoption — why `deferred` is recorded, why a correct step produced no review, and why the trigger is re-checked at adoption — moved to `supervise-prs/NOTES.md`, *Adopt* (#144).
 
 The note on why the post-arming read reconciles rather than samples moved to `rules/watch-and-read-notes.md` (#144).
-
-**Why a step that everyone performed correctly produced no review at all:** the worker is told to stop once the PR is pushed and open, which is right — it is what stops a worker becoming a second orchestrator. The repository opens feature PRs as drafts, which is also right. The two together mean the PR reaches its final state without anything having asked for a review, and no part of the run is in a position to notice: the worker returned its terminal outcome and was released, the parent recorded `PR_OPEN`, CI ran and reported. Four PRs sat for about seven hours with zero reviews and zero comments, one of them red within minutes of opening. Nothing failed. The section exists because the failure has no failure signal of its own — the only place left that looks at the PR is the parent's adoption, so that is where the check has to be.
-
-**Why the parent re-checks a trigger `create-pr` owns:** not because the trigger moved. A worker can return with the PR open and the trigger not yet issued — linkage verification and the trigger both run after creation, so `FAILED` and `NEEDS_USER` both arrive with a usable PR — and once that worker is released nobody will ever go back for it. Reading the `review trigger` line at adoption costs one lookup against a field the per-PR block already carries.
 
 ## Event handling
 

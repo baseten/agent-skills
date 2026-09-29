@@ -57,8 +57,8 @@ Where the estimate is uncertain, over-assign. Over-assignment costs budget; unde
 **`swarm` owns the dispatch mechanics**, and this skill does not restate
 them: which runtime is available and how to degrade when the preferred one is
 not, one worker per task in its own worktree created from a stated base, and the
-supervision rules under *Supervise* below — including the preflight that stops a
-no-change result being reported over a task nothing was watching — and, where a
+supervision of those workers — including the preflight that stops a no-change
+result being reported over a task nothing was watching — and, where a
 worker is a remote session, the countermand its session carries, how its report
 reaches this run, when it is released and what happens to one that blocks or is lost —
 and, wherever this run can reach a worker's worktree, checkpoint compliance and the
@@ -114,20 +114,24 @@ Constrain each agent explicitly:
 
 ## Supervise
 
-Gate "green" on **every** check the repository actually requires having concluded successfully on the current head — `references/ci-and-review-verdicts.md`, *CI is green*, states it, and neither an empty or partial rollup nor one required check among several is a green one. Enumerate what is required rather than gating on whichever check you happened to read.
+**Every PR this run opens or adopts is supervised by `supervise-prs`, run from this run's own loop.** Reading the PRs, attributing each red check (`references/ci-attribution.md`), what green means (`references/ci-and-review-verdicts.md`), arming each PR's watch, the platform-auto-merge check and the review-trigger confirmation are that skill's.
 
-**Two checks are carried here from Dispatch, and this is the section that performs them.** Both were handed over because this run occupies the passes and, unless the repository opted in (see Merge), the merge moment belongs to nobody here; a rule stated only where it was assigned is one no pass executes.
+**The loop is this run's.** Each supervision cycle, invoke `supervise-prs`'s *Pass* with the inputs below, act on what it returns, and wait. While dispatched agents are running their completions are the events; once none is, arm the wake `references/wake-budget.md` requires — the subscriptions `supervise-prs` armed, plus a bounded check-in whose prompt carries the PR set, each PR's durable state and these inputs as they last stood — and each firing runs the next cycle. One loop and one wait: `supervise-prs` arms none of its own.
 
-- **Compare each open PR's recorded lockfile base against the current base**, and name every PR whose lockfile has gone stale. A stale one is redispatched for a re-resolution pass, never merged on the strength of the handoff check.
-- **Re-check every batched routine candidate's target against the one triage cleared.** Where one moved, its clearance and the model selection it implied are void: pull it out **together with its coupled siblings** (see Dispatch), re-triage against the new target, and dispatch it like any uncleared bump. The unrelated rest of the batch stands.
+Pass it:
 
-Both run again at close-out, which hands them to the merger for every PR this run did not merge (see Close out), and Merge runs them once more immediately before each merge it makes.
+- **PR set**: every PR this run opened or adopted, bot bump PRs included, each with its repository, branch/base and head, from the moment it exists;
+- **repair dispatch**: `none` — this run repairs nothing through `repair-pr`: a red check or an unhandled round comes back `unrepaired` and is reported. **Budgets**: none are needed;
+- **posting-identity map**: the run's, and merge the map it returns;
+- **review routing and trigger state, per PR by kind** (see Merge): the routine batch PR requires no review round; every other PR's trigger is `deferred`, owed by this run once the PR is green — `supervise-prs` reports it owed when that condition is met, and a trigger this run has since posted is passed as `issued`, so it is confirmed;
+- **caller pushes**: every re-resolution pass this run redispatched, tagged `substantive` — a lockfile re-resolution changes what is installed — with the branch passed **locked** for as long as that agent runs; and with that PR's trigger state reset to `deferred`, owed once the PR is green again, so the re-resolution is not re-triggered before its CI concludes;
+- **head checks**, both `every-pass`, both `return to caller`, stated in full because this run occupies the passes and, unless the repository opted in (see Merge), the merge moment belongs to nobody here — a rule stated only where it was assigned is one no pass executes:
+  - **compare each open PR's recorded lockfile base against the current base**; a PR whose lockfile has gone stale is returned, and this run redispatches it for a re-resolution pass — never merged on the strength of the handoff check;
+  - **re-check every batched routine candidate's target against the one triage cleared**; where one moved, it is returned, and its clearance and the model selection it implied are void: pull it out **together with its coupled siblings** (see Dispatch), re-triage against the new target, and dispatch it like any uncleared bump. The unrelated rest of the batch stands;
+- **wait owner**: `caller`; **return on**: `every-pass`;
+- **state emission**: `changes-only`. Emit only state **changes**, and only actionable ones: a value that varies for reasons unrelated to state — a count, a timestamp — re-emits every unchanged entry on every tick.
 
-Emit only state **changes**, and only actionable ones. A value that varies for reasons unrelated to state — a count, a timestamp — re-emits every unchanged entry on every tick.
-
-**Separate infrastructure from code, per check, by `references/ci-attribution.md`.** Builder timeouts, image-build transport errors and browser-harness teardown messages are not the change under test; confirm it the way that rule does — whether unrelated branches, and the default branch, fail the same job — and where the failure is repository-wide, re-running is futile and escalation is the useful action.
-
-Read a **changed** failure signature rather than retrying it (`references/ci-attribution.md`, *A narrowing signature*).
+Both carried checks run again at close-out, which hands them to the merger for every PR this run did not merge (see Close out), and Merge runs them once more immediately before each merge it makes.
 
 ## Merge
 
@@ -141,7 +145,7 @@ Where it is `true`, a PR merges once all of these hold on its current head:
 - **no recovery ref outstanding for its branch** (`swarm`, *The recovery ref's lifecycle*);
 - **and it passes the gate for its kind — one kind per route** (see Dispatch):
   - **the routine batch PR** — every candidate on it triage cleared. It merges on the checks above **only while its diff is those candidates' version specifiers in the manifests plus the lockfile**, and the lockfile moves no other package across a major and adds none. Anything else in the diff — `scripts`, `overrides` or `resolutions`, patches, `packageManager`, `.npmrc` or `.yarnrc.yml`, any source file — or a lockfile change beyond that, makes it the reviewed kind. No review round is spent on a bump that changes nothing a reviewer would read;
-  - **every other PR, and a batch PR that fails the diff test above** — an `upgrade-npm-dependency` task's carries a major or a bump triage did not clear — merges only once an automated review round has completed clean on its current head — clean as `references/ci-and-review-verdicts.md`, *A review is clean*, defines it. Post that round's trigger yourself once the PR is green, by `references/review-trigger.md` for which convention, what text and from which account, since the PR may be a bot's and never passed through `create-pr`; skip it where `create-pr` already triggered on this head. A review counts for a later head only where every push since is mechanical by the test in `references/mechanical-pushes.md`, conditions included, and otherwise the round is requested again.
+  - **every other PR, and a batch PR that fails the diff test above** — an `upgrade-npm-dependency` task's carries a major or a bump triage did not clear — merges only once an automated review round has completed clean on its current head — clean as `references/ci-and-review-verdicts.md`, *A review is clean*, defines it. Post that round's trigger yourself once the PR is green, by `references/review-trigger.md` for which convention, what text and from which account, since the PR may be a bot's and never passed through `create-pr`; skip it where any trigger already exists on this head. A review counts for a later head only where every push since is mechanical by the test in `references/mechanical-pushes.md`, conditions included, and otherwise the round is requested again.
 
 Anything else — a check pending or red, a stale lockfile, a moved target, an open thread, a review with findings — is reported, not merged. Merge through `merge-stack`, which this gate authorizes for the PRs it passes exactly as invariant 12 does for `backlog-orchestrator`; where it is unavailable, report the gate unreachable for this run rather than merging another way. **Each merge moves the base**, so re-run the lockfile check on the next PR before merging it rather than trusting the result from before the first.
 

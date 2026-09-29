@@ -211,6 +211,17 @@
         "the answer keeps the claim out of any substantive reply posted to the thread and escalates the question with its draft",
         "the answer reports the verifying read in the skill's output"
       ]
+    },
+    {
+      "id": 16,
+      "name": "per-concern-commits-under-a-repair-pass-all-carry-its-trailers",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). repair-pr invoked you unattended for two threads on unrelated concerns — a pagination off-by-one and a misleading log message — and supplied repair trailers `Repair-Pass: rp-12`, `Repair-Type: review`, `Repair-Model: default`. How many commits do you make, and what does each commit message carry?",
+      "expected_output": "Two, one per concern, since the threads touch unrelated concerns. Each commit message describes its fix and carries all three supplied trailers unchanged — the per-concern split does not drop them from the second commit — beside any trailer the repository requires.",
+      "assertions": [
+        "the answer makes separate commits per concern",
+        "every commit carries all three supplied repair trailers unchanged",
+        "the answer does not drop the trailers from any split commit"
+      ]
     }
   ]
 }

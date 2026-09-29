@@ -164,3 +164,9 @@ A closed PR's comment thread is not a durable record; the next attempt begins fr
 
 **Why dependency merges have their own opt-in and their own gate (Sept 2026, owner's ruling):** `auto-merge` opens backlog-orchestrator's invariant 12 gate, which is built for a settled tranche — a summary, rulings, review rounds — and none of that exists for a Dependabot bump. A repository can reasonably want triage-cleared bumps landing unattended while every feature PR still waits for a person, so the permission is a separate key rather than a second meaning for the first. The gate splits on what changed rather than on the version number: a cleared minor or patch changes no code and has nothing for a reviewer to read, so a review round there spends quota on nothing; any major, and any bump whose upgrade needed application changes, is a code change and gets the same automated review a code change would.
 
+## Supervise
+
+**Why the loop is this run's and `supervise-prs` runs inside it (#144, owner's ruling):** this run acts on every pass — two carried checks return PRs to it, a deferred review falls due once a PR is green, and a stale lockfile needs its own redispatch — so handing the loop to the supervisor would leave it returning after nearly every pass anyway. The wait it arms is bounded by `rules/wake-budget.md`; before the extraction this run's wait on its PRs was not stated at all.
+
+**Why a re-resolution push is passed as a substantive caller push:** it changes what is installed, so it is not identity or ordering, and a review round counts for a later head only where every push since is mechanical. Locking the branch for as long as the re-resolution agent runs is what keeps the supervisor from dispatching onto a branch this run is mutating.
+

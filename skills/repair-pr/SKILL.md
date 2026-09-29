@@ -1,6 +1,6 @@
 ---
 name: repair-pr
-description: Performs one bounded repair pass on an existing pull request for a CI failure, actionable review feedback, or a settle-time finding, using the PR's existing branch/worktree and returning immediately after pushing the repair. Use under implement-issue or backlog-orchestrator; it does not own long-lived monitoring.
+description: Performs one bounded repair pass on an existing pull request for a CI failure, actionable review feedback, or a settle-time finding, using the PR's existing branch/worktree and returning immediately after pushing the repair. Use under supervise-prs, which its callers run; it does not own long-lived monitoring.
 ---
 
 # Repair PR
@@ -15,6 +15,7 @@ This file is the contract; the reasoning behind its rules lives in `NOTES.md` be
 - repair type: `ci`, `review` or `finding`;
 - the evidence matching the type, and evidence means the artifact rather than its absence (`references/absence-is-not-a-verdict.md`): exact failure logs/check summaries for `ci`; review thread(s) for `review`; for `finding`, the settle-time finding verbatim — a `summarize-tranche` `IN_FLIGHT_FIX` action point, or a recorded walkthrough ruling that requires this PR's code to change — with the durable site it lives at;
 - remaining repair-cycle budget;
+- a pass id and model tier (`default` or `strongest`), supplied by the dispatching layer;
 - expected branch/base when supplied.
 
 ## Hard constraints
@@ -75,6 +76,7 @@ Never widen into other action points or findings the caller did not supply, and 
 
 - Before editing, fetch the remote PR branch and verify the assigned checkout is on/derived from the current remote head — the remote branch is durable state.
 - Every repair that changes code ends with a **pushed commit**. Never return success with repair work existing only in the local worktree (NOTES).
+- **Every commit this pass makes carries three trailers**, beside any the repository requires: `Repair-Pass: <the supplied pass id>`, `Repair-Type: <ci|review|finding>` and `Repair-Model: <default|strongest>`. Pass them to `resolve-pr-comment` for every commit it makes under this pass — it applies them (*4. Commit and push* there). They are how a supervisor rebuilding its counts from the branch after a restart tells a repair pass from any other commit, counts passes rather than commits, and counts escalations (NOTES).
 
 ## Output
 

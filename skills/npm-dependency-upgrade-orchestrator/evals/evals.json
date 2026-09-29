@@ -3,7 +3,7 @@
   "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it.",
   "companions": [
     "swarm",
-    "create-pr"
+    "supervise-prs"
   ],
   "evals": [
     {
@@ -241,6 +241,18 @@
         "the answer names the confirmation: other branches or the default branch failing the same job",
         "the answer reports the unconfirmed check as the PR's and does not merge it",
         "the answer does not dispatch a repair pass"
+      ]
+    },
+    {
+      "id": 20,
+      "name": "the-platforms-own-auto-merge-is-checked-before-relying-on-its-surfacing",
+      "prompt": "You are executing the npm-dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The session's background PR watch is surfacing CI events for your bump PRs, and its auto-merge setting is on. The repository has auto-merge-dependencies false. A routine bump PR just went green. What must happen before you rely on that surface, and what if the setting cannot be turned off?",
+      "expected_output": "Surfacing and merging are separate grants: a platform auto-merge merges on CI state alone, outside this run's dependency gate and whatever the repository opted into — here, nothing. Confirm the setting is off before relying on the surface. Where it cannot be turned off, do not rely on it: subscribe explicitly instead, and report any merge it performs as a platform merge outside the gate, never as one this run's gate approved. With auto-merge-dependencies false this run merges nothing itself.",
+      "assertions": [
+        "the answer requires the platform auto-merge to be off before relying on its surfacing",
+        "the answer subscribes explicitly where it cannot be turned off",
+        "the answer reports any platform merge as outside the gate",
+        "the answer does not merge the PR itself"
       ]
     }
   ]
