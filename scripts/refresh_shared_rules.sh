@@ -80,9 +80,10 @@ WATCH_AND_READ="swarm backlog-orchestrator supervise-prs"
 WAKE_BUDGET="backlog-orchestrator supervise-prs npm-dependency-upgrade-orchestrator"
 
 # Skills whose session arms a PR-activity subscription, receives its wakes, or
-# reports to the user that the platform's posture was overridden.
+# reports to the user that the platform's posture was overridden. Swarm cites
+# this rule to distinguish its worker countermand from a standalone supervisor.
 PLATFORM_PR_POSTURE="backlog-orchestrator supervise-prs
-  npm-dependency-upgrade-orchestrator implement-issue"
+  npm-dependency-upgrade-orchestrator implement-issue swarm"
 
 # Skills that classify, repair, report or gate on review threads.
 REVIEW_FEEDBACK="backlog-orchestrator repair-pr resolve-pr-comment

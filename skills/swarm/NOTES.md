@@ -4,6 +4,30 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 **Most of these entries were written while their sections lived in `backlog-orchestrator`**, and moved with them when the generic worker mechanics were lifted into this skill (#123). Read "this document", "this section" and "the run" in them as that skill's contract and run as they stood when the entry was written; the incidents are the same incidents, and every one of them happened on a `backlog-orchestrator` run. Where an entry still explains a rule that stayed behind, it stayed behind with it.
 
+## When this is the wrong tool
+
+Dispatching a single task adds orchestration without parallelism. Dependent tasks form a pipeline: a worker may block on a sibling it cannot see. A read the parent could make is not work to fan out, especially after the parent was refused it.
+
+## 1. Runtime: take what is there, and say which
+
+Session names help a person distinguish an automated session and its run. They cannot establish ownership: anyone may set a name, the list is account-wide, and a run's recorded ids can disappear on crash or compaction. Runtime provenance survives that loss. Workflow fan-out returning is not PR supervision; the parent must carry the watch.
+
+## 2. Isolation: one worker, one task, one worktree
+
+Sharing a checkout makes workers corrupt each other's state and yields misleading test failures. A dispatcher-side path can silently fail in another container, after which a worker may fall back to whatever it finds. An implicit base from a cloud container can make otherwise correct PRs carry unrelated diffs.
+
+## 3. Model: the caller chooses, by how failure shows
+
+A small authorization edit can fail silently while a large mechanical rename fails loudly, so size does not measure model need. Over-assignment spends budget; under-assignment can leave an undetected error. One observed three-line task exhausted a 200K context before reaching code because agent instructions pulled in roughly fifteen specification documents; this is why the instruction surface veto is separate from failure visibility. A repair finding on text an earlier attempt wrote is evidence that the earlier pass did not understand the root, rather than a reason to buy extra retry rounds.
+
+## 4. Supervision: one watcher, and it is the parent
+
+Two watchers can each assume the other will act. An idle remote worker still holds a container and a slot; waiting belongs to the parent. Release must be part of the run's check-in prompt because that prompt survives compaction.
+
+## Bounded runtime probing
+
+Retrying a failed remote start without first ending its session leaks a container per attempt. An argument validation error and a temporary service failure need different handling; neither warrants an unbounded runtime diagnosis before work begins.
+
 ## Remote worker session arguments
 
 **The incident behind passing the source explicitly (2026-08-30):** a run dispatched four workers through `create_session` with no `source_url`, relying on environment inheritance for the checkout as the section then advised. Three inherited one. The fourth had no `sources` key in its session record at all and no repository on disk — same environment, same call shape, same run. Passing `source_url` and `source_revision` fixed it immediately on redispatch. The defect is intermittent, which is why the wording survived long enough to be trusted: three-for-four looks like a working mechanism from inside a single run, and the fourth case looks like something the worker did.
@@ -122,11 +146,17 @@ So the contract stated the gap and failed safe: not releasable, `NEEDS_USER`, co
 
 **Why the missing message channel is stated at tier level and not only inside the `AskUserQuestion` branch:** it was first written down as a property of being mid-prompt, which is where it was observed — and read that way it leaves step 2 looking available on the remote tier, so a parent holding a block it could genuinely clear with an instruction composes one and then finds there is nowhere to send it. `SendMessage` does not address remote CCR worker sessions in any state. `interrupt_session` does reach them, which is what makes the limitation easy to miss: something works, it just does not answer the question the worker stopped on. Every recovery on that tier is therefore archive-and-redispatch rather than redirect, and knowing that before a worker blocks is worth a cycle.
 
-## Concurrency: a ceiling, and the caller sets it
+## 5. Concurrency: a ceiling, and the caller sets it
 
 **Why there is a default at all (#123):** every caller set its own cap — `backlog-orchestrator`'s `concurrent-workers`, the npm orchestrator's begin-narrow rule — so the skill itself had none, and invoked directly, thirty tasks meant thirty workers. The one full-width dispatch on record is the npm orchestrator's: a batch dispatched at full width exhausted one machine's memory and killed a quarter of the run. **Why 4:** it is the only number a caller had already settled on and run under (`backlog-orchestrator`'s built-in `concurrent-workers`), so making it the default changes nothing for that caller and bounds the standalone case at a width that is known to work. The ceiling-not-target rule and the ban on widening because a runtime can moved here with it from that skill's *Default usage safeguards*, which kept only the budget list and its own override.
 
 ## Checkpoint compliance
+
+Workers repeatedly held completed edits locally even when asked to push before checks. Sonnet workers especially treated committing as a step after green checks rather than a protection for work in progress. A clean `git status` can also hide a failed push, so the parent compares the local branch with the remote. On an unreachable checkout the remote head cannot distinguish reading code from eight finished but unpushed files; elapsed-time observations make that uncertainty visible without treating several rapid supervision cycles as independent evidence.
+
+The ref-neutral capture constraints remain in the contract because each is a failure boundary: a scratch index alone does not prevent `git commit` from advancing `HEAD`; a scratch tree not seeded from the worker's head deletes everything outside the task-owned paths; a pipeline or unchecked grep status can make a failed validator look like an empty match; `set -e` is not portable inside subshells. The tested script implements all of them. A parent capture may include a file mid-write, so it is a WIP snapshot rather than a worker-authored final commit.
+
+A recovery ref has to be reconciled on release even when no terminal outcome arrived: a worker may be released after its work reached the remote while it is blocked on irrelevant cleanup. It will never return to push the capture, and lost-worker recovery will not run for it. Keying reconciliation only on successful outcomes leaves that ref outstanding indefinitely and may block a caller's merge gate.
 
 **Where the reasoning for this section lives.** The stalled-head thresholds — 30 minutes reported, two hours `NEEDS_USER`, measured in elapsed time rather than in cycles — were introduced alongside the decision not to reorder the runtime preference, and that reasoning is recorded with the decision: `backlog-orchestrator` NOTES, *Runtime selection*. The nudge cadence for a channel with no path, and why an advancing head is the only acknowledgement, are under *Blocked workers* above, where the review round that produced them recorded them. The capture itself, the script and the recovery ref's generic lifecycle moved here from `backlog-orchestrator` in #136, and their defect history with them (below); that skill kept its four-state ender keyed on PR state, and the reasoning for that ender stayed with it.
 
