@@ -86,12 +86,13 @@ falls back to the `AGENTS.md` list the derivation existed to replace and reports
 success. The general form is `swarm`'s: nothing a dispatcher computed
 may reach a worker as a reference.
 
-**Why an incomplete gate table is a rejection rather than a note:** it is the
+**Why an incomplete gate report is a rejection rather than a note:** it is the
 cheapest moment a skipped check can be caught. The alternative is CI finding it,
-which costs a round, or nothing finding it, which costs a merge. The table says
+which costs a round. (It was a PR-body
+table until issue #158; `rules/authored-write-form-notes.md` says why it moved.) The report says
 which checks ran and is not a claim that they passed — that is CI on the pushed
 head, kept separate because a worker reported all gates green on a PR already
-failing `format:check`.
+failing `format:check`. Where no gate report reaches this run (a remote-session worker), dropping the check is safe because the merge gate still requires every required check green on the head (`rules/ci-and-review-verdicts.md`, *CI is green*); the residual is a check CI skips by a path filter, whose skip reads as passing where the gate report would have shown whether it ran.
 
 **Why this section names no source for the derivation (round 2):** it did, and
 the source was the workflow file — a paraphrase of the rule `implement-issue-core`

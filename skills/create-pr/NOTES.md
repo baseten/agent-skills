@@ -50,13 +50,14 @@ An implementation PR that cannot be linked to an exact issue would be an orphan 
 
 **Why this skill derives the gate the same way rather than reading the
 documentation list (round 1, Sept 2026):** a directly-invoked `create-pr`, or one
-whose caller omitted the gate, would otherwise build a table from
+whose caller omitted the gate, would otherwise build a gate report from
 `CLAUDE.md`/`AGENTS.md` — complete against a list that describes the gate and
-drifts from it. A table complete against the wrong source is worse than no table:
-it reads as evidence that the gate ran.
+drifts from it. A report complete against the wrong source is worse than none:
+it reads as evidence that the gate ran. (That report was a body table until
+issue #158 moved it to the output: `rules/authored-write-form-notes.md`.)
 
 **Why the derivation sits before the body and not in `# Output` (round 2):** it
-was first written where the table is described, which is after the checks have
+was first written where the gate report is described, which is after the checks have
 run, the body has been drafted and the PR has been created. A direct invocation
 therefore ran the documentation list, created the PR, and only then met the rule
 saying not to — so the rule was unreachable by the path it existed for. A

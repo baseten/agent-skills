@@ -119,7 +119,8 @@
         "the footer is justified by nobody having read the reply, not merely by the pass being automated",
         "nothing substantive is posted on the question thread and it is left unresolved",
         "the question item forwards every field resolve-pr-comment's question-item list requires verbatim, the thread's html_url as returned and never rebuilt",
-        "the draft itself is not given a footer"
+        "the draft itself is not given a footer",
+        "the reply does not mention the checks or tests that were run"
       ]
     },
     {

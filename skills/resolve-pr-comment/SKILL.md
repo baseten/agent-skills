@@ -149,9 +149,10 @@ git rev-parse --short HEAD   # or HEAD~1, HEAD~2 as needed
 
 In a remote/web session, use `mcp__github__add_reply_to_pull_request_comment`
 with the resolved `owner`/`repo`, `pullNumber`, `commentId`, and a `body`
-referencing the commit SHA and what changed, e.g.:
+referencing the commit SHA, bare (`references/authored-write-form.md`), and
+what changed, e.g.:
 
-> Fixed in `<sha>` — \<short description of the fix\>.
+> Fixed in \<sha\> — \<short description of the fix\>.
 >
 > \<attribution footer\>
 
