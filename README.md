@@ -596,7 +596,7 @@ Under `backlog-orchestrator` and `npm-dependency-upgrade-orchestrator` the skill
 
 ## Settled tranches
 
-A run is **settled** when nothing more can start right now — `backlog-orchestrator`, *Settled tranche*, owns the predicate — and every open PR has had every review its routing requires completed, with all findings resolved. The run has produced everything it can; the next move belongs to whoever holds merge authority.
+A run is **settled** when nothing more can start right now and every open PR is finished or already put to the owner — `backlog-orchestrator`, *Settled tranche*, owns the predicate. The run has produced everything it can for now; the next move belongs to the owner or to whoever holds merge authority.
 
 At that point `backlog-orchestrator` runs `settle-and-merge`, which owns everything from here to the merge. It invokes `summarize-tranche` first — a short account of what the tranche did plus the action points needing a human, run per tranche because its findings come from run context the next session will not have, and because a follow-up discovered mid-run needs to exist while later tranches can still pick it up.
 

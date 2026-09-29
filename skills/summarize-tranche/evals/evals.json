@@ -98,6 +98,20 @@
         "the body carries the attribution footer",
         "the answer distinguishes authorizing creation from approving the text"
       ]
+    },
+    {
+      "id": 8,
+      "name": "an-item-holding-a-pr-names-the-planned-work-waiting-on-it",
+      "prompt": "You are executing the summarize-tranche skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a tranche of six issues settled. Four merged-or-finished PRs need nothing. PR-5 carries an open question, recorded on the PR, on whether failed events should be dropped or dead-lettered, which the run could not decide. Two issues in the tranche's scope, #31 and #32, have not started; the tracker's native dependency edges show #31 blocked by PR-5's issue and #32 blocked by #31. Nothing else is outstanding. What does the summary say, and what does the action point for PR-5 carry?",
+      "expected_output": "The action point for PR-5 is a DECISION: what (drop or dead-letter failed events), where (PR-5's URL), why not done (needs the owner's choice), next step (rule on it). It also names the planned work waiting on it, by issue URL: #31 directly, and #32 through #31, read from the tracker's dependency edges. The summary says the tranche settled with that work still to come — a partial settle, which resumes once the question is ruled and PR-5 moves — so the reader can tell a tranche waiting on the owner from one that is done. Nothing is invented for the four PRs that need nothing.",
+      "assertions": [
+        "the answer emits a DECISION action point for PR-5 with what, where, why not done and next step",
+        "the action point names #31 and #32 as waiting on it, #32 through #31, by issue URL",
+        "the answer reads the waiting work from the tracker's durable dependency graph",
+        "the summary says the settle is partial, with that work still to come",
+        "the answer adds no action points for the four PRs that need nothing"
+      ],
+      "files": []
     }
   ]
 }

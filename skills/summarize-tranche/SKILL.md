@@ -33,7 +33,7 @@ One paragraph, or up to six bullets. **Hard ceiling.** It is a status summary, s
 
 Say what changed and what it means. NOT: restating each PR's description in turn — the PRs are already that record, and a per-PR recap is the failure mode this skill exists to avoid. One coherent thing across twelve PRs is one sentence.
 
-Include, only where true and material: what the tranche accomplished in the requester's terms; the shape of the work (issues, PRs, independent or stacked); anything that turned out differently than the tickets described (stale baseline, mis-scoped partition, unreal dependency); anything a worker found that was not the assigned work.
+Include, only where true and material: what the tranche accomplished in the requester's terms; the shape of the work (issues, PRs, independent or stacked); anything that turned out differently than the tickets described (stale baseline, mis-scoped partition, unreal dependency); anything a worker found that was not the assigned work; **that the settle is partial**, where planned work waits on an item (*2. Action points*).
 
 Leave out: worker mechanics, retry counts, runtime tiers, token spend, and every number the caller's checkpoint output already reports.
 
@@ -85,6 +85,14 @@ the ruling recorded on the thread with its change still unpushed. Nothing else r
 the walkthrough's already-ruled test retires the question rather than re-emitting it, and the
 same-run route from the walkthrough's own output is gone with the run. Excluding it would
 leave the change with no dispatch path and the merge gate shut for good.
+
+**The same test covers a PR carrying a `NEEDS_USER` item for a spent CI or finding budget, or
+for a finding repair that returned `FAILED` or `NEEDS_USER`**: nothing can dispatch it —
+its own budget refused it, and the finding path takes work no failing check carries — so its
+action point is a `DECISION` (lift the budget, take the fix over, close it), never
+`IN_FLIGHT_FIX`.
+
+**An action point holding a PR that planned work waits on names that work.** Where issues in the tranche's scope that have not started are blocked — directly or through their blockers — by an open PR of this tranche held for the owner — a `DECISION` it waits on, a `NEEDS_USER` item raised on it, a charter hold — or by an issue whose worker is held on the owner's authority (the caller's partial-settle definition, where it has one), name them on that item by issue URL, read from the scope's durable dependency graph (*Sources*), and say in the summary that the tranche settled with that work still to come. The settle is then partial: the run resumes that work once the item is ruled and its PR moves. Without it, a tranche waiting on the owner's answer reads the same as one that is done.
 
 Drop the merely informational: "worth keeping an eye on" is not an action point.
 
