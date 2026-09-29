@@ -832,6 +832,19 @@
         "in the variant the answer keeps the item outstanding because the owner's reply is not the observed ending"
       ],
       "files": []
+    },
+    {
+      "id": 64,
+      "name": "a-ruled-question-hold-still-holds-the-gate-until-the-worker-moves",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a tranche of three issues in a repository with `auto-merge` on. A and B have open PRs from this run, both finished, CI green, reviews clean, no recovery refs, dependency view proven. C's worker session stopped on an AskUserQuestion prompt asking whether a migration should backfill existing rows; this run cannot reach C's checkout, so C was held on the owner's authority with its container retained, and raised as a NEEDS_USER item on issue C. The run settled; the owner is present at the walkthrough and rules \"backfill them\", which is recorded on issue C. After the walkthrough, C's session still reads blocked on the same question, with the same head. Questions: (a) is C's item still outstanding? (b) does the merge gate pass PR-A and PR-B now? (c) what would let it?",
+      "expected_output": "(a) Yes. A ruling on a held worker's question is recorded as direction to the run and retires the question — it is not asked again — but not the item: a held worker's item is retired only by its hold's observed ending (swarm, Blocked workers, its last rule), never by a ruling or a reply, and C still reads blocked with the same head. (b) No. The gate reads a held worker's NEEDS_USER item as outstanding until its hold retires it, whatever is ruled, and it holds every PR in the tranche while one is outstanding, so PR-A and PR-B stay held, naming C's item. (c) The hold ending, observed by the parent: C resuming (the owner answers the prompt in its session and it reads working, or its head advances), or C redispatched on the owner's instruction with the ruling in the dispatch. The parent then retires the item, recording how it ended, and the gate reads it as closed. An archive on the owner's request with no redispatch would not retire it: the item would become an ordinary NEEDS_USER item on the work unit, retired by the ordinary routes.",
+      "assertions": [
+        "the answer keeps C's item outstanding after the ruling because the worker has not moved",
+        "the answer does not let the recorded ruling retire the held worker's item",
+        "the answer keeps PR-A and PR-B held by the gate",
+        "the answer names the worker resuming or being redispatched, observed by the parent, as what retires the item"
+      ],
+      "files": []
     }
   ]
 }
