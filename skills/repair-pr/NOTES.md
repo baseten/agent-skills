@@ -32,7 +32,9 @@ The `finding` type exists because `summarize-tranche` can derive an `IN_FLIGHT_F
 
 ## Recovery / checkpointing
 
-**Why repair commits carry a `Repair-Type:` trailer (#144):** a supervisor's cycle counts live in its per-PR record, which is a cache. After a restart `supervise-prs` rebuilds them from the branch, and nothing distinguished a repair commit from an implementation checkpoint or a person's push — so the count could only be guessed, or treated as unknown, which is treated as spent. A trailer is a token rather than prose, reads the same for every repair type, and costs one line per commit.
+**Why repair commits carry `Repair-Pass:`, `Repair-Type:` and `Repair-Model:` trailers (#144):** a supervisor's cycle counts live in its per-PR record, which is a cache. After a restart `supervise-prs` rebuilds them from the branch, and nothing distinguished a repair commit from an implementation checkpoint or a person's push. The type says which budget a pass drew on; the pass id is what lets a rebuild count passes rather than commits, since one review pass can make a commit per concern through `resolve-pr-comment` (which is why the trailers are forwarded to it); the model tier is what rebuilds `repair-model-escalations`. A trailer is a token rather than prose, and costs three lines per commit.
+
+**A one-time fail-open, accepted:** a PR repaired before the trailers existed has repair commits that carry none, so its rebuild finds no trailered commit and recovers 0 rather than `unknown`. That hands those PRs their budget back once. The alternative — treating every untrailered history as unknown — would mark every PR ever opened as spent, including ones never repaired.
 
 **Why every code-changing repair ends with a pushed commit:** the remote branch is the durable state; repair work existing only in a local worktree is exactly the loss window checkpointing exists to close, and the caller adopts the pushed head, not the worktree.
 

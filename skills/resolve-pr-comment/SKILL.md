@@ -129,7 +129,9 @@ git commit -m "<concise description of what was fixed>"
 git push -u origin <branch>
 ```
 
-For separate commits, repeat per concern. Commit messages should describe the
+For separate commits, repeat per concern. **Under a repair pass that supplied repair trailers** (`repair-pr`, *Recovery / checkpointing*), **every commit this skill makes carries them unchanged** — the single combined commit and each per-concern commit alike — beside any the repository requires.
+
+Commit messages should describe the
 fix, not reference the review comment ("Fix off-by-one in pagination", not
 "Address PR comment"). **A commit message that asserts something about existing
 code needs the same read behind it as a reply does**

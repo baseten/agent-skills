@@ -197,13 +197,14 @@
     {
       "id": 15,
       "name": "a-rebuilt-record-reissues-nothing-and-counts-an-unknown-counter-as-spent",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). After a restart you adopt PR #88 with no counters passed. Its timeline shows the review trigger posted two days ago and the reviewer's answer that it is out of budget until tomorrow; two commits on the branch carrying a `Repair-Type: review` trailer; and one earlier force-push that erased whatever history the CI repairs left. review-repair-cycles is 3 and ci-repair-cycles is 2. What does adoption do about the trigger, and what does the record say for each counter?",
-      "expected_output": "Adoption rebuilds the record from durable evidence. The trigger was posted and the reviewer refused the round, so the trigger is verified and the round is recorded refused with its reset — it is never reissued, not at adoption and not at a restart. Review cycles: two consumed, rebuilt from the Repair-Type trailers on the branch, so one remains. CI cycles cannot be recovered, because the force-push rewrote the history they would be read from: record the counter unknown and treat it as spent — the cap reached, not zero — and report it, because reading a lost cache as zero hands back budget the owner already spent. The subscription is armed and followed by a reconciling read.",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). After a restart you adopt PR #88 with no counters passed. Its timeline shows the review trigger posted two days ago and the reviewer's answer that it is out of budget until tomorrow; three commits on the branch carrying repair trailers — two with `Repair-Pass: p1`, one with `Repair-Pass: p2`, all `Repair-Type: review`, and p2 with `Repair-Model: strongest`; and one earlier force-push after which a commit carrying `Repair-Pass: c1`, `Repair-Type: ci` — shown pushed in the timeline — is no longer on the branch. repair-model-escalations is 1. review-repair-cycles is 3 and ci-repair-cycles is 2. What does adoption do about the trigger, and what does the record say for each counter?",
+      "expected_output": "Adoption rebuilds the record from durable evidence. The trigger was posted and the reviewer refused the round, so the trigger is verified and the round is recorded refused with its reset — it is never reissued, not at adoption and not at a restart. Review cycles: two consumed — two distinct pass ids, not three commits — so one remains; one escalation used (p2 ran on the strongest model), so none remains. CI cycles cannot be recovered: a trailered commit the timeline shows was pushed is gone, so the history was rewritten — record the counter unknown and treat it as spent — the cap reached, not zero — and report it, because reading a lost cache as zero hands back budget the owner already spent. The subscription is armed and followed by a reconciling read.",
       "assertions": [
         "the answer does not reissue the trigger for the refused round",
-        "the answer rebuilds review cycles from the Repair-Type trailers on the branch",
+        "the answer rebuilds review cycles as distinct Repair-Pass ids, two, not three commits",
         "the answer records the unrecoverable CI counter as unknown and treats it as spent, not as zero",
-        "the answer arms the subscription and follows it with a reconciling read"
+        "the answer arms the subscription and follows it with a reconciling read",
+        "the answer rebuilds the escalation count from the Repair-Model trailer"
       ]
     },
     {

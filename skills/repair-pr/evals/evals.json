@@ -148,13 +148,14 @@
     },
     {
       "id": 11,
-      "name": "every-repair-commit-carries-its-repair-type-trailer",
-      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are on a review repair with budget remaining. You fix two threads in one coherent commit; the repository requires a Signed-off-by trailer on every commit. What does the commit message carry, and why does it matter to anyone but you?",
-      "expected_output": "The repository's Signed-off-by trailer and a `Repair-Type: review` trailer, since every commit a repair pass makes carries one naming its type. It matters to the supervisor: its cycle counts are a cache, and after a restart it rebuilds them from the branch, where the trailer is the only thing that tells a repair commit from an implementation checkpoint or a person's push.",
+      "name": "every-repair-commit-carries-its-repair-trailers",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are on a review repair with budget remaining, dispatched as pass id rp-7 on the default model. You fix two threads in one coherent commit; the repository requires a Signed-off-by trailer on every commit. What does the commit message carry, and why does it matter to anyone but you?",
+      "expected_output": "The repository's Signed-off-by trailer and three repair trailers — `Repair-Pass: rp-7`, `Repair-Type: review`, `Repair-Model: default` — since every commit a repair pass makes carries them; and because resolve-pr-comment makes the commit for a review pass, the trailers are passed to it, which applies them to every commit it makes, per-concern ones included. It matters to the supervisor: its counts are a cache, and after a restart it rebuilds them from the branch by distinct pass id, type and model tier — the only way to tell a repair pass from an implementation checkpoint or a person's push.",
       "assertions": [
-        "the answer includes a Repair-Type: review trailer",
+        "the answer includes Repair-Pass, Repair-Type and Repair-Model trailers with the supplied values",
         "the answer keeps the repository's required trailer as well",
-        "the answer explains the trailer lets a supervisor rebuild its cycle counts from the branch"
+        "the answer forwards the trailers to resolve-pr-comment for the commits it makes",
+        "the answer explains the trailers let a supervisor rebuild its counts from the branch"
       ]
     }
   ]

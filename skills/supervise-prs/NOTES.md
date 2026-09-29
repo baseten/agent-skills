@@ -32,6 +32,8 @@ Extracted in #144 from the three skills that each supervised PRs in their own wo
 
 **Why an unrecoverable counter is spent, not zero (#144, owner's ruling B12):** every caller's per-PR record is a cache, and until this change no contract said how its cycle counts were recovered after a restart — so the implicit reading of a lost cache was zero, which hands a PR the budget its owner already spent. The PR itself carries most of what is needed — repair reports, repair commits, trigger comments, reviewer answers, settlement records — and where it does not, failing closed costs one owner decision rather than an unbounded run.
 
+**Why a rewrite is detected by trailer, not by force-push (#144 round 2):** a rebase or restack rewrites every SHA and keeps every commit, so a force-push alone is no evidence a pass was lost; what is evidence is a trailered commit the timeline shows was pushed and the branch no longer carries. Counting distinct pass ids rather than commits keeps a per-concern review pass from counting as several. PRs repaired before the trailers existed rebuild to 0 — a one-time fail-open recorded in `repair-pr/NOTES.md`.
+
 ## One PR, one supervisor
 
 **Why the rule counts supervisors and not mechanisms:** written as "never two monitoring loops over one PR" it contradicted the section that requires a subscription *and* a bounded check-in over each PR — two mechanisms, one owner, which is the intended shape rather than a violation of it. What is actually forbidden is a second party watching: a worker that never stopped reading, or a supervision step reading on its own instead of consuming the parent's pass.
@@ -73,6 +75,8 @@ The reasoning for the rule this section applies — why promotion is never the r
 **Why one loop and one wait (#144):** a caller that also supervises workers — `backlog-orchestrator` under `swarm` — already has a loop whose wait covers worker completions, and a second loop for PRs would be the second supervisor this skill exists to rule out, and a second wake budget the one-counter rule forbids. So under a caller the skill is the PR-side handler inside that loop, and the wake it would have armed is lines in the caller's. The subscription is still armed per PR at adoption either way, because it is part of adopting the PR, not of waiting.
 
 ## Outcomes
+
+**Why a round owed after someone else's push is surfaced (#144 round 2):** this skill may not re-trigger for a push this workflow did not make, and the reviewer may never act on it; counting that round as outstanding would leave the PR waiting with no end. Surfaced, it is reported with who moved the head and holds the merge, as a refused round does.
 
 **Why `unrepaired` is its own outcome (#144 review):** with `repair dispatch = none` a red check is not a budget exhausted and not a judgement call — nothing was attempted — so `needs-user` would misreport it, and `waiting` would hide that nothing is going to change it. The npm orchestrator reported such a PR and did not escalate it; the outcome says exactly that.
 
