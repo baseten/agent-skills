@@ -24,6 +24,8 @@ Durable evidence, not the orchestrator's recollection, because a restarted sessi
 
 **Why merely-informational items are dropped:** a list padded with observations trains the reader to skim past the real items.
 
+**Why a held worker stops holding its dependents when its item retires (#151):** `swarm`, *Blocked workers*, now retires a hold's `NEEDS_USER` item when the worker is observed to resume, be released or be redispatched. A worker that resumed is ordinary in-flight work again, so naming its issue's dependents as waiting on the owner would report a partial settle over an answer already given. The clause cites the retirement rather than restating it.
+
 ## Collapse recurring findings
 
 N workers independently patching around one wrong shared fixture is a single follow-up with N sites: reporting it N times buries the pattern and invites N duplicate tickets. A worker keeping an unscoped shared-file edit out of its own PR is *correct* behavior — the central fix being nobody's job is precisely what the class-level action point exists to correct, which is why the report states why each worker was right to patch locally.

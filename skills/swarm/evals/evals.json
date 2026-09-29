@@ -266,6 +266,32 @@
         "the answer performs a reconciling read covering state, head and base, not only checks and reviews",
         "the answer records the unwatched interval as unread, not empty"
       ]
+    },
+    {
+      "id": 23,
+      "name": "a-held-worker-that-resumes-after-a-grant-retires-its-item",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are dispatching for a caller whose merge gate holds every PR in its tranche while any NEEDS_USER item is outstanding. Worker W3 has no PR yet. Its remote session stopped on a permission prompt for the tool `mcp__linear-server__save_issue`; you held it and raised a NEEDS_USER item on its issue naming the session URL and that literal tool string. Three situations, taken separately: (a) on the next cycle the owner comments on the item \"allowed it\"; W3's session record still shows `status_bucket` BLOCKED, the same pending tool, and the same head as when you raised the item. (b) A cycle later `status_bucket` reads WORKING and W3's head has advanced. (c) Instead of (b), W3's checkout is unreachable and the owner writes \"take the slot back, I'll sort this out later\"; you archive the session on that request, and nothing else changes. In each, what is the state of W3's NEEDS_USER item, what do you record and where, and does it hold the caller's gate? In (c), what would retire the item from there?",
+      "expected_output": "(a) Still outstanding. The item retires only on the parent observing the hold end, by the blocked-state reading, never on the owner's word; the session still reads blocked on the same tool with the same head, so the hold stands and the item keeps holding the gate. (b) Retired: the worker is observed to have resumed after the owner's answer, so the hold retires its own item. Record at the item's site, dated, the session, how it ended (\"permission granted, worker resumed\") and the observation that established it — an observation, not a ruling, written as an authored write whose write id the run records. A retired item is closed, so the gate reads it as not outstanding; no walkthrough ruling is needed, since a grant is an owner action item. W3 is an ordinary in-flight worker again. (c) The hold ends — there is no worker left to hold — but the item does not retire: an archive on the owner's request with no redispatch over unfinished work (no PR) is the exception. The item is restated as an ordinary NEEDS_USER item on the work unit, no longer a held worker's item, putting the options: redispatch once the tool is allowlisted, or leave the unit out of the tranche. It keeps holding the gate. From there it is retired by the ordinary routes: a reply the caller's reply watch accepts releases dispatch, a walkthrough ruling retires it, or a redispatch carries the work on.",
+      "assertions": [
+        "in (a) the answer keeps the item outstanding because the owner's comment is not an observed resumption",
+        "in (b) the answer retires the item on observing the worker resume and records how the hold ended, such as permission granted, worker resumed",
+        "in (b) the answer records the retirement at the item's site",
+        "in (b) the answer says the retired item no longer holds the caller's gate, without waiting for a walkthrough ruling",
+        "in (c) the answer keeps the item outstanding, restated as an ordinary NEEDS_USER item on the work unit with options such as redispatch once allowlisted or leave the unit out",
+        "in (c) the answer says the restated item is retired by the ordinary routes — a ruling, an accepted reply, or a redispatch — not by the hold rule"
+      ]
+    },
+    {
+      "id": 24,
+      "name": "a-returned-mismatch-worker-does-not-retire-its-hold-as-resumed",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are dispatching for a caller whose merge gate holds every PR in its tranche while any NEEDS_USER item is outstanding. Repair worker R2 returned: its session record reads `status_bucket` COMPLETED, and its report on PR-9 says it pushed commit abc123. PR-9 is open. abc123 is not an ancestor of PR-9's head or of any remote branch. This run cannot address R2's session, so no ask was made, and you raised a NEEDS_USER item for the mismatch and kept the container. Next cycle: R2's session still reads COMPLETED, nothing on it reads blocked, and abc123 is still unreachable. (a) Is R2's item still outstanding, and does it hold the gate? (b) What observations would retire it? (c) At an attended walkthrough the owner rules \"accept PR-9 as it stands\", recorded on PR-9 as an owner ruling, and asks you to archive R2, which you do. What happens to the item?",
+      "expected_output": "(a) Still outstanding, and it holds the gate. A mismatch hold never ends as \"resumed\": its worker has returned and never read blocked, so \"no longer blocked\" says nothing about it, and the stranded commit is still unreachable. (b) Its reported commit becoming reachable, which makes it releasable; PR-9 merging or closing; or a redispatch of the work unit on the owner's instruction. Each is recorded at the item's site with how the hold ended and the observation. (c) An archive on the owner's request is not a release on the releasable test and on its own retires nothing. But the work is finished by a recorded ruling: the owner accepted the open PR as it stands, so the item retires on that record, naming it, rather than being restated. Had the owner asked for the archive without accepting PR-9, the work would be unfinished and the item would be restated as an ordinary NEEDS_USER item on the work unit, with options including accepting the PR as it is.",
+      "assertions": [
+        "the answer does not retire the mismatch item on the worker not reading blocked",
+        "the answer keeps the item outstanding and holding the gate while abc123 is unreachable",
+        "the answer names the commit becoming reachable, or PR-9 merging or closing, or a redispatch, as what ends a mismatch hold",
+        "the answer does not treat the owner-requested archive by itself as retiring the item"
+      ]
     }
   ],
   "companions": []

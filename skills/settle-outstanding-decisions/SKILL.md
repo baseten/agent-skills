@@ -48,6 +48,8 @@ A decision qualifies only when **all** of these hold:
 
 A secret only the owner can create, a dashboard setting only they can flip, a permission only they can grant — one real action, no alternatives. Segregate them during discovery into the output's **Owner action items** checklist (what, where, why only the owner can) and never spend a question on one (NOTES).
 
+**A held worker's item is never retired here, whichever of `swarm`'s three holds raised it** (*Blocked workers*, its last rule, says what ends one and what it records). A permission hold is one of these action items: tick its line only where the item's site carries that retirement record — identified by its write id or its attribution footer, never its content — with how the hold ended and where it is recorded, and leave it open otherwise whatever the owner says here — their having granted it is not the worker observed to resume. A question or mismatch hold can be a decision, and is asked like one where it qualifies: record the ruling as direction to the run, and the already-ruled test then retires the question, so it is not asked again — but not the item, which stays outstanding for the gate until that retirement record is there. An item restated to its work unit after an archive is no longer a held worker's item: it is an ordinary decision, asked, recorded and retired like any other.
+
 ## Calibration
 
 Precedents from the run that motivated this skill:
@@ -172,6 +174,7 @@ Keep "mooted by <ruling>" distinct from the other three reasons: those say the d
 ## Owner action items
 
 - [ ] <action> — <where> — <why only the owner can>
+- [x] <action> — <where> — done: <how the hold ended>, recorded at <URL>
 
 ## Unanswered
 

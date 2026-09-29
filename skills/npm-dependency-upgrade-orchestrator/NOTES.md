@@ -170,3 +170,6 @@ A closed PR's comment thread is not a durable record; the next attempt begins fr
 
 **Why a re-resolution push is passed as a substantive caller push:** it changes what is installed, so it is not identity or ordering, and a review round counts for a later head only where every push since is mechanical. Locking the branch for as long as the re-resolution agent runs is what keeps the supervisor from dispatching onto a branch this run is mutating.
 
+## Close out
+
+**Why the close-out names ended holds as well as standing ones (#151):** `swarm`, *Blocked workers*, retires a hold's `NEEDS_USER` item once the worker is observed to resume, be released or be redispatched, and records how it ended. This run does not read items at its merge gate, so nothing here waits on one; but a close-out that named only the holds still standing would drop, without trace, a permission the owner granted mid-run — the allowlist entry that stops the next run blocking on the same tool is exactly what the report exists to carry.
