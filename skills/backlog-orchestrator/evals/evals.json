@@ -280,7 +280,7 @@
     },
     {
       "id": 22,
-      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a supervised PR has no .claude/agent-policy.json in its repository. Three review threads are open on the diff: (a) rooted by a human colleague, asking you to rename a variable for clarity; (b) rooted by close-spice-reviewer[bot], asking why you chose this caching strategy over an alternative; (c) rooted by you earlier in this run, a reply you posted in an existing thread. Question: for each thread, is it auto-fixed, escalated, or neither, and why?",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a supervised PR has no .claude/agent-policy.json in its repository. Three review threads are open on the diff: (a) rooted by a human colleague, asking you to rename a variable for clarity; (b) rooted by example-review-bot[bot], asking why you chose this caching strategy over an alternative; (c) rooted by you earlier in this run, a reply you posted in an existing thread. Question: for each thread, is it auto-fixed, escalated, or neither, and why?",
       "expected_output": "(a) Auto-fixed. It roots on the diff and asks for a code change the pass can make and verify. That the author is a human is irrelevant — author identity decides nothing. (b) NEEDS_USER, reserved for the owner: it asks for rationale, not a diff, so it is escalated with its URL and what it asks, never answered on the run's own authority, and it holds the merge gate shut. That the author is an automated reviewer does not make it repairable. (c) Neither: a comment this run authored is never feedback, which follows from the thread-root test rather than from any author test. No reviewer allowlist or bot test is consulted at any point.",
       "name": "review-thread-kind-not-author",
       "assertions": [
@@ -293,7 +293,7 @@
     },
     {
       "id": 23,
-      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a repository's .claude/agent-policy.json contains {\"auto-fix-reviewers\": [\"close-spice-reviewer\"]}. Question: what does this key do, and what does the run report?",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a repository's .claude/agent-policy.json contains {\"auto-fix-reviewers\": [\"example-review-bot\"]}. Question: what does this key do, and what does the run report?",
       "expected_output": "Nothing: auto-fix-reviewers is not a recognized key and no longer exists. It is reported in the checkpoint output as an unrecognized key, and every other key takes its built-in default — auto-merge stays off. The run does not treat the list as a reviewer allowlist, does not restrict auto-fixing to that login, and does not widen it either: repairability is decided by whether a thread asks for a code change the pass can make, whoever rooted it.",
       "name": "retired-reviewer-key-is-inert",
       "assertions": [
