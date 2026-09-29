@@ -266,6 +266,19 @@
         "the answer performs a reconciling read covering state, head and base, not only checks and reviews",
         "the answer records the unwatched interval as unread, not empty"
       ]
+    },
+    {
+      "id": 23,
+      "name": "a-held-worker-that-resumes-after-a-grant-retires-its-item",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are dispatching for a caller whose merge gate holds every PR in its tranche while any NEEDS_USER item is outstanding. Worker W3's remote session stopped on a permission prompt for the tool `mcp__linear-server__save_issue`; you held it and raised a NEEDS_USER item on its issue naming the session URL and that literal tool string. Three situations, taken separately: (a) on the next cycle the owner comments on the item \"allowed it\", but W3's blocked-state field still reads as awaiting a human; (b) a cycle later that field no longer reads blocked, W3's session is working again, and its head has advanced; (c) instead of (b), the owner asks for the slot back, W3's checkout is unreachable, you archive it on that request, and the owner neither allowlisted the tool nor asked for a redispatch. In each, is W3's NEEDS_USER item still outstanding, what do you record and where, and does it still hold the caller's gate?",
+      "expected_output": "(a) Still outstanding. The item retires on the parent observing the hold end, by the blocked-state reading, never on a report or the owner saying so; the worker still reads blocked, so the hold stands, the item stays outstanding and still holds the gate. (b) Retired. The worker is observed to have resumed on the owner's answer, so the hold ends and retires its own item: record at the item's site, dated, the session, how it ended (\"permission granted, worker resumed\") and the observation that established it — an observation, not a ruling. A retired item is closed, so the caller's gate reads it as not outstanding and it no longer holds any PR; nobody is asked about it again, and no walkthrough ruling is needed or expected, since a grant is an owner action item rather than a decision. W3 is an ordinary in-flight worker again. (c) The hold ends but the item does not retire: freeing the slot with no allowlist change and no redispatch leaves the work unit NEEDS_USER with no worker, so the item stays outstanding, restated to name the work unit rather than the session, and it keeps holding the gate.",
+      "assertions": [
+        "in (a) the answer keeps the item outstanding because the owner's comment is not the observed resumption",
+        "in (b) the answer retires the item on observing the worker resume and records how the hold ended, such as permission granted, worker resumed",
+        "in (b) the answer says the retired item no longer holds the caller's gate",
+        "in (b) the answer does not wait for a walkthrough ruling to retire the item",
+        "in (c) the answer keeps the item outstanding, now naming the work unit with no worker"
+      ]
     }
   ],
   "companions": []

@@ -48,6 +48,8 @@ A decision qualifies only when **all** of these hold:
 
 A secret only the owner can create, a dashboard setting only they can flip, a permission only they can grant — one real action, no alternatives. Segregate them during discovery into the output's **Owner action items** checklist (what, where, why only the owner can) and never spend a question on one (NOTES).
 
+**A permission a held worker is waiting on is one of these, and this skill never marks it done itself.** Its `NEEDS_USER` item ends when the hold does, and `swarm`, *Blocked workers*, its last rule, says what ends it and what it records. Read the item's site for that record: where it is there, the line is ticked, with how the hold ended and where that is recorded; where it is not, the line stays open whatever the owner says here — their having granted it is not the worker observed to resume, and it is the observation that retires the item.
+
 ## Calibration
 
 Precedents from the run that motivated this skill:
@@ -172,6 +174,7 @@ Keep "mooted by <ruling>" distinct from the other three reasons: those say the d
 ## Owner action items
 
 - [ ] <action> — <where> — <why only the owner can>
+- [x] <action> — <where> — done: <how the hold ended>, recorded at <URL>
 
 ## Unanswered
 

@@ -58,3 +58,5 @@ that would persist.
 transport-visibility and posting-identity maps for the same reason those exist —
 a fact about a repository that every later decision reads, established once by
 observation rather than assumed from a provider's name.
+
+**Why a retired hold item is not outstanding (#151):** the gate reads `NEEDS_USER` items tranche-wide, and a held worker's item asks the owner for an act — a permission grant, most often — that no walkthrough ruling records. Without an ending, a grant the worker has already resumed on would hold every PR in the tranche for good. What ends it, and on what evidence, is `swarm`'s (*Blocked workers*, its closing rule, and that skill's NOTES entry for #151); the gate states only that it reads the retired item as closed, so the rule stays in one place.

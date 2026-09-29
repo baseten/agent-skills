@@ -818,6 +818,20 @@
         "in the unattended variant the check-in releases dispatch only and dispatches no repair, and PR-D moves at the next attended settle or through a recorded ruling's IN_FLIGHT_FIX"
       ],
       "files": []
+    },
+    {
+      "id": 63,
+      "name": "a-retired-hold-item-stops-holding-the-tranche-gate",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a tranche of three issues in a repository with `auto-merge` on. A and B have open PRs from this run, both finished, CI green, reviews clean, no recovery refs, dependency view proven. C's worker session stopped on a permission prompt for a tool; it was held on the owner's authority and raised as a NEEDS_USER item on issue C naming the session URL and the literal tool string. The run settled over it, and settle-and-merge's gate held PR-A and PR-B, naming C's item as the condition. Nobody was present. The next day a scheduled check-in re-reads C's session: its blocked-state field no longer reads blocked, the session is working and its head has advanced — the owner allowlisted the tool. Questions: (a) what happens to C's NEEDS_USER item, and what does the check-in write? (b) is C still a surfaced member, and is the run still settled? (c) when the gate is next evaluated, is PR-A or PR-B held by C's item? (d) Variant: instead, the owner replied \"allowed\" on C's item, but the check-in finds C's session still reads blocked. What changes?",
+      "expected_output": "(a) The hold ended on the owner's answer and the check-in observed it, so the hold retires its own item (swarm, Blocked workers, its last rule): the check-in records at the item's site, dated, the session, how it ended — permission granted, worker resumed — and the observation that established it. That is an observation, not a ruling, so it writes nothing claiming one, and it needs no walkthrough to retire the item. (b) No longer a member: once its item is retired, a resumed worker is in flight. The held worker resuming is a delta that un-settles the run; C is supervised as an ordinary in-flight worker, and the run settles again only when the settled conditions hold, including no worker in flight. (c) Neither is held by C's item: a retired item is closed and the gate reads it as not outstanding. With every other condition met, A and B pass the gate when settle-and-merge evaluates it at the next settle. (d) Nothing retires. The owner's reply is not the observed ending, and a held worker's item is retired only by its hold's observed ending, never by a reply; C's session still reads blocked, so the hold stands, the item stays outstanding and keeps holding PR-A and PR-B, and the check-in reports the reply and the still-blocked session.",
+      "assertions": [
+        "the answer retires C's item on the observed resumption, recording how the hold ended, without a walkthrough ruling",
+        "the answer does not record the retirement as an owner ruling",
+        "the answer treats C's resumption as un-settling the run, with C in flight rather than surfaced",
+        "the answer says PR-A and PR-B are no longer held by C's item at the gate",
+        "in the variant the answer keeps the item outstanding because the owner's reply is not the observed ending"
+      ],
+      "files": []
     }
   ]
 }
