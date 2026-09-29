@@ -77,7 +77,7 @@ CI_ATTRIBUTION="backlog-orchestrator
 WATCH_AND_READ="swarm backlog-orchestrator supervise-prs"
 
 # Skills that arm a recurring check-in and bound it.
-WAKE_BUDGET="backlog-orchestrator supervise-prs"
+WAKE_BUDGET="backlog-orchestrator supervise-prs npm-dependency-upgrade-orchestrator"
 
 # Skills that classify, repair, report or gate on review threads.
 REVIEW_FEEDBACK="backlog-orchestrator repair-pr resolve-pr-comment

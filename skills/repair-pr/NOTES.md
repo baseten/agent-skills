@@ -32,6 +32,8 @@ The `finding` type exists because `summarize-tranche` can derive an `IN_FLIGHT_F
 
 ## Recovery / checkpointing
 
+**Why repair commits carry a `Repair-Type:` trailer (#144):** a supervisor's cycle counts live in its per-PR record, which is a cache. After a restart `supervise-prs` rebuilds them from the branch, and nothing distinguished a repair commit from an implementation checkpoint or a person's push — so the count could only be guessed, or treated as unknown, which is treated as spent. A trailer is a token rather than prose, reads the same for every repair type, and costs one line per commit.
+
 **Why every code-changing repair ends with a pushed commit:** the remote branch is the durable state; repair work existing only in a local worktree is exactly the loss window checkpointing exists to close, and the caller adopts the pushed head, not the worktree.
 
 ## Output

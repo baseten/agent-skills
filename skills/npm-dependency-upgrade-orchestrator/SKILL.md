@@ -114,16 +114,21 @@ Constrain each agent explicitly:
 
 ## Supervise
 
-**Every PR this run opens or adopts is supervised by `supervise-prs`, running its own loop once dispatch has produced them.** Reading the PRs, attributing each red check (`references/ci-attribution.md`), what green means (`references/ci-and-review-verdicts.md`), the watch and its bounded check-in, the platform-auto-merge check and the review-trigger confirmation are that skill's. Invoke it with:
+**Every PR this run opens or adopts is supervised by `supervise-prs`, run from this run's own loop.** Reading the PRs, attributing each red check (`references/ci-attribution.md`), what green means (`references/ci-and-review-verdicts.md`), arming each PR's watch, the platform-auto-merge check and the review-trigger confirmation are that skill's.
 
-- **PR set**: every PR this run opened or adopted, bot bump PRs included, each with its repository, branch/base and head;
-- **repair dispatch**: `none` — this run repairs nothing through `repair-pr`: a red check is reported, and a stale lockfile is redispatched by this run, below. **Budgets**: none are needed;
-- **posting-identity map**: the run's;
-- **review routing and trigger state, per PR by kind** (see Merge): the routine batch PR requires no review round; every other PR's trigger is `deferred`, owed by this run once the PR is green — and a trigger this run has since posted is passed as `issued`, so it is confirmed;
+**The loop is this run's.** Each supervision cycle, invoke `supervise-prs`'s *Pass* with the inputs below, act on what it returns, and wait. While dispatched agents are running their completions are the events; once none is, arm the wake `references/wake-budget.md` requires — the subscriptions `supervise-prs` armed, plus a bounded check-in whose prompt carries the PR set, each PR's durable state and these inputs as they last stood — and each firing runs the next cycle. One loop and one wait: `supervise-prs` arms none of its own.
+
+Pass it:
+
+- **PR set**: every PR this run opened or adopted, bot bump PRs included, each with its repository, branch/base and head, from the moment it exists;
+- **repair dispatch**: `none` — this run repairs nothing through `repair-pr`: a red check or an unhandled round comes back `unrepaired` and is reported. **Budgets**: none are needed;
+- **posting-identity map**: the run's, and merge the map it returns;
+- **review routing and trigger state, per PR by kind** (see Merge): the routine batch PR requires no review round; every other PR's trigger is `deferred`, owed by this run once the PR is green — `supervise-prs` reports it owed when that condition is met, and a trigger this run has since posted is passed as `issued`, so it is confirmed;
+- **caller pushes**: every re-resolution pass this run redispatched, tagged `substantive` — a lockfile re-resolution changes what is installed — with the branch passed **locked** for as long as that agent runs;
 - **head checks**, both `every-pass`, both `return to caller`, stated in full because this run occupies the passes and, unless the repository opted in (see Merge), the merge moment belongs to nobody here — a rule stated only where it was assigned is one no pass executes:
-  - **compare each open PR's recorded lockfile base against the current base**; a PR whose lockfile has gone stale is named and returned, and this run redispatches it for a re-resolution pass — never merged on the strength of the handoff check;
+  - **compare each open PR's recorded lockfile base against the current base**; a PR whose lockfile has gone stale is returned, and this run redispatches it for a re-resolution pass — never merged on the strength of the handoff check;
   - **re-check every batched routine candidate's target against the one triage cleared**; where one moved, it is returned, and its clearance and the model selection it implied are void: pull it out **together with its coupled siblings** (see Dispatch), re-triage against the new target, and dispatch it like any uncleared bump. The unrelated rest of the batch stands;
-- **wait owner**: `self`; **return on**: `any-terminal`;
+- **wait owner**: `caller`; **return on**: `every-pass`;
 - **state emission**: `changes-only`. Emit only state **changes**, and only actionable ones: a value that varies for reasons unrelated to state — a count, a timestamp — re-emits every unchanged entry on every tick.
 
 Both carried checks run again at close-out, which hands them to the merger for every PR this run did not merge (see Close out), and Merge runs them once more immediately before each merge it makes.

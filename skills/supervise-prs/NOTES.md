@@ -20,7 +20,7 @@ Extracted in #144 from the three skills that each supervised PRs in their own wo
 
 ## The per-PR record
 
-**Why the per-PR block holds its review lines per convention.** A routed repository can owe two independent reviews on one PR, and invariant 12 asks whether *every* round the routing requires has completed. A single-valued block cannot express "one of two", so the gate would read the first completion as the answer and open over a review still pending. This is the same defect the invariant's own parenthetical had, found in the same pass.
+**Why the per-PR block holds its review lines per convention.** A routed repository can owe two independent reviews on one PR, and a merge gate asks whether *every* round the routing requires has completed. A single-valued block cannot express "one of two", so the gate would read the first completion as the answer and open over a review still pending. This is the same defect the invariant's own parenthetical had, found in the same pass.
 
 ## Adopt
 
@@ -36,7 +36,7 @@ Extracted in #144 from the three skills that each supervised PRs in their own wo
 
 **Why the rule counts supervisors and not mechanisms:** written as "never two monitoring loops over one PR" it contradicted the section that requires a subscription *and* a bounded check-in over each PR — two mechanisms, one owner, which is the intended shape rather than a violation of it. What is actually forbidden is a second party watching: a worker that never stopped reading, or a supervision step reading on its own instead of consuming the parent's pass.
 
-**What the second monitoring loop costs:** the duplicate pass spends API budget on every cycle and decides nothing the first pass did not — it re-reads the same PR to reach the same conclusion, and where it does not, the two loops disagree about a PR one of them is mid-repair on. Writing the lifecycle out as a sequence exists because the failure is never a decision to run two loops; it is a worker that never stopped reading, or a supervision step that reads on its own rather than consuming the parent's pass.
+**What the second monitoring loop costs:** the duplicate pass spends API budget on every cycle and decides nothing the first pass did not — it re-reads the same PR to reach the same conclusion, and where it does not, the two loops disagree about a PR one of them is mid-repair on. The caller's lifecycle is written out as a sequence (in `backlog-orchestrator`, its diagram of dispatch, adoption and supervision) because the failure is never a decision to run two loops; it is a worker that never stopped reading, or a supervision step that reads on its own rather than consuming the parent's pass.
 
 **Why the platform's own auto-merge is called out:** it is a forge setting, not the `auto-merge` policy key, and it merges on CI state alone — outside the gate, whatever this run's policy resolved to. Its merges are not outcomes this skill produced.
 
@@ -48,13 +48,21 @@ Extracted in #144 from the three skills that each supervised PRs in their own wo
 
 ## Draft state
 
-**Why the trigger comment stayed unconditional:** scoping it to "where promotion is withheld" implies its converse — that promoting asks for the review — and whether a provider acts on a publish is exactly what this document refuses to assume. A run in a promote-convention repository would promote four PRs, treat that as having requested review, and sit on four PRs nobody reads: the seven-hour failure *Adopting a PR is three things* exists to prevent, re-opened through the section next to it.
+**Why the trigger comment stayed unconditional:** scoping it to "where promotion is withheld" implies its converse — that promoting asks for the review — and whether a provider acts on a publish is exactly what this document refuses to assume. A run in a promote-convention repository would promote four PRs, treat that as having requested review, and sit on four PRs nobody reads: the seven-hour failure *Adopt* exists to prevent, re-opened through the section next to it.
 
-**Why the old promote-on-clean-review behavior was deleted rather than made configurable:** promoting a draft is a social act — how you ask a person to review — so a run promoting when the PR "looks done" is the run deciding when a person gets asked, the same social act wearing a heuristic. And `auto-merge` already carries the whole distinction a knob would have served: a repository that opted in gets publish-then-merge from the gate once review and CI are clean; one that did not keeps its PR a draft until the owner acts — a repository keeping merge authority keeps review-requesting authority with it. A second knob would encode a distinction the key already makes and could disagree with it.
+The reasoning for the rule this section applies — why promotion is never the run's judgement, why a written convention is not a knob, and why the held-draft discriminator is read from the forge timeline — is `rules/draft-state-notes.md`'s.
 
-**Why deferring to a written convention is not that knob (Sept 2026):** the deleted behaviour had the run deciding, from a heuristic, when a person gets asked to review. A repository's documented convention is the person having decided already, in writing, with the conditions stated — so carrying it out is not the run exercising judgement, which is the whole objection. The knob would have let an invocation turn promotion on; the convention cannot be set by an invocation, and it comes with its own conditions rather than this skill's. Two repositories' `CLAUDE.md` said to mark a PR ready once CI was green, the review was back and every finding was resolved, while this document said the run does not promote — a contradiction with no tiebreak, which left one PR promoted and three not.
+**Why a promotion leaves the PR waiting rather than finished (#144 review):** publishing may start a review round in some repositories and not others, and an immediate read cannot tell *nothing was triggered* from *nothing has appeared yet*. So a promoted PR is not finished until a later delivered pass has classified the publish; what a caller's settle rule does with that is the caller's, which is why the rule itself now says so without naming a tranche.
 
-**Why the held-draft discriminator is "currently draft and ever ready", read from the forge timeline:** as-created versus current cannot see the case that matters — created-as-draft, marked ready by a human, returned to draft by them leaves both values reading `draft`, identical to a PR nobody touched, and a run consulting only those two would publish and merge exactly the PR a person deliberately withdrew. The stronger reading is available *because* this run never moves a PR ready→draft, for any reason — it survives the run promoting under a repository's convention, since what the discriminator reads is that direction alone: every ready→draft transition on this PR is someone's decision, whoever made the draft→ready one before it. The forge timeline, not the state block, because the state block is cached run state — a restart or missed event leaves it wrong about the one question that matters.
+## Adopting a head
+
+**Why a held push still consumes its cycle (#144 review):** the pass pushed — the budget bounds unattended churn, and a push that a head check refused is churn like any other. `backlog-orchestrator`'s CI and review branches compared the diff against the charter, recorded a `DECISION` in place of adopting, and incremented the cycle in the next step regardless; counting it here keeps that.
+
+**Why a held PR stays held until released:** a `DECISION` is the owner's, and a supervisor that re-dispatched on the branch the next pass would push more work onto the thing awaiting a ruling. The caller passes the release once the ruling exists, with the ruling.
+
+## Head moves
+
+**Why a caller's substantive push re-triggers but a stranger's does not (#144 review):** the review-trigger rule governs what *this workflow* triggers. A re-resolved lockfile or a restack that chose between two sides is this workflow's own change to the diff, so it owes the review a repair push would. A push by the owner, a bot or another run is not this workflow's to answer for; it is adopted, reported and reset to unreviewed, and whatever that party's own convention does about review stands.
 
 ## Repair dispatch
 
@@ -65,5 +73,9 @@ Extracted in #144 from the three skills that each supervised PRs in their own wo
 **Why one loop and one wait (#144):** a caller that also supervises workers — `backlog-orchestrator` under `swarm` — already has a loop whose wait covers worker completions, and a second loop for PRs would be the second supervisor this skill exists to rule out, and a second wake budget the one-counter rule forbids. So under a caller the skill is the PR-side handler inside that loop, and the wake it would have armed is lines in the caller's. The subscription is still armed per PR at adoption either way, because it is part of adopting the PR, not of waiting.
 
 ## Outcomes
+
+**Why `unrepaired` is its own outcome (#144 review):** with `repair dispatch = none` a red check is not a budget exhausted and not a judgement call — nothing was attempted — so `needs-user` would misreport it, and `waiting` would hide that nothing is going to change it. The npm orchestrator reported such a PR and did not escalate it; the outcome says exactly that.
+
+**Why the terminal set is listed rather than implied:** `any-terminal` and `all-terminal` are what a standalone loop ends on, and a caller cannot tell `held: lock` — which ends when it drops the lock — from `held: check` — which ends only on a release — unless the contract names which outcomes the loop stops for.
 
 **Why `finished` is defined here and cited by both settle predicates (#144, owner's ruling B7):** `backlog-orchestrator`'s settled conditions and `implement-issue`'s Settle both asked whether each PR was individually finished, in different words, and they disagreed — `implement-issue` required "a completed review round" and "CI green", which a refused round and a producer-merge red can never become, so it sat out its monitoring cap. The orchestrator already counted both as surfaced: holding the merge, never the finish. One definition, in the skill that computes it, is what stops the two drifting again.

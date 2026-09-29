@@ -70,21 +70,24 @@ On a terminal outcome (`BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`)
 
 **This skill supervises its one PR through `supervise-prs`, and lets that skill run its own loop** — there is no parent here to own one, so arming the subscription and the bounded check-in is that loop's job (NOTES). Invoke it with:
 
-- **PR set**: the one PR, with its repository, branch/base, remote head and the canonical issue URL;
+- **PR set**: the one PR, with its repository, branch/base, remote head and the canonical issue URL — adopted on the first pass, which issues any owed trigger and arms the subscription at once;
 - **budgets**: `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles` and `repair-model-escalations`, as *Policy and budgets* resolved them, each with its source;
-- **counters**: this run's record of them — none on a fresh run;
-- **posting-identity map**: the run's map, every entry core returned included; take back the map it returns and keep it as the run's;
+- **counters**: 0 on a fresh run, since this run created the PR; on any later invocation, the counters in `supervise-prs`'s last returned record;
+- **posting-identity map**: the run's map, every entry core returned included; **merge** the map it returns into the run's, never replace it;
 - **review routing and trigger state**: as core's `create-pr` left them;
 - **repair dispatch**: `direct`; **head checks**: none;
 - **wait owner**: `self`; **monitoring cap**: 8 hours where persistent monitoring is supported, none otherwise; **return on**: `any-terminal`; **state emission**: `every-pass`;
 - **findings to repair**: none now — Settle hands one in when it un-settles (below).
+
+**Every later invocation re-passes all of these**, with the counters and map `supervise-prs` last returned.
 
 Its outcome decides what happens next:
 
 | `supervise-prs` returns | this skill |
 | --- | --- |
 | `finished` | settles |
-| `needs-user`, `held`, `merged` or `closed` | settles — every terminal outcome does |
+| `needs-user` | settles — every terminal outcome does. Its outcome is **the pass's own result where a pass produced it** — `FAILED` returns as `FAILED`, `NEEDS_USER` as `NEEDS_USER` — and `NEEDS_USER` otherwise |
+| `held`, `returned`, `unrepaired`, `merged` or `closed` | settles |
 | `waiting` or `repairing` at the monitoring cap, or `cannot-watch` | returns the durable checkpoint (Completion) |
 
 Keep the PR's policy line beside that skill's record: `Policy: budgets <source>; auto-merge <on|off> (<source>)`.
@@ -128,9 +131,9 @@ Its steps, in order, as this skill reads them:
 
 **Un-settling** — a summary `IN_FLIGHT_FIX`, or a code-changing ruling; identical handling from either source, and **never a thread reserved for the owner with nothing able to dispatch it — questions and deferred repairs** (`summarize-tranche`, *2. Action points*, which never emits one as an `IN_FLIGHT_FIX`). A thread carrying a recorded code-changing ruling un-settles as it always did: the ruling is the evidence and the finding path takes it:
 
-- **hand the finding to `supervise-prs` as a finding to repair** — verbatim, the action point or the recorded ruling with its site URL — with the run's map, and take back its outcome and the map it returns. That skill dispatches the `finding` pass, counts the `finding-repair-cycles` cycle and re-triggers review where a pushed repair calls for it;
+- **re-invoke `supervise-prs` with every Phase 2 input and the finding as a finding to repair** — verbatim, the action point or the recorded ruling with its site URL — and merge the map it returns. That invocation returns as soon as the finding's pass has returned, whatever `return on` says; that skill dispatches the `finding` pass, counts the `finding-repair-cycles` cycle and re-triggers review where a pushed repair calls for it;
 - a **pushed** repair or a **`NO_CODE_CHANGE`** → settle again **from step 1** — the re-run recomputes the summary, so the gate never sees evidence the repair invalidated, and re-asks nothing (a recorded ruling retires its question at discovery);
-- **`needs-user`** — the finding budget already spent, or the pass returned `FAILED` or `NEEDS_USER` → that is the outcome, carrying the finding and the pass's report beside the summary in hand. It is a settle-phase outcome and returns directly: never settle again on it, so a failed finding repair is never re-dispatched.
+- **`needs-user`** — the finding budget already spent (`NEEDS_USER`), or the pass returned `FAILED` or `NEEDS_USER` (that result) → that is the outcome, carrying the finding and the pass's report beside the summary in hand. It is a settle-phase outcome and returns directly: never settle again on it, so a failed finding repair is never re-dispatched.
 - A draft→ready transition also un-settles the run, whoever performed it — the rule lives in Merge.
 
 ## Merge

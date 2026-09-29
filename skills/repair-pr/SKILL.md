@@ -75,6 +75,7 @@ Never widen into other action points or findings the caller did not supply, and 
 
 - Before editing, fetch the remote PR branch and verify the assigned checkout is on/derived from the current remote head — the remote branch is durable state.
 - Every repair that changes code ends with a **pushed commit**. Never return success with repair work existing only in the local worktree (NOTES).
+- **Every commit this pass makes carries a `Repair-Type: <ci|review|finding>` trailer**, beside any the repository requires. It is how a supervisor rebuilding its cycle counts from the branch after a restart tells a repair commit from any other (NOTES).
 
 ## Output
 
