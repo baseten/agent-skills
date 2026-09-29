@@ -196,15 +196,15 @@
     },
     {
       "id": 15,
-      "name": "a-rebuilt-record-reissues-nothing-and-counts-an-unknown-counter-as-spent",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). After a restart you adopt PR #88 with no counters passed. Its timeline shows the review trigger posted two days ago and the reviewer's answer that it is out of budget until tomorrow; three commits on the branch carrying repair trailers — two with `Repair-Pass: p1`, one with `Repair-Pass: p2`, all `Repair-Type: review`, and p2 with `Repair-Model: strongest`; and one earlier force-push after which a commit carrying `Repair-Pass: c1`, `Repair-Type: ci` — shown pushed in the timeline — is no longer on the branch. repair-model-escalations is 1. review-repair-cycles is 3 and ci-repair-cycles is 2. What does adoption do about the trigger, and what does the record say for each counter?",
-      "expected_output": "Adoption rebuilds the record from durable evidence. The trigger was posted and the reviewer refused the round, so the trigger is verified and the round is recorded refused with its reset — it is never reissued, not at adoption and not at a restart. Review cycles: two consumed — two distinct pass ids, not three commits — so one remains; one escalation used (p2 ran on the strongest model), so none remains. CI cycles cannot be recovered: a trailered commit the timeline shows was pushed is gone, so the history was rewritten — record the counter unknown and treat it as spent — the cap reached, not zero — and report it, because reading a lost cache as zero hands back budget the owner already spent. The subscription is armed and followed by a reconciling read.",
+      "name": "a-rebuilt-record-reissues-nothing-and-a-rewrite-makes-every-counter-unknown",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). After a restart you adopt two PRs with no counters passed. repair-model-escalations is 1, review-repair-cycles is 3 and ci-repair-cycles is 2 on both. PR #88: its timeline shows the review trigger posted two days ago and the reviewer's answer that it is out of budget until tomorrow; the branch carries three commits with repair trailers — two with `Repair-Pass: p1`, one with `Repair-Pass: p2`, all `Repair-Type: review`, and p2 with `Repair-Model: strongest` — and its history has never been rewritten. PR #89: its branch carries the same three review-trailered commits, but after an earlier force-push a commit carrying `Repair-Pass: c1`, `Repair-Type: ci`, `Repair-Model: default` — shown pushed in the timeline — is no longer on the branch. What does adoption do about #88's trigger, and what does each PR's record say for each counter?",
+      "expected_output": "Adoption rebuilds each record from durable evidence. On #88 the trigger was posted and the reviewer refused the round, so the trigger is verified and the round is recorded refused with its reset — it is never reissued, not at adoption and not at a restart. #88's history is intact, so its counts are read off the trailers: review cycles two consumed — two distinct pass ids, not three commits — so one remains; one escalation used (p2 ran on the strongest model), so none remains; CI cycles 0. #89's history was rewritten: a trailered commit the timeline shows was pushed is gone. That makes every counter unknown, treated as spent and reported — CI, review and escalations alike, not only the CI type whose commit went missing. The surviving review trailers are a lower bound, not a count: the loss is seen only where the timeline still shows the lost commit, so the rewrite may have removed others of any type, and reading a lower bound as the count hands back budget the owner already spent, as reading a lost cache as zero would. Each subscription is armed and followed by a reconciling read.",
       "assertions": [
-        "the answer does not reissue the trigger for the refused round",
-        "the answer rebuilds review cycles as distinct Repair-Pass ids, two, not three commits",
-        "the answer records the unrecoverable CI counter as unknown and treats it as spent, not as zero",
-        "the answer arms the subscription and follows it with a reconciling read",
-        "the answer rebuilds the escalation count from the Repair-Model trailer"
+        "the answer does not reissue the trigger for #88's refused round",
+        "for #88 the answer rebuilds review cycles as distinct Repair-Pass ids, two, not three commits",
+        "for #88 the answer rebuilds the escalation count from the Repair-Model trailer, one used",
+        "for #89 the answer records every counter, review and escalations included, as unknown and treats it as spent, not as zero and not as the surviving trailers' count",
+        "the answer arms each subscription and follows it with a reconciling read"
       ]
     },
     {
@@ -301,6 +301,18 @@
         "the answer still merges the pass's identity entries",
         "the answer counts the pass's cycle as consumed, since it pushed"
       ]
+    },
+    {
+      "id": 24,
+      "name": "a-ruling-that-resolves-a-red-check-is-a-finding",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #52's ci-repair-cycles is spent on a red unit test and its outcome was needs-user. The caller now hands in, as a finding to repair, the owner's recorded ruling on that item: \"try again — the fixture is stale, regenerate it\". finding-repair-cycles is 2 with 0 used. Is this a finding you dispatch, which budget does it spend, and what happens if the pass returns FAILED?",
+      "expected_output": "Yes. A recorded ruling requiring the PR's code to change is a finding whatever check it resolves: the check is its site, the work comes from the ruling. Dispatch one repair-pr pass with repair type finding, the ruling verbatim with its site and the map. It spends finding-repair-cycles if it pushes, and never the CI budget, which stays spent. If it returns FAILED, the PR's outcome is needs-user carrying the finding and the pass's own result.",
+      "assertions": [
+        "the answer dispatches a finding repair for the ruling despite it resolving a failing check",
+        "the answer spends finding-repair-cycles, not the CI budget",
+        "a FAILED return makes the PR needs-user carrying the finding and the pass's result"
+      ],
+      "files": []
     }
   ]
 }

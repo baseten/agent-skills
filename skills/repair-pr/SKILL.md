@@ -61,7 +61,7 @@ Never chase multiple unrelated failures speculatively in one cycle unless they s
 
 ## Finding repair (`repair type = finding`)
 
-The evidence is a settle-time finding — an `IN_FLIGHT_FIX` action point from `summarize-tranche`, which is also where a prose reviewer's findings arrive after `summarize-tranche` classifies them, or a recorded `settle-outstanding-decisions` ruling that requires this PR's code to change — supplied verbatim, the way `ci` supplies logs and `review` supplies threads. It names actionable work on this PR that no failing check and no reviewer's review thread carries (NOTES; the caller's budget is its own counter, `finding-repair-cycles`).
+The evidence is a settle-time finding — an `IN_FLIGHT_FIX` action point from `summarize-tranche`, which is also where a prose reviewer's findings arrive after `summarize-tranche` classifies them, or a recorded `settle-outstanding-decisions` ruling that requires this PR's code to change, including one that resolves a failing check — supplied verbatim, the way `ci` supplies logs and `review` supplies threads. It names actionable work on this PR that no failing check and no reviewer's review thread carries (NOTES; the caller's budget is its own counter, `finding-repair-cycles`).
 
 1. read the supplied finding and its durable site. **Where the repair adds or changes a test — a settle-time finding often asks for exactly that — run the checklist in `references/a-passing-test-is-not-a-verified-fix.md` against it, the time rule included**, as the CI branch does;
 2. verify it still holds against the current head — a later push may already have fixed or mooted it, and the finding as supplied is a claim until that read (`references/establish-do-not-assume.md`). Any assertion this pass then makes about existing code — in a reply, a PR body or a commit message — needs the same treatment before it is written: a grep behind it, not a memory (*You are about to assert it*). Where it no longer applies → return `NO_CODE_CHANGE` with the reason; change nothing; no cycle is consumed;
@@ -70,7 +70,7 @@ The evidence is a settle-time finding — an `IN_FLIGHT_FIX` action point from `
 5. commit only issue-owned changes; push;
 6. return immediately with the new head SHA and checks run.
 
-Never widen into other action points or findings the caller did not supply, and never resolve or reply to review threads here — a finding is not a thread; where a **reviewer's** thread carries the same work, the caller dispatches `review` instead. A ruling recorded as a reply inside a review thread is still a finding: its site is the thread, but the work comes from the owner's ruling rather than from the root comment, and the reviewer's question is already answered by it.
+Never widen into other action points or findings the caller did not supply, and never resolve or reply to review threads here — a finding is not a thread; where a **reviewer's** thread carries the same work, the caller dispatches `review` instead. A ruling recorded as a reply inside a review thread is still a finding: its site is the thread, but the work comes from the owner's ruling rather than from the root comment, and the reviewer's question is already answered by it. **A ruling that resolves a failing check is a finding too**: the check is its site, but the work comes from the ruling — typically "try again" on a CI failure whose own budget is spent — so it spends `finding-repair-cycles`, never the CI budget.
 
 ## Recovery / checkpointing
 

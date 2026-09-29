@@ -34,6 +34,8 @@ Extracted in #144 from the three skills that each supervised PRs in their own wo
 
 **Why a rewrite is detected by trailer, not by force-push (#144 round 2):** a rebase or restack rewrites every SHA and keeps every commit, so a force-push alone is no evidence a pass was lost; what is evidence is a trailered commit the timeline shows was pushed and the branch no longer carries. Counting distinct pass ids rather than commits keeps a per-concern review pass from counting as several. PRs repaired before the trailers existed rebuild to 0 — a one-time fail-open recorded in `repair-pr/NOTES.md`.
 
+**Why a rewrite that lost one type's commit taints every counter (#148):** the first statement said a rewritten history recovers `unknown` without saying whether that meant every counter or only the lost commit's type, and eval 15's scenario — a lost `ci` commit beside surviving `review` ones — was graded as though the review count and the escalation count survived intact, while round 12's reader took the rule at its word and spent them all. The reader was right. The lost commit is the one the timeline happened to still show; a rewrite that removed it could have removed others the timeline does not show, of any type and on any model, so the surviving trailers bound the count from below and no more. Reading a lower bound as the count is the zero-reading of a lost cache (B12) in a smaller form. The cost is the same one B12 accepted — an owner decision where the run might have had budget left — and a rewrite that keeps every trailered commit, a rebase or restack, costs nothing.
+
 ## One PR, one supervisor
 
 **Why the rule counts supervisors and not mechanisms:** written as "never two monitoring loops over one PR" it contradicted the section that requires a subscription *and* a bounded check-in over each PR — two mechanisms, one owner, which is the intended shape rather than a violation of it. What is actually forbidden is a second party watching: a worker that never stopped reading, or a supervision step reading on its own instead of consuming the parent's pass.
@@ -55,6 +57,10 @@ Extracted in #144 from the three skills that each supervised PRs in their own wo
 The reasoning for the rule this section applies — why promotion is never the run's judgement, why a written convention is not a knob, and why the held-draft discriminator is read from the forge timeline — is `rules/draft-state-notes.md`'s.
 
 **Why a promotion leaves the PR waiting rather than finished (#144 review):** publishing may start a review round in some repositories and not others, and an immediate read cannot tell *nothing was triggered* from *nothing has appeared yet*. So a promoted PR is not finished until a later delivered pass has classified the publish; what a caller's settle rule does with that is the caller's, which is why the rule itself now says so without naming a tranche.
+
+## Finding repairs
+
+**Why a ruling is a finding whatever check or thread it resolves (#148 review):** the owner's ruling on a `needs-user` PR is how that PR moves, and the commonest one — try again on a CI failure whose budget is spent — resolves a failing check. Read literally, "work no failing check carries" left that ruling with no dispatch: the CI budget refused it and the finding path excluded it, so the PR and everything behind it stayed stranded. The work comes from the ruling, not the check, so it takes the finding path and spends the finding budget; the CI budget stays spent, and where the finding budget is spent too the caller reports what would move it. This is a behaviour change: before it, a check-resolving ruling had no route at all.
 
 ## Adopting a head
 

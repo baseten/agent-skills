@@ -20,6 +20,8 @@ Durable evidence, not the orchestrator's recollection, because a restarted sessi
 
 **Why the classes and `MERGE_RISK` answer different questions:** the first three classes say who owns the follow-up; `MERGE_RISK` says the merge decision must account for it. An item can carry both — a verified defect with no ticket that must land before one of this tranche's PRs is a `NEW_ISSUE` *and* a `MERGE_RISK`, and reporting only the first tells the caller to file a ticket while leaving it free to rank that PR for merge.
 
+**Why an item names the planned work waiting on it (#148, owner's ruling 2026-09-29):** `backlog-orchestrator` settles over a PR whose question has been raised as an item — the settle exists to get that question to the owner — even where unstarted work in scope depends on the PR. Settled then means "waiting on you", not "done", and nothing in a summary told the two apart: the owner read a finished-looking tranche and did not know three issues were parked behind their answer. The dependency is read from the durable graph rather than taken from the orchestrator, for the same reason as everything else here — a restarted summary must say the same thing.
+
 **Why merely-informational items are dropped:** a list padded with observations trains the reader to skim past the real items.
 
 ## Collapse recurring findings
