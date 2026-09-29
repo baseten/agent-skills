@@ -74,6 +74,17 @@
         "the retarget and the merge are identified as writes with no body, so no footer applies to them"
       ],
       "files": []
+    },
+    {
+      "id": 6,
+      "name": "an-empty-rollup-on-the-head-is-not-green",
+      "prompt": "You are executing the merge-stack skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The user authorized merging PR-3, the base of a two-PR stack. Immediately before merging you refresh its state: its head moved 30 seconds ago when a formatter commit was pushed, and its check rollup for that head is empty; the previous head's checks were all green. Branch protection requires two checks. Do you merge?",
+      "expected_output": "No, not yet. A verdict attaches to the commit it was computed on: the previous head's green says nothing about the current head. And the current head's empty rollup is not green — its checks have not registered, and green means every required check concluded successfully on the current head. Wait for both required checks to conclude on the new head, then merge if they pass.",
+      "assertions": [
+        "the answer does not merge on the previous head's green",
+        "the answer does not treat the empty rollup as green",
+        "the answer waits for both required checks to conclude on the current head"
+      ]
     }
   ]
 }

@@ -5,7 +5,7 @@ not evidence. An assumption is not evidence. A default is not evidence. Each
 arrives as a sentence that reads exactly like a finding, and the remedy is always
 the same shape: name the artifact that would settle it, and look at that.
 
-Three kinds, and runs get caught by all of them — two where a claim arrives, one where the run makes it.
+Three kinds, and runs get caught by all of them — two where a claim arrives, one where the run makes it. And what was established stays established only as of when it was read (*Every read is a snapshot*).
 
 ## Someone asserted it
 
@@ -129,6 +129,17 @@ exists and is currently unavailable, which is more than silence tells you and
 different from failure. Where the refusal names a condition that will lift —
 a quota, a window, a reset — the record carries it, and the run waits for the
 condition rather than re-attempting to discover it.
+
+## Every read is a snapshot
+
+**A multi-item read produces a composite of instants, not a state.** Several sessions are routinely active on one remote at once, and one of them merging three PRs during another's run is ordinary rather than exceptional. Observed directly: a PR read as open, was reported as open in a handover, and had merged between two reads **in the same conversation**. Three separate audits of "where are we" over three days each produced a different answer and each was correct when it was taken.
+
+Two rules follow, and they are cheap:
+
+- **Where a decision spans several reads — a merge gate, a ranking, a settle — re-read the deciding facts immediately before acting on them.** Not the whole world: the specific facts the decision turns on, at the moment it is made. A merge gate's freshness check is one instance of this; the general rule is that a decision computed at 14:02 and executed at 14:31 was made about a repository that no longer exists.
+- **Timestamp every state report.** "Zero open PRs" is only ever true as of a time, and in a repository with concurrent tracks that time expires in minutes. A checkpoint, a handover and a progress line each carry the instant they describe, so a reader can tell a current answer from a correct one that has aged.
+
+**And a disagreement between a checkout and an API response is settled by a third read, not by precedence.** Both are observations with an age: a checkout is as old as its last fetch, a response as old as when it was issued, and either can be the stale one. A redundant PR was opened against a base that had already moved because a stale `origin/main` was believed over a response the run was already holding — but a response held for an hour while the checkout was fetched a minute ago fails the same way with the sides swapped. So where the two disagree about a fact the next act turns on, **re-read the forge now**: a read taken at the moment of deciding is newer than both, which is the same rule as re-reading the deciding facts above. Then refresh the checkout to match, so the next comparison is not against a value already known to be wrong.
 
 ## Why this is worth a rule rather than diligence
 

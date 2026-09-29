@@ -122,6 +122,17 @@
         "the answer places the requirement on the catch rather than on the caller",
         "the answer fixes the drain's reading of the result"
       ]
+    },
+    {
+      "id": 10,
+      "name": "a-local-mass-failure-is-confirmed-against-the-default-branch",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your final local verification fails: 212 tests across unrelated modules error with 'could not connect to server'. Your change adds a column and touches no connection configuration. The service's health endpoint is not reachable from this container, but you can check out the base branch and run one of the failing tests there in under a minute. What do you do before touching any code, and what decides what you return?",
+      "expected_output": "Treat it as an environment hypothesis before a code one: the error names infrastructure rather than an assertion, so check the precondition before reading a single test. The signature raises the hypothesis without settling it, so confirm it independently — with the health endpoint unreachable, run the failing test on the base branch, which fails the same way if the environment is down. Confirmed, report the environment failure rather than changing code. If it passes on the base, the hypothesis is refuted and the failure points back at the change. Where it cannot be confirmed either way, stop and report the suspected environment failure with the error, its breadth and what could not be checked — never thrash against a healthy codebase or return a bare FAILED.",
+      "assertions": [
+        "the answer checks the environment before editing code",
+        "the answer confirms the hypothesis against the base/default branch rather than accepting the signature",
+        "the answer does not return a bare FAILED or change code on the unconfirmed signature"
+      ]
     }
   ]
 }

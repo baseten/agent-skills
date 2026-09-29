@@ -104,7 +104,7 @@ thing this reviewer exists to catch — and the revision marker whose certificat
 the rule governs is this skill's `Reviewed commit:` line, which records the
 documentation head the prose was read at (*The report is one comment*).
 
-The rule's **declined pass** is a completed outcome here specifically: a caller confirming that a routed review took effect reads a decline as one (where the run is `backlog-orchestrator`'s, its *Implementation worker contract* says so at the confirmation step). The residue it returns is the review's result, already reported in round 2's comment — a caller that reads a decline as a failed invocation re-triggers, which is the third round the budget exists to refuse.
+The rule's **declined pass** is a completed outcome here specifically: a caller confirming that a routed review took effect reads a decline as one (the *review trigger* shared rule, *Documentation-review routing*, says so). The residue it returns is the review's result, already reported in round 2's comment — a caller that reads a decline as a failed invocation re-triggers, which is the third round the budget exists to refuse.
 
 # 5. The report is one comment
 
@@ -130,7 +130,7 @@ Reviewed: <the documentation paths>, claims checked against <codebase commit>
 Round 2 is the last round; unresolved findings after it go to the author.
 ```
 
-- **Record two SHAs, and they are different things.** `Reviewed commit:` is the PR head the documents were *read at*; the codebase commit is what their claims were *checked against*, which on a documentation-only PR is the base branch. Only the first answers *has the current document been reviewed*, and a consumer's freshness rule reads exactly that line (where the run is `backlog-orchestrator`'s, its *Establishing that a review is clean*). Recording only the codebase commit lets a completed pass on an older document satisfy the gate after a later push.
+- **Record two SHAs, and they are different things.** `Reviewed commit:` is the PR head the documents were *read at*; the codebase commit is what their claims were *checked against*, which on a documentation-only PR is the base branch. Only the first answers *has the current document been reviewed*, and a consumer's freshness rule reads exactly that line (the *CI and review verdicts* shared rule, *A review is clean*). Recording only the codebase commit lets a completed pass on an older document satisfy the gate after a later push.
 - **Name the paths reviewed.** On a mixed PR a reader who cannot see the scope will read a clean report as the code having been reviewed too, and this comment sitting beside a code review makes that misreading easy rather than perverse.
 - **Say which round this is and that there is no third**, in the comment. A reader has to be able to see that the review terminated by design rather than by neglect — that visibility is half of the fix, because the failure being corrected was nobody knowing whose job it was to stop.
 - **Every finding carries its evidence at `path:line`.** A claim reported false without the code that makes it false is an opinion in a table.

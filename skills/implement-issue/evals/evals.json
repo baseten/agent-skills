@@ -1,7 +1,11 @@
 {
   "skill_name": "implement-issue",
   "description": "Decision-scenario regression evals. Each prompt describes a run state and asks what the skill requires next; assertions check the decision, not the wording. Run them against any rewrite of SKILL.md before merging it: the rewrite passes only if every scenario still resolves the same way.",
-  "companions": ["settle-and-merge", "create-pr"],
+  "companions": [
+    "settle-and-merge",
+    "create-pr",
+    "repair-pr"
+  ],
   "evals": [
     {
       "id": 0,
@@ -124,6 +128,30 @@
         "the answer does not settle again from step 1 after the FAILED finding repair",
         "the answer does not dispatch the finding repair a second time, even though finding budget remains",
         "the answer returns the FAILED outcome directly, carrying the finding and the pass's report"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "a-refused-round-after-a-repair-is-not-re-triggered-and-the-run-settles",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your PR's review round 1 had two findings; repair-pr fixed both and pushed. You re-triggered review. The automated reviewer answered with a comment saying the account has reached its usage limit for code reviews and will reset in 6 hours. CI is green on the head, no thread is unresolved, and every budget has room. Your supervision wakes again 40 minutes later. Do you post the trigger again? Is the review condition satisfied? Does the run settle, or keep waiting until the provider comes back?",
+      "expected_output": "Do not re-post the trigger, now or on any later wake: the reviewer refused the round, a refusal is neither a clean review nor a signal to reissue, and each re-post is another review request that is answered all at once when the budget resets. Record the round as refused with the reason and the 6-hour reset; the trigger itself stays verified. The review condition is not satisfied — a refused round is not a completed one — so the merge gate stays shut for this PR. But the refused round counts as surfaced for settling: the run settles, runs settle-and-merge, and reports the PR as owing a round, leaving the owner to wait or lift the cap.",
+      "assertions": [
+        "the answer does not re-post or schedule the review trigger",
+        "the answer records the round as refused, with the reason and reset",
+        "the answer treats the review condition of the merge gate as unmet",
+        "the answer lets the run settle rather than waiting for the provider to return"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "attribution-is-per-check-and-the-hypothesis-is-confirmed-before-it-counts",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). CI on your PR is red: the e2e job fails with 'connection refused' across forty test files your diff never touched, and the unit job fails one assertion in a module your diff changed. Your diff touches no connection or client configuration. CI repair budget is 2 with 0 used. Readable if you want them: the latest runs of the default branch and of two unrelated open branches, and the test service's health endpoint. (a) Before dispatching anything, what do you do about each job? (b) You read the other runs: the default branch and both unrelated branches fail the same e2e job with the same error. What now, and how many cycles are consumed? (c) Suppose instead all three of those runs pass e2e and you could not reach the health endpoint. What now?",
+      "expected_output": "(a) Attribute per check, not per PR. The unit failure is this PR's. The e2e signature raises an environment hypothesis but does not settle it, because a PR can produce the same error at the same breadth, so confirm it independently before treating it as anything but this PR's — read the other branches' runs or the service's health. (b) Confirmed: the e2e failure is the environment's; report it and consume no cycle for it. Invoke repair-pr once with repair type ci for the unit failure only, passing its context and remaining budget 2; a pushed repair consumes one cycle. (c) Unconfirmed: the hypothesis is not an attribution, so the e2e failure is treated as this PR's — invoke the pass for it rather than classifying it external here.",
+      "assertions": [
+        "the answer attributes the two jobs separately",
+        "the answer does not treat the e2e failure as environmental on its error signature alone",
+        "in (b) the answer treats the e2e failure as environmental because the other branches fail the same job, and consumes no cycle for it",
+        "in (c) the answer treats the unconfirmed e2e failure as this PR's and invokes the repair pass rather than classifying it external"
       ]
     }
   ]

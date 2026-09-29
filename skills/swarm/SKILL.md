@@ -228,64 +228,13 @@ test for when a worker may be released. Release is also driven by the session
 list rather than by the run's memory, and belongs in the prompt the run writes
 for its own check-in, since that is what survives compaction.
 
-**Arm the watch when the task enters the tracked set, not when the run settles.**
-Whatever the mechanism — an event subscription, a platform watch, or a deliberate
-poll — start it as part of adopting the output, and record per task which one is
-in use. Arming later is not equivalent, and the reason is that it is
-*invisible*: between creation and subscription the run is blind to exactly the
-events it most needs, and from the inside it looks identical to a watched task,
-because events keep arriving. They are simply the wrong ones.
-
-### The no-change preflight
-
-**Before reporting any no-change result — a cycle that found nothing, a check-in
-that fired and found nothing, a settled report claiming all quiet — enumerate the
-tracked set with each task's watch state.**
-
-This exists because (`references/absence-is-not-a-verdict.md`) *"no events because nothing happened"* and *"no events
-because nothing was listening"* produce identical silence, and in an observed run
-it was the owner who noticed, not the run. So:
-
-- a task whose watch state was **never recorded** is a **known blind spot**, and
-  the report must name it as one — never as quiet, because the run cannot say
-  whether anything is listening to it;
-- a task on **deliberate polling** counts as quiet only once that poll has
-  actually run this cycle, and is reported with when it was last observed — a
-  polled task carries a staleness bound a subscribed one does not, and a result
-  that hides which of the two it rests on is the report this rule exists to
-  prevent;
-- a due poll **skipped** to save budget reports as **unread**, never as quiet.
-
-This adds no rule the arming requirement does not already state. It is the
-assertion that catches it having been skipped.
-
-### Reading, without spending the run out
-
-**Read on a change signal, not on a schedule.** Re-read a task's state when an
-event named it, when this run just changed it, when its poll is due, when a
-scheduled check-in covers it, or when a decision this cycle turns on a field the
-tracked record does not hold. Otherwise the record *is* the answer.
-
-**One read per task, not one per concern.** Take what the cycle needs in a single
-request, take the tasks that are due together, and let later steps consume that
-pass rather than issuing reads of their own.
-
-**Cheapest read that settles the question.** Expand into detail — logs, comment
-bodies, full diffs — only for a task that actually moved.
-
-**Rate limits belong to the credential, not to the run.** Every session and
-worker authenticating as the same identity draws on the same allowance, so treat
-the remaining figure as shared and falling, and leave headroom rather than
-spending down to the guard. Where it drops by more than this run's own reads
-account for, read that as another run on the same credential and back off harder
-rather than proportionally — and report the sharing, which is the owner's to
-resolve and not this run's.
-
-**On a refusal, defer every read drawing on that resource until it resets.** A
-read the resource cannot serve has no essential case, and "but this one is
-needed" is how a cycle spends its way through a bucket that is already refusing.
-Finish writes already in flight, and report the deferral as known-stale rather
-than as quiet.
+**Arm the watch when the task enters the tracked set, not when the run settles;
+pass the no-change preflight before reporting any no-change result; and read on
+a change signal, within the credential's allowances.**
+`references/watch-and-read.md` states all three — *Arm the watch when the item
+enters the tracked set*, *The no-change preflight*, *Reading on a change signal*
+and *Allowances belong to the credential*. Apply them from there, with the task
+as the item.
 
 ### Countermanding the worker's ambient supervision posture
 

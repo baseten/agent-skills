@@ -92,11 +92,7 @@ Staggering survives unchanged, for its original reason.
 
 ## Why "green" gates on the required check specifically
 
-A check rollup is populated asynchronously. Immediately after a push — particularly one that cancels an in-flight run — it is briefly empty, and an empty rollup satisfies any predicate of the form "no failures and nothing pending".
-
-That predicate reported a false green on the single most consequential result of the run, on the one PR whose outstanding question was whether its end-to-end suite passed. Gating on the repository's required check having *concluded successfully* is immune, because a check that has not registered has not concluded.
-
-Reviewed again on [PR #72](https://github.com/baseten/agent-skills/pull/72): "the required check", singular, closes that hole and leaves an adjacent one open. A repository requiring three checks satisfies a singular reading the moment any one of them concludes successfully, so a PR reports green with two required results still pending — the same false pass reached from the other side, and it does not even need a race to happen. The rule is therefore stated over *every* required check on the current head, with enumerating what the repository actually requires as part of it, because gating on whichever check the run happened to read is how the singular reading gets rebuilt by accident.
+The note on why green gates on every required check moved to `rules/ci-and-review-verdicts-notes.md` with the rule (#144).
 
 ## Why a cleared minor is dispatched differently from an uncleared one
 
@@ -154,15 +150,11 @@ The subtle form of this bug: including a varying value in the compared represent
 
 ## Why infrastructure is separated explicitly
 
-Two-thirds of the failures in one batch were a degraded build service failing repository-wide, including on the default branch. Treating them as defects in the changes under test produced repeated futile re-runs and, worse, a period of misattributing a shared outage to the run's own actions.
-
-The discriminator is cheap and decisive: check whether unrelated branches fail the same job. Where they do, the useful action is escalation to whoever owns the service, not iteration.
+The note on why infrastructure is separated explicitly moved to `rules/ci-attribution-notes.md` with the rule (#144).
 
 ## Why a changed failure signature is read rather than retried
 
-A fix that reduces a failure rather than eliminating it is easily misread as a fix that did not work, and the natural response — revert or retry — discards information.
-
-On that run, a defect blanking every data-driven view reduced, after a fix, to a subset of shards failing a specific element lookup. That narrowing was the evidence that the defect had two sites and one had been corrected. Reading the new signature located the second site; retrying would not have.
+The note on why a changed failure signature is read rather than retried moved to `rules/ci-attribution-notes.md` with the rule (#144).
 
 ## Why declined upgrades are recorded where decisions live
 

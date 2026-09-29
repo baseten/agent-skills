@@ -89,3 +89,13 @@ observation. Both owner-caught instances were in summaries, and neither was
 load-bearing at the moment it was written, which is exactly why neither was
 checked. The recalled-example case is included because it is the same failure
 with a longer half-life, and the example given is this repository's own.
+
+## Every read is a snapshot
+
+Moved here from `backlog-orchestrator`, *Every read is a snapshot*, with its notes (#144). The rule is a claim about when an observation stops being evidence, which is this rule's subject; `settle-and-merge`'s freshness checks and the orchestrator's dispatch prompt each apply it.
+
+**Why this is stated separately from invariant 1 (Sept 2026):** invariant 1 says where truth lives and was read as though that settled it. It does not say that truth moves while you read it, and with several sessions writing to the same remote it moves constantly — a PR read as open merged between two reads in one conversation. Everything downstream of a multi-item read is a composite of instants that never coexisted, which is a different failure from reading the wrong source and needs its own name.
+
+**Why a disagreement is settled by a third read rather than by precedence (round 1):** the first version made the API response authoritative over the checkout, which is right about the observed failure and wrong as a rule — a response held for an hour loses to a checkout fetched a minute ago, and a permanent precedence sends the worker on with the stale one in exactly that case. Both are observations with an age. A read taken at the moment of deciding is newer than either, so the disagreement resolves into the rule one paragraph above rather than into a ranking.
+
+**Why re-reading is scoped to the deciding facts:** re-reading everything before every action would cost more API budget than the read discipline allows, and the exposure is not uniform — a ranking computed from stale data is re-derivable, a merge performed on it is not. So the rule attaches to the acts that cannot be undone.

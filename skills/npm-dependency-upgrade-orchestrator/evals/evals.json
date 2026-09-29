@@ -1,7 +1,10 @@
 {
   "skill_name": "npm-dependency-upgrade-orchestrator",
   "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it.",
-  "companions": ["swarm", "create-pr"],
+  "companions": [
+    "swarm",
+    "create-pr"
+  ],
   "evals": [
     {
       "id": 0,
@@ -223,9 +226,21 @@
         "the trigger text is `@codex review` alone, taken as the default because the repository documents none",
         "the trigger is posted through the invoking user's own credential, not the app token observed authoring as the bot",
         "the answer names the silent non-firing of the convention as the consequence of posting it as the bot",
-      "the answer reads the trigger comment back after posting to confirm it was authored as the invoking user",
+        "the answer reads the trigger comment back after posting to confirm it was authored as the invoking user",
         "the trigger carries no attribution footer, for the functional reason rather than because someone read it",
         "the answer does not re-trigger review because a CI check re-ran on an unchanged head"
+      ]
+    },
+    {
+      "id": 19,
+      "name": "an-unconfirmed-infrastructure-tell-is-reported-as-the-prs",
+      "prompt": "You are executing the npm-dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A supervision pass finds one upgrade PR red: its image-build job failed with a transport error, a signature you have seen from the shared build service before. You have not checked any other branch's runs, and the default branch has not built since yesterday. Is this infrastructure? Do you dispatch anything to fix it, and how do you report the PR?",
+      "expected_output": "Not yet. The transport error is an infrastructure tell, which raises the hypothesis and does not settle it — confirm it by whether unrelated branches and the default branch fail the same job before calling it infrastructure. Until that is established it is not an attribution: the check is treated as the PR's. This run does not dispatch repairs, so it reports the check as this PR's failure — red, not merged — rather than as infrastructure; it does not invent a repair pass. If the confirmation then shows the failure is repository-wide, re-running is futile and escalating to the service's owner is the useful action.",
+      "assertions": [
+        "the answer does not classify the failure as infrastructure on the signature alone",
+        "the answer names the confirmation: other branches or the default branch failing the same job",
+        "the answer reports the unconfirmed check as the PR's and does not merge it",
+        "the answer does not dispatch a repair pass"
       ]
     }
   ]

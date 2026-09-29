@@ -255,6 +255,17 @@
         "The answer returns a restartable checkpoint naming W's session as alive with its URL and the literal tool string",
         "The answer states the session is never archived on the run's authority and is left to the owner or the next invocation"
       ]
+    },
+    {
+      "id": 22,
+      "name": "a-late-subscription-is-followed-by-a-reconciling-read",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are supervising five workers' PRs. Three hours after the fourth PR was opened you notice it was never subscribed, and you subscribe it now; the subscription call succeeds and nothing arrives in the next minute. Your next cycle has nothing else due. Is that PR quiet? What do you read, if anything, and what do you report?",
+      "expected_output": "It is not quiet. A subscription delivers forward only, so the three hours between creation and arming were never observed and the silent minute says nothing about them. Follow the arming immediately with one read that reconciles the PR — its state and mergeability, head and base, and its check runs, reviews and comments — because a merge, a close, a force-push or a moved base could all have happened in the gap. Record the interval as unread rather than empty, and until that read has run, the no-change preflight names the PR as a blind spot, not quiet.",
+      "assertions": [
+        "the answer does not treat the silent minute after arming as evidence nothing happened",
+        "the answer performs a reconciling read covering state, head and base, not only checks and reviews",
+        "the answer records the unwatched interval as unread, not empty"
+      ]
     }
   ],
   "companions": []

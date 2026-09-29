@@ -1,7 +1,12 @@
 {
   "skill_name": "backlog-orchestrator",
   "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it.",
-  "companions": ["swarm", "settle-and-merge", "create-pr"],
+  "companions": [
+    "swarm",
+    "settle-and-merge",
+    "create-pr",
+    "repair-pr"
+  ],
   "evals": [
     {
       "id": 0,

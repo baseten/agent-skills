@@ -16,7 +16,7 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 ## CI repair
 
-**Why the infrastructure tell raises the hypothesis rather than settling it (round 1, Sept 2026):** the error signature — refused connection, missing socket, absent container — is produced identically by a dead service and by this PR changing connection configuration, and at the same breadth, since both hit every test that needs a connection. Routing on the signature alone gives the second case a `NO_CODE_CHANGE` and leaves the defect on the branch. What discriminates is something outside this branch: the service's own health, or whether unrelated branches and the default branch fail the same job, which `npm-dependency-upgrade-orchestrator` already required for its own case and this one was contradicting.
+The note on why the infrastructure tell raises the hypothesis rather than settling it moved to `rules/ci-attribution-notes.md` with the rule (#144).
 
 ## Finding repair
 
