@@ -31,10 +31,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def _load(withheld=None, companion_files=None, follow=None):
+def _load(withheld=None, companion_files=None, follow=None, extra=None):
     """Load run_evals fresh, optionally with one guard neutered."""
     spec = importlib.util.spec_from_file_location(
-        f"run_evals_{id(withheld)}_{id(companion_files)}_{follow}", ROOT / "scripts" / "run_evals.py")
+        f"run_evals_{id(withheld)}_{id(companion_files)}_{follow}_{extra}",
+        ROOT / "scripts" / "run_evals.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     if withheld is not None:
@@ -43,6 +44,8 @@ def _load(withheld=None, companion_files=None, follow=None):
         mod.COMPANION_FILES = companion_files
     if follow is not None:
         mod.FOLLOW_RULE_CITATIONS = follow
+    if extra is not None:
+        mod.EXTRA_SKILL_FILES = extra
     return mod
 
 
@@ -298,12 +301,76 @@ def guard_rule_citations_join_the_contract() -> list[str]:
     return failures
 
 
+def _extra_fixture(tmp: Path) -> None:
+    """A skill and its companion, each with a tier-specific file beside SKILL.md.
+
+    The base has both files at v1; the working tree moves them to v2.
+    """
+    skill = _fixture(tmp)
+    data = json.loads((skill / "evals" / "evals.json").read_text())
+    data["companions"] = ["extra-companion"]
+    (skill / "evals" / "evals.json").write_text(json.dumps(data), encoding="utf-8")
+    (skill / "runtime-x.md").write_text("skill extra v1\n", encoding="utf-8")
+    comp = tmp / "skills" / "extra-companion"
+    comp.mkdir(parents=True)
+    (comp / "SKILL.md").write_text("companion v1\n", encoding="utf-8")
+    (comp / "runtime-y.md").write_text("companion extra v1\n", encoding="utf-8")
+    _git(tmp, "init", "-q")
+    _git(tmp, "add", "-A")
+    _git(tmp, "commit", "-q", "-m", "base")
+    (skill / "runtime-x.md").write_text("skill extra v2\n", encoding="utf-8")
+    (comp / "runtime-y.md").write_text("companion extra v2\n", encoding="utf-8")
+
+
+def guard_extra_skill_files_join_the_contract() -> list[str]:
+    """A top-level .md beside SKILL.md reaches both arms, per revision.
+
+    bootstrap.sh installs the whole skill directory, so a file a SKILL.md tells
+    its reader to load on one tier is contract. Dropped from a round, both arms
+    hold a pointer to nothing and agree on a contract no installed skill has.
+    """
+    failures = []
+    for label, extra, expect in (("intact", None, True), ("guard neutered", False, False)):
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            mod = _load(extra=extra)
+            mod.ROOT = tmp
+            _extra_fixture(tmp)
+            with contextlib.redirect_stdout(io.StringIO()):
+                rc = mod.prepare("fixture-skill", "HEAD", None, tmp / "round")
+            if rc != 0:
+                failures.append(f"{label}: prepare returned {rc}")
+                continue
+            want = {
+                ("new", "runtime-x.md"): "skill extra v2\n",
+                ("old", "runtime-x.md"): "skill extra v1\n",
+                ("new", "extra-companion-runtime-y.md"): "companion extra v2\n",
+                ("old", "extra-companion-runtime-y.md"): "companion extra v1\n",
+            }
+            for (arm, name), v in want.items():
+                p = tmp / "round" / arm / "contract" / name
+                got = p.read_text() if p.exists() else None
+                if expect and got != v:
+                    failures.append(f"{label}: {arm}/{name} is {got!r}, expected {v!r}")
+                if not expect and got is not None:
+                    failures.append(
+                        "guard neutered but a top-level skill file still reached the "
+                        "contract — EXTRA_SKILL_FILES is not what puts it there, so "
+                        "this case pins nothing")
+            if expect:
+                packet = json.loads((tmp / "round" / "new" / "eval-00" / "packet.json").read_text())
+                if "extra-companion-runtime-y.md" not in packet.get("contract_note", ""):
+                    failures.append(f"{label}: the packet does not name the companion's extra file as contract")
+    return failures
+
+
 GUARDS = (
     ("packet withholds the answer", guard_packet_withholds_the_answer),
     ("ungraded is not passing", guard_ungraded_is_not_passing),
     ("single arm is labelled", guard_single_arm_is_labelled),
     ("companions join the contract", guard_companions_join_the_contract),
     ("rule citations join the contract", guard_rule_citations_join_the_contract),
+    ("extra skill files join the contract", guard_extra_skill_files_join_the_contract),
 )
 
 

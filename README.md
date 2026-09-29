@@ -169,16 +169,18 @@ resolves to no heading. A section can be cited by the first clause of a longer
 heading; anything else is an error, including a cross-reference naming a skill
 that does not exist.
 
-`check_word_budgets.py` holds every `SKILL.md` and every rule in `rules/` to a
-word budget in `scripts/word_budgets.json`, because the contracts grow by
+`check_word_budgets.py` holds every `SKILL.md`, every contract file beside one
+(`swarm`'s `runtime-remote.md`; not `NOTES.md` or `README.md`), and every rule in
+`rules/` to a word budget in `scripts/word_budgets.json`, because the contracts grow by
 accretion and a long one is what a compaction summarises worst (#157). The
 budgets started at each file's size and work as a ratchet: a file over its
 budget fails, a file with no entry fails, and a budget more than 2% above its
 file's count fails too, so a budget cannot be padded ahead of growth and a cut
 turns the check red until `--tighten` records it. Each entry also carries a
 target — 3,000 words for a leaf skill, 8,000 for an orchestrator, 1,500 for a
-rule — which is reported and not enforced; so is `--report`'s runtime load, a
-skill's `SKILL.md` plus the references it bundles. A word count is a token
+rule or a file beside a `SKILL.md` — which is reported and not enforced; so is
+`--report`'s runtime load, a skill's `SKILL.md` and the files beside it plus the
+references it bundles. A word count is a token
 count, not a reading, which is why this check is allowed where the ones below
 were not. Raising a budget is governed by `CLAUDE.md`, *Checks*.
 
@@ -243,7 +245,10 @@ of its `evals.json` — `backlog-orchestrator` and `npm-dependency-upgrade-orche
 name `swarm`, which holds the worker mechanics both apply. `prepare` then puts each
 companion's `SKILL.md` and `NOTES.md` into both arms' contract directories, as
 `<companion>-SKILL.md` and `<companion>-NOTES.md`, each arm's taken from its own revision,
-and the reader's packet says they are part of the contract. That is what lets a rule
+and the reader's packet says they are part of the contract. Any other top-level `.md`
+beside a `SKILL.md` — `swarm`'s `runtime-remote.md`, which its contract has a tier-2 run
+read — joins the contract the same way, for the skill itself and for each companion,
+because `bootstrap.sh` installs the whole skill directory. That is what lets a rule
 move between skills and be compared: without it, the new arm reads a pointer to a rule it
 was never given, and a behaviour-preserving move scores as a deletion.
 
