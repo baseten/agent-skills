@@ -49,4 +49,4 @@ So the rule is conditional on a capture path existing, and it carries the fallba
 
 **Why check lists are banned flat and the gate report moved to the output (#158):** a worker tabled its whole gate report into a PR body, because `create-pr` then required a body gate table and the advisory line sat below the budget. The forge's checks already report them; the caller still reads the gate report, so it moved rather than went.
 
-**Why SHAs are bare (#158):** GitHub autolinks a bare SHA, not one in a code span, so the old reply template posted unlinked SHAs. No-announce sits beside it because that reply is a repair's only posted trace.
+**Why SHAs are bare (#158):** GitHub autolinks a bare SHA, not one in a code span, so the old reply template posted unlinked SHAs. No-announce sits beside it because that reply is where a repair is answered; a dispatch's worker report names the head as data for the parent, which is a different write.
