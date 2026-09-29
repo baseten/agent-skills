@@ -36,24 +36,39 @@ bash "$SCRIPT_DIR/scripts/refresh_shared_rules.sh" >/dev/null
 # revision is on disk. Each installed skill gets a `.source`, and
 # ~/.claude/.agent-skills-install holds the same record once. It is read from
 # git rather than kept by hand, because a hand-kept version drifts - the very
-# thing a stamp exists to catch.
-DEFAULT_REPO="https://github.com/baseten/agent-skills"
+# thing a stamp exists to catch. Whatever cannot be read is written as
+# `unknown`, never guessed, and never fails the install.
+
+# git about this checkout and nothing else. An inherited GIT_DIR or
+# GIT_WORK_TREE would answer for some other repository while the top-level
+# check below still passed, so they are dropped - in a subshell, so nothing
+# after this section sees the change.
+git_here() {
+  (unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR
+   git -C "$SCRIPT_DIR" "$@")
+}
 
 # Only a checkout whose own top level is SCRIPT_DIR counts. A tarball unpacked
 # inside some other repository would otherwise be stamped with that
 # repository's HEAD, which is worse than saying nothing.
 own_checkout() {
+  local top
   command -v git >/dev/null 2>&1 || return 1
-  top="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null)" || return 1
+  top="$(git_here rev-parse --show-toplevel 2>/dev/null)" || return 1
   [ "$top" = "$(cd "$SCRIPT_DIR" && pwd -P)" ]
 }
 
 # The origin URL as https, credentials stripped: a clone made with a token in
 # the URL keeps it in .git/config, and this file is meant to be cat'ed and
-# pasted. Anything that does not reduce to host/path - a local path, file:// -
-# falls back to the default, and so does any result still holding an `@`.
+# pasted. The configured value, not `remote get-url`, which applies insteadOf
+# and so reports a container's local git proxy rather than the repository.
+# Anything that does not reduce to a named host and a path - a local path,
+# file://, localhost, an IP address, a result still holding an `@` - is
+# unknown: naming the canonical repository instead would claim it holds a
+# commit that may only exist locally.
 source_repo() {
-  url="$(git -C "$SCRIPT_DIR" remote get-url origin 2>/dev/null)" || url=""
+  local url
+  url="$(git_here config --get remote.origin.url 2>/dev/null)" || url=""
   url="$(printf '%s\n' "$url" | sed -E \
     -e 's#^[A-Za-z][A-Za-z0-9+.-]*://##' \
     -e 's#^[^/]*@##' \
@@ -65,26 +80,30 @@ source_repo() {
   case "$url" in
     *@*|*[[:space:]]*) url="" ;;
   esac
-  if printf '%s\n' "$url" | grep -Eq '^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+/[^/]'; then
+  # The last host label must start with a letter, which rules out an IPv4
+  # address; requiring a dot rules out localhost and other bare names.
+  if printf '%s\n' "$url" | grep -Eq '^([A-Za-z0-9-]+\.)+[A-Za-z][A-Za-z0-9-]*/[^/]'; then
     echo "https://$url"
   else
-    echo "$DEFAULT_REPO"
+    echo "unknown"
   fi
 }
 
-stamp_repo="$DEFAULT_REPO"
+stamp_repo="unknown"
 stamp_commit="unknown"
 stamp_committed="unknown"
 if own_checkout; then
   stamp_repo="$(source_repo)"
-  stamp_commit="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null)" || stamp_commit="unknown"
-  stamp_committed="$(git -C "$SCRIPT_DIR" log -1 --format=%cI 2>/dev/null)" || stamp_committed="unknown"
+  stamp_commit="$(git_here rev-parse --verify -q HEAD 2>/dev/null)" || stamp_commit="unknown"
+  stamp_committed="$(git_here log -1 --format=%cI 2>/dev/null)" || stamp_committed="unknown"
   [ -n "$stamp_commit" ] || stamp_commit="unknown"
   [ -n "$stamp_committed" ] || stamp_committed="unknown"
 fi
 # One timestamp for the whole run, so every stamp from it is identical.
-stamp_installed="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+stamp_installed="$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null)" || stamp_installed="unknown"
+[ -n "$stamp_installed" ] || stamp_installed="unknown"
 
+# `>` and not `>>`: a re-run replaces the record rather than appending a second.
 write_stamp() {
   printf 'repo=%s\ncommit=%s\ncommitted=%s\ninstalled=%s\n' \
     "$stamp_repo" "$stamp_commit" "$stamp_committed" "$stamp_installed" > "$1"
