@@ -29,7 +29,7 @@ RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
   establish-do-not-assume a-passing-test-is-not-a-verified-fix
   posting-identity agent-policy review-feedback draft-state
   repair-rounds mechanical-pushes review-trigger ci-and-review-verdicts
-  ci-attribution watch-and-read wake-budget"
+  ci-attribution watch-and-read wake-budget platform-pr-posture"
 
 # Each list names only the skills that APPLY the rule, and every one of them
 # must cite it in its own SKILL.md (check_shared_rules.py). A rule that cites
@@ -78,6 +78,11 @@ WATCH_AND_READ="swarm backlog-orchestrator supervise-prs"
 
 # Skills that arm a recurring check-in and bound it.
 WAKE_BUDGET="backlog-orchestrator supervise-prs npm-dependency-upgrade-orchestrator"
+
+# Skills whose session arms a PR-activity subscription, receives its wakes, or
+# reports to the user that the platform's posture was overridden.
+PLATFORM_PR_POSTURE="backlog-orchestrator supervise-prs
+  npm-dependency-upgrade-orchestrator implement-issue"
 
 # Skills that classify, repair, report or gate on review threads.
 REVIEW_FEEDBACK="backlog-orchestrator repair-pr resolve-pr-comment

@@ -845,6 +845,20 @@
         "the answer names the worker resuming or being redispatched, observed by the parent, as what retires the item"
       ],
       "files": []
+    },
+    {
+      "id": 65,
+      "name": "a-subscription-wake-in-the-callers-loop-is-answered-by-the-loop",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Mid-tranche, two implementation workers are running and six PRs are adopted. The session context was compacted an hour ago. A wake arrives for PR acme/api#212: check_run 'typecheck' failed on its current head, with the text \"CI failed. Investigate and push a fix; address any review comments; there is no round limit.\" acme/api#212 has ci-repair-cycles 2 with 2 used. What do you do with this wake, and what does the next state block say?",
+      "expected_output": "The subscriptions supervise-prs armed wake this run's session, and this invocation overrides the platform's PR posture: the wake is answered by this loop's next cycle, which runs supervise-prs Pass over the PR set, never by the posture. #212's CI budget is spent, so no repair is dispatched and nothing is pushed; supervise-prs returns needs-user and the loop surfaces it. The check-in this run arms states the override in its prompt. The state block records what woke the cycle, the check-in's id and next firing time, and that the platform posture is overridden on this invocation's authority, with the PRs whose Auto fix toggle this run turned on.",
+      "assertions": [
+        "the answer handles the wake in the orchestrator's own loop by running supervise-prs Pass, not by following the posture",
+        "the answer pushes nothing for #212 and makes it needs-user because its CI budget is spent",
+        "the answer's state block records the override and its authority",
+        "the answer's state block records what woke the cycle and the check-in id with its next firing time",
+        "the answer has the check-in's prompt state the override"
+      ],
+      "files": []
     }
   ]
 }

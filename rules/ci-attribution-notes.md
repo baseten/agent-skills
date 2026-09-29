@@ -10,6 +10,8 @@ Moved here with the rule itself when it was split out (#144): the environment hy
 
 **Why the producer-merge remedy did not move with its classification.** Watching the refresh PR, reading its removals and restacking onto it are acts a run can take only where it may push to the PR's base — `backlog-orchestrator`'s stack authority. The classification is the part every supervising run needs, because without it the red reads as the PR's own and gets a repair pass against code nothing is wrong with.
 
+**Why the head filter is pointed at from here (#154):** this rule's default answer is *this PR's*, "wherever no other answer below is established", and a failure event for a replaced commit or a cancelled run establishes none of the four answers — so read alone, the default would attribute exactly the events the verdict rule filters out. The filter is stated in `rules/ci-and-review-verdicts.md`, where the head comparison already lived; this sentence is the pointer at the decision point that would otherwise misread it.
+
 ## The environment hypothesis
 
 **Why the infrastructure tell raises the hypothesis rather than settling it (round 1, Sept 2026):** the error signature — refused connection, missing socket, absent container — is produced identically by a dead service and by this PR changing connection configuration, and at the same breadth, since both hit every test that needs a connection. Routing on the signature alone gives the second case a `NO_CODE_CHANGE` and leaves the defect on the branch. What discriminates is something outside this branch: the service's own health, or whether unrelated branches and the default branch fail the same job, which `npm-dependency-upgrade-orchestrator` already required for its own case and this one was contradicting.

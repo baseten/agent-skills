@@ -12,6 +12,8 @@ Moved here with the rule itself when it was split out (#144): arming, the no-cha
 
 **Why arming is followed by a read:** the subscription is forward-only and says so nowhere in its result, so a late arming looks exactly like an early one from the inside — both return success, both then deliver events. What differs is an unread interval that no later event will ever cover. Pairing every arming with one read of checks, reviews and comments makes the two cases distinguishable at the only moment the run can still tell them apart; stating the interval as unread rather than empty is the same rule the transport case of `absence-is-not-a-verdict` states, applied to time instead of to a transport.
 
+**Why arming names the posture rule (#154):** arming is the moment a PR-activity subscription hands the session the platform's drive-to-green posture, and this rule is what every supervising skill reads at that moment. The override itself is `rules/platform-pr-posture.md`'s, since its binding reaches the session answering the wake as much as the one arming; the pointer here is so a reader arming a watch meets it.
+
 **Why the post-arming read reconciles rather than samples:** the first version read checks, reviews and comments — which is what the gap was noticed through, not what it contains. A merge, a close, a force-push and a moved base pass through the same blind interval, and a run that reads three of the five holds a stale head or supervises a PR that already merged, both of which look like healthy state from the inside.
 
 ## The no-change preflight

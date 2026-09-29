@@ -81,6 +81,8 @@ On a terminal outcome (`BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`)
 
 **Every later invocation re-passes all of these**, with the counters and map `supervise-prs` last returned.
 
+**This invocation is the user's instruction for this PR, and it overrides the platform's PR posture** (`references/platform-pr-posture.md`). The subscription `supervise-prs` arms turns the platform's Auto fix toggle on and brings a drive-to-green posture with its first wake; this run follows neither. Every wake is answered by `supervise-prs`'s loop — `subscription.created` included, by its first check of the PR — and a spent budget ends in the outcomes below, never in another repair push. The user hears the rule's one-time notice from `supervise-prs` as it subscribes (*Adopt*, step 3; the rule's *Saying so*); this skill does not repeat it, and its structured result records it.
+
 Its outcome decides what happens next:
 
 | `supervise-prs` returns | this skill |
@@ -164,7 +166,7 @@ Where the repository opted in through `auto-merge`, evaluate **invariant 12's ga
 
 - Return `PR_OPEN`/healthy when the PR is implemented, correctly linked, and has no known CI/review item a remaining budget could repair — a thread reserved for the owner, deferred repairs included, does not stop `PR_OPEN`; it holds the merge gate — after Settle, whose summary and walkthrough are the gate's own inputs.
 - Return `MERGED` where the gate's merge completed.
-- With persistent monitoring, `supervise-prs`'s loop continues until the PR is finished or terminal, the user stops it, its wake budget is spent, or the monitoring cap elapses.
+- With persistent monitoring, `supervise-prs`'s loop continues until the PR is finished or terminal, the user stops it, its wake budget is spent, or the monitoring cap elapses. **A user stop unsubscribes the PR and cancels the check-in** (`references/platform-pr-posture.md`, *A user stop still stops*), then returns the durable checkpoint. **Every return of this skill ends the watch** — the PR unsubscribed and the check-in cancelled, whatever the outcome (*The watch ends with the run, not after it*, there); `supervise-prs` handing back to Settle does not.
 - Where it returns `cannot-watch`, or stops with the PR still waiting, return a durable checkpoint — never pretend background monitoring continues.
 - Return `NEEDS_USER` with exact PR/issue URLs, the remaining failure, attempts performed, and the recommended next action. **A reserved thread is not a remaining failure** — a comment never yields this outcome (`supervise-prs`, *Outcomes*); it is reported and holds the merge gate.
 
@@ -180,6 +182,7 @@ Return:
 - issue linkage verified, and the form emitted — closing keyword, or non-closing `Part of:` because a coverage finding was reported;
 - **any design finding core returned in place of a re-siting**, forwarded whole — the value, the objecting call sites and where it belongs; a caller that does not carry it is the only reader it would have had;
 - implementation attempts used, and **`supervise-prs`'s report for the PR** (`supervise-prs`, *Report*) — review rounds and CI, review and finding repair cycles against their caps, strongest-model rounds with the locus evidence for each, every review thread reserved for the owner per item kind, final CI and review state, and draft state as created and current with any transition observed and who performed it (a ready-to-draft transition is never this run's);
+- **the supervision's provenance**: that the platform's PR posture was overridden, on the authority of this invocation as the user's instruction; what woke the run — subscription events by kind, the check-in, or both; the current check-in's id and next firing time, or that none is armed and why; and the toggle line for the PR — turned on by this run's subscription at a time and unsubscribed at a time, or still subscribed and why — never a claim that unsubscribing turned it off, and, where that effect is unknown, the instruction to switch it off by hand;
 - the resolved policy actually applied — budgets, `auto-merge` — each with its source (caller, repo config, built-in default), plus any policy file present but unhonourable (an unreadable file is authority the owner meant to grant and did not);
 - the merge, where one happened: the gate conditions it passed on, whether the PR was published from draft on the way, and the tracker reconciliation;
 - the `summarize-tranche` summary and action points, and the `settle-outstanding-decisions` report — rulings recorded, its one-line decline, or that `auto-request-settle` was off;

@@ -13,6 +13,8 @@ It binds both the layer that supervises a PR and decides whether to dispatch a r
 
 ## Classify per check, not per PR
 
+**On a PR, only a check that failed on its current head reaches attribution at all.** An event naming another commit, and a failure that is only a run a newer one superseded, are filtered before this rule is applied (the *CI and review verdicts* shared rule, *A verdict attaches to a commit*), so neither is ever this PR's by the default below.
+
 A PR can be red for its own reason and someone else's at once, so each red check is attributed on its own. Four answers:
 
 - **this PR's** — the default, and the answer wherever no other answer below is established;
