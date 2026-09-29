@@ -153,6 +153,8 @@ python3 scripts/test_shared_rules.py                  # and each of those guards
 python3 scripts/check_permissions.py                  # the shape of permissions.json, and the README's claims
 python3 scripts/check_no_machine_paths.py             # no skill depends on one machine's filesystem
 python3 scripts/test_no_machine_paths.py              # and that detector can actually fail
+python3 scripts/check_word_budgets.py --report       # no contract outgrows its budget; --report adds runtime load
+python3 scripts/test_check_word_budgets.py            # and each of its guards can actually fail
 bash skills/swarm/scripts/test-checkpoint-capture.sh
 bash scripts/test_bootstrap_stamp.sh                  # bootstrap.sh's install stamp, against a scratch HOME
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh scripts/test_bootstrap_stamp.sh
@@ -166,6 +168,19 @@ a `(see Some Section)` or `` `other-skill`, *Some Section* `` pointer that
 resolves to no heading. A section can be cited by the first clause of a longer
 heading; anything else is an error, including a cross-reference naming a skill
 that does not exist.
+
+`check_word_budgets.py` holds every `SKILL.md` and every rule in `rules/` to a
+word budget in `scripts/word_budgets.json`, because the contracts grow by
+accretion and a long one is what a compaction summarises worst (#157). The
+budgets started at each file's size and work as a ratchet: a file over its
+budget fails, a file with no entry fails, and a budget more than 2% above its
+file's count fails too, so a budget cannot be padded ahead of growth and a cut
+turns the check red until `--tighten` records it. Each entry also carries a
+target — 3,000 words for a leaf skill, 8,000 for an orchestrator, 1,500 for a
+rule — which is reported and not enforced; so is `--report`'s runtime load, a
+skill's `SKILL.md` plus the references it bundles. A word count is a token
+count, not a reading, which is why this check is allowed where the ones below
+were not. Raising a budget is governed by `CLAUDE.md`, *Checks*.
 
 Contract and NOTES heading sets are kept separate, which matters more than it
 sounds: `NOTES.md` is keyed by the section names of `SKILL.md` by design —

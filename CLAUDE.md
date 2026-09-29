@@ -185,6 +185,8 @@ bash scripts/refresh_shared_rules.sh                 # generate references/ firs
 python3 scripts/check_shared_rules.py                # and that every bundled rule matches its source
 python3 scripts/test_shared_rules.py                 # and that each of that check's guards can fail
 python3 scripts/check_permissions.py
+python3 scripts/check_word_budgets.py                # no contract outgrows its word budget
+python3 scripts/test_check_word_budgets.py           # and each of that check's guards can fail
 bash skills/swarm/scripts/test-checkpoint-capture.sh
 bash scripts/test_bootstrap_stamp.sh
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh scripts/test_bootstrap_stamp.sh
@@ -195,6 +197,12 @@ The eval scenarios are not among them, and `README.md`, *Checks*, gives the reas
 consequence for a fixer is what matters here: on a documentation change these deterministic
 checks are nearly the whole safety net, so the sweep is not optional diligence — it is the
 missing test.
+
+**Word budgets only fall without a stated reason.** A change that cuts a contract runs
+`python3 scripts/check_word_budgets.py --tighten` and commits the lowered budgets. A change
+that raises a budget in `scripts/word_budgets.json` says why in its PR body; the check
+cannot enforce that, and nothing should try to by reading the body. A new skill or rule
+adds its own entry.
 
 ## Using this repository's own automation on this repository
 
