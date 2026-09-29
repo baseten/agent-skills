@@ -16,8 +16,11 @@ A word count is a token count, not a reading of the prose: it cannot be
 paraphrased around and it says nothing about meaning, so it sits inside
 CLAUDE.md's rule against checks that grep the contracts.
 
-Counting: whitespace-separated runs of the file's raw bytes, which is what
-`LC_ALL=C wc -w` reports.
+Counting: runs of the file's raw bytes separated by ASCII whitespace, Python's
+`bytes.split()`. That is what `wc -w` reports on macOS; GNU `wc` does not count
+a run made only of non-ASCII bytes, such as a lone em dash, so it reads lower
+on this corpus. The number here is the same on every platform, which is what a
+budget needs.
 
 The budgets live in scripts/word_budgets.json, one entry per `skills/*/SKILL.md`
 and per `rules/*.md` that is not a `-notes.md`. The check fails when:

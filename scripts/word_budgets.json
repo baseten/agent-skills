@@ -1,5 +1,5 @@
 {
-  "_about": "Read by scripts/check_word_budgets.py. Words are whitespace-separated runs of raw bytes, as `LC_ALL=C wc -w` counts them. budget is enforced and only falls (--tighten); target is reported, not enforced: 3000 for a leaf skill, 8000 for an orchestrator, 1500 for a rule. Raising a budget: CLAUDE.md, *Checks*.",
+  "_about": "Read by scripts/check_word_budgets.py. Words are runs of raw bytes separated by ASCII whitespace (Python bytes.split(); macOS wc -w agrees, GNU wc skips a lone em dash). budget is enforced and only falls (--tighten); target is reported, not enforced: 3000 for a leaf skill, 8000 for an orchestrator, 1500 for a rule. Raising a budget: CLAUDE.md, *Checks*.",
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {

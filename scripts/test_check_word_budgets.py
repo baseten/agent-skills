@@ -122,19 +122,21 @@ def main() -> int:
         code, _ = run(tree)
         checks.append(("and stays green on a plain run", code == 0))
 
-        # The count must be the one the budgets file documents: LC_ALL=C wc -w.
-        body = "tab\tsep  double\nnon breaking café — dash\n"
-        probe = t / "probe.md"
-        probe.write_text(body, encoding="utf-8")
-        wc = shutil.which("wc")
-        if wc:
-            r = subprocess.run([wc, "-w", str(probe)], capture_output=True, text=True,
-                               env={"LC_ALL": "C", "PATH": "/usr/bin:/bin"})
-            expected = int(r.stdout.split()[0])
-            tree = build(t, {SKILL: body, RULE: words(1)},
-                         {SKILL: entry(expected), RULE: entry(1, 1500)})
-            code, out = run(tree)
-            checks.append(("the count matches LC_ALL=C wc -w", code == 0))
+        # The count the budgets file documents: runs of bytes split on ASCII
+        # whitespace only. A non-breaking space joins, a lone em dash is a word
+        # (GNU wc disagrees on that one, which is why the number is pinned here
+        # rather than compared with whatever wc the runner has).
+        body = "tab\tsep  double\nnon\u00a0breaking caf\u00e9 \u2014 dash\n"
+        tree = build(t, {SKILL: body, RULE: words(1)},
+                     {SKILL: entry(7), RULE: entry(1, 1500)})
+        code, _ = run(tree)
+        tree6 = build(t, {SKILL: body, RULE: words(1)},
+                      {SKILL: entry(6), RULE: entry(1, 1500)})
+        code6, _ = run(tree6)
+        # 7 green and 6 red pins the count at exactly 7; the slack alone would
+        # let a count of 6 pass under a budget of 7.
+        checks.append(("the count is ASCII-whitespace runs of raw bytes",
+                       code == 0 and code6 == 1))
 
     for name, passed in checks:
         print(("PASS " if passed else "FAIL ") + name)
