@@ -29,6 +29,67 @@ mkdir -p "$CLAUDE_DIR/skills"
 # rules/ rather than committed, so an installed skill is self-contained.
 bash "$SCRIPT_DIR/scripts/refresh_shared_rules.sh" >/dev/null
 
+# --- Install stamp ---
+#
+# A cloud environment runs this once and is then reused, and installing merges
+# rather than replaces, so neither the date nor a directory listing says which
+# revision is on disk. Each installed skill gets a `.source`, and
+# ~/.claude/.agent-skills-install holds the same record once. It is read from
+# git rather than kept by hand, because a hand-kept version drifts - the very
+# thing a stamp exists to catch.
+DEFAULT_REPO="https://github.com/baseten/agent-skills"
+
+# Only a checkout whose own top level is SCRIPT_DIR counts. A tarball unpacked
+# inside some other repository would otherwise be stamped with that
+# repository's HEAD, which is worse than saying nothing.
+own_checkout() {
+  command -v git >/dev/null 2>&1 || return 1
+  top="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null)" || return 1
+  [ "$top" = "$(cd "$SCRIPT_DIR" && pwd -P)" ]
+}
+
+# The origin URL as https, credentials stripped: a clone made with a token in
+# the URL keeps it in .git/config, and this file is meant to be cat'ed and
+# pasted. Anything that does not reduce to host/path - a local path, file:// -
+# falls back to the default, and so does any result still holding an `@`.
+source_repo() {
+  url="$(git -C "$SCRIPT_DIR" remote get-url origin 2>/dev/null)" || url=""
+  url="$(printf '%s\n' "$url" | sed -E \
+    -e 's#^[A-Za-z][A-Za-z0-9+.-]*://##' \
+    -e 's#^[^/]*@##' \
+    -e 's|[?#].*$||' \
+    -e 's#^([^/:]+):[0-9]*/#\1/#' \
+    -e 's#^([^/:]+):#\1/#' \
+    -e 's#/+$##' \
+    -e 's#\.git$##')"
+  case "$url" in
+    *@*|*[[:space:]]*) url="" ;;
+  esac
+  if printf '%s\n' "$url" | grep -Eq '^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+/[^/]'; then
+    echo "https://$url"
+  else
+    echo "$DEFAULT_REPO"
+  fi
+}
+
+stamp_repo="$DEFAULT_REPO"
+stamp_commit="unknown"
+stamp_committed="unknown"
+if own_checkout; then
+  stamp_repo="$(source_repo)"
+  stamp_commit="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null)" || stamp_commit="unknown"
+  stamp_committed="$(git -C "$SCRIPT_DIR" log -1 --format=%cI 2>/dev/null)" || stamp_committed="unknown"
+  [ -n "$stamp_commit" ] || stamp_commit="unknown"
+  [ -n "$stamp_committed" ] || stamp_committed="unknown"
+fi
+# One timestamp for the whole run, so every stamp from it is identical.
+stamp_installed="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+write_stamp() {
+  printf 'repo=%s\ncommit=%s\ncommitted=%s\ninstalled=%s\n' \
+    "$stamp_repo" "$stamp_commit" "$stamp_committed" "$stamp_installed" > "$1"
+}
+
 echo "Installing skills..."
 installed=""
 for skill_path in "$SCRIPT_DIR"/skills/*/; do
@@ -42,6 +103,7 @@ for skill_path in "$SCRIPT_DIR"/skills/*/; do
   # The trailing slash is stripped above because BSD cp reads
   # `cp -r src/ dest/` as "copy the contents of src", unlike GNU cp.
   cp -r "$skill_path" "$CLAUDE_DIR/skills/"
+  write_stamp "$CLAUDE_DIR/skills/$skill/.source"
   echo "  + $skill"
   installed="$installed$skill
 "
@@ -68,6 +130,8 @@ for prev in $RETIRED; do
 done
 
 echo "  Installed: $(ls "$CLAUDE_DIR/skills" | tr '\n' ' ')"
+write_stamp "$CLAUDE_DIR/.agent-skills-install"
+echo "  Source: $stamp_repo @ $stamp_commit"
 
 # --- Permissions ---
 #

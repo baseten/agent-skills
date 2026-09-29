@@ -186,7 +186,8 @@ python3 scripts/check_shared_rules.py                # and that every bundled ru
 python3 scripts/test_shared_rules.py                 # and that each of that check's guards can fail
 python3 scripts/check_permissions.py
 bash skills/swarm/scripts/test-checkpoint-capture.sh
-shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh
+bash scripts/test_bootstrap_stamp.sh
+shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh scripts/test_bootstrap_stamp.sh
 bash scripts/eval_reminder.sh origin/main
 ```
 
