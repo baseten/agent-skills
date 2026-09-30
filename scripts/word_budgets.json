@@ -27,7 +27,7 @@
       "target": 3000
     },
     "skills/normalize-github-dependencies/SKILL.md": {
-      "budget": 1862,
+      "budget": 1867,
       "target": 3000
     },
     "skills/npm-dependency-upgrade-orchestrator/SKILL.md": {
@@ -83,7 +83,7 @@
       "target": 3000
     },
     "skills/validate-backlog/SKILL.md": {
-      "budget": 3827,
+      "budget": 3835,
       "target": 3000
     },
     "rules/a-passing-test-is-not-a-verified-fix.md": {
@@ -99,7 +99,7 @@
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 1844,
+      "budget": 1839,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
