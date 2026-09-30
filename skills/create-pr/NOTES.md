@@ -16,7 +16,7 @@ On Linear and other trackers, the same rule holds through a different mechanism 
 
 The rule and its reasoning — the convention, documentation-review routing, the trigger comment's account and footer, and when review is triggered again — moved to `rules/review-trigger.md` and `rules/review-trigger-notes.md` (#142), because `backlog-orchestrator`, `implement-issue` and `npm-dependency-upgrade-orchestrator` issue triggers under it too, and the last of them on PRs that never pass through this skill. What stays here is what only this skill does: the first trigger after creation, and the deferred trigger a caller can request.
 
-**Why the Output forwards the routed skill's result whole.** On a documentation-only routed PR no trigger comment is posted, so the comment-kind identity evidence this skill's Output otherwise supplies has no source — and the routed skill posts the comment that would have supplied it. Summarizing its result away also breaks the producer→recorder chain into `summarize-tranche`, which is where its findings become action points and reach the merge gate at all.
+**Why the Output forwards the routed skill's result whole.** On a documentation-only routed PR no trigger comment is posted, so the comment-kind identity evidence this skill's Output otherwise supplies has no source — and the routed skill posts the comment that would have supplied it. Summarizing its result away also breaks the producer→recorder chain into `summarize-wave`, which is where its findings become action points and reach the merge gate at all.
 
 ## The PR body's brevity
 

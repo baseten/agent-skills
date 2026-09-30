@@ -31,10 +31,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def _load(withheld=None, companion_files=None, follow=None, extra=None, schemas=None):
+def _load(withheld=None, companion_files=None, follow=None, extra=None, schemas=None,
+          renames=None):
     """Load run_evals fresh, optionally with one guard neutered."""
     spec = importlib.util.spec_from_file_location(
-        f"run_evals_{id(withheld)}_{id(companion_files)}_{follow}_{extra}_{schemas}",
+        f"run_evals_{id(withheld)}_{id(companion_files)}_{follow}_{extra}_{schemas}_{renames}",
         ROOT / "scripts" / "run_evals.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -48,6 +49,8 @@ def _load(withheld=None, companion_files=None, follow=None, extra=None, schemas=
         mod.EXTRA_SKILL_FILES = extra
     if schemas is not None:
         mod.SCHEMA_FILES = schemas
+    if renames is not None:
+        mod.FOLLOW_RENAMES = renames
     return mod
 
 
@@ -426,6 +429,63 @@ def guard_schema_files_join_the_contract() -> list[str]:
     return failures
 
 
+def _rename_fixture(tmp: Path) -> None:
+    """A skill committed as `old-name`, then moved to `fixture-skill` and reworded."""
+    _fixture(tmp)
+    skill = tmp / "skills" / "fixture-skill"
+    (skill / "SKILL.md").write_text(
+        "---\nname: old-name\ndescription: fixture\n---\n\n# Old\n\n"
+        + "A line the rename leaves alone.\n" * 20, encoding="utf-8")
+    (skill / "NOTES.md").write_text("old notes\n" + "unchanged\n" * 20, encoding="utf-8")
+    (tmp / "skills" / "fixture-skill").rename(tmp / "skills" / "old-name")
+    _git(tmp, "init", "-q")
+    _git(tmp, "add", "-A")
+    _git(tmp, "commit", "-q", "-m", "base")
+    _git(tmp, "mv", "skills/old-name", "skills/fixture-skill")
+    skill_md = skill / "SKILL.md"
+    skill_md.write_text(skill_md.read_text().replace("old-name", "fixture-skill")
+                        .replace("# Old", "# New"), encoding="utf-8")
+
+
+def guard_a_renamed_skill_keeps_its_old_arm() -> list[str]:
+    """A skill renamed since the base is compared against its old directory.
+
+    Without this the base has no SKILL.md under the new name and the round
+    drops to one arm - a baseline, not a result - for exactly the change that
+    most needs the comparison to show nothing moved.
+    """
+    failures = []
+    for label, renames, expect in (("intact", None, True), ("guard neutered", False, False)):
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            mod = _load(renames=renames)
+            mod.ROOT = tmp
+            _rename_fixture(tmp)
+            with contextlib.redirect_stdout(io.StringIO()):
+                rc = mod.prepare("fixture-skill", "HEAD", None, tmp / "round")
+            if rc != 0:
+                failures.append(f"{label}: prepare returned {rc}")
+                continue
+            meta = json.loads((tmp / "round" / "round.json").read_text())
+            old_md = tmp / "round" / "old" / "contract" / "SKILL.md"
+            old_notes = tmp / "round" / "old" / "contract" / "NOTES.md"
+            if expect:
+                if meta["arms"] != ["new", "old"]:
+                    failures.append(f"{label}: arms are {meta['arms']}, expected both")
+                elif "# Old" not in old_md.read_text():
+                    failures.append(f"{label}: the old arm's SKILL.md is not the base's")
+                elif not old_notes.exists():
+                    failures.append(f"{label}: the old arm dropped the base's NOTES.md")
+                if meta.get("base_skill") != "old-name":
+                    failures.append(f"{label}: round.json records base_skill "
+                                    f"{meta.get('base_skill')!r}, expected 'old-name'")
+            elif meta["arms"] != ["new"]:
+                failures.append(
+                    "guard neutered but the old arm was still found — "
+                    "FOLLOW_RENAMES is not what finds it, so this case pins nothing")
+    return failures
+
+
 GUARDS = (
     ("packet withholds the answer", guard_packet_withholds_the_answer),
     ("ungraded is not passing", guard_ungraded_is_not_passing),
@@ -434,6 +494,7 @@ GUARDS = (
     ("rule citations join the contract", guard_rule_citations_join_the_contract),
     ("extra skill files join the contract", guard_extra_skill_files_join_the_contract),
     ("schema files join the contract", guard_schema_files_join_the_contract),
+    ("a renamed skill keeps its old arm", guard_a_renamed_skill_keeps_its_old_arm),
 )
 
 

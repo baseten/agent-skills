@@ -128,10 +128,13 @@ for skill_path in "$SCRIPT_DIR"/skills/*/; do
 "
 done
 
-# Skills this repository has removed. Reported, never deleted: an install that
-# has one may have got it from here or may have its own, and this script cannot
-# tell. Naming it is enough — the reader can.
-RETIRED="draft-blog-post draft-slack-message upgrade-major-dependency dependency-upgrade-orchestrator"
+# Skills this repository has removed, and the old names of skills it has
+# renamed - a rename installs the new directory beside the old one, which then
+# goes stale exactly as a removed skill does (summarize-tranche is now
+# summarize-wave). Reported, never deleted: an install that has one may have got
+# it from here or may have its own, and this script cannot tell. Naming it is
+# enough — the reader can.
+RETIRED="draft-blog-post draft-slack-message upgrade-major-dependency dependency-upgrade-orchestrator summarize-tranche"
 for prev in $RETIRED; do
   # Match a whole entry, not a substring. `installed` holds one name per line,
   # so prefixing a newline delimits every entry on both sides; without it a

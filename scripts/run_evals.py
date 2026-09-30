@@ -32,7 +32,8 @@ answer back beside it.
 
 A new skill has no old arm. `prepare` says so and emits one arm; its scores are
 a baseline for the next round rather than a result, because there is nothing to
-disagree with.
+disagree with. A skill renamed since the base is not new: git's rename
+detection names its old directory, and the old arm is read from there.
 
 A skill whose contract cites another skill's rules as its own - an orchestrator
 that defers its worker mechanics to `swarm` - names that skill in a top-level
@@ -89,6 +90,12 @@ SCHEMA_FILES = True
 # pointer to a file it was never given.
 FOLLOW_RULE_CITATIONS = True
 
+# Whether a skill renamed since the base is read from its old directory in the
+# old arm. Without it the base has no `skills/<new-name>/SKILL.md`, the round
+# silently degrades to one arm, and a rename - the change most likely to be
+# behaviour-neutral - is the one change that can never be compared.
+FOLLOW_RENAMES = True
+
 
 def _disp(p: Path) -> str:
     """A path to show a human: repo-relative inside the tree, absolute outside.
@@ -111,7 +118,39 @@ def _git_show(ref: str, path: str) -> str | None:
     return r.stdout if r.returncode == 0 else None
 
 
-def _contract_files(skill: str, base: str | None = None) -> list[str]:
+def _base_name(skill: str, base: str) -> str:
+    """The skill's directory name at `base`: its own, or the one it was renamed from.
+
+    Read from git's rename detection between the base and the working tree, so a
+    `git mv` is found whether or not it has been committed yet. Where nothing
+    was renamed to this skill, its own name is the answer, and a skill that is
+    new stays new.
+    """
+    if not FOLLOW_RENAMES or _git_show(base, f"skills/{skill}/SKILL.md") is not None:
+        return skill
+    r = subprocess.run(
+        ["git", "diff", "-M", "--name-status", "--diff-filter=R", base, "--", "skills/"],
+        cwd=ROOT, capture_output=True, text=True,
+    )
+    for line in r.stdout.split("\n"):
+        parts = line.split("\t")
+        if len(parts) == 3 and parts[2] == f"skills/{skill}/SKILL.md":
+            m = re.fullmatch(r"skills/([^/]+)/SKILL\.md", parts[1])
+            if m:
+                return m.group(1)
+    return skill
+
+
+def _at_base(rel: str, skill: str, base_skill: str) -> str:
+    """Where a file of `skill` lived at the base, given its name there."""
+    prefix = f"skills/{skill}/"
+    if base_skill != skill and rel.startswith(prefix):
+        return f"skills/{base_skill}/" + rel[len(prefix):]
+    return rel
+
+
+def _contract_files(skill: str, base: str | None = None,
+                    base_skill: str | None = None) -> list[str]:
     """The files a reader is given: the contract and its companions, never evals.
 
     The union of both revisions, not the working tree alone. A change that
@@ -135,15 +174,19 @@ def _contract_files(skill: str, base: str | None = None) -> list[str]:
         out |= {f"skills/{skill}/schemas/{p.name}" for p in (d / "schemas").iterdir() if p.is_file()}
 
     if base is not None:
+        # Listed under the base's name, recorded under this one: both arms key
+        # their files by the current path, and only the old arm's read maps it.
+        at_base = base_skill or skill
         listing = subprocess.run(
-            ["git", "ls-tree", "-r", "--name-only", base, f"skills/{skill}/"],
+            ["git", "ls-tree", "-r", "--name-only", base, f"skills/{at_base}/"],
             cwd=ROOT, capture_output=True, text=True,
         )
         for rel in listing.stdout.split("\n"):
             rel = rel.strip()
             if not rel or "/evals/" in rel:
                 continue
-            tail = rel[len(f"skills/{skill}/"):]
+            tail = rel[len(f"skills/{at_base}/"):]
+            rel = f"skills/{skill}/{tail}"
             if SCHEMA_FILES and tail.startswith("schemas/") and tail.count("/") == 1:
                 out.add(rel)
                 continue
@@ -260,7 +303,8 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
         print("no scenarios selected", file=sys.stderr)
         return 1
 
-    files = _contract_files(skill, base)
+    base_skill = _base_name(skill, base) if base is not None else skill
+    files = _contract_files(skill, base, base_skill)
     arms: dict[str, dict[str, str]] = {"new": {}}
     for rel in files:
         if (ROOT / rel).exists():
@@ -270,7 +314,7 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
     if base is None:
         single_arm_reason = "no --base given"
     else:
-        old = {rel: _git_show(base, rel) for rel in files}
+        old = {rel: _git_show(base, _at_base(rel, skill, base_skill)) for rel in files}
         if old.get(f"skills/{skill}/SKILL.md") is None:
             single_arm_reason = f"{skill} does not exist at {base} - it is new"
         else:
@@ -285,7 +329,8 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
     # its copy.
     for arm, contents in arms.items():
         skill_text = contents.get(f"skills/{skill}/SKILL.md", "")
-        for name, text in _reached_refs(arm, base, skill_text, skill).items():
+        owner = base_skill if arm == "old" else skill
+        for name, text in _reached_refs(arm, base, skill_text, owner).items():
             contents[f"skills/{skill}/references/{name}"] = text
 
     # Companion skills, per arm, and the references their own SKILL.md reaches.
@@ -344,6 +389,7 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
 
     (round_dir / "round.json").write_text(json.dumps({
         "skill": skill, "base": base, "arms": sorted(arms),
+        "base_skill": base_skill if "old" in arms else None,
         "companions": {arm: present[arm] for arm in sorted(arms)},
         "scenarios": [c["id"] for c in cases],
         "prepared_at": datetime.now(timezone.utc).isoformat(),
@@ -353,6 +399,8 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
     print(f"round: {_disp(round_dir)}")
     print(f"  skill      {skill}")
     print(f"  arms       {', '.join(sorted(arms))}")
+    if "old" in arms and base_skill != skill:
+        print(f"  renamed    old arm read from skills/{base_skill}/ at {base}")
     print(f"  scenarios  {len(cases)}")
     for arm in sorted(arms):
         if companions:

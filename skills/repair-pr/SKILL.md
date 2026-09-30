@@ -13,7 +13,7 @@ This file is the contract; the reasoning behind its rules lives in `NOTES.md` be
 
 - PR URL; canonical issue URL; repository; dedicated checkout/worktree for the PR branch;
 - repair type: `ci`, `review` or `finding`;
-- the evidence matching the type, and evidence means the artifact rather than its absence (`references/absence-is-not-a-verdict.md`): exact failure logs/check summaries for `ci`; review thread(s) for `review`; for `finding`, the settle-time finding verbatim — a `summarize-tranche` `IN_FLIGHT_FIX` action point, or a recorded walkthrough ruling that requires this PR's code to change — with the durable site it lives at;
+- the evidence matching the type, and evidence means the artifact rather than its absence (`references/absence-is-not-a-verdict.md`): exact failure logs/check summaries for `ci`; review thread(s) for `review`; for `finding`, the settle-time finding verbatim — a `summarize-wave` `IN_FLIGHT_FIX` action point, or a recorded walkthrough ruling that requires this PR's code to change — with the durable site it lives at;
 - remaining repair-cycle budget;
 - a pass id and model tier (`default` or `strongest`), supplied by the dispatching layer;
 - expected branch/base when supplied.
@@ -61,7 +61,7 @@ Never chase multiple unrelated failures speculatively in one cycle unless they s
 
 ## Finding repair (`repair type = finding`)
 
-The evidence is a settle-time finding — an `IN_FLIGHT_FIX` action point from `summarize-tranche`, which is also where a prose reviewer's findings arrive after `summarize-tranche` classifies them, or a recorded `settle-outstanding-decisions` ruling that requires this PR's code to change, including one that resolves a failing check — supplied verbatim, the way `ci` supplies logs and `review` supplies threads. It names actionable work on this PR that no failing check and no reviewer's review thread carries (NOTES; the caller's budget is its own counter, `finding-repair-cycles`).
+The evidence is a settle-time finding — an `IN_FLIGHT_FIX` action point from `summarize-wave`, which is also where a prose reviewer's findings arrive after `summarize-wave` classifies them, or a recorded `settle-outstanding-decisions` ruling that requires this PR's code to change, including one that resolves a failing check — supplied verbatim, the way `ci` supplies logs and `review` supplies threads. It names actionable work on this PR that no failing check and no reviewer's review thread carries (NOTES; the caller's budget is its own counter, `finding-repair-cycles`).
 
 1. read the supplied finding and its durable site. **Where the repair adds or changes a test — a settle-time finding often asks for exactly that — run the checklist in `references/a-passing-test-is-not-a-verified-fix.md` against it, the time rule included**, as the CI branch does;
 2. verify it still holds against the current head — a later push may already have fixed or mooted it, and the finding as supplied is a claim until that read (`references/establish-do-not-assume.md`). Any assertion this pass then makes about existing code — in a reply, a PR body or a commit message — needs the same treatment before it is written: a grep behind it, not a memory (*You are about to assert it*). Where it no longer applies → return `NO_CODE_CHANGE` with the reason; change nothing; no cycle is consumed;

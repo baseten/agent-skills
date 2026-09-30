@@ -83,7 +83,7 @@ read at all.
 
 Two such claims were caught by the owner in one day: a PR reported as having every
 review thread resolved, with four still open — answered with fixes and never
-marked resolved — and a tranche's worker sessions reported as done and archived,
+marked resolved — and a wave's worker sessions reported as done and archived,
 all four idle and holding containers, with the session list never read. A status
 summary is where this concentrates, because it is written to be believed, in the
 register of a report. A motivating example recalled rather than re-read is the

@@ -29,7 +29,7 @@ Two mechanisms override the built-in defaults, and the precedence is stated here
 
 ## Resolution
 
-**Policy resolves per PR, from the repository that PR lives in.** A run can span repositories — a `backlog-orchestrator` run's manifest in one, PRs landing in several — and per-repo difference is the entire point, so there is no run-wide policy read once from the manifest's repo. In a `backlog-orchestrator` tranche where one repository carries a config and another does not, the first repository's PRs follow its file and the second's follow the built-in defaults, in the same run, at the same settle. One config, resolved once and applied run-wide, would do the opposite of what the file is for: work-repo rules on a personal repo's PRs, or the reverse.
+**Policy resolves per PR, from the repository that PR lives in.** A run can span repositories — a `backlog-orchestrator` run's manifest in one, PRs landing in several — and per-repo difference is the entire point, so there is no run-wide policy read once from the manifest's repo. In a `backlog-orchestrator` wave where one repository carries a config and another does not, the first repository's PRs follow its file and the second's follow the built-in defaults, in the same run, at the same settle. One config, resolved once and applied run-wide, would do the opposite of what the file is for: work-repo rules on a personal repo's PRs, or the reverse.
 
 Keys scope to different objects, and each resolves from the repository that owns its object: a per-PR key from the PR's repository, a per-issue key from the issue's. A reading skill whose keys also scope to the run states where those resolve from.
 

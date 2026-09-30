@@ -4,9 +4,9 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 ## When to run
 
-**Why the settled predicate is the caller's rather than a pointer (#140):** this section pointed at `backlog-orchestrator`, *Settled tranche*, for the predicate — a skill that reaches this one only through `settle-and-merge`, and one a direct invocation never runs under. Invoking the skill over a tranche is now the caller's statement that the tranche is settled, and the orchestrator's section is named only as where that run's predicate lives. The collision independence marks the orchestrator computes are likewise an input, listed with the others, as `settle-and-merge` already passed them.
+**Why the settled predicate is the caller's rather than a pointer (#140):** this section pointed at `backlog-orchestrator`, *Settled wave*, for the predicate — a skill that reaches this one only through `settle-and-merge`, and one a direct invocation never runs under. Invoking the skill over a wave is now the caller's statement that the wave is settled, and the orchestrator's section is named only as where that run's predicate lives. The collision independence marks the orchestrator computes are likewise an input, listed with the others, as `settle-and-merge` already passed them.
 
-Direct invocation answers with whatever state exists — rather than refusing because the tranche is not formally settled — because the user asking "what should I merge first?" mid-run deserves the best available ordering, not a lecture about lifecycle. The settled-tranche timing is the orchestrator's contract, not a precondition on the analysis being useful.
+Direct invocation answers with whatever state exists — rather than refusing because the wave is not formally settled — because the user asking "what should I merge first?" mid-run deserves the best available ordering, not a lecture about lifecycle. The settled-wave timing is the orchestrator's contract, not a precondition on the analysis being useful.
 
 ## Collect the PR set and stack topology
 
@@ -30,7 +30,7 @@ These sets exist in the output because they are the most common reason a "merge 
 
 ## Rank
 
-**Why review order is free of stack ordering:** review and merge answer different questions — where a human's attention goes first versus what the branch topology permits. A child PR can be the riskiest, most review-worthy item in the tranche while being unable to merge until its parent lands; collapsing the two orders hides that.
+**Why review order is free of stack ordering:** review and merge answer different questions — where a human's attention goes first versus what the branch topology permits. A child PR can be the riskiest, most review-worthy item in the wave while being unable to merge until its parent lands; collapsing the two orders hides that.
 
 **Why batching does not avoid restacking:** `merge-stack` merges one node, fully restacks the remaining descendant subtree, and refreshes checks and mergeability before selecting the next node — so an N-PR chain performs those rewrites whether merged in one sitting or several, and may wait on CI after each one. What one sitting actually saves is work *outside* the chain: every other open PR absorbs one base movement per sitting rather than one per merge, and a tail left open restacks now and then again when you return to it. Hence the rule to estimate turnaround from the per-node rewrite-and-recheck cost, and to hold a chain's tail only for a review reason.
 

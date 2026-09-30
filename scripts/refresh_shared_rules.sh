@@ -19,7 +19,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 AUTHORED_WRITE_FORM="backlog-orchestrator settle-and-merge create-pr normalize-github-dependencies
   npm-dependency-upgrade-orchestrator
   merge-stack repair-pr resolve-pr-comment review-docs review-skill settle-outstanding-decisions
-  summarize-tranche upgrade-npm-dependency validate-backlog supervise-prs"
+  summarize-wave upgrade-npm-dependency validate-backlog supervise-prs"
 
 # One variable per rule, named for the rule file in upper snake case.
 # check_shared_rules.py reads these assignments to learn which skills are
@@ -86,13 +86,13 @@ PLATFORM_PR_POSTURE="backlog-orchestrator supervise-prs
 
 # Skills that classify, repair, report or gate on review threads.
 REVIEW_FEEDBACK="backlog-orchestrator repair-pr resolve-pr-comment
-  review-docs summarize-tranche supervise-prs"
+  review-docs summarize-wave supervise-prs"
 
 # Skills that act on something asserted by an agent, assumed about a provider,
 # or that author a write making claims about existing code or current state.
 ESTABLISH_DO_NOT_ASSUME="backlog-orchestrator swarm settle-and-merge repair-pr
   validate-backlog review-skill implement-issue-core create-pr resolve-pr-comment
-  summarize-tranche settle-outstanding-decisions implement-issue supervise-prs"
+  summarize-wave settle-outstanding-decisions implement-issue supervise-prs"
 
 # Skills that write or change a test as part of their work.
 A_PASSING_TEST_IS_NOT_A_VERIFIED_FIX="implement-issue-core repair-pr
@@ -106,7 +106,7 @@ ABSENCE_IS_NOT_A_VERDICT="backlog-orchestrator settle-and-merge repair-pr
   resolve-pr-comment merge-stack plan-merge-order validate-backlog
   normalize-github-dependencies
   upgrade-npm-dependency implement-issue-core
-  review-docs review-skill summarize-tranche supervise-prs"
+  review-docs review-skill summarize-wave supervise-prs"
 
 
 is_rule() { case " $(echo $RULES) " in *" $1 "*) return 0 ;; esac; return 1; }

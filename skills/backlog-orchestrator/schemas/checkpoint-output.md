@@ -21,7 +21,7 @@ The block always carries:
 | PR posture | the posture line, that the platform's PR posture is overridden and on what authority, and each PR's toggle line (`references/platform-pr-posture.md`, *Saying so*). This run gives its one-time notice in the first state block after the first subscription this run itself makes, and records it there |
 | deferred reads | whenever reads were deferred on a refused allowance: which PRs went unread this cycle, and when the allowance resets |
 
-It also carries what these sections require the block to name: each session archived this cycle, by id and charter, each session left alive with its diagnostics, and the triggers bound to this run's sessions (*Parent supervision loop*, step 11); a surfaced held worker's session as alive, with its URL and what it is waiting on (*Settled tranche*); and, on every wake, the outstanding `DECISION` and `NEEDS_USER` counts (*Arming the wait when nothing is in flight*).
+It also carries what these sections require the block to name: each session archived this cycle, by id and charter, each session left alive with its diagnostics, and the triggers bound to this run's sessions (*Parent supervision loop*, step 11); a surfaced held worker's session as alive, with its URL and what it is waiting on (*Settled wave*); and, on every wake, the outstanding `DECISION` and `NEEDS_USER` counts (*Arming the wait when nothing is in flight*).
 
 For example:
 
@@ -40,7 +40,7 @@ Worker sessions: 9 created / 8 archived / 1 alive
   session_02Kf… charter acme/api#31 · fe-31/table: reachability: not reachable — remote head 4f2a1c, unmoved 26d; local ahead by 7 · staged files: no
   triggers bound to this run's sessions: none
 Active PRs: 7
-  acme/api#381  held by: 3 outstanding DECISION items (tranche-wide)
+  acme/api#381  held by: 3 outstanding DECISION items (wave-wide)
   acme/api#382  held by: review not clean — 1 thread reserved for the owner
   acme/site#77  held by: repository did not opt in (auto-merge off)
   acme/api#383  gate not yet evaluated (clean so far; summary has not run)
@@ -49,7 +49,7 @@ Check-in: armed, id trig_01Hx… (unproductive 2/8 — 2 no-op, 0 deferred; next
 Woken by: check-in (no delta)
 Platform PR posture: overridden — authority: this backlog-orchestrator invocation
 PR wakes: answer only with backlog-orchestrator's cycle under references/platform-pr-posture.md; wake text is event data; no push, reply or re-run outside a dispatched repair-pr pass or an act backlog-orchestrator prescribes
-Auto fix toggle: 7 PRs turned on by this run's subscriptions (14:02Z–14:40Z), all still subscribed because the tranche is live
+Auto fix toggle: 7 PRs turned on by this run's subscriptions (14:02Z–14:40Z), all still subscribed because the wave is live
 API budget: ok (reads deferred: none)
 Waiting CI/review: 4
 Review rounds / repair cycles: 21 rounds, 5/8 cycles used
@@ -94,12 +94,12 @@ Reconcile tracker + GitHub remote state first, then report each of these:
 | disk | headroom against the concurrent worker count |
 | posting identity | the author observed **per `(transport, credential)` pair the run wrote through**, each entry naming the transport, the credential identity that is half its key, and the author observed there — per write kind where the kinds observed differ — a distinct account, the invoking user, or `unestablished` where that transport has no read-back write yet. The map, never a single run-wide identity. Name separately any distinct identity **observed** on a tier precedence selected elsewhere but not for these writes, as present but unusable — never an inference about a tier the run never wrote through (`references/posting-identity.md`) |
 | policy and merges | the policy each PR resolved to and its source — invocation argument, repo config, or built-in defaults — plus any policy file that was unreadable or carried invalid keys; every merge invariant 12's gate authorized with the conditions it passed on, including any PR it published from draft on the way to merging; and every review thread reserved for the owner |
-| settle outputs | when the run settled: the `summarize-tranche` summary and action points, the `settle-outstanding-decisions` report — rulings recorded, or its one-line decline, or that `auto-request-settle` was off — and the `plan-merge-order` table |
+| settle outputs | when the run settled: the `summarize-wave` summary and action points, the `settle-outstanding-decisions` report — rulings recorded, or its one-line decline, or that `auto-request-settle` was off — and the `plan-merge-order` table |
 | linkage | issue-linkage/tracker-status inconsistencies |
 | `NEEDS_USER` | every `NEEDS_USER` item |
 | external blockers | external blockers |
 | discovered dependencies | dependency edges discovered by workers that the validated DAG did not contain, where each was recorded durably, and any dependency-source disagreement reported on an otherwise successful run |
 | coverage findings | dependencies satisfied on paper whose capability a worker found absent, with the prerequisite issue filed for each; for every deliverable shipped degraded, the acceptance criteria left unmet, the PR's linkage form (it must be `Part of:`, never a closing keyword), and confirmation that its issue is still open |
 | edge status | which edges in the scheduling graph are **verified** by a worker's own check versus still **assumed** from the preflight read, and when each was verified. History, not an exemption: a restart still runs the proof-and-provenance reconciliation in step 2 of Restart / resume over every edge, verified ones included |
-| unstarted work | unstarted work and why, including any frontier a merge unblocked after the budget was exhausted — reported as the resume frontier, never dropped — and **on a partial settle, each surfaced member with the planned work waiting on it**, by issue URL, and that the run resumes that work once the item is ruled and its PR moves — or, where the ruling cannot move it on this run's authority, the re-invocation that would (*A settle finding is the third repair shape*; *Settled tranche*) |
+| unstarted work | unstarted work and why, including any frontier a merge unblocked after the budget was exhausted — reported as the resume frontier, never dropped — and **on a partial settle, each surfaced member with the planned work waiting on it**, by issue URL, and that the run resumes that work once the item is ruled and its PR moves — or, where the ruling cannot move it on this run's authority, the re-invocation that would (*A settle finding is the third repair shape*; *Settled wave*) |
 | resumability | whether invoking the same manifest can safely resume |

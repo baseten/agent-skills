@@ -8,7 +8,7 @@ already existed — reproduce the failure on the unfixed code before accepting t
 fix — and three of the four defeats passed it trivially, because the fix and the
 test were written in the same pass. A rule that names the check without naming
 what defeats it can only be followed by someone who already knows what to look
-for. Four in one tranche is not bad luck; it is what that gap produces.
+for. Four in one wave is not bad luck; it is what that gap produces.
 
 **Why these four and not a longer list.** Each is decidable by reading the test
 alone, without running anything and without knowing the domain: does a lookup

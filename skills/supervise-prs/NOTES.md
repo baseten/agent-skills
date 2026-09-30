@@ -10,7 +10,7 @@ Extracted in #144 from the three skills that each supervised PRs in their own wo
 
 **Why the override is stated at the top as well as at *Adopt* (#154):** the posture arrives on the first wake after subscribing, and a session can reach a wake — after a compaction, or in a caller's loop — without having re-read *Adopt*. The top of the skill is what a reader has in view before any section, so the override is stated there once, briefly, and cited to the shared rule that holds it; the rule's reasoning, and why it is a shared rule rather than a section here, is `rules/platform-pr-posture-notes.md`.
 
-**Why it never merges:** merging is gated, and the gates differ by caller — `settle-and-merge`'s for tranches and single issues, the npm orchestrator's by kind. A supervisor that merged would need to hold every gate's conditions, which is what the gates were extracted to avoid.
+**Why it never merges:** merging is gated, and the gates differ by caller — `settle-and-merge`'s for waves and single issues, the npm orchestrator's by kind. A supervisor that merged would need to hold every gate's conditions, which is what the gates were extracted to avoid.
 
 ## Inputs
 
@@ -62,7 +62,7 @@ Extracted in #144 from the three skills that each supervised PRs in their own wo
 
 The reasoning for the rule this section applies — why promotion is never the run's judgement, why a written convention is not a knob, and why the held-draft discriminator is read from the forge timeline — is `rules/draft-state-notes.md`'s.
 
-**Why a promotion leaves the PR waiting rather than finished (#144 review):** publishing may start a review round in some repositories and not others, and an immediate read cannot tell *nothing was triggered* from *nothing has appeared yet*. So a promoted PR is not finished until a later delivered pass has classified the publish; what a caller's settle rule does with that is the caller's, which is why the rule itself now says so without naming a tranche.
+**Why a promotion leaves the PR waiting rather than finished (#144 review):** publishing may start a review round in some repositories and not others, and an immediate read cannot tell *nothing was triggered* from *nothing has appeared yet*. So a promoted PR is not finished until a later delivered pass has classified the publish; what a caller's settle rule does with that is the caller's, which is why the rule itself now says so without naming a wave.
 
 ## Finding repairs
 

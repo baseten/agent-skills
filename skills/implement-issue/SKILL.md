@@ -15,7 +15,7 @@ This file is the contract. The reasoning behind each rule — incident history, 
 |---|---|
 | `implement-issue-core`, `create-pr` | implementation |
 | `supervise-prs`, composing `repair-pr` (+ `resolve-pr-comment` for review fixes) | the PR's supervision, and its bounded repair passes: `ci`, `review`, or `finding` |
-| `settle-and-merge`, composing `summarize-tranche`, then `settle-outstanding-decisions` (while `auto-request-settle` is on) | settle, in that order, then the merge gate |
+| `settle-and-merge`, composing `summarize-wave`, then `settle-outstanding-decisions` (while `auto-request-settle` is on) | settle, in that order, then the merge gate |
 | `merge-stack` | any merge this run performs — required whenever the resolved `auto-merge` leaves the gate reachable; check at preflight where policy resolves, never discover at the gate |
 
 - A required skill unavailable → return `BLOCKED` naming it. Never improvise a replacement workflow. A repository that never opted into `auto-merge` imposes no `merge-stack` requirement.
@@ -96,7 +96,7 @@ Keep the PR's policy line beside that skill's record: `Policy: budgets <source>;
 
 # Settle
 
-The run settles when its one issue reaches a terminal state: the PR `finished` as `supervise-prs`, *Outcomes*, defines it — what that definition counts as surfaced holds the merge gate and never the settlement — or a terminal outcome: `BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`. With one issue in scope nothing waits behind its PR, so no settle here is partial. **Every terminal outcome settles, including one Phase 1 returned before supervision began** (NOTES: the failure outcomes carry the most decision-shaped material; the empty case gets `summarize-tranche`'s one line). Then run `settle-and-merge`, *The settle sequence*, over this one PR, passing it every input its *Inputs* names, as this skill supplies them:
+The run settles when its one issue reaches a terminal state: the PR `finished` as `supervise-prs`, *Outcomes*, defines it — what that definition counts as surfaced holds the merge gate and never the settlement — or a terminal outcome: `BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`. With one issue in scope nothing waits behind its PR, so no settle here is partial. **Every terminal outcome settles, including one Phase 1 returned before supervision began** (NOTES: the failure outcomes carry the most decision-shaped material; the empty case gets `summarize-wave`'s one line). Then run `settle-and-merge`, *The settle sequence*, over this one PR, passing it every input its *Inputs* names, as this skill supplies them:
 
 - **PR set and scope**: scope, the canonical issue URL; PR set, its one PR — or none, where Phase 1 returned before creating one;
 - **findings**: the worker and review findings the run produced;
@@ -112,7 +112,7 @@ The run settles when its one issue reaches a terminal state: the PR `finished` a
 Its steps, in order, as this skill reads them:
 
 1. **reconcile** tracker and remote state — everything after computes from durable truth, not this session's cache — and the PR body against its diff, whether or not `repair-pr` flagged drift: whether the body may be edited is that skill's *Merge behavior* (its step 1);
-2. **invoke `summarize-tranche`** (canonical issue URL, this PR, the worker and review findings) and **act on its action points before anything below** (its steps 2–3). A one-issue run is a tranche of one; nothing in that skill reads differently at this size;
+2. **invoke `summarize-wave`** (canonical issue URL, this PR, the worker and review findings) and **act on its action points before anything below** (its steps 2–3). A one-issue run is a wave of one; nothing in that skill reads differently at this size;
 3. **request `settle-outstanding-decisions`**, seeded with the summary and passed the run's posting-identity map, unless `auto-request-settle` resolved off — and **merge every identity entry it returns into the map, all of them** (`references/posting-identity.md`): a ruling can be the first authored write through a transport this run never used, and step 4's merge reads the map. The option gates only the request; attendance is that skill's own precondition — an unattended settle gets its one-line decline, and the decisions stay at their durable sites (its step 4);
 4. **translate rulings into gate consequences** (below) when its step 5 hands them back, passing back the translated action points, then evaluate the merge gate where the repository opted in (its step 6; see Merge);
 5. **return** — the summary and action points first, then the rulings or the decline (its step 7).
@@ -131,7 +131,7 @@ Its steps, in order, as this skill reads them:
 - Unruled — deferred, declined, never asked — is still outstanding; unruled is not clean, and the gate already refuses it.
 - A free-text ruling that cannot be confidently placed takes the disposition row (NOTES: the misreadings are not symmetric).
 
-**Un-settling** — a summary `IN_FLIGHT_FIX`, or a code-changing ruling; identical handling from either source, and **never a thread reserved for the owner with nothing able to dispatch it — questions and deferred repairs** (`summarize-tranche`, *2. Action points*, which never emits one as an `IN_FLIGHT_FIX`). A thread carrying a recorded code-changing ruling un-settles as it always did: the ruling is the evidence and the finding path takes it:
+**Un-settling** — a summary `IN_FLIGHT_FIX`, or a code-changing ruling; identical handling from either source, and **never a thread reserved for the owner with nothing able to dispatch it — questions and deferred repairs** (`summarize-wave`, *2. Action points*, which never emits one as an `IN_FLIGHT_FIX`). A thread carrying a recorded code-changing ruling un-settles as it always did: the ruling is the evidence and the finding path takes it:
 
 - **re-invoke `supervise-prs` with every Phase 2 input and the finding as a finding to repair** — verbatim, the action point or the recorded ruling with its site URL — and merge the map it returns. That invocation returns as soon as the finding's pass has returned, whatever `return on` says; that skill dispatches the `finding` pass, counts the `finding-repair-cycles` cycle and re-triggers review where a pushed repair calls for it;
 - a **pushed** repair or a **`NO_CODE_CHANGE`** → settle again **from step 1** — the re-run recomputes the summary, so the gate never sees evidence the repair invalidated, and re-asks nothing (a recorded ruling retires its question at discovery);
@@ -140,13 +140,13 @@ Its steps, in order, as this skill reads them:
 
 ## Merge
 
-Where the repository opted in through `auto-merge`, evaluate **invariant 12's gate exactly as `settle-and-merge`, *The merge gate*, defines it** — apply it as written, carry no copy. Two tranche-phrased clauses read for one issue: "no `DECISION`/`MERGE_RISK`/`NEEDS_USER` outstanding anywhere in the tranche" resolves to this issue's own items; the ordering after summary, walkthrough, and ranking lands as step 4 of Settle, with no ranking in between. A gate evaluated before the summary has no `DECISION`/`MERGE_RISK` inputs to test — a guess wearing the gate's name.
+Where the repository opted in through `auto-merge`, evaluate **invariant 12's gate exactly as `settle-and-merge`, *The merge gate*, defines it** — apply it as written, carry no copy. Two wave-phrased clauses read for one issue: "no `DECISION`/`MERGE_RISK`/`NEEDS_USER` outstanding anywhere in the wave" resolves to this issue's own items; the ordering after summary, walkthrough, and ranking lands as step 4 of Settle, with no ranking in between. A gate evaluated before the summary has no `DECISION`/`MERGE_RISK` inputs to test — a guess wearing the gate's name.
 
 **Dependency-view condition — supplied here by core's completeness report** (passed as `settle-and-merge`'s per-PR dependency-view input, Settle; its *Merge behavior* says what discharges the condition — a standalone run has no preflight to answer it):
 
 - core reported completeness **unproven**, on any boundary → the condition holds the gate exactly as a `MERGE_RISK`. The PR does not merge; return naming the boundary and the discharge.
 - The discharge must answer for the **whole view**: a re-run whose dependency transport can read the graph and prove the boundary, or the owner explicitly answering for the view itself — a decision-shaped hold the walkthrough can put to them and record, the recorded ruling retiring the hold as any translated constraint, never opening the gate. NOT: one confirmed edge — a targeted answer proves no omissions, and the known-true-case proof needs a working transport (`implement-issue-core`, *Back the completeness of the set*).
-- NOT: routing the hold through `summarize-tranche`'s classification — its bar treats the caveat as reportable, not as a mandatory `MERGE_RISK` (NOTES).
+- NOT: routing the hold through `summarize-wave`'s classification — its bar treats the caveat as reportable, not as a mandatory `MERGE_RISK` (NOTES).
 - A **proven** view discharges the condition; nothing to hold.
 
 **Evidence freshness across draft→ready.** The gate accepts no evidence older than this PR's latest draft→ready transition, whichever site performed it — the owner at any moment (re-read the forge before the gate), or the merge path's own publish (`settle-and-merge`, *Merge behavior*), which is the rule's next instance rather than a separate step. Settle passes `hand back` as its publish rule, so this rule — not the three-state rule — governs that publish:
@@ -184,10 +184,10 @@ Return:
 - the resolved policy actually applied — budgets, `auto-merge` — each with its source (caller, repo config, built-in default), plus any policy file present but unhonourable (an unreadable file is authority the owner meant to grant and did not);
 - the merge, where one happened: the gate conditions it passed on, whether the PR was published from draft on the way, and the tracker reconciliation;
 - any edit to the published PR's body — what changed and why — or the drift left unedited, with its suggested replacement;
-- the `summarize-tranche` summary and action points, and the `settle-outstanding-decisions` report — rulings recorded, its one-line decline, or that `auto-request-settle` was off;
+- the `summarize-wave` summary and action points, and the `settle-outstanding-decisions` report — rulings recorded, its one-line decline, or that `auto-request-settle` was off;
 - the run's **full posting-identity map** — every entry observed by core, each repair pass, the walkthrough, and a gate-authorized `merge-stack` invocation, under its `(transport, credential)` key; carry all entries, `unestablished` where no authored write was read back (NOTES: why nothing may be collapsed);
 - whether the blocker set's completeness was backed or left unproven, and on what boundary;
-- the routed documentation review's result, exactly as core reported it — round, status, and any findings with their evidence. It reaches `summarize-tranche` through this line and nowhere else, and **no routed review** is a different state from **a routed review that found nothing**;
+- the routed documentation review's result, exactly as core reported it — round, status, and any findings with their evidence. It reaches `summarize-wave` through this line and nowhere else, and **no routed review** is a different state from **a routed review that found nothing**;
 - dependencies checked and any source disagreements, exactly as core reported them — including on `PR_OPEN` (NOTES);
 - blocker/failure details, including the dependency class each block was judged under;
 - recommended user action when needed.
