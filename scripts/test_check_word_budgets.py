@@ -90,6 +90,18 @@ def main() -> int:
         code, out = run(build(t, files, ok))
         checks.append(("a new skill with no entry fails", code == 1 and "no budget entry" in out))
 
+        # A contract file beside a SKILL.md is governed; NOTES.md and README.md are not.
+        files = base_files()
+        files["skills/probe/runtime-probe.md"] = words(20)
+        files["skills/probe/NOTES.md"] = words(999)
+        files["skills/probe/README.md"] = words(999)
+        code, out = run(build(t, files, ok))
+        checks.append(("a contract file beside SKILL.md with no entry fails",
+                       code == 1 and "runtime-probe.md: no budget entry" in out))
+        code, _ = run(build(t, files, {**ok, "skills/probe/runtime-probe.md": entry(20, 1500)}))
+        checks.append(("with its entry it is green, and NOTES.md and README.md need none",
+                       code == 0))
+
         code, out = run(build(t, base_files(), {**ok, "skills/gone/SKILL.md": entry(10)}))
         checks.append(("an entry naming no file fails", code == 1 and "names no governed file" in out))
 

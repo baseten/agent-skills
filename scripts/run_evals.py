@@ -38,8 +38,10 @@ A skill whose contract cites another skill's rules as its own - an orchestrator
 that defers its worker mechanics to `swarm` - names that skill in a top-level
 `"companions": ["swarm"]` array in its evals.json. `prepare` then puts each
 companion's SKILL.md and NOTES.md into both arms' contract directories as
-`<companion>-SKILL.md` and `<companion>-NOTES.md`, the old arm's read from git at
-the base, and tells the reader they are part of the contract. Without it a
+`<companion>-SKILL.md` and `<companion>-NOTES.md` - plus any other top-level
+`.md` beside that SKILL.md, as `<companion>-<name>` - the old arm's read from git
+at the base, and tells the reader they are part of the contract. A skill's own
+top-level `.md` files beyond SKILL.md and NOTES.md join its arms the same way. Without it a
 reader holds a contract that says "apply it from there" with nothing there, and
 a rule moved between skills reads as a rule deleted. A companion that does not
 exist at the base contributes nothing to the old arm, which is the truth about
@@ -64,6 +66,13 @@ WITHHELD = ("expected_output", "assertions", "name")
 
 # What a companion skill contributes to a contract directory, per arm.
 COMPANION_FILES = ("SKILL.md", "NOTES.md")
+
+# Whether any other top-level `.md` beside a skill's SKILL.md - a tier-specific
+# part of the contract such as swarm's runtime-remote.md - joins the contract,
+# for the skill and for each companion. bootstrap.sh installs the whole skill
+# directory, so such a file is part of what an installed skill reads; a round
+# that dropped it would compare two contracts neither of which is installed.
+EXTRA_SKILL_FILES = True
 
 # Whether a reference a rule cites joins the contract too. A shared rule that
 # cites `references/<x>.md` is carried with <x> beside it (refresh_shared_rules.sh
@@ -108,6 +117,8 @@ def _contract_files(skill: str, base: str | None = None) -> list[str]:
     for rel in ("SKILL.md", "NOTES.md"):
         if (d / rel).exists():
             out.add(f"skills/{skill}/{rel}")
+    if EXTRA_SKILL_FILES and d.is_dir():
+        out |= {f"skills/{skill}/{p.name}" for p in d.glob("*.md")}
     refs = d / "references"
     if refs.is_dir():
         out |= {f"skills/{skill}/references/{p.name}" for p in refs.glob("*.md")}
@@ -123,6 +134,8 @@ def _contract_files(skill: str, base: str | None = None) -> list[str]:
                 continue
             tail = rel[len(f"skills/{skill}/"):]
             if tail in ("SKILL.md", "NOTES.md") or tail.startswith("references/"):
+                out.add(rel)
+            elif EXTRA_SKILL_FILES and "/" not in tail:
                 out.add(rel)
     return sorted(out)
 
@@ -156,6 +169,19 @@ def _ref_text(arm: str, base: str | None, name: str, owner: str) -> str | None:
     return _git_show(base, f"rules/{name}") or _git_show(base, f"skills/{owner}/references/{name}")
 
 
+def _top_level_md(arm: str, base: str | None, skill: str) -> list[str]:
+    """The `.md` files directly in a skill's directory, at one arm's revision."""
+    if arm == "new":
+        d = ROOT / "skills" / skill
+        return sorted(p.name for p in d.glob("*.md")) if d.is_dir() else []
+    listing = subprocess.run(
+        ["git", "ls-tree", "--name-only", base, f"skills/{skill}/"],
+        cwd=ROOT, capture_output=True, text=True,
+    )
+    return sorted(Path(r.strip()).name for r in listing.stdout.split("\n")
+                  if r.strip().endswith(".md"))
+
+
 def _companion_files(arm: str, base: str | None, companion: str) -> dict[str, str]:
     """A companion's contract files for one arm, keyed by the name a reader sees.
 
@@ -163,7 +189,10 @@ def _companion_files(arm: str, base: str | None, companion: str) -> dict[str, st
     that did not exist at the base is not part of the base's contract.
     """
     out: dict[str, str] = {}
-    for name in COMPANION_FILES:
+    names = list(COMPANION_FILES)
+    if EXTRA_SKILL_FILES and COMPANION_FILES:
+        names += [n for n in _top_level_md(arm, base, companion) if n not in names]
+    for name in names:
         rel = f"skills/{companion}/{name}"
         if arm == "new":
             path = ROOT / rel
@@ -223,12 +252,14 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
     # Kept apart from `arms` because their names are prefixed in the contract dir.
     extra: dict[str, dict[str, str]] = {arm: {} for arm in arms}
     present: dict[str, list[str]] = {arm: [] for arm in arms}
+    comp_names: dict[str, dict[str, list[str]]] = {arm: {} for arm in arms}
     for arm in arms:
         for comp in companions:
             files = _companion_files(arm, base, comp)
             if not files:
                 continue
             present[arm].append(comp)
+            comp_names[arm][comp] = list(files)
             extra[arm].update(files)
             reached = _reached_refs(arm, base, files.get(f"{comp}-SKILL.md", ""), comp)
             for name, text in sorted(reached.items()):
@@ -255,8 +286,7 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
             packet = {k: v for k, v in c.items() if k not in WITHHELD}
             packet["contract_dir"] = _disp(round_dir / arm / "contract")
             if present[arm]:
-                names = [f"`{c}-{f}`" for c in present[arm] for f in COMPANION_FILES
-                         if f"{c}-{f}" in extra[arm]]
+                names = [f"`{n}`" for c in present[arm] for n in comp_names[arm][c]]
                 packet["contract_note"] = (
                     "Every file in contract_dir is part of the contract you are executing. "
                     f"Besides the skill's own files it holds {', '.join(names)}: the contract "

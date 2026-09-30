@@ -1,5 +1,5 @@
 {
-  "_about": "Read by scripts/check_word_budgets.py. Words are runs of raw bytes separated by ASCII whitespace (Python bytes.split(); macOS wc -w agrees, GNU wc skips a lone em dash). budget is enforced and only falls (--tighten); target is reported, not enforced: 3000 for a leaf skill, 8000 for an orchestrator, 1500 for a rule. Raising a budget: CLAUDE.md, *Checks*.",
+  "_about": "Read by scripts/check_word_budgets.py. Words are runs of raw bytes separated by ASCII whitespace (Python bytes.split(); macOS wc -w agrees, GNU wc skips a lone em dash). budget is enforced and only falls (--tighten); target is reported, not enforced: 3000 for a leaf skill, 8000 for an orchestrator, 1500 for a rule or a contract file beside a SKILL.md. Raising a budget: CLAUDE.md, *Checks*.",
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
@@ -67,8 +67,12 @@
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
-      "budget": 14985,
+      "budget": 8955,
       "target": 8000
+    },
+    "skills/swarm/runtime-remote.md": {
+      "budget": 1292,
+      "target": 1500
     },
     "skills/upgrade-npm-dependency/SKILL.md": {
       "budget": 4613,
