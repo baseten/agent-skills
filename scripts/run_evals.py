@@ -41,7 +41,10 @@ companion's SKILL.md and NOTES.md into both arms' contract directories as
 `<companion>-SKILL.md` and `<companion>-NOTES.md` - plus any other top-level
 `.md` beside that SKILL.md, as `<companion>-<name>` - the old arm's read from git
 at the base, and tells the reader they are part of the contract. A skill's own
-top-level `.md` files beyond SKILL.md and NOTES.md join its arms the same way. Without it a
+top-level `.md` files beyond SKILL.md and NOTES.md join its arms the same way, and so does
+every file in a `schemas/` directory beside that SKILL.md, kept at `schemas/<name>`
+(`<companion>-schemas/<name>` for a companion) so a contract citing it by that path
+resolves. Without it a
 reader holds a contract that says "apply it from there" with nothing there, and
 a rule moved between skills reads as a rule deleted. A companion that does not
 exist at the base contributes nothing to the old arm, which is the truth about
@@ -73,6 +76,12 @@ COMPANION_FILES = ("SKILL.md", "NOTES.md")
 # directory, so such a file is part of what an installed skill reads; a round
 # that dropped it would compare two contracts neither of which is installed.
 EXTRA_SKILL_FILES = True
+
+# Whether the files in a skill's `schemas/` directory - field lists a SKILL.md
+# moved out of its prose, such as backlog-orchestrator's checkpoint-output.md -
+# join the contract, for the skill and for each companion. bootstrap.sh installs
+# the whole skill directory, so they are installed contract like a top-level .md.
+SCHEMA_FILES = True
 
 # Whether a reference a rule cites joins the contract too. A shared rule that
 # cites `references/<x>.md` is carried with <x> beside it (refresh_shared_rules.sh
@@ -122,6 +131,8 @@ def _contract_files(skill: str, base: str | None = None) -> list[str]:
     refs = d / "references"
     if refs.is_dir():
         out |= {f"skills/{skill}/references/{p.name}" for p in refs.glob("*.md")}
+    if SCHEMA_FILES and (d / "schemas").is_dir():
+        out |= {f"skills/{skill}/schemas/{p.name}" for p in (d / "schemas").iterdir() if p.is_file()}
 
     if base is not None:
         listing = subprocess.run(
@@ -130,9 +141,14 @@ def _contract_files(skill: str, base: str | None = None) -> list[str]:
         )
         for rel in listing.stdout.split("\n"):
             rel = rel.strip()
-            if not rel or "/evals/" in rel or not rel.endswith(".md"):
+            if not rel or "/evals/" in rel:
                 continue
             tail = rel[len(f"skills/{skill}/"):]
+            if SCHEMA_FILES and tail.startswith("schemas/") and tail.count("/") == 1:
+                out.add(rel)
+                continue
+            if not rel.endswith(".md"):
+                continue
             if tail in ("SKILL.md", "NOTES.md") or tail.startswith("references/"):
                 out.add(rel)
             elif EXTRA_SKILL_FILES and "/" not in tail:
@@ -182,6 +198,26 @@ def _top_level_md(arm: str, base: str | None, skill: str) -> list[str]:
                   if r.strip().endswith(".md"))
 
 
+def _schema_files(arm: str, base: str | None, skill: str) -> list[str]:
+    """The files directly in a skill's `schemas/` directory, at one arm's revision."""
+    if not SCHEMA_FILES:
+        return []
+    if arm == "new":
+        d = ROOT / "skills" / skill / "schemas"
+        return sorted(p.name for p in d.iterdir() if p.is_file()) if d.is_dir() else []
+    listing = subprocess.run(
+        ["git", "ls-tree", "--name-only", base, f"skills/{skill}/schemas/"],
+        cwd=ROOT, capture_output=True, text=True,
+    )
+    return sorted(Path(r.strip()).name for r in listing.stdout.split("\n") if r.strip())
+
+
+def _contract_name(skill: str, rel: str) -> str:
+    """The name a file takes in the contract directory: flat, except `schemas/`."""
+    tail = rel[len(f"skills/{skill}/"):]
+    return tail if tail.startswith("schemas/") else Path(rel).name
+
+
 def _companion_files(arm: str, base: str | None, companion: str) -> dict[str, str]:
     """A companion's contract files for one arm, keyed by the name a reader sees.
 
@@ -192,6 +228,7 @@ def _companion_files(arm: str, base: str | None, companion: str) -> dict[str, st
     names = list(COMPANION_FILES)
     if EXTRA_SKILL_FILES and COMPANION_FILES:
         names += [n for n in _top_level_md(arm, base, companion) if n not in names]
+    names += [f"schemas/{n}" for n in _schema_files(arm, base, companion)]
     for name in names:
         rel = f"skills/{companion}/{name}"
         if arm == "new":
@@ -200,7 +237,10 @@ def _companion_files(arm: str, base: str | None, companion: str) -> dict[str, st
         else:
             text = _git_show(base, rel)
         if text is not None:
-            out[f"{companion}-{name}"] = text
+            key = f"{companion}-{name}"
+            if name.startswith("schemas/"):
+                key = f"{companion}-schemas/{name[len('schemas/'):]}"
+            out[key] = text
     if f"{companion}-SKILL.md" not in out:
         return {}
     return out
@@ -272,7 +312,7 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
     round_dir.mkdir(parents=True)
 
     for arm, contents in arms.items():
-        named = {Path(rel).name: text for rel, text in contents.items()}
+        named = {_contract_name(skill, rel): text for rel, text in contents.items()}
         named.update(extra[arm])
         for name, text in named.items():
             dest = round_dir / arm / "contract" / name

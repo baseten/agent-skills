@@ -102,6 +102,18 @@ def main() -> int:
         checks.append(("with its entry it is green, and NOTES.md and README.md need none",
                        code == 0))
 
+        # A file in a skill's schemas/ is governed too, whatever its extension.
+        files = base_files()
+        files["skills/probe/schemas/fields.md"] = words(30)
+        files["skills/probe/schemas/fields.json"] = words(5)
+        code, out = run(build(t, files, ok))
+        checks.append(("a schemas/ file with no entry fails",
+                       code == 1 and "schemas/fields.md: no budget entry" in out
+                       and "schemas/fields.json: no budget entry" in out))
+        code, _ = run(build(t, files, {**ok, "skills/probe/schemas/fields.md": entry(30, 1500),
+                                       "skills/probe/schemas/fields.json": entry(5, 1500)}))
+        checks.append(("with their entries schemas/ files are green", code == 0))
+
         code, out = run(build(t, base_files(), {**ok, "skills/gone/SKILL.md": entry(10)}))
         checks.append(("an entry naming no file fails", code == 1 and "names no governed file" in out))
 

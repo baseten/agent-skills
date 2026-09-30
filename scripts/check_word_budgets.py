@@ -25,8 +25,10 @@ budget needs.
 The budgets live in scripts/word_budgets.json, one entry per `skills/*/SKILL.md`,
 per other contract file beside one (a top-level `skills/*/*.md` that is not
 NOTES.md or README.md, such as swarm's runtime-remote.md, which a tier-specific
-run loads with the SKILL.md), and per `rules/*.md` that is not a `-notes.md`.
-Without the second kind, a cut could move text into a file beside SKILL.md and
+run loads with the SKILL.md), per file in a skill's `schemas/` directory (such
+as backlog-orchestrator's checkpoint-output.md, the field lists its SKILL.md
+moved there), and per `rules/*.md` that is not a `-notes.md`. Without the
+second and third kinds, a cut could move text into a file beside SKILL.md and
 count as a cut. The check fails when:
 
   - a file has more words than its budget;
@@ -64,6 +66,7 @@ def governed() -> list[str]:
     """Every file that must carry a budget, as a repository-relative path."""
     files = sorted(ROOT.glob("skills/*/SKILL.md"))
     files += sorted(p for p in ROOT.glob("skills/*/*.md") if p.name not in NOT_CONTRACT)
+    files += sorted(p for p in ROOT.glob("skills/*/schemas/*") if p.is_file())
     files += sorted(p for p in ROOT.glob("rules/*.md") if not p.name.endswith("-notes.md"))
     return [p.relative_to(ROOT).as_posix() for p in files]
 
@@ -135,6 +138,7 @@ def print_runtime_load() -> None:
         refs = sorted((skill_md.parent / "references").glob("*.md"))
         own = count_words(skill_md) + sum(
             count_words(p) for p in sorted(skill_md.parent.glob("*.md")) if p.name not in NOT_CONTRACT)
+        own += sum(count_words(p) for p in sorted(skill_md.parent.glob("schemas/*")) if p.is_file())
         ref_words = sum(count_words(p) for p in refs)
         rows.append((skill_md.parent.name, own, len(refs), ref_words, own + ref_words))
     width = max((len(r[0]) for r in rows), default=5)
