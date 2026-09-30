@@ -2,11 +2,21 @@
 
 Companion to `SKILL.md`. That file is the contract; this one holds the reasoning and the incident history behind its rules, keyed by section. Read a section's note before changing its rules or when applying them to a case the contract doesn't obviously cover. Nothing here overrides the contract.
 
+**The #157 restructure.** `SKILL.md` was cut with no rule dropped, weakened, narrowed or broadened: incident narrative, history, restated rationale and `(NOTES: …)` asides moved here, under the section they explain; restatements of what `swarm`, `supervise-prs` or a `rules/` file owns became pointers; the state block's and the closing report's field lists moved to `schemas/checkpoint-output.md`, which is part of the contract and which `SKILL.md`, *Progress / checkpoint output*, keeps the rules for; and the session reconciliation, the recovery-ref ender and the reach-by-tier statement became tables. Every heading survived, because other skills cite them. Entries marked *(moved in #157)* are text the contract used to carry; older entries quote the contract as it stood when they were written. **`schemas/` is a directory inside the skill, not the repository's `schemas/`**, because `bootstrap.sh` installs a skill directory and nothing above it; `scripts/run_evals.py` carries it into a round's contract directory and `scripts/check_word_budgets.py` budgets it like a file beside `SKILL.md`, so text moved there cannot count as a cut.
+
+## Autonomy and interactive prompts
+
+**Why a review-thread `NEEDS_USER` item never interrupts (moved in #157):** interrupting on one would stop a run that has work left and, on a fired trigger, ask a question with nobody present to answer it. The other `NEEDS_USER` kinds are surfaced in the closing output for the same reason — they need a person eventually, not now, and the run still has work to do meanwhile; the settled step is the one point where the run has nothing left to do, which is why the decision-shaped items get their sanctioned exception there.
+
+**The promise the list protects:** a run that asks three questions before dispatching a single worker has already failed its main promise.
+
 ## Runtime selection
 
 **Why the runtime preference was not reordered (review finding on the #59 PR):** the preference list puts remote worker sessions above subagents, and this change establishes that the parent can enforce invariant 5 on the second and not the first — so followed literally it prefers the tier where the guarantee is unenforceable. Reordering was rejected here on two grounds. It is a scope change rather than a correction: which tier a run uses affects disk, resilience and isolation, none of which invariant 5 settles alone. And the throughput argument for the remote tier, the one usually reached for, does not hold — subagents run genuinely concurrently, so the real purchase is a container per worker (four worktrees not sharing one disk, per `swarm`, *Capacity during the run*), a worker that outlives this session's compaction, and per-container tool isolation. Capacity and resilience, not speed. Getting that wrong in the first telling is what made the trade look one-sided.
 
 What landed instead is the trade stated where the preference is made, plus the one lever the parent still has on that tier: a remote head that does not advance is reported after 30 minutes and raised at two hours. Measured in elapsed time, deliberately: the supervision loop has no minimum interval, so a cycle count is really a count of how busy the run is, and a burst of sibling events would have raised a working worker minutes after dispatch. That is not a capture and is not offered as one — it converts a state that reads as *still working* into one somebody sees. The knob that would let an owner prefer the enforceable tier is deliberately not here; it is policy, and it is tracked separately.
+
+**Why the fan-out is sized to the headroom (moved in #157):** one staged fan-out over twelve issues against a cap of six opens twelve PRs — a running workflow cannot be reached once the cap fills, so the cap bounds nothing inside it. A Dynamic Workflow suits the fan-out because it is the "many small independent transformations" shape workflows are documented for; the launch approval prompt's exact form depends on the session's permission mode.
 
 ## Review and repair sessions
 
@@ -19,6 +29,12 @@ What landed instead is the trade stated where the preference is made, plus the o
 ## Transport precedence
 
 **Why an incremental gap counts as "no higher tier exposes it":** precedence buys attribution and permission handling, not efficiency, so a first-class tool with no `since` bound and no conditional-request support is not the cheaper choice merely by being first-class. Without that carve-out written down the two rules disagree in silence — precedence says stay on the tool, the budget rules say ask incrementally, and a run splitting the difference re-fetches everything through the preferred tier every cycle and calls it compliance.
+
+**Why the dependency-edge read is carved out of tier 3 (moved in #157):** falling back to raw HTTP where the scope spans repositories trades a named, proceedable warning — `dependency transport unavailable` — for an unproven boundary no proof can ever clear, since the read drops cross-repository edges with no error.
+
+## Proving a transport can see the graph
+
+**The consequences behind each rule (moved in #157):** a known-true case is the strongest proof because its answer does not depend on any transport being trustworthy. A scope drawn from a possibly-partial read cannot bound its own validation, because a credential that hides children in one repository omits from the boundary list the very repository that was hidden. One passing control on the easy case is how a scoped credential looks validated, which is why a cross-repository graph needs a cross-repository control. "MCP works" is not a finding; "MCP, as this account, resolves edges from A into B" is. A server-side narrowing is exactly what a silent partial view looks like from one call away, which is why an authorization error invalidates every proof on the credential. And the graph is what the run schedules against, so a false absence there dispatches work whose prerequisites are unbuilt.
 
 ## Authored write form
 
@@ -36,11 +52,29 @@ The `html_url` provenance rule is the one that is not obvious. A review-comment 
 
 The notification half is deliberately subordinate. A subscription dies with the session that armed it, so a notification is unobservable-in-principle from a later run: nothing may treat it as delivery, and the item is complete when it is *recorded*. Reporting whether one was sent is useful; depending on it having been seen is the failure mode.
 
+**Why the bundled path and not `rules/` (moved in #157):** `bootstrap.sh` installs a skill directory and nothing above it, so on an installed run the `rules/` source does not exist and only the bundled copy does. And the rule is stated once outside this file because a partial copy naming some of its exclusions and not its budget is how the rule drifts.
+
+## Tracker abstraction
+
+**Why the parent's own comment scan skips the marker (moved in #157):** it is a dependency reader like the three subordinate skills, and an edge taken from a worker report here enters the scheduling DAG directly — the shortest path of all to re-adopting something this run already rejected.
+
 ## Mandatory validation preflight
 
 **Why a resolved-premise node is `NEEDS_USER` and not a new state (Sept 2026):** it has to be somewhere the existing machinery already reaches, or it wedges the run — a node that is neither READY nor blocked-by-unmerged-work satisfies no settled condition, no stop condition and no restart classification, so the run can neither settle nor stop and a reader resolving that the cheap way dispatches it. `NEEDS_USER` is already surfaced in the closing output rather than asked mid-run, already handled by the settled predicate and the stop conditions, and already the right meaning: a person decides whether the issue is done, because this pass concluded it from outside the issue's own history.
 
 **Why an issue being closed is not a trigger:** issue state is queryable, which is exactly why it slips through as a fact. It is still someone's assertion one step removed, and a waiver discharged by an assertion is a gate removed by whoever closed a ticket. The tracking issue is a coordination point the removal closes.
+
+**Why a resolved-premise node is never dispatched (moved in #157):** dispatching produces a PR, review rounds and eventually a conflict over work already done. `NEEDS_USER` is where the settled predicate, the stop conditions and the closing report already handle it.
+
+**Why `dependency transport unavailable` is excepted from the unproven-visibility block (moved in #157):** the block exists where a transport *might* be short and you cannot tell by how much. Where no transport exposes a dependency read, blocking stops every GitHub backlog forever rather than making one safer — and letting the stricter-sounding general rule swallow the exception is precisely how this correction gets undone.
+
+**Why a baseline is measured per base (moved in #157):** tickets go stale, and a wrong baseline is worse than none — genuinely new failures hide inside an imaginary one. A number measured on one base and broadcast to another reintroduces the defect from the other direction: a real regression hidden inside a borrowed baseline, or a pre-existing failure reported as new.
+
+## Escalating to deep validation
+
+**Why escalation is scoped to a subgraph (moved in #157):** the cost objection to deep mode is about breadth, and escalation does not have to be all-or-nothing. The `dependency transport unavailable` exception survives escalation because a deeper read cannot conjure a capability the tracker does not expose.
+
+**Why a clean escalation is still reported, and why a missing deep mode blocks:** reporting makes the extra cost visible and attributable rather than invisible overhead. A trigger fires precisely because shallow evidence cannot answer the question for those nodes, so falling back to shallow and dispatching on its `PASS` recreates exactly the case the escalation exists to catch, with the cost hidden behind a green result.
 
 ## Default usage safeguards
 
@@ -66,11 +100,19 @@ The spend ceiling deliberately does not move on a merge. Merging work already pa
 
 **Why a released slot is itself a dispatch trigger (round 2):** removing the settle-routing made the release real and left nothing acting on it. Every re-entry rule was keyed on the frontier *advancing*, so a run settled against the cap would watch its PRs merge as leaves that unblock nothing, each ending at a step that forbids dispatch, and hand off with spend unused and dispatchable work never started — the same wedge a third time, in the one place the simplification had not looked. The axis was every statement written on "settled means the frontier is empty", which the new predicate had made false by construction.
 
+**Consequences restated in the contract before #157, moved here:** counting adopted PRs matters because otherwise the reviewer load the budget bounds is doubled by the restart path. The possible overshoot after a restart is the price of recovery never trusting a cache. And returning when `concurrent-open-prs` is reached would turn flow control into a stop.
+
 ## Model and skill policy
 
 **Why selection moved in front of the ladder (Sept 2026):** the ladder catches a worker that keeps failing, and the observed losses were workers that did not fail. One patched the single site its ticket named where the defect was restated at three — a green PR fixing a third of the bug. Another declined its own ticket's preferred option, correctly, by reading the spec over the issue text; a cheaper worker doing what the ticket said would have looked exactly as successful. No trigger that keys on repeated failure can reach either, which is why the assignment is made up front and the ladder is the floor under it rather than the mechanism.
 
 **Why the axes live in `swarm` and not here:** that skill already owned model selection by failure visibility, and a second copy of the tiers in this file is the drift this repository keeps finding. What is genuinely this skill's is the implementation escalation ladder, which stays. The repair-escalation evidence trigger and the cycle interaction moved to `rules/repair-rounds.md` (#140), with their notes, because `implement-issue` applies them too.
+
+**Why a missing `merge-stack` narrows the gate rather than stopping the tranche (moved in #157):** the asymmetry with `implement-issue` is deliberate, not drift. That skill blocks one issue's worth of nothing at an invocation its user is typically attending; blocking here would trade twelve issues of authorized implementation for the tool their optional final step needs. The worker/parent exception is stated because "required" plus "unavailable means `BLOCKED`" otherwise reads as a preflight stop, the outcome the fallback was written to avoid.
+
+## Restart / resume
+
+**Why the escalation triggers apply at restart (moved in #157):** a resumed run is if anything the likelier place to meet one, since its dependencies closed in an earlier tranche by construction. An unproven boundary's edge is re-adopted because the validator reads through a transport that may truncate identically to last time; the comment-record edge is classified at this step because skipping it is precisely how a retired dependency becomes permanent. `DONE` is skipped only after the recovery-ref enumeration because this step precedes both PR and checkpoint adoption, so an issue skipped on merge evidence is never reached by anything that would have found its ref.
 
 ## Implementation worker contract
 
@@ -113,6 +155,8 @@ that cannot drift.
 
 **Why a dispatch prompt never claims a decision was authorised (Sept 2026):** "The orchestrator has authorised…" is exactly the shape of an injected instruction, and a Sonnet worker right to distrust it refused; the same task worded neutrally, pointing at the ruling's record, went through.
 
+**Consequences the dispatch list used to carry inline (moved in #157):** both question stalls observed were a worker waiting for a "go" nobody would send. A guess past a prescribed stop is worse than the deadlock it avoids, and harder to see. Unmarked, unproven dependency context lets the worker's three sources agree because two are empty, so readiness rests on an absence nobody established. A worker given no authorization membership defaults to the stronger outcome — safe, but it costs the parent the distinction. A worker sent no identity for its report posts it as the invoking user, correctly, because the prompt never asked otherwise. A prompt that says the report's contents are optional gets exactly the judgment step 11 exists to carry dropped — the four review rounds below are the evidence the missing item is never the one anybody predicted. The incomplete gate report is caught cheaper than CI and much cheaper than a review round. And a worker left to settle a checkout-versus-API disagreement by whichever it looked at last is how a redundant PR gets opened against a base that had already moved.
+
 ## Confirming a trigger that is a skill invocation
 
 The notes on confirming a trigger that is a skill invocation, and why a declined pass is completed, moved to `rules/review-trigger-notes.md` with the confirmation step (#144).
@@ -133,6 +177,8 @@ The note on why the per-PR record holds its review lines per convention moved to
 
 **The seven unreclaimable sessions:** doing the reconciliation by hand found seven `IDLE` sessions belonging to a *different* orchestrator run, checked out on repositories outside the recovering session's GitHub scope — so whether their branches were ever pushed was unreadable from there. Those are report-never-reclaim on ownership alone. Without that branch, a forcing function on live sessions either wedges a clean run behind someone else's leak or teaches runs to archive sessions the safety rules protect. **"Cannot verify" splits by ownership, though** (a review correction to #50's original framing): an unverifiable session belonging to *another* run is excluded from settlement like any other not-mine session, but an unverifiable session *this run created* still blocks settlement as `NEEDS_USER` — it is this run's cost and possibly this run's armed wake, and settling over it would recreate the leak with a documented excuse. Safety still forbids archiving it unverified; the human resolves the standoff. (Since the 2026-09-23 ruling, above, *unverifiable* no longer means *uninspectable worktree*: a session this run created is verified by its remote state, and only one the releasable test fails — a mismatch — is held this way.)
 
+**The incidents behind step 11's diagnostics (moved in #157):** of the two runs that leaked sessions, one never reached step 10, and the other wrote "archived" into its notes and never called the tool — reporting an action is not performing it (`swarm` NOTES, *Releasing a worker*). "1 alive" cannot distinguish a warm container mid-turn from a month of unpushed work, which is the whole reason the diagnostic exists. And the merged-PR check before reading anything as stranded comes from a session that sat `IDLE` and unarchived for four weeks reporting `staged_files` with no branch on the remote — first reported as four weeks of unpushed work; its PR had merged the day it was created and the branch was deleted with it, so the staged files were residue. What that session did show is worse, and is why it is kept: chartered for one issue, it had grown a twenty-two-issue backlog marked ready for dispatch, its checkout pointed at a repository's pre-migration organisation, and the owner had been talking to it believing it was part of the live run.
+
 ## Every read is a snapshot
 
 The notes on why every read is a snapshot moved to `rules/establish-do-not-assume-notes.md` with the rule (#144).
@@ -150,6 +196,8 @@ The note on why the trigger comment stays unconditional moved to `supervise-prs/
 **Why a quiet wake still reports the owner's queue (Sept 2026):** the unproductive-wake machinery is built entirely around *durable* state, and an outstanding `DECISION` is not durable state — it is a thing that does not change, which is precisely why the backoff cannot see it. A run can be correct on every wake, report no delta, back off to four-hourly, and never once say that three decisions have been sitting with the owner the whole time. The counts ride the same lengthening cadence, so they cost nothing extra and they cannot go silent. Making quiescence-with-open-decisions a settle trigger is the other half: a run whose only remaining movement needs an answer nobody has asked for is not waiting for anything, and backing off around it is waiting for the wrong thing.
 
 The notes on what two unbounded check-ins cost, why a subscription is not free, and why the count lives in the wake's prompt moved to `rules/wake-budget-notes.md` with the budget (#144).
+
+**Why the wake is armed at all, and why the release step is in its prompt (moved in #157):** a settled run that simply waits has no event source of its own, and "the run advances its own frontier" quietly becomes conditional on something nothing required it to arrange. An observed run on the remote tier dispatched separate implementation, review and repair sessions, never archived one, and left fourteen finished sessions alive until the owner asked — because releasing lived in the run's head and not in the prompt it woke to.
 
 ## Progress / checkpoint output
 
@@ -205,6 +253,8 @@ The note on why the remaining budget is read off the block at dispatch moved to 
 
 The note on why a producer merge's red is expected-red moved to `rules/ci-attribution-notes.md` with the classification (#144); the refresh-PR remedy it describes is still this skill's.
 
+**The producer-merge remedy (moved in #157):** an observed run saw the expected-red three times, once per producer merge. It counts as surfaced because a run unable to settle over it could never report the refresh PR as the owner's merge to make.
+
 ## A settle finding is the third repair shape
 
 The argument for `finding-repair-cycles` being its own counter moved to `rules/repair-rounds-notes.md` with the rule it explains (#140).
@@ -221,6 +271,8 @@ The argument for `finding-repair-cycles` being its own counter moved to `rules/r
 
 **What crediting a close would do:** a recompute that treats close like merge sees a dependency-free node and dispatches a fresh worker for the work a human just declined — recreating the PR they closed and spending budget to do it.
 
+**Consequences moved in #157:** filling four free workers into one slot of `concurrent-open-prs` headroom is three over the cap, which is why step 4 fills to the headroom and not the worker count. A held `DECISION` is held because dispatching commits the run to one answer before the human gives it; an unproven dependency view holds the whole advance because every node step 3 just called READY shares the blind spot; and a worker raising one against a `dependency transport unavailable` boundary is read as a report because holding the advance would stop the run permanently on a condition accepted at the preflight.
+
 ## How a worker's report actually reaches you
 
 **The truncation case:** a worker whose credential reached edges the parent's cannot may have found three hidden blockers and had room to summarise one. If that one happens to be an edge the parent already holds, a reconcile-and-stop ends the decision on the strength of a line that had room for one — and the other two are never learned while every sibling stays scheduled against the same truncated graph.
@@ -233,11 +285,19 @@ The argument for `finding-repair-cycles` being its own counter moved to `rules/r
 
 **How the three issue-comment readers were found:** one at a time, each after the previous fix looked complete — which is why the table in the contract enumerates them and why the marker is a property, not a patch in three files.
 
+**Consequences moved in #157:** a tooling `FAILED`'s missing blocker URL is legitimate, not unanswerable. Invalidating visibility over a same-transport state change holds every sibling on the boundary for a prerequisite that merely changed state since the caller last checked. Treating the block as disproof of the run's own view is what stops the redispatch loop forming, and demanding a known-true case on a `dependency transport unavailable` boundary converts a limitation accepted at preflight into an indefinite hold. A worker can steer `needs_action` only by ending its turn saying these things, and it is the one place a terminal no-PR outcome can still say something specific. A report on an issue manufactures the permanent blockers the persistence rule exists to prevent as designed behaviour, not as a mistake someone might make.
+
 ## Checkpoint compliance
 
 **The capture itself, and the reasoning for it, moved to `swarm` (#136):** the defect history of the capture sequence, why validation precedes the push, why one ref per branch, and why the branch name is encoded are in `swarm` NOTES, *Checkpoint compliance*, beside the section and the script they explain. What stays here is the reasoning for the ender this skill keeps.
 
 **Why the four-state ref-ender rule is enumerated:** the rule was built one case at a time and each missing case left a ref with no ender, which invariant 12 then converts into a PR that can never merge. A two-state copy that lived in Lost worker recovery covered only open and merged, so a lost worker with no PR or a closed one had its capture merged into the branch and its ref neither verified nor deleted.
+
+**Consequences moved in #157:** merging an open PR while its recovery ref is outstanding would drop work the run itself decided was worth rescuing. A capture landing on a closed PR's branch is reported because a person usually decided against that line of work and is worth their knowing about.
+
+## Where the parent cannot reach
+
+**Why the remote-session tier sits beside the workflow tier (moved in #157):** that is the opposite of where it sat while the *see* half was assumed; on that tier the escalation has no first step and no second one. Unreachable-mid-run is a real cost of the workflow runtime — the same one that disqualifies it for PR supervision — and this is the second thing it cannot do, not a footnote on the first.
 
 ## Cross-branch artifact collisions
 
@@ -250,6 +310,8 @@ The argument for `finding-repair-cycles` being its own counter moved to `rules/r
 **Why the third kind gets its own remedy (round 1, Sept 2026):** it was first written into a section whose resolution rule routes collisions to a merge-order decision, and ordering cannot resolve this one — whichever of the two names merges first, the final tree is identical and broken. Surfacing it for an ordering call spends the owner's decision on a question with no answer. One branch has to change, and the re-run afterwards is not ceremony: a repair that fixes one reference and misses another produces exactly the clean diffs that hid it the first time.
 
 **Why the input set is every open branch and not the run's members:** the check already existed in an observed tranche, over the branches it had dispatched, and it caught a genuine conflict. It missed this one because the colliding branch belonged to a concurrently running track. A run's own graph is not the repository. Naming the integrated branches in the output is what makes a partial set legible as partial — otherwise a clean result over the wrong set is indistinguishable from a clean result.
+
+**The third-kind example (moved in #157):** one branch added tests querying the string `Center`; another renamed it to `Centre`. No line was shared, git merged cleanly, and the default branch's own CI found it after both had landed.
 
 ## Performing the renumber
 
@@ -271,6 +333,8 @@ The argument for `finding-repair-cycles` being its own counter moved to `rules/r
 
 **The proxy ladder, and what corroboration actually establishes:** distinct transport, then distinct credential, then distinct moment were each offered as a stand-in for independent visibility and each failed, because a proxy can always coincide with the thing it is standing in for — ask for the property the conclusion needs, visibility, proven. And when a preflight warning and a worker report coincide, the reading it invites is backwards: two actors agreeing does not make the prose edge more likely real (they read the same prose); it makes a *partial view* less likely — a different and more useful conclusion. Correlating costs nothing, since the warning is already in hand.
 
+**Why an availability disagreement never touches a visibility proof (moved in #157):** invalidating a proof and halting slot-filling for a stale base is an expensive answer to a cheap problem.
+
 ## Settled tranche
 
 **Why a held, surfaced worker does not block settlement (#66, review round one on swarm's #145):** `swarm`, *Blocked workers*, now holds a worker on the owner's authority in three cases — a permission request, a blocked worker whose checkout cannot be reached, and an unclosed mismatch — and before this the in-flight and live-session conditions both counted it, so one permission prompt kept an entire tranche from settling: no summary, no walkthrough, no ranking, and no merge gate for PRs that had nothing to do with it. That is the run waiting on the owner without having asked, which is what the settle sequence exists to end. (The gate still reads the held worker's `NEEDS_USER` item tranche-wide while it is outstanding, so what settling buys the other PRs is the summary, the walkthrough and the ranking; their merge still waits on the item, #148, until the hold ends and retires it, #151.) The fix follows the reserved-thread precedent: once the hold is raised as a `NEEDS_USER` item it is surfaced, it holds its own work unit, and the rest of the tranche settles. The live-session condition keeps its force for every other session, because its purpose — making a skipped release detectable — is met here by naming the held session as alive in every report, not by blocking. The check-in watches the held session, and its resuming is a delta and un-settles the run, so the exception cannot turn into a worker nobody is watching.
@@ -282,3 +346,5 @@ The argument for `finding-repair-cycles` being its own counter moved to `rules/r
 **Why a settle with work waiting behind a surfaced PR is taken and reported partial (the same ruling's refinement):** the alternative — holding the settle until the dependents can run — waits on the very answer the settle exists to obtain. So the run settles early, and is explicit that it has not finished: the report names, per item, the planned work behind it. Nothing new is needed for the continuation: a code-changing ruling is already a finding repair that un-settles the run, a charter release already re-adopts the head, and a merge already advances the frontier, so the ruling's "the run un-settles and continues" is those rules running, cited rather than restated.
 
 **Why the predicate admits budget-held READY work (Sept 2026):** a run whose only remaining work is held by a budget can do nothing, and a predicate demanding an empty READY set would leave it unable to settle and therefore unable to reach the merges that release the budget. Settled means nothing is dispatchable *now*, not that nothing remains. A future editor reading "settled = nothing can start" is the reason this is written down.
+
+**Consequences moved in #157:** a worker blocked on a permission prompt reads as quiet from every angle the other conditions look from, which is how a run declares itself settled over a worker stopped mid-issue. The live-session condition is what makes a skipped or merely-reported release detectable rather than forbidden; naming a surfaced held worker's session in every report means a live session is never one the output omits; and excluding other runs' sessions means someone else's leak cannot wedge this run's settlement. Saying a settle is partial lets the owner tell a tranche that is done from one waiting on their answer. An `IN_FLIGHT_FIX` found at the ranking rather than at the predicate is the same defect one step later, and no more acceptable for it.

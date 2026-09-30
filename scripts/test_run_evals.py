@@ -31,10 +31,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def _load(withheld=None, companion_files=None, follow=None, extra=None):
+def _load(withheld=None, companion_files=None, follow=None, extra=None, schemas=None):
     """Load run_evals fresh, optionally with one guard neutered."""
     spec = importlib.util.spec_from_file_location(
-        f"run_evals_{id(withheld)}_{id(companion_files)}_{follow}_{extra}",
+        f"run_evals_{id(withheld)}_{id(companion_files)}_{follow}_{extra}_{schemas}",
         ROOT / "scripts" / "run_evals.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -46,6 +46,8 @@ def _load(withheld=None, companion_files=None, follow=None, extra=None):
         mod.FOLLOW_RULE_CITATIONS = follow
     if extra is not None:
         mod.EXTRA_SKILL_FILES = extra
+    if schemas is not None:
+        mod.SCHEMA_FILES = schemas
     return mod
 
 
@@ -364,6 +366,66 @@ def guard_extra_skill_files_join_the_contract() -> list[str]:
     return failures
 
 
+def _schema_fixture(tmp: Path) -> None:
+    """A skill and its companion, each with a file in `schemas/`, v1 at the base and v2 now."""
+    skill = _fixture(tmp)
+    data = json.loads((skill / "evals" / "evals.json").read_text())
+    data["companions"] = ["schema-companion"]
+    (skill / "evals" / "evals.json").write_text(json.dumps(data), encoding="utf-8")
+    (skill / "schemas").mkdir()
+    (skill / "schemas" / "out.md").write_text("skill schema v1\n", encoding="utf-8")
+    (skill / "schemas" / "out.json").write_text('{"v": 1}\n', encoding="utf-8")
+    comp = tmp / "skills" / "schema-companion"
+    (comp / "schemas").mkdir(parents=True)
+    (comp / "SKILL.md").write_text("companion v1\n", encoding="utf-8")
+    (comp / "schemas" / "fields.md").write_text("companion schema v1\n", encoding="utf-8")
+    _git(tmp, "init", "-q")
+    _git(tmp, "add", "-A")
+    _git(tmp, "commit", "-q", "-m", "base")
+    (skill / "schemas" / "out.md").write_text("skill schema v2\n", encoding="utf-8")
+    (skill / "schemas" / "out.json").write_text('{"v": 2}\n', encoding="utf-8")
+    (comp / "schemas" / "fields.md").write_text("companion schema v2\n", encoding="utf-8")
+
+
+def guard_schema_files_join_the_contract() -> list[str]:
+    """A file in a skill's schemas/ reaches both arms, per revision, at schemas/<name>.
+
+    bootstrap.sh installs the whole skill directory, and a SKILL.md that moved a
+    field list into schemas/ cites it by that path. Dropped from a round, both
+    arms hold a pointer to nothing; flattened, the citation does not resolve.
+    """
+    failures = []
+    for label, schemas, expect in (("intact", None, True), ("guard neutered", False, False)):
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            mod = _load(schemas=schemas)
+            mod.ROOT = tmp
+            _schema_fixture(tmp)
+            with contextlib.redirect_stdout(io.StringIO()):
+                rc = mod.prepare("fixture-skill", "HEAD", None, tmp / "round")
+            if rc != 0:
+                failures.append(f"{label}: prepare returned {rc}")
+                continue
+            want = {
+                ("new", "schemas/out.md"): "skill schema v2\n",
+                ("old", "schemas/out.md"): "skill schema v1\n",
+                ("new", "schemas/out.json"): '{"v": 2}\n',
+                ("old", "schemas/out.json"): '{"v": 1}\n',
+                ("new", "schema-companion-schemas/fields.md"): "companion schema v2\n",
+                ("old", "schema-companion-schemas/fields.md"): "companion schema v1\n",
+            }
+            for (arm, name), v in want.items():
+                p = tmp / "round" / arm / "contract" / name
+                got = p.read_text() if p.exists() else None
+                if expect and got != v:
+                    failures.append(f"{label}: {arm}/{name} is {got!r}, expected {v!r}")
+                if not expect and got is not None:
+                    failures.append(
+                        "guard neutered but a schemas/ file still reached the contract — "
+                        "SCHEMA_FILES is not what puts it there, so this case pins nothing")
+    return failures
+
+
 GUARDS = (
     ("packet withholds the answer", guard_packet_withholds_the_answer),
     ("ungraded is not passing", guard_ungraded_is_not_passing),
@@ -371,6 +433,7 @@ GUARDS = (
     ("companions join the contract", guard_companions_join_the_contract),
     ("rule citations join the contract", guard_rule_citations_join_the_contract),
     ("extra skill files join the contract", guard_extra_skill_files_join_the_contract),
+    ("schema files join the contract", guard_schema_files_join_the_contract),
 )
 
 

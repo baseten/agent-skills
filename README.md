@@ -170,7 +170,8 @@ heading; anything else is an error, including a cross-reference naming a skill
 that does not exist.
 
 `check_word_budgets.py` holds every `SKILL.md`, every contract file beside one
-(`swarm`'s `runtime-remote.md`; not `NOTES.md` or `README.md`), and every rule in
+(`swarm`'s `runtime-remote.md`; not `NOTES.md` or `README.md`), every file in a
+skill's `schemas/` directory (`backlog-orchestrator`'s `checkpoint-output.md`), and every rule in
 `rules/` to a word budget in `scripts/word_budgets.json`, because the contracts grow by
 accretion and a long one is what a compaction summarises worst (#157). The
 budgets started at each file's size and work as a ratchet: a file over its
@@ -248,7 +249,9 @@ companion's `SKILL.md` and `NOTES.md` into both arms' contract directories, as
 and the reader's packet says they are part of the contract. Any other top-level `.md`
 beside a `SKILL.md` — `swarm`'s `runtime-remote.md`, which its contract has a tier-2 run
 read — joins the contract the same way, for the skill itself and for each companion,
-because `bootstrap.sh` installs the whole skill directory. That is what lets a rule
+because `bootstrap.sh` installs the whole skill directory; so does every file in a
+`schemas/` directory beside it, kept at `schemas/<name>` so the contract's citation of it
+resolves. That is what lets a rule
 move between skills and be compared: without it, the new arm reads a pointer to a rule it
 was never given, and a behaviour-preserving move scores as a deletion.
 
