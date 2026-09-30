@@ -159,12 +159,6 @@ in a set; a thousand-line mechanical rename the safest.
 
 **Where the estimate is uncertain, over-assign.**
 
-**Context capacity is a second gate, and a veto over the first.** Before assigning
-a small-context model, measure what the worker will *load* before it reaches the
-task — the repository's agent-instruction file and everything it pulls in — not
-the diff. Where that surface is large, a small-context model is excluded however
-mechanical the task.
-
 **Escalate on evidence, not on exhaustion.** Dispatch a repair or retry on the
 strongest available model when the failure being re-attempted sits on
 **something an earlier attempt in this run already wrote** — a reshaped version of
@@ -265,11 +259,6 @@ the contrary.
   return that outcome. Otherwise choose the most defensible option and record
   the question, the choice and the reasoning on the pull request.
 ```
-
-**Never claim a decision was authorised in a dispatch prompt; link the record of
-it.** Where the caller is `backlog-orchestrator`, its *Implementation worker
-contract*, Before dispatch step 6, is where rulings enter a prompt. This concerns
-a decision's licence, not the countermand, whose override is stated on purpose.
 
 **Attribution is the one thing in a dispatch prompt that is never inherited**;
 everything else travels down verbatim by design. Identity describes the session that writes, and a worker is a different one. A retry
@@ -691,10 +680,9 @@ report it; do not ask.
 
 ### Capacity during the run
 
-Re-check disk headroom and worker-slot capacity each cycle, not only at dispatch.
-Report the current figure with the worker count — a slot a blocked worker holds
-counted as occupied and reported as blocked (*Blocked workers*), not free — and
-stop filling slots before exhaustion rather than after a write fails.
+Report worker-slot capacity each cycle with the worker count — a slot a blocked
+worker holds counted as occupied and reported as blocked (*Blocked workers*), not
+free.
 
 ## Authority, and what it does not cover
 
@@ -765,7 +753,8 @@ Apply this rather than improvising a capture.
 it shares, its checkout included, and never run `git add` in its index. Either:
 
 - **live worker** — build the commit **ref-neutrally** and push it to a **recovery
-  ref**, never to the worker's branch, with the tested script beside this skill:
+  ref** (`refs/checkpoints/<encoded-branch>`), never to the worker's branch, with
+  the tested script beside this skill:
 
   ```bash
   scripts/checkpoint-capture.sh <worktree> <issue-branch> <worker-head-sha> <issue-owned-paths-file> [remote]
@@ -777,28 +766,9 @@ it shares, its checkout included, and never run `git add` in its index. Either:
   keys), generated output, build artifacts or unrelated files, and an untracked
   file only when the task created it. Where ownership is unclear, leave the path
   out and report it. **Run `scripts/test-checkpoint-capture.sh` after any edit to
-  the script** — reading it and agreeing is not verification. Any substitute must
-  satisfy the constraints it implements:
-
-  - it moves **nothing the worker holds**: a scratch `GIT_INDEX_FILE` isolates the
-    index (plain `git commit` would still advance the ref `HEAD` names), and
-    `commit-tree` writes a commit attached to no ref;
-  - the scratch index is **seeded from the worker's head first**, then the
-    task-owned paths overlaid — built from the path list alone it records every
-    other file as a deletion;
-  - **verification runs before the push and fails closed**: the capture is diffed
-    **against its parent**, and every reported path is compared with the
-    task-owned list, aborting on any extra. `diff-tree` runs alone, never piped;
-    pathnames are compared **raw** (`diff-tree -z`), never C-quoted; grep's exit
-    status is checked explicitly (a failed grep never reads as an empty match);
-    every step is `&&`-gated so none can fail into the push — never rely on
-    `set -e`, which not every host shell honours inside a subshell;
-  - **one ref per worker branch, force-replaced on each capture — never one per
-    capture commit**. Force-update deliberately: the ref is expected to move
-    backwards in content only when the worker moved it;
-  - the branch name is **encoded into a single ref component, escaping `%` before
-    `/`** — `feature/foo` becomes `refs/checkpoints/feature%2Ffoo` — keeping the
-    mapping reversible and injective, and the ref readable during recovery.
+  the script** — reading it and agreeing is not verification. **There is no
+  substitute**: where the script is unavailable, do not capture — raise
+  `NEEDS_USER`.
 - **wedged worker** — stop it first, then commit normally onto its branch in the
   now-quiesced worktree. Stopping consumes that task's lost-worker budget
   (*Concurrency*), so it needs the same evidence any redispatch does.
@@ -864,8 +834,7 @@ State, for the run — alongside what the sections above say to report:
 - the **runtime tier** that ran, and any tier probed and rejected;
 - the **base branch** every worker was created from;
 - per task: the **model** assigned and the failure-visibility reason in a clause,
-  plus any escalation and what triggered it — and **where the capacity veto moved
-  the task off the tier that reason chose, say so and name what it measured**;
+  plus any escalation and what triggered it;
 - per task: the **watch state**, and for polled tasks when they were last read;
 - every task whose watch state is unrecorded, named as a blind spot;
 - the two capabilities recorded at startup, and how each session's channel was

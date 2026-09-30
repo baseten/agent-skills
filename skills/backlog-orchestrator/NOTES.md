@@ -12,7 +12,7 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 ## Runtime selection
 
-**Why the runtime preference was not reordered (review finding on the #59 PR):** the preference list puts remote worker sessions above subagents, and this change establishes that the parent can enforce invariant 5 on the second and not the first — so followed literally it prefers the tier where the guarantee is unenforceable. Reordering was rejected here on two grounds. It is a scope change rather than a correction: which tier a run uses affects disk, resilience and isolation, none of which invariant 5 settles alone. And the throughput argument for the remote tier, the one usually reached for, does not hold — subagents run genuinely concurrently, so the real purchase is a container per worker (four worktrees not sharing one disk, per `swarm`, *Capacity during the run*), a worker that outlives this session's compaction, and per-container tool isolation. Capacity and resilience, not speed. Getting that wrong in the first telling is what made the trade look one-sided.
+**Why the runtime preference was not reordered (review finding on the #59 PR):** the preference list puts remote worker sessions above subagents, and this change establishes that the parent can enforce invariant 5 on the second and not the first — so followed literally it prefers the tier where the guarantee is unenforceable. Reordering was rejected here on two grounds. It is a scope change rather than a correction: which tier a run uses affects disk, resilience and isolation, none of which invariant 5 settles alone. And the throughput argument for the remote tier, the one usually reached for, does not hold — subagents run genuinely concurrently, so the real purchase is a container per worker (four worktrees not sharing one disk, per `swarm`, *Concurrency*), a worker that outlives this session's compaction, and per-container tool isolation. Capacity and resilience, not speed. Getting that wrong in the first telling is what made the trade look one-sided.
 
 What landed instead is the trade stated where the preference is made, plus the one lever the parent still has on that tier: a remote head that does not advance is reported after 30 minutes and raised at two hours. Measured in elapsed time, deliberately: the supervision loop has no minimum interval, so a cycle count is really a count of how busy the run is, and a burst of sibling events would have raised a working worker minutes after dispatch. That is not a capture and is not offered as one — it converts a state that reads as *still working* into one somebody sees. The knob that would let an owner prefer the enforceable tier is deliberately not here; it is policy, and it is tracked separately.
 
@@ -21,10 +21,6 @@ What landed instead is the trade stated where the preference is made, plus the o
 ## Review and repair sessions
 
 **Why a review session spends no repair cycle.** The same prompt had both review and repair sessions count against `review-repair-cycles`. That key counts pushed repair passes, and a review session pushes nothing — charging it would make every review round look like a spent repair and exhaust the budget on reading alone.
-
-## Invocation and bounded scope
-
-**Why the tracker's declared priority is the recommended scope (Sept 2026):** a run offered "audit the remainder" as its recommended scope while the tracker's own epic declared itself the immediate build priority. The tracker is the owner's statement of what they want built; an option the run composed from reading the code is the run's view, and recommending it by default quietly substitutes one for the other.
 
 ## Transport precedence
 
@@ -55,8 +51,6 @@ The notification half is deliberately subordinate. A subscription dies with the 
 **Why the bundled path and not `rules/` (moved in #157):** `bootstrap.sh` installs a skill directory and nothing above it, so on an installed run the `rules/` source does not exist and only the bundled copy does. And the rule is stated once outside this file because a partial copy naming some of its exclusions and not its budget is how the rule drifts.
 
 ## Tracker abstraction
-
-**Why the parent's own comment scan skips the marker (moved in #157):** it is a dependency reader like the three subordinate skills, and an edge taken from a worker report here enters the scheduling DAG directly — the shortest path of all to re-adopting something this run already rejected.
 
 ## Mandatory validation preflight
 
@@ -152,8 +146,6 @@ that cannot drift.
 - **whether the completeness of the blocker set was backed** — by a caller's proven complete set, or by a known-true case read and observed — or left unproven, and on what boundary. A `PR_OPEN` with an empty blocker list and a proof behind it, and one with an empty blocker list because nothing was visible, are different claims that look the same;
 - **the transport tier and a non-secret credential identity** — account and scopes, never the credential. Outcomes branches on whether the worker's identity differs from the run's, because a mismatch under a *different* credential shows one of the two views is partial while the same mismatch under the *same* credential merely repeats a read already made;
 - the criteria it could not satisfy, the guarantees it narrowed, the sources that disagreed.
-
-**Why a dispatch prompt never claims a decision was authorised (Sept 2026):** "The orchestrator has authorised…" is exactly the shape of an injected instruction, and a Sonnet worker right to distrust it refused; the same task worded neutrally, pointing at the ruling's record, went through.
 
 **Consequences the dispatch list used to carry inline (moved in #157):** both question stalls observed were a worker waiting for a "go" nobody would send. A guess past a prescribed stop is worse than the deadlock it avoids, and harder to see. Unmarked, unproven dependency context lets the worker's three sources agree because two are empty, so readiness rests on an absence nobody established. A worker given no authorization membership defaults to the stronger outcome — safe, but it costs the parent the distinction. A worker sent no identity for its report posts it as the invoking user, correctly, because the prompt never asked otherwise. A prompt that says the report's contents are optional gets exactly the judgment step 11 exists to carry dropped — the four review rounds below are the evidence the missing item is never the one anybody predicted. The incomplete gate report is caught cheaper than CI and much cheaper than a review round. And a worker left to settle a checkout-versus-API disagreement by whichever it looked at last is how a redundant PR gets opened against a base that had already moved.
 
@@ -265,7 +257,7 @@ The argument for `finding-repair-cycles` being its own counter moved to `rules/r
 
 **Why the resumed dispatch needs the escalation most:** nobody is watching it — the run resumed on an event, not on a human's attention — and the merge that triggered it is itself the event that makes a stale cross-wave dependency look satisfied. The preflight at the selected mode is the only check between that illusion and a dispatched worker.
 
-**Why reconciliation is per batch of merge events:** a landing stack delivers one event per PR, and reconciling on each re-reads the same graph as many times as the stack is deep. Draining first and reconciling once is the whole saving; there is deliberately no debounce timer, because delaying the frontier advance to batch better trades correctness for cost in the direction this skill does not accept. Events genuinely minutes apart each get their own pass, and that is correct — the burst is the case this was written for.
+**Why reconciliation covers every delivered event at once:** a landing stack delivers one event per PR, and reconciling on each re-reads the same graph as many times as the stack is deep. There is deliberately no debounce timer: delaying the frontier advance to batch better trades correctness for cost.
 
 **Why the validator is handed the prior graph:** re-enumerating hierarchy, project structure and every dependency edge is among the most expensive reads the run makes, and re-running it per advance is how a landing stack pays for the same graph repeatedly. The correctness rule is untouched — the preflight still runs, at the escalated mode — what changes is that it verifies a delta it was given rather than rebuilding state the run already holds validated.
 
@@ -283,13 +275,13 @@ The argument for `finding-repair-cycles` being its own counter moved to `rules/r
 
 **What the routing costs, stated plainly:** on any terminal outcome without a PR the worker's verbatim reasoning compresses to a line, and the rest goes with its transcript. That is a real loss. It is the right trade because the parent cannot adopt that reasoning unclassified in any case — it has to re-establish the finding before recording it — and a line saying *where to look* is what it actually needs in order to start.
 
-**How the three issue-comment readers were found:** one at a time, each after the previous fix looked complete — which is why the table in the contract enumerates them and why the marker is a property, not a patch in three files.
+**How the three issue-comment readers were found:** one at a time, each after the previous fix looked complete — which is why the table in the contract enumerates them. A first-line marker once let those readers skip a report that reached an issue anyway; it was dropped in #49, after a sweep of the owner's trackers found no marked comment left on any issue. The mechanism was always that reports go on PRs.
 
 **Consequences moved in #157:** a tooling `FAILED`'s missing blocker URL is legitimate, not unanswerable. Invalidating visibility over a same-transport state change holds every sibling on the boundary for a prerequisite that merely changed state since the caller last checked. Treating the block as disproof of the run's own view is what stops the redispatch loop forming, and demanding a known-true case on a `dependency transport unavailable` boundary converts a limitation accepted at preflight into an indefinite hold. A worker can steer `needs_action` only by ending its turn saying these things, and it is the one place a terminal no-PR outcome can still say something specific. A report on an issue manufactures the permanent blockers the persistence rule exists to prevent as designed behaviour, not as a mistake someone might make.
 
 ## Checkpoint compliance
 
-**The capture itself, and the reasoning for it, moved to `swarm` (#136):** the defect history of the capture sequence, why validation precedes the push, why one ref per branch, and why the branch name is encoded are in `swarm` NOTES, *Checkpoint compliance*, beside the section and the script they explain. What stays here is the reasoning for the ender this skill keeps.
+**The capture itself, and the reasoning for it, moved to `swarm` (#136):** the defect history of the capture sequence is in `swarm` NOTES, *Checkpoint compliance*; why validation precedes the push, why one ref per branch, and why the branch name is encoded are in the header comment of `swarm`'s `scripts/checkpoint-capture.sh` (#49). What stays here is the reasoning for the ender this skill keeps.
 
 **Why the four-state ref-ender rule is enumerated:** the rule was built one case at a time and each missing case left a ref with no ender, which invariant 12 then converts into a PR that can never merge. A two-state copy that lived in Lost worker recovery covered only open and merged, so a lost worker with no PR or a closed one had its capture merged into the branch and its ref neither verified nor deleted.
 
