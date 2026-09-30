@@ -49,7 +49,8 @@ RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
 # that pass or merge the run's posting-identity map.
 POSTING_IDENTITY="backlog-orchestrator settle-and-merge swarm create-pr implement-issue
   implement-issue-core merge-stack repair-pr resolve-pr-comment review-docs
-  settle-outstanding-decisions supervise-prs"
+  settle-outstanding-decisions supervise-prs normalize-github-dependencies
+  review-skill summarize-wave upgrade-npm-dependency validate-backlog"
 
 # Skills that read .claude/agent-policy.json, or gate on what it grants.
 AGENT_POLICY="backlog-orchestrator settle-and-merge implement-issue

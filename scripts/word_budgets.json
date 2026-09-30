@@ -51,7 +51,7 @@
       "target": 3000
     },
     "skills/review-skill/SKILL.md": {
-      "budget": 1922,
+      "budget": 1929,
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
@@ -63,7 +63,7 @@
       "target": 3000
     },
     "skills/summarize-wave/SKILL.md": {
-      "budget": 2155,
+      "budget": 2163,
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
@@ -79,7 +79,7 @@
       "target": 1500
     },
     "skills/upgrade-npm-dependency/SKILL.md": {
-      "budget": 4613,
+      "budget": 4620,
       "target": 3000
     },
     "skills/validate-backlog/SKILL.md": {

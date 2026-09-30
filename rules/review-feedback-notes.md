@@ -15,7 +15,7 @@ was reasoning about a section that no longer lives there.
 
 The owner asked for the rule scoped to human comments and, when the asymmetry was put to them, confirmed author-blind. Do not narrow it without a new ruling.
 
-**Why this rule names the posting-identity rule path-neutrally (#168):** it names that rule to say why the no-new-threads prohibition is needed — the degraded path — not because a skill applying this rule must select an author to do so. Cited as a `references/` path, it was copied into every skill carrying this one. Every consumer of this rule that selects an author declares the posting-identity rule itself; `summarize-wave`, which creates follow-up issues when authorized but never selects an author or carries a map, lost its transitive copy, and that is recorded as an open question for the owner on #168 rather than decided here. The citation of the write-form rule stays a path: a skill acting on the thread-root carve-out reads there what the footer marks, which is why nothing may test for it.
+**Why this rule names the posting-identity rule path-neutrally (#168):** it names that rule to say why the no-new-threads prohibition is needed — the degraded path — not because a skill applying this rule must select an author to do so. Cited as a `references/` path, it was copied into every skill carrying this one. Every consumer of this rule that makes an authored write declares the posting-identity rule itself — `summarize-wave` included, since the owner's ruling on #168. The citation of the write-form rule stays a path: a skill acting on the thread-root carve-out reads there what the footer marks, which is why nothing may test for it.
 
 ## Unhandled feedback
 
