@@ -43,7 +43,7 @@ remembered — and do it before attribution, a budget or a comment sees the even
 
 **Green means every check the repository actually requires has concluded successfully on the current head.** Enumerate what is required rather than gating on whichever check you happened to read. Two false passes share one root here, and closing only the second leaves the first:
 
-- **an empty or barely populated rollup is not green.** A rollup is populated asynchronously and is briefly empty after a push — particularly one that cancels an in-flight run — and an empty rollup satisfies any predicate of the form "no failures and nothing pending" (`references/absence-is-not-a-verdict.md`). A check that has not registered has not concluded;
+- **an empty or barely populated rollup is not green.** A rollup is populated asynchronously and is briefly empty after a push — particularly one that cancels an in-flight run — and an empty rollup satisfies any predicate of the form "no failures and nothing pending" (the *absence is not a verdict* shared rule). A check that has not registered has not concluded;
 - **one required check concluding is not green** where several are required and another is still pending or failing.
 
 Neither is a pass.

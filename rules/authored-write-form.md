@@ -1,44 +1,65 @@
 # Authored write form
 
-This is the rule other skills mean when they cite *authored write form*.
+This is the rule other skills mean when they cite *authored write form*. It is a shared rule, not a skill: held once at `rules/authored-write-form.md` and copied into each applying skill's `references/authored-write-form.md` by `scripts/refresh_shared_rules.sh`. Edit the source, never a copy; check_shared_rules.py fails if a generated copy diverges.
 
-**It is not a skill and nobody invokes it.** It is a shared rule, held once at
-`rules/authored-write-form.md` and copied into each skill that applies it by
-`scripts/refresh_shared_rules.sh`. A skill reads its own
-`references/authored-write-form.md`, which works after `bootstrap.sh` has
-installed only that skill's directory, and travels with the skill if it is
-moved into a plugin. Edit the source, never a copy; check_shared_rules.py fails if a generated copy diverges.
+The *posting identity* shared rule decides which **author** a write carries; this decides **what the write looks like** once it is authored — identity is a fact about the credential, form a fact about the text. It covers every authored forge/tracker write made on the run's behalf — PR bodies, timeline comments, review replies, worker reports, recorded rulings — whichever skill or worker performs it. **This file is the rule's only statement; the skills that write defer here rather than restating it.** Two rules: keep it short, and mark the writes nobody read.
 
-`references/posting-identity.md` decides which **author** a write carries; this decides **what the write looks like** once it is authored — identity is a fact about the credential, form a fact about the text. It covers every authored forge/tracker write made on the run's behalf — PR bodies, timeline comments, review replies, worker reports, recorded rulings — whichever skill or worker performs it. **This section is the rule's only statement; the skills that write defer here rather than restating it.** Two rules: keep it short, and mark the writes nobody read.
+## Keep it short
 
-**Keep it short, and say why rather than what.** The reader is a person with a queue of these; length is a cost they pay and the run does not, which is the asymmetry that makes it worth a rule. A review reply is one line: `Fixed in <sha> — <what changed>.` and nothing else above the footer. **A push is never announced**: a pushed repair is answered by that reply in the thread it fixes, or not at all — never by a timeline comment, a new thread or any other write saying what was pushed or that CI now passes. The worker report a dispatch requires (`swarm`, *How a worker's report actually reaches you*) is not an announcement: it names the head, and nothing else this section forbids.
+**Say why rather than what.** The reader pays for every word; the run pays nothing.
 
-**A commit SHA in any forge write is bare — never inside a code span or code block, where the forge does not link it.** Use the 7-character short form or longer, or the full SHA; another repository's commit is *owner/repo@sha*, also bare.
+- **A review reply is one line**: `Fixed in <sha> — <what changed>.` and nothing else above the footer.
+- **A push is never announced.** A pushed repair is answered by that reply in the thread it fixes, or not at all — never by a timeline comment, a new thread or any other write saying what was pushed or that CI now passes. The worker report a dispatch requires (`swarm`, *How a worker's report actually reaches you*) is not an announcement: it names the head, and nothing else this file forbids.
+- **A commit SHA in any forge write is bare** — never inside a code span or code block, where the forge does not link it. The 7-character short form or longer, or the full SHA; another repository's commit is *owner/repo@sha*, also bare.
+- **Never hard-wrap a write that lands in a forge field** — a PR body, an issue body, a review comment. A browser renders a newline inside a paragraph as a line break, so write each paragraph as one long line; code blocks, tables and lists are unaffected. **Expect to get this wrong, and expect nothing to catch it**: the write never reaches the repository's formatter, which trains the opposite habit.
 
-**No write reports verification — no list, table or sentence saying which checks ran or how they came out** (lint, formatting, type checking, test suites, CI) — in a PR body, a comment, a review body or a commit message, a collapsed `<details>` block included: run locally or not, passed, failed or `not locally runnable`, whatever the gate's provenance, and whatever a style guide or template asks. The forge's own checks report them; a gate report goes in the structured result returned to the caller. The testing summary — which is what a template section for checks gets instead — is only the manual steps a reader has to run, grouped rather than one per assertion, and a line naming which behaviour a new or existing test now pins, never that a suite passes and never a list of test files. A repair's diagnosis of the failure it fixed or declined, and a reply answering a reviewer's question about a test or check, are not verification; they go where their contract puts them.
+**No write reports verification** — no list, table or sentence saying which checks ran or how they came out (lint, formatting, type checking, test suites, CI) — in a PR body, a comment, a review body or a commit message, **a collapsed `<details>` block included**: run locally or not, passed, failed or `not locally runnable`, whatever the gate's provenance, and whatever a style guide or template asks. The forge's own checks report them; a gate report goes in the structured result returned to the caller. What a template's checks section gets instead is the **testing summary**: only the manual steps a reader has to run, grouped rather than one per assertion, and a line naming which behaviour a new or existing test now pins — never that a suite passes, never a list of test files. A repair's diagnosis of the failure it fixed or declined, and a reply answering a reviewer's question about a test or check, are not verification; they go where their contract puts them.
 
-A **PR body** is the case with a budget, because it is the one a reviewer has to read before they can start:
+## A PR body
 
-- **300 words of prose above the fold, maximum** — linkage, background, description and the testing summary together. It is a ceiling for a genuinely large change, not a target; most come in far under. A manual test checklist does not count against it and is capped at 8 grouped items, because a fifteen-item list gets skipped entirely and six get done.
-- **Background: 2-4 sentences** — the problem, not its history. **Description: one paragraph, or at most 5 bullets** — the solution and why this one.
-- **The body states intent, not content: background, why this solution where a reviewer might expect another, what is deliberately in and out of scope, and what could break.** So: no file-by-file inventory and no "surface area changed" list, no restating what a function now does, no investigation log ("grepped for", "reproduced with", "verdict:"), and no account of the order things went wrong in. **The diff is the content**, and a description that competes with it buries the part only a person could have written.
-- **Depth goes in a collapsed `<details>` block or a commit message**, not above the fold. Over budget means **cut**, never compress by deleting whitespace while keeping every fact.
-- **A genuinely trivial PR gets a near-empty body.** Do not manufacture prose to fill a template, and delete a template heading with nothing real under it rather than padding it. **Where the template's gap is something the author can supply and this run cannot** — a capture of a visual change, a note only they hold — leave the heading with one line naming what is needed instead of deleting it. Deleting is right where the section will never apply to this change; it is wrong where it hides a gap, because the reader then sees an absent section rather than a missing screenshot, and cannot tell which.
-- **Where a change is user-visible and the repository provides a way to capture it** — a screenshot skill, a Storybook or VRT harness, a browser-driving test — **capture one**: it is the only part of a body the diff cannot supply. Where it does not, describe **what changed visually** and say that no capture was available — never describe the capture itself, which is the same fabrication one step back. **Never imply a visual check that was not performed.** The unconditional form of this rule belongs to a human author's style guide, where the actor can always take a screenshot; this contract's actor frequently cannot, and an obligation it cannot meet is discharged with a fabricated "N/A" (`rules/authored-write-form-notes.md`).
+The one write with a budget, since a reviewer reads it before starting:
 
-**Where the repository or the user's own configuration documents a PR-description style guide, that guide governs and its budget wins** — `create-pr` already reads `CLAUDE.md`/`AGENTS.md` before writing a body, and a personal guide is where voice rules live, which are not this section's to state. The rules above (the verification ban above excepted) are the floor for a repository with no guide of its own. Where the write's own site mandates contents — `create-pr`'s linkage and `Depends on:` lines, `settle-outstanding-decisions`'s ruling record, the worker report's **judgment its subtraction requires** (`backlog-orchestrator`, *Before dispatch*, step 11) — **those contents win**: brevity governs how each required element is written, never whether it is written, and one dropped to shorten a write is a defect, not a short write. Where a site defines its contents as a **subtraction** rather than a list, brevity may not convert the subtraction into a list: everything the subtraction leaves in is required, including whatever nobody has thought to enumerate.
+| part | limit |
+|---|---|
+| prose above the fold — linkage, background, description and testing summary together | **300 words maximum**: a ceiling for a genuinely large change, not a target |
+| background | 2-4 sentences: the problem, not its history |
+| description | one paragraph, or at most 5 bullets: the solution and why this one |
+| manual test checklist | not counted in the 300; **at most 8 grouped items** |
+| depth | a collapsed `<details>` block or a commit message, never above the fold |
 
-### Editing a PR body after it is created
+**The body states intent, not content**: background, why this solution where a reviewer might expect another, what is deliberately in and out of scope, and what could break. So no file-by-file inventory or "surface area changed" list, no restating what a function now does, no investigation log ("grepped for", "reproduced with", "verdict:"), and no account of the order things went wrong in. The diff is the content. **Over budget means cut**, never compress by deleting whitespace while keeping every fact.
 
-**Creating a PR is not an edit. After it, the run edits a PR's body only where at least one holds:** the PR is a draft; the body still carries the attribution footer — the run's own text, which nobody has read (below); or the merge opt-in governing the PR — `auto-merge`, or `auto-merge-dependencies` for a dependency PR merged under that gate — is resolved on for it (the *agent policy* shared rule, *Precedence*). **The `Depends on:` line is stack metadata: the run may always update that line, and only that line.** **In every other case it never edits the body** — a published PR whose body a person has read, that opt-in off — and reports the drift instead, as an action point with a suggested replacement. An allowed edit to a published PR is reported: which PR, what changed, and why. Both reports are made at settle (`settle-and-merge`, *Merge behavior*), or in the skill's own output where no settle follows. **An allowed edit to a body a person wrote — their draft, say — adds no footer**: the text is still theirs.
+**A genuinely trivial PR gets a near-empty body.** Do not manufacture prose to fill a template: delete a template heading with nothing real under it. **But where the gap is something the author can supply and this run cannot** — a capture of a visual change, a note only they hold — **keep the heading with one line naming what is needed**: deleting is right where the section will never apply to this change, and wrong where it hides a gap.
 
-### The attribution footer marks the writes nobody read
+**Where a change is user-visible and the repository provides a way to capture it** — a screenshot skill, a Storybook or VRT harness, a browser-driving test — **capture one**. Where it does not, describe what changed visually and say that no capture was available; never describe the capture itself. **Never imply a visual check that was not performed** (notes: why this is conditional).
 
-**The footer is not a stamp on everything the run types. It marks a write no person read before it was posted.** At every write site the test is one question, asked of the write in front of you:
+## What overrides brevity
+
+**A documented PR-description style guide — the repository's, or the user's own configuration — governs, and its budget wins.** `create-pr` reads `CLAUDE.md`/`AGENTS.md` before writing a body, and voice rules live in a personal guide, not here. Everything above except the verification ban and the no-wrap rule is the floor for a repository with no guide; those two hold under any guide.
+
+**Contents the write's own site mandates win over brevity**: `create-pr`'s linkage and `Depends on:` lines, `settle-outstanding-decisions`'s ruling record, the worker report's **judgment its subtraction requires** (`backlog-orchestrator`, *Before dispatch*, step 11). Brevity governs how each required element is written, never whether: one dropped to shorten a write is a defect. **Where a site defines its contents as a subtraction, brevity may not turn it into a list** — everything the subtraction leaves in is required, including what nobody thought to enumerate.
+
+## Editing a PR body after it is created
+
+Creating a PR is not an edit. After creation:
+
+| case | may the run edit the body? |
+|---|---|
+| the PR is a draft | yes |
+| the body still carries the attribution footer — the run's own text, which nobody has read | yes |
+| the merge opt-in governing the PR — `auto-merge`, or `auto-merge-dependencies` for a dependency PR merged under that gate — is resolved on for it (the *agent policy* shared rule, *Precedence*) | yes |
+| the `Depends on:` line, in any case | **always — that line and only that line**: it is stack metadata |
+| **anything else** — a published PR whose body a person has read, that opt-in off | **never**: report the drift as an action point with a suggested replacement |
+
+An allowed edit to a published PR is reported: which PR, what changed, and why. Both reports are made at settle (`settle-and-merge`, *Merge behavior*), or in the skill's own output where no settle follows. **An allowed edit to a body a person wrote — their draft, say — adds no footer**: the text is still theirs.
+
+## The attribution footer marks the writes nobody read
+
+**The footer is not a stamp on everything the run types.** At every write site the test is one question, asked of the write in front of you:
 
 > Did this run obtain the invoking person's approval of **this exact text** before posting it?
 
-**No → the write carries the footer. Yes → it does not.** Nothing else decides it: not which skill performs the write, not what typed the words, not whether the run feels confident about them.
+**No → the write carries the footer. Yes → it does not.** Nothing else decides it: not which skill performs the write, not what typed the words, not how confident the run is.
 
 ```text
 
@@ -46,9 +67,7 @@ A **PR body** is the case with a budget, because it is the one a reviewer has to
 _Generated by [Claude Code](https://claude.ai/code)_
 ```
 
-**Approval means this exact text.** A person who authorised the run, approved the plan, or asked for the PR has not approved a body they have not read. Sitting in the session is not approval either. Where the run cannot say the person read the text it is about to post, the answer is No and the footer goes on — that is the safe direction, and it is the common one.
-
-Applied to the writes these skills actually make:
+**Approval means this exact text.** A person who authorised the run, approved the plan, asked for the PR, or sat in the session has not approved a body they have not read. Where the run cannot say the person read the text, the answer is No and the footer goes on — the safe direction, and the common one.
 
 | write | approval | footer |
 |---|---|---|
@@ -56,12 +75,10 @@ Applied to the writes these skills actually make:
 | A `create-pr` body drafted interactively, shown to the user, and confirmed or edited by them | this exact text | **no** |
 | A `settle-outstanding-decisions` recorded ruling | **the complete comment**, shown to the owner and approved or edited — approving the answer inside it is not approving the record built around it | **no** where that happened, **yes** where it did not |
 | A `NEEDS_USER` draft reply | not a write at all — material for a person, who authors it when they post it | **no** |
-| The review-trigger comment | — | **no**, see below |
+| A write with no body — a merge, a base retarget, a native dependency edge | nothing to govern: brevity and the footer reach only writes with text (`merge-stack` applies this to its three write kinds) | **no** |
+| The review-trigger comment | — | **no**, below |
 
-Forge avatar rendering is **transport-dependent and not a signal a reader can rely on** — the same run's writes appear differently depending on which surface authored them, and on the posting-identity rule's degraded path, which is the common one, they carry the invoking user's login with nothing marking them as agent-written at all (`rules/authored-write-form-notes.md`: what the avatar actually tracks).
-
-- **Never hard-wrap a write that lands in a forge field.** A pull request body, an issue body and a review comment are rendered by a browser, and a newline inside a paragraph becomes a line break there, so prose wrapped at a fixed column arrives as a ragged column rather than a paragraph. Write each paragraph as one long line and let the rendering wrap it; code blocks, tables and lists are unaffected. **Expect to get this wrong and expect nothing to catch it**: a repository that formats its markdown at a fixed width trains the habit on every file the run touches, while the write itself is composed inline, never reaches the formatter, and fails no check - the column only appears once the thing is posted.
-- **The footer says the posted text went unread; it does not say who wrote the content.** The two are different claims and can both be true of one comment, so **an attribution already present is never itself a reason to omit the footer** — only the approval test is. A `settle-outstanding-decisions` ruling carries an owner-ruling marker attributing the content to the owner, and still carries the footer unless the owner was shown and approved the complete comment (that skill, *Recording the ruling*). Reading the marker as licence to drop the footer is the mistake this bullet exists to block, and an earlier version of this section made it.
-- **A write with no body carries no footer, because there is nowhere to put one.** A merge, a base retarget, a native dependency edge: the form rule reaches the writes that have text, and brevity and the footer both have nothing to govern on a write that has none (`merge-stack` applies this to its own three write kinds).
-- **The footer is not identity evidence, and it is not a discriminator either.** It is text this run wrote, so it establishes nothing about authorship: the posting-identity map is still built only from observed write authorship, and a footer is never read back as an observation. Nor may anything test for it to decide whether a comment is this run's own — that is the author-side carve-out `references/review-feedback.md`, *The thread-root test*, forbids maintaining separately, and it would break on every attended write, which legitimately carries none, and on any comment a person pasted one into. The thread-root test and the no-new-threads rule keep that job. **Both of these hold unchanged under the approval test**, which narrows which writes are marked and changes nothing about what the mark may be used for.
-- **The review trigger comment carries no footer and nothing else** — it must read exactly as the repository's convention requires, and the convention fails silently when it does not (the *review trigger* shared rule owns the convention; `references/posting-identity.md`, *The review trigger*, owns its authorship). **That functional reason is the one to state**: the trigger also happens to be unattended, so the approval test alone would ask for a footer, and the exemption is what overrides it.
+- **The footer says the posted text went unread, not who wrote the content**, so **an attribution already present is never itself a reason to omit it** — only the approval test is. A `settle-outstanding-decisions` ruling carries an owner-ruling marker and still carries the footer unless the owner was shown and approved the complete comment (that skill, *Recording the ruling*).
+- **The forge's avatar is no substitute**: it varies with the transport that authored the write, and on the posting-identity rule's degraded path, the common one, shows the invoking user's login with nothing marking the write as agent-written (notes).
+- **The footer is not identity evidence and not a discriminator.** It is text this run wrote: the posting-identity map is built only from observed write authorship, and a footer is never read back as an observation. Nothing may test for it to decide whether a comment is this run's own — that is the author-side carve-out the *review feedback* shared rule, *The thread-root test*, forbids maintaining separately, and it would misread every attended write, which carries none, and any comment a person pasted one into. The thread-root test and the no-new-threads rule keep that job. **Both hold unchanged under the approval test.**
+- **The review-trigger comment carries no footer and nothing else**: it must read exactly as the repository's convention requires, and the convention fails silently when it does not (the *review trigger* shared rule owns the convention; the *posting identity* shared rule, *The review trigger*, owns its authorship). **That functional reason is the one to state**: the trigger is also unattended, so the approval test alone would ask for a footer, and the exemption overrides it.

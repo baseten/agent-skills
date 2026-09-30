@@ -17,7 +17,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # rule source  ->  skills that apply it
 AUTHORED_WRITE_FORM="backlog-orchestrator settle-and-merge create-pr normalize-github-dependencies
-  npm-dependency-upgrade-orchestrator
+  npm-dependency-upgrade-orchestrator implement-issue-core
   merge-stack repair-pr resolve-pr-comment review-docs review-skill settle-outstanding-decisions
   summarize-wave upgrade-npm-dependency validate-backlog supervise-prs"
 
@@ -37,6 +37,13 @@ RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
 # lists: the loop at the bottom derives that carriage per skill, transitively,
 # and copies it too. So a skill here carries more than the lists say, and the
 # lists still say exactly which skills apply what.
+#
+# Every word of a bundled rule is paid once per skill that carries it, so a skill
+# is listed only where it cites the rule at a point where it decides something,
+# and a rule cites another as `references/<x>.md` only where a skill acting on
+# the first must apply the second to do so. A rule named for context - to say
+# which rule owns a neighbouring question, or why - is named in the path-neutral
+# form, "the *review trigger* shared rule", which derives nothing.
 #
 # Skills that make an authored forge/tracker write and select its author, or
 # that pass or merge the run's posting-identity map.

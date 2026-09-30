@@ -54,3 +54,17 @@ So the rule is conditional on a capture path existing, and it carries the fallba
 **Why a PR body is edited after creation only under three conditions (#163, owner's ruling 2026-09-30):** a run rewrote a published description a person had read, to add behaviour changes, because the settle reconcile then told it to unconditionally. A draft, a body still carrying the footer, and a repository that granted `auto-merge` are the cases where nobody's read text is overwritten or the owner already handed the PR to the run; everywhere else the drift is reported with a replacement for the author to apply, and the merge still holds on it.
 
 **Why `Depends on:` is exempt, why the governing opt-in counts, and why an allowed edit adds no footer (#163 review, owner's ruling 2026-09-30):** the `Depends on:` line is stack metadata `merge-stack` must keep true on every restack, not a person's prose. The permission follows whichever merge opt-in governs the PR, so a dependency PR under `auto-merge-dependencies` is treated as an implementation PR under `auto-merge`. And an edit the rule allows on a body a person wrote leaves the rest of their text theirs, so a footer would misattribute it.
+
+**Why this rule names the posting-identity and review-feedback rules path-neutrally (#168):** it names them to say which rule owns a neighbouring question — authorship, and the thread-root discriminator — not because a skill applying this rule must apply either to do so. Cited as `references/…` paths, each was copied into every skill carrying this one. Five of those — `normalize-github-dependencies`, `review-skill`, `summarize-wave`, `upgrade-npm-dependency`, `validate-backlog` — author forge writes but neither cite the posting-identity rule, select an author nor carry a map, and none classifies a thread; they lost the transitive copies. Whether any of them should declare the posting-identity rule (as `review-docs`, `review-skill`'s sibling, does) is left to the owner (#168) rather than decided in a behaviour-preserving change. The skills that do select an author declare it themselves. The restructure in the same change moved the reasons below out of the rule; the entries above already held the rest.
+
+## A PR body
+
+**Also moved from the rule (#168):** most PR bodies come in far under the 300-word ceiling; and a capture is the only part of a body the diff cannot supply, which is why it is asked for wherever the repository provides a way.
+
+**Why the checklist is capped at 8 grouped items (moved from the rule, #168):** a fifteen-item manual checklist gets skipped entirely, and a six-item one gets done.
+
+**Why a heading stays over a gap only the author can fill (moved from the rule, #168):** deleting a template heading is right where the section will never apply to the change, and wrong where it hides a gap, because the reader then sees an absent section rather than a missing screenshot, and cannot tell which.
+
+## The attribution footer marks the writes nobody read
+
+**Why the "attribution already present" bullet exists (moved from the rule, #168):** reading the owner-ruling marker as licence to drop the footer is the mistake it blocks, and an earlier version of this section made it.
