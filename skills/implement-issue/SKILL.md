@@ -111,7 +111,7 @@ The run settles when its one issue reaches a terminal state: the PR `finished` a
 
 Its steps, in order, as this skill reads them:
 
-1. **reconcile** tracker and remote state — everything after computes from durable truth, not this session's cache — and the PR body against its diff, on every settle and whatever `repair-pr` flagged: whether the body may be edited is that skill's *Merge behavior* (its step 1);
+1. **reconcile** tracker and remote state — everything after computes from durable truth, not this session's cache — and the PR body against its diff, whether or not `repair-pr` flagged drift: whether the body may be edited is that skill's *Merge behavior* (its step 1);
 2. **invoke `summarize-tranche`** (canonical issue URL, this PR, the worker and review findings) and **act on its action points before anything below** (its steps 2–3). A one-issue run is a tranche of one; nothing in that skill reads differently at this size;
 3. **request `settle-outstanding-decisions`**, seeded with the summary and passed the run's posting-identity map, unless `auto-request-settle` resolved off — and **merge every identity entry it returns into the map, all of them** (`references/posting-identity.md`): a ruling can be the first authored write through a transport this run never used, and step 4's merge reads the map. The option gates only the request; attendance is that skill's own precondition — an unattended settle gets its one-line decline, and the decisions stay at their durable sites (its step 4);
 4. **translate rulings into gate consequences** (below) when its step 5 hands them back, passing back the translated action points, then evaluate the merge gate where the repository opted in (its step 6; see Merge);

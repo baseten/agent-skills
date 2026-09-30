@@ -86,11 +86,12 @@
       "id": 7,
       "name": "draft-body-drift-is-edited",
       "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Step 1 of a settle. PR-8 is still a draft. Its body carries no attribution footer — its author edited it — and it describes a `--dry-run` flag that review round 2 removed from the diff. The caller's resolved policy has `auto-merge` off for PR-8's repository. May the run correct PR-8's body, and does anything about it go in the settle's report?",
-      "expected_output": "Yes. A draft is one of the conditions under which the run may edit a PR body after creation, whatever else holds, so the run corrects the body in the authored-write-form rule's form. Because the PR is a draft rather than published, the edit is not one the settle must name as an edit to a published PR, and no drift action point is raised since the body now agrees with the diff.",
+      "expected_output": "Yes. A draft is one of the conditions under which the run may edit a PR body after creation, whatever else holds, so the run corrects the body in the authored-write-form rule's form. Because the PR is a draft rather than published, the edit is not one the settle must name as an edit to a published PR, and no drift action point is raised since the body now agrees with the diff. The edit adds no attribution footer: the body is still its author's text.",
       "assertions": [
         "the answer edits PR-8's body rather than only reporting the drift",
         "the answer does not refuse the edit on the grounds that a person read the body or that auto-merge is off",
-        "no drift action point is raised for PR-8 once its body is corrected"
+        "no drift action point is raised for PR-8 once its body is corrected",
+        "the edit does not add an attribution footer to PR-8's body"
       ]
     },
     {
@@ -102,6 +103,17 @@
         "the answer edits PR-9's body",
         "the edit is reported at settle",
         "the report names the PR, what changed and why"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "published-body-still-carrying-the-footer-is-edited-and-reported",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Step 1 of a settle. PR-10 is published. Its body is the one a dispatched worker wrote at creation and still ends with the attribution footer; nobody has edited it. It says the importer skips duplicate rows; a repair changed it to reject the file instead. The caller's resolved policy has `auto-merge` off for PR-10's repository. What happens to PR-10's body, and where is that visible?",
+      "expected_output": "The edit is allowed even with auto-merge off, because the body still carries the attribution footer — the run's own text, which nobody has read. The run corrects it, keeping the footer, and because PR-10 is published the edit is reported in the settle's closing output (step 7): which PR, what changed — skipping duplicates to rejecting the file — and why.",
+      "assertions": [
+        "the answer edits PR-10's body despite auto-merge being off",
+        "the answer grounds the permission in the footer marking unread text",
+        "the edit is reported at settle with the PR, what changed and why"
       ]
     }
   ]

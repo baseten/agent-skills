@@ -45,7 +45,7 @@ Each one states: **what** (one line) · **where** (issue URL, PR URL, or `path:l
 
 **A change in this tranche, merged or open, to a timing something outside the diff watches is a `MERGE_RISK`, even when the change is right**: a schedule, a cron, a worker's cadence, a healthcheck's ping period, a timeout an alert or SLA is set against. Name the old and new values and what watches them. The test is the outside observer — a monitor, an alert, a downstream consumer, people's routine — so an internal retry backoff or a test timeout is not one (NOTES).
 
-**A PR body contradicting its diff that the run may not edit is a `MERGE_RISK`** (`references/authored-write-form.md`, *Editing a PR body after it is created*): the body's claim, what the diff now does, and a suggested replacement — the next step is the author's edit, never the run's.
+**A PR body contradicting its diff that the run may not edit is a `MERGE_RISK` that holds only its own PR** (`references/authored-write-form.md`, *Editing a PR body after it is created*): the body's claim, what the diff now does, and a suggested replacement — the next step is the author's edit.
 
 **Every claim these items make about existing code or current state needs a read behind it before the item is written** (`references/establish-do-not-assume.md`, *You are about to assert it*; NOTES). A claim that cannot be settled first is written with that said and with what would settle it, rather than plainly or not at all.
 
@@ -141,7 +141,5 @@ A worker-reported defect is a claim about that worker's environment. Confirm it 
 1. [NEW_ISSUE] <what> — <where> — <why not done> — <next step>
 2. [DECISION]  <what> — <where> — <why not done> — <next step>
 ```
-
-Report `No action points.` explicitly when there are none.
 
 Return alongside the report: tranche scope (manifest/issue set); PRs covered; action point counts by class; issues created, when creation was authorized; anything that could not be verified, and why.

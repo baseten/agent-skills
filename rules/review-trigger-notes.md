@@ -39,3 +39,9 @@ Added with `review-docs` (Sept 2026). The confirmation step was written for an e
 **Why confirmation is owed at all:** a trigger that silently no-ops is worse than one that fails loudly, because the run then reports PRs as reviewed and clean when nothing reviewed them.
 
 **Why the run never touches a human reviewer (#163, owner's ruling 2026-09-30):** a run re-requested review from a person after fixing their changes-requested review, because the platform's session posture said to and nothing here said otherwise. Asking a person for their time is theirs to be asked by the owner, not by an automated loop; the automated trigger is the one review request a run's budgets bound.
+
+**Why an unavailable review skill falls back to the ordinary trigger:** the same fail-safe direction as the cannot-tell rule — a PR reviewed by the wrong instrument costs a reading, a PR reviewed by nothing costs the review.
+
+**Why a refused write path is not retried:** it will not start working on the next PR, and each failed attempt leaves trigger and refusal comments behind on the PR.
+
+**Why code-owner requests on publish are named (#163 review):** a forge can request code owners on `ready_for_review` by itself, which reads exactly like the reviewer request the run is banned from making; saying whose act it is keeps the run from undoing it and keeps it visible.

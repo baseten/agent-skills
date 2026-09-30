@@ -11,7 +11,7 @@
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 4172,
+      "budget": 4171,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
@@ -19,7 +19,7 @@
       "target": 3000
     },
     "skills/merge-stack/SKILL.md": {
-      "budget": 2193,
+      "budget": 2177,
       "target": 3000
     },
     "skills/normalize-github-dependencies/SKILL.md": {
@@ -51,7 +51,7 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 4646,
+      "budget": 4644,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
@@ -59,7 +59,7 @@
       "target": 3000
     },
     "skills/summarize-tranche/SKILL.md": {
-      "budget": 2161,
+      "budget": 2155,
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
@@ -91,11 +91,11 @@
       "target": 1500
     },
     "rules/agent-policy.md": {
-      "budget": 1548,
+      "budget": 1547,
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2233,
+      "budget": 2217,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
@@ -139,7 +139,7 @@
       "target": 1500
     },
     "rules/review-trigger.md": {
-      "budget": 1597,
+      "budget": 1583,
       "target": 1500
     },
     "rules/wake-budget.md": {

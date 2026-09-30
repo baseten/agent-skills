@@ -175,7 +175,7 @@ After retargeting C:
 - if `P_BASE_BRANCH` is the head of another still-open parent PR, set C's line to that PR's full URL;
 - otherwise remove C's `Depends on:` line entirely.
 
-Preserve the rest of the PR body exactly. **This edit changes the `Depends on:` line and nothing else** — it does not shorten the body, and it never appends an attribution footer to one — twice over, since the body is not this run's text to mark and its author read it (`references/authored-write-form.md`; NOTES). A body that already carries a footer keeps the one it has and never gains a second. **It is an edit after creation, made only where that rule's *Editing a PR body after it is created* allows**; otherwise leave the body and report the line it should now read.
+Preserve the rest of the PR body exactly. **This edit changes the `Depends on:` line and nothing else** — it does not shorten the body, and it never appends an attribution footer to one — twice over, since the body is not this run's text to mark and its author read it (`references/authored-write-form.md`; NOTES). A body that already carries a footer keeps the one it has and never gains a second. It is that rule's `Depends on:` exception (*Editing a PR body after it is created*), so it is always made, and reported where the PR is published.
 
 ### Recursively restack grandchildren
 
@@ -301,7 +301,7 @@ Report:
 - branches rebased / force-with-lease pushed;
 - PRs retargeted;
 - posting identities observed, keyed by (transport, credential), per write kind observed through each pair;
-- `Depends on:` metadata changed — naming each published PR edited — or left, with the line it should now read;
+- `Depends on:` metadata changed, naming each published PR edited;
 - remaining stack topology;
 - CI/review blockers or rebase conflicts;
 - whether the skill can be safely rerun to continue.
