@@ -15,10 +15,6 @@ That asymmetry — this skill *writes* what others only read — is why the prob
 
 **Why a truncated candidate set defeats its own validation:** a credential that hides children in one repository yields a truncated candidate set, and a scope derived from a possibly-partial read cannot bound its own validation — the hidden repository never appears, so no control ever tests it, and every edge written afterwards rests on a view known to be incomplete. Hence the independent cross-check, and hence a differing count *stopping writes* here where in a read-only skill it merely warns. A matching count is not the converse because two enumerations sharing a blind spot agree exactly about what neither can see.
 
-## Dependency sources
-
-**Why a worker-report comment never contributes an edge:** the report is a worker's persisted observation, not a statement about the issue's dependencies, and it necessarily contains dependency URLs. This skill writes native metadata, so an edge taken from a report becomes the authoritative answer every later readiness check trusts — including an edge the orchestrator has already classified as stale, which then blocks its issue with nothing prompting a re-examination. `validate-backlog` and `implement-issue-core` skip the same comments in their read-only scans; the same exclusion matters most here because the mistake is written back into the tracker.
-
 ## Precondition: trustworthy absence
 
 **Why absence needs proof:** a relayed, proxied, scoped, or short-lived credential can return a partial relationship set with no error and no warning — a credential scoped to one repository returns one repository's worth of a graph spanning several, and the response looks complete. The edge you are about to add may already be live and simply invisible. This skill decides what to write from what it believes is missing, so an under-reporting read converts directly into duplicate writes.
@@ -32,7 +28,6 @@ That asymmetry — this skill *writes* what others only read — is why the prob
 ## Confirmation and mutation policy
 
 **Why descriptions stay intact by default:** the prose may contain useful context, and removing it is a separate editorial mutation from adding native edges — bundling the two turns an additive, reversible normalization into a lossy rewrite nobody asked for.
-
 
 **Why the opt-in cleanup carries the write-form rule as a constraint and not a signature** (added in the shared-rule extraction round): a description rewrite is the only authored prose this skill ever produces. Every other operation it performs is a native dependency edge, which has no body for a write rule to govern, and that asymmetry is what made this write easy to overlook when the rule was stated for PR bodies and review replies. It is also the write least likely to be read before it goes out — the cleanup is asked for across a wave and seen afterwards — so it is precisely the case the footer's approval test exists for. Stating it at the decision point rather than leaving it implied means a future editor removing it has to decide to.
 

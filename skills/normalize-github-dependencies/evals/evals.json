@@ -15,18 +15,6 @@
       "files": []
     },
     {
-      "id": 1,
-      "name": "worker-report-edge-never-a-candidate",
-      "prompt": "You are executing the normalize-github-dependencies skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: in-scope issue I-3 has (a) a body line 'Depends on <URL-P>' and (b) a comment whose first line is exactly '**Worker report \u2014 unclassified evidence, not a dependency record.**' containing 'observed blocked by <URL-Q> at dispatch time'. Visibility is fully proven for all boundaries. Question: which of URL-P and URL-Q become candidate edges, at what stage is the other excluded, and could the excluded one be admitted as AMBIGUOUS given the explicit wording inside the report?",
-      "expected_output": "URL-P becomes a candidate (explicit body text). URL-Q never does: the worker-report comment is skipped at the read stage, so the edge never reaches classification at all \u2014 not SAFE_TO_ADD, not AMBIGUOUS, at no confidence. Writing it would make a worker's stale observation the authoritative native metadata every later readiness check trusts.",
-      "assertions": [
-        "URL-P is a candidate edge from the body text",
-        "URL-Q is excluded at the read/scan stage \u2014 it never reaches classification, and is not admitted as AMBIGUOUS or any other class",
-        "The answer explains the stake: this skill writes native metadata, so a report-sourced (possibly stale) edge would become the authoritative answer later checks trust"
-      ],
-      "files": []
-    },
-    {
       "id": 2,
       "name": "direction-normalization-one-form",
       "prompt": "You are executing the normalize-github-dependencies skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: three text statements in scope: (1) issue B's body says 'Depends on A'; (2) issue A's body says 'Blocks B'; (3) issue C's body says 'related to D \u2014 see also for context'. Visibility is proven; no native edges exist yet. Question: how many candidate edges result, in which direction(s), how many native writes do you perform for the A/B relationship, and does (3) produce an edge?",

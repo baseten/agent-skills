@@ -27,7 +27,6 @@ Checks, in order:
 4. read native parent/sub-issue hierarchy where the tracker supports it;
 5. read native `blocked by` / `blocking` relationships **through whatever transport step 2 found working** — on GitHub that is an authenticated `gh issue view <url> --json blockedBy,blocking`, or `mcp__github-deps__issue_dependency_read` where a second GitHub MCP server was provisioned with the `issue_dependencies` flag, since the built-in server exposes neither; where step 2 found none, this source is absent and the run is classified `dependency transport unavailable`. Never decide readability from the tracker's name, in either direction;
 6. scan issue bodies/comments for textual dependency phrases and linked issue URLs (`blocked by`, `depends on`, `after`, `requires`, `prerequisite`, `must land first`, and equivalents);
-   - **skip any comment whose first line is exactly `**Worker report — unclassified evidence, not a dependency record.**`** — a previous worker's persisted report, not a statement about the issue's dependencies; `implement-issue-core` excludes the same comments (NOTES: the stale-edge reintroduction this prevents);
 7. compare structured dependencies against text-described dependencies;
 8. detect cycles, missing issue targets, contradictory ordering, closed/cancelled prerequisite inconsistencies, orphaned children, duplicates, and links outside the authorized scope;
 9. distinguish an external prerequisite from an authorized implementation issue;

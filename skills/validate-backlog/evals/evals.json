@@ -51,18 +51,6 @@
       "files": []
     },
     {
-      "id": 4,
-      "name": "worker-report-comment-is-skipped",
-      "prompt": "You are executing the validate-backlog skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: during the prose scan (check 6), issue I-7's comments include one whose first line is exactly '**Worker report — unclassified evidence, not a dependency record.**'; its body says 'observed blocked by <URL-X> at dispatch time' — and URL-X is an edge the orchestrator previously classified as stale. I-7's own body also says 'depends on <URL-Y>'. Question: which of URL-X and URL-Y enter the textual dependency set, and why is the skipped one skipped?",
-      "expected_output": "URL-Y enters (issue body prose). URL-X does not: the comment is a previous worker's persisted report, not a statement about the issue's dependencies, and scanning it would put the stale edge back into the normalized DAG on every validation from then on — before implement-issue-core's identical exclusion could ever apply. Nothing is lost: whatever the report observed, it observed in the issue's own prose, which the scan reads anyway.",
-      "assertions": [
-        "URL-Y (from the issue body) enters the textual dependency set",
-        "URL-X (from the worker-report comment) is excluded — the comment matching the exact first-line marker is skipped",
-        "The answer explains the stale-edge reintroduction this prevents (the report would resurrect an edge the orchestrator already classified as stale, on every future validation)"
-      ],
-      "files": []
-    },
-    {
       "id": 5,
       "name": "an-authorized-rewrite-signs-the-body-not-the-edge",
       "prompt": "You are executing the validate-backlog skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the user has explicitly asked you to apply the suggested fixes. Two are dependency-link additions; one rewrites an issue body to remove a stale prose blocker. Questions: (a) does the rewritten body carry the attribution footer? (b) do the dependency links?",

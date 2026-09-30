@@ -12,7 +12,7 @@
 # <issue-owned-paths-file>: one repo-relative path per line; both the paths
 # staged into the capture and the allowlist the capture is validated against.
 #
-# Guarantees (any substitute must satisfy all of them):
+# Guarantees (SKILL.md allows no substitute for this script):
 #   - moves NOTHING the worker holds: not its index (GIT_INDEX_FILE isolates a
 #     scratch index), not any ref (commit-tree attaches the commit to no ref),
 #     not its worktree;
@@ -38,6 +38,39 @@
 # than relying on `set -e`:
 # errexit is not honoured inside a subshell in every host shell, and this
 # logic must not depend on the host shell's state.
+#
+# Why (moved from swarm NOTES.md, Checkpoint compliance):
+#
+# Why validation precedes the push: commit-tree writes the commit locally, so
+# the check needs no remote at all — and once the ref is single and force-
+# updated, publishing first would let a malformed capture destroy the last
+# known-good snapshot, discarding both the current work and the thing the
+# mechanism exists to protect. Validating first costs nothing and removes that
+# window entirely; a temporary ref promoted after validation would achieve the
+# same and is only worth reaching for where a check genuinely needs the
+# remote, which this one does not.
+#
+# Why one ref per branch, force-replaced: a ref-neutral capture leaves the
+# worktree untouched, so a worker that stays dirty is captured again on the
+# next supervision cycle, and a commit-keyed ref name would accumulate
+# siblings. Siblings have no safe ender: reconciling the newest does not make
+# an older one an ancestor of the branch head, so an ancestor test never
+# retires it, and merging every sibling invites conflicts wherever a later
+# snapshot supersets an earlier one. Replacement is safe for a reason specific
+# to how these commits are built — every capture is seeded from the worker's
+# head and overlays the same issue-owned path list, so a later capture carries
+# the earlier one's content except where the worker itself changed it.
+#
+# Why the branch name is encoded rather than nested or suffixed: a ref cannot
+# exist where another ref needs a directory, so any scheme that keeps the
+# branch's slashes creates a collision between prefix-related branches
+# (feature/foo blocks the directory feature/foo/bar needs — git rejects the
+# push outright, so the worker cannot be checkpointed at all). A fixed
+# trailing component only moves the collision to branches whose names contain
+# that component. Encoding % before / keeps the mapping injective —
+# feature/foo → feature%2Ffoo while the equally legal branch feature%2Ffoo →
+# feature%252Ffoo — and keeps the ref readable for the person reading these
+# during recovery, which a hash would not.
 
 WORKTREE=$1
 BRANCH=$2

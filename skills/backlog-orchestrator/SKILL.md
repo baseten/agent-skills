@@ -56,7 +56,7 @@ Reusable worker skills:
 3. **A run is bounded.** Never turn one build-order ticket into an open-ended project crawl.
 4. **One implementation worker = one issue = one isolated checkout/worktree.**
 5. **In-flight implementation is remotely checkpointed.** Significant completed work must not exist only in an ephemeral container. What enforces this differs by runtime: where the parent can reach a worker's checkout it verifies and captures (`swarm`, *Checkpoint compliance*; how a recovery ref ends here is *Checkpoint compliance*, here); where it cannot — normally the remote-session tier — the invariant rests on the worker's own pushes, with the dispatch prompt and the observable remote head as the only levers. Say which of those a run relies on rather than reporting the invariant as satisfied by machinery that was never available.
-6. **The model is selected per issue, and Sonnet is the default where the selection does not say otherwise** (see Model and skill policy, which owns the assignment, the capacity check and the escalation ladder). Use the strongest available reasoning model for orchestration when appropriate.
+6. **The model is selected per issue, and Sonnet is the default where the selection does not say otherwise** (see Model and skill policy, which owns the assignment and the escalation ladder). Use the strongest available reasoning model for orchestration when appropriate.
 7. **Only validated READY work is dispatched.**
 8. **Execution dependency is not automatically Git ancestry.** Stack only where code ancestry requires it.
 9. **The parent/orchestration layer owns long-lived PR state.** Implementation and repair workers are bounded and short-lived.
@@ -128,7 +128,7 @@ Determine availability in preference order:
 3. **Subagents** — available when the session exposes the Agent tool. The normal runtime for a local session, and the normal fallback everywhere else.
 4. **Serialized execution in this session** — always available; correct when safe isolation cannot be provided.
 
-**That order trades invariant 5's enforcement for capacity and resilience.** Tier 2 buys a container per worker (see `swarm`, *Capacity during the run*), a worker that outlives this session's compaction, and per-container tool isolation; but the parent cannot reach a tier-2 worker's checkout, so the parent-side verification `swarm`, *Checkpoint compliance*, relies on is unavailable there, while on tier 3 it works. Report which tier was selected and, on tier 2, that invariant 5 rests on the worker's own pushes. Where an owner would rather have the guarantee than the capacity, tier 3 is the correct selection, and nothing here forbids it.
+**That order trades invariant 5's enforcement for capacity and resilience.** Tier 2 buys a container per worker (see `swarm`, *Concurrency*), a worker that outlives this session's compaction, and per-container tool isolation; but the parent cannot reach a tier-2 worker's checkout, so the parent-side verification `swarm`, *Checkpoint compliance*, relies on is unavailable there, while on tier 3 it works. Report which tier was selected and, on tier 2, that invariant 5 rests on the worker's own pushes. Where an owner would rather have the guarantee than the capacity, tier 3 is the correct selection, and nothing here forbids it.
 
 **This run's session-name prefix is `bo`** — `bo/<run-id>: <issue>`, for example
 `bo/a41f: api#348`. The convention and the reason the name is never what a sweep
@@ -236,7 +236,7 @@ Prefer tracker-native structured metadata where available:
 - status/state;
 - project/priority/build-order fields.
 
-Also inspect descriptions/comments for explicit dependency language, because textual dependencies may not yet have been normalized — **except any comment whose first line is exactly `**Worker report — unclassified evidence, not a dependency record.**`**, which is skipped here as the three subordinate skills skip it. This scan is a dependency reader like theirs, and being the parent's own does not exempt it: an edge taken from a report here enters the scheduling DAG directly.
+Also inspect descriptions/comments for explicit dependency language, because textual dependencies may not yet have been normalized.
 
 ## Completion semantics
 
@@ -276,7 +276,7 @@ The supplied full issue URLs form the implementation boundary. Read external dep
 
 ## 3. One or more project boards/projects
 
-Projects are discovery surfaces, not execution graphs. Combine FE/BE/shared projects into one candidate DAG. Prefer an identifiable selected build-order/root issue before dispatching broad project work. **Where the invocation leaves the scope open and the run puts options to the owner, the documented default is what the tracker itself declares the priority** — an epic or build-order issue naming itself the immediate build priority. Offer the options with that one recommended, never an option the run composed, such as an audit of what remains; the run's own reading of the codebase wins only when the owner picks it.
+Projects are discovery surfaces, not execution graphs. Combine FE/BE/shared projects into one candidate DAG. Prefer an identifiable selected build-order/root issue before dispatching broad project work.
 
 # Mandatory validation preflight
 
@@ -328,7 +328,7 @@ A coverage gap is not the unproven-visibility case, and that doctrine cannot cat
 - **Escalation that finds nothing is still reported** — name the trigger, the nodes escalated, and the clean result in the checkpoint output.
 - **A single-repository wave with no hedged inputs does not escalate.** Escalation answers a trigger and does not become the new baseline.
 - **Escalation on one node does not force deep validation of unrelated branches.** Nodes no trigger reaches are validated shallow in the same preflight, and the checkpoint says which nodes got which mode.
-- **If deep mode is unavailable** — not installed, failing, or out of model budget — the escalated nodes are **not dispatchable**: a shallow `PASS` over them is no answer. Take the escalation's `FAIL` path — stop those paths, raise `NEEDS_USER`, and continue only the branches no trigger reached, which shallow validated on its own terms. Report the condition, the nodes owed the deeper read, and what blocked it. Never fall back to shallow and dispatch on its `PASS`.
+- **If deep mode is unavailable** for any reason, the escalated nodes are **not dispatchable**: a shallow `PASS` over them is no answer. Take the escalation's `FAIL` path — stop those paths, raise `NEEDS_USER`, and continue only the branches no trigger reached, which shallow validated on its own terms. Report the condition, the nodes owed the deeper read, and what blocked it. Never fall back to shallow and dispatch on its `PASS`.
 
 # Default usage safeguards
 
@@ -409,7 +409,7 @@ Keys scope to different objects, and each resolves from the repository that owns
 
 The orchestration/lead context may use the strongest available reasoning model.
 
-**Select a model per issue, and select it before dispatch.** `swarm`, *Model: the caller chooses, by how failure shows*, owns both gates — the tier, chosen on failure visibility rather than task size, and the context-capacity veto over it. Apply them from there; do not restate them here. Never accidentally inherit the lead's model, and where a runtime has no per-worker model selection, every worker runs whatever it gives.
+**Select a model per issue, and select it before dispatch.** `swarm`, *Model: the caller chooses, by how failure shows*, owns the tier, chosen on failure visibility rather than task size. Apply it from there; do not restate it here. Never accidentally inherit the lead's model, and where a runtime has no per-worker model selection, every worker runs whatever it gives.
 
 **Sonnet is this skill's default**, and it is where that skill's mid tier lands for implementation and repair work.
 
@@ -490,15 +490,10 @@ A cloud/remote session is usually created with one mandated outcome branch (`cla
 
 It is incompatible with the per-issue stacked topology below. Resolve that by default, without asking:
 
-- **single-issue scope** — use the mandated branch as that issue's branch;
 - **remote worker sessions** — give each worker session its own `outcome_branch`, set to that issue's calculated branch, so each worker's own session authorizes exactly the branch it needs and the parent, which dispatches rather than pushing implementation code, keeps its own. Prefer this whenever the runtime supports it;
-- **shared-session workers (subagents, serialized)** — per-issue branches. One branch cannot carry an n-way fanout or a stack, so the mandate is unsatisfiable as written.
-
-That last case is an override, and a session-level mandate outranks skill content, so the permission has to come from the user — and it does come from the invocation: asking a fanout orchestrator to execute an n-issue wave is a request for n branches. Act on that without a prompt, name every branch used in the checkpoint output so the override is visible, and stop if the user says the mandate is externally imposed rather than theirs to waive.
+- **shared-session workers (subagents, serialized)** — per-issue branches, overriding the mandate on the invocation's own authority (an n-issue wave is a request for n branches): name every branch used in the checkpoint output, and stop if the user says the mandate is externally imposed.
 
 Ask only where the default would lose work: the mandated branch already carries unmerged commits, or an open PR overlapping this scope. A mandated branch holding no commits of its own is not a conflict.
-
-A user who wants the mandate honored strictly says so in the invocation, which reduces the run to a single-branch serialized wave.
 
 # DAG and PR topology
 
@@ -549,7 +544,7 @@ Before dispatch:
 3. allocate isolated worktree/check-out;
 4. resolve shared-resource access details (see Shared environment, below);
 5. record canonical issue URL -> tracker -> repo -> worktree -> branch -> base -> worker;
-6. compose the dispatch prompt so it carries every default the worker skills already own. **A design ruling this run writes into it states the ruling and links the record of it, never claims it was authorised, and names the chosen shape's failure paths** — what persists if a later step fails, what a retry does — because the worker implements a ruling without re-deriving it, so nobody else is positioned to check them; the worker records it on the PR with the rest of its choices (step 8);
+6. compose the dispatch prompt so it carries every default the worker skills already own. **A design ruling this run writes into it states the ruling and links the record of it, and names the chosen shape's failure paths** — what persists if a later step fails, what a retry does — because the worker implements a ruling without re-deriving it, so nobody else is positioned to check them; the worker records it on the PR with the rest of its choices (step 8);
 7. state branch protection explicitly: the worker pushes **only** to its assigned branch, never to the repository's default branch or to any branch it was not assigned — including to fix or revert something it just broke. A worker convinced a change must land on the default branch directly stops and reports instead of pushing it. The branch assignment does not imply any of this;
 8. countermand interactive questions explicitly, and state the substitute. The worker never calls `AskUserQuestion` or otherwise stops to put a question to a human, and never waits for a reply or a confirmation either. Nobody is there to answer an unattended worker's prompts — the parent can surface one (`swarm`, *Blocked workers*) but never answer it — so the call stops the worker until a human happens to look. Where a worker holding a genuine open question puts it depends on whether its own skill already owns that stop:
    - `implement-issue-core` returns `BLOCKED`/`BLOCKED_EXTERNAL`/`NEEDS_USER` rather than guessing when scope is materially underspecified, a supplied base is invalid, a prerequisite cannot be observed, or a product decision needs approval; there the worker returns and documents that outcome. **The substitute never licenses implementing past a stop a worker skill prescribes** — a guess there produces a PR built against a missing dependency or invented product intent;
@@ -570,7 +565,7 @@ Before dispatch:
 - **How a worker settles a checkout against an API response.** Both are observations with an age — `origin/main` is as old as its last fetch, which on a container tier can be when the container was built, and a held response is as old as when it was issued. Where the two disagree about something the worker is about to act on, it re-reads the forge at that moment and refreshes the checkout to match (see *Every read is a snapshot*).
 - **The outbound claim check, alongside the write-form rule** (`references/establish-do-not-assume.md`, *You are about to assert it*). A worker authors the writes this run is most likely to be judged by — its PR body, its report comment, its commit messages — and constraining only this orchestrator's own writes leaves every remembered claim a worker states about the codebase, or about the state of what it touched (*pushed* and *resolved* above all), unchecked.
 - **The run's whole posting-identity map** — every (transport, credential) entry, not one selected pair — plus the instruction to read the worker's own first authored write back and report what it observed (see `references/posting-identity.md`). The worker's `create-pr` may need an agent-authored entry to create the PR and an invoking-user entry for the author-sensitive review trigger, so selecting one either gives the PR the wrong author or leaves a valid trigger path unavailable, and the worker cannot recover what it was not sent. The worker's report is itself an authored write, normally a PR comment: a prompt requiring the report while omitting the identity to report under gets it posted as the invoking user. A distinct identity observed at `create-pr` does not reach that write on its own.
-- **The authored-write-form rule** (see Authored write form) — the rule, not a paraphrase of it: brevity, no list of checks in a body or comment, bare commit SHAs, the no-wrap constraint on forge fields, the footer **with its approval test**, the required-contents precedence, and the trigger comment's exemption. A worker carrying "sign every write" instead of the test will footer a body a person edited; one carrying only "sign unattended writes" will decide for itself what counts as attended. A dispatched worker's own writes answer No to the test — nobody reads them — so in practice its report and its PR body are footered, and the test is still what it carries, because the worker is what discovers whether anyone approved a given text. **Carry with it that the report's contents are required in full** — the marker first line, and the judgment step 11's subtraction defines — so brevity governs how the worker writes each item and never whether it writes one; *keep forge writes short* beside *only the first line is required* is a licence to drop exactly that judgment. The footer goes at the end, where it cannot displace the marker line.
+- **The authored-write-form rule** (see Authored write form) — the rule, not a paraphrase of it: brevity, no list of checks in a body or comment, bare commit SHAs, the no-wrap constraint on forge fields, the footer **with its approval test**, the required-contents precedence, and the trigger comment's exemption. A worker carrying "sign every write" instead of the test will footer a body a person edited; one carrying only "sign unattended writes" will decide for itself what counts as attended. A dispatched worker's own writes answer No to the test — nobody reads them — so in practice its report and its PR body are footered, and the test is still what it carries, because the worker is what discovers whether anyone approved a given text. **Carry with it that the report's contents are required in full** — the judgment step 11's subtraction defines — so brevity governs how the worker writes each item and never whether it writes one. The footer goes at the end.
 
 **A returned PR whose gate report is missing a derived check is rejected, not accepted and watched.** The gate report, in the worker's returned result (`implement-issue-core`, *Output*), is its report that it ran what it was given, and an incomplete one is the cheapest moment to catch a skipped step. A worker's claim that the gates passed is separate and is not evidence: the report says which ran, CI on the pushed head says whether they passed. Where the worker's return does not reach this run (step 11), there is no gate report to read, and CI on the pushed head is the whole record.
 
@@ -731,7 +726,7 @@ Each cycle performs real work:
 
     **Report every session this step archived** in the state block, by id and charter. **And list this run's triggers**: a trigger bound to one of this run's worker sessions means the countermand did not hold, and the remedy is to archive that session where the releasable test passes — not to delete the trigger, which a live session re-arms (see `swarm`, *Releasing a worker*). A worker that is still working and has armed one is a finding about the dispatch prompt, reported as such;
 12. **emit the state block** (fields: `schemas/checkpoint-output.md`; rules: Progress / checkpoint output) — every cycle, including the long one-PR supervision tail, not only in closing output;
-13. re-check disk/slot capacity (`swarm`, *Capacity during the run*);
+13. report slot capacity (`swarm`, *Capacity during the run*);
 14. check sibling branches for colliding added or modified claimed artifacts;
 15. surface `NEEDS_USER`;
 16. wait using native task/event wait, then repeat. **One loop and one wait per session, and both are this run's**: `supervise-prs` runs inside this loop with `wait owner = caller`, arms no check-in of its own, and its PRs' changes are deltas on this run's one wake (Arming the wait when nothing is in flight). **The PR subscriptions `supervise-prs` armed wake this session, and this invocation overrides the platform's PR posture they carry** (`references/platform-pr-posture.md`): every wake — `subscription.created`, a CI failure, a comment, the check-in — is answered by this loop's next cycle, never by the posture's own loop, and a spent budget ends in `supervise-prs`'s outcome for that PR, never in another repair push.
@@ -766,7 +761,7 @@ Step 16's native task/event wait is sufficient while workers are running: their 
 
 A merge someone else performed is a **frontier-advancing event**, not a terminal one: it is the thing that turns in-scope `BLOCKED` issues into READY work. Steps 6 and 7 of the loop above are how the run consumes it, and they stay reachable after the wave settles. On every merge/close event:
 
-1. reconcile tracker + GitHub remote state, so readiness is recomputed from durable truth rather than cached run state — **once per batch of merge/close events, not once per event**. **The batch is every such event already delivered when this step is reached**: drain the queue first, then reconcile once over all of them, and fold an event arriving mid-reconciliation into the next pass rather than starting a fresh one. A later event whose reconciliation would repeat one this cycle already performed over the same graph is consumed by it. Events genuinely minutes apart each still get their own reconciliation;
+1. reconcile tracker + GitHub remote state, so readiness is recomputed from durable truth rather than cached run state — **once over every merge/close event already delivered**;
 2. restack affected descendants (see Stack mutation while PRs are open), **and renumber the next independent colliding migration** where the merge was one of them (see Performing the renumber);
 3. recompute the READY frontier over the **same bounded manifest**, crediting merges only (below). A merge never widens scope: an issue the invocation did not adopt does not become in-scope because something it depends on merged;
 4. if new nodes became READY, re-run the preflight over the bounded scope before dispatching — **at the mode the escalation rules select**, not shallow by default (see Escalating to deep validation) — then fill free worker slots in scheduling order, **up to the `concurrent-open-prs` headroom**; free worker slots are not free PR slots. The preflight is mandatory before **any** new implementation worker, and the merge changed the graph the previous run validated. **What is optional is rebuilding what you already hold**: hand the validator the prior validated graph and the change, so it verifies the delta rather than re-enumerating hierarchy, project structure and every dependency edge. Where the validator cannot accept prior state, the full re-derivation stands; the cost is a tooling limitation to report, not a reason to skip it;
@@ -794,7 +789,6 @@ Nothing about the advance relaxes the safeguards it dispatches under:
 
 - **invariant 12 still holds.** Auto-advance is triggered by observing a merge — whoever performed it, a merge invariant 12's gate authorized included — never by deciding one should happen. The advance itself merges nothing.
 - **both budgets are consumed like any other dispatch.** If `new-issue-budget` is exhausted, do not dispatch: report the newly-READY frontier in the checkpoint output as the resume frontier, so a resumed invocation adopts it instead of rediscovering it. If `concurrent-open-prs` is the one exhausted, the frontier is reachable within this invocation without settling anything: dispatch into whatever headroom there is, which a merge of one of this run's PRs has just freed and a merge elsewhere has not — then wait for the next release (step 5). Never silently drop newly-unblocked work.
-- **`NEEDS_USER` is not cleared by a merge.** A node whose only remaining blocker is a question a human was asked to decide stays blocked, and auto-advance must not resume that path (above). Only the blockers the merge actually satisfied are retired.
 - `concurrent-workers`, attempt/repair caps, per-issue model selection, one issue per worker, and isolated checkouts apply to resumed dispatch unchanged.
 
 Edge cases:
@@ -846,10 +840,8 @@ A report must never land in an issue comment: three skills read issue comments f
 | reader | what it does with a comment-named edge | why it matters |
 |---|---|---|
 | `implement-issue-core` | unions it into the issue's blocker set | re-blocks the issue on every later dispatch |
-| `validate-backlog` | scans comments in a **mandatory preflight** | reintroduces the edge before any downstream exclusion applies |
+| `validate-backlog` | scans comments in a **mandatory preflight** | reintroduces the edge on every validation |
 | `normalize-github-dependencies` | **promotes it into native metadata** | worst case — native is authoritative and an empty `blocked_by` is indistinguishable from "no blockers", so nothing later re-examines it |
-
-**As a backstop for a report that lands on an issue anyway** — older tooling, a hand-pasted transcript, a worker running an earlier prompt — those three skills also skip any comment whose first line is exactly `**Worker report — unclassified evidence, not a dependency record.**`. That is a property of the marker: a comment opening with that line is not a statement about the issue's dependencies, and no reader may take an edge from it. It is a second line of defence, not the mechanism; the mechanism is that reports go on PRs and conclusions are the parent's to write.
 
 ## Verifying worker reports
 
@@ -857,7 +849,7 @@ A report must never land in an issue comment: three skills read issue comments f
 
 ## Checkpoint compliance
 
-`swarm`, *Checkpoint compliance*, owns what the parent observes of every in-flight worker each cycle, the stalled-head escalation, and when it nudges and when it captures instead (its *Enforce, do not re-ask*). It also owns how the parent captures — the ref-neutral sequence that does not race a live worker, its verification, the recovery-ref naming, the wedged-worker path and the tested script beside that skill (its *Capturing without racing the worker*) — and the recovery ref's generic lifecycle (its *The recovery ref's lifecycle*). Apply them from there; here the worker's branch is its issue branch, and its task-owned paths are the issue-owned paths. This section is what becomes of a ref this run captured: an ender keyed on PR state, the issue's completeness and invariant 12, which replaces `swarm`'s generic reachability ender (the rest of that lifecycle — redundancy, release-time reconciliation — still applies).
+`swarm`, *Checkpoint compliance*, owns what the parent observes of every in-flight worker each cycle, the stalled-head escalation, and when it nudges and when it captures instead (its *Enforce, do not re-ask*). It also owns how the parent captures — the ref-neutral sequence that does not race a live worker, its verification (in the tested script), the recovery-ref naming, the wedged-worker path and the tested script beside that skill (its *Capturing without racing the worker*) — and the recovery ref's generic lifecycle (its *The recovery ref's lifecycle*). Apply them from there; here the worker's branch is its issue branch, and its task-owned paths are the issue-owned paths. This section is what becomes of a ref this run captured: an ender keyed on PR state, the issue's completeness and invariant 12, which replaces `swarm`'s generic reachability ender (the rest of that lifecycle — redundancy, release-time reconciliation — still applies).
 
 **The principle is `swarm`'s — a recovery ref is dropped only once a durable carrier the run will actually read holds its contents.** The four PR states differ solely in whether such a carrier exists, and all four are enumerated deliberately: a missing case leaves a ref with no ender, which invariant 12 then converts into a PR that can never merge. Its consumers are the release-time reconciliation and the blocked-worker archive (`swarm`, *The recovery ref's lifecycle* and *Blocked workers*), and lost-worker recovery (Lost worker / workflow recovery):
 
@@ -880,9 +872,7 @@ This contract assumes the parent can **see** a worker's checkout and **send it a
 
 So the remote-session tier sits beside the workflow tier for this section's purposes, not beside subagents. A remote worker session cannot be made to checkpoint structurally — nothing in the parent's reach interposes on it — so the honest guarantee is weaker: state that in the checkpoint output rather than reporting invariant 5 as enforced.
 
-Under a Dynamic Workflow, enforcement has to be structural — encoded in the script's control flow, which is deterministic, rather than in an agent prompt. **Checkpoint granularity equals stage granularity**: a script can only interpose at a stage boundary, so one checkpoint stage after implementation is only the final push. Bounded loss requires implementation split into several bounded stages, each ending with a push. That works only where the issue's work decomposes into units the script can name in advance — per-file waves, per-module conversions, work already sliced by the ticket; where it does not, the workflow runtime **cannot** satisfy invariant 5 for that issue.
-
-So the runtime preference is conditional: invariant 5 outranks the workflow's fit to the fan-out shape, and a runtime whose workers the parent can reach is preferred whenever the implementation cannot be staged into script-visible units.
+Under a workflow, work is checkpointed only at stage boundaries; report invariant 5 as holding only there.
 
 ## Cross-branch artifact collisions
 
@@ -905,7 +895,7 @@ For the first two kinds, correct resolution depends on merge order:
 
 ### Performing the renumber
 
-**Produce it with the repository's own generator. Never hand-edit the artifact's identity fields.** A claimed identity is rarely stored in one place, and a hand-rename that misses one copy makes the artifact **silently skipped**: no error, no log, green CI, and the change never applies. The class generalizes past migrations: any artifact whose identity is **claimed rather than derived and spread across more than one file** — a migration with its journal and snapshot, a lockfile with its manifest, a generated client with its registry entry.
+**Generate and verify it as `references/mechanical-pushes.md` requires for a renumbered artifact** — the repository's own generator, never a hand edit of identity fields, and a proof that it applies.
 
 **A renumber is a mutation like a restack**: never start one on a branch whose `supervise-prs` record shows a mutator — wait for that pass to return — and hold the branch locked while it runs.
 
@@ -913,9 +903,9 @@ For the first two kinds, correct resolution depends on merge order:
 
 **Where the artifact carries a hand-written body review read — a migration's SQL — regenerate the identity and keep that body verbatim**: a regenerated body need not reproduce it (an expression index or a partial `WHERE` can come back different). The pass regenerates the snapshot, the journal entry and the number, and carries the reviewed body across unchanged. Check that the body differs from the reviewed one only in its number and filename and that the new snapshot's predecessor id is the id of the base's latest snapshot; whether the push then needs another review round is `references/mechanical-pushes.md`'s call.
 
-Then verify the result **applies**, not that it compiles and not that CI is green — a skipped migration passes both. Run the artifact's own apply path — migrate against a scratch database, install from the lockfile, regenerate and diff against the committed copy — and confirm the effect the artifact was supposed to have is actually present. For an artifact with a reviewed hand-written body, carrying it across is the splice, done every time rather than only where the generator falls short; re-verify after it, because a carry that was skipped or partial leaves a regenerated body that silently dropped a backfill.
+For an artifact with a reviewed hand-written body, carrying it across is the splice, done every time rather than only where the generator falls short; re-verify after it, because a carry that was skipped or partial leaves a regenerated body that silently dropped a backfill.
 
-Until that verification passes, the renumber is not finished, and it is not mechanical — see Mechanical pushes do not consume review, which grants the skip-re-review exemption only to a renumber that has cleared this.
+Until the apply verification passes, the renumber is not finished, and it is not mechanical — see Mechanical pushes do not consume review, which grants the skip-re-review exemption only to a renumber that has cleared this.
 
 # Lost worker / workflow recovery
 
