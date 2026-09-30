@@ -4,7 +4,7 @@
 and it is not enough: where the fix and the test were written together, a broken
 test fails before the fix and passes after it for reasons that have nothing to do
 with the behaviour, and the check is satisfied trivially. Four distinct defeats
-appeared in a single tranche, and each one is mechanical enough to check
+appeared in a single wave, and each one is mechanical enough to check
 directly.
 
 Run this against every new or changed test, before the fix is accepted.

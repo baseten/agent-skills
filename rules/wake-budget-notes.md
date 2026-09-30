@@ -6,7 +6,7 @@ and the audience for it is a person editing the rule, who has this checkout.
 
 Moved here with the rule itself, from `backlog-orchestrator`, *Arming the wait when nothing is in flight*, and the part of *API budget and read discipline* that bounded a deferring wake, with their notes (#144). "The run" in the moved entries is `backlog-orchestrator`'s, as it stood when the entry was written. The reply watch, the owner-queue report on a quiet wake and the attendance-gated settle trigger stayed in that skill: they are about its items and its settle sequence, not about how often a wake may fire.
 
-**Why this is a shared rule (#144):** the wake is armed by whichever party owns supervision — `backlog-orchestrator` over a tranche, and a PR supervisor running its own loop over one PR — and the budget must bind both identically, or the unbounded watcher it exists to stop comes back through whichever copy is looser.
+**Why this is a shared rule (#144):** the wake is armed by whichever party owns supervision — `backlog-orchestrator` over a wave, and a PR supervisor running its own loop over one PR — and the budget must bind both identically, or the unbounded watcher it exists to stop comes back through whichever copy is looser.
 
 ## A subscription and a check-in, both
 

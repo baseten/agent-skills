@@ -22,9 +22,9 @@ on the remote-session tier. The reasoning and incident history live in
 - **One task.** Dispatch it directly.
 - **Tasks that are not independent.** If B needs A's output, that is a pipeline;
   as a swarm it produces a worker blocked on a sibling it cannot see. A caller
-  that owns a dependency graph resolves it into independent tranches first
+  that owns a dependency graph resolves it into independent waves first
   (`backlog-orchestrator` does this with `validate-backlog`) and dispatches one
-  tranche at a time.
+  wave at a time.
 - **The work is a read.** Never dispatch a worker to make a read the parent could
   make itself, least of all to re-ask something the parent was just refused. Fan
   out work; never fan out looking.
@@ -600,7 +600,7 @@ string where it is a permission hold, and that it is never archived on the run's
 authority — so the owner, or the next invocation, picks it up from there. No worker may sit blocked across a run without appearing in its output.
 
 **A hold whose worker moves retires the item it raised.** Each hold raises a
-`NEEDS_USER` item, and a caller whose merge gate reads items tranche-wide holds
+`NEEDS_USER` item, and a caller whose merge gate reads items wave-wide holds
 every PR while one is outstanding (`settle-and-merge`, *The merge gate*). **A
 ruling does not end a hold, for any of the three**: a permission grant is an act,
 not a choice (`settle-outstanding-decisions`, *Owner action items are not
@@ -641,7 +641,7 @@ accepted). There is no worker left to hold, so the item is **no longer a held
 worker's item**: restate it as an ordinary `NEEDS_USER` item on the work unit with
 its options — redispatch it (for a permission hold once `<tool>` is allowlisted;
 for a question hold with the answer in the dispatch); leave the unit out of the
-tranche; and, for a mismatch whose PR is open, accept that PR as it is. From there
+wave; and, for a mismatch whose PR is open, accept that PR as it is. From there
 the ordinary routes retire it, never this section: a reply the caller's reply
 watch accepts releases dispatch, a walkthrough ruling retires it, a redispatch
 carries the work on. Over finished work there is nothing to ask: a PR merged or

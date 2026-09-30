@@ -5,7 +5,7 @@ description: Validate a bounded implementation backlog before autonomous executi
 
 # Validate Backlog
 
-Validate a bounded implementation tranche before work starts.
+Validate a bounded implementation wave before work starts.
 
 This file is the contract; the reasoning behind its rules lives in `NOTES.md` beside it, keyed by section. NOTES explains; it never overrides.
 

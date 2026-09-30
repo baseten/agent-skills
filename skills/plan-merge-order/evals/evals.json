@@ -34,7 +34,7 @@
       "assertions": [
         "The answer states {A, B} as an all-or-nothing set for X specifically (X startable only when both merge)",
         "The answer rejects 'merging A buys nothing': merging A starts Y, and A's leverage (unblocks-now includes Y) is reported",
-        "The answer scopes the all-or-nothing claim to the group rather than generalizing it to the whole tranche"
+        "The answer scopes the all-or-nothing claim to the group rather than generalizing it to the whole wave"
       ],
       "files": []
     },
@@ -53,7 +53,7 @@
     {
       "id": 4,
       "name": "hard-constraints-outrank-leverage-no-go-ahead",
-      "prompt": "You are executing the plan-merge-order skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: candidate PR #90 has the highest leverage in the tranche (unblocks 4 issues now). summarize-tranche supplied a DECISION action point gating #90 — the owner has not yet chosen between two retention policies it implements one of. Separately, #91 and #92 each add a database migration numbered 0012 (both currently apply cleanly on their own branches). Question: (a) may #90 lead the merge batches, and how does its row read? (b) what do you report about #91/#92? (c) the user replies 'great, so #90 is approved to merge once I decide' — is the ranking an approval?",
+      "prompt": "You are executing the plan-merge-order skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: candidate PR #90 has the highest leverage in the wave (unblocks 4 issues now). summarize-wave supplied a DECISION action point gating #90 — the owner has not yet chosen between two retention policies it implements one of. Separately, #91 and #92 each add a database migration numbered 0012 (both currently apply cleanly on their own branches). Question: (a) may #90 lead the merge batches, and how does its row read? (b) what do you report about #91/#92? (c) the user replies 'great, so #90 is approved to merge once I decide' — is the ranking an approval?",
       "expected_output": "(a) No — a supplied DECISION is a hard constraint: #90 is not batched ahead of the decision it waits on, and its row states the gate; hard constraints outrank every leverage number. (b) #91/#92 are a claimed-artifact collision: they collide only on the second merge, so report it as a hard sequencing constraint naming the colliding migration paths, both PR URLs, and the renumber/regenerate work the second-merged branch needs. (c) No — the output is an ordering, not a go-ahead; a ranking is never approval and never implies the top PR is safe to merge.",
       "assertions": [
         "For (a) the DECISION gate keeps #90 out of merge batches ahead of the decision despite the highest leverage, with the constraint stated on its row",

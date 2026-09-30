@@ -1,6 +1,6 @@
 ---
 name: plan-merge-order
-description: Rank the open PRs of a settled implementation tranche (settled is the caller's predicate, and invoking this skill over a tranche is its statement that it holds) by how much downstream work each one unblocks, and emit a review order, a merge batching plan, and the hard sequencing constraints as a table. Use when a tranche is settled — or whenever asked what to review or merge first to unblock a backlog.
+description: Rank the open PRs of a settled implementation wave (settled is the caller's predicate, and invoking this skill over a wave is its statement that it holds) by how much downstream work each one unblocks, and emit a review order, a merge batching plan, and the hard sequencing constraints as a table. Use when a wave is settled — or whenever asked what to review or merge first to unblock a backlog.
 ---
 
 # Plan Merge Order
@@ -15,9 +15,9 @@ It is tracker-agnostic (GitHub Issues, Linear, or another supported tracker) and
 
 ## When to run
 
-Run when a tranche is **settled**. That predicate is the caller's: where a supervising run invokes this skill over a tranche, the invocation is its statement that the predicate holds (where the run is `backlog-orchestrator`'s, its *Settled tranche* defines it); do not restate it here, because a copy drifts the moment the predicate changes and this one did.
+Run when a wave is **settled**. That predicate is the caller's: where a supervising run invokes this skill over a wave, the invocation is its statement that the predicate holds (where the run is `backlog-orchestrator`'s, its *Settled wave* defines it); do not restate it here, because a copy drifts the moment the predicate changes and this one did.
 
-**Invoked directly by a person, mid-run or otherwise, rank with whatever state exists** rather than refusing because the tranche is not formally settled — and where PRs are still moving (open work, CI or review in flight), say the ranking is provisional and why (NOTES).
+**Invoked directly by a person, mid-run or otherwise, rank with whatever state exists** rather than refusing because the wave is not formally settled — and where PRs are still moving (open work, CI or review in flight), say the ranking is provisional and why (NOTES).
 
 NOT a merge readiness gate: top of this ranking says nothing about whether a PR is correct.
 
@@ -28,7 +28,7 @@ Accept:
 - a manifest/parent/build-order issue URL, an explicit issue set, or an explicit PR set;
 - the repositories in scope;
 - optionally, the run's own PR/branch/stack state when a caller already holds it;
-- optionally, `MERGE_RISK` and `DECISION` action points from `summarize-tranche`;
+- optionally, `MERGE_RISK` and `DECISION` action points from `summarize-wave`;
 - optionally, **the cross-branch collisions the caller found**, each marked independent where the caller showed it; a collision not marked independent is interacting (*Claimed artifacts*, below).
 
 Supplied action points are **hard constraints on the ordering**, not commentary: a `MERGE_RISK` is stated in its PR's row; a PR gated by a `DECISION` is never batched ahead of the decision it waits on; one an action point makes unmergeable as it stands is said to be so in the table, never ranked as ready.

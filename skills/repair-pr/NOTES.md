@@ -20,7 +20,7 @@ The note on why the infrastructure tell raises the hypothesis rather than settli
 
 ## Finding repair
 
-The `finding` type exists because `summarize-tranche` can derive an `IN_FLIGHT_FIX` from durable evidence that is neither CI- nor review-shaped — a worker's documented caveat, the diff itself, a coverage finding — and a code-changing walkthrough ruling arrives the same way. Neither `ci` nor `review` has a compliant invocation for it, and this skill is required (improvising is forbidden), so the documented action point used to force the run to block or improvise. The budget key (`finding-repair-cycles`) and the argument for it being its own counter are `rules/repair-rounds.md`'s (*The finding budget*); the caller-side outcome branching is each caller's own.
+The `finding` type exists because `summarize-wave` can derive an `IN_FLIGHT_FIX` from durable evidence that is neither CI- nor review-shaped — a worker's documented caveat, the diff itself, a coverage finding — and a code-changing walkthrough ruling arrives the same way. Neither `ci` nor `review` has a compliant invocation for it, and this skill is required (improvising is forbidden), so the documented action point used to force the run to block or improvise. The budget key (`finding-repair-cycles`) and the argument for it being its own counter are `rules/repair-rounds.md`'s (*The finding budget*); the caller-side outcome branching is each caller's own.
 
 **Why a mooted finding returns `NO_CODE_CHANGE` with no cycle consumed:** a later push may already have fixed or superseded the finding; changing code anyway would spend budget re-litigating settled work, exactly as an external CI failure does not consume a CI cycle.
 

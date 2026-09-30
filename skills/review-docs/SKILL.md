@@ -81,7 +81,7 @@ Where a claim's tense is genuinely ambiguous, check the premises and say which r
 
 **These findings are not review-thread feedback, and the route they take to a merge decision is not the review path.** This skill's report is a timeline comment authored by the run, which `references/review-feedback.md`, *The thread-root test*, classifies as conversation by kind — that rule's discriminator, not an oversight here. So nothing groups these into a review round, and no `repair-pr` pass with `repair type = review` will ever see one.
 
-They travel the **finding** route instead, which exists for exactly this: work evidenced by something other than a thread. An actionable finding is **returned to the caller**, which carries it into the run's findings and so into `summarize-tranche` — a document change this PR still needs is an `IN_FLIGHT_FIX`, one that must not ship as it stands is also a `MERGE_RISK`, and a `NEEDS_AUTHOR` is a `DECISION`. Invariant 12's gate already refuses to open over any of the three, and `repair-pr` already accepts a finding as a repair type. **Nothing new is needed at the gate, and nothing here restates it** — a `NOTE` simply never becomes an item, whatever it says and however many there are.
+They travel the **finding** route instead, which exists for exactly this: work evidenced by something other than a thread. An actionable finding is **returned to the caller**, which carries it into the run's findings and so into `summarize-wave` — a document change this PR still needs is an `IN_FLIGHT_FIX`, one that must not ship as it stands is also a `MERGE_RISK`, and a `NEEDS_AUTHOR` is a `DECISION`. Invariant 12's gate already refuses to open over any of the three, and `repair-pr` already accepts a finding as a repair type. **Nothing new is needed at the gate, and nothing here restates it** — a `NOTE` simply never becomes an item, whatever it says and however many there are.
 
 On a **mixed** PR the two reviews are independent and both are owed. A clean pass here speaks only for the documentation paths and never for the code review, whose own findings reach the gate by their own route.
 
@@ -165,7 +165,7 @@ documentation paths, alongside the code review, which still runs in full.
 - Reviews; never edits the document, pushes a commit, resolves a thread, or merges.
 - **Never reviews code, on any PR.** On a mixed PR the code is the code review's, and a finding about the document is phrased as a claim the document gets wrong — never as a change the code should make, even when changing the code is obviously the better fix. Say which it is and leave the choice with the author.
 - Never re-reviews a mechanical push (`references/mechanical-pushes.md` is the test); it consumes no round either.
-- Never opens issues or files follow-ups. A finding needing work beyond this PR is reported as a finding; `summarize-tranche` is what turns run findings into action points.
+- Never opens issues or files follow-ups. A finding needing work beyond this PR is reported as a finding; `summarize-wave` is what turns run findings into action points.
 
 # Output
 

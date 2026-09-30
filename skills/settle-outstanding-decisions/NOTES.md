@@ -4,7 +4,7 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 ## Collects and records; does not act
 
-`summarize-tranche` and `plan-merge-order` hand the next move back to the caller, and this skill does the same, for the same reason: every action a ruling calls for already has an owner — `repair-pr` for a fix, `merge-stack` for a merge, the orchestrator's frontier logic for a held path — and a walkthrough that mutates PRs between questions makes the owner wait mid-conversation on work they have not reviewed.
+`summarize-wave` and `plan-merge-order` hand the next move back to the caller, and this skill does the same, for the same reason: every action a ruling calls for already has an owner — `repair-pr` for a fix, `merge-stack` for a merge, the orchestrator's frontier logic for a held path — and a walkthrough that mutates PRs between questions makes the owner wait mid-conversation on work they have not reviewed.
 
 ## Attendance is the precondition
 
@@ -20,7 +20,7 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 **Why the bar is trust-shaped:** an owner asked to ratify things the run could have decided itself stops reading the questions, and then the one that mattered gets a skimmed answer. The same failure drives the action-item segregation: a non-choice put through a question prompt ("create the token / don't") teaches the owner the prompt is padding.
 
-**Why a held worker's permission is ticked from the record and never from the owner's word (#151):** it is an owner action item, so no ruling retires it, and before #151 nothing did — its `NEEDS_USER` item held the merge gate tranche-wide after the worker had resumed. `swarm` now retires the item on the parent's observation of the hold ending. This skill only reads that: ticking the line because the owner said "done" would report closed an item the gate still reads as outstanding, or — if it wrote anything — make this skill a second retirer on weaker evidence than the one `swarm` requires. Review round one on #153 widened it to all three holds: a question or mismatch hold can be asked and ruled, but the ruling is direction, and treating its record as the item's ending would let the gate open while the worker still sits blocked. The item restated to the work unit after an archive is the exception, because no worker is left whose movement could retire it.
+**Why a held worker's permission is ticked from the record and never from the owner's word (#151):** it is an owner action item, so no ruling retires it, and before #151 nothing did — its `NEEDS_USER` item held the merge gate wave-wide after the worker had resumed. `swarm` now retires the item on the parent's observation of the hold ending. This skill only reads that: ticking the line because the owner said "done" would report closed an item the gate still reads as outstanding, or — if it wrote anything — make this skill a second retirer on weaker evidence than the one `swarm` requires. Review round one on #153 widened it to all three holds: a question or mismatch hold can be asked and ruled, but the ruling is direction, and treating its record as the item's ending would let the gate open while the worker still sits blocked. The item restated to the work unit after an archive is the exception, because no worker is left whose movement could retire it.
 
 ## Discovery
 

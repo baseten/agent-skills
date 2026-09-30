@@ -65,7 +65,7 @@ more missing supplier reactively. This audit walks the whole gate once instead."
 
 - **The axis is a rule crossed with its consumers**, because that is the pairing an author
   cannot hold in their head — the gate was written for a world with a validated DAG and a
-  tranche-wide view, and every assumption that held there failed silently for the consumer
+  wave-wide view, and every assumption that held there failed silently for the consumer
   that had neither.
 - **Three answers per cell, not two.** "Supplied by a different mechanism" is the answer
   that keeps the table honest: collapsing it into "supplied" hides the drift risk, and

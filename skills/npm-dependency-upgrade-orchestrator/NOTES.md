@@ -162,7 +162,7 @@ A closed PR's comment thread is not a durable record; the next attempt begins fr
 
 ## Merge
 
-**Why dependency merges have their own opt-in and their own gate (Sept 2026, owner's ruling):** `auto-merge` opens backlog-orchestrator's invariant 12 gate, which is built for a settled tranche — a summary, rulings, review rounds — and none of that exists for a Dependabot bump. A repository can reasonably want triage-cleared bumps landing unattended while every feature PR still waits for a person, so the permission is a separate key rather than a second meaning for the first. The gate splits on what changed rather than on the version number: a cleared minor or patch changes no code and has nothing for a reviewer to read, so a review round there spends quota on nothing; any major, and any bump whose upgrade needed application changes, is a code change and gets the same automated review a code change would.
+**Why dependency merges have their own opt-in and their own gate (Sept 2026, owner's ruling):** `auto-merge` opens backlog-orchestrator's invariant 12 gate, which is built for a settled wave — a summary, rulings, review rounds — and none of that exists for a Dependabot bump. A repository can reasonably want triage-cleared bumps landing unattended while every feature PR still waits for a person, so the permission is a separate key rather than a second meaning for the first. The gate splits on what changed rather than on the version number: a cleared minor or patch changes no code and has nothing for a reviewer to read, so a review round there spends quota on nothing; any major, and any bump whose upgrade needed application changes, is a code change and gets the same automated review a code change would.
 
 ## Supervise
 
