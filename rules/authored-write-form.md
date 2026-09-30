@@ -35,7 +35,7 @@ The one write with a budget, since a reviewer reads it before starting:
 
 ## What overrides brevity
 
-**A documented PR-description style guide — the repository's, or the user's own configuration — governs, and its budget wins.** `create-pr` reads `CLAUDE.md`/`AGENTS.md` before writing a body, and voice rules live in a personal guide, not here. Everything above except the verification ban and the no-wrap rule is the floor for a repository with no guide; those two hold under any guide.
+**A documented PR-description style guide — the repository's, or the user's own configuration — governs, and its budget wins.** `create-pr` reads `CLAUDE.md`/`AGENTS.md` before writing a body, and voice rules live in a personal guide, not here. Everything above except the verification ban and the no-wrap rule is the floor for a repository with no guide; those two hold under any guide, and so do the sections below — the body-edit rule and the footer — which are not style-guide matters either.
 
 **Contents the write's own site mandates win over brevity**: `create-pr`'s linkage and `Depends on:` lines, `settle-outstanding-decisions`'s ruling record, the worker report's **judgment its subtraction requires** (`backlog-orchestrator`, *Before dispatch*, step 11). Brevity governs how each required element is written, never whether: one dropped to shorten a write is a defect. **Where a site defines its contents as a subtraction, brevity may not turn it into a list** — everything the subtraction leaves in is required, including what nobody thought to enumerate.
 

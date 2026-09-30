@@ -21,7 +21,6 @@ Prefer platform-native or promoted events — for a PR: CI completion, review an
 | the item's watch state | it reports as |
 |---|---|
 | **never recorded** | a **known blind spot** — never quiet, since the run cannot say whether anything is listening |
-| recorded as armed (subscribed) | quiet, where nothing arrived |
 | **deliberate polling**, its poll ran this cycle | quiet, **with when it was last observed** — a polled item carries a staleness bound a subscribed one does not, and the result says which of the two it rests on |
 | deliberate polling, its poll did **not** run this cycle | a blind spot, exactly as an unrecorded one |
 | a due poll **skipped** to save budget | **unread**, never quiet |
@@ -64,7 +63,7 @@ Otherwise the record **is** the answer, and a `last read` stamp on it is what di
 | the response | defer | the resuming wake is never armed before |
 |---|---|---|
 | a rate-limit response, or an allowance too low to finish the cycle | **every read drawing on that resource, until it resets** — a read it cannot serve has no essential case | its reset, or a supplied `Retry-After`, **whichever is later** |
-| a secondary or abuse limit | **every read**, until its `Retry-After` where it supplies one: it is tied to no resource and stops both | a supplied `Retry-After` |
+| a secondary or abuse limit | **reads on both allowances**: it is tied to no resource and stops both | a supplied `Retry-After` |
 | either, supplying **neither bound** | as above | **nothing — it sets no floor**, and contributes nothing to the wake's schedule |
 
 Report the deferral as known-stale, never as quiet. The floor is a floor, not a target; where the supervising skill bounds its check-in under the *wake budget* shared rule, how the floor composes with that backoff is that rule's. **No floor never means no wake**: a watch forbidden to wake before a time nothing names could neither be re-armed nor spend its budget, and later changes would go unobserved forever.

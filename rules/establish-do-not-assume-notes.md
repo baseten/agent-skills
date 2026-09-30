@@ -54,7 +54,7 @@ feels like a lookup. Folded into *Someone asserted it* it would have been read a
 being about other people's claims, which is how the docs-only version of this
 check sat next to a review reply carrying a false premise and did not catch it.
 
-**Why an unverified claim is marked rather than dropped** (the rule states it for every outbound claim; the `DECISION` item is the expensive instance, and #168 separated the two sentences so the general reading, which the section's scope already gave, cannot be read as scoped to `DECISION` items). Dropping it loses
+**Why an unverified claim is marked rather than dropped.** (Scoped, as the rule states it, to the `DECISION` item; for every other outbound claim the rule is a read before posting.) Dropping it loses
 information the owner may need and cannot recover; posting it plainly launders a
 recollection into evidence. Marking it costs a clause and keeps the reader's
 ability to weigh it — and where they do have the codebase in front of them, they

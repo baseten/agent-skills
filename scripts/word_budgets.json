@@ -99,7 +99,7 @@
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 1824,
+      "budget": 1844,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
@@ -115,7 +115,7 @@
       "target": 1500
     },
     "rules/establish-do-not-assume.md": {
-      "budget": 1467,
+      "budget": 1473,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
@@ -151,7 +151,7 @@
       "target": 1500
     },
     "rules/watch-and-read.md": {
-      "budget": 1497,
+      "budget": 1481,
       "target": 1500
     }
   }

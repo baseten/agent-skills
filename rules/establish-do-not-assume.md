@@ -39,7 +39,7 @@ No sentence to disbelieve: the run reasons from what a tool or provider *probabl
 
 **Wire the check at the point the artifact is composed**, not at the skill that happens to carry this file: the reply *and* the escalation draft, the PR body *and* its title, the `DECISION` item, the issue body a rewrite produces, the ruling comment, the commit message, the status summary and checkpoint report — and into the dispatch prompt of any worker that will author one on the run's behalf, since a prompt that omits a requirement gets a worker that skips it.
 
-**A claim that cannot be settled before posting is posted marked unverified, with what would settle it** — never posted plainly, never dropped. A `DECISION` item is the expensive case: the owner rules from the claim, with less of the codebase in front of them than the run has.
+**A wrong claim in a `DECISION` item is the expensive case**: the owner rules from the claim, with less of the codebase in front of them than the run has. Where such a claim cannot be settled before posting, post it marked as unverified with what would settle it — never posted plainly, never dropped.
 
 ## Establishing it by trying it costs what the attempt costs
 
