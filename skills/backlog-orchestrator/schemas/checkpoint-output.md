@@ -21,7 +21,7 @@ The block always carries:
 | PR posture | the posture line, that the platform's PR posture is overridden and on what authority, and each PR's toggle line (`references/platform-pr-posture.md`, *Saying so*). This run gives its one-time notice in the first state block after the first subscription this run itself makes, and records it there |
 | deferred reads | whenever reads were deferred on a refused allowance: which PRs went unread this cycle, and when the allowance resets |
 
-It also carries what these sections require the block to name: each session archived this cycle, by id and charter, each session left alive with its diagnostics, and the triggers bound to this run's sessions (*Parent supervision loop*, step 11); a surfaced held worker's session as alive, with its URL and what it is waiting on (*Settled tranche*); and, on a wake, the outstanding `DECISION` and `NEEDS_USER` counts (*Arming the wait when nothing is in flight*).
+It also carries what these sections require the block to name: each session archived this cycle, by id and charter, each session left alive with its diagnostics, and the triggers bound to this run's sessions (*Parent supervision loop*, step 11); a surfaced held worker's session as alive, with its URL and what it is waiting on (*Settled tranche*); and, on every wake, the outstanding `DECISION` and `NEEDS_USER` counts (*Arming the wait when nothing is in flight*).
 
 For example:
 

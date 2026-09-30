@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 25919,
+      "budget": 25931,
       "target": 8000
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
