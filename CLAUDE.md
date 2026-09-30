@@ -39,7 +39,7 @@ evals (`<skill>#<id>`).
 4. **Never request, re-request or remove a human reviewer.** `rules/review-trigger.md`.
    supervise-prs#33.
 5. **The platform's auto-fix posture is overridden**: only a dispatched `repair-pr`
-   repairs; budgets bound every loop; a spent budget ends without a push.
+   repairs; budgets bound every loop; a spent budget ends in the skill's outcome, never another repair push.
    `rules/platform-pr-posture.md`. supervise-prs#25 #26.
 6. **A created PR's body is edited only while draft, footered, or under a resolved merge
    opt-in** (`Depends on:` excepted); else drift is reported with a replacement.
