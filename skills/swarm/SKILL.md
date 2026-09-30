@@ -507,10 +507,45 @@ Read the blocked state explicitly each cycle, and resolve it in this order:
    checkout** (*Remote worker session arguments*); the two paths end differently
    and neither is the exception to the other:
 
-   | checkout | what to do |
-   |---|---|
-   | **reachable** | **Recover the slot; do not resolve it as `NEEDS_USER` and leave it.** (a) Capture uncommitted work to a **remote** ref with the ref-neutral sequence (Checkpoint compliance, *Capturing without racing the worker*), verified as that section requires — never a plain `git commit`, which the archive discards. (b) Only once the capture is on the remote, or there was nothing to capture, archive the session. (c) Where a capture was pushed, end its ref by **its ender under Checkpoint compliance, *The recovery ref's lifecycle* — the caller's own where it has one — apply it, do not restate it here**: this archive is not a release and the worker is not lost, so no other trigger site ever ends this ref, and unconsumed it blocks the caller's merge gate (`backlog-orchestrator`'s invariant 12) while the redispatch redoes the work. (d) Redispatch **the same work unit** — not "the issue", which turns a blocked `repair-pr` worker into a fresh implementation attempt: preserve the worker's role, its repair type where it had one, and the budget it had left rather than issuing a new one — from the latest durable remote state, which now includes the capture, with the question countermand in place. Where the caller's ender raised `NEEDS_USER` instead (`backlog-orchestrator`'s does, for a PR that has already merged), that is the outcome: do not redispatch work whose PR has merged — the owner now holds the decision. Record the question it stopped on either way — it is a finding about the dispatch prompt. |
-   | **unreachable** | The run can neither capture nor establish there was nothing to capture, and case 1 already released every such worker the test passes — what reaches here is a mismatch. **The slot is not recoverable on the run's own authority: `NEEDS_USER`, container retained**, naming the session, its last observed remote head, and the question it stopped on. Do not archive it to free the slot. It is held on the terms of this section's last rule — not the "still waiting" that rule forbids. A run that ends this way has not failed, and is not clean either. |
+   **Where the checkout is reachable — recover the slot; do not resolve it as
+   `NEEDS_USER` and leave it.** In this order:
+
+   1. **Capture** uncommitted work to a **remote** ref with the ref-neutral
+      sequence (Checkpoint compliance, *Capturing without racing the worker*) —
+      never a plain `git commit`, which the archive discards.
+   2. **Verify** the capture as that section requires.
+   3. **Archive** the session — only once the capture is on the remote, or you have
+      established there was nothing to capture.
+   4. **End the ref**, where a capture was pushed, by **its ender under Checkpoint
+      compliance, *The recovery ref's lifecycle* — the caller's own where it has
+      one — apply it, do not restate it here.** This archive is not a release and
+      the worker is not lost, so no other trigger site ever ends this ref;
+      unconsumed, it blocks the caller's merge gate (`backlog-orchestrator`'s
+      invariant 12) while the redispatch redoes the work.
+   5. **Redispatch the same work unit** from the latest durable remote state, which
+      now includes the capture, with the question countermand in place. The same
+      work unit, not "the issue" — which would turn a blocked `repair-pr` worker
+      into a fresh implementation attempt: preserve the worker's role, its repair
+      type where it had one, and the budget it had left rather than issuing a new
+      one. Where the caller's ender raised `NEEDS_USER` instead
+      (`backlog-orchestrator`'s does, for a PR that has already merged), that is
+      the outcome: do not redispatch work whose PR has merged — the owner now holds
+      the decision.
+
+   Record the question it stopped on either way — it is a finding about the
+   dispatch prompt.
+
+   **Where the checkout is unreachable**, the run can neither capture nor establish
+   there was nothing to capture, and case 1 already released every such worker the
+   test passes — so what reaches here is work the remote cannot vouch for, **like**
+   a mismatch. It is not a mismatch hold: it is step 3's question hold, and it ends
+   by the question-hold endings of the last rule, including **resumed** when the
+   worker is answered in place — not by the mismatch endings. **The slot is not
+   recoverable on the run's own authority: `NEEDS_USER`, container retained**,
+   naming the session, its last observed remote head, and the question it stopped
+   on. Do not archive it to free the slot. It is held on the terms of this
+   section's last rule — not the "still waiting" that rule forbids. A run that ends
+   this way has not failed, and is not clean either.
 
 4. **Neither, and the prompt is a permission request** — `NEEDS_USER`, naming the
    task, the session, **where to answer it — the session's URL —** and **the exact
@@ -808,12 +843,12 @@ its reachability half, and the rest of this lifecycle still applies; for
 The escalation turns on the two capabilities (*Remote worker session arguments*),
 detected independently, so there are four combinations:
 
-| checkout | channel | on uncommitted completed work (reachable), or an unadvancing remote head (unreachable) |
-|---|---|---|
-| reachable | present (subagents in parent-created worktrees, serialized) | on first observing uncommitted completed work, instruct the worker to commit and push; if the next cycle still shows it uncommitted, **capture it yourself** rather than nudging again |
-| reachable | absent | **capture on first observation** — a nudge nobody can deliver is not evidence of anything |
-| unreachable | present | **nudge, repeatedly**, then the stalled-head escalation |
-| unreachable | absent (tier 2, normally) | the stalled-head escalation alone; there is no parent-side capture |
+| checkout | channel | trigger | action |
+|---|---|---|---|
+| reachable | present (subagents in parent-created worktrees, serialized) | uncommitted completed work in the worktree | on first observation, instruct the worker to commit and push; if the next cycle still shows it uncommitted, **capture it yourself** rather than nudging again |
+| reachable | absent | uncommitted completed work in the worktree | **capture on first observation** — a nudge nobody can deliver is not evidence of anything |
+| unreachable | present | a remote head that has not advanced, on the stalled-head observations | **nudge, repeatedly**, then the stalled-head escalation |
+| unreachable | absent (tier 2, normally) | a remote head that has not advanced, on the stalled-head observations | the stalled-head escalation alone; there is no parent-side capture |
 
 Where the nudge repeats, **repeat it on the stalled-head rule's elapsed-time
 observations, not once per cycle** — one nudge per observation, from the same

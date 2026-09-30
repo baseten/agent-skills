@@ -1,12 +1,15 @@
 # swarm — the remote-session tier
 
 Part of `swarm`'s contract, read on tier 2 (remote worker sessions,
-`create_session`) before the first worker is dispatched.
-`SKILL.md` points here from *Runtime* and *Remote worker session arguments*; its
-rules assume this file has been read, and this file assumes them. The reasoning
-is in `NOTES.md`, under the `SKILL.md` section that points here — mostly *Remote
-worker session arguments*, *Countermanding the worker's ambient supervision
-posture* and *Blocked workers*.
+`create_session`) before the first worker is dispatched. `SKILL.md` points here
+from *Runtime*, *Remote worker session arguments* and *Bounded runtime probing*,
+from the countermand section (its placement table and its residue), from the
+paragraph beginning *Two things are never archived*, and from *Blocked workers*
+(the channel, and case 4's filesystem-search exception); its rules assume this
+file has been read, and this file assumes them. The reasoning is in `NOTES.md`,
+under the `SKILL.md` section that points here — mostly *Remote worker session
+arguments*, *Countermanding the worker's ambient supervision posture* and
+*Blocked workers*.
 
 ## Session arguments and the checkout check
 
