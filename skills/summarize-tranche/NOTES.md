@@ -22,6 +22,12 @@ Durable evidence, not the orchestrator's recollection, because a restarted sessi
 
 **Why an item names the planned work waiting on it (#148, owner's ruling 2026-09-29):** `backlog-orchestrator` settles over a PR whose question has been raised as an item — the settle exists to get that question to the owner — even where unstarted work in scope depends on the PR. Settled then means "waiting on you", not "done", and nothing in a summary told the two apart: the owner read a finished-looking tranche and did not know three issues were parked behind their answer. The dependency is read from the durable graph rather than taken from the orchestrator, for the same reason as everything else here — a restarted summary must say the same thing.
 
+**Why a claim in an action point needs a read first:** the `where` and the `why` are exactly where a recollection gets stated as a fact, and a `DECISION` is the expensive place for one — the owner rules from it, holding less of the codebase than the run does.
+
+**The timing incident behind the outside-observer `MERGE_RISK`:** a scanner moved from manual to hourly pings left a five-minute healthcheck flapping every hour for a day.
+
+**Why an uneditable body drift is a `MERGE_RISK` carrying a replacement (#163, owner's ruling 2026-09-30):** the run may no longer rewrite a published body a person has read, so the fix is the author's, and the replacement is what makes it a minute's work; the merge still holds on it, as it did when the run edited instead.
+
 **Why merely-informational items are dropped:** a list padded with observations trains the reader to skim past the real items.
 
 **Why a held worker stops holding its dependents when its item retires (#151):** `swarm`, *Blocked workers*, now retires a hold's `NEEDS_USER` item when the worker is observed to resume, be released or be redispatched. A worker that resumed is ordinary in-flight work again, so naming its issue's dependents as waiting on the owner would report a partial settle over an answer already given. The clause cites the retirement rather than restating it.

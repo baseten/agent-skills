@@ -30,6 +30,8 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 **Why what discharges a stale green is established rather than stated:** whether a repository's checks run against the branch or against the branch merged with its base decides whether a re-run means anything, and it differs by configuration. Asserting either would make the rule confidently wrong in half the repositories it runs in — a re-run that proves nothing, or a branch update nobody needed.
 
+**Why the body reconcile runs at step 1 and edits only under the write-form rule (#163, owner's ruling 2026-09-30):** in the merge path it either never ran where `auto-merge` was off, or — as `implement-issue` read it — rewrote a published description a person had read. At step 1 it runs on every settle, before anything publishes, and a forbidden edit reaches `summarize-tranche` as an action point, where a person looks. Why the comparison ignores the drift flag: `backlog-orchestrator/NOTES.md`, *Why the body comparison is unconditional in both consumers*.
+
 **Why the merge goes through `merge-stack` and passes the map:** the stack rules require that skill for any merge or restack, and a raw forge call is exactly what the required-skills rule exists to prevent. Its merges, retargetings, and body edits are authored writes — easy to miss because it is invoked as an operation on the graph rather than as a worker that reports — and its identity observations are the last ones the structured result's map can carry.
 
 **Why publishing has three states rather than two (round 1, Sept 2026):** the

@@ -117,7 +117,7 @@
     "auto-merge": {
       "type": "boolean",
       "default": false,
-      "description": "Let implementation PRs merge through the invariant 12 merge gate, which settle-and-merge defines. Only this file can turn it on. Read by: backlog-orchestrator, implement-issue.",
+      "description": "Let implementation PRs merge through the invariant 12 merge gate, which settle-and-merge defines. Only this file can turn it on. On, it also lets a run edit the body of a published PR it governs. Read by: backlog-orchestrator, implement-issue.",
       "x-read-by": [
         "backlog-orchestrator",
         "implement-issue"
@@ -126,7 +126,7 @@
     "auto-merge-dependencies": {
       "type": "boolean",
       "default": false,
-      "description": "Let dependency PRs merge: triage-cleared minor/patch bumps on CI alone; majors and bumps needing application changes after a clean automated review. Only this file can turn it on. Read by: npm-dependency-upgrade-orchestrator.",
+      "description": "Let dependency PRs merge: triage-cleared minor/patch bumps on CI alone; majors and bumps needing application changes after a clean automated review. Only this file can turn it on. On, it also lets a run edit the body of a published dependency PR it governs. Read by: npm-dependency-upgrade-orchestrator.",
       "x-read-by": [
         "npm-dependency-upgrade-orchestrator"
       ]

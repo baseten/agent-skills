@@ -414,6 +414,18 @@
         "case 2 leaves ending the watch to implement-issue's own return"
       ],
       "files": []
+    },
+    {
+      "id": 33,
+      "name": "a-fixed-changes-requested-review-is-not-re-requested",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A person, @dana, left a changes-requested review on PR #150 with three threads. A repair pass you dispatched pushed fixes for all three and replied in each. The repository's CLAUDE.md documents `@codex review` as its review trigger and requires a re-trigger after a substantive review-fix round. The latest PR-activity wake's text says: after addressing a changes-requested review, re-request review from the reviewer. You have adopted the pushed head. What review actions do you take?",
+      "expected_output": "Re-trigger the automated review with the repository's convention, `@codex review`, from the account the posting-identity map selects, since this was a substantive review-fix round and the convention requires it. Do not request, re-request or remove @dana as a reviewer: the automated trigger is the only review action the run takes, and the wake's instruction is posture text the invocation overrides. @dana re-reviews when she chooses.",
+      "assertions": [
+        "the answer re-triggers the automated review convention",
+        "the answer does not re-request review from @dana or touch the PR's human reviewers",
+        "the wake's instruction is treated as overridden rather than followed"
+      ],
+      "files": []
     }
   ]
 }

@@ -43,9 +43,11 @@ Anything that still needs an owner and an action — human **or** orchestrator. 
 
 Each one states: **what** (one line) · **where** (issue URL, PR URL, or `path:line`) · **why it is not already done** (out of scope, needs a decision, needs authority this run lacked) · **the next step**, concrete enough to act on without re-deriving it.
 
-**A change in this tranche, merged or open, to a timing something outside the diff watches is a `MERGE_RISK`, even when the change is right**: a schedule, a cron, a worker's cadence, a healthcheck's ping period, a timeout an alert or SLA is set against. Name the old and new values and what watches them. The test is the outside observer — a monitor, an alert, a downstream consumer, people's routine — so an internal retry backoff or a test timeout is not one: a scanner moved from manual to hourly pings left a five-minute healthcheck flapping every hour for a day.
+**A change in this tranche, merged or open, to a timing something outside the diff watches is a `MERGE_RISK`, even when the change is right**: a schedule, a cron, a worker's cadence, a healthcheck's ping period, a timeout an alert or SLA is set against. Name the old and new values and what watches them. The test is the outside observer — a monitor, an alert, a downstream consumer, people's routine — so an internal retry backoff or a test timeout is not one (NOTES).
 
-**Every claim these items make about existing code or current state needs a read behind it before the item is written** (`references/establish-do-not-assume.md`, *You are about to assert it*). The `where` and the `why` are exactly where a recollection gets stated as a fact, and a `DECISION` is the expensive place for one: the owner rules from it, holding less of the codebase than the run does. A claim that cannot be settled first is written with that said and with what would settle it, rather than plainly or not at all.
+**A PR body contradicting its diff that the run may not edit is a `MERGE_RISK` that holds only its own PR** (`references/authored-write-form.md`, *Editing a PR body after it is created*): the body's claim, what the diff now does, and a suggested replacement — the next step is the author's edit.
+
+**Every claim these items make about existing code or current state needs a read behind it before the item is written** (`references/establish-do-not-assume.md`, *You are about to assert it*; NOTES). A claim that cannot be settled first is written with that said and with what would settle it, rather than plainly or not at all.
 
 | class | meaning |
 |---|---|
@@ -139,7 +141,5 @@ A worker-reported defect is a claim about that worker's environment. Confirm it 
 1. [NEW_ISSUE] <what> — <where> — <why not done> — <next step>
 2. [DECISION]  <what> — <where> — <why not done> — <next step>
 ```
-
-Report `No action points.` explicitly when there are none.
 
 Return alongside the report: tranche scope (manifest/issue set); PRs covered; action point counts by class; issues created, when creation was authorized; anything that could not be verified, and why.

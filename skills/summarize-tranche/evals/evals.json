@@ -125,6 +125,18 @@
         "PR-8's recorded ruling whose finding repair returned FAILED is a DECISION, not IN_FLIGHT_FIX"
       ],
       "files": []
+    },
+    {
+      "id": 10,
+      "name": "an-uneditable-body-drift-is-a-merge-risk-with-a-replacement",
+      "prompt": "You are executing the summarize-tranche skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The settle passed you this finding from its body reconcile: PR-12 is published, its body is its author's own text with no attribution footer, `auto-merge` is off for its repository, so the body was not edited. The body says the command gains a `--force` flag; since review round 3 the diff has no such flag and instead prompts for confirmation. How do you report this?",
+      "expected_output": "As a MERGE_RISK action point on PR-12: the body claims a --force flag, the diff instead prompts for confirmation; not done because the run may not edit a published body a person has read with auto-merge off; the next step is the author replacing the paragraph, with a suggested replacement given in the item. The run does not propose making the edit itself.",
+      "assertions": [
+        "the item is classed MERGE_RISK",
+        "the item carries a suggested replacement for the drifted text",
+        "the next step is the author's edit, not the run's"
+      ],
+      "files": []
     }
   ]
 }
