@@ -22,6 +22,40 @@ arrangement; this file is where it is required.
 of them states a rule of its own, and none should be read as qualifying one. That is this
 file's own collapse rule applied to itself — three review rounds went by before it was.
 
+## Protected rules
+
+These make the skills usable in a workplace. **No cut, restructure or deletion may drop,
+weaken or narrow one.** Each line indexes the rule's home, which governs, and its pinning
+evals (`<skill>#<id>`).
+
+1. **A write nobody read carries the footer; a run never answers a person's question or
+   roots a thread.** `rules/authored-write-form.md`, `rules/review-feedback.md`.
+   create-pr#6, resolve-pr-comment#0, review-docs#11.
+2. **Identity is observed authorship; own writes are known by id or footer, never content.**
+   `rules/posting-identity.md`; `swarm`, *Blocked workers*. backlog-orchestrator#5 #58.
+3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
+   `backlog-orchestrator`, *Arming the wait when nothing is in flight*.
+   backlog-orchestrator#58.
+4. **Never request, re-request or remove a human reviewer.** `rules/review-trigger.md`.
+   supervise-prs#33.
+5. **The platform's auto-fix posture is overridden**: only a dispatched `repair-pr`
+   repairs; budgets bound every loop; a spent budget ends in the skill's outcome, never another repair push.
+   `rules/platform-pr-posture.md`. supervise-prs#25 #26.
+6. **A created PR's body is edited only while draft, footered, or under a resolved merge
+   opt-in** (`Depends on:` excepted); else drift is reported with a replacement.
+   `rules/authored-write-form.md`. settle-and-merge#6 #9, merge-stack#5.
+7. **No forge write reports verification; SHAs are bare.** `rules/authored-write-form.md`.
+   create-pr#11, resolve-pr-comment#17.
+8. **Merges are opt-in, through the one gate, failing closed.** `settle-and-merge`, *The
+   merge gate*; `rules/agent-policy.md`. backlog-orchestrator#0 #2.
+9. **Stranded work reaches a remote ref before any archive; permission holds name the
+   literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked
+   workers*; `rules/wake-budget.md`. backlog-orchestrator#4 #19, swarm#20.
+
+**A PR changing a protected rule's text says so in its body**, and gets a blind
+rule-by-rule audit plus a pinning-eval round before merge. None is an issue-#49
+deletion candidate.
+
 ## A rule change is not complete until its dependents agree
 
 **The completion criterion for any change to a rule: no document in this repository
