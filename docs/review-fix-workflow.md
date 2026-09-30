@@ -2,7 +2,7 @@
 
 How to settle automated review (Codex, or any diff-scoped reviewer) on this repository in
 fewer rounds. `CLAUDE.md` carries the binding rules; this document is the reasoning and the
-checklist behind them.
+checklist behind them. `CLAUDE.md`, *Protected rules*, lists what no fix may weaken.
 
 ## The problem this addresses
 
