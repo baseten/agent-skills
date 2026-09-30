@@ -18,7 +18,7 @@ A report is a claim about a world the reporter may not be able to see, whoever w
 | a cross-repo `file:line` citation | that repository's current default branch |
 | the run's own *next step* | whether the call was made |
 
-**Never report a next step in a form readable as done**: perform it first, or mark it outstanding with the reason. Where something is blocked on an action this run owns, that action's observable status is part of the state — *not triggered*, *triggered at `<ts>`*, *awaiting*, *findings*, *clean on `<sha>`* — never a prose sentence about what is needed.
+That last row hides: among evidence rows, a sentence about what happens next renders identically to one about what happened. **Never report a next step in a form readable as done**: perform it first, or mark it outstanding with the reason. Where something is blocked on an action this run owns, that action's observable status is part of the state — *not triggered*, *triggered at `<ts>`*, *awaiting*, *findings*, *clean on `<sha>`* — never a prose sentence about what is needed.
 
 ## Nobody asserted it — the run assumed it
 
