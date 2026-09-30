@@ -83,7 +83,7 @@ For each candidate edge:
 
 Classify candidates:
 
-- `SAFE_TO_ADD` — explicit text, unambiguous direction, no conflict/cycle.;
+- `SAFE_TO_ADD` — explicit text, unambiguous direction, no conflict/cycle;
 - `ALREADY_PRESENT` — native dependency already exists;
 - `AMBIGUOUS` — wording does not establish direction strongly enough;
 - `CONFLICT` — contradicts native metadata or would introduce a cycle;
