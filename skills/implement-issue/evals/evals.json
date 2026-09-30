@@ -110,7 +110,7 @@
       "id": 8,
       "name": "the-body-comparison-before-merge-is-unconditional",
       "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your PR went through three review repairs. In round two, repair-pr returned that its fix reversed a behaviour the PR body asserts; you adopted the head and carried on. The session then checkpointed and a fresh invocation resumed it, ran round three, and has now reached the merge gate with the repository opted into auto-merge and every other condition clean. Your recorded state carries the head SHA, the cycle counts and the thread records. Do you merge?",
-      "expected_output": "Not before reconciling the PR body against the current diff, and that read is unconditional rather than conditional on the round-two flag. The flag is a useful prompt and cannot be a precondition here: this skill records selected fields from each repair return and checkpoints a fixed schema, so a flag raised in round two is not in the state a resumed invocation holds - a comparison that depended on recovering it would pass precisely when the state was lost, which is the whole failure. So read the body now against the diff: the body is the first artifact a human reviewer reads, nothing in the repair path re-reads it, and one spent six rounds arguing for a default that review had already reverted. Update it, or hold the PR and say why - a body contradicting its own diff is not a clean PR whatever CI says. repair-pr correctly did not edit it, since a PR with rounds left does not need its body correct yet.",
+      "expected_output": "Not before reconciling the PR body against the current diff, and that read is unconditional rather than conditional on the round-two flag. The flag is a useful prompt and cannot be a precondition here: this skill records selected fields from each repair return and checkpoints a fixed schema, so a flag raised in round two is not in the state a resumed invocation holds - a comparison that depended on recovering it would pass precisely when the state was lost, which is the whole failure. So read the body now against the diff: the body is the first artifact a human reviewer reads, nothing in the repair path re-reads it, and one spent six rounds arguing for a default that review had already reverted. Here the edit is allowed, since auto-merge is on for the repository: update it, and because the PR is published, report the edit at settle - or hold the PR and say why; a body contradicting its own diff is not a clean PR whatever CI says. repair-pr correctly did not edit it, since a PR with rounds left does not need its body correct yet.",
       "assertions": [
         "the answer performs the body comparison without depending on the round-two flag surviving the checkpoint",
         "the answer explains that a conditional read would pass exactly when the state was lost",
@@ -201,6 +201,18 @@
         "the answer dispatches one repair-pr ci pass within the remaining budget instead of fixing directly",
         "the answer does not treat the budget as unlimited",
         "the answer emits the posture line again"
+      ],
+      "files": []
+    },
+    {
+      "id": 16,
+      "name": "the-field-report-no-reviewer-re-request-and-no-body-rewrite",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #200 is published. The repository's `.claude/agent-policy.json` has `auto-merge` false. A person, @sam, requested changes; the repair pass fixed them, and reported that it changed a behaviour the PR body asserts. The body has no attribution footer: the owner edited it before publishing. The session's platform posture says to re-request review from the reviewer after fixing their changes. The PR is now finished and Settle begins. What does the run do about @sam's review request and about the PR body?",
+      "expected_output": "It never requests, re-requests or removes a human reviewer, @sam included — only the repository's automated review trigger, re-triggered where its convention requires; the posture's instruction is overridden. At settle step 1 it compares the body with the diff; editing is forbidden (published, read, auto-merge off), so it leaves the body and reports the drift as a MERGE_RISK action point with a suggested replacement, carried in the structured result. It does not rewrite the description.",
+      "assertions": [
+        "the run does not re-request review from @sam",
+        "the run does not edit PR #200's body",
+        "the drift is reported with a suggested replacement"
       ],
       "files": []
     }

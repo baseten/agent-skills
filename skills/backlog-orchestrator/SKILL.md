@@ -219,7 +219,9 @@ repair*; *Parent supervision loop*, step 1).
 installs a skill directory and nothing above it, so on an installed run the
 source does not exist and only the bundled copy does. It covers
 length, what a body is for, what must never be in it, the attribution footer and
-its approval test, and the precedence of required contents over brevity.
+its approval test, the precedence of required contents over brevity, and when a
+PR body may be edited after creation — this run edits none itself;
+`settle-and-merge` and `merge-stack` apply it.
 
 The posting-identity rule (`references/posting-identity.md`) decides which
 **author** a write carries; that rule decides
@@ -227,9 +229,8 @@ The posting-identity rule (`references/posting-identity.md`) decides which
 `references/establish-do-not-assume.md`, *You are about to assert it*, decides
 what may be **claimed** in one — about existing code and about current state,
 this run's own state block and checkpoint included. Every skill that
-applies it carries a generated copy at that path, which is why the rule is
-stated once outside this file rather than here: a partial copy naming some of its exclusions and not its budget is
-how the rule drifts.
+applies it carries a generated copy at that path, so the rule is stated once,
+outside this file.
 
 # Tracker abstraction
 

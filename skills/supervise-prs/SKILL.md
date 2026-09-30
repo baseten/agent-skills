@@ -95,7 +95,7 @@ One pass is one supervision cycle over the tracked set. In order:
 0. **adopt every PR in the set that is not yet tracked** (*Adopt*) — at entry, not at settle;
 1. **take in every pass that returned, whatever its outcome** — adopted, held, `NO_CODE_CHANGE`, `FAILED` or `NEEDS_USER`:
    - merge every posting-identity entry it returned into the map — never replace it: a pass runs on its own transports, and this is the only evidence about them;
-   - record every item it returned (*Review feedback*, step 3) and its body-drift flag, forwarded to the caller as a prompt for its reconcile before publish or merge, never as a precondition;
+   - record every item it returned (*Review feedback*, step 3) and its body-drift flag, forwarded to the caller as a prompt for the settle's body reconcile (`settle-and-merge`), never as a precondition;
    - release it through the dispatch mechanism;
    - then apply its outcome (*Adopting a head*);
 2. **take in the caller's pushes** (*Head moves*), and the releases;

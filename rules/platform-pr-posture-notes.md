@@ -41,3 +41,5 @@ Added in #154, from a field report on an `implement-issue` run in a Claude Code 
 ## Saying so
 
 **Why the user is told:** the toggle is visible and says "Auto fix". A user who sees it on and a run that fixes nothing without a budget reads as a broken run; one sentence at subscription prevents the confusion, and the stop sentence answers the obvious next question — whether they can still stop it.
+
+**Why re-requesting a person's review is on the overridden list (#163):** the posture is what told a run to re-request review from the person whose changes-requested review it had fixed. The ban is stated once in the review-trigger rule; it is listed here because a session weighing the posture reads this list, not that rule.

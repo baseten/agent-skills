@@ -42,6 +42,8 @@ The `finding` type exists because `summarize-tranche` can derive an `IN_FLIGHT_F
 
 ## Output
 
+**The body-drift incident:** one PR body kept making the case for enabling network-error retries after review had reverted that exact default. Since #163 the flag feeds `settle-and-merge`'s step-1 reconcile, which edits only where the write-form rule allows and otherwise reports the drift.
+
 **Why the posting-identity read-back is per (transport, credential) pair and includes `unestablished`:** a repair pass can run on transports the caller never used, so its observations are the caller's only evidence about those write paths — a `gh` reply here can establish an invoking-user path where the caller had only an agent-authored one, which is what re-opens a provisionally unavailable review trigger.
 
 **Why the locus report exists:** whether a supplied finding sits on a locus an earlier repair of this PR wrote is the caller's strongest-model escalation trigger, and this pass has the branch history open while it works. The caller can read the same signal from commit history, so this is corroboration, not the only copy.
