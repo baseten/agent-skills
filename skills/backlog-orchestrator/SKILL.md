@@ -1056,11 +1056,11 @@ Settlement was computed before the summary existed, so the summary is capable of
 | action point | effect |
 |---|---|
 | `IN_FLIGHT_FIX` | the tranche is **not settled** — that PR has actionable work outstanding. Return it to supervision, dispatch it as a `finding` repair within the finding budget (see A settle finding is the third repair shape), and re-test the settled conditions before ranking |
-| `MERGE_RISK` | still settled, but the ranking must carry it. Pass it to `plan-merge-order`, and raise it as a `NEEDS_USER` **item** where it blocks a merge decision outright — never an outcome for the PR, and a deferred repair already is such an item |
+| `MERGE_RISK` | still settled, but the ranking must carry it. Pass it to `plan-merge-order`, and raise it as a `NEEDS_USER` **item** where it blocks a merge decision outright — never an outcome for the PR, and a deferred repair already is such an item; a body drift never is one, since it holds only its own PR (`summarize-tranche`, *2. Action points*) |
 | `DECISION` | the settled step's walkthrough request (`settle-and-merge`, *The settle sequence*, step 4) is where it gets ruled when someone is present; unruled, pass to `plan-merge-order` and surface as `NEEDS_USER` — it gates a human, not the run |
-| `NEW_ISSUE` | report it; no effect on settlement. No effect on ordering **unless the item carries an ordering consequence** — a follow-up that must land before one of this tranche's PRs is also a `MERGE_RISK`, and takes that row too. The classes answer different questions, so read the item rather than the label alone |
+| `NEW_ISSUE` | report it; no effect on settlement. No effect on ordering **unless the item carries an ordering consequence** — a follow-up that must land before one of this tranche's PRs is also a `MERGE_RISK`, and takes that row too |
 
-An `IN_FLIGHT_FIX` reaching the ranking is the same defect the settled conditions already guard against: a table that orders PRs which are not actually finished is a table the user cannot act on. Finding it one step later does not make it acceptable.
+An `IN_FLIGHT_FIX` reaching the ranking is the same defect the settled conditions already guard against: a table that orders PRs which are not actually finished is a table the user cannot act on.
 
 ## Settled is a resting state, not an exit
 

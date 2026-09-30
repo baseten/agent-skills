@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 31577,
+      "budget": 31570,
       "target": 8000
     },
     "skills/create-pr/SKILL.md": {
@@ -51,7 +51,7 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 4644,
+      "budget": 4643,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
@@ -139,7 +139,7 @@
       "target": 1500
     },
     "rules/review-trigger.md": {
-      "budget": 1583,
+      "budget": 1581,
       "target": 1500
     },
     "rules/wake-budget.md": {
