@@ -160,7 +160,7 @@ so `references/authored-write-form.md` reaches it only as a constraint on what
 may be removed: brevity governs a body this run writes, never one it edits down,
 and **no attribution footer is added** — appending one would mark the author's
 own retained prose as generated, which is the dishonesty the footer exists to
-prevent. `merge-stack` applies the same rule to a descendant PR's body for the
+prevent. Every write's author follows `references/posting-identity.md`. `merge-stack` applies the same rule to a descendant PR's body for the
 same reason (*Update `Depends on:` after parent merge*). A description that
 already carries a footer keeps the one it has.
 

@@ -181,7 +181,8 @@ passes.
 
 **The comment follows the authored-write-form rule**
 (`references/authored-write-form.md`) and carries the attribution footer: that
-rule's approval test answers No for every comment this skill writes. The
+rule's approval test answers No for every comment this skill writes. Its author
+follows the posting-identity rule (`references/posting-identity.md`). The
 disagreement table and each finding's scenario name are the write's **required
 contents** — a table cut to fit a word count is the review deleting its evidence.
 

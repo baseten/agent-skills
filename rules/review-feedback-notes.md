@@ -15,6 +15,22 @@ was reasoning about a section that no longer lives there.
 
 The owner asked for the rule scoped to human comments and, when the asymmetry was put to them, confirmed author-blind. Do not narrow it without a new ruling.
 
+**Why this rule names the posting-identity rule path-neutrally (#168):** it names that rule to say why the no-new-threads prohibition is needed — the degraded path — not because a skill applying this rule must select an author to do so. Cited as a `references/` path, it was copied into every skill carrying this one. Every consumer of this rule that makes an authored write declares the posting-identity rule itself — `summarize-wave` included, since the owner's ruling on #168. The citation of the write-form rule stays a path: a skill acting on the thread-root carve-out reads there what the footer marks, which is why nothing may test for it.
+
 ## Unhandled feedback
 
 **Why the unhandled-feedback predicate moved here (#140):** it was stated in full in `backlog-orchestrator`, *CI/review repair*, and `implement-issue` applied it too — restating the predicate in condensed form and pointing up into `backlog-orchestrator` for the rest ("states the rule"), an orchestrator it never runs under. Both supervising runs apply it on every supervision cycle, and it is the thread-root test's carve-out applied to re-admission, so it belongs beside that test. The text moved verbatim except for role nouns and self-citations: "this run" and "the parent" became "the supervising run", "step 5's mechanism sentence" became the step that records a pass's returned threads (each consumer numbers its steps differently), and citations of `references/review-feedback.md` became in-file section references.
+
+## What may be auto-fixed
+
+**Moved from the rule (#168):** author identity predicts the kind of comment only loosely — automated reviewers ask design questions and humans file one-line nits — so gating on it reserved work the run could safely do while admitting work it could not. The first entry in this file gives the owner's ruling.
+
+## The thread-root test
+
+**Moved from the rule (#168):** nothing today makes the run want to root a thread, which is exactly why the prohibition must be a stated rule rather than an observed habit. The restart property matters because an author-side carve-out would have to fall back to recognizing the run's own report and reply forms once the predecessor's record of its own writes is gone; thread structure and comment kind need no such record.
+
+## Reserved for the owner
+
+**Moved from the rule (#168):** both gate conditions — invariant 12's clean-review condition and the outstanding `NEEDS_USER` item — name the same threads, which is why removing the reviewer policy did not loosen the gate. The two ways a reservation ends exist because without them the gate reads a thread as reserved after the owner has answered it: the deadlock the carve-out exists to prevent, one step later. Counting the owner's own reply alongside a walkthrough ruling covers the commonest case, an owner who simply answers the reviewer, which leaves the walkthrough nothing to ask and nothing else to clear it.
+
+**Also moved from the rule (#168):** the thread-root test survives independently of the kind test; the carve-out would drift the moment it were maintained separately; a question item carries every field so the owner posts the reply from the checkpoint without opening anything; and skipping dispatch on a question-only round reserves the thread with no draft, the one outcome the reservation exists to avoid.

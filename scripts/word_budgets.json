@@ -27,7 +27,7 @@
       "target": 3000
     },
     "skills/normalize-github-dependencies/SKILL.md": {
-      "budget": 1862,
+      "budget": 1867,
       "target": 3000
     },
     "skills/npm-dependency-upgrade-orchestrator/SKILL.md": {
@@ -51,7 +51,7 @@
       "target": 3000
     },
     "skills/review-skill/SKILL.md": {
-      "budget": 1922,
+      "budget": 1929,
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
@@ -63,7 +63,7 @@
       "target": 3000
     },
     "skills/summarize-wave/SKILL.md": {
-      "budget": 2155,
+      "budget": 2163,
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
@@ -79,11 +79,11 @@
       "target": 1500
     },
     "skills/upgrade-npm-dependency/SKILL.md": {
-      "budget": 4613,
+      "budget": 4620,
       "target": 3000
     },
     "skills/validate-backlog/SKILL.md": {
-      "budget": 3827,
+      "budget": 3835,
       "target": 3000
     },
     "rules/a-passing-test-is-not-a-verified-fix.md": {
@@ -99,11 +99,11 @@
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2212,
+      "budget": 1839,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
-      "budget": 940,
+      "budget": 947,
       "target": 1500
     },
     "rules/ci-attribution.md": {
@@ -115,7 +115,7 @@
       "target": 1500
     },
     "rules/establish-do-not-assume.md": {
-      "budget": 2173,
+      "budget": 1515,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
@@ -139,11 +139,11 @@
       "target": 1500
     },
     "rules/review-feedback.md": {
-      "budget": 1980,
+      "budget": 1551,
       "target": 1500
     },
     "rules/review-trigger.md": {
-      "budget": 1581,
+      "budget": 1603,
       "target": 1500
     },
     "rules/wake-budget.md": {
@@ -151,7 +151,7 @@
       "target": 1500
     },
     "rules/watch-and-read.md": {
-      "budget": 1681,
+      "budget": 1481,
       "target": 1500
     }
   }
