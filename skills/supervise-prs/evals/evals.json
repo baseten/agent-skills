@@ -451,6 +451,19 @@
         "the report carries the approval-pending reply verbatim with its html_url, the human author, fix SHA and held reply"
       ],
       "files": []
+    },
+    {
+      "id": 36,
+      "name": "a-rejected-thread-is-not-redispatched-until-new-content",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #60's settle returned one rejected held reply — thread T, fix 4a5b6c7 — and your caller passed it to you as a rejected held reply. On the next passes, T is still unresolved. Questions: (a) is T unhandled feedback, and do you dispatch a review pass for it or hold a new reply? (b) what changes if the reviewer posts a follow-up in T? (c) does T hold the merge gate, and does your report carry it?",
+      "expected_output": "(a) No. T is recorded as handled — rejected, keyed by thread and fix 4a5b6c7, so it is neither redispatched nor re-held for the rest of the run. (b) The follow-up is new content, so T is unhandled again and goes into the next review round. A newer fix there would be a fresh held reply. (c) Yes: it is still an unresolved thread, so it holds the gate. The report lists it as 'reply not posted — thread open for you'.",
+      "assertions": [
+        "the rejected thread is treated as handled and not redispatched or re-held",
+        "new content makes it unhandled again",
+        "it still holds the merge gate",
+        "the report lists it as reply not posted — thread open for you"
+      ],
+      "files": []
     }
   ]
 }

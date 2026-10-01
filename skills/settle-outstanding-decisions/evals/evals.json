@@ -154,7 +154,7 @@
       "id": 11,
       "name": "an-approved-held-reply-is-posted-without-footer-then-resolved",
       "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a run's settled step (settle-and-merge, step 4) invoked you with the owner present and passed one approval-pending reply item: a human reviewer's thread on PR 52 of acme/api, its fix pushed as 2d3e4f5, with the held reply 'Fixed in 2d3e4f5 — renamed tmp to pending_batch.' Nobody else has posted in the thread since. Questions: (a) does it qualify, and how do you ask it? (b) the owner approves it unchanged — what is posted, does it carry the footer or an owner-ruling marker, what do you record, and what then happens to the thread? (c) had the owner rejected it, what would you write?",
-      "expected_output": "(a) It qualifies: the fix is pushed, and the owner's approval of a reply under their name is the outstanding thing. Ask it as an approval, showing the held reply exactly as it will be posted, its thread URL and the fix SHA, with approve, edit or reject. It is merge-gating. (b) The reply text exactly as approved, as a reply on the thread, with no attribution footer, because the owner read this exact text, and with no owner-ruling marker or question wrapper: it is the reply, not a ruling record. Record its write id in the output, then resolve the thread at once. (c) Nothing: no reply, no rejected-draft record, no resolution. The thread stays open for the owner and the item keeps holding the merge gate.",
+      "expected_output": "(a) It qualifies: the fix is pushed, and the owner's approval of a reply under their name is the outstanding thing. Ask it as an approval, showing the held reply exactly as it will be posted, its thread URL and the fix SHA, with approve, edit or reject. It is merge-gating. (b) The reply text exactly as approved, as a reply on the thread, with no attribution footer, because the owner read this exact text, and with no owner-ruling marker or question wrapper: it is the reply, not a ruling record. Record its write id in the output, then resolve the thread at once. (c) Nothing: no reply, no rejected-draft record, no resolution. The thread stays open for the owner, and it is the open thread that keeps holding the merge gate.",
       "assertions": [
         "the held reply is asked as an approval showing the exact text",
         "the approved reply is posted without the attribution footer",
@@ -169,11 +169,11 @@
       "id": 12,
       "name": "the-owner-sees-the-threads-newer-comments-when-asked",
       "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: settle-and-merge invoked you with the owner present and passed one approval-pending reply item: a human reviewer's thread on PR 52 of acme/api, fix 8b9c0d1, held reply 'Fixed in 8b9c0d1 — added the null guard.' Re-reading as you ask, you see the reviewer has posted since the fix: 'looks right, but can the guard log a warning?'. Questions: (a) what do you show the owner when you ask? (b) the owner approves anyway — what happens? (c) is there any check after approval that stops the post?",
-      "expected_output": "(a) The held reply exactly as it will be posted, the thread URL and fix SHA, and every comment posted in the thread since the fix, re-read as you ask — here the reviewer's follow-up — so the owner decides with it in front of them. (b) Post it with no footer, record its write id, and resolve the thread. (c) No. The owner has seen the newer comments; nothing re-reads to block the post after approval. The follow-up is ordinary new content for supervision to classify.",
+      "expected_output": "(a) The held reply exactly as it will be posted, the thread URL and fix SHA, and every comment posted in the thread since the fix, re-read as you ask — here the reviewer's follow-up — so the owner decides with it in front of them. (b) Post it with no footer, record its write id, and resolve the thread. (c) No. Nothing re-reads after approval. A comment posted between the ask and the approval would not have been shown, and approval resolves the thread over it — an accepted cost. The reviewer's follow-up here, shown at ask time, was the owner's to weigh.",
       "assertions": [
         "the owner is shown every comment posted since the fix, re-read at ask time",
         "an approved reply is posted with no footer, its write id recorded, and the thread resolved",
-        "no re-read after approval blocks the post"
+        "no re-read after approval blocks the post, and a comment landing after the ask is accepted as resolved over"
       ],
       "files": []
     },
@@ -181,10 +181,10 @@
       "id": 13,
       "name": "a-rejected-held-reply-is-dropped-and-listed",
       "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: settle-and-merge invoked you with the owner present and passed one approval-pending reply item on PR 52 of acme/api. The owner rejects it: 'I'll answer her myself'. Later in the same run the wave un-settles, settles again, and the walkthrough is requested again. Questions: (a) what do you post or resolve on the rejection? (b) what does your result carry for it, and what does the caller do with it? (c) is it asked again in the second walkthrough? (d) what does the final report say about the thread?",
-      "expected_output": "(a) Nothing: no reply, no rejected-draft record, no resolution. (b) The item, listed as rejected; the caller removes it from the held set for the rest of the run. (c) No: it is no longer in the set passed in. (d) 'reply not posted — thread open for you', with the thread URL and fix SHA.",
+      "expected_output": "(a) Nothing: no reply, no rejected-draft record, no resolution. (b) The item, listed as rejected with its thread and fix SHA; the supervising run records it as handled — rejected. (c) No: a rejected reply is not passed to the walkthrough again, unless new content arrives on the thread first. (d) 'reply not posted — thread open for you', with the thread URL and fix SHA.",
       "assertions": [
         "a rejection posts and resolves nothing",
-        "the result lists the item as rejected for the caller to drop from the held set",
+        "the result lists the item as rejected, with thread and fix SHA, for the supervising run to record",
         "it is not asked again later in the run",
         "the final report lists it as reply not posted — thread open for you"
       ],

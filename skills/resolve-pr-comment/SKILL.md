@@ -257,8 +257,9 @@ them. **Approved or edited → post that text with no footer**, the approval tes
 answering Yes, record the reply's write id (`references/posting-identity.md`:
 own writes are known by id), **then resolve** (step 6). **Rejected → post nothing
 and resolve nothing**: the fix stays pushed, the thread stays open, and it is
-dropped from the held set and reported as *reply not posted — thread open for
-you*.
+reported as *reply not posted — thread open for you*, recorded as handled —
+rejected for the fix SHA (`references/review-feedback.md`, *Approval-pending
+replies*). A newer fix on the thread gets a fresh held reply.
 
 **A new comment in the thread, from anyone but this workflow, is new content**
 (`references/review-feedback.md`, *Unhandled feedback*): a thread back on one is
@@ -370,7 +371,7 @@ first checking the head for a change already made, which the last row covers:
 | Wants an answer | A `NEEDS_USER` item with its draft reply, exactly as unattended |
 | Wants nothing | A no-action entry, exactly as unattended |
 | Wants both (*A comment can want both*) | Both entries for the one thread — the change unapplied as a deferred repair, and the question as a `NEEDS_USER` item with its draft. The thread is handled only once the caller has recorded both |
-| Wants a code change **already on the head**, whatever brought it back | **Never a deferred repair or a budget `NEEDS_USER` item**: the work is done. An approval-pending reply item naming the commit that made the change. **Held even where only bots are in the thread, deliberately**: this mode posts nothing, and the walkthrough or the owner posts it (*Replies held for approval*). A thread that also carries a question gets no held reply: only its question item comes back |
+| Wants a code change **already on the head**, and no comment by anyone but this workflow is newer than that fix — otherwise the thread is classified by the newest such comment, on the rows above | **Never a deferred repair or a budget `NEEDS_USER` item**: the work is done. An approval-pending reply item naming the commit that made the change. **Held even where only bots are in the thread, deliberately**: this mode posts nothing, and the walkthrough or the owner posts it (*Replies held for approval*). A thread that also carries a question gets no held reply: only its question item comes back |
 
 **The mode has to be explicit, because this skill's default workflow pushes.**
 A caller that wants classification without repair and does not say so gets the
@@ -556,9 +557,9 @@ on a pushed fix, whichever mode handled it.
 
 **Where a person is in it, no reply is held for it at all** — none composed,
 none asked (*Replies held for approval*). The fix is pushed, the question takes
-the `NEEDS_USER` route, and the thread stays open for the owner. The final report
-lists the fix SHA as *fix pushed — thread left for you (it also asks a
-question)*. **Where only bots are in it**, the work-done reply is posted with the
+the `NEEDS_USER` route, and the thread stays open for the owner. Return an entry
+*fix pushed — thread left for you (it also asks a question)* with the thread URL
+and fix SHA, which the supervising run records and its final report lists. **Where only bots are in it**, the work-done reply is posted with the
 footer as on any bot thread; the question still keeps the thread open.
 
 Forcing it into one classification fails in a different way each direction, and

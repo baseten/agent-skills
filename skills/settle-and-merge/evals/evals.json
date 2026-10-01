@@ -127,6 +127,18 @@
         "the answer says a later re-dispatch finds the change on the head and composes a fresh held reply",
         "the answer does not claim the walkthrough is idempotent over held replies"
       ]
+    },
+    {
+      "id": 11,
+      "name": "a-rejected-thread-is-still-listed-after-a-second-settle",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: at the first settle the owner rejected one held reply, and you returned it to the caller, which had supervise-prs record it as rejected. The wave un-settles, a merge lands, and it settles again with nobody present. The held-reply records the caller passes now carry no approval-pending items, one rejected held reply and one mixed-thread fix. Questions: (a) what does step 4 pass the walkthrough? (b) what does step 7 list?",
+      "expected_output": "(a) No held replies: rejected ones are not passed to be asked again. (b) The rejected one as 'reply not posted — thread open for you' with its thread URL and fix SHA, still listed although it was rejected at an earlier settle, and the mixed-thread fix as 'fix pushed — thread left for you (it also asks a question)'. Both are read from the held-reply records.",
+      "assertions": [
+        "the rejected reply is not passed to the walkthrough",
+        "step 7 still lists the rejected reply after the second settle",
+        "step 7 lists the mixed-thread fix",
+        "both come from the held-reply records"
+      ]
     }
   ]
 }

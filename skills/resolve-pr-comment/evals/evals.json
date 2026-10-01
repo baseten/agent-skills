@@ -372,7 +372,7 @@
     {
       "id": 29,
       "name": "a-bot-following-up-in-a-thread-a-person-is-in-is-held",
-      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invokes you unattended on PR 52 of acme/api, auto-resolve-comments false. A human reviewer (user.type User) opened the thread asking for a rename, which an earlier pass already made and whose held reply the owner approved and the run posted. Now example-review-bot[bot] (user.type Bot) has followed up in the same thread: 'the rename missed one call site in tests/'. You fix it and push 2e3f4a5. Questions: (a) is the reply posted with the footer and the thread resolved, since the comment being addressed is a bot's? (b) why?",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invokes you unattended on PR 52 of acme/api, auto-resolve-comments false. A human reviewer (user.type User) opened the thread asking for a rename, which an earlier pass already made; its held reply is still waiting for approval and the thread is open. Now example-review-bot[bot] (user.type Bot) has followed up in the same thread: 'the rename missed one call site in tests/'. You fix it and push 2e3f4a5. Questions: (a) is the reply posted with the footer and the thread resolved, since the comment being addressed is a bot's? (b) why?",
       "expected_output": "(a) No. The reply is held, nothing is posted, the thread stays open, and an approval-pending reply item is returned. (b) A person is in the thread, and that decides it, not who wrote the latest comment: the human who opened it is still the one being answered, and misreading in this direction only holds a reply.",
       "assertions": [
         "the reply is held rather than posted",
@@ -425,6 +425,41 @@
         "the reply is held rather than posted",
         "the thread is not resolved",
         "the answer treats a true whose source is not the repository's file as false"
+      ]
+    },
+    {
+      "id": 34,
+      "name": "a-further-fix-after-a-rejection-gets-a-fresh-held-reply",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invokes you unattended on PR 52 of acme/api, auto-resolve-comments false. In a thread a human reviewer (user.type User) opened, the held reply for fix 1a2b3c4 was rejected by the owner earlier in this run and recorded as rejected. The reviewer has since followed up asking for one more rename, which you make and push as 9e8d7c6. Questions: (a) is the thread still handled as rejected? (b) what reply do you return, and will it be asked?",
+      "expected_output": "(a) No. The follow-up is new content, so the thread is unhandled again, and the rejection was keyed to fix 1a2b3c4, not to the thread forever. (b) A fresh approval-pending reply item for 9e8d7c6, with its own one-line held reply. It is asked as usual, because a newer fix has a different SHA and is a new reply.",
+      "assertions": [
+        "the follow-up makes the thread unhandled despite the earlier rejection",
+        "a fresh approval-pending item is returned for the new SHA",
+        "the fresh held reply is to be asked, not suppressed by the old rejection"
+      ]
+    },
+    {
+      "id": 35,
+      "name": "zero-budget-classifies-a-fixed-thread-by-its-newest-comment",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invokes you unattended and classify-only (budget spent) on PR 52 of acme/api. Two threads a human reviewer (user.type User) opened each asked for a change already on the head, made by 2b3c4d5 and 3c4d5e6. Since those fixes, thread A has a new comment from the reviewer: 'thanks!'. Thread B has: 'why a map here rather than a set?'. Questions: what does each thread come back as, and does either come back as an approval-pending reply item?",
+      "expected_output": "Each is classified by its newest comment, since a comment by someone other than this workflow is newer than the fix. Thread A is a no-action entry: handled, left open for the owner. Thread B is a NEEDS_USER question item with its draft. Neither is an approval-pending reply item: the already-on-head row applies only where no newer comment exists. Neither is a deferred repair, since the requested changes are already made.",
+      "assertions": [
+        "thread A comes back as no-action",
+        "thread B comes back as a NEEDS_USER question item",
+        "neither comes back as an approval-pending reply item",
+        "neither is treated as a deferred repair"
+      ]
+    },
+    {
+      "id": 36,
+      "name": "a-bot-only-already-fixed-thread-at-zero-budget-is-held",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invokes you classify-only (budget spent) on PR 52 of acme/api. The only thread is example-review-bot[bot]'s (user.type Bot) 'use the MAX_RETRIES constant', and the head already has the constant, from 6d7e8f9; nothing has been posted in the thread since. Questions: (a) do you post the footer reply and resolve it, as you would for a bot-only thread? (b) what comes back?",
+      "expected_output": "(a) No. Classify-only posts nothing, so even a bot-only thread's reply is held here, deliberately, instead of being posted with the footer. (b) An approval-pending reply item naming 6d7e8f9, for the walkthrough or the owner to post. It is not a deferred repair, since the work is done.",
+      "assertions": [
+        "nothing is posted or resolved in classify-only mode",
+        "the bot-only thread's reply is held as an approval-pending item",
+        "the answer treats this as deliberate because classify-only posts nothing",
+        "it is not a deferred repair"
       ]
     }
   ]
