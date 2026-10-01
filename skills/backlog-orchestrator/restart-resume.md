@@ -1,8 +1,8 @@
 # backlog-orchestrator — restart and resume
 
-Part of `backlog-orchestrator`'s contract, read on a restart before the validation preflight. `SKILL.md`, *Restart / resume*, says what counts as one; it points here from there and from *Mandatory validation preflight*, and cites this file from *Default usage safeguards* (resuming an adopted branch), *Arming the wait when nothing is in flight* and *Stop conditions* (a returned checkpoint), and *How a worker's report actually reaches you* (which records a restart adopts). Its rules assume `SKILL.md` has been read, and `SKILL.md` assumes them on a restart. The reasoning is in `NOTES.md`, under *Restart / resume*.
+Part of `backlog-orchestrator`'s contract, read when an invocation resumes an earlier run of this orchestration, before the preflight. `SKILL.md` points here from *Mandatory validation preflight*, from the head of *Durable remote state and restart*, beside the classification a restart re-derives, and from *Restart / resume*, and cites this file from *Default usage safeguards* (resuming an adopted branch), *Arming the wait when nothing is in flight* and *Stop conditions* (a returned checkpoint), and *How a worker's report actually reaches you* (which records a restart adopts). Its rules assume `SKILL.md` has been read, and `SKILL.md` assumes them on a restart. The reasoning is in `NOTES.md`, under *Restart / resume*.
 
-## Restart / resume
+## The restart sequence
 
 A Dynamic Workflow interrupted by session exit restarts fresh rather than resuming, so restart recovery always comes from tracker + GitHub remote state, never from workflow-runtime state:
 
@@ -20,5 +20,3 @@ A Dynamic Workflow interrupted by session exit restarts fresh rather than resumi
 7. adopt matching remote issue branches/checkpoints even when no PR exists yet;
 8. identify the earliest still-unfinished executable frontier;
 9. resume there, dispatching fresh workers (in a new Dynamic Workflow fan-out if the user re-opts in, sized to the headroom as `dynamic-workflow.md` requires, or via the fallback runtime chain) for whatever is not yet durable — **up to the `concurrent-open-prs` headroom**. Resuming an adopted branch is a dispatch like any other, and an adopted branch holds a slot only once a worker resumes it, so a restart adopting twelve open PRs and two branches holds twelve and resumes the branches only as slots free.
-
-"Latest unclosed ticket" means the earliest remaining unfinished point in established build order, not the numerically newest issue. Parallel groups may have multiple resume-frontier nodes.

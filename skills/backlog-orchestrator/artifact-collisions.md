@@ -27,4 +27,4 @@ For the first two kinds, correct resolution depends on merge order:
 
 For an artifact with a reviewed hand-written body, carrying it across is the splice, done every time rather than only where the generator falls short; re-verify after it, because a carry that was skipped or partial leaves a regenerated body that silently dropped a backfill.
 
-Until the apply verification passes, the renumber is not finished, and it is not mechanical — see `SKILL.md`, *Mechanical pushes do not consume review*, which grants the skip-re-review exemption only to a renumber that has cleared this.
+Until the apply verification passes, the renumber is not finished, and it is not mechanical — see `references/mechanical-pushes.md`, which grants the skip-re-review exemption only to a renumber that has cleared this.

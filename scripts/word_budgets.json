@@ -3,15 +3,15 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 23787,
+      "budget": 23909,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
-      "budget": 840,
+      "budget": 834,
       "target": 1500
     },
     "skills/backlog-orchestrator/deep-validation.md": {
-      "budget": 465,
+      "budget": 454,
       "target": 1500
     },
     "skills/backlog-orchestrator/dynamic-workflow.md": {
@@ -19,7 +19,7 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/restart-resume.md": {
-      "budget": 732,
+      "budget": 721,
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {

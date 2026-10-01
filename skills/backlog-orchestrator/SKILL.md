@@ -7,7 +7,7 @@ description: Autonomously executes a bounded dependency-linked implementation wa
 
 Execute a prepared implementation wave autonomously.
 
-This file is the contract; the reasoning and incident history behind its rules live in `NOTES.md` beside it, keyed by section. NOTES explains; it never overrides. Four files beside it are part of the contract on their situation, each read only when it arises, and the pointer at each decision point says when: `deep-validation.md` (an escalation trigger fired), `restart-resume.md` (a restart), `artifact-collisions.md` (a cross-branch collision, found or expected at dispatch) and `dynamic-workflow.md` (a Dynamic Workflow fan-out). The fields of the state block and the closing report are in `schemas/checkpoint-output.md` beside this file, and bind as this file does. The checkpoint-capture sequence lives in `swarm`, as a tested implementation in that skill's `scripts/checkpoint-capture.sh` with its test suite beside it.
+This file is the contract; the reasoning and incident history behind its rules live in `NOTES.md` beside it, keyed by section. NOTES explains; it never overrides. Four files beside it are part of the contract on their situation, each read only when it arises, and the pointer at each decision point says when: `deep-validation.md` (an escalation trigger fired), `restart-resume.md` (resuming an earlier run of this orchestration), `artifact-collisions.md` (a cross-branch collision, found or expected at dispatch) and `dynamic-workflow.md` (a Dynamic Workflow fan-out). The fields of the state block and the closing report are in `schemas/checkpoint-output.md` beside this file, and bind as this file does. The checkpoint-capture sequence lives in `swarm`, as a tested implementation in that skill's `scripts/checkpoint-capture.sh` with its test suite beside it.
 
 This skill is the **policy and backlog layer**. Claude's runtime may provide the worker scheduling/persistence layer for the bounded implementation fan-out.
 
@@ -102,7 +102,7 @@ The orchestration policy must be independent of the mechanism used to run worker
 
 A Dynamic Workflow is a JavaScript orchestration script that fans plain subagents out (up to 16 concurrent, capped at 1000 total) in the background and returns only their final results to the caller — the shape of the **bounded implementation fan-out** this skill dispatches.
 
-When the user has opted into a workflow for this invocation (see Invocation), use it **only for the implementation fan-out**. **Before writing the workflow script, read `dynamic-workflow.md` (beside this file)**: it holds what each worker's prompt must encode, how the fan-out is sized, where the checkpoint push goes, and what the workflow may not do to the backlog or to state.
+When the user has opted into a workflow for this invocation (see Invocation), use it **only for the implementation fan-out**. **Before writing the workflow script, read `dynamic-workflow.md` (beside this file)**: it holds what each worker's prompt must encode, where the checkpoint push goes, and what the workflow may not do to the backlog or to state. **Size the fan-out to the `concurrent-open-prs` headroom at launch, never to the whole authorized set**: a running workflow cannot be reached or paused once the cap fills, so the cap bounds nothing that runs inside it.
 
 A Dynamic Workflow does **not** persist across a Claude Code session exiting (an interrupted one restarts fresh next session), accepts no external input mid-run, and cannot be woken later by a CI/webhook event. So never use a Dynamic Workflow for **long-lived PR/CI/review supervision**: it always stays with this skill's parent-level supervision loop (PR promotion and central supervision), whether or not the implementation fan-out ran inside a workflow.
 
@@ -277,7 +277,7 @@ Projects are discovery surfaces, not execution graphs. Combine FE/BE/shared proj
 
 Before dispatching any **new** implementation worker, invoke `validate-backlog` on the entire bounded scope — `shallow` by default, deeper over the nodes the escalation rules below reach.
 
-**The run's first preflight** is also where per-repository policy is read — each in-scope repository's `.claude/agent-policy.json`, per `references/agent-policy.md`, which owns the schema, resolution, and failure rules. **Later preflights do not re-read it, and reuse that snapshot.** A re-run after a frontier advance revalidates the *graph*, which the merge changed; policy is owner-authored configuration that can authorize merges, and re-reading it there would let a mid-run merge adopt a config the run's own workers wrote — which `references/agent-policy.md`, *Resolution*, forbids by fixing the read to the repository state the run started from. A restart is a new run and takes a fresh snapshot. **On a restart, read `restart-resume.md` (beside this file) before this preflight** — *Restart / resume* says what counts as one; its step 2 is this preflight, followed by the reconciliation a restart owes.
+**The run's first preflight** is also where per-repository policy is read — each in-scope repository's `.claude/agent-policy.json`, per `references/agent-policy.md`, which owns the schema, resolution, and failure rules. **Later preflights do not re-read it, and reuse that snapshot.** A re-run after a frontier advance revalidates the *graph*, which the merge changed; policy is owner-authored configuration that can authorize merges, and re-reading it there would let a mid-run merge adopt a config the run's own workers wrote — which `references/agent-policy.md`, *Resolution*, forbids by fixing the read to the repository state the run started from. A restart is a new run and takes a fresh snapshot. **When this invocation resumes an earlier run of this orchestration — the same manifest re-invoked after an interruption or session exit, or a checkpoint a previous run returned — read `restart-resume.md` (beside this file) before the preflight, and follow its steps in order.** Its step 2 is this preflight.
 
 Use the validator's normalized DAG as the scheduling graph. Do not let the execution runtime independently invent a competing decomposition. That prohibition is about re-planning, not evidence: a worker reporting a blocker it verified against its own issue is correcting the graph from a position the validator did not have (see Outcomes). Accept an edge a worker verified; reject a runtime's attempt to reorder or re-scope the backlog.
 
@@ -309,6 +309,8 @@ Shallow mode reads declared dependency metadata and issue text. It reads code in
 - **a cross-repository consumer edge** — an in-scope issue in one repository depends on an issue in another. This is the primary trigger; a frontend consuming a backend built in an earlier wave is the canonical case, and that wave having merged is what makes shallow mode confident and wrong;
 - **an issue whose text hedges about its inputs** — "may require", "additional providers may be needed", "assuming X exists" — or an acceptance criterion naming a capability no in-scope issue delivers;
 - **a dependency satisfied by an issue that closed in an earlier wave**, where nothing in this run verified what that issue actually exposes.
+
+**A single-repository wave with no hedged inputs does not escalate.** Escalation answers a trigger and does not become the new baseline.
 
 **When any trigger fires, read `deep-validation.md` (beside this file) before running the escalated preflight** — the first preflight, a restart's and a frontier advance's alike. It holds how the escalation is scoped, how its results are handled at either mode, what happens when deep mode is unavailable, why a coverage gap is not a visibility failure, and what the checkpoint reports.
 
@@ -411,6 +413,8 @@ Workers must inherit/preload the active installed skills. A **worker** whose req
 
 # Durable remote state and restart
 
+**When this invocation resumes an earlier run of this orchestration — the same manifest re-invoked after an interruption or session exit, or a checkpoint a previous run returned — read `restart-resume.md` (beside this file) before the preflight, and follow its steps in order.**
+
 Classify in-scope issues from tracker + GitHub remote evidence:
 
 - `DONE`
@@ -439,9 +443,11 @@ A cloud worktree is ephemeral. Never claim restart safety for unpushed local cha
 
 ## Restart / resume
 
-**This invocation is a restart wherever durable work already exists in the bounded scope** — an in-scope issue with a linked implementation PR, open or merged, a remote issue branch or checkpoint, a recovery ref, or a blocker comment a previous run recorded — **and whenever it resumes a checkpoint a previous run returned. On a restart, read `restart-resume.md` (beside this file) before the validation preflight, and follow its steps in order**: it holds the recovery sequence — re-expansion, the restart preflight and the reconciliation of previously recorded blockers, `DONE` skipping, PR and branch adoption, and where dispatch resumes.
+**When this invocation resumes an earlier run of this orchestration — the same manifest re-invoked after an interruption or session exit, or a checkpoint a previous run returned — read `restart-resume.md` (beside this file) before the preflight, and follow its steps in order.**
 
 A fresh orchestration session must be able to recover from tracker + GitHub remote state alone.
+
+"Latest unclosed ticket" means the earliest remaining unfinished point in established build order, not the numerically newest issue. Parallel groups may have multiple resume-frontier nodes.
 
 ## Branch discoverability
 
@@ -521,7 +527,7 @@ Before dispatch:
 11. include, on any runtime where a worker's return value does not reach this run, the requirement that it **record the judgment part of its result on its PR before returning** — not on the issue, and not the run state, which the session record and the branch already carry; see `swarm`, *How a worker's report actually reaches you*. **Never enumerate what the report contains; state it as a subtraction.** The report is `implement-issue-core`'s entire Output contract *minus* what this run can already read for itself — the branch, the PR, and the session record's `status_bucket`, `pending_action`, `task_summary` and `post_turn_summary` — and minus the gate report, which is never posted (`references/authored-write-form.md`). Everything else in that contract is judgment, which has no other carrier. **The one fact it adds back is the head commit the worker pushed** — or that it pushed nothing, and the head it found (`swarm`, *How a worker's report actually reaches you*, says why).
 
     Any terminal outcome reached before a PR exists writes nothing and simply returns — investigating it, and recording anything that comes of it, is this run's job, not the worker's;
-12. dispatch the worker with `implement-issue-core`, on the model selected for this issue (see Model and skill policy).
+12. dispatch the worker with `implement-issue-core`, on the model selected for this issue (see Model and skill policy). **Where the fan-out runs as a Dynamic Workflow, read `dynamic-workflow.md` before writing its script**, and size it to the `concurrent-open-prs` headroom at launch (*Preferred runtime: Claude Code Dynamic Workflows*).
 
 **A dispatch prompt that enumerates a required process is followed literally**: a default left out of it is a default skipped, and the worker will accurately report that the task never asked for it. The same literalism decides what the worker does with instructions this run did not write (see `swarm`, *Countermanding the worker's ambient supervision posture*). So every dispatched prompt must carry each of the following.
 
@@ -730,7 +736,7 @@ A merge someone else performed is a **frontier-advancing event**, not a terminal
 2. restack affected descendants (see Stack mutation while PRs are open), **and renumber the next independent colliding migration** where the merge was one of them (read `artifact-collisions.md`, *Performing the renumber*, before performing it);
 3. recompute the READY frontier over the **same bounded manifest**, crediting merges only (below). A merge never widens scope: an issue the invocation did not adopt does not become in-scope because something it depends on merged;
 4. if new nodes became READY, re-run the preflight over the bounded scope before dispatching — **at the mode the escalation rules select**, not shallow by default (see Escalating to deep validation; where a trigger fires, read `deep-validation.md` before this preflight) — then fill free worker slots in scheduling order, **up to the `concurrent-open-prs` headroom**; free worker slots are not free PR slots. The preflight is mandatory before **any** new implementation worker, and the merge changed the graph the previous run validated. **What is optional is rebuilding what you already hold**: hand the validator the prior validated graph and the change, so it verifies the delta rather than re-enumerating hierarchy, project structure and every dependency edge. Where the validator cannot accept prior state, the full re-derivation stands; the cost is a tooling limitation to report, not a reason to skip it;
-5. **whether or not anything became READY, a merge or close of one of this run's PRs released a `concurrent-open-prs` slot — if the cap was holding READY work, fill the freed capacity**, within `new-issue-budget` and running the preflight over the nodes it starts (step 4's waiver covers the *advance*, never a dispatch: invariant 7 dispatches only validated READY work). Otherwise stay settled and keep supervising.
+5. **whether or not anything became READY, a merge or close of one of this run's PRs released a `concurrent-open-prs` slot — if the cap was holding READY work, fill the freed capacity**, within `new-issue-budget` and running the preflight over the nodes it starts (where a trigger fires, read `deep-validation.md` before it; step 4's waiver covers the *advance*, never a dispatch: invariant 7 dispatches only validated READY work). Otherwise stay settled and keep supervising.
 
 This requires no new user prompt. While `new-issue-budget` has headroom and in-scope work remains, a merge or close resumes dispatch inside the same invocation.
 
