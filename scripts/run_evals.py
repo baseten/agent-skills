@@ -50,6 +50,17 @@ reader holds a contract that says "apply it from there" with nothing there, and
 a rule moved between skills reads as a rule deleted. A companion that does not
 exist at the base contributes nothing to the old arm, which is the truth about
 that base.
+
+`prepare --lazy-side-files` tests the pointers to those side files rather than
+their text. A side file is a top-level `.md` beside a SKILL.md other than
+NOTES.md and README.md - `swarm`'s `runtime-remote.md`, or a file a contract
+moved a situational section into. By default the reader is told every file is
+contract, so a pointer that never fires still scores as a pass. In this mode the
+side files stay in contract_dir, but the reader is told to read SKILL.md first,
+to open a side file only where the text it is reading sends it there, and to end
+its answer naming each side file it opened with the line that sent it - so a
+grader can tell a rule reached through its pointer from one read because it was
+lying there. key.json lists that arm's side files for the grader.
 """
 from __future__ import annotations
 
@@ -89,6 +100,11 @@ SCHEMA_FILES = True
 # derives that closure), so a reader holding only the first rule is holding a
 # pointer to a file it was never given.
 FOLLOW_RULE_CITATIONS = True
+
+# The top-level files beside a SKILL.md that are not side files: the contract's
+# entry point, its notes, and a page for people. `--lazy-side-files` treats every
+# other top-level `.md` of the skill and its companions as read-on-pointer.
+NOT_SIDE_FILES = ("SKILL.md", "NOTES.md", "README.md")
 
 # Whether a skill renamed since the base is read from its old directory in the
 # old arm. Without it the base has no `skills/<new-name>/SKILL.md`, the round
@@ -289,7 +305,27 @@ def _companion_files(arm: str, base: str | None, companion: str) -> dict[str, st
     return out
 
 
-def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path) -> int:
+def _side_files(skill: str, contents: dict[str, str], companions: dict[str, list[str]]) -> list[str]:
+    """The side files of one arm, by the name a reader sees in contract_dir."""
+    own = [Path(rel).name for rel in contents
+           if Path(rel).parent == Path("skills") / skill and rel.endswith(".md")
+           and Path(rel).name not in NOT_SIDE_FILES]
+    comp = [k for c, keys in companions.items() for k in keys
+            if "/" not in k and k not in {f"{c}-{n}" for n in NOT_SIDE_FILES}]
+    return sorted(own) + sorted(comp)
+
+
+def _lazy_note(side: list[str]) -> str:
+    names = ", ".join(f"`{n}`" for n in side)
+    return ("Side files in contract_dir: " + names + ". Read `SKILL.md` first. Open a side file "
+            "only when the contract text you are reading tells you to read it in the situation "
+            "in front of you, never because it is there; one you were not sent to does not bind "
+            "you. End your answer with a section headed `Side files opened`, listing each side "
+            "file you opened and quoting the line that sent you there, or `none`.")
+
+
+def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path,
+            lazy_side_files: bool = False) -> int:
     evals_path = ROOT / "skills" / skill / "evals" / "evals.json"
     if not evals_path.exists():
         print(f"no evals at {_disp(evals_path)}", file=sys.stderr)
@@ -364,6 +400,10 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_text(text, encoding="utf-8")
 
+    side: dict[str, list[str]] = {
+        arm: _side_files(skill, arms[arm], comp_names[arm]) if lazy_side_files else []
+        for arm in arms}
+
     for arm in arms:
         for c in cases:
             pdir = round_dir / arm / f"eval-{c['id']:02d}"
@@ -378,20 +418,26 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
                     f"of {', '.join(f'`{c}`' for c in present[arm])}, which this skill cites for "
                     "rules it applies as its own. Where the contract says a rule lives in that "
                     "skill, it is in those files and binds you exactly as the skill's own text does.")
+            if side[arm]:
+                note = packet.get("contract_note")
+                packet["contract_note"] = (note + " " if note else "") + _lazy_note(side[arm])
             (pdir / "packet.json").write_text(
                 json.dumps(packet, indent=2) + "\n", encoding="utf-8")
             # The grading key sits beside the packet, not inside it. A reader is
             # given packet.json; a grader is given key.json and answer.md.
-            (pdir / "key.json").write_text(json.dumps(
-                {"id": c["id"], "name": c["name"],
-                 "expected_output": c["expected_output"],
-                 "assertions": c["assertions"]}, indent=2) + "\n", encoding="utf-8")
+            key = {"id": c["id"], "name": c["name"],
+                   "expected_output": c["expected_output"],
+                   "assertions": c["assertions"]}
+            if lazy_side_files:
+                key["side_files"] = side[arm]
+            (pdir / "key.json").write_text(json.dumps(key, indent=2) + "\n", encoding="utf-8")
 
     (round_dir / "round.json").write_text(json.dumps({
         "skill": skill, "base": base, "arms": sorted(arms),
         "base_skill": base_skill if "old" in arms else None,
         "companions": {arm: present[arm] for arm in sorted(arms)},
         "scenarios": [c["id"] for c in cases],
+        "lazy_side_files": {arm: side[arm] for arm in sorted(arms)} if lazy_side_files else None,
         "prepared_at": datetime.now(timezone.utc).isoformat(),
         "single_arm_reason": single_arm_reason,
     }, indent=2) + "\n", encoding="utf-8")
@@ -402,6 +448,9 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path)
     if "old" in arms and base_skill != skill:
         print(f"  renamed    old arm read from skills/{base_skill}/ at {base}")
     print(f"  scenarios  {len(cases)}")
+    if lazy_side_files:
+        for arm in sorted(arms):
+            print(f"  side files {arm}: {', '.join(side[arm]) or 'none'} (read on pointer)")
     for arm in sorted(arms):
         if companions:
             print(f"  companions {arm}: {', '.join(present[arm]) or 'none at this revision'}")
@@ -483,6 +532,9 @@ def main() -> int:
                    help="ref for the old arm; omit or pass '' for a single-arm baseline")
     p.add_argument("--ids", default=None, help="comma-separated scenario ids (default: all)")
     p.add_argument("--out", default=None, help="round directory (default: a scratch path)")
+    p.add_argument("--lazy-side-files", action="store_true",
+                   help="tell readers to open a side file only where the contract sends them, "
+                        "and to name each one they opened")
 
     s = sub.add_parser("score", help="read grading.json files and report disagreements")
     s.add_argument("--round", required=True)
@@ -491,7 +543,7 @@ def main() -> int:
     if a.cmd == "prepare":
         ids = {int(x) for x in a.ids.split(",")} if a.ids else None
         out = Path(a.out) if a.out else Path("/tmp") / f"evals-{a.skill}-{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}"
-        return prepare(a.skill, a.base or None, ids, out.resolve())
+        return prepare(a.skill, a.base or None, ids, out.resolve(), a.lazy_side_files)
     return score(Path(a.round).resolve())
 
 
