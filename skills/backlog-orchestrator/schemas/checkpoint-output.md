@@ -16,6 +16,7 @@ The block always carries:
 | worker sessions | created / archived / alive |
 | active PRs | each with CI and review state, and its gate line (*Progress / checkpoint output*) |
 | per-PR supervision state | each PR's repair counters and trigger states as `supervise-prs` last returned them — the counters the next pass and a restart are passed |
+| review-session ids | per PR, each dispatched review session's review id and inline comment ids, as its report named them |
 | check-in | the check-in state with its id, next firing time and unproductive-wake count split by kind |
 | what woke this cycle | the event or the check-in |
 | PR posture | the posture line, that the platform's PR posture is overridden and on what authority, and each PR's toggle line (`references/platform-pr-posture.md`, *Saying so*). This run gives its one-time notice in the first state block after the first subscription this run itself makes, and records it there |

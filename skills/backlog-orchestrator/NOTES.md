@@ -22,6 +22,8 @@ What landed instead is the trade stated where the preference is made, plus the o
 
 ## Review and repair sessions
 
+**Why a review session posts a real review:** the owner's ruling on #176, recorded with the carve-out in `rules/review-feedback-notes.md`, *The thread-root test*.
+
 **Why a review session spends no repair cycle.** The same prompt had both review and repair sessions count against `review-repair-cycles`. That key counts pushed repair passes, and a review session pushes nothing — charging it would make every review round look like a spent repair and exhaust the budget on reading alone.
 
 ## Transport precedence
@@ -100,9 +102,11 @@ The spend ceiling deliberately does not move on a merge. Merging work already pa
 
 ## Model and skill policy
 
-**Why selection moved in front of the ladder (Sept 2026):** the ladder catches a worker that keeps failing, and the observed losses were workers that did not fail. One patched the single site its ticket named where the defect was restated at three — a green PR fixing a third of the bug. Another declined its own ticket's preferred option, correctly, by reading the spec over the issue text; a cheaper worker doing what the ticket said would have looked exactly as successful. No trigger that keys on repeated failure can reach either, which is why the assignment is made up front and the ladder is the floor under it rather than the mechanism.
+**Why `swarm` is a required skill (#176):** this skill hands it release, capture, recovery refs and blocked and lost workers, the homes of protected rules 2 and 9, but it was not in the list the preflight checks, so a missing install was found only when the first worker needed it.
 
-**Why the axes live in `swarm` and not here:** that skill already owned model selection by failure visibility, and a second copy of the tiers in this file is the drift this repository keeps finding. What is genuinely this skill's is the implementation escalation ladder, which stays. The repair-escalation evidence trigger and the cycle interaction moved to `rules/repair-rounds.md` (#140), with their notes, because `implement-issue` applies them too.
+**Why selection moved in front of the ladder (Sept 2026):** the ladder catches a worker that keeps failing, and the observed losses were workers that did not fail. One patched the single site its ticket named where the defect was restated at three — a green PR fixing a third of the bug. Another declined its own ticket's preferred option, correctly, by reading the spec over the issue text; a cheaper worker doing what the ticket said would have looked exactly as successful. No trigger that keys on failure can reach either, which is why the assignment is made up front and the ladder is the floor under it rather than the mechanism.
+
+**Why the axes live in `swarm` and not here:** that skill already owned model selection by failure visibility, and a second copy of the tiers in this file is the drift this repository keeps finding. What is genuinely this skill's is the implementation escalation ladder, which stays — its trigger is `swarm`'s evidence rule since #176: the old "reasoning-heavy repeated failure" trigger could never fire inside the default `implementation-attempts: 2`. The repair-escalation evidence trigger and the cycle interaction moved to `rules/repair-rounds.md` (#140), with their notes, because `implement-issue` applies them too.
 
 **Why a missing `merge-stack` narrows the gate rather than stopping the wave (moved in #157):** the asymmetry with `implement-issue` is deliberate, not drift. That skill blocks one issue's worth of nothing at an invocation its user is typically attending; blocking here would trade twelve issues of authorized implementation for the tool their optional final step needs. The worker/parent exception is stated because "required" plus "unavailable means `BLOCKED`" otherwise reads as a preflight stop, the outcome the fallback was written to avoid.
 
@@ -165,6 +169,8 @@ The note on why the per-PR record holds its review lines per convention moved to
 
 ## Parent supervision loop
 
+**Why steps 9 and 11 defer to `swarm`'s states (restatement audit, #176):** step 11 listed three outcomes and sent anything failing the releasable test to *Blocked workers* or `NEEDS_USER`, so a healthy worker still working raised an owner item that held the wave. Step 9 captured only after a failed nudge, which never comes where no channel exists. Both now take `swarm`'s own state tables.
+
 **Why step 16 states the override (#154):** `supervise-prs` arms each PR's subscription, but runs here with `wait owner = caller`, so every wake those subscriptions produce lands in this loop — and the first one carries the platform's drive-to-green posture. A session that has been compacted since adoption has this contract and the wake's text in view, not `supervise-prs`'s; stating the override where this loop waits is what puts it beside the posture at the moment it is read. The rule and its reasoning are `rules/platform-pr-posture.md` and its notes.
 
 **Why the trigger sweep detects rather than deletes.** The incident prompt proposed deleting any trigger bound to a worker session on each cycle. This file already records that deleting a leaked session's trigger caused it to arm a replacement one minute later: the session arms the wake, so only archiving stops it. With finished sessions now archived on a match, archival kills their triggers anyway. A trigger on a worker still working is a finding about the dispatch prompt, not something to fight.
@@ -212,6 +218,8 @@ The notes on what two unbounded check-ins cost, why a subscription is not free, 
 **Why the per-PR record carries the session id:** the recovery that cleaned up the leaks had to match sessions to PRs by fuzzy-matching session titles with a script over a truncated tool result. A session id and archived flag on the record the run already keeps makes the reconciliation a lookup.
 
 ## PR promotion and central supervision
+
+**Why the diagram no longer resumes a worker (#176):** a resumed implementation worker's push carries no repair trailers and spends no budget, so a restart rebuilds its counters as 0: the unbounded loop protected rule 5 forbids. Repairs are `repair-pr` passes `supervise-prs` dispatches.
 
 **Why the charter lives in the PR body and not only in the per-PR block (round 1, Sept 2026):** invariant 1 classifies that block as a cache, so a run recording the charter only there loses it at the session boundary — and a resumed run would rebuild one from the issue as it now stands, after the diff expanded and quite possibly after the issue was edited to match. That reconstruction agrees with anything, which is the same defect as recording it late. The body is durable, is written at creation anyway, and is where the comparison already had to look. Where no charter line is recoverable, the check is reported **unavailable** rather than performed against a guess: an unavailable check is a known blind spot, a check against a reconstructed charter is a clean result that means nothing.
 
@@ -312,6 +320,8 @@ The argument for `finding-repair-cycles` being its own counter moved to `rules/r
 **The worked example behind the generator rule:** a Drizzle migration's identity lives in five places — the `.sql` filename, the journal's `idx`, `tag` and `when`, and the snapshot's `id`/`prevId` chain. A hand-rename that updates four and misses `when` makes the migration **silently skipped**: no error, no log, green CI, and the schema change never applies. Renumbering `0011` to `0014` in `crypto-scanner-api` was exactly this; the repair was regenerating through `pnpm db:generate` and splicing the hand-written backfill back in. A regenerated artifact that silently drops hand-written content is the same failure with the sign flipped, hence splice-and-re-verify.
 
 ## Outcomes
+
+**Why a late coverage retrofit takes the body-edit rule (#176):** editing a published, read body in place is what protected rule 6 forbids. Where the rule bars the edit, the drift is reported for the owner with its replacement body instead.
 
 **Why the verified-availability record must never become a skip:** the worker's dependency precondition runs on every dispatch regardless, and it would be a contradiction to build a record whose purpose was to let a caller skip the very check that produced it. The record informs restarts; it exempts nothing.
 
