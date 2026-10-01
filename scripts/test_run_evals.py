@@ -369,6 +369,53 @@ def guard_extra_skill_files_join_the_contract() -> list[str]:
     return failures
 
 
+def guard_lazy_side_files_are_read_on_pointer() -> list[str]:
+    """Under --lazy-side-files a reader is told to open a side file only when sent.
+
+    By default every side file is announced as contract, so a reader holds a
+    moved rule whether or not the pointer to it ever fired, and a round can never
+    catch a missed pointer. The lazy note must name every side file, of the skill
+    and of each companion, leave the entry points out, and require the answer to
+    say which side files it opened and what sent it there.
+    """
+    failures = []
+    for label, lazy, expect in (("intact", True, True), ("guard neutered", False, False)):
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            mod = _load()
+            mod.ROOT = tmp
+            _extra_fixture(tmp)
+            with contextlib.redirect_stdout(io.StringIO()):
+                rc = mod.prepare("fixture-skill", "HEAD", None, tmp / "round", lazy)
+            if rc != 0:
+                failures.append(f"{label}: prepare returned {rc}")
+                continue
+            for arm in ("new", "old"):
+                d = tmp / "round" / arm / "eval-00"
+                note = json.loads((d / "packet.json").read_text()).get("contract_note", "")
+                key = json.loads((d / "key.json").read_text())
+                told = "Side files opened" in note and "Read `SKILL.md` first" in note
+                if not expect:
+                    if told or "side_files" in key:
+                        failures.append(
+                            "guard neutered but the reader was still told to read side files "
+                            "on pointer — the flag is not what puts the note there, so this "
+                            "case pins nothing")
+                    continue
+                if not told:
+                    failures.append(f"{label}: {arm} packet does not carry the read-on-pointer note")
+                for name in ("`runtime-x.md`", "`extra-companion-runtime-y.md`"):
+                    if name not in note:
+                        failures.append(f"{label}: {arm} note does not name {name} as a side file")
+                listed = note.split("Side files in contract_dir:", 1)[-1].split(". Read", 1)[0]
+                for entry in ("`SKILL.md`", "`extra-companion-SKILL.md`", "`NOTES.md`"):
+                    if entry in listed:
+                        failures.append(f"{label}: {arm} note lists the entry point {entry} as a side file")
+                if key.get("side_files") != ["runtime-x.md", "extra-companion-runtime-y.md"]:
+                    failures.append(f"{label}: {arm} key.json side_files is {key.get('side_files')!r}")
+    return failures
+
+
 def _schema_fixture(tmp: Path) -> None:
     """A skill and its companion, each with a file in `schemas/`, v1 at the base and v2 now."""
     skill = _fixture(tmp)
@@ -493,6 +540,7 @@ GUARDS = (
     ("companions join the contract", guard_companions_join_the_contract),
     ("rule citations join the contract", guard_rule_citations_join_the_contract),
     ("extra skill files join the contract", guard_extra_skill_files_join_the_contract),
+    ("lazy side files are read on pointer", guard_lazy_side_files_are_read_on_pointer),
     ("schema files join the contract", guard_schema_files_join_the_contract),
     ("a renamed skill keeps its old arm", guard_a_renamed_skill_keeps_its_old_arm),
 )

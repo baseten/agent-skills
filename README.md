@@ -255,6 +255,14 @@ resolves. That is what lets a rule
 move between skills and be compared: without it, the new arm reads a pointer to a rule it
 was never given, and a behaviour-preserving move scores as a deletion.
 
+That also means a pointer to a side file can never fail a default round: the reader
+is told the side file is contract, so it holds the moved rule whether or not the
+pointer fired. `prepare --lazy-side-files` tests the pointer instead. The side files
+stay in the contract directory, but the reader is told to read `SKILL.md` first, to
+open a side file only where the text sends it, and to name each one it opened with
+the line that sent it; `key.json` lists the arm's side files for the grader. Use it
+for any change that moves text into a side file or edits a pointer to one.
+
 `score` reads the `grading.json` files and reports the pass rate per arm, then the
 disagreements, which is the only part that carries information. It marks an ungraded
 scenario as ungraded rather than counting it either way.

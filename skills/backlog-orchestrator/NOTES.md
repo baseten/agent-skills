@@ -2,7 +2,9 @@
 
 Companion to `SKILL.md`. That file is the contract; this one holds the reasoning and the incident history behind its rules, keyed by section. Read a section's note before changing its rules or when applying them to a case the contract doesn't obviously cover. Nothing here overrides the contract.
 
-**The #157 restructure.** `SKILL.md` was cut with no rule dropped, weakened, narrowed or broadened: incident narrative, history, restated rationale and `(NOTES: …)` asides moved here, under the section they explain; restatements of what `swarm`, `supervise-prs` or a `rules/` file owns became pointers; the state block's and the closing report's field lists moved to `schemas/checkpoint-output.md`, which is part of the contract and which `SKILL.md`, *Progress / checkpoint output*, keeps the rules for; and the session reconciliation, the recovery-ref ender and the reach-by-tier statement became tables. Every heading survived, because other skills cite them. Entries marked *(moved in #157)* are text the contract used to carry; older entries quote the contract as it stood when they were written. **`schemas/` is a directory inside the skill, not the repository's `schemas/`**, because `bootstrap.sh` installs a skill directory and nothing above it; `scripts/run_evals.py` carries it into a round's contract directory and `scripts/check_word_budgets.py` budgets it like a file beside `SKILL.md`, so text moved there cannot count as a cut.
+**The #157 restructure.** `SKILL.md` was cut with no rule dropped, weakened, narrowed or broadened: incident narrative, history, restated rationale and `(NOTES: …)` asides moved here, under the section they explain; restatements of what `swarm`, `supervise-prs` or a `rules/` file owns became pointers; the state block's and the closing report's field lists moved to `schemas/checkpoint-output.md`, which is part of the contract and which `SKILL.md`, *Progress / checkpoint output*, keeps the rules for; and the session reconciliation, the recovery-ref ender and the reach-by-tier statement became tables. Every heading survived that cut, because other skills cite them; since #167 some live in the files beside `SKILL.md` (below). Entries marked *(moved in #157)* are text the contract used to carry; older entries quote the contract as it stood when they were written. **`schemas/` is a directory inside the skill, not the repository's `schemas/`**, because `bootstrap.sh` installs a skill directory and nothing above it; `scripts/run_evals.py` carries it into a round's contract directory and `scripts/check_word_budgets.py` budgets it like a file beside `SKILL.md`, so text moved there cannot count as a cut.
+
+**The #167 split.** Four situational parts of the contract moved verbatim, apart from their cross-references, into files beside `SKILL.md`, each read only when its situation arises, on the pattern `swarm` uses for `runtime-remote.md`: the escalation's mechanics, coverage and reporting (`deep-validation.md`), the restart sequence (`restart-resume.md`), collision remedies, the dispatch-time expectation and the renumber (`artifact-collisions.md`), and the workflow script's requirements (`dynamic-workflow.md`). What a reader needs to *decide* whether the situation has arisen stayed: the escalation triggers and the rule that an untriggered wave does not escalate, collision detection, the opt-in, tier selection and the fan-out's sizing rule, and the resume-frontier definition. The restart pointer states restart in the contract's own terms — this orchestration re-invoked over the same manifest, or a returned checkpoint resumed — and sits where the restart steps used to, beside the classification they re-derive. Each decision point in `SKILL.md` carries a pointer naming the trigger and the file, never a bare cross-reference, because a rule one hop away was missed in eval 65 on #165. Entries below keep their section names; a heading whose section moved says where it now lives. Like `runtime-remote.md`, these are plain files, not `references/`, so `bootstrap.sh` installs them with the directory, `scripts/run_evals.py` carries every top-level `.md` into a round's contract, and `scripts/check_word_budgets.py` budgets each.
 
 ## Autonomy and interactive prompts
 
@@ -16,7 +18,7 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 What landed instead is the trade stated where the preference is made, plus the one lever the parent still has on that tier: a remote head that does not advance is reported after 30 minutes and raised at two hours. Measured in elapsed time, deliberately: the supervision loop has no minimum interval, so a cycle count is really a count of how busy the run is, and a burst of sibling events would have raised a working worker minutes after dispatch. That is not a capture and is not offered as one — it converts a state that reads as *still working* into one somebody sees. The knob that would let an owner prefer the enforceable tier is deliberately not here; it is policy, and it is tracked separately.
 
-**Why the fan-out is sized to the headroom (moved in #157):** one staged fan-out over twelve issues against a cap of six opens twelve PRs — a running workflow cannot be reached once the cap fills, so the cap bounds nothing inside it. A Dynamic Workflow suits the fan-out because it is the "many small independent transformations" shape workflows are documented for; the launch approval prompt's exact form depends on the session's permission mode.
+**Why the fan-out is sized to the headroom (moved in #157; the rule is in `dynamic-workflow.md` since #167):** one staged fan-out over twelve issues against a cap of six opens twelve PRs — a running workflow cannot be reached once the cap fills, so the cap bounds nothing inside it. A Dynamic Workflow suits the fan-out because it is the "many small independent transformations" shape workflows are documented for; the launch approval prompt's exact form depends on the session's permission mode.
 
 ## Review and repair sessions
 
@@ -64,7 +66,7 @@ The notification half is deliberately subordinate. A subscription dies with the 
 
 **Why a baseline is measured per base (moved in #157):** tickets go stale, and a wrong baseline is worse than none — genuinely new failures hide inside an imaginary one. A number measured on one base and broadcast to another reintroduces the defect from the other direction: a real regression hidden inside a borrowed baseline, or a pre-existing failure reported as new.
 
-## Escalating to deep validation
+## Escalating to deep validation — triggers in `SKILL.md`, the rest in `deep-validation.md`, *Running an escalation*
 
 **Why escalation is scoped to a subgraph (moved in #157):** the cost objection to deep mode is about breadth, and escalation does not have to be all-or-nothing. The `dependency transport unavailable` exception survives escalation because a deeper read cannot conjure a capability the tracker does not expose.
 
@@ -104,7 +106,7 @@ The spend ceiling deliberately does not move on a merge. Merging work already pa
 
 **Why a missing `merge-stack` narrows the gate rather than stopping the wave (moved in #157):** the asymmetry with `implement-issue` is deliberate, not drift. That skill blocks one issue's worth of nothing at an invocation its user is typically attending; blocking here would trade twelve issues of authorized implementation for the tool their optional final step needs. The worker/parent exception is stated because "required" plus "unavailable means `BLOCKED`" otherwise reads as a preflight stop, the outcome the fallback was written to avoid.
 
-## Restart / resume
+## Restart / resume — the steps in `restart-resume.md`, *The restart sequence*
 
 **Why the escalation triggers apply at restart (moved in #157):** a resumed run is if anything the likelier place to meet one, since its dependencies closed in an earlier wave by construction. An unproven boundary's edge is re-adopted because the validator reads through a transport that may truncate identically to last time; the comment-record edge is classified at this step because skipping it is precisely how a retired dependency becomes permanent. `DONE` is skipped only after the recovery-ref enumeration because this step precedes both PR and checkpoint adoption, so an issue skipped on merge evidence is never reached by anything that would have found its ref.
 
@@ -291,7 +293,7 @@ The argument for `finding-repair-cycles` being its own counter moved to `rules/r
 
 **Why the remote-session tier sits beside the workflow tier (moved in #157):** that is the opposite of where it sat while the *see* half was assumed; on that tier the escalation has no first step and no second one. Unreachable-mid-run is a real cost of the workflow runtime — the same one that disqualifies it for PR supervision — and this is the second thing it cannot do, not a footnote on the first.
 
-## Cross-branch artifact collisions
+## Cross-branch artifact collisions — detection in `SKILL.md`; *Resolving a collision* and *Expecting a collision at dispatch* in `artifact-collisions.md`
 
 **Why a sequence collision is expected at dispatch rather than only detected after (Sept 2026):** detection was already here, and it fires only once the PRs exist, by which point every one of them is green. Four workers each took the next free migration number from the same base and each passed its migration-consistency check, because each was consistent with the base in isolation. The collision was knowable the moment more than one schema-touching issue was dispatched. The renumbers are strictly sequential because the snapshots chain by predecessor id, so the second has to be regenerated against a schema including the first — which is also why they cannot be batched. The reviewed body is kept verbatim because it is the thing review read: regenerating it risks an expression index or partial `WHERE` coming back different, and keeping it is what keeps any re-review down to the identity files.
 
@@ -305,7 +307,7 @@ The argument for `finding-repair-cycles` being its own counter moved to `rules/r
 
 **The third-kind example (moved in #157):** one branch added tests querying the string `Center`; another renamed it to `Centre`. No line was shared, git merged cleanly, and the default branch's own CI found it after both had landed.
 
-## Performing the renumber
+## Performing the renumber — `artifact-collisions.md`
 
 **The worked example behind the generator rule:** a Drizzle migration's identity lives in five places — the `.sql` filename, the journal's `idx`, `tag` and `when`, and the snapshot's `id`/`prevId` chain. A hand-rename that updates four and misses `when` makes the migration **silently skipped**: no error, no log, green CI, and the schema change never applies. Renumbering `0011` to `0014` in `crypto-scanner-api` was exactly this; the repair was regenerating through `pnpm db:generate` and splicing the hand-written backfill back in. A regenerated artifact that silently drops hand-written content is the same failure with the sign flipped, hence splice-and-re-verify.
 
