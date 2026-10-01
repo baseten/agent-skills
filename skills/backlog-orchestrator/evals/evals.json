@@ -281,13 +281,13 @@
     {
       "id": 22,
       "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a supervised PR has no .claude/agent-policy.json in its repository. Three review threads are open on the diff: (a) rooted by a human colleague, asking you to rename a variable for clarity; (b) rooted by example-review-bot[bot], asking why you chose this caching strategy over an alternative; (c) rooted by you earlier in this run, a reply you posted in an existing thread. Question: for each thread, is it auto-fixed, escalated, or neither, and why?",
-      "expected_output": "(a) Auto-fixed. It roots on the diff and asks for a code change the pass can make and verify. That the author is a human is irrelevant — author identity decides nothing. (b) NEEDS_USER, reserved for the owner: it asks for rationale, not a diff, so it is escalated with its URL and what it asks, never answered on the run's own authority, and it holds the merge gate shut. That the author is an automated reviewer does not make it repairable. (c) Neither: a comment this run authored is never feedback, which follows from the thread-root test rather than from any author test. No reviewer allowlist or bot test is consulted at any point.",
+      "expected_output": "(a) Auto-fixed. It roots on the diff and asks for a code change the pass can make and verify. That the author is a human is irrelevant to that — author identity decides nothing about what is fixed; it decides only that the fix's reply is held for the owner's approval and the thread left open, auto-resolve-comments being off by default. (b) NEEDS_USER, reserved for the owner: it asks for rationale, not a diff, so it is escalated with its URL and what it asks, never answered on the run's own authority, and it holds the merge gate shut. That the author is an automated reviewer does not make it repairable. (c) Neither: a comment this run authored is never feedback, which follows from the thread-root test rather than from any author test. No reviewer allowlist or bot test is consulted for any of these classifications.",
       "name": "review-thread-kind-not-author",
       "assertions": [
         "the human-rooted rename is auto-fixed, and the answer states author identity does not decide repairability",
         "the bot-rooted design question is NEEDS_USER and is not answered on the run's own authority",
         "the run's own earlier comment is never feedback, via the thread-root test",
-        "no bot test or reviewer allowlist is applied anywhere"
+        "no bot test or reviewer allowlist decides any thread's classification"
       ],
       "files": []
     },
@@ -856,6 +856,19 @@
         "the answer's state block records the override and its authority",
         "the answer's state block records what woke the cycle and the check-in id with its next firing time",
         "the answer has the check-in's prompt state the override"
+      ],
+      "files": []
+    },
+    {
+      "id": 66,
+      "name": "held-replies-are-counted-on-wakes-and-listed-at-budget-stop",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: your wave has settled with nothing dispatchable. Two PRs are open; each has one thread whose fix is pushed and whose reply is held for the owner (an approval-pending reply). No DECISION or NEEDS_USER item is open. A scheduled check-in wakes with no durable change. Questions: (a) what does the wake's state block report about the owner's queue? (b) is this quiet wake a settle trigger? (c) on the next attended turn, with nothing else moving, is quiescence a settle trigger? (d) the wake budget then runs out with the replies still held — what does the stop report say about them?",
+      "expected_output": "(a) The DECISION and NEEDS_USER counts (zero) and the approval-pending reply count, two, on the wake's cadence, even though nothing else changed. (b) No: quiescence settles only on an attended turn or a real state change, never on a quiet unattended wake. (c) Yes: open approval-pending replies count alongside open decisions, so the run settles and routes them through the settled step's walkthrough. (d) It lists every held reply not yet posted, with its thread URL, fix SHA and text, because a held reply is dropped with the run.",
+      "assertions": [
+        "the wake reports the approval-pending reply count",
+        "a quiet unattended wake does not trigger settle",
+        "quiescence on an attended turn with held replies open is a settle trigger",
+        "the budget-stop report lists each held reply with its text"
       ],
       "files": []
     }

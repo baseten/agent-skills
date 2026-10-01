@@ -115,6 +115,41 @@
         "the answer grounds the permission in the footer marking unread text",
         "the edit is reported at settle with the PR, what changed and why"
       ]
+    },
+    {
+      "id": 10,
+      "name": "the-closing-output-lists-unposted-held-replies",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a run settles on a scheduled wake with nobody present, so the walkthrough declines. The caller passed two approval-pending reply items, each a thread a person is in with its fix pushed and its one-line held reply. Questions: (a) does the closing output mention them, and with what? (b) can the owner recover them later by running settle-outstanding-decisions?",
+      "expected_output": "(a) Yes: it lists every held reply not yet posted — thread URL, fix SHA and the one-line text — separately from the decisions, so the owner can post it themselves. It also lists each fix pushed on a thread a person is in that also asks a question as 'fix pushed — thread left for you (it also asks a question)'. (b) No. A held reply's text is run state and is dropped when the run ends; no later walkthrough recovers it, and the closing output must not say otherwise. The threads stay open with their fixes pushed. A later run that re-dispatches such a thread finds the change already on the head and composes a fresh held reply rather than fixing it again.",
+      "assertions": [
+        "the closing output lists each unposted held reply with its thread URL, fix SHA and text",
+        "the answer says a later settle-outstanding-decisions run cannot recover the held text",
+        "the answer says a later re-dispatch finds the change on the head and composes a fresh held reply",
+        "the answer does not claim the walkthrough is idempotent over held replies"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "a-rejected-thread-is-still-listed-after-a-second-settle",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: at the first settle the owner rejected one held reply, and you returned it to the caller, which had supervise-prs record it as rejected. The wave un-settles, a merge lands, and it settles again with nobody present. The held-reply records the caller passes now carry no approval-pending items, one rejected held reply and one mixed-thread fix. Questions: (a) what does step 4 pass the walkthrough? (b) what does step 7 list?",
+      "expected_output": "(a) No held replies: rejected ones are not passed to be asked again. (b) The rejected one as 'reply not posted — thread open for you' with its thread URL and fix SHA, still listed although it was rejected at an earlier settle, and the mixed-thread fix as 'fix pushed — thread left for you (it also asks a question)'. Both are read from the held-reply records.",
+      "assertions": [
+        "the rejected reply is not passed to the walkthrough",
+        "step 7 still lists the rejected reply after the second settle",
+        "step 7 lists the mixed-thread fix",
+        "both come from the held-reply records"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "an-approved-held-reply-is-not-re-asked-at-a-second-settle",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: at the first settle the owner approved one held reply, which was posted (write id 9001) and its thread resolved. You returned that outcome, and the caller passed it to supervise-prs. The wave settles again later. Questions: (a) is that reply passed to the walkthrough again? (b) does step 7 list it as unposted?",
+      "expected_output": "(a) No: the approved outcome cleared its approval-pending record in supervise-prs' record, so it is not among the held-reply records passed in. (b) No: it was posted and the thread resolved, so it is not listed as unposted.",
+      "assertions": [
+        "the approved reply is not passed to the walkthrough again",
+        "it is not listed as unposted at step 7",
+        "the outcome reached supervise-prs through the caller"
+      ]
     }
   ]
 }

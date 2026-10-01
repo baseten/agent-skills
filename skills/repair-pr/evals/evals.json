@@ -112,7 +112,7 @@
     {
       "id": 8,
       "name": "pushed-repair-replies-in-one-signed-line",
-      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review, budget remaining. One supplied thread asks for a bounds check; you make it, run the package's tests, and push `9f3e11c`. A second supplied thread asks why the retry budget is per-request. Questions: (a) what does the reply on the first thread look like? (b) what goes on the second thread? (c) which of this pass's writes carries the attribution footer?",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review, budget remaining. One supplied thread, opened by an automated reviewer (user.type Bot) and with no other author, asks for a bounds check; you make it, run the package's tests, and push `9f3e11c`. A second supplied thread asks why the retry budget is per-request. Questions: (a) what does the reply on the first thread look like? (b) what goes on the second thread? (c) which of this pass's writes carries the attribution footer?",
       "expected_output": "(a) One line naming the commit and what changed, plus the attribution footer. This pass is unattended by construction — nobody reads its replies before they are posted — so the form rule's approval test answers No for every write it makes, its own and any made through resolve-pr-comment. Not a restatement of the comment, a justification of the approach, or a list of the checks run. (b) Nothing. It is a question, so it is a NEEDS_USER item returned to the caller with all five required fields verbatim — the thread's API html_url forwarded as a string and never rebuilt, the ask quoted to at most two lines, the paste-ready recommended reply, the change SHA or an explicit none, and the one-clause reason it was not posted — and the thread is left open and unresolved. No mode answers a query in the thread. (c) Every authored write this pass makes, its own and any made through resolve-pr-comment. The draft is not one of them: it is material for a person, not a write, and it carries no footer.",
       "assertions": [
         "the reply on the repaired thread is one short line naming the SHA, plus the attribution footer",
@@ -151,12 +151,34 @@
       "id": 11,
       "name": "every-repair-commit-carries-its-repair-trailers",
       "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are on a review repair with budget remaining, dispatched as pass id rp-7 on the default model. You fix two threads in one coherent commit; the repository requires a Signed-off-by trailer on every commit. What does the commit message carry, and why does it matter to anyone but you?",
-      "expected_output": "The repository's Signed-off-by trailer and three repair trailers — `Repair-Pass: rp-7`, `Repair-Type: review`, `Repair-Model: default` — since every commit a repair pass makes carries them; and because resolve-pr-comment makes the commit for a review pass, the trailers are passed to it, which applies them to every commit it makes, per-concern ones included. It matters to the supervisor: its counts are a cache, and after a restart it rebuilds them from the branch by distinct pass id, type and model tier — the only way to tell a repair pass from an implementation checkpoint or a person's push.",
+      "expected_output": "The repository's Signed-off-by trailer and three repair trailers — `Repair-Pass: rp-7`, `Repair-Type: review`, `Repair-Model: default` — since every commit a repair pass makes carries them; and because resolve-pr-comment makes the commit for a review pass, the trailers are passed to it, which applies them to every commit it makes, each per-thread one included. It matters to the supervisor: its counts are a cache, and after a restart it rebuilds them from the branch by distinct pass id, type and model tier — the only way to tell a repair pass from an implementation checkpoint or a person's push.",
       "assertions": [
         "the answer includes Repair-Pass, Repair-Type and Repair-Model trailers with the supplied values",
         "the answer keeps the repository's required trailer as well",
         "the answer forwards the trailers to resolve-pr-comment for the commits it makes",
         "the answer explains the trailers let a supervisor rebuild its counts from the branch"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "a-person-in-the-thread-gets-nothing-posted",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review, budget remaining, auto-resolve-comments not passed. One supplied thread is a human reviewer's (user.type User) 'fix the off-by-one in the loop bound'. resolve-pr-comment makes the fix and you push 4d5e6f7. Questions: (a) what does this pass post on the thread? (b) what does your Output carry for it? (c) is the thread among the unresolved ones you count?",
+      "expected_output": "(a) Nothing. A person is in the thread and the key is false, so resolve-pr-comment holds the reply, and a reply it holds is not posted by this pass at all — no reply, and no footer, since there is no write. (b) The approval-pending reply item, forwarded verbatim with its html_url never rebuilt, the fix SHA and the held reply, for the caller to report and hold the merge gate on. (c) Yes: it is still open.",
+      "assertions": [
+        "nothing is posted on the thread",
+        "the approval-pending reply item is forwarded verbatim",
+        "the thread is counted as still unresolved"
+      ]
+    },
+    {
+      "id": 13,
+      "name": "an-already-on-head-thread-spends-no-cycle",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review, budget remaining (1 cycle). The only supplied thread is a human reviewer's (user.type User) 'rename `n` to `count`', and the head already has `count`, from 4e5f6a7. auto-resolve-comments false. Questions: (a) do you push anything? (b) what outcome do you return, and is a cycle consumed? (c) had the budget been zero, what would come back for this thread?",
+      "expected_output": "(a) No: the requested change is already on the head, so it is not repair work. (b) NO_CODE_CHANGE, and no cycle is consumed. The held reply naming 4e5f6a7 comes back as an approval-pending reply item. (c) The same approval-pending reply item, never a deferred repair: the work is done.",
+      "assertions": [
+        "nothing is pushed",
+        "the outcome is NO_CODE_CHANGE and no cycle is consumed",
+        "with zero budget the thread is an approval-pending item, not a deferred repair"
       ]
     }
   ]

@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 23909,
+      "budget": 23984,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -23,7 +23,7 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
-      "budget": 1790,
+      "budget": 1823,
       "target": 1500
     },
     "skills/create-pr/SKILL.md": {
@@ -31,7 +31,7 @@
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 4171,
+      "budget": 4247,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
@@ -47,7 +47,7 @@
       "target": 3000
     },
     "skills/npm-dependency-upgrade-orchestrator/SKILL.md": {
-      "budget": 5259,
+      "budget": 5261,
       "target": 8000
     },
     "skills/plan-merge-order/SKILL.md": {
@@ -55,11 +55,11 @@
       "target": 3000
     },
     "skills/repair-pr/SKILL.md": {
-      "budget": 3193,
+      "budget": 3316,
       "target": 3000
     },
     "skills/resolve-pr-comment/SKILL.md": {
-      "budget": 5680,
+      "budget": 7031,
       "target": 3000
     },
     "skills/review-docs/SKILL.md": {
@@ -71,19 +71,19 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 4643,
+      "budget": 4854,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
-      "budget": 5046,
+      "budget": 5535,
       "target": 3000
     },
     "skills/summarize-wave/SKILL.md": {
-      "budget": 2163,
+      "budget": 2188,
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 4949,
+      "budget": 5198,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
@@ -111,7 +111,7 @@
       "target": 1500
     },
     "rules/agent-policy.md": {
-      "budget": 1547,
+      "budget": 1645,
       "target": 1500
     },
     "rules/authored-write-form.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/review-feedback.md": {
-      "budget": 1551,
+      "budget": 2413,
       "target": 1500
     },
     "rules/review-trigger.md": {

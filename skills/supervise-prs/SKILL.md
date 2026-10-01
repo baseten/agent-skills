@@ -21,6 +21,7 @@ This file is the contract; the reasoning and incident history behind its rules l
 | --- | --- | --- |
 | **PR set** | the PRs to supervise, each with its repository, branch and base, the head as the caller knows it, and the canonical issue URL where there is one | nothing to supervise: return, naming the missing input |
 | **budgets, per PR** | the resolved caps for `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles` and `repair-model-escalations`, each with its source. This skill never reads `.claude/agent-policy.json` itself (`references/agent-policy.md`, *Resolution*) | **every cap 0**: the run classifies and reports and pushes nothing, and the report says no budgets were passed |
+| **`auto-resolve-comments`, per PR** | the resolved key, with its source — whether a repaired thread a person is in is replied to and resolved without approval (`resolve-pr-comment`, *Replies held for approval*) | **`false`**: such replies are held |
 | **counters, per PR** | cycles and escalations already used: **0 for a PR the caller's run created**, otherwise the counters in this skill's last returned record for that PR | rebuilt from the PR's durable evidence at *Adopt* |
 | **posting-identity map** | the run's map (`references/posting-identity.md`) | start empty: every entry `unestablished` |
 | **review routing and trigger state, per PR** | per review convention the PR's routing requires: who performs its rounds — `this skill` (a trigger comment or an invoked review skill) or `caller` (for instance a dispatched review session) — and its trigger state: `issued`, `verified`, `pending`, `deferred` (with who owes the round and the condition it waits on), or `unavailable`; and any round recorded `refused`. **A `caller` convention, or a `deferred` round the caller owes, requires `wait owner = caller`**: the round falls due in a pass result, and only a caller running the loop sees it | the routing from the repository, per `references/review-trigger.md`, performed by this skill; the state read off the PR's timeline at *Adopt*; nothing found is `pending` |
@@ -28,6 +29,7 @@ This file is the contract; the reasoning and incident history behind its rules l
 | **head checks** | zero or more checks of the caller's own, each **stated in full**: what it compares, when it runs — `on-repair-head`, before a pass's pushed head is adopted, or `every-pass` — and what each result does: `adopt`, `hold`, or `return to caller` | none |
 | **caller pushes**, per pass | heads the caller pushed to a supervised branch since the last pass, each tagged `mechanical` or `substantive` by `references/mechanical-pushes.md`; and the branches the caller holds **locked** because it is about to mutate them, or is mutating them now | none |
 | **releases**, per pass | PRs held by a head check that the caller releases, with what it decided. **On release the held head is adopted as a head move** (*Head moves*); a caller that decided against it reverts separately, and that is a caller push | none |
+| **held-reply outcomes**, per pass | each held reply a walkthrough settled, from `settle-and-merge`'s result: approved with its write id and `resolved` or `left open`, which clears its approval-pending record, or rejected as thread and fix SHA, recorded as handled — rejected (`references/review-feedback.md`, *Approval-pending replies*) | none |
 | **findings to repair** | settle-time findings on a supervised PR, verbatim with their durable site: an `IN_FLIGHT_FIX` action point, or a recorded ruling that requires the PR's code to change | none |
 | **wait owner** | `self` or `caller` | `self` |
 | **monitoring cap** | a wall-clock bound on this skill's own loop | none: the wake budget alone bounds it |
@@ -58,7 +60,7 @@ branch/base
 remote head SHA
 CI: per check — state, and attribution where red (references/ci-attribution.md)
 per review convention: performed by; trigger state; rounds, each pending/refused (reason, reset)/complete-with-findings/clean
-reserved threads (question items, deferred-repair items), and no-action threads
+reserved threads (question items, deferred-repair items), approval-pending replies (one per thread), rejected held replies (thread + fix SHA), mixed-thread fixes left for the owner, and no-action threads — held-reply records (approval-pending, rejected, the no-action that ends one) replace each other per thread, and a later reserved or deferred-repair record turns one into a mixed-thread record (`references/review-feedback.md`, *Approval-pending replies*); every other record stands beside them
 draft state: as-created -> current; promotion convention, or absent
 cycles used/cap: CI · review · finding; review rounds completed; strongest-model rounds used/cap, with locus evidence
 mutator: none / pass <id> / caller (locked)
@@ -98,7 +100,7 @@ One pass is one supervision cycle over the tracked set. In order:
    - record every item it returned (*Review feedback*, step 3) and its body-drift flag, forwarded to the caller as a prompt for the settle's body reconcile (`settle-and-merge`), never as a precondition;
    - release it through the dispatch mechanism;
    - then apply its outcome (*Adopting a head*);
-2. **take in the caller's pushes** (*Head moves*), and the releases;
+2. **take in the caller's pushes** (*Head moves*), the releases, and the held-reply outcomes, recording each;
 3. **read what is due**, once, in one consolidated pass — `references/watch-and-read.md`, *Reading on a change signal* and *Allowances belong to the credential*, decide which PRs are due and how. Fold the result into the records and stamp `last read`. A PR no signal named keeps the state it had; a PR observed merged or closed takes that outcome; **a head move made by neither a pass nor a caller push** is handled under *Head moves*;
 4. **run every `every-pass` head check** and apply its disposition;
 5. **CI** (*CI failure*); **review** (*Review feedback*); **findings** (*Finding repairs*);
@@ -129,8 +131,8 @@ What a run may auto-fix, the thread-root test, the owner's reservation and what 
 On unhandled feedback, as `references/review-feedback.md`, *Unhandled feedback*, defines it, **dispatch on any such round, including one where nothing looks repairable from the outside**:
 
 1. group the coherent current review round;
-2. `repair dispatch` is `none` → record the round unhandled and report it; the PR's outcome is `unrepaired`. Otherwise dispatch one `repair-pr` pass with `repair type = review`, the threads, the remaining budget and the map (*Repair dispatch*). **The budget gates repairing, not classifying**: dispatch even where the review budget is spent — the pass then classifies and drafts but repairs nothing, and what would have been repairable comes back as **deferred-repair items** under a `NO_CODE_CHANGE` round, never a `needs-user` outcome for the PR (`repair-pr`, *Hard constraints*);
-3. when the pass returns (*Pass*, step 1), **record every `NEEDS_USER` item and every no-action thread** — a question item with everything `resolve-pr-comment`, *What a question item must contain*, requires, verbatim and with its `html_url` forwarded rather than rebuilt; a deferred-repair item with that `html_url`, the change it asks for and no draft; **a thread that returned two items is recorded once per item and is handled only when both are in** (`resolve-pr-comment`, *A comment can want both*). Recording is what stops a thread being re-grouped into a later round until new content arrives on it;
+2. `repair dispatch` is `none` → record the round unhandled and report it; the PR's outcome is `unrepaired`. Otherwise dispatch one `repair-pr` pass with `repair type = review`, the threads, the remaining budget, the PR's `auto-resolve-comments` with its source, and the map (*Repair dispatch*). **The budget gates repairing, not classifying**: dispatch even where the review budget is spent — the pass then classifies and drafts but repairs nothing, and what would have been repairable comes back as **deferred-repair items** under a `NO_CODE_CHANGE` round, never a `needs-user` outcome for the PR (`repair-pr`, *Hard constraints*);
+3. when the pass returns (*Pass*, step 1), **record every `NEEDS_USER` item and every no-action thread** — a question item with everything `resolve-pr-comment`, *What a question item must contain*, requires, verbatim and with its `html_url` forwarded rather than rebuilt; a deferred-repair item with that `html_url`, the change it asks for and no draft; **a thread that returned two items is recorded once per item and is handled only when both are in** (`resolve-pr-comment`, *A comment can want both*); and every **approval-pending reply item** and *fix pushed — thread left for you* entry, verbatim (`references/review-feedback.md`, *Approval-pending replies*). Recording is what stops a thread being re-grouped into a later round until new content arrives on it;
 4. **count the review cycle only where the pass pushed a repair.** A `NO_CODE_CHANGE` pass consumes no cycle, and its items and drafts are recorded exactly as a pushing pass's are. Count a completed round in `review rounds completed` whenever a round's verdict lands.
 
 Review feedback may reference a head a rebase or restack has superseded: locate each finding by content rather than line number, and confirm it still applies to the current head before repairing. **Never derive the classification or write the draft here instead of dispatching** — `resolve-pr-comment` owns both.
@@ -192,7 +194,7 @@ When a pass returns having pushed:
 - **Model**: Sonnet, or the strongest available model where *Escalation on evidence* has fired and an escalation remains (`references/repair-rounds.md`, which owns the trigger, the cycle cap and who decides). Read the remaining budget off the record and pass it (*The remaining budget*).
 - **Pass identity**: give every pass a fresh id and its model tier — `default` or `strongest` — which `repair-pr` writes into the trailers on every commit it makes, so a rebuild counts passes and escalations from the branch.
 - **Checkout**: every pass works on a dedicated checkout of the current PR branch.
-- **`swarm`**, where a worker's return value does not reach the run: its dispatch prompt carries the requirement to record its judgment on the PR under repair before returning — `repair-pr`'s Output contract minus what the run can read for itself, and minus the checks run, which are never posted (`references/authored-write-form.md`), plus the head it pushed or found — naming each question item's thread and kind and **leaving its draft reply out**, because a PR comment is public and a draft is never posted on any path (`resolve-pr-comment`, *The draft reply*).
+- **`swarm`**, where a worker's return value does not reach the run: its dispatch prompt carries the requirement to record its judgment on the PR under repair before returning — `repair-pr`'s Output contract minus what the run can read for itself, and minus the checks run, which are never posted (`references/authored-write-form.md`), plus the head it pushed or found — naming each question item's thread and kind and **leaving its draft reply out**, because a PR comment is public and a draft is never posted on any path (`resolve-pr-comment`, *The draft reply*) — and likewise each approval-pending reply's thread and fix SHA without its held text, which posting there would publish unapproved.
 - **`none`**: nothing is dispatched; every branch above that would dispatch reports instead.
 
 ## Budgets
@@ -213,7 +215,7 @@ When a pass returns having pushed:
 
 Per PR, one of:
 
-- **`finished`** — CI green on the head, or every red check confirmed expected-red after a producer merge and reported; every review round the routing requires completed, recorded `refused`, or owed after a head move by neither a pass nor a caller push; every unhandled thread handled — resolved, recorded no-action, or reserved for the owner; no pass in flight; **nothing remains that a pass within budget would be dispatched for**. A refused round, a round owed after someone else's head move, a reserved thread and an expected-red check are **surfaced**: each holds the PR's merge and never its finishing;
+- **`finished`** — CI green on the head, or every red check confirmed expected-red after a producer merge and reported; every review round the routing requires completed, recorded `refused`, or owed after a head move by neither a pass nor a caller push; every unhandled thread handled — resolved, recorded no-action, reserved for the owner, or holding an approval-pending reply; no pass in flight; **nothing remains that a pass within budget would be dispatched for**. A refused round, a round owed after someone else's head move, a reserved thread, an approval-pending reply and an expected-red check are **surfaced**: each holds the PR's merge and never its finishing;
 - **`waiting`** — on CI, a review round, a publish's classification or an allowance reset, naming which and since when;
 - **`repairing`** — a pass is in flight;
 - **`held: lock`** — the caller holds the branch; ends when it passes the push or drops the lock;
@@ -232,7 +234,7 @@ The per-PR record, plus:
 
 - whether it changed this pass;
 - every expected-red check with its refresh; every round owed to the caller, with its head;
-- every reserved thread per item kind, verbatim, and every no-action thread;
+- every reserved thread per item kind, verbatim, every approval-pending reply, verbatim, every rejected held reply as *reply not posted — thread open for you*, every mixed-thread fix as *fix pushed — thread left for you (it also asks a question)* or *(a further change is deferred)*, every approved reply left open as *reply posted — thread left open*, and every no-action thread;
 - every refused round with its reason and reset; every repository whose triggering was suppressed;
 - promotions performed; every explicitly held draft; the body-drift flags passes returned;
 - reads deferred, and when the allowance resets;

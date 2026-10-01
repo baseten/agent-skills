@@ -29,8 +29,11 @@ weaken or narrow one.** Each line indexes the rule's home, which governs, and it
 evals (`<skill>#<id>`).
 
 1. **A write nobody read carries the footer; a run never answers a person's question or
-   roots a thread.** `rules/authored-write-form.md`, `rules/review-feedback.md`.
-   create-pr#6, resolve-pr-comment#0, review-docs#11.
+   roots a thread, and holds its reply to, and resolution of, a thread a person is in
+   for approval unless the repository's own config turns that off.**
+   `rules/authored-write-form.md`, `rules/review-feedback.md`; `resolve-pr-comment`,
+   *Replies held for approval*. create-pr#6, resolve-pr-comment#0 #18 #21 #23 #26
+   #28, review-docs#11, settle-outstanding-decisions#11 #12.
 2. **Identity is observed authorship; own writes are known by id or footer, never content.**
    `rules/posting-identity.md`; `swarm`, *Blocked workers*. backlog-orchestrator#5 #58.
 3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
@@ -250,7 +253,8 @@ this repository*, for the full reasoning.
 - **`auto-merge` is enabled for this repository**, so the merge gate is reachable. The risk
   on a documentation PR is not a stalled run but a locally-correct fix merging while
   contradicting a document the reviewer did not re-check that round. Narrow it per run
-  (an invocation can switch `auto-merge` off, never on) when a change touches shared rules.
+  (`rules/agent-policy.md`, *Precedence*, says which keys an invocation can only switch
+  off) when a change touches shared rules.
 - **A run editing the contract it is executing.** Using `backlog-orchestrator` or
   `implement-issue` to change `backlog-orchestrator/SKILL.md` means the run is rewriting
   its own instructions mid-flight. Nothing in the contracts guards this. Make such changes

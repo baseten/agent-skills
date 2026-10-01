@@ -20,13 +20,13 @@
     {
       "id": 1,
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a supervised PR was passed review-repair-cycles 2, with 0 used. Three review threads are open on the diff: (a) rooted by a human colleague, asking you to rename a variable for clarity; (b) rooted by example-review-bot[bot], asking why you chose this caching strategy over an alternative; (c) rooted by you earlier in this run, a reply you posted in an existing thread. Question: for each thread, is it auto-fixed, escalated, or neither, and why?",
-      "expected_output": "(a) Auto-fixed. It roots on the diff and asks for a code change the pass can make and verify. That the author is a human is irrelevant — author identity decides nothing. (b) NEEDS_USER, reserved for the owner: it asks for rationale, not a diff, so it is escalated with its URL and what it asks, never answered on the run's own authority, and it holds the PR's merge. That the author is an automated reviewer does not make it repairable. (c) Neither: a comment this run authored is never feedback, which follows from the thread-root test rather than from any author test. No reviewer allowlist or bot test is consulted at any point.",
+      "expected_output": "(a) Auto-fixed. It roots on the diff and asks for a code change the pass can make and verify. That the author is a human is irrelevant to that — author identity decides nothing about what is fixed; it decides only that the fix's reply is held for the owner's approval and the thread left open, auto-resolve-comments being off by default. (b) NEEDS_USER, reserved for the owner: it asks for rationale, not a diff, so it is escalated with its URL and what it asks, never answered on the run's own authority, and it holds the PR's merge. That the author is an automated reviewer does not make it repairable. (c) Neither: a comment this run authored is never feedback, which follows from the thread-root test rather than from any author test. No reviewer allowlist or bot test is consulted for any of these classifications.",
       "name": "review-thread-kind-not-author",
       "assertions": [
         "the human-rooted rename is auto-fixed, and the answer states author identity does not decide repairability",
         "the bot-rooted design question is NEEDS_USER and is not answered on the run's own authority",
         "the run's own earlier comment is never feedback, via the thread-root test",
-        "no bot test or reviewer allowlist is applied anywhere"
+        "no bot test or reviewer allowlist decides any thread's classification"
       ]
     },
     {
@@ -424,6 +424,80 @@
         "the answer re-triggers the automated review convention",
         "the answer does not re-request review from @dana or touch the PR's human reviewers",
         "the wake's instruction is treated as overridden rather than followed"
+      ],
+      "files": []
+    },
+    {
+      "id": 34,
+      "name": "an-approval-pending-thread-is-not-redispatched",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Last pass, a review repair-pr pass on PR #60 fixed a human reviewer's nit and pushed it; resolve-pr-comment held the reply because auto-resolve-comments is false, and the pass returned an approval-pending reply item for the thread, which you recorded. This pass, the thread is still unresolved and nothing new has been posted on it. Questions: (a) is it unhandled feedback, and do you dispatch a review pass for it? (b) what if the reviewer now posts a follow-up in that thread asking for a further change? (c) the settle walkthrough later posts the owner-approved reply into the thread — does that make it unhandled?",
+      "expected_output": "(a) No. An approval-pending thread is recorded as handled, like a reserved or no-action one, so it is not regrouped or redispatched while it waits; redispatching would re-fix a pushed change every cycle. (b) The reviewer's follow-up is new content, so the thread is unhandled again and goes into the next review round. (c) No. The approved reply is this workflow's own write, a settlement record, not new content, so it does not re-admit the thread.",
+      "assertions": [
+        "the approval-pending thread is treated as handled and not redispatched",
+        "a reviewer's follow-up re-opens it as unhandled",
+        "the walkthrough's posted approved reply is not treated as new content"
+      ],
+      "files": []
+    },
+    {
+      "id": 35,
+      "name": "an-approval-pending-thread-holds-the-merge-gate-not-finishing",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #60's CI is green, every required review round has completed, no pass is in flight, and its only open thread holds an approval-pending reply: the fix is pushed, the reply is held for the owner. Questions: (a) what outcome does PR #60 take? (b) does the thread count against the clean-review condition of the merge gate? (c) what does your report carry for it?",
+      "expected_output": "(a) finished: the thread is handled and nothing a pass within budget would do remains, so it does not stop the PR finishing. It is surfaced. (b) Yes. Open and its reply unposted, it fails the clean-review condition as any unresolved actionable thread does, so the gate does not open over it, though it does not block settlement. (c) The approval-pending reply verbatim — the thread's API html_url unrebuilt, the human author, the fix SHA and the held reply — the owner's only copy once the run ends.",
+      "assertions": [
+        "the PR is finished with the approval-pending thread surfaced",
+        "the approval-pending thread holds the merge gate's clean-review condition",
+        "the thread does not block finishing or settlement",
+        "the report carries the approval-pending reply verbatim with its html_url, the human author, fix SHA and held reply"
+      ],
+      "files": []
+    },
+    {
+      "id": 36,
+      "name": "a-rejected-thread-is-not-redispatched-until-new-content",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #60's settle returned one rejected held reply — thread T, fix 4a5b6c7 — and your caller passed it to you as a rejected held reply. On the next passes, T is still unresolved. Questions: (a) is T unhandled feedback, and do you dispatch a review pass for it or hold a new reply? (b) what changes if the reviewer posts a follow-up in T? (c) does T hold the merge gate, and does your report carry it?",
+      "expected_output": "(a) No. T is recorded as handled — rejected, keyed by thread and fix 4a5b6c7, so it is neither redispatched nor re-held for the rest of the run. (b) The follow-up is new content, so T is unhandled again and goes into the next review round. A newer fix there would be a fresh held reply. (c) Yes: it is still an unresolved thread, so it holds the gate. The report lists it as 'reply not posted — thread open for you'.",
+      "assertions": [
+        "the rejected thread is treated as handled and not redispatched or re-held",
+        "new content makes it unhandled again",
+        "it still holds the merge gate",
+        "the report lists it as reply not posted — thread open for you"
+      ],
+      "files": []
+    },
+    {
+      "id": 37,
+      "name": "a-reserved-question-survives-a-later-thanks",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: on PR #60, thread T carries a reserved question item ('should this retry be idempotent?'), recorded last pass. The reviewer now posts in T: 'thanks for the fix'. A review pass classifies that comment as no-action. Questions: (a) what does T's record hold afterwards? (b) does the merge gate still see the question?",
+      "expected_output": "(a) Both: the no-action record for the new comment and the reserved question. Only held-reply records replace each other, and a reservation ends only when the thread is resolved or an answer is recorded, never because a later comment was no-action. (b) Yes: the reserved question still holds the gate.",
+      "assertions": [
+        "the reserved question record survives the later no-action",
+        "the no-action does not replace the reservation",
+        "the question still holds the merge gate"
+      ],
+      "files": []
+    },
+    {
+      "id": 38,
+      "name": "a-two-item-thread-keeps-both-records",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a zero-budget review pass on PR #60 returned two items for thread U, a deferred repair and a question item, and on the next pass a held reply for a different thread V was approved and its outcome passed to you. Questions: (a) how many records does U hold? (b) what does V's outcome do to V's record?",
+      "expected_output": "(a) Two: the deferred repair and the question item. A thread with two items keeps both, and only held-reply records replace each other. (b) An approval with its write id clears V's approval-pending record, whether its outcome says resolved or left open; left open, V is reported as 'reply posted — thread left open'.",
+      "assertions": [
+        "thread U keeps both records",
+        "an approved outcome clears the approval-pending record"
+      ],
+      "files": []
+    },
+    {
+      "id": 39,
+      "name": "a-held-reply-ends-when-the-thread-turns-mixed",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: on PR #60, two threads have an approval-pending reply recorded. Thread A, fix 1a1a1a1: the reviewer then posts 'why is this cached per request?', which the next pass classifies as a reserved question. Thread B, fix 2b2b2b2: the reviewer then asks for a further change, and the pass, at zero review budget, returns it as a deferred repair. The run then settles. Questions: (a) what happens to each held reply? (b) is either thread resolved? (c) how is each listed?",
+      "expected_output": "(a) Both held replies end. A later reserved or deferred-repair record makes each a mixed thread from then on, so its held reply is dropped — not passed to the walkthrough, not asked, not posted. (b) Neither: no run resolves a thread carrying an open reservation or deferred repair. (c) A as 'fix pushed — thread left for you (it also asks a question)' with 1a1a1a1. B as 'fix pushed — thread left for you (a further change is deferred)' with 2b2b2b2.",
+      "assertions": [
+        "both held replies are dropped, not asked and not posted",
+        "neither thread is resolved",
+        "thread A is listed with its fix SHA as also asking a question",
+        "thread B is listed with its fix SHA as having a further change deferred"
       ],
       "files": []
     }

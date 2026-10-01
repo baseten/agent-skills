@@ -28,3 +28,23 @@ one the next editor of that contract will not find.
 **Why the other readers of a value count as mentioned:** "minimal change, nothing not mentioned" is right for a comment about one surface and wrong for a comment about what a value means, where fixing the named reader alone turns readers that were wrong together into readers that disagree — one PR took five rounds that way, and the fourth round's defect, an expired alert that could still be submitted, was caused by the first round's fix. The scope is bounded to readers the fix changes, so it does not turn a one-line repair into an audit. The full incident is in `repair-pr`'s NOTES, *Hard constraints*, which also says why every repair type takes this rule.
 
 **Why the reply may carry the method:** the one-line reply otherwise states a result — *fixed* — that invites agreement. Naming how the readers were found gives the reviewer something to attack, and the reader missed in that incident was reached through a derived prop the grep did not name.
+
+## 2. One commit per thread
+
+**Why one commit per thread replaced rolling mechanical comments together (#174, owner's ruling 2026-10-01):** a held reply is approved against the commit it names. A shared commit would put several reviewers' changes behind one SHA and ask the owner to approve, for one person, a reply pointing at someone else's change too. A commit per thread costs a few more commits on the branch and makes every reply's SHA mean exactly that thread's fix. An explicit "one commit" from the user still wins: they have chosen the trade themselves.
+
+## Replies held for approval
+
+**Why the reply waits and the fix does not (#174, owner's ruling 2026-10-01):** the kind test is author-blind on purpose, and that is right for the fix. It was wrong for what follows it. The reply goes out under the owner's account to a person, and resolving the thread tells that person the owner considered their point and is done with it. Neither is the run's to say unread. A thread only bots are in has nobody waiting to be told, so it keeps today's path. `auto-resolve-comments: true` restores today's path for people too, for a repository whose owner wants it.
+
+**Why this is not the removed `auto-fix-reviewers` gate:** that key decided what was *fixed* by who wrote the comment, and erred both ways. Here authorship decides nothing about the fix — a person's nit is still repaired and pushed in the same pass — only whether the reply and the resolution wait.
+
+**Why `user.type == "Bot"` and not a login list:** it is a property the forge sets for GitHub Apps and bot accounts, so it needs no allowlist to drift. A machine user posting from an ordinary account reads as human, and that direction only holds a reply. Checked on 2026-10-01 against an automated reviewer's root comment on a public PR of this repository: the REST review comment returned `user.type: "Bot"` for the `[bot]` login, and the GraphQL `reviewThreads` query returned `author { __typename }` as `Bot` for the same comment, while the owner's replies returned `User`. Step 1's query selects `__typename` for that reason.
+
+**Why any person in the thread, not the root author (blind audit of #175):** the root author is the wrong comment to test. A person following up inside a bot's thread is the one being answered, and a bot following up in a thread a person is in is still answering to them. Testing every comment is the simplest rule that gets both right, and it errs only towards holding.
+
+**Why an already-fixed thread is never re-fixed or reserved (blind audit of #175):** a restart loses the record of a held reply but not the pushed fix. Read with a spent budget, the thread would come back as a deferred repair — a `NEEDS_USER` item holding the whole wave over work that is done. Checking the head first turns it back into what it was: a reply waiting for approval.
+
+**Why a held reply is not a `NEEDS_USER` item:** nothing is undecided — the fix is pushed and the text is one line. Made a `NEEDS_USER` item, it would hold every PR in a wave through the gate's wave-wide condition. As an open thread it holds only its own PR, through the clean-review condition.
+
+**How it meets a mixed thread (owner's ruling after the third blind audit of #175):** no held reply is composed for a thread a person is in that also asks a question. A footerless approved reply beside an open question reads as the owner's answer, and every ordering rule written to prevent that had its own dead end. The fix is pushed, the question goes the `NEEDS_USER` route, and the owner gets the thread with the fix SHA listed.
