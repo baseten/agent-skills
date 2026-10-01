@@ -59,7 +59,7 @@ branch/base
 remote head SHA
 CI: per check — state, and attribution where red (references/ci-attribution.md)
 per review convention: performed by; trigger state; rounds, each pending/refused (reason, reset)/complete-with-findings/clean
-reserved threads (question items, deferred-repair items), approval-pending replies, and no-action threads
+reserved threads (question items, deferred-repair items), approval-pending replies (each rejected one marked, with when), and no-action threads
 draft state: as-created -> current; promotion convention, or absent
 cycles used/cap: CI · review · finding; review rounds completed; strongest-model rounds used/cap, with locus evidence
 mutator: none / pass <id> / caller (locked)
@@ -130,7 +130,7 @@ What a run may auto-fix, the thread-root test, the owner's reservation and what 
 On unhandled feedback, as `references/review-feedback.md`, *Unhandled feedback*, defines it, **dispatch on any such round, including one where nothing looks repairable from the outside**:
 
 1. group the coherent current review round;
-2. `repair dispatch` is `none` → record the round unhandled and report it; the PR's outcome is `unrepaired`. Otherwise dispatch one `repair-pr` pass with `repair type = review`, the threads, the remaining budget, the PR's `auto-resolve-comments` and the map (*Repair dispatch*). **The budget gates repairing, not classifying**: dispatch even where the review budget is spent — the pass then classifies and drafts but repairs nothing, and what would have been repairable comes back as **deferred-repair items** under a `NO_CODE_CHANGE` round, never a `needs-user` outcome for the PR (`repair-pr`, *Hard constraints*);
+2. `repair dispatch` is `none` → record the round unhandled and report it; the PR's outcome is `unrepaired`. Otherwise dispatch one `repair-pr` pass with `repair type = review`, the threads, the remaining budget, the PR's `auto-resolve-comments` with its source, and the map (*Repair dispatch*). **The budget gates repairing, not classifying**: dispatch even where the review budget is spent — the pass then classifies and drafts but repairs nothing, and what would have been repairable comes back as **deferred-repair items** under a `NO_CODE_CHANGE` round, never a `needs-user` outcome for the PR (`repair-pr`, *Hard constraints*);
 3. when the pass returns (*Pass*, step 1), **record every `NEEDS_USER` item and every no-action thread** — a question item with everything `resolve-pr-comment`, *What a question item must contain*, requires, verbatim and with its `html_url` forwarded rather than rebuilt; a deferred-repair item with that `html_url`, the change it asks for and no draft; **a thread that returned two items is recorded once per item and is handled only when both are in** (`resolve-pr-comment`, *A comment can want both*); and every **approval-pending reply item**, verbatim (`references/review-feedback.md`, *Approval-pending replies*). Recording is what stops a thread being re-grouped into a later round until new content arrives on it;
 4. **count the review cycle only where the pass pushed a repair.** A `NO_CODE_CHANGE` pass consumes no cycle, and its items and drafts are recorded exactly as a pushing pass's are. Count a completed round in `review rounds completed` whenever a round's verdict lands.
 

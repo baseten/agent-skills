@@ -135,7 +135,7 @@ Both carried checks run again at close-out, which hands them to the merger for e
 
 ## Merge
 
-**This run merges only where the repository opted in with `auto-merge-dependencies`** in the repository's policy file, resolved exactly as `references/agent-policy.md` resolves every key — its *Precedence* included: an invocation can switch this key off, never on. Absent or `false`, the run merges nothing and the close-out hands the checks below to the merger.
+**This run merges only where the repository opted in with `auto-merge-dependencies`** in the repository's policy file, resolved exactly as `references/agent-policy.md` resolves every key — its *Precedence* included, which lists this key among those an invocation can only narrow. Absent or `false`, the run merges nothing and the close-out hands the checks below to the merger.
 
 Where it is `true`, a PR merges once all of these hold on its current head:
 

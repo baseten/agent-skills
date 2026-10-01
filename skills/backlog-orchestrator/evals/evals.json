@@ -858,6 +858,19 @@
         "the answer has the check-in's prompt state the override"
       ],
       "files": []
+    },
+    {
+      "id": 66,
+      "name": "held-replies-are-counted-on-wakes-and-listed-at-budget-stop",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: your wave has settled with nothing dispatchable. Two PRs are open; each has one thread whose fix is pushed and whose reply is held for the owner (an approval-pending reply). No DECISION or NEEDS_USER item is open. A scheduled check-in wakes with no durable change. Questions: (a) what does the wake's state block report about the owner's queue? (b) is this quiet wake a settle trigger? (c) on the next attended turn, with nothing else moving, is quiescence a settle trigger? (d) the wake budget then runs out with the replies still held — what does the stop report say about them?",
+      "expected_output": "(a) The DECISION and NEEDS_USER counts (zero) and the approval-pending reply count, two, on the wake's cadence, even though nothing else changed. (b) No: quiescence settles only on an attended turn or a real state change, never on a quiet unattended wake. (c) Yes: open approval-pending replies count alongside open decisions, so the run settles and routes them through the settled step's walkthrough. (d) It lists every held reply not yet posted, with its thread URL, fix SHA and text, because a held reply is dropped with the run.",
+      "assertions": [
+        "the wake reports the approval-pending reply count",
+        "a quiet unattended wake does not trigger settle",
+        "quiescence on an attended turn with held replies open is a settle trigger",
+        "the budget-stop report lists each held reply with its text"
+      ],
+      "files": []
     }
   ]
 }

@@ -331,7 +331,7 @@ Unless overridden (below):
 - automatic merges (`auto-merge`): **disabled** — the opt-in invariant 12's gate requires;
 - requesting the `settle-outstanding-decisions` walkthrough at settle (`auto-request-settle`): **enabled**. The option gates only whether this run makes the request; whether the walkthrough may actually ask stays with that skill's attendance precondition (see `settle-and-merge`, *The settle sequence*, step 4).
 
-These are the built-in defaults. An invocation argument and the repository's policy file override them by the precedence `references/agent-policy.md`, *Precedence*, states — which exempts the two merge permissions and `auto-resolve-comments`, so an invocation can switch `auto-merge` or `auto-resolve-comments` off for a run but never on.
+These are the built-in defaults. An invocation argument and the repository's policy file override them by the precedence `references/agent-policy.md`, *Precedence*, states — including the keys it lists that an invocation can switch off but never on.
 
 Dynamic Workflows do not override these limits.
 

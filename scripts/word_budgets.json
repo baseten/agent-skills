@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 23965,
+      "budget": 23956,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -31,7 +31,7 @@
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 4207,
+      "budget": 4233,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
@@ -47,7 +47,7 @@
       "target": 3000
     },
     "skills/npm-dependency-upgrade-orchestrator/SKILL.md": {
-      "budget": 5259,
+      "budget": 5261,
       "target": 8000
     },
     "skills/plan-merge-order/SKILL.md": {
@@ -55,11 +55,11 @@
       "target": 3000
     },
     "skills/repair-pr/SKILL.md": {
-      "budget": 3264,
+      "budget": 3267,
       "target": 3000
     },
     "skills/resolve-pr-comment/SKILL.md": {
-      "budget": 6646,
+      "budget": 6902,
       "target": 3000
     },
     "skills/review-docs/SKILL.md": {
@@ -71,11 +71,11 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 4735,
+      "budget": 4763,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
-      "budget": 5529,
+      "budget": 5615,
       "target": 3000
     },
     "skills/summarize-wave/SKILL.md": {
@@ -83,7 +83,7 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 5033,
+      "budget": 5042,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
@@ -111,7 +111,7 @@
       "target": 1500
     },
     "rules/agent-policy.md": {
-      "budget": 1639,
+      "budget": 1645,
       "target": 1500
     },
     "rules/authored-write-form.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/review-feedback.md": {
-      "budget": 1902,
+      "budget": 2017,
       "target": 1500
     },
     "rules/review-trigger.md": {

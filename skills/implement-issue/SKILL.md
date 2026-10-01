@@ -26,7 +26,7 @@ This file is the contract. The reasoning behind each rule — incident history, 
 
 - Invoking this skill authorizes implementation and PR creation for the supplied issue, unless the user says otherwise.
 - It authorizes a merge **only** where the PR's own repository opted in via `auto-merge` in `.claude/agent-policy.json`. The key is shared with `backlog-orchestrator` deliberately — scoped to invariant 12's gate, not to the skill evaluating it — so a config predating this skill grants it too (NOTES).
-- An invocation argument or caller can switch `auto-merge` off for a run, never on. Without the opt-in this skill merges nothing; everything else stays the user's separate `merge-stack` authorization.
+- An invocation argument or caller can narrow `auto-merge`, never widen it, as `references/agent-policy.md`, *Precedence*, rules for every key it lists. Without the opt-in this skill merges nothing; everything else stays the user's separate `merge-stack` authorization.
 - The issue's **full URL is canonical identity** everywhere. Short keys are display only, never durable state.
 
 ## Policy and budgets
@@ -36,8 +36,8 @@ This file is the contract. The reasoning behind each rule — incident history, 
 - Preserve exactly any caller-supplied repository, worktree, branch, base, dependency context, tracker, and budgets.
 - Read the policy file (`references/agent-policy.md` names it, and *Fail-closed handling* its old-name fallback) **once, at run start, from the head of the repository's default branch** — never from the worktree this run writes, and never again afterwards.
 - Keys consumed: `implementation-attempts`, `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-merge`, `auto-request-settle`, `auto-resolve-comments`. Ignore `concurrent-workers`, `concurrent-open-prs` and `new-issue-budget` — no single-issue meaning.
-- **A caller's complete resolved policy suppresses the read**: use supplied keys as given; omitted keys take the built-in defaults — except `auto-merge`, which takes **`false`**: an unmentioned permission was not granted.
-- **A partial invocation override suppresses nothing**: read the file and merge the argument over it per key (`auto-merge`: off only). NOT: treating one argument as a resolved policy — that would hand a zero-repair-cycles repository two cycles because its owner narrowed something else (NOTES).
+- **A caller's complete resolved policy suppresses the read**: use supplied keys as given, each with the source the caller resolved it from; omitted keys take the built-in defaults — except `auto-merge`, which takes **`false`**: an unmentioned permission was not granted.
+- **A partial invocation override suppresses nothing**: read the file and merge the argument over it per key, by `references/agent-policy.md`, *Precedence* — which lists the keys an argument can only switch off. NOT: treating one argument as a resolved policy — that would hand a zero-repair-cycles repository two cycles because its owner narrowed something else (NOTES).
 - Built-in defaults (absent file — the common case): implementation attempts **2** · CI repair **2** · review repair **2** · finding repair **2** · strongest-model repair rounds **1** · `auto-merge` **off** · `auto-request-settle` **on** · `auto-resolve-comments` **off**. Monitoring cap: **8 hours** where persistent monitoring is supported — an invocation property, not a policy key.
 
 # Phase 1 — durable implementation

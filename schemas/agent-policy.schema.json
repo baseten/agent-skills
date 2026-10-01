@@ -117,7 +117,7 @@
     "auto-resolve-comments": {
       "type": "boolean",
       "default": false,
-      "description": "Post and resolve a repaired thread a person is in without waiting for approval; off, that reply is held for the owner and the thread left open. Threads only bots are in are unaffected. Only this file can turn it on: an invocation argument may turn it off, never on. Read by: backlog-orchestrator, implement-issue, resolve-pr-comment.",
+      "description": "Post and resolve a repaired thread a person is in without waiting for approval; off, that reply is held for the owner and the thread left open. Threads only bots are in are unaffected. Only this file can turn it on. Read by: backlog-orchestrator, implement-issue, resolve-pr-comment.",
       "x-read-by": [
         "backlog-orchestrator",
         "implement-issue",

@@ -177,6 +177,19 @@
         "a ruling needing a code change leaves the held reply unposted and reported as held"
       ],
       "files": []
+    },
+    {
+      "id": 13,
+      "name": "a-held-reply-is-not-posted-over-a-newer-comment",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: settle-and-merge invoked you with the owner present and passed two approval-pending reply items on PR 52 of acme/api, each a human reviewer's thread with its fix pushed. The owner approves both. Re-reading before posting, you find that in the first thread the owner has meanwhile replied 'fixed in 4f5a6b7, thanks', and in the second the reviewer has followed up 'this also needs a test'. Questions: (a) do you post either approved reply, or resolve either thread? (b) what do you report for each?",
+      "expected_output": "(a) Neither is posted and neither thread is resolved: a comment newer than the fix exists in each that this workflow did not write. (b) The first: the owner replied themselves, so the hold has ended, with nothing posted or resolved. The second: the reviewer's follow-up is new content, so the thread returns to supervision to be classified and, here, repaired.",
+      "assertions": [
+        "neither approved reply is posted",
+        "neither thread is resolved",
+        "the owner's reply is reported as having ended the hold",
+        "the reviewer's follow-up is reported as new content returning the thread to supervision"
+      ],
+      "files": []
     }
   ]
 }

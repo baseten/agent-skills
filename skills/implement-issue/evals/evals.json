@@ -215,6 +215,19 @@
         "the drift is reported with a suggested replacement"
       ],
       "files": []
+    },
+    {
+      "id": 17,
+      "name": "an-invocation-cannot-turn-auto-resolve-comments-on",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are invoked with the argument auto-resolve-comments: true for an issue in acme/api, whose default branch has no .claude/agent-policy.json. During supervision a human reviewer (user.type User) asks for a rename, which a review repair pass makes. Questions: (a) what does auto-resolve-comments resolve to for this PR, and with what source? (b) what do you pass supervise-prs for it? (c) is the rename's reply posted and the thread resolved unread?",
+      "expected_output": "(a) false, from the built-in default. `references/agent-policy.md`, *Precedence*, lists auto-resolve-comments among the keys an invocation can switch off but never on, so the argument is ignored for that direction. (b) false with its source, which supervise-prs passes on through repair-pr to resolve-pr-comment. resolve-pr-comment trusts a true only when its source is the repository's file anyway. (c) No: the reply is held for the owner and the thread left open.",
+      "assertions": [
+        "the key resolves to false despite the invocation argument",
+        "the answer cites agent-policy Precedence rather than a rule of its own",
+        "the resolved value is passed down with its source",
+        "the reply is held and the thread left open"
+      ],
+      "files": []
     }
   ]
 }

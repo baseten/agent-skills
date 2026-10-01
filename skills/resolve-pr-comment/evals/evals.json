@@ -132,13 +132,14 @@
     {
       "id": 10,
       "name": "attended-mixed-comment-pushes-the-fix-and-drafts-the-answer",
-      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a person invokes you directly and names one review comment: \"add the null guard here, and explain why the shared helper is unsuitable for this path.\" You can see both the fix and the answer. Questions: (a) do you post the explanation in the thread, or return it as a NEEDS_USER item with a draft? (b) do you apply the guard? (c) do you resolve the thread? (d) separately: the same comment reaches you from repair-pr with a zero repair budget — what do you return, and how many entries?",
-      "expected_output": "(a) Neither posted nor withheld: the explanation is drafted and handed to the person who invoked the skill, in this session's output, exactly as any query — no mode answers a query in the thread. (b) Yes — apply and verify the guard, push it, and reply only to report what changed (`Fixed in <sha> — …`), never written as though it answered the question — posted with the attribution footer where only bots are in the thread; where a person is in it and auto-resolve-comments is off, held, and not offered or posted while the question is reserved. (c) No. No mode resolves a mixed thread: the question half leaves it open. (d) Two entries for the one thread — a deferred-repair item carrying the unapplied change and no draft, and a question item carrying the drafted answer — and nothing is applied, pushed, replied to or resolved. The thread is handled only once the caller has recorded both; forwarding one entry drops either work nobody records or a question nobody can put to the owner.",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a person invokes you directly and names one review comment, from a human teammate (user.type User), with auto-resolve-comments off: \"add the null guard here, and explain why the shared helper is unsuitable for this path.\" You can see both the fix and the answer. Questions: (a) do you post the explanation in the thread, or return it as a NEEDS_USER item with a draft? (b) do you apply the guard? (c) do you resolve the thread? (d) separately: the same comment reaches you from repair-pr with a zero repair budget — what do you return, and how many entries?",
+      "expected_output": "(a) Neither posted nor withheld: the explanation is drafted and handed to the person who invoked the skill, in this session's output, exactly as any query — no mode answers a query in the thread. (b) Yes — apply and verify the guard and push it. Its one-line held reply (`Fixed in <sha> — …`), never written as though it answered the question, is asked in the session only after the explanation's draft has gone to the person, and posted only once they have settled the question in the session — answered it in the thread themselves, or ruled on it. Their own answer, posted in this session, does not end the hold. If they leave the question open, nothing is posted and the held reply is reported. (c) Not on the fix: only once the person has settled the question and the approved held reply is posted, and then it is resolved. Left open, it stays unresolved. (d) Two entries for the one thread — a deferred-repair item carrying the unapplied change and no draft, and a question item carrying the drafted answer — and nothing is applied, pushed, replied to or resolved. The thread is handled only once the caller has recorded both; forwarding one entry drops either work nobody records or a question nobody can put to the owner.",
       "assertions": [
         "attended, the explanation is returned as a draft for the invoking person rather than posted in the thread",
         "the null guard is applied and pushed in the attended case",
-        "any reply posted reports only what changed and does not answer the question",
-        "the thread is not resolved in any mode",
+        "the held reply is asked only after the draft is handed over and posted only once the person settles the question in the session",
+        "with the question left open nothing is posted and the held reply is reported",
+        "the thread is never resolved on the fix alone",
         "the zero-budget case returns two entries for the one thread, a deferred repair and a question item",
         "nothing is applied, pushed, replied or resolved in the classify-only case"
       ]
@@ -303,7 +304,7 @@
       "id": 23,
       "name": "a-machine-user-counts-as-a-person",
       "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invoked you unattended on PR 52 of acme/api with one thread, auto-resolve-comments false. The thread's only comment is from `acme-ci-helper`, an ordinary account that a team runs a script under; its user.type is User, though its comments are plainly automated. It asks you to sort an import block. You sort it and push 0e1f2a3. Questions: (a) is a person in this thread for the reply rule? (b) what happens to the reply and the thread? (c) why is that the right direction to err in?",
-      "expected_output": "(a) Yes. Only an author whose user.type is Bot counts as a bot; anything else, a machine user on an ordinary account included, is treated as a person, however automated its comments look. (b) The sort is fixed and pushed; the one-line held reply is written and held, nothing is posted, the thread stays open, and an approval-pending reply item is returned. (c) Misreading in that direction only holds a reply for approval. The other direction would post and resolve under the owner's name on a person's thread unread.",
+      "expected_output": "(a) Yes. Only an author whose user.type is Bot counts as a bot; anything else, a machine user on an ordinary account included, is treated as a person, however automated its comments look. (b) The sort is fixed and pushed; the one-line held reply is written and held, nothing is posted, the thread stays open, and an approval-pending reply item is returned. (c) Misreading in that direction only holds a reply for approval. The other direction would post and resolve under the owner's name on a thread a person is in unread.",
       "assertions": [
         "the machine user is treated as human because its user.type is not Bot",
         "the answer does not infer bot-ness from the account's name or behaviour",
@@ -338,7 +339,7 @@
       "id": 26,
       "name": "an-invocation-true-cannot-turn-auto-resolve-on",
       "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a person invokes you on PR 52 of acme/api with the argument auto-resolve-comments: true. The repository has no .claude/agent-policy.json. The one named thread is a human reviewer's (user.type User): 'rename `n` to `count`'. You rename it and push 1c2d3e4. Questions: (a) is the reply posted now, with the footer? (b) why or why not?",
-      "expected_output": "(a) No. The reply is held and shown to the person for approval. (b) Only the repository's own file can turn auto-resolve-comments on; an invocation argument may turn it off but never on, exactly as for auto-merge. With no file the key is false, whatever the argument says, because true would post and resolve under the owner's name in a person's thread with nobody having read it.",
+      "expected_output": "(a) No. The reply is held and shown to the person for approval. (b) Only the repository's own file can turn auto-resolve-comments on; an invocation argument may turn it off but never on, exactly as for auto-merge. With no file the key is false, whatever the argument says, because true would post and resolve under the owner's name in a thread a person is in with nobody having read it.",
       "assertions": [
         "the reply is held despite the invocation argument",
         "the answer says only repository config can turn the key on",
@@ -365,6 +366,42 @@
         "the reply is held rather than posted",
         "the thread is not resolved",
         "the answer decides on the human in the thread, not on the bot that opened it"
+      ]
+    },
+    {
+      "id": 29,
+      "name": "a-bot-following-up-in-a-thread-a-person-is-in-is-held",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invokes you unattended on PR 52 of acme/api, auto-resolve-comments false. A human reviewer (user.type User) opened the thread asking for a rename, which an earlier pass already made and whose held reply the owner approved and the run posted. Now example-review-bot[bot] (user.type Bot) has followed up in the same thread: 'the rename missed one call site in tests/'. You fix it and push 2e3f4a5. Questions: (a) is the reply posted with the footer and the thread resolved, since the comment being addressed is a bot's? (b) why?",
+      "expected_output": "(a) No. The reply is held, nothing is posted, the thread stays open, and an approval-pending reply item is returned. (b) A person is in the thread, and that decides it, not who wrote the latest comment: the human who opened it is still the one being answered, and misreading in this direction only holds a reply.",
+      "assertions": [
+        "the reply is held rather than posted",
+        "the thread is not resolved",
+        "the answer decides on the person in the thread, not on the bot that wrote the follow-up"
+      ]
+    },
+    {
+      "id": 30,
+      "name": "an-already-fixed-thread-with-budget-left-is-not-re-fixed",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a run restarted and lost its record. repair-pr invokes you unattended on PR 52 of acme/api with review budget remaining, auto-resolve-comments false. One supplied thread is a human reviewer's (user.type User) 'extract the magic number into a constant'; the head already has the constant, added by 6a7b8c9 after the comment, and nobody has replied in the thread since. Questions: (a) do you make the change again or commit anything for it? (b) what happens to the reply? (c) does this pass consume a repair cycle for that thread?",
+      "expected_output": "(a) No. A thread whose requested change is already on the head is never fixed again, whatever the budget; there is nothing to commit. (b) A held reply naming 6a7b8c9 is written and returned as an approval-pending reply item, since a person is in the thread; nothing is posted. (c) Not for that thread: no repair is made for it, so it contributes no repair work to the round.",
+      "assertions": [
+        "the change is not made again and nothing is committed for it",
+        "the reply names the commit already on the head and is held as an approval-pending item",
+        "nothing is posted",
+        "the thread contributes no repair work to the round"
+      ]
+    },
+    {
+      "id": 31,
+      "name": "an-unattended-bot-only-mixed-thread-posts-its-work-done-reply",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invokes you unattended with budget remaining on one thread whose only comment is from example-review-bot[bot] (user.type Bot): 'add a timeout here, and explain why the retry wrapper doesn't cover this call.' You add the timeout and push 3c4d5e6. auto-resolve-comments is false. Questions: (a) what do you post? (b) what do you return? (c) is the thread resolved?",
+      "expected_output": "(a) The one-line work-done reply naming 3c4d5e6, with the attribution footer, posted now: only bots are in the thread, so nothing is held. It reports the change and does not answer the question. (b) The question as a NEEDS_USER item with its draft, the change SHA 3c4d5e6 in its SHA field. No approval-pending reply item. (c) No: the reserved question keeps it open.",
+      "assertions": [
+        "the work-done reply is posted now with the footer",
+        "the posted reply does not answer the question",
+        "the question comes back as a NEEDS_USER item with its draft",
+        "no approval-pending reply item is returned",
+        "the thread is not resolved"
       ]
     }
   ]
