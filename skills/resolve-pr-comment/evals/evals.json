@@ -478,12 +478,13 @@
     {
       "id": 38,
       "name": "a-follow-up-asking-for-a-change-already-made-is-approval-pending",
-      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invokes you classify-only (budget spent) on PR 52 of acme/api. In a thread a human reviewer (user.type User) opened, an earlier fix 1d2e3f4 renamed `buf`. After that fix the reviewer posted: 'please also make the constant uppercase' — and the head already has it uppercase, from 5a6b7c8. Questions: what comes back for the thread, and is it a deferred repair?",
-      "expected_output": "An approval-pending reply item naming 5a6b7c8. The newest comment is classified on every row, the already-on-head row included, and the change it asks for is already on the head. So it is not a deferred repair, though the budget is spent. Nothing is posted.",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invokes you classify-only (budget spent) on PR 52 of acme/api. In a thread a human reviewer (user.type User) opened, an earlier fix 1d2e3f4 renamed `buf`. After that fix the reviewer posted: 'please also make the constant uppercase' — and the head already has it uppercase, from 5a6b7c8. Questions: (a) what comes back for the thread, and is it a deferred repair? (b) later the owner approves that held reply, and nobody has posted since the reviewer's follow-up — is the thread resolved?",
+      "expected_output": "An approval-pending reply item naming 5a6b7c8. The newest comment is classified on every row, the already-on-head row included, and the change it asks for is already on the head. So it is not a deferred repair, though the budget is spent. Nothing is posted. (b) Yes. The quiet-thread test compares against the comment the held reply answers — the follow-up itself — not against the fix, and nothing is newer than that follow-up, so the approved reply is posted and the thread resolved.",
       "assertions": [
         "the thread comes back as an approval-pending reply item naming the commit already on the head",
         "it is not returned as a deferred repair",
-        "nothing is posted"
+        "nothing is posted",
+        "once approved, the thread is resolved, because no comment is newer than the follow-up the reply answers"
       ]
     },
     {

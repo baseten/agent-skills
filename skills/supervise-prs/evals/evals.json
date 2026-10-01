@@ -481,7 +481,7 @@
       "id": 38,
       "name": "a-two-item-thread-keeps-both-records",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a zero-budget review pass on PR #60 returned two items for thread U, a deferred repair and a question item, and on the next pass a held reply for a different thread V was approved and its outcome passed to you. Questions: (a) how many records does U hold? (b) what does V's outcome do to V's record?",
-      "expected_output": "(a) Two: the deferred repair and the question item. A thread with two items keeps both, and only held-reply records replace each other. (b) An approval with its write id clears V's approval-pending record: the thread was resolved.",
+      "expected_output": "(a) Two: the deferred repair and the question item. A thread with two items keeps both, and only held-reply records replace each other. (b) An approval with its write id clears V's approval-pending record, whether its outcome says resolved or left open; left open, V is reported as 'reply posted — thread left open'.",
       "assertions": [
         "thread U keeps both records",
         "an approved outcome clears the approval-pending record"

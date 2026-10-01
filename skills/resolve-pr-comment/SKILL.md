@@ -261,7 +261,7 @@ the fix**, re-read at that moment, so the owner decides with them in front of
 them. **Approved or edited → post that text with no footer**, the approval test
 answering Yes, record the reply's write id (`references/posting-identity.md`:
 own writes are known by id), **then resolve** (step 6) — only where the ask-time
-re-read found no newer comment by anyone else, and never a thread carrying an
+re-read found no comment newer than the one this reply answers by anyone else, and never a thread carrying an
 open reservation or deferred repair (`references/review-feedback.md`,
 *Approval-pending replies*). **Rejected → post nothing
 and resolve nothing**: the fix stays pushed, the thread stays open, and it is
@@ -631,7 +631,8 @@ After completing all steps, summarize:
   were held
 - **Every approval-pending reply item**, one entry each, carrying what
   *Replies held for approval* lists — attended, with the person's verdict on it
-  and the write id of any reply posted; every rejected one as *reply not posted
+  and the write id of any reply posted, marked *reply posted — thread left open*
+  where it was not resolved; every rejected one as *reply not posted
   — thread open for you*; and every thread a person is in that also asks a
   question as *fix pushed — thread left for you (it also asks a question)*, with
   its fix SHA

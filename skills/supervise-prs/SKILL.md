@@ -29,7 +29,7 @@ This file is the contract; the reasoning and incident history behind its rules l
 | **head checks** | zero or more checks of the caller's own, each **stated in full**: what it compares, when it runs — `on-repair-head`, before a pass's pushed head is adopted, or `every-pass` — and what each result does: `adopt`, `hold`, or `return to caller` | none |
 | **caller pushes**, per pass | heads the caller pushed to a supervised branch since the last pass, each tagged `mechanical` or `substantive` by `references/mechanical-pushes.md`; and the branches the caller holds **locked** because it is about to mutate them, or is mutating them now | none |
 | **releases**, per pass | PRs held by a head check that the caller releases, with what it decided. **On release the held head is adopted as a head move** (*Head moves*); a caller that decided against it reverts separately, and that is a caller push | none |
-| **held-reply outcomes**, per pass | each held reply a walkthrough settled, from `settle-and-merge`'s result: approved with its write id, which clears its approval-pending record, or rejected as thread and fix SHA, recorded as handled — rejected (`references/review-feedback.md`, *Approval-pending replies*) | none |
+| **held-reply outcomes**, per pass | each held reply a walkthrough settled, from `settle-and-merge`'s result: approved with its write id and `resolved` or `left open`, which clears its approval-pending record, or rejected as thread and fix SHA, recorded as handled — rejected (`references/review-feedback.md`, *Approval-pending replies*) | none |
 | **findings to repair** | settle-time findings on a supervised PR, verbatim with their durable site: an `IN_FLIGHT_FIX` action point, or a recorded ruling that requires the PR's code to change | none |
 | **wait owner** | `self` or `caller` | `self` |
 | **monitoring cap** | a wall-clock bound on this skill's own loop | none: the wake budget alone bounds it |
@@ -234,7 +234,7 @@ The per-PR record, plus:
 
 - whether it changed this pass;
 - every expected-red check with its refresh; every round owed to the caller, with its head;
-- every reserved thread per item kind, verbatim, every approval-pending reply, verbatim, every rejected held reply as *reply not posted — thread open for you*, every mixed-thread fix as *fix pushed — thread left for you (it also asks a question)* or *(a further change is deferred)*, and every no-action thread;
+- every reserved thread per item kind, verbatim, every approval-pending reply, verbatim, every rejected held reply as *reply not posted — thread open for you*, every mixed-thread fix as *fix pushed — thread left for you (it also asks a question)* or *(a further change is deferred)*, every approved reply left open as *reply posted — thread left open*, and every no-action thread;
 - every refused round with its reason and reset; every repository whose triggering was suppressed;
 - promotions performed; every explicitly held draft; the body-drift flags passes returned;
 - reads deferred, and when the allowance resets;
