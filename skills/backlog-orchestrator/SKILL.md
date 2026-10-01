@@ -982,7 +982,7 @@ On reaching settled:
 1–7. run `settle-and-merge`'s sequence over this run's PR set (`settle-and-merge`, *The settle sequence*), passing it every input its *Inputs* names, as this run supplies them:
    - **PR set and scope**: the manifest/scope, and this run's PR set — which may be empty, where every issue blocked before creating a PR;
    - **findings**: the worker and review findings the run produced;
-   - **held-reply records**: the approval-pending, rejected and mixed-thread records `supervise-prs`'s record holds; pass the rejections `settle-and-merge` returns to `supervise-prs` as its *rejected held replies* input;
+   - **held-reply records**: the approval-pending, rejected and mixed-thread records `supervise-prs`'s record holds; pass the held-reply outcomes `settle-and-merge` returns to `supervise-prs` as its *held-reply outcomes* input;
    - **posting-identity map**: the run's map (`references/posting-identity.md`);
    - **resolved policy**: `auto-merge` per PR and `auto-request-settle` for the run, as this run's preflight resolved them (`references/agent-policy.md`) — `auto-merge` off wherever *Model and skill policy* made the gate unreachable;
    - **ranking**: step 5 ranks, with each cross-branch collision this run found, marked independent where `artifact-collisions.md`, *Resolving a collision*, showed it, and the held issue set — anything classified `NEEDS_USER` for a resolved premise;

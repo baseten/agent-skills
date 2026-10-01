@@ -139,6 +139,17 @@
         "step 7 lists the mixed-thread fix",
         "both come from the held-reply records"
       ]
+    },
+    {
+      "id": 12,
+      "name": "an-approved-held-reply-is-not-re-asked-at-a-second-settle",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: at the first settle the owner approved one held reply, which was posted (write id 9001) and its thread resolved. You returned that outcome, and the caller passed it to supervise-prs. The wave settles again later. Questions: (a) is that reply passed to the walkthrough again? (b) does step 7 list it as unposted?",
+      "expected_output": "(a) No: the approved outcome cleared its approval-pending record in supervise-prs' record, so it is not among the held-reply records passed in. (b) No: it was posted and the thread resolved, so it is not listed as unposted.",
+      "assertions": [
+        "the approved reply is not passed to the walkthrough again",
+        "it is not listed as unposted at step 7",
+        "the outcome reached supervise-prs through the caller"
+      ]
     }
   ]
 }

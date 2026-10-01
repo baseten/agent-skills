@@ -101,7 +101,7 @@ The run settles when its one issue reaches a terminal state: the PR `finished` a
 
 - **PR set and scope**: scope, the canonical issue URL; PR set, its one PR — or none, where Phase 1 returned before creating one;
 - **findings**: the worker and review findings the run produced;
-- **held-reply records**: the approval-pending, rejected and mixed-thread records `supervise-prs`'s record holds; pass the rejections `settle-and-merge` returns to `supervise-prs` as its *rejected held replies* input;
+- **held-reply records**: the approval-pending, rejected and mixed-thread records `supervise-prs`'s record holds; pass the held-reply outcomes `settle-and-merge` returns to `supervise-prs` as its *held-reply outcomes* input;
 - **posting-identity map**: the run's map;
 - **resolved policy**: `auto-merge` and `auto-request-settle`, resolved for its one PR (Policy and budgets);
 - **ranking**: `caller translates` — nothing is ranked, since one PR has no ordering to rank. This skill runs the ruling translation below over the rulings handed back at its step 5 and passes back the translated action points;

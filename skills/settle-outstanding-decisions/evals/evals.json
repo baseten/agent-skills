@@ -179,7 +179,7 @@
     },
     {
       "id": 13,
-      "name": "a-rejected-held-reply-is-dropped-and-listed",
+      "name": "a-rejected-held-reply-is-recorded-and-listed",
       "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: settle-and-merge invoked you with the owner present and passed one approval-pending reply item on PR 52 of acme/api. The owner rejects it: 'I'll answer her myself'. Later in the same run the wave un-settles, settles again, and the walkthrough is requested again. Questions: (a) what do you post or resolve on the rejection? (b) what does your result carry for it, and what does the caller do with it? (c) is it asked again in the second walkthrough? (d) what does the final report say about the thread?",
       "expected_output": "(a) Nothing: no reply, no rejected-draft record, no resolution. (b) The item, listed as rejected with its thread and fix SHA; the supervising run records it as handled — rejected. (c) No: a rejected reply is not passed to the walkthrough again, unless new content arrives on the thread first. (d) 'reply not posted — thread open for you', with the thread URL and fix SHA.",
       "assertions": [

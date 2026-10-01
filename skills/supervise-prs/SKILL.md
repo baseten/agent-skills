@@ -29,7 +29,7 @@ This file is the contract; the reasoning and incident history behind its rules l
 | **head checks** | zero or more checks of the caller's own, each **stated in full**: what it compares, when it runs — `on-repair-head`, before a pass's pushed head is adopted, or `every-pass` — and what each result does: `adopt`, `hold`, or `return to caller` | none |
 | **caller pushes**, per pass | heads the caller pushed to a supervised branch since the last pass, each tagged `mechanical` or `substantive` by `references/mechanical-pushes.md`; and the branches the caller holds **locked** because it is about to mutate them, or is mutating them now | none |
 | **releases**, per pass | PRs held by a head check that the caller releases, with what it decided. **On release the held head is adopted as a head move** (*Head moves*); a caller that decided against it reverts separately, and that is a caller push | none |
-| **rejected held replies** | each held reply a walkthrough rejected, as thread and fix SHA, from `settle-and-merge`'s result — recorded as handled — rejected (`references/review-feedback.md`, *Approval-pending replies*) | none |
+| **held-reply outcomes**, per pass | each held reply a walkthrough settled, from `settle-and-merge`'s result: approved with its write id, which clears its approval-pending record, or rejected as thread and fix SHA, recorded as handled — rejected (`references/review-feedback.md`, *Approval-pending replies*) | none |
 | **findings to repair** | settle-time findings on a supervised PR, verbatim with their durable site: an `IN_FLIGHT_FIX` action point, or a recorded ruling that requires the PR's code to change | none |
 | **wait owner** | `self` or `caller` | `self` |
 | **monitoring cap** | a wall-clock bound on this skill's own loop | none: the wake budget alone bounds it |
@@ -60,7 +60,7 @@ branch/base
 remote head SHA
 CI: per check — state, and attribution where red (references/ci-attribution.md)
 per review convention: performed by; trigger state; rounds, each pending/refused (reason, reset)/complete-with-findings/clean
-reserved threads (question items, deferred-repair items), approval-pending replies (one per thread), rejected held replies (thread + fix SHA), mixed-thread fixes left for the owner, and no-action threads — one record per thread, the latest classification replacing an earlier one
+reserved threads (question items, deferred-repair items), approval-pending replies (one per thread), rejected held replies (thread + fix SHA), mixed-thread fixes left for the owner, and no-action threads — held-reply records (approval-pending, rejected, the no-action that ends one) replace each other per thread; every other record stands beside them
 draft state: as-created -> current; promotion convention, or absent
 cycles used/cap: CI · review · finding; review rounds completed; strongest-model rounds used/cap, with locus evidence
 mutator: none / pass <id> / caller (locked)
@@ -100,7 +100,7 @@ One pass is one supervision cycle over the tracked set. In order:
    - record every item it returned (*Review feedback*, step 3) and its body-drift flag, forwarded to the caller as a prompt for the settle's body reconcile (`settle-and-merge`), never as a precondition;
    - release it through the dispatch mechanism;
    - then apply its outcome (*Adopting a head*);
-2. **take in the caller's pushes** (*Head moves*), and the releases;
+2. **take in the caller's pushes** (*Head moves*), the releases, and the held-reply outcomes, recording each;
 3. **read what is due**, once, in one consolidated pass — `references/watch-and-read.md`, *Reading on a change signal* and *Allowances belong to the credential*, decide which PRs are due and how. Fold the result into the records and stamp `last read`. A PR no signal named keeps the state it had; a PR observed merged or closed takes that outcome; **a head move made by neither a pass nor a caller push** is handled under *Head moves*;
 4. **run every `every-pass` head check** and apply its disposition;
 5. **CI** (*CI failure*); **review** (*Review feedback*); **findings** (*Finding repairs*);

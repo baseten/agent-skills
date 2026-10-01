@@ -100,7 +100,8 @@ in any mode and whatever the budget — a re-dispatch after a restart lost the
 run's record is the usual case. It gets no commit, and it is never a deferred
 repair or a `NEEDS_USER` item for that change: the work is done. Step 5 decides
 its reply, naming the commit that made the change. A thread back on a newer
-comment is classified by that comment instead (*Replies held for approval*).
+comment has that comment classified (*Replies held for approval*) — alongside
+any open reserved question, never instead of it.
 
 State the commit plan before touching any files.
 
@@ -222,6 +223,9 @@ own writes aside, has an author that is not a `Bot`:
 
 So a person's follow-up inside a bot's thread holds the reply, and so does a
 bot's follow-up in a thread a person is in: the person is still being answered.
+**A thread with a reserved question is the exception to all three rows**: nothing
+is posted as if it answered the question and the thread is not resolved, whatever
+the key (*A comment can want both*).
 **Anything not `Bot` is a person**, a machine user posting from an ordinary
 account included: misreading in that direction only holds a reply, the safe
 failure. **This decides nothing about the fix.** What is repaired stays the kind
@@ -262,8 +266,9 @@ rejected for the fix SHA (`references/review-feedback.md`, *Approval-pending
 replies*). A newer fix on the thread gets a fresh held reply.
 
 **A new comment in the thread, from anyone but this workflow, is new content**
-(`references/review-feedback.md`, *Unhandled feedback*): a thread back on one is
-classified by that comment like any other, and an acknowledgement comes back as
+(`references/review-feedback.md`, *Unhandled feedback*): a thread back on one has
+that comment classified like any other — alongside any open reserved question,
+never instead of it — and an acknowledgement comes back as
 a no-action entry (*A comment that wants nothing*), left open for the owner.
 
 **The already-on-head case** (step 2) is decided by the table above, so a thread
@@ -371,7 +376,7 @@ first checking the head for a change already made, which the last row covers:
 | Wants an answer | A `NEEDS_USER` item with its draft reply, exactly as unattended |
 | Wants nothing | A no-action entry, exactly as unattended |
 | Wants both (*A comment can want both*) | Both entries for the one thread — the change unapplied as a deferred repair, and the question as a `NEEDS_USER` item with its draft. The thread is handled only once the caller has recorded both |
-| Wants a code change **already on the head**, and no comment by anyone but this workflow is newer than that fix — otherwise the thread is classified by the newest such comment, on the rows above | **Never a deferred repair or a budget `NEEDS_USER` item**: the work is done. An approval-pending reply item naming the commit that made the change. **Held even where only bots are in the thread, deliberately**: this mode posts nothing, and the walkthrough or the owner posts it (*Replies held for approval*). A thread that also carries a question gets no held reply: only its question item comes back |
+| Wants a code change **already on the head**, with no comment newer than the fix but the request itself — otherwise the newest comment by anyone but this workflow is classified on every row, this one included, so a follow-up asking for a change already made lands here too | **Never a deferred repair or a budget `NEEDS_USER` item**: the work is done. An approval-pending reply item naming the commit that made the change. **Held even where only bots are in the thread, deliberately**: this mode posts nothing, and the walkthrough or the owner posts it (*Replies held for approval*). A thread that also carries a question gets no held reply: only its question item comes back |
 
 **The mode has to be explicit, because this skill's default workflow pushes.**
 A caller that wants classification without repair and does not say so gets the
@@ -393,7 +398,7 @@ reconstruct from a thread URL defeats the whole rule. Every `NEEDS_USER`
 | 1 | **the thread's `html_url`** | **as returned by the API, verbatim — never a hand-built anchor.** A review-comment thread and a PR-level comment use different fragment forms, so a URL assembled from a PR number and a comment id silently resolves to the wrong place, or to the top of the PR, and the failure is invisible from here: the link works, it just does not land on the thread. Take the field the API gave you (`html_url` on the comment from `get_review_comments`, or the `gh api` equivalent) and pass it through unchanged. Not sure a URL came from the API → it did not; re-read the thread |
 | 2 | **the ask, quoted** | the reviewer's own words, **at most 2 lines**, trimmed with an ellipsis rather than paraphrased. A paraphrase is where the question quietly becomes the one the pass found easier to answer |
 | 3 | **the recommended reply — and it is paste-ready only for one of the two draft kinds** | **An answerable-from-work draft** is paste-ready: one line where the answer fits in one, written as the person would post it rather than as a report to them — no "the reviewer asks whether…" preamble, no meta-commentary. **A decision-only draft is not**, and must not be presented as though it were: it lists the options and their costs and deliberately makes no pick (*The draft reply*), so pasting it into the thread posts a non-answer over a question still undecided. Label it **`decision — not for posting`** and say what the person's next step is: decide, then answer in their own words, or route it to `settle-outstanding-decisions`, which asks the underlying options and records the one chosen (*Handling queries*). Neither kind carries an attribution footer — they author whatever they post |
-| 4 | **the SHA of any code change made for this thread, or `none`** | explicitly `none` where nothing was pushed. A blank field reads as "not recorded" and sends the person to the diff to check; on a mixed thread (*A comment can want both*) this is where the pushed fix is named, which is the only place the two halves of that thread meet |
+| 4 | **the SHA of any code change made for this thread, or `none`** | explicitly `none` where nothing was pushed; where the thread already has a fix on the head from an earlier pass, that fix's SHA. A blank field reads as "not recorded" and sends the person to the diff to check; on a mixed thread (*A comment can want both*) this is where the pushed fix is named, which is the only place the two halves of that thread meet |
 | 5 | **why it was not posted** | one clause — *needs your intent*, *product decision*, *only you can confirm the constraint*. Not a restatement of the rule; the person knows the rule, they need to know which of its branches this thread is |
 
 **A thread URL anywhere in this skill's output obeys row 1**, not only in a

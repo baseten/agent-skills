@@ -59,7 +59,7 @@
       "target": 3000
     },
     "skills/resolve-pr-comment/SKILL.md": {
-      "budget": 6896,
+      "budget": 6980,
       "target": 3000
     },
     "skills/review-docs/SKILL.md": {
@@ -71,11 +71,11 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 4804,
+      "budget": 4834,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
-      "budget": 5471,
+      "budget": 5472,
       "target": 3000
     },
     "skills/summarize-wave/SKILL.md": {
@@ -83,7 +83,7 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 5133,
+      "budget": 5159,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/review-feedback.md": {
-      "budget": 2114,
+      "budget": 2231,
       "target": 1500
     },
     "rules/review-trigger.md": {

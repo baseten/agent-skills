@@ -442,12 +442,13 @@
       "id": 35,
       "name": "zero-budget-classifies-a-fixed-thread-by-its-newest-comment",
       "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invokes you unattended and classify-only (budget spent) on PR 52 of acme/api. Two threads a human reviewer (user.type User) opened each asked for a change already on the head, made by 2b3c4d5 and 3c4d5e6. Since those fixes, thread A has a new comment from the reviewer: 'thanks!'. Thread B has: 'why a map here rather than a set?'. Questions: what does each thread come back as, and does either come back as an approval-pending reply item?",
-      "expected_output": "Each is classified by its newest comment, since a comment by someone other than this workflow is newer than the fix. Thread A is a no-action entry: handled, left open for the owner. Thread B is a NEEDS_USER question item with its draft. Neither is an approval-pending reply item: the already-on-head row applies only where no newer comment exists. Neither is a deferred repair, since the requested changes are already made.",
+      "expected_output": "Each is classified by its newest comment, since a comment by someone other than this workflow is newer than the fix. Thread A is a no-action entry: handled, left open for the owner. Thread B is a NEEDS_USER question item with its draft, and its SHA field carries the earlier fix 3c4d5e6 already on the head, not none. Neither is an approval-pending reply item: the already-on-head row applies only where no newer comment exists. Neither is a deferred repair, since the requested changes are already made.",
       "assertions": [
         "thread A comes back as no-action",
         "thread B comes back as a NEEDS_USER question item",
         "neither comes back as an approval-pending reply item",
-        "neither is treated as a deferred repair"
+        "neither is treated as a deferred repair",
+        "thread B's question item carries the earlier fix SHA 3c4d5e6 in its SHA field"
       ]
     },
     {
@@ -460,6 +461,29 @@
         "the bot-only thread's reply is held as an approval-pending item",
         "the answer treats this as deliberate because classify-only posts nothing",
         "it is not a deferred repair"
+      ]
+    },
+    {
+      "id": 37,
+      "name": "a-change-request-on-a-reserved-thread-is-fixed-but-not-answered",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invokes you unattended on PR 52 of acme/api with budget remaining and auto-resolve-comments: true from the repository's file. A human reviewer's thread (user.type User) carries an open reserved question: 'why not reuse the shared retry helper?'. The reviewer now adds: 'either way, please rename `n` to `attempts`'. You rename it and push 7f8e9d0. Questions: (a) is the rename made? (b) is a reply posted, and is the thread resolved, given the key is true? (c) what happens to the reserved question?",
+      "expected_output": "(a) Yes: the new comment is classified alongside the open question, never instead of it, and a change request is repaired. (b) No reply is posted as if it answered the question, and the thread is not resolved. A reserved question is the exception to every row of the reply table, auto-resolve-comments: true included. (c) It stays reserved as NEEDS_USER, its item's SHA field naming 7f8e9d0, and the thread stays open for the owner.",
+      "assertions": [
+        "the rename is made and pushed",
+        "nothing is posted as if it answered the question",
+        "the thread is not resolved despite the key being true",
+        "the reserved question stays reserved"
+      ]
+    },
+    {
+      "id": 38,
+      "name": "a-follow-up-asking-for-a-change-already-made-is-approval-pending",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invokes you classify-only (budget spent) on PR 52 of acme/api. In a thread a human reviewer (user.type User) opened, an earlier fix 1d2e3f4 renamed `buf`. After that fix the reviewer posted: 'please also make the constant uppercase' — and the head already has it uppercase, from 5a6b7c8. Questions: what comes back for the thread, and is it a deferred repair?",
+      "expected_output": "An approval-pending reply item naming 5a6b7c8. The newest comment is classified on every row, the already-on-head row included, and the change it asks for is already on the head. So it is not a deferred repair, though the budget is spent. Nothing is posted.",
+      "assertions": [
+        "the thread comes back as an approval-pending reply item naming the commit already on the head",
+        "it is not returned as a deferred repair",
+        "nothing is posted"
       ]
     }
   ]
