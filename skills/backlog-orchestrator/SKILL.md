@@ -104,17 +104,17 @@ A Dynamic Workflow is a JavaScript orchestration script that fans plain subagent
 
 When the user has opted into a workflow for this invocation (see Invocation), use it **only for the implementation fan-out**. **Before writing the workflow script, read `dynamic-workflow.md` (beside this file)**: it holds what each worker's prompt must encode, where the checkpoint push goes, and what the workflow may not do to the backlog or to state. **Size the fan-out to the `concurrent-open-prs` headroom at launch, never to the whole authorized set**: a running workflow cannot be reached or paused once the cap fills, so the cap bounds nothing that runs inside it.
 
-A Dynamic Workflow does **not** persist across a Claude Code session exiting (an interrupted one restarts fresh next session), accepts no external input mid-run, and cannot be woken later by a CI/webhook event. So never use a Dynamic Workflow for **long-lived PR/CI/review supervision**: it always stays with this skill's parent-level supervision loop (PR promotion and central supervision), whether or not the implementation fan-out ran inside a workflow.
+**Never use a Dynamic Workflow for long-lived PR/CI/review supervision** — *Parent supervision loop* states why, and that this holds after a workflow fan-out too.
 
 ## Fallback runtimes
 
-When a Dynamic Workflow was not requested for this invocation, or cannot honor the required DAG/worker constraints, degrade through the remaining tiers of Runtime selection below: remote worker sessions, then ordinary isolated subagents with the parent supervision loop defined here, then serialized execution when safe isolation cannot be provided. Agent-team primitives may substitute for tier 2 where that experimental feature is confirmed enabled.
+When a Dynamic Workflow was not requested for this invocation, or cannot honor the required DAG/worker constraints, degrade through the remaining tiers of Runtime selection below. Agent-team primitives may substitute for tier 2 where that experimental feature is confirmed enabled.
 
-Degrade silently and get on with the run. Not requesting a Dynamic Workflow is neither a reason to abandon the orchestration nor a reason to ask the user which tier to use.
+Not requesting a Dynamic Workflow is no reason to abandon the orchestration.
 
 ## Runtime selection
 
-Choose the runtime yourself at startup, from what is actually callable in this session. Never present a runtime menu, and never offer a runtime whose tools are absent here.
+Choose the runtime at startup by detection, never by asking (`swarm`, *1. Runtime: take what is there, and say which*), from what is actually callable in this session — never offering a runtime whose tools are absent here.
 
 Determine availability in preference order:
 
@@ -123,7 +123,7 @@ Determine availability in preference order:
 3. **Subagents** — available when the session exposes the Agent tool. The normal runtime for a local session, and the normal fallback everywhere else.
 4. **Serialized execution in this session** — always available; correct when safe isolation cannot be provided.
 
-**That order trades invariant 5's enforcement for capacity and resilience.** Tier 2 buys a container per worker (see `swarm`, *Concurrency*), a worker that outlives this session's compaction, and per-container tool isolation; but the parent cannot reach a tier-2 worker's checkout, so the parent-side verification `swarm`, *Checkpoint compliance*, relies on is unavailable there, while on tier 3 it works. Report which tier was selected and, on tier 2, that invariant 5 rests on the worker's own pushes. Where an owner would rather have the guarantee than the capacity, tier 3 is the correct selection, and nothing here forbids it.
+**That order trades invariant 5's enforcement for capacity and resilience.** Tier 2 buys a container per worker (see `swarm`, *Concurrency*), a worker that outlives this session's compaction, and per-container tool isolation; but the parent cannot reach a tier-2 worker's checkout, so the parent-side verification `swarm`, *Checkpoint compliance*, relies on is unavailable there, while on tier 3 it works. Report which tier was selected and, on tier 2, which lever invariant 5 rests on. Where an owner would rather have the guarantee than the capacity, tier 3 is the correct selection, and nothing here forbids it.
 
 **This run's session-name prefix is `bo`** — `bo/<run-id>: <issue>`, for example
 `bo/a41f: api#348`. The convention and the reason the name is never what a sweep
@@ -138,7 +138,7 @@ Where a repository's review or repair is performed by dispatched sessions rather
 - **a review session** is dispatched per PR head with `source_revision` set to the PR branch and **no `outcome_branch`**: it reads, posts one PR review with event `COMMENT`, never `APPROVE` or `REQUEST_CHANGES` — a body carrying the attribution, plus inline comments each rooting a thread — or one ranked comment, per the repository's convention, and pushes nothing. That review is the one carve-out from the run never rooting a thread (`references/review-feedback.md`, *The thread-root test*). **Its dispatch adds one requirement to `swarm`'s report: name the id of the review posted and the ids of its inline comments.** Record them from that report, or from a read of the review by its id where the report names only that — never by footer or content. **This run dispatches it**: the convention is passed to `supervise-prs` as performed by the `caller`, and each round that skill reports owed, with its head, is a review session this run dispatches;
 - **a repair session** is dispatched with `outcome_branch` set to the PR branch, and may only add commits or merge commits, never rewrite history. `supervise-prs` dispatches it, through `swarm`.
 
-**Only the repair session spends `review-repair-cycles`**: a review session pushes nothing, and what a cycle is — and what becomes of findings raised after the budget is spent — is `supervise-prs`'s (*Budgets*). Review rounds draw on the provider's quota instead, which this key does not bound.
+**Only the repair session spends `review-repair-cycles`**, which counts pushed repair passes (*Default usage safeguards*), and a review session pushes nothing. Review rounds draw on the provider's quota instead, which this key does not bound.
 
 ### Bounded runtime probing
 
@@ -190,9 +190,7 @@ Record which transport was validated for which class of relationship read and ac
 
 **Stated in full in `references/posting-identity.md`.** Apply it from there
 — the bundled copy, for the same reason as the authored-write-form rule below.
-It decides which **author** each authored write carries, from a map of observed
-authorship per `(transport, credential)` pair and write kind, and it owns the
-review trigger's authorship exception (*The review trigger*). This skill holds the
+This skill holds the
 run's map: it passes the whole map to every worker it dispatches (*Implementation
 worker contract*) and merges every entry a worker or repair returns (*CI/review
 repair*; *Parent supervision loop*, step 1).
@@ -201,9 +199,7 @@ repair*; *Parent supervision loop*, step 1).
 
 **Stated in full in `references/authored-write-form.md`.** Apply it from there
 — that path, not the repository's `rules/` source, which does not exist on an
-installed run. It covers length, what a body is for, what must never be in it,
-the attribution footer and its approval test, the precedence of required
-contents over brevity, and when a PR body may be edited after creation — this
+installed run. When a PR body may be edited after creation is that rule's — this
 run edits none except where *Editing a PR body after it is created* allows (a
 late coverage retrofit, *Outcomes*, is one such case); `settle-and-merge` and
 `merge-stack` apply it.
@@ -279,7 +275,7 @@ Projects are discovery surfaces, not execution graphs. Combine FE/BE/shared proj
 
 Before dispatching any **new** implementation worker, invoke `validate-backlog` on the entire bounded scope — `shallow` by default, deeper over the nodes the escalation rules below reach.
 
-**The run's first preflight** is also where per-repository policy is read — each in-scope repository's `.claude/agent-policy.json`, per `references/agent-policy.md`, which owns the schema, resolution, and failure rules. **Later preflights do not re-read it, and reuse that snapshot.** A re-run after a frontier advance revalidates the *graph*, which the merge changed; policy is owner-authored configuration that can authorize merges, and re-reading it there would let a mid-run merge adopt a config the run's own workers wrote — which `references/agent-policy.md`, *Resolution*, forbids by fixing the read to the repository state the run started from. A restart is a new run and takes a fresh snapshot. **When this invocation resumes an earlier run of this orchestration — the same manifest re-invoked after an interruption or session exit, or a checkpoint a previous run returned — read `restart-resume.md` (beside this file) before the preflight, and follow its steps in order.** Its step 2 is this preflight.
+**The run's first preflight** is also where per-repository policy is read — each in-scope repository's `.claude/agent-policy.json`, per `references/agent-policy.md`, which owns the schema, resolution, and failure rules. **Later preflights do not re-read it, and reuse that snapshot.** A re-run after a frontier advance revalidates the *graph*, not policy (`references/agent-policy.md`, *Resolution*, fixes the read to the repository state the run started from). A restart is a new run and takes a fresh snapshot. **When this invocation resumes an earlier run of this orchestration — the same manifest re-invoked after an interruption or session exit, or a checkpoint a previous run returned — read `restart-resume.md` (beside this file) before the preflight, and follow its steps in order.** Its step 2 is this preflight.
 
 Use the validator's normalized DAG as the scheduling graph. Do not let the execution runtime independently invent a competing decomposition. That prohibition is about re-planning, not evidence: a worker reporting a blocker it verified against its own issue is correcting the graph from a position the validator did not have (see Outcomes). Accept an edge a worker verified; reject a runtime's attempt to reorder or re-scope the backlog.
 
@@ -354,7 +350,7 @@ When the bounded scope exceeds `new-issue-budget`, do not ask which issues to dr
 
 **`review-repair-cycles` counts pushed repair passes, not review rounds** — `supervise-prs`, *Budgets*, states it, and how both numbers are reported in every status line that mentions a repair round. Carry both into the checkpoint, and do not raise the default from a round count.
 
-Budget exhaustion on a node -> `NEEDS_USER`, not another speculative attempt — as an **outcome** where an implementation budget is spent, and for a PR's repair budgets as `supervise-prs`, *Budgets*, states it: an outcome for CI and finding, items for review (see `references/review-feedback.md`, *Reserved for the owner*). Continue unrelated DAG branches safely.
+Budget exhaustion on a node -> `NEEDS_USER`, not another speculative attempt — as an **outcome** where an implementation budget is spent, and for a PR's repair budgets as `supervise-prs`, *Budgets*, states it. Continue unrelated DAG branches safely.
 
 ## Policy keys and defaults
 
@@ -416,8 +412,6 @@ Workers must inherit/preload the active installed skills. A **worker** whose req
 
 # Durable remote state and restart
 
-**When this invocation resumes an earlier run of this orchestration — the same manifest re-invoked after an interruption or session exit, or a checkpoint a previous run returned — read `restart-resume.md` (beside this file) before the preflight, and follow its steps in order.**
-
 Classify in-scope issues from tracker + GitHub remote evidence:
 
 - `DONE`
@@ -446,7 +440,7 @@ A cloud worktree is ephemeral. Never claim restart safety for unpushed local cha
 
 ## Restart / resume
 
-**When this invocation resumes an earlier run of this orchestration — the same manifest re-invoked after an interruption or session exit, or a checkpoint a previous run returned — read `restart-resume.md` (beside this file) before the preflight, and follow its steps in order.**
+**A resumed run reads `restart-resume.md` (beside this file) before the preflight and follows its steps in order** — *Mandatory validation preflight* states what counts as resuming.
 
 A fresh orchestration session must be able to recover from tracker + GitHub remote state alone.
 
@@ -529,7 +523,7 @@ Before dispatch:
 10. include **authorization membership**: the bounded authorized set, or a per-blocker flag for whether each is inside it. Only you know this, and the worker's block outcome turns on it — without it, an external-looking prerequisite you did authorize comes back as an out-of-scope wait and you skip the frontier re-derivation it needed. A worker given nothing defaults to the stronger outcome. And where a sibling branch may claim the same migration number, that its number is provisional — **read `artifact-collisions.md` before this dispatch wherever more than one open branch targeting the base may generate a migration** (*Cross-branch artifact collisions*);
 11. include, on any runtime where a worker's return value does not reach this run, the requirement that it **record the judgment part of its result on its PR before returning** — not on the issue, and not the run state, which the session record and the branch already carry; see `swarm`, *How a worker's report actually reaches you*. **Never enumerate what the report contains; state it as a subtraction.** The report is `implement-issue-core`'s entire Output contract *minus* what this run can already read for itself — the branch, the PR, and the session record's `status_bucket`, `pending_action`, `task_summary` and `post_turn_summary` — and minus the gate report, which is never posted (`references/authored-write-form.md`). Everything else in that contract is judgment, which has no other carrier. **The one fact it adds back is the head commit the worker pushed** — or that it pushed nothing, and the head it found (`swarm`, *How a worker's report actually reaches you*, says why).
 
-    Any terminal outcome reached before a PR exists writes nothing and simply returns — investigating it, and recording anything that comes of it, is this run's job, not the worker's;
+    Any terminal outcome reached before a PR exists writes nothing and simply returns (`swarm`, *How a worker's report actually reaches you*, No PR);
 12. dispatch the worker with `implement-issue-core`, on the model selected for this issue (see Model and skill policy). **Where the fan-out runs as a Dynamic Workflow, read `dynamic-workflow.md` before writing its script**, and size it to the `concurrent-open-prs` headroom at launch (*Preferred runtime: Claude Code Dynamic Workflows*).
 
 **A dispatch prompt that enumerates a required process is followed literally**: a default left out of it is a default skipped, and the worker will accurately report that the task never asked for it. The same literalism decides what the worker does with instructions this run did not write (see `swarm`, *Countermanding the worker's ambient supervision posture*). So every dispatched prompt must carry each of the following.
@@ -537,15 +531,15 @@ Before dispatch:
 - **The automated review trigger instruction** — the worker's `create-pr` issues it under `references/review-trigger.md`, so do not restate the rule here — unless this run explicitly defers review. Deferral is a conscious choice recorded in run state, naming what review is owed and on which PRs; never an omission. **Record it as the per-PR `review trigger` value `deferred`** — that field is what `supervise-prs`, *Adopt*, reads, and a deferral left at `pending` is issued there as an unfinished trigger.
 - **The pre-PR gate, derived once per repository and written out in full.** The parent derives it at preflight as `implement-issue-core`, *Final local verification* defines — the base branch's required status checks, mapped to the commands that produce them, with its fallback and its `not locally runnable` outcome; that skill owns the derivation — and puts the resulting set in the prompt, with each entry's outcome vocabulary and where the set came from. Not a path to it, and not a pointer to `AGENTS.md`, which describes the gate and drifts from it (`swarm`, *Isolation*, on why a path is worse than useless here). Deriving it once also stops two workers disagreeing about what the gate is.
 - **How a worker settles a checkout against an API response.** Both are observations with an age — `origin/main` is as old as its last fetch, which on a container tier can be when the container was built, and a held response is as old as when it was issued. Where the two disagree about something the worker is about to act on, it re-reads the forge at that moment and refreshes the checkout to match (see *Every read is a snapshot*).
-- **The outbound claim check, alongside the write-form rule** (`references/establish-do-not-assume.md`, *You are about to assert it*). A worker authors the writes this run is most likely to be judged by — its PR body, its report comment, its commit messages — and constraining only this orchestrator's own writes leaves every remembered claim a worker states about the codebase, or about the state of what it touched (*pushed* and *resolved* above all), unchecked.
-- **The run's whole posting-identity map** — every (transport, credential) entry, not one selected pair — plus the instruction to read the worker's own first authored write back and report what it observed (see `references/posting-identity.md`). The worker's `create-pr` may need an agent-authored entry to create the PR and an invoking-user entry for the author-sensitive review trigger, so selecting one either gives the PR the wrong author or leaves a valid trigger path unavailable, and the worker cannot recover what it was not sent. The worker's report is itself an authored write, normally a PR comment: a prompt requiring the report while omitting the identity to report under gets it posted as the invoking user. A distinct identity observed at `create-pr` does not reach that write on its own.
-- **The authored-write-form rule** (see Authored write form) — the rule, not a paraphrase of it: brevity, no list of checks in a body or comment, bare commit SHAs, the no-wrap constraint on forge fields, the footer **with its approval test**, the required-contents precedence, and the trigger comment's exemption. A worker carrying "sign every write" instead of the test will footer a body a person edited; one carrying only "sign unattended writes" will decide for itself what counts as attended. A dispatched worker's own writes answer No to the test — nobody reads them — so in practice its report and its PR body are footered, and the test is still what it carries, because the worker is what discovers whether anyone approved a given text. **Carry with it that the report's contents are required in full** — the judgment step 11's subtraction defines — so brevity governs how the worker writes each item and never whether it writes one. The footer goes at the end.
+- **The outbound claim check, alongside the write-form rule** (`references/establish-do-not-assume.md`, *You are about to assert it*, which requires it in the prompt of every worker that authors a write) — about the codebase, and about the state of what the worker touched (*pushed* and *resolved* above all).
+- **The run's whole posting-identity map** — every (transport, credential) entry, not one selected pair — plus the instruction to read the worker's own first authored write back and report what it observed (see `references/posting-identity.md`). The worker's report is itself an authored write, normally a PR comment: a prompt requiring the report while omitting the identity to report under gets it posted as the invoking user. A distinct identity observed at `create-pr` does not reach that write on its own.
+- **The authored-write-form rule** (see Authored write form) — the rule, not a paraphrase of it: brevity, no list of checks in a body or comment, bare commit SHAs, the no-wrap constraint on forge fields, the footer **with its approval test**, the required-contents precedence, and the trigger comment's exemption. A dispatched worker's own writes answer No to the test — nobody reads them — so in practice its report and its PR body are footered, and the test is still what it carries, because the worker is what discovers whether anyone approved a given text. **Carry with it that the report's contents are required in full** — the judgment step 11's subtraction defines — so brevity governs how the worker writes each item and never whether it writes one. The footer goes at the end.
 
 **A returned PR whose gate report is missing a derived check is rejected, not accepted and watched.** The gate report, in the worker's returned result (`implement-issue-core`, *Output*), is its report that it ran what it was given, and an incomplete one is the cheapest moment to catch a skipped step. A worker's claim that the gates passed is separate and is not evidence: the report says which ran, CI on the pushed head says whether they passed. Where the worker's return does not reach this run (step 11), there is no gate report to read, and CI on the pushed head is the whole record.
 
 Issuing the review trigger is not the end of it: confirming it took effect, at adoption and after every re-trigger, and reading every PR's CI and review verdicts from then on, are `supervise-prs`'s (*Adopt*, *Review trigger*).
 
-This generalizes past review triggers. When the platform offers several ways to perform the same write, prefer its first-class integration tooling over raw transport: attribution, permissions, and downstream automation can all differ between them, invisibly until a write is made and read back. Where identity matters to a workflow, verify it by inspecting an object the run actually created and reading its author — never by asking the credential who it is, which can answer differently from what its writes carry.
+This generalizes past review triggers: every write's transport follows *Transport precedence*, and its identity is established as `references/posting-identity.md` states.
 
 Under Dynamic Workflows, provide these constraints to every workflow worker explicitly. Do not let a worker select another backlog ticket when it finishes.
 
@@ -579,9 +573,9 @@ Treat all five as best-effort on the worker's part. They belong in every dispatc
 
 # PR promotion and central supervision
 
-**`supervise-prs` supervises every PR this run tracks, created or adopted, from inside this run's own loop** (Parent supervision loop). Platform surfacing and the check that the platform's own auto-merge is off, adoption, reading, CI attribution, review routing, repair passes and their budgets, review triggers and draft state are that skill's. This section says what this run passes it and what stays here. A Dynamic Workflow run does not itself persist or surface PR/CI/review events once it returns its fan-out results, so supervision is this run's from that moment.
+**`supervise-prs` supervises every PR this run tracks, created or adopted, from inside this run's own loop** (Parent supervision loop). Platform surfacing and the check that the platform's own auto-merge is off, adoption, reading, CI attribution, review routing, repair passes and their budgets, review triggers and draft state are that skill's. This section says what this run passes it and what stays here.
 
-Once an implementation worker reaches `PR_OPEN`, release that implementation worker — on a remote-session runtime that is an archive call, not merely ceasing to message it (see `swarm`, *Releasing a worker*). Long-lived PR supervision belongs to the parent/runtime orchestration layer.
+Once an implementation worker reaches `PR_OPEN`, release it as `swarm`, *Releasing a worker*, defines the act per tier. Long-lived PR supervision belongs to the parent/runtime orchestration layer.
 
 **One PR, one supervisor, and it is this run.** The lifecycle is:
 
@@ -593,7 +587,7 @@ parent  -> adopt the PR, arm its subscription, and own it from there:
            and repair only through a `repair-pr` pass `supervise-prs` dispatches
 ```
 
-A worker never supervises its own PR and is never resumed to repair it — only a dispatched `repair-pr` pass repairs (`references/platform-pr-posture.md`, *The override*) — and a Dynamic Workflow never supervises anything: it returns its fan-out results and supervision is the parent's from that moment (see Parent supervision loop).
+A worker never supervises its own PR and is never resumed to repair it — only a dispatched `repair-pr` pass repairs (`references/platform-pr-posture.md`, *The override*) — and a Dynamic Workflow never supervises anything (*Parent supervision loop*).
 
 **What this run passes `supervise-prs`:**
 
@@ -604,7 +598,7 @@ A worker never supervises its own PR and is never resumed to repair it — only 
 - **review routing and trigger state**: as each worker's `create-pr` left it, and `deferred` where this run deferred review (*Implementation worker contract*); a convention performed by dispatched review sessions is passed as performed by the `caller`, with the review and comment ids recorded there (*Review and repair sessions*);
 - **repair dispatch**: `swarm`, with whether a worker's return value reaches this run on the selected tier;
 - **head checks**: the chartered-scope check below;
-- **caller pushes**: every restack (*Stack mutation while PRs are open*) and renumber (`artifact-collisions.md`, *Performing the renumber*) this run pushed since the last pass, and every restack `merge-stack` performed with a gate-authorized merge, tagged by `references/mechanical-pushes.md`, with each branch this run is about to mutate held locked;
+- **caller pushes**: every restack (*Stack mutation while PRs are open*) and renumber (`artifact-collisions.md`, *Performing the renumber*) this run pushed since the last pass, and every restack `merge-stack` performed with a gate-authorized merge, tagged as *Mechanical pushes do not consume review* says, with each branch this run is about to mutate held locked;
 - **findings to repair**: settle findings (*A settle finding is the third repair shape*);
 - **releases**: each PR held by the chartered-scope check whose `DECISION` has been ruled, with the ruling;
 - **wait owner**: `caller`; **return on**: `every-pass`; **state emission**: `every-pass`, because the state block is emitted every cycle;
@@ -663,7 +657,7 @@ On an `IN_FLIGHT_FIX` action point, or a code-changing ruling its row routes her
 
 ## Mechanical pushes do not consume review
 
-This run tags each restack and renumber it pushes by `references/mechanical-pushes.md`'s test, conditions included, and passes it to `supervise-prs` as a caller push; what a mechanical push means for the PR's record is that skill's (*Pushes this skill did not make*).
+This run tags each restack and renumber it pushes by `references/mechanical-pushes.md`'s test, conditions included, and passes it to `supervise-prs` as a caller push; what a mechanical push means for the PR's record is that skill's (*Head moves*).
 
 ## Draft state
 
@@ -671,14 +665,14 @@ This run tags each restack and renumber it pushes by `references/mechanical-push
 
 # Parent supervision loop
 
-Long-lived PR/CI/review supervision always runs in this parent loop, never inside a Dynamic Workflow — a workflow run accepts no external input once started and does not persist past the current session. This holds even for a run whose implementation fan-out did execute inside a Dynamic Workflow: once it returns its worker results (PR URLs, branches, heads), supervision reverts to this loop.
+Long-lived PR/CI/review supervision always runs in this parent loop, never inside a Dynamic Workflow — a workflow does not persist across a Claude Code session exiting (an interrupted one restarts fresh next session), accepts no external input once started, and cannot be woken later by a CI/webhook event (`swarm`, *1. Runtime*: it returns results and supervises nothing). This holds even for a run whose implementation fan-out did execute inside a Dynamic Workflow: once it returns its worker results (PR URLs, branches, heads), supervision reverts to this loop.
 
 The main parent thread must remain active while mutating workers run or active PR events can lead to more in-scope work.
 
 Each cycle performs real work:
 
 1. consume worker completions (including a Dynamic Workflow's returned fan-out results, if one was used), extracting each one's dependency evidence — unmet blockers, source disagreements, **and the resolutions that confirmed your view** — and **merging every posting-identity entry it returned into the run's transport-and-credential-keyed map** (see `references/posting-identity.md`), regardless of its outcome. Do this before releasing the worker: the worker's transports are not this run's, so its observations are the only evidence the run will ever have about them, and a released worker cannot be asked again;
-2. **run `supervise-prs`, *Pass*, over this run's PR set** — the delivered PR events, the repair completions step 1 consumed, this cycle's caller pushes and any findings to repair — with the inputs *PR promotion and central supervision* lists. It reads what is due, dispatches repairs through `swarm`, adopts heads after the chartered-scope check, re-triggers and promotes, and returns an outcome per PR with the map it updated. This run makes no supervision read of its own beside it. Its own reads — the tracker reconciliation, the refresh PR, and the reads `validate-backlog` and the settle skills make — follow `references/watch-and-read.md` too: only where this cycle has a reason to, in one consolidated pass, a deliberate descent to a lower transport tier recorded as *Transport precedence* requires. Its dispatch-as-reading carve-out reaches those required skills, which are mandatory where they are mandated, budget or no;
+2. **run `supervise-prs`, *Pass*, over this run's PR set** — the delivered PR events, the repair completions step 1 consumed, this cycle's caller pushes and any findings to repair — with the inputs *PR promotion and central supervision* lists. This run makes no supervision read of its own beside it. Its own reads — the tracker reconciliation, the refresh PR, and the reads `validate-backlog` and the settle skills make — follow `references/watch-and-read.md` too: only where this cycle has a reason to, in one consolidated pass, a deliberate descent to a lower transport tier recorded as *Transport precedence* requires. Its dispatch-as-reading carve-out reaches those required skills, which are mandatory where they are mandated, budget or no;
 3. fold the outcomes into the per-PR blocks and act on them: `merged` or `closed` is a frontier event (Frontier advance on merge); `finished` feeds the settled predicate; `held: check` by the chartered-scope check is a `DECISION` item; `needs-user` goes to step 15, whose item is what makes it surfaced (*Settled wave*);
 4. merge the map `supervise-prs` returned into the run's map, and update this run's budgets;
 5. repair workers are this run's workers under `swarm` like any other — their completions arrive at step 1 and are forwarded to the next *Pass*;
@@ -687,7 +681,7 @@ Each cycle performs real work:
 8. inspect stack ancestry changes;
 9. inspect every in-flight worktree for uncommitted work and enforce checkpoints (see `swarm`, *Checkpoint compliance* — a mandatory step; the parent captures on the worker's behalf as `swarm`, *Enforce, do not re-ask*, decides for the recorded capabilities — on first observation where no channel reaches the worker — by `swarm`, *Capturing without racing the worker*, its ref then ended under Checkpoint compliance here) — **mandatory wherever worktrees are reachable, and inapplicable where the run established they are not**, in which case this step is the remote-head reading and the report saying so, never a skipped step recorded as a passed one;
 10. read every worker's runtime state, not only its work state — release the finished (see `swarm`, *Releasing a worker*) and act on the blocked (see `swarm`, *Blocked workers*);
-11. **reconcile released-vs-alive against the runtime, never against the run's memory** (`swarm`, *Runtime: take what is there, and say which*, states the three sources and which is authoritative) — the run's own record of releasing is not evidence, and reporting an action is not performing it. On a runtime with a session list, list the sessions whose provenance marks them as created by this run (`parent_session_id` on Claude Code Remote — never "sessions that look like workers"), and compare against the per-PR records. Three outcomes:
+11. **reconcile released-vs-alive against the runtime, never against the run's memory** (`swarm`, *Runtime: take what is there, and say which*, states the three sources and which is authoritative). On a runtime with a session list, list the sessions whose provenance marks them as created by this run (`parent_session_id` on Claude Code Remote — never "sessions that look like workers"), and compare against the per-PR records. Three outcomes:
 
     | session | action |
     |---|---|
@@ -697,7 +691,7 @@ Each cycle performs real work:
 
     **For every session this step leaves alive, the report is diagnostic rather than a count.** Name, per session: the issue it was chartered for; **its reachability** — whether its head commit is reachable on the remote, and where it is not, how far the remote head has got; and whether it carries staged or uncommitted files. **Branch existence is not progress** — the `clean | local ahead` case (`swarm`, *Checkpoint compliance*) reads as healthy under a branch-exists field. Where the worktree is reachable, compare its local head against the remote's; where it is not, record the remote head and **how long since it last advanced** — a head unmoved for days against a live session is the same signal from outside. Where a field cannot be read from here, say which one and that it is unread; an unread field is not a clean one.
 
-    **The test is whether the work is reachable on the remote, never whether a branch of that name exists.** Reachable is defined once, on the worker's head commit, under `swarm`, *Releasing a worker*. Where the tracked remote branch is absent, check whether its PR merged before reading anything as stranded: a merged PR's branch is routinely deleted by the forge. The remote-branch reading is also what the capture lever under `swarm`, *Releasing a worker*, turns on, so it is needed in this pass regardless.
+    **The test is whether the work is reachable on the remote, never whether a branch of that name exists** — reachable as `swarm`, *Releasing a worker*, defines it. Where the tracked remote branch is absent, check whether its PR merged before reading anything as stranded. The remote-branch reading is also what that section's capture lever turns on, so it is needed in this pass regardless.
 
     **Report every session this step archived** in the state block, by id and charter. **And list this run's triggers**: a trigger bound to one of this run's worker sessions means the countermand did not hold, and the remedy is to archive that session where the releasable test passes — not to delete the trigger, which a live session re-arms (see `swarm`, *Releasing a worker*). A worker that is still working and has armed one is a finding about the dispatch prompt, reported as such;
 12. **emit the state block** (fields: `schemas/checkpoint-output.md`; rules: Progress / checkpoint output) — every cycle, including the long one-PR supervision tail, not only in closing output;
@@ -706,13 +700,13 @@ Each cycle performs real work:
 15. surface `NEEDS_USER`;
 16. wait using native task/event wait, then repeat. **One loop and one wait per session, and both are this run's**: `supervise-prs` runs inside this loop with `wait owner = caller`, arms no check-in of its own, and its PRs' changes are deltas on this run's one wake (Arming the wait when nothing is in flight). **The PR subscriptions `supervise-prs` armed wake this session, and this invocation overrides the platform's PR posture they carry** (`references/platform-pr-posture.md`): every wake — `subscription.created`, a CI failure, a comment, the check-in — is answered by this loop's next cycle, never by the posture's own loop, and a spent budget ends in `supervise-prs`'s outcome for that PR, never in another repair push.
 
-Do not use CPU loops, file-touch loops, detached sleeps, meaningless commits, or other fake activity solely to prevent idling.
+No fake activity to prevent idling — CPU loops, file-touch loops, detached sleeps, meaningless commits (`references/wake-budget.md`, *Not a licence to keep a loop warm*).
 
 Remote Git checkpoints remain mandatory regardless of runtime, because no platform/runtime persistence substitutes for durable source control.
 
 ## Every read is a snapshot
 
-`references/establish-do-not-assume.md`, *Every read is a snapshot*, states it: a multi-item read is a composite of instants, so re-read the deciding facts immediately before acting on them, timestamp every state report, and settle a checkout-versus-API disagreement by a third read. Apply it from there. Here it reaches the merge gate's freshness check (`settle-and-merge`, *Merge behavior*, is one instance), the ranking, every checkpoint and handover, and every dispatch prompt, which carries the checkout-versus-API half because a worker inherits the same habit and has less to check it against (*Implementation worker contract*).
+`references/establish-do-not-assume.md`, *Every read is a snapshot*, states it; apply it from there. Here it reaches the merge gate's freshness check (`settle-and-merge`, *Merge behavior*, is one instance), the ranking, every checkpoint and handover, and every dispatch prompt, which carries the checkout-versus-API half because a worker inherits the same habit and has less to check it against (*Implementation worker contract*).
 
 ## Arming the wait when nothing is in flight
 
@@ -726,11 +720,11 @@ Step 16's native task/event wait is sufficient while workers are running: their 
 - **deltas**: a held worker session resuming, and a new reply at the site of an open item this run raised, are deltas under the budget's clearing rule; a wake that finds a new reply at an open item's site is productive, whichever way it goes;
 - **stop once every PR in the set is merged or closed and no item this run raised is still open**; until then the watch runs within the budget, which the open items do not extend. **Where an item this run raised is still open when the budget runs out, the stop report names each one and says that a reply to it will not be noticed until the run is invoked again — and lists from `supervise-prs`'s record every held reply not yet posted, with its text, every rejected one and every mixed-thread fix left for the owner, since all are dropped with the run** (`references/review-feedback.md`, *Approval-pending replies*). **A stop on the budget ends the subscriptions with the check-in** — every PR still open is unsubscribed and named with its toggle line (`references/platform-pr-posture.md`, *The watch ends with the run, not after it*). A held worker session is returned as `swarm`, *Blocked workers*, requires when its watch is spent;
 - **a quiet wake is silent about state and never silent about what is waiting on the owner.** An outstanding `DECISION` or `NEEDS_USER` item is not durable state, so the unproductive-wake test cannot see it: every wake reports (in the state block) the outstanding `DECISION` and `NEEDS_USER` counts and the approval-pending reply count, on the same lengthening cadence as the wake itself, even when it reports nothing else. **Quiescence with open decisions or approval-pending replies is a settle trigger on an attended turn or a real state change, never on a quiet unattended wake**: a run whose only remaining movement depends on an answer nobody has been asked for settles and routes the items through the settled step — but on a scheduled wake `settle-outstanding-decisions` declines for want of anybody to ask, and step 8 forbids re-deriving settled state that has not changed. The counts are reported on every wake; the sequence re-runs only where someone is there or something actually moved;
-- **write the release step into the wake's own prompt, as well as the count** — the prompt a run writes for its own check-in is what survives compaction, and the run's memory of what supervision involves does not. Each re-armed prompt names step 11 — read the session list by provenance, apply the releasable test, archive what passes, report what was archived — and the settled step sweeps once more before returning;
+- **write the release step into the wake's own prompt, as well as the count** (`swarm`, *4. Supervision*, on why). Each re-armed prompt names step 11 — read the session list by provenance, apply the releasable test, archive what passes, report what was archived — and the settled step sweeps once more before returning;
 - **the wake's prompt carries the posture line** (`references/platform-pr-posture.md`, *Saying so*), naming this skill — the check-in is the one wake whose text this run writes;
 - **the wake's prompt carries, beside the count and the comparands the budget rule requires, each open item's site, the newest reply already seen there, and the ids of this run's own writes**, since the posting-identity map that tells an owner's reply from the run's own post lives in session memory, and a firing without it reads the run's own review trigger as the owner's answer.
 
-**When neither can be armed**, reconcile durable state and return the restartable checkpoint the budget rule requires, naming the resume frontier and the PRs whose merges would advance it, exactly as Stop conditions already requires when the runtime cannot safely stay active. Restart / resume (`restart-resume.md`) adopts that and re-derives readiness from durable truth, so what is lost is the automation, not the work.
+**When neither can be armed**, reconcile durable state and return the restartable checkpoint the budget rule requires, naming the resume frontier and the PRs whose merges would advance it. Restart / resume (`restart-resume.md`) adopts that and re-derives readiness from durable truth.
 
 ## Frontier advance on merge
 
@@ -776,7 +770,7 @@ Edge cases:
 
 ## How a worker's report actually reaches you
 
-`swarm`, *How a worker's report actually reaches you*, owns the carrier — which runtime delivers a worker's report at all, what the session record carries without anyone writing it, and routing the report by whether a PR exists. This is the dependency-specific half: what this run does with a worker that stopped on a dependency before any PR existed, and why a report never becomes a blocker record.
+`swarm`, *How a worker's report actually reaches you*, owns the carrier and the routing of a report by whether a PR exists. This is the dependency-specific half: what this run does with a worker that stopped on a dependency before any PR existed, and why a report never becomes a blocker record.
 
 On the no-PR path, first separate the dependency-shaped outcomes from the rest. A `FAILED` from an implementation or tooling fault carries no blocker URL, no resolution and no dependency credential — legitimately, and not the "unanswerable" of step 1 below — and feeding it into the decision below would send a compile error down the unproven-boundary path and hold every sibling. Route those by their own outcome: `FAILED` follows the retry policy, a product-decision `NEEDS_USER` its own handling. What follows applies where the worker stopped **on a dependency**:
 
@@ -796,8 +790,6 @@ The response is an ordered decision, and **every step resolves to the last branc
 **Where the worker's credential identity is unknown, treat it as differing** — the same rule as step 1, at the other input. `needs_action` is written by the runtime summarizing the worker's turn, not by the worker, and how reliably the summarizer preserves these facts is **untested**. The identity and the blocker URL sharpen this decision when they arrive; neither is a precondition for reaching step 4 without them.
 
 **`NEEDS_USER` needs one thing more**, because its two kinds demand opposite handling — an unverifiable prerequisite is a question for a person; an unproven dependency view is transport evidence that invalidates a visibility proof and holds every sibling. Require the dispatch prompt to have the worker put **which kind, and the exact measure that was out of reach**, into `needs_action`. A parent left to infer the kind from an empty blocker list handles the expensive one as the cheap one.
-
-Establishing a blocker is the parent's job, needing a visibility proof the worker does not hold, so on the no-PR path the parent writes the record, never the worker.
 
 None of this is implementation-specific. A repair worker's return value is lost on the same tier in the same way; what its dispatch prompt carries for that is `supervise-prs`'s (*Repair dispatch*).
 
@@ -820,11 +812,11 @@ A report must never land in an issue comment: three skills read issue comments f
 
 ## Verifying worker reports
 
-`swarm`, *Verifying what workers report*, states the rule; apply it from there. For a PR, the durable evidence is CI on the pushed head, and the rule reaches one decision that module does not have: never block a merge decision on a worker-reported failure unverified. The same status attaches to a reviewer's claim of a commit, a carried note from a previous run, and this run's own statement of what it is about to do (`references/establish-do-not-assume.md`).
+`swarm`, *Verifying what workers report*, states the rule; apply it from there. For a PR, the durable evidence is CI on the pushed head, and the rule reaches one decision that module does not have: never block a merge decision on a worker-reported failure unverified. Other claims a run meets are settled as `references/establish-do-not-assume.md`, *Someone asserted it*, says.
 
 ## Checkpoint compliance
 
-`swarm`, *Checkpoint compliance*, owns what the parent observes of every in-flight worker each cycle, the stalled-head escalation, and when it nudges and when it captures instead (its *Enforce, do not re-ask*). It also owns how the parent captures — the ref-neutral sequence that does not race a live worker, its verification (in the tested script), the recovery-ref naming, the wedged-worker path and the tested script beside that skill (its *Capturing without racing the worker*) — and the recovery ref's generic lifecycle (its *The recovery ref's lifecycle*). Apply them from there; here the worker's branch is its issue branch, and its task-owned paths are the issue-owned paths. This section is what becomes of a ref this run captured: an ender keyed on PR state, the issue's completeness and invariant 12, which replaces `swarm`'s generic reachability ender (the rest of that lifecycle — redundancy, release-time reconciliation — still applies).
+`swarm`, *Checkpoint compliance*, owns what the parent observes of every in-flight worker each cycle and when it nudges or captures (its *Enforce, do not re-ask*), how it captures and names the recovery ref (its *Capturing without racing the worker*), and the ref's generic lifecycle (its *The recovery ref's lifecycle*). Apply them from there; here the worker's branch is its issue branch, and its task-owned paths are the issue-owned paths. This section is what becomes of a ref this run captured: an ender keyed on PR state, the issue's completeness and invariant 12, which replaces `swarm`'s generic reachability ender (the rest of that lifecycle — redundancy, release-time reconciliation — still applies).
 
 **The principle is `swarm`'s — a recovery ref is dropped only once a durable carrier the run will actually read holds its contents.** The four PR states differ solely in whether such a carrier exists, and all four are enumerated deliberately: a missing case leaves a ref with no ender, which invariant 12 then converts into a PR that can never merge. Its consumers are the release-time reconciliation and the blocked-worker archive (`swarm`, *The recovery ref's lifecycle* and *Blocked workers*), and lost-worker recovery (Lost worker / workflow recovery):
 
@@ -845,7 +837,7 @@ This contract assumes the parent can **see** a worker's checkout and **send it a
 | remote worker sessions | normally no, and never assumed — the session record hands out a repository and no path, and the container is not shared | whichever the recorded capability says — absent for every worker session the observed runtime was asked about; never assumed | only the worker's own pushes, via its dispatch prompt, plus `NEEDS_USER` |
 | Dynamic Workflow fan-out | no — its worktrees are not paths the parent was given | no — workflow agents accept no input mid-run | the script's structure (below) |
 
-So the remote-session tier sits beside the workflow tier for this section's purposes, not beside subagents. A remote worker session cannot be made to checkpoint structurally — nothing in the parent's reach interposes on it — so the honest guarantee is weaker: state that in the checkpoint output rather than reporting invariant 5 as enforced.
+So the remote-session tier sits beside the workflow tier for this section's purposes, not beside subagents: nothing in the parent's reach interposes on it, so the checkpoint output says which lever holds, as invariant 5 requires.
 
 Under a workflow, work is checkpointed only at stage boundaries; report invariant 5 as holding only there.
 
@@ -863,7 +855,7 @@ Dependency edges and stack ancestry do not detect any of these — the branches 
 
 # Lost worker / workflow recovery
 
-`swarm`, *Lost workers*, owns the procedure — what to inspect in which order, adopting pushed checkpoints, the redispatch and the escalation on repeated loss — and applies here as written, with the issue as the task, `lost-worker-redispatches` as its budget, and tracker state among what a resume reads when the whole cloud container/workflow disappears.
+`swarm`, *Lost workers*, owns the procedure and applies here as written, with the issue as the task, `lost-worker-redispatches` as its budget, and tracker state among what a resume reads when the whole cloud container/workflow disappears.
 
 Its step 4 ends the recovery ref by **the four-state rule under Checkpoint compliance — apply it, do not restate it here.** All four states reach this consumer: a worker can disappear before opening a PR, after its PR was closed unmerged, while it is open, or after it merged. Unconsumed, the ref blocks invariant 12's gate over work that has already landed.
 
@@ -877,7 +869,7 @@ Do not blindly restack every descendant after every upstream push. Instead:
 - record stale ancestry;
 - restack before descendant diffs/CI/review become misleading;
 - ensure ancestry is correct before merge-ready state;
-- pass each restack push to `supervise-prs` as a caller push, tagged by `references/mechanical-pushes.md` — a restack-only push is mechanical: no review re-trigger, no cycle consumed;
+- pass each restack push to `supervise-prs` as a caller push, tagged as *Mechanical pushes do not consume review* says;
 - use `merge-stack` for authorized merge/restack operations;
 - hold the branch locked while restacking, so `supervise-prs` dispatches no repair to it meanwhile, and pass the new heads before its next *Pass*.
 
