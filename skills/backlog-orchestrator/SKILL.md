@@ -657,7 +657,7 @@ On an `IN_FLIGHT_FIX` action point, or a code-changing ruling its row routes her
 
 ## Mechanical pushes do not consume review
 
-This run tags each restack and renumber it pushes by `references/mechanical-pushes.md`'s test, conditions included, and passes it to `supervise-prs` as a caller push; what a mechanical push means for the PR's record is that skill's (*Pushes this skill did not make*).
+This run tags each restack and renumber it pushes by `references/mechanical-pushes.md`'s test, conditions included, and passes it to `supervise-prs` as a caller push; what a mechanical push means for the PR's record is that skill's (*Head moves*).
 
 ## Draft state
 
@@ -700,7 +700,7 @@ Each cycle performs real work:
 15. surface `NEEDS_USER`;
 16. wait using native task/event wait, then repeat. **One loop and one wait per session, and both are this run's**: `supervise-prs` runs inside this loop with `wait owner = caller`, arms no check-in of its own, and its PRs' changes are deltas on this run's one wake (Arming the wait when nothing is in flight). **The PR subscriptions `supervise-prs` armed wake this session, and this invocation overrides the platform's PR posture they carry** (`references/platform-pr-posture.md`): every wake — `subscription.created`, a CI failure, a comment, the check-in — is answered by this loop's next cycle, never by the posture's own loop, and a spent budget ends in `supervise-prs`'s outcome for that PR, never in another repair push.
 
-No fake activity to prevent idling (`references/wake-budget.md`, *Not a licence to keep a loop warm*).
+No fake activity to prevent idling — CPU loops, file-touch loops, detached sleeps, meaningless commits (`references/wake-budget.md`, *Not a licence to keep a loop warm*).
 
 Remote Git checkpoints remain mandatory regardless of runtime, because no platform/runtime persistence substitutes for durable source control.
 
