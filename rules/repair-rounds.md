@@ -23,7 +23,7 @@ The trigger is that evidence and nothing else, so it fires on the earliest round
 
 ## Who decides
 
-**The dispatching layer owns the decision.** `repair-pr` never selects or escalates its own model, exactly as `implement-issue-core` returns a reasoning-heavy repeated failure instead of escalating one. The evidence is readable by the dispatching layer from durable state — the PR's own commit history against where each finding sits — so a restart evaluates the same trigger its predecessor would have; the repair worker reports what it saw as corroboration, not as the record.
+**The dispatching layer owns the decision.** `repair-pr` never selects or escalates its own model, exactly as `implement-issue-core` returns a failure instead of escalating one. The evidence is readable by the dispatching layer from durable state — the PR's own commit history against where each finding sits — so a restart evaluates the same trigger its predecessor would have; the repair worker reports what it saw as corroboration, not as the record.
 
 ## The remaining budget
 

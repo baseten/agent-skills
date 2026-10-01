@@ -538,10 +538,10 @@
       "id": 41,
       "name": "the-escalation-ladder-cannot-see-a-confidently-wrong-worker",
       "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are about to dispatch three issues. One is a defect whose ticket names a single call site, and you have no evidence either way about whether that is the root. One is a known problem needing careful work around a hazard the ticket states. One is a fully-specified mechanical change in a repository whose CLAUDE.md pulls in fifteen specification documents. You have model-escalations available per issue. Do you dispatch all three on the default and let the ladder handle it?",
-      "expected_output": "No. The ladder catches a worker that keeps failing and cannot catch one that is confidently wrong, which is the expensive shape here: a worker that patches the one site the ticket named, where the defect is restated at three, returns a green PR fixing a third of the bug and trips no repeated-failure trigger, because it did not fail. So the model is selected per issue before dispatch, by swarm's Model section, which owns the failure-visibility tiers - apply them from there rather than restating them. The first issue is a diagnosis problem and takes the strongest model. The second is careful execution against a stated hazard and takes the default. The third is fully specified and mechanical; it can take the cheapest tier only where an existing checker decides success and a wrong answer fails loudly, and otherwise takes the default. The ladder stays as the floor under all three.",
+      "expected_output": "No. The ladder catches a worker that keeps failing and cannot catch one that is confidently wrong, which is the expensive shape here: a worker that patches the one site the ticket named, where the defect is restated at three, returns a green PR fixing a third of the bug and trips no failure-keyed trigger, because it did not fail. So the model is selected per issue before dispatch, by swarm's Model section, which owns the failure-visibility tiers - apply them from there rather than restating them. The first issue is a diagnosis problem and takes the strongest model. The second is careful execution against a stated hazard and takes the default. The third is fully specified and mechanical; it can take the cheapest tier only where an existing checker decides success and a wrong answer fails loudly, and otherwise takes the default. The ladder stays as the floor under all three.",
       "assertions": [
         "the answer selects per issue before dispatch rather than relying on the escalation ladder",
-        "the answer names confidently-wrong as invisible to a trigger that keys on repeated failure",
+        "the answer names confidently-wrong as invisible to a trigger that keys on failure",
         "the answer defers to swarm for the tiers rather than restating them"
       ]
     },
@@ -869,6 +869,95 @@
         "a quiet unattended wake does not trigger settle",
         "quiescence on an attended turn with held replies open is a settle trigger",
         "the budget-stop report lists each held reply with its text"
+      ],
+      "files": []
+    },
+    {
+      "id": 67,
+      "name": "a-red-pr-is-repaired-by-a-dispatched-pass-never-by-resuming-its-worker",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: issue A's implementation worker, a subagent in a parent-created worktree that you can still message, opened PR-12 and reported PR_OPEN. You adopted the PR. CI now goes red on a test in a file that worker wrote; ci-repair-cycles has 2 left. The worker still has the full context of its change. Questions: (a) do you message that worker to fix CI? (b) who makes the repair, and what does its push carry? (c) why does it matter after a restart?",
+      "expected_output": "(a) No. The implementation worker was released at PR_OPEN and is never resumed to repair its PR. (b) supervise-prs dispatches a ci repair-pr pass, which works on a dedicated checkout of the PR branch, consumes one ci-repair-cycle, and carries the Repair-Pass, Repair-Type and Repair-Model trailers. Only a dispatched repair-pr pass repairs: that is the platform posture override. (c) A resumed worker's push carries no trailers and spends no budget, so a restart rebuilds the counters as 0 from the branch, and the budget no longer bounds the loop.",
+      "assertions": [
+        "the answer does not resume or message the implementation worker to fix CI",
+        "the repair is a repair-pr pass that supervise-prs dispatches, counted against ci-repair-cycles",
+        "the answer ties a worker push to missing trailers or an unbounded budget"
+      ],
+      "files": []
+    },
+    {
+      "id": 68,
+      "name": "step-11-leaves-a-worker-still-working-and-asks-before-raising-a-mismatch",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: step 11 lists the sessions this run created, on a runtime with a session list. (a) An implementation session whose record reads WORKING has not returned and has no PR yet. It is not stopped on a prompt. (b) A repair session has returned and its report names pushed head 3e1f0a, which is nowhere on the remote. A message channel to it exists. Questions: for each, does it pass the releasable test, and what does step 11 do? Does either raise NEEDS_USER this cycle?",
+      "expected_output": "(a) It fails the releasable test because it is not done, but it is still working. swarm's Releasing a worker state for that is: nobody owns it yet, so leave it and re-check next cycle. It is not a blocked worker and not NEEDS_USER, and raising an owner item for it would hold the whole wave over a healthy worker. Report it diagnostically: charter, remote-head reachability and staged or uncommitted files. (b) A mismatch. Keep the container. Because a channel exists, first use swarm's lever: ask it to commit everything, push and report the resulting head. Then check that the named commit becomes reachable, never just that a branch exists. Only a mismatch the lever does not close becomes NEEDS_USER, naming the session, what it reported, what the remote shows and that the ask was made. So neither raises NEEDS_USER this cycle.",
+      "assertions": [
+        "the still-working session is left and re-checked next cycle, not raised as NEEDS_USER or treated as blocked",
+        "the mismatched session is asked to commit and push before any NEEDS_USER",
+        "success is judged by the named commit becoming reachable, not by a branch existing",
+        "neither session raises NEEDS_USER this cycle"
+      ],
+      "files": []
+    },
+    {
+      "id": 69,
+      "name": "step-9-captures-on-first-observation-where-no-channel-reaches-the-worker",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: step 9. A subagent working in a worktree this run created holds completed, uncommitted edits. You can read and write its worktree. An earlier send to it was refused, so the run recorded its message channel as absent. Nobody has nudged it, because no nudge can be delivered. Question: do you capture its work this cycle, or wait for a nudge to fail first?",
+      "expected_output": "Capture it this cycle, on first observation. swarm's Enforce, do not re-ask table decides for the recorded capabilities: a reachable checkout with no channel means capture on first observation, since a nudge nobody can deliver is not evidence of anything. Waiting for a failed nudge would wait forever. Capture uses swarm's tested capture to a recovery ref, without touching the live worker's branch or index, and that ref is then ended under Checkpoint compliance.",
+      "assertions": [
+        "the answer captures on this first observation",
+        "the answer does not wait for or attempt a nudge first",
+        "the answer grounds the decision in the recorded capabilities (checkout reachable, channel absent)"
+      ],
+      "files": []
+    },
+    {
+      "id": 70,
+      "name": "implementation-retries-escalate-on-evidence-not-on-a-repeated-failure",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: built-in defaults, so implementation-attempts is 2 and model-escalations is 1. Issue A's first attempt, on the default model, failed with a type error inside a module that attempt created. Issue B's first attempt failed in a long-standing module no attempt in this run touched. Questions: (a) what model runs each retry? (b) does an escalated retry get an extra attempt? (c) would waiting for a repeated failure ever escalate here?",
+      "expected_output": "(a) A's retry runs on the strongest model: its failure sits on something an earlier attempt in this run wrote, which is swarm's escalate-on-evidence trigger, and that uses issue A's one model-escalation. B's retry stays at the default, because a failure in untouched code is not that evidence. (b) No. An escalated retry still consumes its ordinary attempt. (c) No. With two attempts, a repeated failure has already used both, so a trigger keyed on repetition could never fire inside the budget.",
+      "assertions": [
+        "issue A's retry is escalated on the evidence that its failure sits on text an earlier attempt wrote",
+        "issue B's retry stays at the default",
+        "the escalated retry still consumes an implementation attempt",
+        "the answer does not wait for a repeated failure to escalate"
+      ],
+      "files": []
+    },
+    {
+      "id": 71,
+      "name": "a-late-coverage-finding-edits-a-body-only-where-the-edit-rule-allows",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR-9 closes issue C with Closes: in its body. A worker opened it, it is published, a reviewer has read its body, and the attribution footer is gone because the author rewrote the text. auto-merge is off for its repository. A coverage finding then arrives: C's prerequisite capability is missing, so PR-9 must not close C. Questions: (a) do you rewrite the body to Part of: / Blocked by:? (b) what happens instead, and what holds the PR? (c) variant: PR-9 is still a draft. What changes?",
+      "expected_output": "(a) No. authored-write-form's Editing a PR body after it is created allows no edit to a published body a person has read when the merge opt-in is off, and only the Depends on: line is always editable. (b) Report the drift with the non-closing replacement body (Part of: and Blocked by: in place of Closes:) as an action point. The body drift is a MERGE_RISK that holds PR-9 until a person makes the change, so it cannot merge and auto-close C. (c) A draft's body may be edited, so the non-closing form is edited in, and the edit is reported.",
+      "assertions": [
+        "the answer does not edit the published, read body with auto-merge off",
+        "the answer reports the drift with a non-closing replacement body",
+        "the drift holds the PR from merging",
+        "in the draft variant the body is edited to the non-closing form"
+      ],
+      "files": []
+    },
+    {
+      "id": 72,
+      "name": "a-dispatched-review-session-roots-threads-that-are-repaired-as-feedback",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the repository's review convention is a review session this run dispatches. No distinct posting identity is available, so everything posts as the invoking user. The session posts its review on PR-4: a body plus three inline comments. Two ask for code changes the pass can make, and one asks why an approach was chosen. review-repair-cycles has 2 left. Questions: (a) was rooting those threads allowed, given that the run never roots a review thread? (b) are those threads feedback to act on or run-authored conversation? What happens to each? (c) how does the run know these threads are its own review session's, and where is the attribution? (d) does the review session spend review-repair-cycles?",
+      "expected_output": "(a) Yes. A dispatched review session posting one real review, a body plus inline comments each rooting a thread, is the one explicit carve-out from the no-new-threads rule. It is that session's alone, and nothing else the run writes roots a thread. (b) Feedback. The carve-out for run-authored comments never reaches them. supervise-prs dispatches a review repair-pr pass: the two change requests are repaired, and the why-question is NEEDS_USER, reserved for the owner and not answered on the run's authority. (c) By the ids of the review and its comments, recorded from the session's report and passed to supervise-prs with the review routing. Never by content or footer. The review body carries the attribution footer, and the inline comments are part of that review. (d) No. A review session pushes nothing. Only the repair pass spends a cycle, and only if it pushes.",
+      "assertions": [
+        "the answer allows the review session to root threads as the one carve-out for dispatched review sessions",
+        "the review's threads are treated as feedback and dispatched for repair, not excluded as run-authored",
+        "the rationale question is reserved for the owner, not answered",
+        "the threads are identified by recorded review and comment ids, never by content or footer",
+        "the attribution is on the review body"
+      ],
+      "files": []
+    },
+    {
+      "id": 73,
+      "name": "the-preflight-checks-swarm-is-installed",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: at the first preflight you check the installed required skills. validate-backlog, implement-issue-core, create-pr, supervise-prs, repair-pr, resolve-pr-comment and the settle skills are present, but swarm is not installed. Question: is anything missing, and what do you do before dispatching?",
+      "expected_output": "Yes. swarm is a parent-required skill: this run hands it dispatch, release, capture, recovery refs and blocked and lost workers. The preflight reports it missing and nothing is dispatched. The run does not improvise its own dispatch or release mechanics in its place.",
+      "assertions": [
+        "the answer identifies swarm as a required skill that is missing",
+        "nothing is dispatched without swarm",
+        "the answer does not improvise a replacement for swarm's dispatch or release"
       ],
       "files": []
     }

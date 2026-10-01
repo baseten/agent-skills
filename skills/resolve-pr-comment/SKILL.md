@@ -214,7 +214,9 @@ what changed and stops there; the question is escalated with its draft
 **Who is in the thread decides whether the reply posts now** — each comment's
 `user.type` in the REST API, its author's `__typename` in the GraphQL query of
 step 1. **A person is in the thread** where any comment in it, this workflow's
-own writes aside, has an author that is not a `Bot`:
+own writes and a root the caller marked as its own review session's
+(`references/review-feedback.md`, *The thread-root test*) aside, has an author
+that is not a `Bot`:
 
 | a person in the thread | `auto-resolve-comments` | the reply and step 6 |
 | --- | --- | --- |

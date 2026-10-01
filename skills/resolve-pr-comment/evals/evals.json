@@ -509,6 +509,18 @@
         "the acknowledgement is classified as no-action alongside the question",
         "nothing is posted or resolved"
       ]
+    },
+    {
+      "id": 41,
+      "name": "a-review-session-root-is-not-a-person-unless-a-person-follows-up",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: an unattended repair pass invokes you with two review threads and auto-resolve-comments false. Both threads are rooted by inline comments the caller marked as its own dispatched review session's. They post under the invoking user's account, a User, not a Bot. Thread (a) has no other comment. In thread (b), a human colleague has since replied: 'agreed, and please also rename the helper'. You fix both. Question: for each thread, is the reply posted and the thread resolved now, or held for approval?",
+      "expected_output": "(a) Posted now, with the footer, and resolved. A root the caller marked as its own review session's is not a person in the thread, so the reply takes the bot path. (b) Held: written, not posted, and the thread left open. The colleague's follow-up is a non-Bot comment that is not this workflow's, so a person is now in the thread. The rename is still fixed; only the reply and the resolution wait.",
+      "assertions": [
+        "thread (a)'s reply is posted and the thread resolved, because the marked review-session root is not a person",
+        "thread (b)'s reply is held because a person has commented since",
+        "the colleague's requested change is still fixed in (b)"
+      ],
+      "files": []
     }
   ]
 }

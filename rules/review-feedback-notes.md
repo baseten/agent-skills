@@ -27,6 +27,8 @@ The owner asked for the rule scoped to human comments and, when the asymmetry wa
 
 ## The thread-root test
 
+**Why a dispatched review session may root threads (owner's ruling, #176):** a repository whose review is a session the run dispatches gets a real review, a body plus inline threads, rather than one comment standing in for it. The carve-out is held to that session so the prohibition keeps its job everywhere else. Its threads are known by recorded ids because, on the degraded path, nothing on the forge tells them from the invoking user's own; ids lost to a restart fall to the held direction, which only delays a reply.
+
 **Moved from the rule (#168):** nothing today makes the run want to root a thread, which is exactly why the prohibition must be a stated rule rather than an observed habit. The restart property matters because an author-side carve-out would have to fall back to recognizing the run's own report and reply forms once the predecessor's record of its own writes is gone; thread structure and comment kind need no such record.
 
 ## Reserved for the owner

@@ -29,11 +29,12 @@ weaken or narrow one.** Each line indexes the rule's home, which governs, and it
 evals (`<skill>#<id>`).
 
 1. **A write nobody read carries the footer; a run never answers a person's question or
-   roots a thread, and holds its reply to, and resolution of, a thread a person is in
-   for approval unless the repository's own config turns that off.**
+   roots a thread (a dispatched review session's own review excepted), and holds its
+   reply to, and resolution of, a thread a person is in for approval unless the
+   repository's own config turns that off.**
    `rules/authored-write-form.md`, `rules/review-feedback.md`; `resolve-pr-comment`,
    *Replies held for approval*. create-pr#6, resolve-pr-comment#0 #18 #21 #23 #26
-   #28, review-docs#11, settle-outstanding-decisions#11 #12.
+   #28 #41, review-docs#11, settle-outstanding-decisions#11 #12, backlog-orchestrator#72.
 2. **Identity is observed authorship; own writes are known by id or footer, never content.**
    `rules/posting-identity.md`; `swarm`, *Blocked workers*. backlog-orchestrator#5 #58.
 3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
@@ -43,10 +44,11 @@ evals (`<skill>#<id>`).
    supervise-prs#33.
 5. **The platform's auto-fix posture is overridden**: only a dispatched `repair-pr`
    repairs; budgets bound every loop; a spent budget ends in the skill's outcome, never another repair push.
-   `rules/platform-pr-posture.md`. supervise-prs#25 #26.
+   `rules/platform-pr-posture.md`. supervise-prs#25 #26, backlog-orchestrator#67.
 6. **A created PR's body is edited only while draft, footered, or under a resolved merge
    opt-in** (`Depends on:` excepted); else drift is reported with a replacement.
-   `rules/authored-write-form.md`. settle-and-merge#6 #9, merge-stack#5.
+   `rules/authored-write-form.md`. settle-and-merge#6 #9, merge-stack#5,
+   backlog-orchestrator#71.
 7. **No forge write reports verification; SHAs are bare.** `rules/authored-write-form.md`.
    create-pr#11, resolve-pr-comment#17.
 8. **Merges are opt-in, through the one gate, failing closed.** `settle-and-merge`, *The
