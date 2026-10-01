@@ -133,13 +133,13 @@
       "id": 10,
       "name": "attended-mixed-comment-pushes-the-fix-and-drafts-the-answer",
       "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a person invokes you directly and names one review comment, from a human teammate (user.type User), with auto-resolve-comments off: \"add the null guard here, and explain why the shared helper is unsuitable for this path.\" You can see both the fix and the answer. Questions: (a) do you post the explanation in the thread, or return it as a NEEDS_USER item with a draft? (b) do you apply the guard? (c) do you resolve the thread? (d) separately: the same comment reaches you from repair-pr with a zero repair budget — what do you return, and how many entries?",
-      "expected_output": "(a) Neither posted nor withheld: the explanation is drafted and handed to the person who invoked the skill, in this session's output, exactly as any query — no mode answers a query in the thread. (b) Yes — apply and verify the guard and push it. Its one-line held reply (`Fixed in <sha> — …`), never written as though it answered the question, is asked in the session only after the explanation's draft has gone to the person, and posted only once they have settled the question in the session — answered it in the thread themselves, or ruled on it. Their own answer, posted in this session, does not end the hold. If they leave the question open, nothing is posted and the held reply is reported. (c) Not on the fix: only once the person has settled the question and the approved held reply is posted, and then it is resolved. Left open, it stays unresolved. (d) Two entries for the one thread — a deferred-repair item carrying the unapplied change and no draft, and a question item carrying the drafted answer — and nothing is applied, pushed, replied to or resolved. The thread is handled only once the caller has recorded both; forwarding one entry drops either work nobody records or a question nobody can put to the owner.",
+      "expected_output": "(a) Neither posted nor withheld: the explanation is drafted and handed to the person who invoked the skill, in this session's output, exactly as any query — no mode answers a query in the thread. (b) Yes — apply and verify the guard and push it. Because a person is in the thread and it also asks a question, no held reply is composed or asked: nothing is posted, and the session's summary lists the fix SHA as 'fix pushed — thread left for you (it also asks a question)'. Any reply that is posted, on a thread only bots are in, reports only what changed and never answers the question. (c) No. No mode resolves a mixed thread: the question half leaves it open for the owner. (d) Two entries for the one thread — a deferred-repair item carrying the unapplied change and no draft, and a question item carrying the drafted answer — and nothing is applied, pushed, replied to or resolved. The thread is handled only once the caller has recorded both; forwarding one entry drops either work nobody records or a question nobody can put to the owner.",
       "assertions": [
         "attended, the explanation is returned as a draft for the invoking person rather than posted in the thread",
         "the null guard is applied and pushed in the attended case",
-        "the held reply is asked only after the draft is handed over and posted only once the person settles the question in the session",
-        "with the question left open nothing is posted and the held reply is reported",
-        "the thread is never resolved on the fix alone",
+        "no held reply is composed or asked for the thread, and the fix SHA is listed as left for the owner",
+        "any reply posted reports only what changed and does not answer the question",
+        "the thread is not resolved in any mode",
         "the zero-budget case returns two entries for the one thread, a deferred repair and a question item",
         "nothing is applied, pushed, replied or resolved in the classify-only case"
       ]
@@ -175,7 +175,7 @@
       "id": 13,
       "name": "question-item-carries-all-five-fields-with-an-api-url",
       "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md from the skill directory you were given). Scenario: repair-pr hands you one thread on PR 412 of acme/repo, unattended. A human reviewer wrote a long comment whose substance is: \"I don't follow why this needs a second pass — doesn't the batch already dedupe upstream? Also please rename `tmp`.\" You renamed `tmp` and pushed `9f3e11c`. You can answer the dedupe question from the code: the upstream dedupe is per-shard, the second pass is cross-shard, and `batcher.py:88` is where that is decided. The API returned `html_url` as `https://github.com/acme/repo/pull/412#discussion_r99887766`. Question: write out the NEEDS_USER item exactly as you will return it, and say what you must not do to that URL.",
-      "expected_output": "A question item with all five fields in order: (1) the html_url exactly as the API returned it — `https://github.com/acme/repo/pull/412#discussion_r99887766` — passed through unchanged; (2) the ask quoted in at most two lines, the reviewer's own words, trimmed with an ellipsis rather than paraphrased; (3) the recommended reply — paste-ready here, one line, because this draft is answerable from the work; e.g. \"The upstream dedupe is per-shard; the second pass is what catches cross-shard duplicates (`batcher.py:88`).\" — no preamble, no meta-commentary, and no attribution footer, since the person posting it authors it; (4) the change SHA `9f3e11c`, because a rename was pushed for this thread — not blank; (5) one clause on why it was not posted, e.g. \"needs your confirmation that cross-shard duplicates are in scope\". Must not do to the URL: rebuild it. Never assemble it from the PR number and a comment id — a review-comment thread and a PR-level comment use different fragment forms, so a constructed link resolves to the wrong place or the top of the PR and looks fine doing it, and the run cannot detect that. The thread stays open and unresolved and nothing substantive is posted. Because a person is in this thread and auto-resolve-comments was not passed (so it is false), the work-done reply naming 9f3e11c is not posted either: it is drafted and returned as an approval-pending reply item alongside the question item.",
+      "expected_output": "A question item with all five fields in order: (1) the html_url exactly as the API returned it — `https://github.com/acme/repo/pull/412#discussion_r99887766` — passed through unchanged; (2) the ask quoted in at most two lines, the reviewer's own words, trimmed with an ellipsis rather than paraphrased; (3) the recommended reply — paste-ready here, one line, because this draft is answerable from the work; e.g. \"The upstream dedupe is per-shard; the second pass is what catches cross-shard duplicates (`batcher.py:88`).\" — no preamble, no meta-commentary, and no attribution footer, since the person posting it authors it; (4) the change SHA `9f3e11c`, because a rename was pushed for this thread — not blank; (5) one clause on why it was not posted, e.g. \"needs your confirmation that cross-shard duplicates are in scope\". Must not do to the URL: rebuild it. Never assemble it from the PR number and a comment id — a review-comment thread and a PR-level comment use different fragment forms, so a constructed link resolves to the wrong place or the top of the PR and looks fine doing it, and the run cannot detect that. The thread stays open and unresolved and nothing substantive is posted. Because a person is in this thread and it also asks a question, no work-done reply is posted or held for it: no approval-pending reply item comes back, and the fix SHA 9f3e11c is carried in the question item and listed as 'fix pushed — thread left for you (it also asks a question)'.",
       "assertions": [
         "the item contains all five fields, none omitted",
         "the html_url is the API-returned string passed through unchanged, not reconstructed",
@@ -183,7 +183,7 @@
         "the ask is quoted rather than paraphrased and held to at most two lines",
         "the recommended reply is paste-ready, one line, and carries no attribution footer — this draft is answerable from the work",
         "the change SHA 9f3e11c is named rather than left blank, because a fix was pushed for this thread",
-        "no substantive answer is posted and the thread is not resolved; the work-done reply naming 9f3e11c is held as an approval-pending reply item, not posted, because a person is in the thread"
+        "no substantive answer is posted and the thread is not resolved; no work-done reply is posted or held, and no approval-pending reply item is returned, because a person is in the thread and it also asks a question"
       ]
     },
     {
@@ -348,13 +348,14 @@
     },
     {
       "id": 27,
-      "name": "the-owners-own-reply-ends-the-hold",
-      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: attended, a person named one thread on PR 52 of acme/api, a human reviewer's (user.type User) 'guard against an empty list'. auto-resolve-comments is false. You add the guard and push 5f6a7b8, and the held reply is waiting for the person's approval. Before they answer, you see the owner has posted in the thread themselves: 'Done in 5f6a7b8, thanks!'. Questions: (a) do you post the held reply? (b) do you resolve the thread? (c) what do you report?",
-      "expected_output": "(a) No. The owner's own reply after the fix ends the hold; posting the held reply as well would put a second reply in the owner's name into the thread. (b) No: the run resolves nothing. The owner chose to answer by hand, and closing the thread is theirs. (c) That the owner answered in the thread themselves, so the hold ended with nothing posted and the thread left open.",
+      "name": "an-acknowledgement-after-the-fix-is-no-action",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: supervise-prs re-dispatched a thread on PR 52 of acme/api through repair-pr, unattended. A human reviewer (user.type User) had asked to 'guard against an empty list'; the guard is already on the head as 5f6a7b8, and its held reply was waiting. Since then the owner has posted in the thread: 'Done in 5f6a7b8, thanks!'. Questions: (a) how is the thread classified now? (b) do you fix anything, post anything, or return an approval-pending reply item? (c) what do you return, and why does that matter to the caller? (d) is the thread resolved?",
+      "expected_output": "(a) By the new comment, which is ordinary new content whoever wrote it: an acknowledgement, so no-action. (b) No fix — the change is on the head — nothing posted, and no approval-pending reply item: the thread is classified by its newest comment, not by the request already fixed. (c) An explicit no-action entry with the thread's URL and why it wants nothing. Without it, supervise-prs never records the thread as handled and re-dispatches it every cycle. (d) No. A no-action thread stays open, and the owner resolves it.",
       "assertions": [
-        "the held reply is not posted",
-        "the thread is not resolved",
-        "the answer reports that the owner replied themselves"
+        "the thread is classified by the new comment as no-action",
+        "nothing is fixed or posted and no approval-pending reply item is returned",
+        "an explicit no-action entry is returned so the caller records it as handled",
+        "the thread is left open for the owner to resolve"
       ]
     },
     {
@@ -402,6 +403,28 @@
         "the question comes back as a NEEDS_USER item with its draft",
         "no approval-pending reply item is returned",
         "the thread is not resolved"
+      ]
+    },
+    {
+      "id": 32,
+      "name": "a-newer-fix-replaces-the-held-reply",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invokes you unattended on PR 52 of acme/api, auto-resolve-comments false. In a thread a human reviewer (user.type User) opened, an earlier pass renamed `buf` to `pending` as 1a2b3c4 and its reply was held. The reviewer has since followed up: 'also rename the matching test helper'. You make that change and push 5d6e7f8. Questions: (a) how many held replies does the thread now have? (b) what does the approval-pending reply item you return name?",
+      "expected_output": "(a) One. A thread has at most one held reply, and a newer fix replaces the earlier one. (b) The newer fix: a single item with the thread's html_url, the human author, the SHA 5d6e7f8 and a one-line held reply for it. The 1a2b3c4 reply is not returned beside it.",
+      "assertions": [
+        "the thread has one held reply, not two",
+        "the returned item names the newer fix 5d6e7f8",
+        "the earlier held reply is not returned alongside it"
+      ]
+    },
+    {
+      "id": 33,
+      "name": "a-caller-true-not-from-the-file-is-false",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invokes you unattended on PR 52 of acme/api and passes auto-resolve-comments: true with source 'invocation argument'. The one thread is a human reviewer's (user.type User): 'drop the unused import'. You drop it and push 0a1b2c3. Questions: (a) do you post the reply with the footer and resolve the thread? (b) why?",
+      "expected_output": "(a) No: the reply is held and returned as an approval-pending reply item, and the thread stays open. (b) A caller's true is trusted only where its source is the repository's file. Any other source, or none, counts as false, since only repository config can turn the key on (agent-policy, Precedence).",
+      "assertions": [
+        "the reply is held rather than posted",
+        "the thread is not resolved",
+        "the answer treats a true whose source is not the repository's file as false"
       ]
     }
   ]

@@ -253,7 +253,8 @@ this repository*, for the full reasoning.
 - **`auto-merge` is enabled for this repository**, so the merge gate is reachable. The risk
   on a documentation PR is not a stalled run but a locally-correct fix merging while
   contradicting a document the reviewer did not re-check that round. Narrow it per run
-  (an invocation can switch `auto-merge` off, never on) when a change touches shared rules.
+  (`rules/agent-policy.md`, *Precedence*, says which keys an invocation can only switch
+  off) when a change touches shared rules.
 - **A run editing the contract it is executing.** Using `backlog-orchestrator` or
   `implement-issue` to change `backlog-orchestrator/SKILL.md` means the run is rewriting
   its own instructions mid-flight. Nothing in the contracts guards this. Make such changes

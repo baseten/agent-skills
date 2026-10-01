@@ -47,15 +47,21 @@ The reservation binds every skill that classifies, repairs or answers a thread. 
 
 ## Approval-pending replies
 
-**A repaired thread whose reply is held for approval** (`resolve-pr-comment`, *Replies held for approval*) has its fix pushed and its reply unposted. It is reported in the checkpoint output with what its item carries, and:
+**A repaired thread whose reply is held for approval** (`resolve-pr-comment`, *Replies held for approval*) has its fix pushed and its reply unposted. A thread has at most one: a newer fix on it replaces the earlier held reply. It is reported in the checkpoint output with what its item carries, and:
 
 - **it is handled** (*Unhandled feedback*), so it is not re-dispatched while it waits;
 - **it is not clean**: open, it fails invariant 12's clean-review condition, as any unresolved actionable thread does;
 - **it does not block settlement**, exactly as a reserved thread does not: `settle-outstanding-decisions` is where it is put to the owner.
 
-**It ends** when the run posts the owner's approved reply — the thread then resolved at once; in a thread with a reserved question that waits until the reservation has ended (`resolve-pr-comment`, *A comment can want both*) — or when the thread is resolved, or when **the owner replies in the thread themselves after the fix**, which ends it with nothing posted and nothing resolved, and is reported. That reply is ordinary new content (*Unhandled feedback*): the thread is re-admitted and re-classified, so a "thanks" is no-action and a change request is repaired. **Every post of an approved held reply re-reads the thread first** and posts nothing where a comment newer than the fix exists that this workflow did not write (`resolve-pr-comment`, *Replies held for approval*). **A rejection ends nothing, and is remembered for the run**: recorded in run state, it is not asked again in the same run unless new content has arrived on the thread since; it still holds the gate and is still listed at the end. **A thread whose requested change is already on the head is never fixed again**, in any mode and whatever the budget: it is held again — unless the owner has replied since that change, which ended the hold — never a deferred repair or a budget `NEEDS_USER` item (`resolve-pr-comment`, *Replies held for approval*).
+**It is asked once**, attended in the session or in the walkthrough, with every comment posted in the thread since the fix, re-read at that moment. **Approved or edited**, it is posted with no footer, its write id recorded, and the thread resolved. **Rejected, or never answered by the run's end**, nothing is posted, and the thread stays open, listed in the final report as *reply not posted — thread open for you*. **A rejected item is dropped from the held set for the rest of the run.**
 
-**A held reply does not outlive the run.** It is run state: when the run ends, an unposted held reply's text is dropped, and the thread stays open with its fix pushed. No later invocation recovers that text. A later invocation that re-dispatches the open thread finds the change already on the head and composes a fresh held reply, as above. So the run's final report and checkpoint output list every held reply not yet posted — the thread URL, the fix SHA and the one-line text — and the owner can post it themselves.
+**A new comment in the thread is ordinary new content**, whoever wrote it — owner, reviewer or bot (*Unhandled feedback*). The thread re-enters normal handling and is classified by that comment. A change request is repaired, a question becomes `NEEDS_USER`, and an acknowledgement is no-action: handled, and left open for the owner to resolve.
+
+**A thread whose requested change is already on the head is never fixed again**, in any mode and whatever the budget, and never becomes a deferred repair or a `NEEDS_USER` item for that change (`resolve-pr-comment`, step 2).
+
+**A thread that also carries a reserved question never gets a held reply** (`resolve-pr-comment`, *A comment can want both*): its fix is pushed, the question takes the `NEEDS_USER` route, and the final report lists the fix SHA as *fix pushed — thread left for you (it also asks a question)*.
+
+**A held reply does not outlive the run.** It is run state: when the run ends, nothing recovers it, and the thread stays open with its fix pushed. A later invocation that re-dispatches the thread finds the change already on the head and composes a fresh one. The final report and checkpoint output list every unposted one — thread URL, fix SHA, text.
 
 Nothing here replaces the repository's review *trigger* convention, which the *review trigger* shared rule owns: triggering a reviewer and acting on its findings are separate concerns.
 

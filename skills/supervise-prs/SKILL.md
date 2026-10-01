@@ -59,7 +59,7 @@ branch/base
 remote head SHA
 CI: per check — state, and attribution where red (references/ci-attribution.md)
 per review convention: performed by; trigger state; rounds, each pending/refused (reason, reset)/complete-with-findings/clean
-reserved threads (question items, deferred-repair items), approval-pending replies (each rejected one marked, with when), and no-action threads
+reserved threads (question items, deferred-repair items), approval-pending replies (one per thread, minus any a walkthrough rejected), and no-action threads
 draft state: as-created -> current; promotion convention, or absent
 cycles used/cap: CI · review · finding; review rounds completed; strongest-model rounds used/cap, with locus evidence
 mutator: none / pass <id> / caller (locked)

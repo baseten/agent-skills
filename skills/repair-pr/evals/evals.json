@@ -169,6 +169,17 @@
         "the approval-pending reply item is forwarded verbatim",
         "the thread is counted as still unresolved"
       ]
+    },
+    {
+      "id": 13,
+      "name": "an-already-on-head-thread-spends-no-cycle",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review, budget remaining (1 cycle). The only supplied thread is a human reviewer's (user.type User) 'rename `n` to `count`', and the head already has `count`, from 4e5f6a7. auto-resolve-comments false. Questions: (a) do you push anything? (b) what outcome do you return, and is a cycle consumed? (c) had the budget been zero, what would come back for this thread?",
+      "expected_output": "(a) No: the requested change is already on the head, so it is not repair work. (b) NO_CODE_CHANGE, and no cycle is consumed. The held reply naming 4e5f6a7 comes back as an approval-pending reply item. (c) The same approval-pending reply item, never a deferred repair: the work is done.",
+      "assertions": [
+        "nothing is pushed",
+        "the outcome is NO_CODE_CHANGE and no cycle is consumed",
+        "with zero budget the thread is an approval-pending item, not a deferred repair"
+      ]
     }
   ]
 }

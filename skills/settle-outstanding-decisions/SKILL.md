@@ -46,14 +46,10 @@ A decision qualifies only when **all** of these hold:
 
 ## Held replies
 
-**An approval-pending reply item** (`resolve-pr-comment`, *Replies held for approval*) qualifies without meeting the bar above: its fix is pushed, and what is outstanding is only the owner's approval of a reply that goes out under their name. Ask it as an approval — show the **held reply** exactly as it will be posted, with its thread URL and the fix SHA, and offer approve, edit, or reject. It is merge-gating (*Ordering*), and is acted on as soon as its chunk is answered, as a ruling is recorded (*Recording the ruling*). An item that reached the run without its text — a `swarm` worker's PR record carries none (`supervise-prs`, *Repair dispatch*) — has it composed here, in `resolve-pr-comment`'s one-line form, from the fix SHA and its diff.
+**An approval-pending reply item** (`resolve-pr-comment`, *Replies held for approval*) qualifies without meeting the bar above: its fix is pushed, and what is outstanding is only the owner's approval of a reply that goes out under their name. Ask it as an approval — show the **held reply** exactly as it will be posted, with its thread URL and the fix SHA, **and every comment posted in the thread since the fix, re-read as you ask**, and offer approve, edit, or reject. The owner decides with those in front of them. It is merge-gating (*Ordering*), and is acted on as soon as its chunk is answered, as a ruling is recorded (*Recording the ruling*). An item that reached the run without its text — a `swarm` worker's PR record carries none (`supervise-prs`, *Repair dispatch*) — has it composed here, in `resolve-pr-comment`'s one-line form, from the fix SHA and its diff.
 
-**Before posting, re-read the thread.** Where any comment newer than the fix exists that this workflow did not write, post nothing and resolve nothing (`references/review-feedback.md`, *Approval-pending replies*). An owner's reply has ended the hold: report it. A reviewer's follow-up is new content: report it as returning to supervision.
-
-- **Approved or edited** → post that text, edited exactly as the owner edited it, as a reply on the thread, with **no footer** — the owner read this exact text (`references/authored-write-form.md`, the approval test) — and no owner-ruling marker or question: it is the reply, not a ruling record. **Record its write id** in the output, since an own write is known by id and this one carries no footer (`references/posting-identity.md`). **Then resolve the thread at once.** Resolving here never stands in for a fix: the fix is already pushed.
-- **Rejected** → post nothing and resolve nothing, and write no rejected-draft record. Report it, marked rejected, so the caller records the rejection in run state: the same run does not ask it again unless new content has arrived on the thread since — an item passed in marked rejected is skipped on that test. The thread stays open for the owner, the item goes on holding the merge gate, and it is still listed at the end.
-
-**A thread that also carries a reserved question** (`resolve-pr-comment`, *A comment can want both*) waits on both. **Ask its held reply only after the question is ruled**, in a later chunk, **and post it only once the reservation has ended** (`references/review-feedback.md`, *Reserved for the owner*) — an approved footerless reply in a reserved thread would read as the owner's answer to the question. Where the reservation does not end here — a ruling that needs a code change, a non-answer — the held reply is not posted, and it goes into the report as held.
+- **Approved or edited** → post that text, edited exactly as the owner edited it, as a reply on the thread, with **no footer** — the owner read this exact text (`references/authored-write-form.md`, the approval test) — and no owner-ruling marker or question: it is the reply, not a ruling record. **Record its write id** in the output, since an own write is known by id and this one carries no footer (`references/posting-identity.md`). **Then resolve the thread.** Resolving here never stands in for a fix: the fix is already pushed.
+- **Rejected** → post nothing and resolve nothing, and write no rejected-draft record. List it in the result as rejected, so the caller drops it from the held set for the rest of the run; the thread stays open and the final report lists it as *reply not posted — thread open for you*.
 
 ## Owner action items are not decisions
 
@@ -185,7 +181,7 @@ Keep "mooted by <ruling>" distinct from the other three reasons: those say the d
 
 ## Held replies
 
-- <thread URL> — <fix SHA> — posted (write id <id>) and resolved / held: <the one-line text> — rejected, or its question still reserved / the owner answered, nothing posted
+- <thread URL> — <fix SHA> — posted (write id <id>) and resolved / rejected: reply not posted — thread open for you / not asked: <the one-line text>
 
 ## Owner action items
 

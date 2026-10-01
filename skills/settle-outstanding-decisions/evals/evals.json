@@ -167,27 +167,26 @@
     },
     {
       "id": 12,
-      "name": "a-mixed-threads-held-reply-waits-for-its-question",
-      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: settle-and-merge invoked you with the owner present. One thread on PR 52 of acme/api carries two items: a reserved question ('why not reuse the shared retry helper?') with an answerable-from-work draft, and an approval-pending reply item for the null guard pushed in the same thread as 8b9c0d1. Questions: (a) in which order do you ask them, and may they share a chunk? (b) the owner approves the drafted answer, which needs no code change — when may the held reply be posted, and is the thread resolved? (c) had the owner instead ruled that the helper must be reused, a code change, what happens to the held reply?",
-      "expected_output": "(a) The question first; the held reply only after the question is ruled, in a later chunk. An approved footerless reply in a reserved thread would read as the owner's answer to the question, so it is never offered while the reservation stands. (b) Once the ruling is recorded and needs no code change, the reservation has ended; then ask the held reply, post it on approval with no footer, record its write id, and resolve the thread. (c) The reservation does not end here, since the ruling's code change has not been pushed, so the held reply is not posted. It goes into the report as held, with its text.",
+      "name": "the-owner-sees-the-threads-newer-comments-when-asked",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: settle-and-merge invoked you with the owner present and passed one approval-pending reply item: a human reviewer's thread on PR 52 of acme/api, fix 8b9c0d1, held reply 'Fixed in 8b9c0d1 — added the null guard.' Re-reading as you ask, you see the reviewer has posted since the fix: 'looks right, but can the guard log a warning?'. Questions: (a) what do you show the owner when you ask? (b) the owner approves anyway — what happens? (c) is there any check after approval that stops the post?",
+      "expected_output": "(a) The held reply exactly as it will be posted, the thread URL and fix SHA, and every comment posted in the thread since the fix, re-read as you ask — here the reviewer's follow-up — so the owner decides with it in front of them. (b) Post it with no footer, record its write id, and resolve the thread. (c) No. The owner has seen the newer comments; nothing re-reads to block the post after approval. The follow-up is ordinary new content for supervision to classify.",
       "assertions": [
-        "the question is asked before the held reply, never in the same chunk",
-        "the held reply is not offered or posted while the question is reserved",
-        "after a ruling that ends the reservation the reply is posted and the thread resolved",
-        "a ruling needing a code change leaves the held reply unposted and reported as held"
+        "the owner is shown every comment posted since the fix, re-read at ask time",
+        "an approved reply is posted with no footer, its write id recorded, and the thread resolved",
+        "no re-read after approval blocks the post"
       ],
       "files": []
     },
     {
       "id": 13,
-      "name": "a-held-reply-is-not-posted-over-a-newer-comment",
-      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: settle-and-merge invoked you with the owner present and passed two approval-pending reply items on PR 52 of acme/api, each a human reviewer's thread with its fix pushed. The owner approves both. Re-reading before posting, you find that in the first thread the owner has meanwhile replied 'fixed in 4f5a6b7, thanks', and in the second the reviewer has followed up 'this also needs a test'. Questions: (a) do you post either approved reply, or resolve either thread? (b) what do you report for each?",
-      "expected_output": "(a) Neither is posted and neither thread is resolved: a comment newer than the fix exists in each that this workflow did not write. (b) The first: the owner replied themselves, so the hold has ended, with nothing posted or resolved. The second: the reviewer's follow-up is new content, so the thread returns to supervision to be classified and, here, repaired.",
+      "name": "a-rejected-held-reply-is-dropped-and-listed",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: settle-and-merge invoked you with the owner present and passed one approval-pending reply item on PR 52 of acme/api. The owner rejects it: 'I'll answer her myself'. Later in the same run the wave un-settles, settles again, and the walkthrough is requested again. Questions: (a) what do you post or resolve on the rejection? (b) what does your result carry for it, and what does the caller do with it? (c) is it asked again in the second walkthrough? (d) what does the final report say about the thread?",
+      "expected_output": "(a) Nothing: no reply, no rejected-draft record, no resolution. (b) The item, listed as rejected; the caller removes it from the held set for the rest of the run. (c) No: it is no longer in the set passed in. (d) 'reply not posted — thread open for you', with the thread URL and fix SHA.",
       "assertions": [
-        "neither approved reply is posted",
-        "neither thread is resolved",
-        "the owner's reply is reported as having ended the hold",
-        "the reviewer's follow-up is reported as new content returning the thread to supervision"
+        "a rejection posts and resolves nothing",
+        "the result lists the item as rejected for the caller to drop from the held set",
+        "it is not asked again later in the run",
+        "the final report lists it as reply not posted — thread open for you"
       ],
       "files": []
     }
