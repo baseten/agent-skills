@@ -60,7 +60,7 @@ branch/base
 remote head SHA
 CI: per check — state, and attribution where red (references/ci-attribution.md)
 per review convention: performed by; trigger state; rounds, each pending/refused (reason, reset)/complete-with-findings/clean
-reserved threads (question items, deferred-repair items), approval-pending replies (one per thread), rejected held replies (thread + fix SHA), mixed-thread fixes left for the owner, and no-action threads — held-reply records (approval-pending, rejected, the no-action that ends one) replace each other per thread; every other record stands beside them
+reserved threads (question items, deferred-repair items), approval-pending replies (one per thread), rejected held replies (thread + fix SHA), mixed-thread fixes left for the owner, and no-action threads — held-reply records (approval-pending, rejected, the no-action that ends one) replace each other per thread, and a later reserved or deferred-repair record turns one into a mixed-thread record (`references/review-feedback.md`, *Approval-pending replies*); every other record stands beside them
 draft state: as-created -> current; promotion convention, or absent
 cycles used/cap: CI · review · finding; review rounds completed; strongest-model rounds used/cap, with locus evidence
 mutator: none / pass <id> / caller (locked)

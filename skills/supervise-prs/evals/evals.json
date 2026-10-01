@@ -487,6 +487,19 @@
         "an approved outcome clears the approval-pending record"
       ],
       "files": []
+    },
+    {
+      "id": 39,
+      "name": "a-held-reply-ends-when-the-thread-turns-mixed",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: on PR #60, two threads have an approval-pending reply recorded. Thread A, fix 1a1a1a1: the reviewer then posts 'why is this cached per request?', which the next pass classifies as a reserved question. Thread B, fix 2b2b2b2: the reviewer then asks for a further change, and the pass, at zero review budget, returns it as a deferred repair. The run then settles. Questions: (a) what happens to each held reply? (b) is either thread resolved? (c) how is each listed?",
+      "expected_output": "(a) Both held replies end. A later reserved or deferred-repair record makes each a mixed thread from then on, so its held reply is dropped — not passed to the walkthrough, not asked, not posted. (b) Neither: no run resolves a thread carrying an open reservation or deferred repair. (c) A as 'fix pushed — thread left for you (it also asks a question)' with 1a1a1a1. B as 'fix pushed — thread left for you (a further change is deferred)' with 2b2b2b2.",
+      "assertions": [
+        "both held replies are dropped, not asked and not posted",
+        "neither thread is resolved",
+        "thread A is listed with its fix SHA as also asking a question",
+        "thread B is listed with its fix SHA as having a further change deferred"
+      ],
+      "files": []
     }
   ]
 }
