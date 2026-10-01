@@ -169,10 +169,11 @@
       "id": 12,
       "name": "the-owner-sees-the-threads-newer-comments-when-asked",
       "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: settle-and-merge invoked you with the owner present and passed one approval-pending reply item: a human reviewer's thread on PR 52 of acme/api, fix 8b9c0d1, held reply 'Fixed in 8b9c0d1 — added the null guard.' Re-reading as you ask, you see the reviewer has posted since the fix: 'looks right, but can the guard log a warning?'. Questions: (a) what do you show the owner when you ask? (b) the owner approves anyway — what happens? (c) is there any check after approval that stops the post?",
-      "expected_output": "(a) The held reply exactly as it will be posted, the thread URL and fix SHA, and every comment posted in the thread since the fix, re-read as you ask — here the reviewer's follow-up — so the owner decides with it in front of them. (b) Post it with no footer, record its write id, and resolve the thread. (c) No. Nothing re-reads after approval. A comment posted between the ask and the approval would not have been shown, and approval resolves the thread over it — an accepted cost. The reviewer's follow-up here, shown at ask time, was the owner's to weigh.",
+      "expected_output": "(a) The held reply exactly as it will be posted, the thread URL and fix SHA, and every comment posted in the thread since the fix, re-read as you ask — here the reviewer's follow-up — so the owner decides with it in front of them. (b) Post it with no footer and record its write id, but do not resolve the thread: the ask-time re-read found a comment newer than the fix by someone else. It is left open and listed as 'reply posted — thread left open (new comment since the fix)', and supervision takes up the follow-up as new content. (c) No. Nothing re-reads after approval to block the post. A comment posted between the ask and the approval would not have been shown, and if the ask-time re-read was clean the thread is resolved over it — an accepted cost.",
       "assertions": [
         "the owner is shown every comment posted since the fix, re-read at ask time",
-        "an approved reply is posted with no footer, its write id recorded, and the thread resolved",
+        "the approved reply is posted with no footer and its write id recorded",
+        "the thread is not resolved because the ask-time re-read found a newer comment",
         "no re-read after approval blocks the post, and a comment landing after the ask is accepted as resolved over"
       ],
       "files": []
@@ -187,6 +188,19 @@
         "the result lists the item as rejected, with thread and fix SHA, for the supervising run to record",
         "it is not asked again later in the run",
         "the final report lists it as reply not posted — thread open for you"
+      ],
+      "files": []
+    },
+    {
+      "id": 14,
+      "name": "an-approved-reply-is-posted-but-not-resolved-over-a-newer-comment",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: settle-and-merge invoked you with the owner present and passed one approval-pending reply item on PR 52 of acme/api, fix 8c9d0e1. After the supervising run's last pass, and before you ask, the reviewer posted in the thread: 'does this also cover the batch path?'. Re-reading as you ask, you show it to the owner, who approves the held reply anyway. Questions: (a) is the reply posted? (b) is the thread resolved? (c) what do you record and list? (d) what happens to the reviewer's question?",
+      "expected_output": "(a) Yes, with no footer and its write id recorded. (b) No. The ask-time re-read found a comment newer than the fix by someone other than this workflow, so the thread is left open for the owner. (c) The outcome is approved, with the write id, for the supervising run to record. It is listed as 'reply posted — thread left open (new comment since the fix)'. (d) Supervision takes it up as new content: the thread is unresolved, so it is re-admitted and classified, here as a NEEDS_USER question.",
+      "assertions": [
+        "the approved reply is posted with no footer",
+        "the thread is not resolved because a newer comment existed at ask time",
+        "the outcome is recorded as approved with its write id and listed as reply posted, thread left open",
+        "supervision classifies the newer question as NEEDS_USER"
       ],
       "files": []
     }

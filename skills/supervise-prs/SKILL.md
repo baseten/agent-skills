@@ -234,7 +234,7 @@ The per-PR record, plus:
 
 - whether it changed this pass;
 - every expected-red check with its refresh; every round owed to the caller, with its head;
-- every reserved thread per item kind, verbatim, every approval-pending reply, verbatim, every rejected held reply as *reply not posted — thread open for you*, every mixed-thread fix as *fix pushed — thread left for you (it also asks a question)*, and every no-action thread;
+- every reserved thread per item kind, verbatim, every approval-pending reply, verbatim, every rejected held reply as *reply not posted — thread open for you*, every mixed-thread fix as *fix pushed — thread left for you (it also asks a question)* or *(a further change is deferred)*, and every no-action thread;
 - every refused round with its reason and reset; every repository whose triggering was suppressed;
 - promotions performed; every explicitly held draft; the body-drift flags passes returned;
 - reads deferred, and when the allowance resets;

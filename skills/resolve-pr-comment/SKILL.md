@@ -101,9 +101,8 @@ run's record is the usual case. It gets no commit, and it is never a deferred
 repair or a `NEEDS_USER` item for that change: the work is done. Step 5 decides
 its reply, naming the commit that made the change. A thread back on a newer
 comment has that comment classified (*Replies held for approval*) — alongside
-any open reserved question, never instead of it, unless the question's own
-author explicitly withdraws or supersedes it (`references/review-feedback.md`,
-*Approval-pending replies*).
+any open reserved question, never instead of it, whoever wrote it
+(`references/review-feedback.md`, *Approval-pending replies*).
 
 State the commit plan before touching any files.
 
@@ -261,7 +260,10 @@ can want both*). Then:
 the fix**, re-read at that moment, so the owner decides with them in front of
 them. **Approved or edited → post that text with no footer**, the approval test
 answering Yes, record the reply's write id (`references/posting-identity.md`:
-own writes are known by id), **then resolve** (step 6) — never a thread carrying an open reservation or deferred repair. **Rejected → post nothing
+own writes are known by id), **then resolve** (step 6) — only where the ask-time
+re-read found no newer comment by anyone else, and never a thread carrying an
+open reservation or deferred repair (`references/review-feedback.md`,
+*Approval-pending replies*). **Rejected → post nothing
 and resolve nothing**: the fix stays pushed, the thread stays open, and it is
 reported as *reply not posted — thread open for you*, recorded as handled —
 rejected for the fix SHA (`references/review-feedback.md`, *Approval-pending

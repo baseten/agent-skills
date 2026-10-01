@@ -488,21 +488,21 @@
     },
     {
       "id": 39,
-      "name": "the-questions-author-withdrawing-it-re-classifies-the-thread",
+      "name": "a-withdrawn-question-stays-reserved-for-the-owner",
       "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invokes you unattended with budget remaining on PR 52 of acme/api. A thread opened by a human reviewer (user.type User) carries her reserved question 'why not reuse the shared retry helper?'. She now posts: 'scratch my question, the helper doesn't fit — just rename `n` to `attempts`'. You rename it and push 4b5c6d7. auto-resolve-comments is false. Questions: (a) is the thread classified by her new comment, or alongside the open question? (b) what happens to the reservation? (c) what happens to the reply?",
-      "expected_output": "(a) By her new comment. She is the question's own author and explicitly withdraws it, so the thread is re-classified by that comment, not alongside the question. (b) It ends as the reservation table's first row allows: the re-classified thread wants only a diff, and the review workflow may resolve it. (c) The rename is pushed, and since a person is in the thread and the key is false, its one-line reply is held as an approval-pending item. Once that is approved and posted, the thread is resolved.",
+      "expected_output": "(a) Alongside the open question. Her comment is new content and is classified, but a newer comment on a reserved thread never replaces the question, whoever wrote it — the question's own author included. (b) It stays reserved until the owner records an answer, such as 'withdrawn' or 'no longer applies'. The run never resolves a reserved thread on its own reading of a follow-up. (c) The rename is pushed as 4b5c6d7. No reply is posted as if it answered the question, and the thread is not resolved by the run. The question item's SHA field names 4b5c6d7.",
       "assertions": [
-        "the thread is re-classified by the author's withdrawal",
+        "the withdrawal is classified alongside the question, not instead of it",
         "the rename is pushed",
-        "the reservation is treated as ended",
-        "the reply is held for approval because a person is in the thread"
+        "the reservation stays until the owner records an answer",
+        "the run does not resolve the thread or reply as if it answered the question"
       ]
     },
     {
       "id": 40,
       "name": "another-persons-thanks-leaves-the-reservation",
       "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invokes you unattended on PR 52 of acme/api. A thread carries a reserved question from reviewer A (user.type User): 'should this be idempotent?'. A different person, reviewer B (user.type User), now posts: 'thanks, this looks good'. Questions: (a) does B's comment end the reservation? (b) what do you return?",
-      "expected_output": "(a) No. Only the question's own author explicitly withdrawing or superseding it re-classifies the thread. B's comment is classified alongside the open question, never instead of it. (b) A no-action entry for B's acknowledgement, with the reserved question still standing. Nothing is posted or resolved.",
+      "expected_output": "(a) No. A newer comment on a reserved thread is classified alongside the open question, never instead of it, whoever wrote it. Only an answer the owner records ends the reservation. (b) A no-action entry for B's acknowledgement, with the reserved question still standing. Nothing is posted or resolved.",
       "assertions": [
         "the reservation is not ended by another person's comment",
         "the acknowledgement is classified as no-action alongside the question",
