@@ -110,11 +110,11 @@ When the user has opted into a workflow for this invocation (see Invocation), us
 
 When a Dynamic Workflow was not requested for this invocation, or cannot honor the required DAG/worker constraints, degrade through the remaining tiers of Runtime selection below: remote worker sessions, then ordinary isolated subagents with the parent supervision loop defined here, then serialized execution when safe isolation cannot be provided. Agent-team primitives may substitute for tier 2 where that experimental feature is confirmed enabled.
 
-Degrade silently and get on with the run. Not requesting a Dynamic Workflow is neither a reason to abandon the orchestration nor a reason to ask the user which tier to use.
+Not requesting a Dynamic Workflow is no reason to abandon the orchestration.
 
 ## Runtime selection
 
-Choose the runtime yourself at startup, from what is actually callable in this session. Never present a runtime menu, and never offer a runtime whose tools are absent here.
+Choose the runtime at startup by detection, never by asking (`swarm`, *1. Runtime: take what is there, and say which*), from what is actually callable in this session — never offering a runtime whose tools are absent here.
 
 Determine availability in preference order:
 
@@ -527,7 +527,7 @@ Before dispatch:
 10. include **authorization membership**: the bounded authorized set, or a per-blocker flag for whether each is inside it. Only you know this, and the worker's block outcome turns on it — without it, an external-looking prerequisite you did authorize comes back as an out-of-scope wait and you skip the frontier re-derivation it needed. A worker given nothing defaults to the stronger outcome. And where a sibling branch may claim the same migration number, that its number is provisional — **read `artifact-collisions.md` before this dispatch wherever more than one open branch targeting the base may generate a migration** (*Cross-branch artifact collisions*);
 11. include, on any runtime where a worker's return value does not reach this run, the requirement that it **record the judgment part of its result on its PR before returning** — not on the issue, and not the run state, which the session record and the branch already carry; see `swarm`, *How a worker's report actually reaches you*. **Never enumerate what the report contains; state it as a subtraction.** The report is `implement-issue-core`'s entire Output contract *minus* what this run can already read for itself — the branch, the PR, and the session record's `status_bucket`, `pending_action`, `task_summary` and `post_turn_summary` — and minus the gate report, which is never posted (`references/authored-write-form.md`). Everything else in that contract is judgment, which has no other carrier. **The one fact it adds back is the head commit the worker pushed** — or that it pushed nothing, and the head it found (`swarm`, *How a worker's report actually reaches you*, says why).
 
-    Any terminal outcome reached before a PR exists writes nothing and simply returns — investigating it, and recording anything that comes of it, is this run's job, not the worker's;
+    Any terminal outcome reached before a PR exists writes nothing and simply returns (`swarm`, *How a worker's report actually reaches you*, No PR);
 12. dispatch the worker with `implement-issue-core`, on the model selected for this issue (see Model and skill policy). **Where the fan-out runs as a Dynamic Workflow, read `dynamic-workflow.md` before writing its script**, and size it to the `concurrent-open-prs` headroom at launch (*Preferred runtime: Claude Code Dynamic Workflows*).
 
 **A dispatch prompt that enumerates a required process is followed literally**: a default left out of it is a default skipped, and the worker will accurately report that the task never asked for it. The same literalism decides what the worker does with instructions this run did not write (see `swarm`, *Countermanding the worker's ambient supervision posture*). So every dispatched prompt must carry each of the following.
@@ -535,7 +535,7 @@ Before dispatch:
 - **The automated review trigger instruction** — the worker's `create-pr` issues it under `references/review-trigger.md`, so do not restate the rule here — unless this run explicitly defers review. Deferral is a conscious choice recorded in run state, naming what review is owed and on which PRs; never an omission. **Record it as the per-PR `review trigger` value `deferred`** — that field is what `supervise-prs`, *Adopt*, reads, and a deferral left at `pending` is issued there as an unfinished trigger.
 - **The pre-PR gate, derived once per repository and written out in full.** The parent derives it at preflight as `implement-issue-core`, *Final local verification* defines — the base branch's required status checks, mapped to the commands that produce them, with its fallback and its `not locally runnable` outcome; that skill owns the derivation — and puts the resulting set in the prompt, with each entry's outcome vocabulary and where the set came from. Not a path to it, and not a pointer to `AGENTS.md`, which describes the gate and drifts from it (`swarm`, *Isolation*, on why a path is worse than useless here). Deriving it once also stops two workers disagreeing about what the gate is.
 - **How a worker settles a checkout against an API response.** Both are observations with an age — `origin/main` is as old as its last fetch, which on a container tier can be when the container was built, and a held response is as old as when it was issued. Where the two disagree about something the worker is about to act on, it re-reads the forge at that moment and refreshes the checkout to match (see *Every read is a snapshot*).
-- **The outbound claim check, alongside the write-form rule** (`references/establish-do-not-assume.md`, *You are about to assert it*). A worker authors the writes this run is most likely to be judged by — its PR body, its report comment, its commit messages — and constraining only this orchestrator's own writes leaves every remembered claim a worker states about the codebase, or about the state of what it touched (*pushed* and *resolved* above all), unchecked.
+- **The outbound claim check, alongside the write-form rule** (`references/establish-do-not-assume.md`, *You are about to assert it*, which requires it in the prompt of every worker that authors a write) — about the codebase, and about the state of what the worker touched (*pushed* and *resolved* above all).
 - **The run's whole posting-identity map** — every (transport, credential) entry, not one selected pair — plus the instruction to read the worker's own first authored write back and report what it observed (see `references/posting-identity.md`). The worker's `create-pr` may need an agent-authored entry to create the PR and an invoking-user entry for the author-sensitive review trigger, so selecting one either gives the PR the wrong author or leaves a valid trigger path unavailable, and the worker cannot recover what it was not sent. The worker's report is itself an authored write, normally a PR comment: a prompt requiring the report while omitting the identity to report under gets it posted as the invoking user. A distinct identity observed at `create-pr` does not reach that write on its own.
 - **The authored-write-form rule** (see Authored write form) — the rule, not a paraphrase of it: brevity, no list of checks in a body or comment, bare commit SHAs, the no-wrap constraint on forge fields, the footer **with its approval test**, the required-contents precedence, and the trigger comment's exemption. A worker carrying "sign every write" instead of the test will footer a body a person edited; one carrying only "sign unattended writes" will decide for itself what counts as attended. A dispatched worker's own writes answer No to the test — nobody reads them — so in practice its report and its PR body are footered, and the test is still what it carries, because the worker is what discovers whether anyone approved a given text. **Carry with it that the report's contents are required in full** — the judgment step 11's subtraction defines — so brevity governs how the worker writes each item and never whether it writes one. The footer goes at the end.
 
@@ -543,7 +543,7 @@ Before dispatch:
 
 Issuing the review trigger is not the end of it: confirming it took effect, at adoption and after every re-trigger, and reading every PR's CI and review verdicts from then on, are `supervise-prs`'s (*Adopt*, *Review trigger*).
 
-This generalizes past review triggers. When the platform offers several ways to perform the same write, prefer its first-class integration tooling over raw transport: attribution, permissions, and downstream automation can all differ between them, invisibly until a write is made and read back. Where identity matters to a workflow, verify it by inspecting an object the run actually created and reading its author — never by asking the credential who it is, which can answer differently from what its writes carry.
+This generalizes past review triggers: every write's transport follows *Transport precedence*, and its identity is established as `references/posting-identity.md` states.
 
 Under Dynamic Workflows, provide these constraints to every workflow worker explicitly. Do not let a worker select another backlog ticket when it finishes.
 
@@ -579,7 +579,7 @@ Treat all five as best-effort on the worker's part. They belong in every dispatc
 
 **`supervise-prs` supervises every PR this run tracks, created or adopted, from inside this run's own loop** (Parent supervision loop). Platform surfacing and the check that the platform's own auto-merge is off, adoption, reading, CI attribution, review routing, repair passes and their budgets, review triggers and draft state are that skill's. This section says what this run passes it and what stays here.
 
-Once an implementation worker reaches `PR_OPEN`, release that implementation worker — on a remote-session runtime that is an archive call, not merely ceasing to message it (see `swarm`, *Releasing a worker*). Long-lived PR supervision belongs to the parent/runtime orchestration layer.
+Once an implementation worker reaches `PR_OPEN`, release it as `swarm`, *Releasing a worker*, defines the act per tier. Long-lived PR supervision belongs to the parent/runtime orchestration layer.
 
 **One PR, one supervisor, and it is this run.** The lifecycle is:
 
@@ -704,7 +704,7 @@ Each cycle performs real work:
 15. surface `NEEDS_USER`;
 16. wait using native task/event wait, then repeat. **One loop and one wait per session, and both are this run's**: `supervise-prs` runs inside this loop with `wait owner = caller`, arms no check-in of its own, and its PRs' changes are deltas on this run's one wake (Arming the wait when nothing is in flight). **The PR subscriptions `supervise-prs` armed wake this session, and this invocation overrides the platform's PR posture they carry** (`references/platform-pr-posture.md`): every wake — `subscription.created`, a CI failure, a comment, the check-in — is answered by this loop's next cycle, never by the posture's own loop, and a spent budget ends in `supervise-prs`'s outcome for that PR, never in another repair push.
 
-Do not use CPU loops, file-touch loops, detached sleeps, meaningless commits, or other fake activity solely to prevent idling.
+No fake activity to prevent idling (`references/wake-budget.md`, *Not a licence to keep a loop warm*).
 
 Remote Git checkpoints remain mandatory regardless of runtime, because no platform/runtime persistence substitutes for durable source control.
 
@@ -795,8 +795,6 @@ The response is an ordered decision, and **every step resolves to the last branc
 
 **`NEEDS_USER` needs one thing more**, because its two kinds demand opposite handling — an unverifiable prerequisite is a question for a person; an unproven dependency view is transport evidence that invalidates a visibility proof and holds every sibling. Require the dispatch prompt to have the worker put **which kind, and the exact measure that was out of reach**, into `needs_action`. A parent left to infer the kind from an empty blocker list handles the expensive one as the cheap one.
 
-Establishing a blocker is the parent's job, needing a visibility proof the worker does not hold, so on the no-PR path the parent writes the record, never the worker.
-
 None of this is implementation-specific. A repair worker's return value is lost on the same tier in the same way; what its dispatch prompt carries for that is `supervise-prs`'s (*Repair dispatch*).
 
 **A worker's report is evidence; a blocker record is a conclusion. Keeping them apart is what the routing (`swarm`, *How a worker's report actually reaches you*) is for.**
@@ -818,7 +816,7 @@ A report must never land in an issue comment: three skills read issue comments f
 
 ## Verifying worker reports
 
-`swarm`, *Verifying what workers report*, states the rule; apply it from there. For a PR, the durable evidence is CI on the pushed head, and the rule reaches one decision that module does not have: never block a merge decision on a worker-reported failure unverified. The same status attaches to a reviewer's claim of a commit, a carried note from a previous run, and this run's own statement of what it is about to do (`references/establish-do-not-assume.md`).
+`swarm`, *Verifying what workers report*, states the rule; apply it from there. For a PR, the durable evidence is CI on the pushed head, and the rule reaches one decision that module does not have: never block a merge decision on a worker-reported failure unverified. Other claims a run meets are settled as `references/establish-do-not-assume.md`, *Someone asserted it*, says.
 
 ## Checkpoint compliance
 
