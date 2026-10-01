@@ -114,6 +114,16 @@
         "implement-issue"
       ]
     },
+    "auto-resolve-comments": {
+      "type": "boolean",
+      "default": false,
+      "description": "Post and resolve a repaired thread a person rooted without waiting for approval; off, that reply is held for the owner and the thread left open. Bot-rooted threads are unaffected. Read by: backlog-orchestrator, implement-issue, resolve-pr-comment.",
+      "x-read-by": [
+        "backlog-orchestrator",
+        "implement-issue",
+        "resolve-pr-comment"
+      ]
+    },
     "auto-merge": {
       "type": "boolean",
       "default": false,

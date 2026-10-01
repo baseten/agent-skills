@@ -48,6 +48,12 @@ Too broad: the owner supplies the option they chose, their free text, and an app
 
 The mistake: under the ruling's own semantics the footer says *the posted text went unread*, and the marker says *the content is the owner's*. Those are different claims about different spans, and both can be true of one comment — so a footer beside a marker does not double-attribute anything. Reading an existing attribution as licence to drop the footer is a general hazard, not one specific to this skill, which is why the retraction is stated in `references/authored-write-form.md`, as well: an attribution already present is never itself a reason to omit the footer, and only the approval test is.
 
+## Held replies
+
+**Why a held reply skips the qualification bar, and why its rejection writes nothing (#174, owner's ruling 2026-10-01):** the bar keeps homework away from the owner, but a held reply is not homework. The fix is done; the one thing the run cannot do is speak for the owner to a person. So it is asked as an approval. An approved reply is the reply itself, with no ruling record around it. It is one line the owner read in full, so the approval test leaves it without a footer. On a rejection the owner said to post nothing. A rejected-draft record would be a post, so the thread is left as it is for them.
+
+**Why a mixed thread's held reply is asked with or after its question:** the thread resolves only once both are settled (`resolve-pr-comment`, *A comment can want both*). Asked first, in an earlier chunk, the reply would be posted while the question was still open and nothing later would resolve the thread; asked with or after it, the walkthrough knows both answers when it acts.
+
 ## Output
 
 **Why the identity return is per pair AND per write kind:** a single walkthrough can record rulings at sites needing different transports (a GitHub PR thread through MCP, a Linear issue through its CLI), and one pair alone can carry rulings of distinct write kinds — a PR timeline comment and a review-thread reply — which the platform may author differently; an observation answers only for its own kind. Returning only a pair's first ruling drops whatever the later ones established — a later transport's entry, or a later kind through the same pair — and either loss is exactly the invoking-user path a later trigger may need, or the evidence a later review reply degrades without.

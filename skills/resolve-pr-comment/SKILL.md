@@ -1,13 +1,15 @@
 ---
 name: resolve-pr-comment
-description: Apply an appropriate fix as a new commit on the PR, push it, reply to the original review comment with the commit SHA, and resolve the conversation thread in GitHub.
+description: Apply an appropriate fix as a new commit per thread on the PR, push it, reply to the original review comment with the commit SHA, and resolve the conversation thread in GitHub — holding the reply and the resolution for approval where a person rooted the thread, unless the repository set `auto-resolve-comments`.
 ---
 
 # Resolve PR Comment(s)
 
 You're helping resolve one or more GitHub PR review comments by applying the
 appropriate fix, committing and pushing it, replying to each comment with the
-commit SHA, and resolving each conversation thread.
+commit SHA, and resolving each conversation thread — or, where a person rooted
+the thread, holding that reply and resolution for approval (*Replies held for
+approval*).
 
 Determine `owner/repo` from the current git remote (`git remote get-url
 origin`) rather than assuming a fixed repo.
@@ -71,7 +73,7 @@ query($endCursor: String) {
           comments(first: 100) {
             totalCount
             pageInfo { hasNextPage }
-            nodes { databaseId author { login } body url }
+            nodes { databaseId author { login __typename } body url }
           }
         }
       }
@@ -84,15 +86,16 @@ If specific comment IDs or URLs were provided, fetch those directly. Read the
 referenced files at the relevant lines to understand what each comment is
 asking for.
 
-### 2. Decide: single commit or separate commits
+### 2. One commit per thread
 
-| Situation                                                     | Strategy                     |
-| --------------------------------------------------------------| ----------------------------- |
-| All comments are simple/mechanical (rename, typo, formatting) | Roll into one commit         |
-| Comments touch unrelated concerns or one is complex           | Separate commits per concern |
-| User says "one commit" or "separate commits"                  | Follow their instruction     |
+**Each thread's fix is its own commit, whatever its size**, so each reply names
+a SHA that holds that thread's change and nothing else — a reply held for
+approval (*Replies held for approval*) is approved against the commit it names,
+and a shared commit would ask the owner to approve a reply over someone else's
+change. Three typo threads are three commits. A user's explicit instruction
+("one commit", "separate commits") wins over this default.
 
-Explain the batching decision before touching any files.
+State the commit plan before touching any files.
 
 ### 3. Apply the fix(es)
 
@@ -121,15 +124,14 @@ Explain the batching decision before touching any files.
 
 ### 4. Commit and push
 
-For a single combined commit:
+Per thread:
 
 ```bash
 git add <files>
 git commit -m "<concise description of what was fixed>"
-git push -u origin <branch>
 ```
 
-For separate commits, repeat per concern. **Under a repair pass that supplied repair trailers** (`repair-pr`, *Recovery / checkpointing*), **every commit this skill makes carries them unchanged** — the single combined commit and each per-concern commit alike — beside any the repository requires.
+then push once, `git push -u origin <branch>`. **Under a repair pass that supplied repair trailers** (`repair-pr`, *Recovery / checkpointing*), **every commit this skill makes carries them unchanged** — each per-thread commit, and a single commit where the user asked for one — beside any the repository requires.
 
 Commit messages should describe the
 fix, not reference the review comment ("Fix off-by-one in pagination", not
@@ -166,8 +168,11 @@ gh api repos/<owner>/<repo>/pulls/<PR>/comments/<comment_id>/replies \
 <attribution footer>"
 ```
 
-- If multiple comments were fixed in the same commit, each gets the same SHA.
-- If each got its own commit, each gets its own SHA.
+Each reply names its thread's own commit (step 2); where the user asked for
+one commit, each names that one.
+
+**Whether it is posted now is decided below** (*Replies held for approval*), and
+the templates here are the text either way.
 
 **That one line is the whole reply.** The reviewer wants to know the comment was
 acted on and where to look; the diff is the explanation and the thread already
@@ -181,9 +186,10 @@ invites agreement.
 
 **The footer goes on unless the person approved this reply text**
 (`references/authored-write-form.md`, the approval test). Unattended
-and classify-only that is never true, so those replies carry it. Attended it is
+and classify-only that is never true, so the replies those modes post carry it. Attended it is
 true only where the person was actually shown the reply and confirmed or edited
-it — invoking the skill is not that, and neither is being in the session. The
+it — invoking the skill is not that, and neither is being in the session. A held
+reply approved or edited by the owner is that case, so it is posted without one. The
 placeholder in the templates above is where it goes when it applies.
 
 **Where a reply does say something about the codebase, read it first.** The one-line form above rarely leaves room for a claim, and the escalation drafts and question items this skill composes do. Any assertion about what some other part of the codebase does needs a read behind it before it is posted, never a recollection (`references/establish-do-not-assume.md`, *You are about to assert it*) — a reply asserting a blast radius from memory was wrong about it, and four greps would have settled it in minutes.
@@ -194,7 +200,57 @@ which is absolute across modes. Where a comment asked for both, this reply says
 what changed and stops there; the question is escalated with its draft
 (*A comment can want both*).
 
+#### Replies held for approval
+
+**The thread's root author decides whether the reply posts now** — the root
+comment's `user.type` in the REST API, its author's `__typename` in the GraphQL
+query of step 1:
+
+| root author | `auto-resolve-comments` | the reply and step 6 |
+| --- | --- | --- |
+| `Bot` — a GitHub App or bot account | either | posted now, footer per the approval test, then resolved |
+| anything else | `true` | the same |
+| anything else | `false`, the default | **held**: drafted, not posted; the thread left open |
+
+**Anything not `Bot` is a person**, a machine user posting from an ordinary
+account included: misreading in that direction only holds a reply, the safe
+failure. **This decides nothing about the fix.** What is repaired stays the kind
+test's alone (`references/review-feedback.md`, *What may be auto-fixed*) — the
+human's nit is still fixed and pushed; only the reply and the resolution wait.
+It is not the removed author gate come back.
+
+**The key** comes from the caller, which resolved it for this PR (`repair-pr`
+passes it). A person invoking this skill with none passed resolves it as a run
+start does (`references/agent-policy.md`, *Resolution*); an unattended caller
+that passed none gets `false`.
+
+A held reply is the same one-line text, with no footer in the draft. Then:
+
+- **attended** — show the person the draft and ask them to approve, edit or
+  reject it, in this session;
+- **unattended** — return it as an **approval-pending reply item**: the
+  thread's API `html_url` (*What a question item must contain*, row 1), the root
+  author, the fix SHA, and the drafted reply. It is not a `NEEDS_USER` item —
+  nothing is undecided — and the supervising run reports it and holds the merge
+  gate on it (`references/review-feedback.md`, *Approval-pending replies*);
+  `settle-outstanding-decisions` puts it to the owner.
+
+**Approved or edited → post that text with no footer**, the approval test
+answering Yes, **then resolve** (step 6). **Rejected → post nothing and resolve
+nothing**: the fix stays pushed and the thread stays open for the owner.
+
+**A mixed thread's work-done reply is held the same way**, and approving it
+posts it without resolving (*A comment can want both* says when that thread
+resolves).
+
+A held thread re-dispatched after its record was lost, whose change is already
+on the head, is not fixed again: draft its reply naming the commit that made it,
+and hold it as before.
+
 ### 6. Resolve the conversation thread
+
+**Resolve only a thread whose reply step 5 posted** — never one whose reply is
+held, until that reply is approved and posted.
 
 In a remote/web session, use `mcp__github__resolve_review_thread` with the
 resolved `owner`/`repo` and the `threadId` (node ID) from step 1's
@@ -259,7 +315,8 @@ as unattended.
 
 Unattended, the classification in *Handling queries* below runs and reaches the
 same verdicts it reaches attended — **the prose branch is `NEEDS_USER` in every
-mode, so this section overrides nothing about it.** What is unattended-specific
+mode, so this section overrides nothing about it.** A held reply comes back as its
+item (step 5). What is otherwise unattended-specific
 is only where the result goes: nobody is in the session to hand it to, so every
 `NEEDS_USER` item is returned to the caller **carrying exactly what
 *What a question item must contain* requires**, and the thread is left open. That
@@ -458,7 +515,7 @@ from contradicting the modes above:
 | --- | --- |
 | Classify-only | A question item with its draft, returned alongside the deferred repair as the second of two entries for the one thread. Nothing is posted at all |
 | Attended | Not answered in the thread. The draft goes to the person who invoked this skill, in this session's output; an answerable-from-work draft they may post as themselves, a decision-only one they decide first (*Handling queries*). The fix is pushed and reported as the fix |
-| Unattended (*Unattended callers*) | Not answered in the thread. Return the question as a `NEEDS_USER` item with its draft, and reply only to report what changed — a statement about work done, never written as though it answered the question |
+| Unattended (*Unattended callers*) | Not answered in the thread. Return the question as a `NEEDS_USER` item with its draft, and reply only to report what changed — a statement about work done, never written as though it answered the question, and held where a person rooted the thread (*Replies held for approval*) |
 
 **Attended is not an exception here, and this section does not make one**: a
 person being present makes handing the draft over cheap, not posting it safe
@@ -470,6 +527,16 @@ covers, since what a reviewer reads is one thread with one voice in it.
 user's; unattended, the thread is reserved and a reserved thread is never
 resolved; classify-only resolves nothing at all. So a mixed comment never closes
 on a pushed fix, whichever mode handled it.
+
+**Where a person rooted it, the thread waits on two things.** The question stays
+reserved as `NEEDS_USER`, and the work-done reply is held for approval like any
+other (*Replies held for approval*) — not posted until approved, and approving it
+posts it and resolves nothing. **The thread is resolved only once both are
+settled**: the reply approved and posted, and the reservation ended
+(`references/review-feedback.md`, *Reserved for the owner*). This skill never
+sees both settle, so it never resolves such a thread; `settle-outstanding-decisions`,
+*Held replies*, resolves it where both settle there, and otherwise it is left open
+for the owner.
 
 Forcing it into one classification fails in a different way each direction, and
 the repairable direction fails silently:
@@ -527,7 +594,10 @@ After completing all steps, summarize:
 
 - Which comments were resolved
 - The commit SHA(s) applied
-- Confirmation that replies were posted and threads marked resolved
+- Confirmation that replies were posted and threads marked resolved, or which
+  were held
+- **Every approval-pending reply item**, one entry each, carrying what
+  *Replies held for approval* lists — attended, with the person's verdict on it
 - **For each claim about existing code carried in a reply, an escalation draft or
   a commit message, the artifact read to settle it** — or that it went out marked
   unverified, with what would settle it. The reply carries the claim and never

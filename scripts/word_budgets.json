@@ -31,7 +31,7 @@
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 4171,
+      "budget": 4196,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
@@ -55,11 +55,11 @@
       "target": 3000
     },
     "skills/repair-pr/SKILL.md": {
-      "budget": 3193,
+      "budget": 3264,
       "target": 3000
     },
     "skills/resolve-pr-comment/SKILL.md": {
-      "budget": 5680,
+      "budget": 6359,
       "target": 3000
     },
     "skills/review-docs/SKILL.md": {
@@ -71,19 +71,19 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 4643,
+      "budget": 4654,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
-      "budget": 5046,
+      "budget": 5412,
       "target": 3000
     },
     "skills/summarize-wave/SKILL.md": {
-      "budget": 2163,
+      "budget": 2188,
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 4949,
+      "budget": 5032,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
@@ -111,7 +111,7 @@
       "target": 1500
     },
     "rules/agent-policy.md": {
-      "budget": 1547,
+      "budget": 1592,
       "target": 1500
     },
     "rules/authored-write-form.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/review-feedback.md": {
-      "budget": 1551,
+      "budget": 1756,
       "target": 1500
     },
     "rules/review-trigger.md": {

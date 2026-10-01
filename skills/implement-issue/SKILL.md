@@ -35,10 +35,10 @@ This file is the contract. The reasoning behind each rule — incident history, 
 
 - Preserve exactly any caller-supplied repository, worktree, branch, base, dependency context, tracker, and budgets.
 - Read the policy file (`references/agent-policy.md` names it, and *Fail-closed handling* its old-name fallback) **once, at run start, from the head of the repository's default branch** — never from the worktree this run writes, and never again afterwards.
-- Keys consumed: `implementation-attempts`, `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-merge`, `auto-request-settle`. Ignore `concurrent-workers`, `concurrent-open-prs` and `new-issue-budget` — no single-issue meaning.
+- Keys consumed: `implementation-attempts`, `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-merge`, `auto-request-settle`, `auto-resolve-comments`. Ignore `concurrent-workers`, `concurrent-open-prs` and `new-issue-budget` — no single-issue meaning.
 - **A caller's complete resolved policy suppresses the read**: use supplied keys as given; omitted keys take the built-in defaults — except `auto-merge`, which takes **`false`**: an unmentioned permission was not granted.
 - **A partial invocation override suppresses nothing**: read the file and merge the argument over it per key (`auto-merge`: off only). NOT: treating one argument as a resolved policy — that would hand a zero-repair-cycles repository two cycles because its owner narrowed something else (NOTES).
-- Built-in defaults (absent file — the common case): implementation attempts **2** · CI repair **2** · review repair **2** · finding repair **2** · strongest-model repair rounds **1** · `auto-merge` **off** · `auto-request-settle` **on**. Monitoring cap: **8 hours** where persistent monitoring is supported — an invocation property, not a policy key.
+- Built-in defaults (absent file — the common case): implementation attempts **2** · CI repair **2** · review repair **2** · finding repair **2** · strongest-model repair rounds **1** · `auto-merge` **off** · `auto-request-settle` **on** · `auto-resolve-comments` **off**. Monitoring cap: **8 hours** where persistent monitoring is supported — an invocation property, not a policy key.
 
 # Phase 1 — durable implementation
 
@@ -72,6 +72,7 @@ On a terminal outcome (`BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`)
 
 - **PR set**: the one PR, with its repository, branch/base, remote head and the canonical issue URL — adopted on the first pass, which issues any owed trigger and arms the subscription at once;
 - **budgets**: `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles` and `repair-model-escalations`, as *Policy and budgets* resolved them, each with its source;
+- **`auto-resolve-comments`**: as *Policy and budgets* resolved it, with its source;
 - **counters**: 0 on a fresh run, since this run created the PR; on any later invocation, the counters in `supervise-prs`'s last returned record;
 - **posting-identity map**: the run's map, every entry core returned included; **merge** the map it returns into the run's, never replace it;
 - **review routing and trigger state**: as core's `create-pr` left them;
@@ -162,7 +163,7 @@ Where the repository opted in through `auto-merge`, evaluate **invariant 12's ga
 
 # Completion
 
-- Return `PR_OPEN`/healthy when the PR is implemented, correctly linked, and has no known CI/review item a remaining budget could repair — a thread reserved for the owner, deferred repairs included, does not stop `PR_OPEN`; it holds the merge gate — after Settle, whose summary and walkthrough are the gate's own inputs.
+- Return `PR_OPEN`/healthy when the PR is implemented, correctly linked, and has no known CI/review item a remaining budget could repair — a thread reserved for the owner, deferred repairs included, or holding an approval-pending reply, does not stop `PR_OPEN`; it holds the merge gate — after Settle, whose summary and walkthrough are the gate's own inputs.
 - Return `MERGED` where the gate's merge completed.
 - With persistent monitoring, `supervise-prs`'s loop continues until the PR is finished or terminal, the user stops it, its wake budget is spent, or the monitoring cap elapses. **A user stop unsubscribes the PR and cancels the check-in** (`references/platform-pr-posture.md`, *A user stop still stops*), then returns the durable checkpoint. **Every return of this skill ends the watch** — the PR unsubscribed and the check-in cancelled, whatever the outcome (*The watch ends with the run, not after it*, there); `supervise-prs` handing back to Settle does not.
 - Where it returns `cannot-watch`, or stops with the PR still waiting, return a durable checkpoint — never pretend background monitoring continues.
@@ -179,9 +180,9 @@ Return:
 - branch/base; PR URL/number; remote head SHA;
 - issue linkage verified, and the form emitted — closing keyword, or non-closing `Part of:` because a coverage finding was reported;
 - **any design finding core returned in place of a re-siting**, forwarded whole — the value, the objecting call sites and where it belongs; a caller that does not carry it is the only reader it would have had;
-- implementation attempts used, and **`supervise-prs`'s report for the PR** (`supervise-prs`, *Report*) — review rounds and CI, review and finding repair cycles against their caps, strongest-model rounds with the locus evidence for each, every review thread reserved for the owner per item kind, final CI and review state, and draft state as created and current with any transition observed and who performed it (a ready-to-draft transition is never this run's);
+- implementation attempts used, and **`supervise-prs`'s report for the PR** (`supervise-prs`, *Report*) — review rounds and CI, review and finding repair cycles against their caps, strongest-model rounds with the locus evidence for each, every review thread reserved for the owner per item kind and every approval-pending reply, final CI and review state, and draft state as created and current with any transition observed and who performed it (a ready-to-draft transition is never this run's);
 - **the supervision's provenance**: that the platform's PR posture was overridden, on the authority of this invocation as the user's instruction; what woke the run — subscription events by kind, the check-in, or both; the current check-in's id and next firing time, or that none is armed and why; and the toggle line for the PR — turned on by this run's subscription at a time and unsubscribed at a time, or still subscribed and why — never a claim that unsubscribing turned it off, and, where that effect is unknown, the instruction to switch it off by hand;
-- the resolved policy actually applied — budgets, `auto-merge` — each with its source (caller, repo config, built-in default), plus any policy file present but unhonourable (an unreadable file is authority the owner meant to grant and did not);
+- the resolved policy actually applied — budgets, `auto-merge`, `auto-resolve-comments` — each with its source (caller, repo config, built-in default), plus any policy file present but unhonourable (an unreadable file is authority the owner meant to grant and did not);
 - the merge, where one happened: the gate conditions it passed on, whether the PR was published from draft on the way, and the tracker reconciliation;
 - any edit to the published PR's body — what changed and why — or the drift left unedited, with its suggested replacement;
 - the `summarize-wave` summary and action points, and the `settle-outstanding-decisions` report — rulings recorded, its one-line decline, or that `auto-request-settle` was off;

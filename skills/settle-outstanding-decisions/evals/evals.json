@@ -149,6 +149,21 @@
         "the answer denies that the owner-ruling marker is itself a reason to omit the footer"
       ],
       "files": []
+    },
+    {
+      "id": 11,
+      "name": "an-approved-held-reply-is-posted-without-footer-then-resolved",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the owner invoked you live after a run settled. The run's report carries an approval-pending reply item: a human reviewer's thread on PR 52 of acme/api, its fix pushed as 2d3e4f5, with the held reply 'Fixed in 2d3e4f5 — renamed tmp to pending_batch.' A second item is the same shape on another thread, and that thread also carries a reserved question nobody has answered. Questions: (a) does the first item qualify, and how do you ask it? (b) the owner approves it unchanged — what is posted, does it carry the footer or an owner-ruling marker, and what then happens to the thread? (c) the owner approves the second one too — is that thread resolved? (d) had the owner rejected the first, what would you write?",
+      "expected_output": "(a) It qualifies: the fix is pushed, and the owner's approval of a reply under their name is the outstanding thing. Ask it as an approval, showing the reply exactly as it will be posted, its thread URL and the fix SHA, with approve, edit or reject. It is merge-gating. (b) The reply text exactly as approved, as a reply on the thread, with no attribution footer, because the owner read this exact text, and with no owner-ruling marker or question wrapper: it is the reply, not a ruling record. Then resolve the thread. (c) The approved reply is posted the same way, but the thread is not resolved: its reserved question is still unanswered and keeps it open. (d) Nothing: no reply, no rejected-draft record, no resolution. The thread stays open for the owner and the item keeps holding the merge gate.",
+      "assertions": [
+        "the held reply is asked as an approval showing the exact text",
+        "the approved reply is posted without the attribution footer",
+        "the approved reply is posted without a ruling-record wrapper",
+        "the thread is resolved after posting when it carries no unanswered reserved question",
+        "a thread that also carries an unanswered reserved question is not resolved",
+        "a rejection writes nothing at all and resolves nothing"
+      ],
+      "files": []
     }
   ]
 }

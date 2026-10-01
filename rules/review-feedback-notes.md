@@ -34,3 +34,10 @@ The owner asked for the rule scoped to human comments and, when the asymmetry wa
 **Moved from the rule (#168):** both gate conditions — invariant 12's clean-review condition and the outstanding `NEEDS_USER` item — name the same threads, which is why removing the reviewer policy did not loosen the gate. The two ways a reservation ends exist because without them the gate reads a thread as reserved after the owner has answered it: the deadlock the carve-out exists to prevent, one step later. Counting the owner's own reply alongside a walkthrough ruling covers the commonest case, an owner who simply answers the reviewer, which leaves the walkthrough nothing to ask and nothing else to clear it.
 
 **Also moved from the rule (#168):** the thread-root test survives independently of the kind test; the carve-out would drift the moment it were maintained separately; a question item carries every field so the owner posts the reply from the checkpoint without opening anything; and skipping dispatch on a question-only round reserves the thread with no draft, the one outcome the reservation exists to avoid.
+
+## Approval-pending replies
+
+**Why a held reply is handled but not clean (#174, owner's ruling 2026-10-01):** handled, because otherwise the supervisor would see an unresolved thread on every cycle and redispatch a fix that is already pushed. Not clean, because the reviewer has not been told, and the thread is still open; merging over it would merge past a person who has not seen their point answered. Like a reserved thread it does not block settlement: settlement is where it gets put to the owner.
+
+**Why the approved reply is not new content:** the walkthrough posting it is this workflow's own write, exactly as a ruling is. Treating it as new content would re-admit the thread it has just finished.
+

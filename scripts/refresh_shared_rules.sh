@@ -53,7 +53,7 @@ POSTING_IDENTITY="backlog-orchestrator settle-and-merge swarm create-pr implemen
   review-skill summarize-wave upgrade-npm-dependency validate-backlog"
 
 # Skills that read .claude/agent-policy.json, or gate on what it grants.
-AGENT_POLICY="backlog-orchestrator settle-and-merge implement-issue
+AGENT_POLICY="backlog-orchestrator settle-and-merge implement-issue resolve-pr-comment
   npm-dependency-upgrade-orchestrator supervise-prs"
 
 # Skills that promote a draft, decline to, or gate on the drafts it defines as held.

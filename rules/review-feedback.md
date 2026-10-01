@@ -4,12 +4,14 @@ This is the rule other skills mean when they cite *review feedback*: what a run 
 
 ## What may be auto-fixed
 
-**Decided by what the comment asks for, never by who wrote it.** There is no bot test and no reviewer allowlist: a human reviewer's typo fix is repaired, an automated reviewer's architecture question is escalated.
+**Decided by what the comment asks for, never by who wrote it.** No bot test and no reviewer allowlist enters it: a human reviewer's typo fix is repaired, an automated reviewer's architecture question is escalated.
 
 | the thread asks for | kind | the run |
 |---|---|---|
 | a code change this pass can make and verify — a rename, a missing guard, an off-by-one, a test, a lint fix, a bounded refactor the comment itself specifies | **repairable** | fixes it |
 | anything answering it requires other than a code change, whose correct response is prose rather than a diff — a question about intent, a design or product judgment, a request for rationale, an objection needing a decision | **`NEEDS_USER`** | escalates it (*Reserved for the owner*) |
+
+**Authorship decides one later thing, and never this one**: whether the reply to a repaired thread, and its resolution, wait for the owner's approval (`resolve-pr-comment`, *Replies held for approval*). That is not the removed `auto-fix-reviewers` gate — what is fixed stays this test's alone.
 
 ## The thread-root test
 
@@ -43,6 +45,16 @@ The reservation binds every skill that classifies, repairs or answers a thread. 
 
 **A rejected-draft record ends nothing.** Ending a reservation does not make the thread unhandled — a settlement record is not new content — so nothing re-dispatches it.
 
+## Approval-pending replies
+
+**A repaired thread whose reply is held for approval** (`resolve-pr-comment`, *Replies held for approval*) has its fix pushed and its reply unposted. It is reported in the checkpoint output with what its item carries, and:
+
+- **it is handled** (*Unhandled feedback*), so it is not re-dispatched while it waits;
+- **it is not clean**: open, it fails invariant 12's clean-review condition, as any unresolved actionable thread does;
+- **it does not block settlement**, exactly as a reserved thread does not: `settle-outstanding-decisions` is where it is put to the owner.
+
+It ends when its approved reply is posted — the thread then resolved, unless a reservation on it still holds it open (`resolve-pr-comment`, *A comment can want both*) — or when the owner resolves the thread. A rejection ends nothing. Like a reservation it is run state, and a later invocation re-classifies the thread from the forge.
+
 Nothing here replaces the repository's review *trigger* convention, which the *review trigger* shared rule owns: triggering a reviewer and acting on its findings are separate concerns.
 
 ## Unhandled feedback
@@ -52,10 +64,10 @@ Nothing here replaces the repository's review *trigger* convention, which the *r
 - the thread roots on the diff;
 - the supervising run did not author it (a consequence of the thread-root test);
 - **it is still unresolved** — a thread the run repaired and resolved is handled by being resolved;
-- it is not already recorded as **handled — reserved or no-action — unless new content has arrived on it since**.
+- it is not already recorded as **handled — reserved, no-action or approval-pending — unless new content has arrived on it since**.
 
-**Both classifications mark a thread handled**: a reserved one awaits the owner, a no-action one wants nothing from anybody. A predicate recording only reserved threads re-dispatches every acknowledgement on every cycle without bound, since a classify-only pass consumes no cycle; one omitting resolution re-groups every thread the run just fixed.
+**Each of these marks a thread handled**: a reserved one awaits the owner, a no-action one wants nothing from anybody, an approval-pending one awaits the owner's approval of a reply. A predicate recording only reserved threads re-dispatches every acknowledgement on every cycle without bound, since a classify-only pass consumes no cycle; one omitting resolution re-groups every thread the run just fixed.
 
-**New content means a write this workflow did not author.** A reviewer's follow-up re-opens the thread; a settlement record does not — an approved answer, a recorded choice or a rejected-draft record posted into a reserved thread by `settle-outstanding-decisions` is this workflow answering it. Treating one as new content would re-admit the thread, re-classify the answered question and re-offer the rejected draft, all while holding the merge gate. It is the thread-root test's carve-out applied to re-admission. **The exception belongs in this predicate, not only in the step that records a pass's returned threads**: a reviewer following up inside a reserved thread with a concrete change request has made it unhandled again, and a predicate that excludes the thread on its root's old classification never reaches the step that would re-admit it. Author identity decides nothing (*What may be auto-fixed*).
+**New content means a write this workflow did not author.** A reviewer's follow-up re-opens the thread; a settlement record does not — an approved answer, a recorded choice, a rejected-draft record or an approved held reply posted by `settle-outstanding-decisions` is this workflow answering it. Treating one as new content would re-admit the thread, re-classify the answered question and re-offer the rejected draft, all while holding the merge gate. It is the thread-root test's carve-out applied to re-admission. **The exception belongs in this predicate, not only in the step that records a pass's returned threads**: a reviewer following up inside a reserved thread with a concrete change request has made it unhandled again, and a predicate that excludes the thread on its root's old classification never reaches the step that would re-admit it. Author identity decides nothing (*What may be auto-fixed*).
 
 **The supervising run dispatches on any such round, including one where nothing looks repairable from the outside.** A reserved thread is never dispatched *for repair* — but reserving is a conclusion, not a precondition: classification and the draft reply need the thread body and the code around it, which is the dispatched pass's context. A run that triaged a round as question-only and skipped dispatch would reserve it with no draft.

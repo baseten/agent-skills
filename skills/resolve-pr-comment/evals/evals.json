@@ -40,11 +40,11 @@
       "id": 3,
       "name": "batching-mechanical-vs-complex",
       "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md from the skill directory you were given). Scenario: four comments are targeted — three are one-word typo fixes in the doc strings of the same module (one concern), the fourth asks for a real fix to an off-by-one in pagination logic. The user gave no batching instruction. Question: how many commits do you make, what do the commit messages look like (give an example for the pagination one), and do you explain the batching before editing?",
-      "expected_output": "Two commits: the three related typo fixes (one concern) rolled into one, the complex pagination fix separate. Messages describe the fix ('Fix off-by-one in pagination'), never 'Address PR comment'. The batching decision is explained before touching files.",
+      "expected_output": "Four commits, one per thread: each typo fix gets its own commit even though the three are one concern, so each reply names a SHA holding only its thread's change; the pagination fix is the fourth. Rolling the typos into one would be right only had the user asked for one commit. Messages describe the fix ('Fix off-by-one in pagination'), never 'Address PR comment'. The commit plan is stated before touching files.",
       "assertions": [
-        "The answer keeps the pagination fix in its own commit and groups the three related typo fixes together (any per-concern grouping that separates the complex fix is acceptable; here the typos are stated to be one concern, so one combined commit)",
+        "The answer makes one commit per thread — four here — rather than rolling the three typo fixes into one, since the user gave no batching instruction",
         "The answer's example commit message describes the fix itself (e.g. 'Fix off-by-one in pagination') and rejects 'Address PR comment'-style messages",
-        "The answer explains the batching decision before touching any files"
+        "The answer states the commit plan before touching any files"
       ]
     },
     {
@@ -77,7 +77,7 @@
       "id": 6,
       "name": "kind-judged-by-intent-not-punctuation",
       "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: an unattended caller supplies two threads on the diff. (a) \"Could you add a null check here? line 40 can be undefined.\" (b) \"I don't follow why this needs a second pass over the array.\" Note that (a) is phrased as a question and (b) is not. Questions: for each, is it repairable or NEEDS_USER, and on what basis?",
-      "expected_output": "(a) Repairable. Despite the question mark, it asks for a code change the pass can make and verify — add the null check, commit, reply with the SHA, resolve the thread. Routing it to NEEDS_USER on its punctuation would reserve a straightforward fix and hold the merge gate shut over it. (b) NEEDS_USER, despite having no question mark: its correct response is prose — an explanation of why the second pass is needed — not a diff, so it comes back as an item with a draft and is neither answered nor resolved. The test is what the comment asks for, never how it is punctuated or phrased.",
+      "expected_output": "(a) Repairable. Despite the question mark, it asks for a code change the pass can make and verify — add the null check and commit it; whether the SHA reply is posted and the thread resolved now, or the reply held for approval, depends on who rooted the thread, not on its kind. Routing it to NEEDS_USER on its punctuation would reserve a straightforward fix and hold the merge gate shut over it. (b) NEEDS_USER, despite having no question mark: its correct response is prose — an explanation of why the second pass is needed — not a diff, so it comes back as an item with a draft and is neither answered nor resolved. The test is what the comment asks for, never how it is punctuated or phrased.",
       "assertions": [
         "the question-phrased change request is treated as repairable and fixed",
         "the statement-phrased request for rationale is treated as NEEDS_USER",
@@ -89,7 +89,7 @@
       "id": 7,
       "name": "acknowledgements-are-no-action-not-needs-user",
       "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: an unattended caller supplies three open threads on the diff. (a) \"Thanks, this looks good.\" (b) \"I don't follow why this needs a second pass over the array.\" (c) \"Add a null check on line 40.\" Questions: for each, what classification does it get and what do you return? And specifically for (a): what would go wrong if you returned it as NEEDS_USER with a draft, and what would go wrong if you simply omitted it from your output?",
-      "expected_output": "(a) No-action. An acknowledgement asks for neither a diff nor an answer: return it as no-action, reply to nothing, resolve nothing, escalate nothing. (b) NEEDS_USER — its correct response is prose, so it comes back as an item with a draft, unanswered and unresolved. (c) Repairable — make the change, commit, reply with the SHA, resolve the thread. Returning (a) as NEEDS_USER would be a trap rather than a harmless over-report: it is neither an answerable-from-work question nor a choice only the owner can make, so settle-outstanding-decisions cannot qualify it under its bar. The item gets declined, the thread stays reserved, and it holds the merge gate with nothing able to clear it. Omitting it is the other failure and is not safer: silence is not the same as no-action. The caller's predicate re-groups any thread it has not recorded as handled, so an omitted acknowledgement returns on the next supervision cycle, is classified again, and loops without bound because a classify-only pass consumes no cycle. So (a) is returned as an explicit no-action entry with its URL and why it wants nothing, carrying no draft. The classification is three-way: a diff, an answer, or nothing at all.",
+      "expected_output": "(a) No-action. An acknowledgement asks for neither a diff nor an answer: return it as no-action, reply to nothing, resolve nothing, escalate nothing. (b) NEEDS_USER — its correct response is prose, so it comes back as an item with a draft, unanswered and unresolved. (c) Repairable — make the change and commit it; the SHA reply and the resolution follow now, or wait for approval where a person rooted the thread. Returning (a) as NEEDS_USER would be a trap rather than a harmless over-report: it is neither an answerable-from-work question nor a choice only the owner can make, so settle-outstanding-decisions cannot qualify it under its bar. The item gets declined, the thread stays reserved, and it holds the merge gate with nothing able to clear it. Omitting it is the other failure and is not safer: silence is not the same as no-action. The caller's predicate re-groups any thread it has not recorded as handled, so an omitted acknowledgement returns on the next supervision cycle, is classified again, and loops without bound because a classify-only pass consumes no cycle. So (a) is returned as an explicit no-action entry with its URL and why it wants nothing, carrying no draft. The classification is three-way: a diff, an answer, or nothing at all.",
       "assertions": [
         "the acknowledgement is classified no-action, not NEEDS_USER and not repairable",
         "nothing is replied, resolved or escalated for the acknowledgement",
@@ -133,7 +133,7 @@
       "id": 10,
       "name": "attended-mixed-comment-pushes-the-fix-and-drafts-the-answer",
       "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a person invokes you directly and names one review comment: \"add the null guard here, and explain why the shared helper is unsuitable for this path.\" You can see both the fix and the answer. Questions: (a) do you post the explanation in the thread, or return it as a NEEDS_USER item with a draft? (b) do you apply the guard? (c) do you resolve the thread? (d) separately: the same comment reaches you from repair-pr with a zero repair budget — what do you return, and how many entries?",
-      "expected_output": "(a) Neither posted nor withheld: the explanation is drafted and handed to the person who invoked the skill, in this session's output, exactly as any query — no mode answers a query in the thread. (b) Yes — apply and verify the guard, push it, and reply only to report what changed (`Fixed in <sha> — …`, plus the attribution footer), never written as though it answered the question. (c) No. No mode resolves a mixed thread: the question half leaves it open. (d) Two entries for the one thread — a deferred-repair item carrying the unapplied change and no draft, and a question item carrying the drafted answer — and nothing is applied, pushed, replied to or resolved. The thread is handled only once the caller has recorded both; forwarding one entry drops either work nobody records or a question nobody can put to the owner.",
+      "expected_output": "(a) Neither posted nor withheld: the explanation is drafted and handed to the person who invoked the skill, in this session's output, exactly as any query — no mode answers a query in the thread. (b) Yes — apply and verify the guard, push it, and reply only to report what changed (`Fixed in <sha> — …`), never written as though it answered the question — posted with the attribution footer where a bot rooted the thread, or shown to the person for approval and posted without it where a person did and auto-resolve-comments is off. (c) No. No mode resolves a mixed thread: the question half leaves it open. (d) Two entries for the one thread — a deferred-repair item carrying the unapplied change and no draft, and a question item carrying the drafted answer — and nothing is applied, pushed, replied to or resolved. The thread is handled only once the caller has recorded both; forwarding one entry drops either work nobody records or a question nobody can put to the owner.",
       "assertions": [
         "attended, the explanation is returned as a draft for the invoking person rather than posted in the thread",
         "the null guard is applied and pushed in the attended case",
@@ -160,7 +160,7 @@
     {
       "id": 12,
       "name": "reply-is-one-line-and-signed-only-when-nobody-read-it",
-      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md from the skill directory you were given). Scenario: a reviewer asked you to rename `tmp` to `pending_batch`. You made the change, ran the repo's checks and pushed it as a1b2c3d. You were invoked unattended by repair-pr. Draft the exact body of the reply you will post on that review thread, say what must not be in it, and say what would change if instead a person had been shown this reply and had approved its wording.",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md from the skill directory you were given). Scenario: an automated reviewer (a GitHub App; the root comment's user.type is Bot) asked you to rename `tmp` to `pending_batch`. You made the change, ran the repo's checks and pushed it as a1b2c3d. You were invoked unattended by repair-pr. Draft the exact body of the reply you will post on that review thread, say what must not be in it, and say what would change if instead a person had been shown this reply and had approved its wording.",
       "expected_output": "One line naming the commit and what changed — Fixed in a1b2c3d — renamed `tmp` to `pending_batch`. — followed by the attribution footer, because this reply was posted unattended and no person read it: a blank line, a `---` rule, then `_Generated by [Claude Code](https://claude.ai/code)_`. Not in it: the comment restated back, a justification of the approach, a narration of what else was considered, or a list of the checks that were run. The diff is the explanation and the thread already holds the request. Had a person been shown this exact reply and approved its wording, the footer would be omitted — the footer marks a write nobody read, and invoking the skill or sitting in the session is not approval of the text.",
       "assertions": [
         "the drafted reply is a single short line naming the commit SHA and what changed",
@@ -174,7 +174,7 @@
       "id": 13,
       "name": "question-item-carries-all-five-fields-with-an-api-url",
       "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md from the skill directory you were given). Scenario: repair-pr hands you one thread on PR 412 of acme/repo, unattended. A human reviewer wrote a long comment whose substance is: \"I don't follow why this needs a second pass — doesn't the batch already dedupe upstream? Also please rename `tmp`.\" You renamed `tmp` and pushed `9f3e11c`. You can answer the dedupe question from the code: the upstream dedupe is per-shard, the second pass is cross-shard, and `batcher.py:88` is where that is decided. The API returned `html_url` as `https://github.com/acme/repo/pull/412#discussion_r99887766`. Question: write out the NEEDS_USER item exactly as you will return it, and say what you must not do to that URL.",
-      "expected_output": "A question item with all five fields in order: (1) the html_url exactly as the API returned it — `https://github.com/acme/repo/pull/412#discussion_r99887766` — passed through unchanged; (2) the ask quoted in at most two lines, the reviewer's own words, trimmed with an ellipsis rather than paraphrased; (3) the recommended reply — paste-ready here, one line, because this draft is answerable from the work; e.g. \"The upstream dedupe is per-shard; the second pass is what catches cross-shard duplicates (`batcher.py:88`).\" — no preamble, no meta-commentary, and no attribution footer, since the person posting it authors it; (4) the change SHA `9f3e11c`, because a rename was pushed for this thread — not blank; (5) one clause on why it was not posted, e.g. \"needs your confirmation that cross-shard duplicates are in scope\". Must not do to the URL: rebuild it. Never assemble it from the PR number and a comment id — a review-comment thread and a PR-level comment use different fragment forms, so a constructed link resolves to the wrong place or the top of the PR and looks fine doing it, and the run cannot detect that. The thread stays open and unresolved and nothing substantive is posted.",
+      "expected_output": "A question item with all five fields in order: (1) the html_url exactly as the API returned it — `https://github.com/acme/repo/pull/412#discussion_r99887766` — passed through unchanged; (2) the ask quoted in at most two lines, the reviewer's own words, trimmed with an ellipsis rather than paraphrased; (3) the recommended reply — paste-ready here, one line, because this draft is answerable from the work; e.g. \"The upstream dedupe is per-shard; the second pass is what catches cross-shard duplicates (`batcher.py:88`).\" — no preamble, no meta-commentary, and no attribution footer, since the person posting it authors it; (4) the change SHA `9f3e11c`, because a rename was pushed for this thread — not blank; (5) one clause on why it was not posted, e.g. \"needs your confirmation that cross-shard duplicates are in scope\". Must not do to the URL: rebuild it. Never assemble it from the PR number and a comment id — a review-comment thread and a PR-level comment use different fragment forms, so a constructed link resolves to the wrong place or the top of the PR and looks fine doing it, and the run cannot detect that. The thread stays open and unresolved and nothing substantive is posted. Because a person rooted this thread and auto-resolve-comments was not passed (so it is false), the work-done reply naming 9f3e11c is not posted either: it is drafted and returned as an approval-pending reply item alongside the question item.",
       "assertions": [
         "the item contains all five fields, none omitted",
         "the html_url is the API-returned string passed through unchanged, not reconstructed",
@@ -182,7 +182,7 @@
         "the ask is quoted rather than paraphrased and held to at most two lines",
         "the recommended reply is paste-ready, one line, and carries no attribution footer — this draft is answerable from the work",
         "the change SHA 9f3e11c is named rather than left blank, because a fix was pushed for this thread",
-        "no substantive answer is posted and the thread is not resolved — the work-done reply naming 9f3e11c is required here, because this comment also asked for a diff"
+        "no substantive answer is posted and the thread is not resolved; the work-done reply naming 9f3e11c is drafted but held as an approval-pending reply item, not posted, because a person rooted the thread"
       ]
     },
     {
@@ -214,11 +214,11 @@
     },
     {
       "id": 16,
-      "name": "per-concern-commits-under-a-repair-pass-all-carry-its-trailers",
+      "name": "per-thread-commits-under-a-repair-pass-all-carry-its-trailers",
       "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). repair-pr invoked you unattended for two threads on unrelated concerns — a pagination off-by-one and a misleading log message — and supplied repair trailers `Repair-Pass: rp-12`, `Repair-Type: review`, `Repair-Model: default`. How many commits do you make, and what does each commit message carry?",
-      "expected_output": "Two, one per concern, since the threads touch unrelated concerns. Each commit message describes its fix and carries all three supplied trailers unchanged — the per-concern split does not drop them from the second commit — beside any trailer the repository requires.",
+      "expected_output": "Two, one per thread — each thread's fix is its own commit, whatever the concerns. Each commit message describes its fix and carries all three supplied trailers unchanged — the per-thread split does not drop them from the second commit — beside any trailer the repository requires.",
       "assertions": [
-        "the answer makes separate commits per concern",
+        "the answer makes one commit per thread",
         "every commit carries all three supplied repair trailers unchanged",
         "the answer does not drop the trailers from any split commit"
       ]
@@ -226,7 +226,7 @@
     {
       "id": 17,
       "name": "reply-sha-is-bare-and-no-push-is-announced",
-      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md from the skill directory you were given). Scenario: repair-pr hands you two threads on PR 88 of acme/web, unattended. The first asks for a null guard; you add it and push commit 5e6f7a8b9c0d. The second asks you to bump the shared client instead of patching locally; that bump is commit 1a2b3c4d5e6f in acme/client, already merged there, and you push the version bump here as 9d8c7b6a5f4e. CI on PR 88 was red before your pushes and is green now. Questions: (a) write the exact body of each reply as you will post it; (b) do you also post a timeline comment on PR 88 saying the fixes are pushed and CI is green?",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md from the skill directory you were given). Scenario: repair-pr hands you two threads on PR 88 of acme/web, unattended, both rooted by an automated reviewer whose root comments have user.type Bot. The first asks for a null guard; you add it and push commit 5e6f7a8b9c0d. The second asks you to bump the shared client instead of patching locally; that bump is commit 1a2b3c4d5e6f in acme/client, already merged there, and you push the version bump here as 9d8c7b6a5f4e. CI on PR 88 was red before your pushes and is green now. Questions: (a) write the exact body of each reply as you will post it; (b) do you also post a timeline comment on PR 88 saying the fixes are pushed and CI is green?",
       "expected_output": "(a) Each reply is one line naming the commit and what changed, with every SHA written bare — never in backticks or a code block, where the forge does not link it — in at least the 7-character short form: e.g. \"Fixed in 5e6f7a8 — added the null guard.\" and \"Fixed in 9d8c7b6 — bumped the client to pick up acme/client@1a2b3c4.\" The other repository's commit is written owner/repo@sha, also bare. Each reply ends with the attribution footer, since nobody read it before it was posted. (b) No. A pushed repair is answered by the reply in the thread it fixes, or not at all; no timeline comment, new thread or other write announces the push or that CI now passes — the checks on the PR already report that.",
       "assertions": [
         "every commit SHA in the drafted replies is bare, not inside backticks or a code block",
@@ -234,6 +234,80 @@
         "the other repository's commit is written as owner/repo@sha, bare",
         "each reply is a single line naming the commit and what changed, plus the attribution footer",
         "the answer posts no timeline comment or other write announcing the push or the green CI"
+      ]
+    },
+    {
+      "id": 18,
+      "name": "unattended-human-nit-is-fixed-and-its-reply-held",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invoked you unattended on PR 52 of acme/api with two threads and did not pass auto-resolve-comments. Both are rooted by a human reviewer whose root comments have user.type User. (1) 'typo: recieve -> receive' in a docstring. (2) 'rename `buf` to `pending`'. Both are trivially correct changes. Questions: (a) are they fixed? (b) how many commits? (c) what do you post on each thread? (d) is either thread resolved? (e) what do you return to repair-pr for them?",
+      "expected_output": "(a) Yes — the kind test decides what is fixed, and both ask for a code change this pass can make and verify; who wrote them decides nothing about that. (b) Two, one per thread, so each reply names its own SHA. (c) Nothing. The threads are human-rooted and auto-resolve-comments was not passed, so it is false: each one-line reply (`Fixed in <sha> — …`) is drafted and held, not posted. (d) No — both stay open until a held reply is approved and posted. (e) Two approval-pending reply items, each carrying the thread's API html_url passed through unchanged, the root author, the fix SHA and the drafted one-line reply. They are not NEEDS_USER items, since nothing is undecided.",
+      "assertions": [
+        "both nits are fixed and pushed despite being from a human reviewer",
+        "the answer makes one commit per thread",
+        "nothing is posted on either thread",
+        "neither thread is resolved",
+        "each thread comes back as an approval-pending reply item carrying its html_url, root author, fix SHA and drafted reply",
+        "the held replies are not reported as NEEDS_USER items"
+      ]
+    },
+    {
+      "id": 19,
+      "name": "bot-nit-is-posted-with-the-footer-and-resolved",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invoked you unattended on PR 52 of acme/api with one thread, auto-resolve-comments false. The thread's root comment is from example-review-bot[bot], user.type Bot, asking you to replace a magic number with the existing `MAX_RETRIES` constant. You make the change and push it as 4c5d6e7. Questions: (a) what do you post, and does it carry the footer? (b) is the thread resolved? (c) does auto-resolve-comments being false change anything here?",
+      "expected_output": "(a) The one-line reply `Fixed in 4c5d6e7 — replaced the literal with MAX_RETRIES.`, posted now, with the attribution footer, because nobody read it before it was posted. (b) Yes, after the reply is posted. (c) No: a Bot-rooted thread is replied to and resolved whatever the key says; the key only governs threads a person rooted.",
+      "assertions": [
+        "the reply is posted now as one line naming the SHA",
+        "the posted reply carries the attribution footer",
+        "the thread is resolved",
+        "auto-resolve-comments false is treated as irrelevant to a Bot-rooted thread"
+      ]
+    },
+    {
+      "id": 20,
+      "name": "auto-resolve-comments-true-restores-the-old-path-for-a-person",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invoked you unattended on PR 52 of acme/api with one thread and passed auto-resolve-comments: true, as the repository's policy file sets it. The root comment is from a human reviewer, user.type User: 'drop the unused import on line 3'. You remove it and push 8a9b0c1. Questions: (a) is the reply posted or held? (b) does it carry the footer? (c) is the thread resolved?",
+      "expected_output": "(a) Posted now: with auto-resolve-comments true, a human-rooted thread gets the same treatment as a bot's. (b) Yes — the run is unattended and nobody approved the text, so the approval test answers No and the footer goes on. (c) Yes, after the reply is posted.",
+      "assertions": [
+        "the reply is posted without waiting for approval",
+        "the reply carries the attribution footer",
+        "the thread is resolved",
+        "no approval-pending reply item is returned for it"
+      ]
+    },
+    {
+      "id": 21,
+      "name": "attended-human-reply-is-shown-then-posted-without-footer",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a person invokes you directly on PR 52 of acme/api and names one comment, from a human teammate (user.type User): 'rename `tmp` to `pending_batch`'. No caller passed auto-resolve-comments, and the repository's policy file does not set it. You make the change and push 2d3e4f5. Questions: (a) do you post the reply straight away? (b) what do you do instead? (c) the person approves your draft with one word changed — what is posted, with or without the footer, and what happens to the thread?",
+      "expected_output": "(a) No. The key resolves to its default, false, and the thread is human-rooted, so the reply is held. (b) Show the person the drafted one-line reply — e.g. `Fixed in 2d3e4f5 — renamed tmp to pending_batch.` — and ask them to approve, edit or reject it in the session. (c) The edited text exactly as they edited it is posted, with no footer, because the person read and approved this exact text. Then the thread is resolved.",
+      "assertions": [
+        "the reply is not posted before the person approves it",
+        "the drafted reply is shown to the person for approval, edit or rejection",
+        "the approved text is posted as the person edited it",
+        "the approved reply carries no attribution footer",
+        "the thread is resolved after the approved reply is posted"
+      ]
+    },
+    {
+      "id": 22,
+      "name": "a-rejected-held-reply-posts-nothing-and-leaves-the-thread-open",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: attended, a person named one thread on PR 52 of acme/api from a human reviewer (user.type User) asking to inline a helper. auto-resolve-comments is false. You inline it, push 6f7a8b9, and show the person the drafted reply. They reject it: 'don't reply yet, I want to talk to her first'. Questions: (a) what do you post? (b) is the thread resolved? (c) do you revert the commit?",
+      "expected_output": "(a) Nothing — no reply and no other write on the thread. (b) No; it stays open for the owner. (c) No: the fix stays pushed. Rejecting the reply rejects the reply, not the fix.",
+      "assertions": [
+        "nothing is posted on the thread",
+        "the thread is left unresolved",
+        "the fix commit stays pushed rather than being reverted"
+      ]
+    },
+    {
+      "id": 23,
+      "name": "a-machine-user-counts-as-a-person",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invoked you unattended on PR 52 of acme/api with one thread, auto-resolve-comments false. The root comment is from `acme-ci-helper`, an ordinary account that a team runs a script under; its user.type is User, though its comments are plainly automated. It asks you to sort an import block. You sort it and push 0e1f2a3. Questions: (a) is this thread bot-rooted or human-rooted for the reply rule? (b) what happens to the reply and the thread? (c) why is that the right direction to err in?",
+      "expected_output": "(a) Human-rooted. Only a root author whose user.type is Bot counts as a bot; anything else, a machine user on an ordinary account included, is treated as a person, however automated its comments look. (b) The sort is fixed and pushed; the one-line reply is drafted and held, nothing is posted, the thread stays open, and an approval-pending reply item is returned. (c) Misreading in that direction only holds a reply for approval. The other direction would post and resolve under the owner's name on a person's thread unread.",
+      "assertions": [
+        "the machine user is treated as human because its user.type is not Bot",
+        "the answer does not infer bot-ness from the account's name or behaviour",
+        "the fix is pushed but the reply is held and the thread left open",
+        "the answer names holding a reply as the safe failure direction"
       ]
     }
   ]

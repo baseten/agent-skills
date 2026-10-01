@@ -371,6 +371,7 @@ The policy file — `.claude/agent-policy.json`, its schema, precedence, resolut
   "repair-model-escalations": 1,
   "lost-worker-redispatches": 1,
   "auto-request-settle": true,
+  "auto-resolve-comments": false,
   "auto-merge": false
 }
 ```
@@ -381,7 +382,7 @@ Keys scope to different objects, and each resolves from the repository that owns
 
 | keys | scope | resolved from |
 | --- | --- | --- |
-| `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-merge` | per PR | the PR's repository |
+| `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-resolve-comments`, `auto-merge` | per PR | the PR's repository |
 | `implementation-attempts`, `model-escalations`, `lost-worker-redispatches` | per issue | the issue's repository |
 | `concurrent-workers`, `concurrent-open-prs`, `new-issue-budget`, `auto-request-settle` | per run | the manifest's repository; an explicit issue set contained in one repository uses that repository; a multi-repo set with no manifest uses the built-ins |
 
@@ -595,7 +596,7 @@ A worker never supervises its own PR, and a Dynamic Workflow never supervises an
 **What this run passes `supervise-prs`:**
 
 - **PR set**: every PR this run tracks, with its canonical issue URL;
-- **budgets**: `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles` and `repair-model-escalations` per PR, as this run's preflight resolved them (*Policy keys and defaults*), with their source;
+- **budgets**: `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles` and `repair-model-escalations` per PR, as this run's preflight resolved them (*Policy keys and defaults*), with their source — and `auto-resolve-comments` per PR, the same way;
 - **counters**: 0 for a PR this run created; otherwise the counters in `supervise-prs`'s last returned record for that PR, which the state block carries every cycle;
 - **posting-identity map**: the run's whole map — and this run takes back the map it returns and merges it, as it does a worker's (`references/posting-identity.md`);
 - **review routing and trigger state**: as each worker's `create-pr` left it, and `deferred` where this run deferred review (*Implementation worker contract*); a convention performed by dispatched review sessions is passed as performed by the `caller` (*Review and repair sessions*);

@@ -74,7 +74,9 @@ API `html_url` as the orchestrator recorded it and never rebuilt
 budget was spent, and that the next step is to apply it or lift the budget. A
 **question** thread is not an action point of its own: the walkthrough reads it from
 the question item the run recorded, which is what spares the owner opening the
-thread at all.
+thread at all. **An approval-pending reply is not one either**: its fix is pushed, and
+the walkthrough reads it from the item the run recorded
+(`references/review-feedback.md`, *Approval-pending replies*).
 
 **The test is the absence of a dispatch, not the reservation.** One reserved thread has
 one: a thread carrying a **recorded code-changing ruling whose change has not been pushed**
