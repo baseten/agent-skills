@@ -321,7 +321,7 @@ The argument for `finding-repair-cycles` being its own counter moved to `rules/r
 
 ## Outcomes
 
-**Why a late coverage retrofit takes the body-edit rule (#176):** editing a published, read body in place is what protected rule 6 forbids. Where the rule bars the edit, the drift reported with its replacement holds the PR at the gate instead.
+**Why a late coverage retrofit takes the body-edit rule (#176):** editing a published, read body in place is what protected rule 6 forbids. Where the rule bars the edit, the drift is reported for the owner with its replacement body instead.
 
 **Why the verified-availability record must never become a skip:** the worker's dependency precondition runs on every dispatch regardless, and it would be a contradiction to build a record whose purpose was to let a caller skip the very check that produced it. The record informs restarts; it exempts nothing.
 

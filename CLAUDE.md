@@ -29,9 +29,10 @@ weaken or narrow one.** Each line indexes the rule's home, which governs, and it
 evals (`<skill>#<id>`).
 
 1. **A write nobody read carries the footer; a run never answers a person's question or
-   roots a thread (a dispatched review session's own review excepted), and holds its
-   reply to, and resolution of, a thread a person is in for approval unless the
-   repository's own config turns that off.**
+   roots a thread (a dispatched review session's own review excepted, its inline comments
+   belonging to that review's footered body), and holds its reply to, and resolution
+   of, a thread a person is in for approval unless the repository's own config turns
+   that off.**
    `rules/authored-write-form.md`, `rules/review-feedback.md`; `resolve-pr-comment`,
    *Replies held for approval*. create-pr#6, resolve-pr-comment#0 #18 #21 #23 #26
    #28 #41, review-docs#11, settle-outstanding-decisions#11 #12, backlog-orchestrator#72.
