@@ -52,7 +52,9 @@ The mistake: under the ruling's own semantics the footer says *the posted text w
 
 **Why a held reply skips the qualification bar, and why its rejection writes nothing (#174, owner's ruling 2026-10-01):** the bar keeps homework away from the owner, but a held reply is not homework. The fix is done; the one thing the run cannot do is speak for the owner to a person. So it is asked as an approval. An approved reply is the reply itself, with no ruling record around it. It is one line the owner read in full, so the approval test leaves it without a footer. On a rejection the owner said to post nothing. A rejected-draft record would be a post, so the thread is left as it is for them.
 
-**Why a mixed thread's held reply is asked with or after its question:** the thread resolves only once both are settled (`resolve-pr-comment`, *A comment can want both*). Asked first, in an earlier chunk, the reply would be posted while the question was still open and nothing later would resolve the thread; asked with or after it, the walkthrough knows both answers when it acts.
+**Why a mixed thread's held reply is asked after its question, and posted only once the reservation ends (blind audit of #175):** an approved footerless reply in a reserved thread reads as the owner's answer to the question. Asked after the ruling, the walkthrough knows whether the reservation ended before it posts anything.
+
+**Why the caller passes the held replies (blind audit of #175):** a held reply is run state, so the walkthrough has no durable site to discover it from. `settle-and-merge` hands over what the supervising run recorded; a walkthrough the owner invokes later has none, and the run's closing output listed them for the owner instead.
 
 ## Output
 

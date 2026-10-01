@@ -115,6 +115,17 @@
         "the answer grounds the permission in the footer marking unread text",
         "the edit is reported at settle with the PR, what changed and why"
       ]
+    },
+    {
+      "id": 10,
+      "name": "the-closing-output-lists-unposted-held-replies",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a run settles on a scheduled wake with nobody present, so the walkthrough declines. The caller passed two approval-pending reply items, each a person's thread with its fix pushed and its one-line held reply. Questions: (a) does the closing output mention them, and with what? (b) can the owner recover them later by running settle-outstanding-decisions?",
+      "expected_output": "(a) Yes: it lists every held reply not yet posted — thread URL, fix SHA and the one-line text — separately from the decisions, so the owner can post it themselves. (b) No. A held reply is run state and is dropped when the run ends; no later walkthrough recovers it, and the closing output must not say otherwise. The threads stay open with their fixes pushed.",
+      "assertions": [
+        "the closing output lists each unposted held reply with its thread URL, fix SHA and text",
+        "the answer says a later settle-outstanding-decisions run cannot recover them",
+        "the answer does not claim the walkthrough is idempotent over held replies"
+      ]
     }
   ]
 }

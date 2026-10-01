@@ -1,13 +1,13 @@
 ---
 name: resolve-pr-comment
-description: Apply an appropriate fix as a new commit per thread on the PR, push it, reply to the original review comment with the commit SHA, and resolve the conversation thread in GitHub — holding the reply and the resolution for approval where a person rooted the thread, unless the repository set `auto-resolve-comments`.
+description: Apply an appropriate fix as a new commit per thread on the PR, push it, reply to the original review comment with the commit SHA, and resolve the conversation thread in GitHub — holding the reply and the resolution for approval where a person is in the thread, unless the repository set `auto-resolve-comments`.
 ---
 
 # Resolve PR Comment(s)
 
 You're helping resolve one or more GitHub PR review comments by applying the
 appropriate fix, committing and pushing it, replying to each comment with the
-commit SHA, and resolving each conversation thread — or, where a person rooted
+commit SHA, and resolving each conversation thread — or, where a person is in
 the thread, holding that reply and resolution for approval (*Replies held for
 approval*).
 
@@ -202,55 +202,67 @@ what changed and stops there; the question is escalated with its draft
 
 #### Replies held for approval
 
-**The thread's root author decides whether the reply posts now** — the root
-comment's `user.type` in the REST API, its author's `__typename` in the GraphQL
-query of step 1:
+**Who is in the thread decides whether the reply posts now** — each comment's
+`user.type` in the REST API, its author's `__typename` in the GraphQL query of
+step 1. **A person is in the thread** where any comment in it, this workflow's
+own writes aside, has an author that is not a `Bot`:
 
-| root author | `auto-resolve-comments` | the reply and step 6 |
+| a person in the thread | `auto-resolve-comments` | the reply and step 6 |
 | --- | --- | --- |
-| `Bot` — a GitHub App or bot account | either | posted now, footer per the approval test, then resolved |
-| anything else | `true` | the same |
-| anything else | `false`, the default | **held**: drafted, not posted; the thread left open |
+| no — every other author is a `Bot` | either | posted now, footer per the approval test, then resolved |
+| yes | `true` | the same |
+| yes | `false`, the default | **held**: written, not posted; the thread left open |
 
+So a person's follow-up inside a bot's thread holds the reply, and so does a
+bot's follow-up in a thread a person is in: the person is still being answered.
 **Anything not `Bot` is a person**, a machine user posting from an ordinary
 account included: misreading in that direction only holds a reply, the safe
 failure. **This decides nothing about the fix.** What is repaired stays the kind
 test's alone (`references/review-feedback.md`, *What may be auto-fixed*) — the
-human's nit is still fixed and pushed; only the reply and the resolution wait.
+person's nit is still fixed and pushed; only the reply and the resolution wait.
 It is not the removed author gate come back.
 
 **The key** comes from the caller, which resolved it for this PR (`repair-pr`
 passes it). A person invoking this skill with none passed resolves it as a run
-start does (`references/agent-policy.md`, *Resolution*); an unattended caller
-that passed none gets `false`.
+start does (`references/agent-policy.md`, *Resolution*). **Only the repository's
+file can turn it on** (*Precedence* there): an invocation argument of `true`
+with no such file still holds, and a caller that passed none, or a value that is
+not a boolean, gets `false`.
 
-A held reply is the same one-line text, with no footer in the draft. Then:
+The **held reply** is the same one-line text, written with no footer. Then:
 
-- **attended** — show the person the draft and ask them to approve, edit or
-  reject it, in this session;
+- **attended** — show the person the held reply and ask them to approve, edit
+  or reject it, in this session;
 - **unattended** — return it as an **approval-pending reply item**: the
-  thread's API `html_url` (*What a question item must contain*, row 1), the root
-  author, the fix SHA, and the drafted reply. It is not a `NEEDS_USER` item —
-  nothing is undecided — and the supervising run reports it and holds the merge
-  gate on it (`references/review-feedback.md`, *Approval-pending replies*);
+  thread's API `html_url` (*What a question item must contain*, row 1), the
+  authors that put a person in the thread, the fix SHA, and the held reply. It is
+  not a `NEEDS_USER` item — nothing is undecided — and the supervising run
+  reports it and holds the merge gate on it (`references/review-feedback.md`,
+  *Approval-pending replies*, which also says the hold ends with the run);
   `settle-outstanding-decisions` puts it to the owner.
 
 **Approved or edited → post that text with no footer**, the approval test
-answering Yes, **then resolve** (step 6). **Rejected → post nothing and resolve
-nothing**: the fix stays pushed and the thread stays open for the owner.
+answering Yes, record the reply's write id (`references/posting-identity.md`:
+own writes are known by id), **then resolve** (step 6) at once. **Rejected →
+post nothing and resolve nothing**: the fix stays pushed and the thread stays
+open for the owner. **The owner replied in the thread themselves after the fix**
+→ the hold has ended: post nothing, resolve nothing, and report that they did.
 
-**A mixed thread's work-done reply is held the same way**, and approving it
-posts it without resolving (*A comment can want both* says when that thread
-resolves).
+**A mixed thread's work-done reply is held the same way, and is not posted while
+its question is reserved** (*A comment can want both*).
 
-A held thread re-dispatched after its record was lost, whose change is already
-on the head, is not fixed again: draft its reply naming the commit that made it,
-and hold it as before.
+**A held thread re-dispatched after its record was lost, whose change is already
+on the head, is never fixed again** — in every mode, classify-only included, and
+whatever the budget: it is not a deferred repair and not a budget `NEEDS_USER`
+item, since the work is done. Write its reply naming the commit that made the
+change and decide it by the table above, so a person's thread holds it again
+(*Classify-only invocations*, last row, for that mode).
 
 ### 6. Resolve the conversation thread
 
 **Resolve only a thread whose reply step 5 posted** — never one whose reply is
-held, until that reply is approved and posted.
+held, until that reply is approved and posted, and never one the owner answered
+themselves.
 
 In a remote/web session, use `mcp__github__resolve_review_thread` with the
 resolved `owner`/`repo` and the `threadId` (node ID) from step 1's
@@ -337,7 +349,8 @@ whenever its remaining repair budget is zero.
 
 In that mode **steps 3-6 of the workflow do not run**: make no correction, run
 no verification, commit nothing, push nothing, reply to nothing and resolve
-nothing. Return every supplied thread as its classification and nothing else:
+nothing. Return every supplied thread as its classification and nothing else —
+first checking the head for a change already made, which the last row covers:
 
 | Classification | Returned as |
 | --- | --- |
@@ -345,6 +358,7 @@ nothing. Return every supplied thread as its classification and nothing else:
 | Wants an answer | A `NEEDS_USER` item with its draft reply, exactly as unattended |
 | Wants nothing | A no-action entry, exactly as unattended |
 | Wants both (*A comment can want both*) | Both entries for the one thread — the change unapplied as a deferred repair, and the question as a `NEEDS_USER` item with its draft. The thread is handled only once the caller has recorded both |
+| Wants a code change **already on the head** — a held thread re-dispatched after its record was lost | **Never a deferred repair or a budget `NEEDS_USER` item**: the work is done. An approval-pending reply item naming the commit that made the change, held whoever is in the thread, since this mode posts nothing (*Replies held for approval*). A question it also carries comes back as above |
 
 **The mode has to be explicit, because this skill's default workflow pushes.**
 A caller that wants classification without repair and does not say so gets the
@@ -515,7 +529,7 @@ from contradicting the modes above:
 | --- | --- |
 | Classify-only | A question item with its draft, returned alongside the deferred repair as the second of two entries for the one thread. Nothing is posted at all |
 | Attended | Not answered in the thread. The draft goes to the person who invoked this skill, in this session's output; an answerable-from-work draft they may post as themselves, a decision-only one they decide first (*Handling queries*). The fix is pushed and reported as the fix |
-| Unattended (*Unattended callers*) | Not answered in the thread. Return the question as a `NEEDS_USER` item with its draft, and reply only to report what changed — a statement about work done, never written as though it answered the question, and held where a person rooted the thread (*Replies held for approval*) |
+| Unattended (*Unattended callers*) | Not answered in the thread. Return the question as a `NEEDS_USER` item with its draft, and reply only to report what changed — a statement about work done, never written as though it answered the question, and held where a person is in the thread (*Replies held for approval*), so not posted while the question is reserved |
 
 **Attended is not an exception here, and this section does not make one**: a
 person being present makes handing the draft over cheap, not posting it safe
@@ -528,15 +542,14 @@ user's; unattended, the thread is reserved and a reserved thread is never
 resolved; classify-only resolves nothing at all. So a mixed comment never closes
 on a pushed fix, whichever mode handled it.
 
-**Where a person rooted it, the thread waits on two things.** The question stays
-reserved as `NEEDS_USER`, and the work-done reply is held for approval like any
-other (*Replies held for approval*) — not posted until approved, and approving it
-posts it and resolves nothing. **The thread is resolved only once both are
-settled**: the reply approved and posted, and the reservation ended
-(`references/review-feedback.md`, *Reserved for the owner*). This skill never
-sees both settle, so it never resolves such a thread; `settle-outstanding-decisions`,
-*Held replies*, resolves it where both settle there, and otherwise it is left open
-for the owner.
+**Where a person is in it, the thread waits on two things.** The question stays
+reserved as `NEEDS_USER`, and the work-done reply is held (*Replies held for
+approval*). **The held reply is never offered or posted while the question is
+reserved**: an approved footerless reply sitting in a reserved thread would read
+as the owner's answer to it. This skill returns before the reservation can end,
+so it neither offers nor posts that reply and never resolves the thread;
+`settle-outstanding-decisions`, *Held replies*, asks it only after the question
+is ruled and posts it only once the reservation has ended.
 
 Forcing it into one classification fails in a different way each direction, and
 the repairable direction fails silently:
@@ -598,6 +611,7 @@ After completing all steps, summarize:
   were held
 - **Every approval-pending reply item**, one entry each, carrying what
   *Replies held for approval* lists — attended, with the person's verdict on it
+  and the write id of any reply posted
 - **For each claim about existing code carried in a reply, an escalation draft or
   a commit message, the artifact read to settle it** — or that it went out marked
   unverified, with what would settle it. The reply carries the claim and never

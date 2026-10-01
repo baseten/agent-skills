@@ -30,9 +30,10 @@ evals (`<skill>#<id>`).
 
 1. **A write nobody read carries the footer; a run never answers a person's question or
    roots a thread, and holds its reply to a person's thread for approval unless the
-   repository opted out.** `rules/authored-write-form.md`, `rules/review-feedback.md`;
-   `resolve-pr-comment`, *Replies held for approval*. create-pr#6, resolve-pr-comment#0
-   #18 #21 #23, review-docs#11, settle-outstanding-decisions#11.
+   repository's own config turns that off.** `rules/authored-write-form.md`,
+   `rules/review-feedback.md`; `resolve-pr-comment`, *Replies held for approval*.
+   create-pr#6, resolve-pr-comment#0 #18 #21 #23 #26, review-docs#11,
+   settle-outstanding-decisions#11 #12.
 2. **Identity is observed authorship; own writes are known by id or footer, never content.**
    `rules/posting-identity.md`; `swarm`, *Blocked workers*. backlog-orchestrator#5 #58.
 3. **Only an owner reply choosing an offered option releases a hold or dispatch.**

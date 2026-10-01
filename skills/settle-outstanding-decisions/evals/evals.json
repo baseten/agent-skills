@@ -153,15 +153,28 @@
     {
       "id": 11,
       "name": "an-approved-held-reply-is-posted-without-footer-then-resolved",
-      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the owner invoked you live after a run settled. The run's report carries an approval-pending reply item: a human reviewer's thread on PR 52 of acme/api, its fix pushed as 2d3e4f5, with the held reply 'Fixed in 2d3e4f5 — renamed tmp to pending_batch.' A second item is the same shape on another thread, and that thread also carries a reserved question nobody has answered. Questions: (a) does the first item qualify, and how do you ask it? (b) the owner approves it unchanged — what is posted, does it carry the footer or an owner-ruling marker, and what then happens to the thread? (c) the owner approves the second one too — is that thread resolved? (d) had the owner rejected the first, what would you write?",
-      "expected_output": "(a) It qualifies: the fix is pushed, and the owner's approval of a reply under their name is the outstanding thing. Ask it as an approval, showing the reply exactly as it will be posted, its thread URL and the fix SHA, with approve, edit or reject. It is merge-gating. (b) The reply text exactly as approved, as a reply on the thread, with no attribution footer, because the owner read this exact text, and with no owner-ruling marker or question wrapper: it is the reply, not a ruling record. Then resolve the thread. (c) The approved reply is posted the same way, but the thread is not resolved: its reserved question is still unanswered and keeps it open. (d) Nothing: no reply, no rejected-draft record, no resolution. The thread stays open for the owner and the item keeps holding the merge gate.",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a run's settled step (settle-and-merge, step 4) invoked you with the owner present and passed one approval-pending reply item: a human reviewer's thread on PR 52 of acme/api, its fix pushed as 2d3e4f5, with the held reply 'Fixed in 2d3e4f5 — renamed tmp to pending_batch.' Nobody else has posted in the thread since. Questions: (a) does it qualify, and how do you ask it? (b) the owner approves it unchanged — what is posted, does it carry the footer or an owner-ruling marker, what do you record, and what then happens to the thread? (c) had the owner rejected it, what would you write?",
+      "expected_output": "(a) It qualifies: the fix is pushed, and the owner's approval of a reply under their name is the outstanding thing. Ask it as an approval, showing the held reply exactly as it will be posted, its thread URL and the fix SHA, with approve, edit or reject. It is merge-gating. (b) The reply text exactly as approved, as a reply on the thread, with no attribution footer, because the owner read this exact text, and with no owner-ruling marker or question wrapper: it is the reply, not a ruling record. Record its write id in the output, then resolve the thread at once. (c) Nothing: no reply, no rejected-draft record, no resolution. The thread stays open for the owner and the item keeps holding the merge gate.",
       "assertions": [
         "the held reply is asked as an approval showing the exact text",
         "the approved reply is posted without the attribution footer",
         "the approved reply is posted without a ruling-record wrapper",
-        "the thread is resolved after posting when it carries no unanswered reserved question",
-        "a thread that also carries an unanswered reserved question is not resolved",
+        "the posted reply's write id is recorded",
+        "the thread is resolved straight after posting",
         "a rejection writes nothing at all and resolves nothing"
+      ],
+      "files": []
+    },
+    {
+      "id": 12,
+      "name": "a-mixed-threads-held-reply-waits-for-its-question",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: settle-and-merge invoked you with the owner present. One thread on PR 52 of acme/api carries two items: a reserved question ('why not reuse the shared retry helper?') with an answerable-from-work draft, and an approval-pending reply item for the null guard pushed in the same thread as 8b9c0d1. Questions: (a) in which order do you ask them, and may they share a chunk? (b) the owner approves the drafted answer, which needs no code change — when may the held reply be posted, and is the thread resolved? (c) had the owner instead ruled that the helper must be reused, a code change, what happens to the held reply?",
+      "expected_output": "(a) The question first; the held reply only after the question is ruled, in a later chunk. An approved footerless reply in a reserved thread would read as the owner's answer to the question, so it is never offered while the reservation stands. (b) Once the ruling is recorded and needs no code change, the reservation has ended; then ask the held reply, post it on approval with no footer, record its write id, and resolve the thread. (c) The reservation does not end here, since the ruling's code change has not been pushed, so the held reply is not posted. It goes into the report as held, with its text.",
+      "assertions": [
+        "the question is asked before the held reply, never in the same chunk",
+        "the held reply is not offered or posted while the question is reserved",
+        "after a ruling that ends the reservation the reply is posted and the thread resolved",
+        "a ruling needing a code change leaves the held reply unposted and reported as held"
       ],
       "files": []
     }

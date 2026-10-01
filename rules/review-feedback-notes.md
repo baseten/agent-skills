@@ -41,3 +41,8 @@ The owner asked for the rule scoped to human comments and, when the asymmetry wa
 
 **Why the approved reply is not new content:** the walkthrough posting it is this workflow's own write, exactly as a ruling is. Treating it as new content would re-admit the thread it has just finished.
 
+**Why a held reply does not outlive the run (owner's ruling on the blind audit of #175):** making the hold durable would need a trailer on every fix commit and a forge-derived definition every consumer reads. The owner declined that: a dropped hold costs one unposted line, and the fix is already pushed. So the run lists every held reply it did not post, with its text, and the owner posts it if they want to. Nothing claims a later walkthrough can find it.
+
+**Why the owner's own reply ends the hold (blind audit of #175):** an owner who answered the reviewer in the thread has said what they want said. Posting the held reply after it would be a second, footerless voice in the owner's name, and resolving would close a thread the owner chose to answer by hand.
+
+**Why `auto-resolve-comments` turns on only from the repository (blind audit of #175):** `true` posts under the owner's name in a person's thread with nobody having read the reply. That is the same kind of grant as a merge permission, so it takes the same exemption.

@@ -112,7 +112,7 @@
     {
       "id": 8,
       "name": "pushed-repair-replies-in-one-signed-line",
-      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review, budget remaining. One supplied thread, rooted by an automated reviewer (user.type Bot), asks for a bounds check; you make it, run the package's tests, and push `9f3e11c`. A second supplied thread asks why the retry budget is per-request. Questions: (a) what does the reply on the first thread look like? (b) what goes on the second thread? (c) which of this pass's writes carries the attribution footer?",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review, budget remaining. One supplied thread, opened by an automated reviewer (user.type Bot) and with no other author, asks for a bounds check; you make it, run the package's tests, and push `9f3e11c`. A second supplied thread asks why the retry budget is per-request. Questions: (a) what does the reply on the first thread look like? (b) what goes on the second thread? (c) which of this pass's writes carries the attribution footer?",
       "expected_output": "(a) One line naming the commit and what changed, plus the attribution footer. This pass is unattended by construction — nobody reads its replies before they are posted — so the form rule's approval test answers No for every write it makes, its own and any made through resolve-pr-comment. Not a restatement of the comment, a justification of the approach, or a list of the checks run. (b) Nothing. It is a question, so it is a NEEDS_USER item returned to the caller with all five required fields verbatim — the thread's API html_url forwarded as a string and never rebuilt, the ask quoted to at most two lines, the paste-ready recommended reply, the change SHA or an explicit none, and the one-clause reason it was not posted — and the thread is left open and unresolved. No mode answers a query in the thread. (c) Every authored write this pass makes, its own and any made through resolve-pr-comment. The draft is not one of them: it is material for a person, not a write, and it carries no footer.",
       "assertions": [
         "the reply on the repaired thread is one short line naming the SHA, plus the attribution footer",
@@ -157,6 +157,17 @@
         "the answer keeps the repository's required trailer as well",
         "the answer forwards the trailers to resolve-pr-comment for the commits it makes",
         "the answer explains the trailers let a supervisor rebuild its counts from the branch"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "a-person-in-the-thread-gets-nothing-posted",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review, budget remaining, auto-resolve-comments not passed. One supplied thread is a human reviewer's (user.type User) 'fix the off-by-one in the loop bound'. resolve-pr-comment makes the fix and you push 4d5e6f7. Questions: (a) what does this pass post on the thread? (b) what does your Output carry for it? (c) is the thread among the unresolved ones you count?",
+      "expected_output": "(a) Nothing. A person is in the thread and the key is false, so resolve-pr-comment holds the reply, and a reply it holds is not posted by this pass at all — no reply, and no footer, since there is no write. (b) The approval-pending reply item, forwarded verbatim with its html_url never rebuilt, the fix SHA and the held reply, for the caller to report and hold the merge gate on. (c) Yes: it is still open.",
+      "assertions": [
+        "nothing is posted on the thread",
+        "the approval-pending reply item is forwarded verbatim",
+        "the thread is counted as still unresolved"
       ]
     }
   ]

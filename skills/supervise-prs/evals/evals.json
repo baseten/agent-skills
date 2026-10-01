@@ -443,12 +443,12 @@
       "id": 35,
       "name": "an-approval-pending-thread-holds-the-merge-gate-not-finishing",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #60's CI is green, every required review round has completed, no pass is in flight, and its only open thread holds an approval-pending reply: the fix is pushed, the reply is held for the owner. Questions: (a) what outcome does PR #60 take? (b) does the thread count against the clean-review condition of the merge gate? (c) what does your report carry for it?",
-      "expected_output": "(a) finished: the thread is handled and nothing a pass within budget would do remains, so it does not stop the PR finishing. It is surfaced. (b) Yes. Open and its reply unposted, it fails the clean-review condition as any unresolved actionable thread does, so the gate does not open over it, though it does not block settlement. (c) The approval-pending reply verbatim — the thread's API html_url unrebuilt, the root author, the fix SHA and the drafted reply.",
+      "expected_output": "(a) finished: the thread is handled and nothing a pass within budget would do remains, so it does not stop the PR finishing. It is surfaced. (b) Yes. Open and its reply unposted, it fails the clean-review condition as any unresolved actionable thread does, so the gate does not open over it, though it does not block settlement. (c) The approval-pending reply verbatim — the thread's API html_url unrebuilt, the human author, the fix SHA and the held reply — the owner's only copy once the run ends.",
       "assertions": [
         "the PR is finished with the approval-pending thread surfaced",
         "the approval-pending thread holds the merge gate's clean-review condition",
         "the thread does not block finishing or settlement",
-        "the report carries the approval-pending reply verbatim with its html_url, root author, fix SHA and draft"
+        "the report carries the approval-pending reply verbatim with its html_url, the human author, fix SHA and held reply"
       ],
       "files": []
     }
