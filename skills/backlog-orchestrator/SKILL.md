@@ -104,7 +104,7 @@ A Dynamic Workflow is a JavaScript orchestration script that fans plain subagent
 
 When the user has opted into a workflow for this invocation (see Invocation), use it **only for the implementation fan-out**. **Before writing the workflow script, read `dynamic-workflow.md` (beside this file)**: it holds what each worker's prompt must encode, where the checkpoint push goes, and what the workflow may not do to the backlog or to state. **Size the fan-out to the `concurrent-open-prs` headroom at launch, never to the whole authorized set**: a running workflow cannot be reached or paused once the cap fills, so the cap bounds nothing that runs inside it.
 
-A Dynamic Workflow does **not** persist across a Claude Code session exiting (an interrupted one restarts fresh next session), accepts no external input mid-run, and cannot be woken later by a CI/webhook event. So never use a Dynamic Workflow for **long-lived PR/CI/review supervision**: it always stays with this skill's parent-level supervision loop (PR promotion and central supervision), whether or not the implementation fan-out ran inside a workflow.
+**Never use a Dynamic Workflow for long-lived PR/CI/review supervision** — *Parent supervision loop* states why, and that this holds after a workflow fan-out too.
 
 ## Fallback runtimes
 
@@ -123,7 +123,7 @@ Determine availability in preference order:
 3. **Subagents** — available when the session exposes the Agent tool. The normal runtime for a local session, and the normal fallback everywhere else.
 4. **Serialized execution in this session** — always available; correct when safe isolation cannot be provided.
 
-**That order trades invariant 5's enforcement for capacity and resilience.** Tier 2 buys a container per worker (see `swarm`, *Concurrency*), a worker that outlives this session's compaction, and per-container tool isolation; but the parent cannot reach a tier-2 worker's checkout, so the parent-side verification `swarm`, *Checkpoint compliance*, relies on is unavailable there, while on tier 3 it works. Report which tier was selected and, on tier 2, that invariant 5 rests on the worker's own pushes. Where an owner would rather have the guarantee than the capacity, tier 3 is the correct selection, and nothing here forbids it.
+**That order trades invariant 5's enforcement for capacity and resilience.** Tier 2 buys a container per worker (see `swarm`, *Concurrency*), a worker that outlives this session's compaction, and per-container tool isolation; but the parent cannot reach a tier-2 worker's checkout, so the parent-side verification `swarm`, *Checkpoint compliance*, relies on is unavailable there, while on tier 3 it works. Report which tier was selected and, on tier 2, which lever invariant 5 rests on. Where an owner would rather have the guarantee than the capacity, tier 3 is the correct selection, and nothing here forbids it.
 
 **This run's session-name prefix is `bo`** — `bo/<run-id>: <issue>`, for example
 `bo/a41f: api#348`. The convention and the reason the name is never what a sweep
@@ -138,7 +138,7 @@ Where a repository's review or repair is performed by dispatched sessions rather
 - **a review session** is dispatched per PR head with `source_revision` set to the PR branch and **no `outcome_branch`**: it reads, posts one PR review with event `COMMENT`, never `APPROVE` or `REQUEST_CHANGES` — a body carrying the attribution, plus inline comments each rooting a thread — or one ranked comment, per the repository's convention, and pushes nothing. That review is the one carve-out from the run never rooting a thread (`references/review-feedback.md`, *The thread-root test*). **Its dispatch adds one requirement to `swarm`'s report: name the id of the review posted and the ids of its inline comments.** Record them from that report, or from a read of the review by its id where the report names only that — never by footer or content. **This run dispatches it**: the convention is passed to `supervise-prs` as performed by the `caller`, and each round that skill reports owed, with its head, is a review session this run dispatches;
 - **a repair session** is dispatched with `outcome_branch` set to the PR branch, and may only add commits or merge commits, never rewrite history. `supervise-prs` dispatches it, through `swarm`.
 
-**Only the repair session spends `review-repair-cycles`**: a review session pushes nothing, and what a cycle is — and what becomes of findings raised after the budget is spent — is `supervise-prs`'s (*Budgets*). Review rounds draw on the provider's quota instead, which this key does not bound.
+**Only the repair session spends `review-repair-cycles`**, which counts pushed repair passes (*Default usage safeguards*), and a review session pushes nothing. Review rounds draw on the provider's quota instead, which this key does not bound.
 
 ### Bounded runtime probing
 
@@ -416,8 +416,6 @@ Workers must inherit/preload the active installed skills. A **worker** whose req
 
 # Durable remote state and restart
 
-**When this invocation resumes an earlier run of this orchestration — the same manifest re-invoked after an interruption or session exit, or a checkpoint a previous run returned — read `restart-resume.md` (beside this file) before the preflight, and follow its steps in order.**
-
 Classify in-scope issues from tracker + GitHub remote evidence:
 
 - `DONE`
@@ -446,7 +444,7 @@ A cloud worktree is ephemeral. Never claim restart safety for unpushed local cha
 
 ## Restart / resume
 
-**When this invocation resumes an earlier run of this orchestration — the same manifest re-invoked after an interruption or session exit, or a checkpoint a previous run returned — read `restart-resume.md` (beside this file) before the preflight, and follow its steps in order.**
+**A resumed run reads `restart-resume.md` (beside this file) before the preflight and follows its steps in order** — *Mandatory validation preflight* states what counts as resuming.
 
 A fresh orchestration session must be able to recover from tracker + GitHub remote state alone.
 
@@ -579,7 +577,7 @@ Treat all five as best-effort on the worker's part. They belong in every dispatc
 
 # PR promotion and central supervision
 
-**`supervise-prs` supervises every PR this run tracks, created or adopted, from inside this run's own loop** (Parent supervision loop). Platform surfacing and the check that the platform's own auto-merge is off, adoption, reading, CI attribution, review routing, repair passes and their budgets, review triggers and draft state are that skill's. This section says what this run passes it and what stays here. A Dynamic Workflow run does not itself persist or surface PR/CI/review events once it returns its fan-out results, so supervision is this run's from that moment.
+**`supervise-prs` supervises every PR this run tracks, created or adopted, from inside this run's own loop** (Parent supervision loop). Platform surfacing and the check that the platform's own auto-merge is off, adoption, reading, CI attribution, review routing, repair passes and their budgets, review triggers and draft state are that skill's. This section says what this run passes it and what stays here.
 
 Once an implementation worker reaches `PR_OPEN`, release that implementation worker — on a remote-session runtime that is an archive call, not merely ceasing to message it (see `swarm`, *Releasing a worker*). Long-lived PR supervision belongs to the parent/runtime orchestration layer.
 
@@ -593,7 +591,7 @@ parent  -> adopt the PR, arm its subscription, and own it from there:
            and repair only through a `repair-pr` pass `supervise-prs` dispatches
 ```
 
-A worker never supervises its own PR and is never resumed to repair it — only a dispatched `repair-pr` pass repairs (`references/platform-pr-posture.md`, *The override*) — and a Dynamic Workflow never supervises anything: it returns its fan-out results and supervision is the parent's from that moment (see Parent supervision loop).
+A worker never supervises its own PR and is never resumed to repair it — only a dispatched `repair-pr` pass repairs (`references/platform-pr-posture.md`, *The override*) — and a Dynamic Workflow never supervises anything (*Parent supervision loop*).
 
 **What this run passes `supervise-prs`:**
 
@@ -604,7 +602,7 @@ A worker never supervises its own PR and is never resumed to repair it — only 
 - **review routing and trigger state**: as each worker's `create-pr` left it, and `deferred` where this run deferred review (*Implementation worker contract*); a convention performed by dispatched review sessions is passed as performed by the `caller`, with the review and comment ids recorded there (*Review and repair sessions*);
 - **repair dispatch**: `swarm`, with whether a worker's return value reaches this run on the selected tier;
 - **head checks**: the chartered-scope check below;
-- **caller pushes**: every restack (*Stack mutation while PRs are open*) and renumber (`artifact-collisions.md`, *Performing the renumber*) this run pushed since the last pass, and every restack `merge-stack` performed with a gate-authorized merge, tagged by `references/mechanical-pushes.md`, with each branch this run is about to mutate held locked;
+- **caller pushes**: every restack (*Stack mutation while PRs are open*) and renumber (`artifact-collisions.md`, *Performing the renumber*) this run pushed since the last pass, and every restack `merge-stack` performed with a gate-authorized merge, tagged as *Mechanical pushes do not consume review* says, with each branch this run is about to mutate held locked;
 - **findings to repair**: settle findings (*A settle finding is the third repair shape*);
 - **releases**: each PR held by the chartered-scope check whose `DECISION` has been ruled, with the ruling;
 - **wait owner**: `caller`; **return on**: `every-pass`; **state emission**: `every-pass`, because the state block is emitted every cycle;
@@ -671,7 +669,7 @@ This run tags each restack and renumber it pushes by `references/mechanical-push
 
 # Parent supervision loop
 
-Long-lived PR/CI/review supervision always runs in this parent loop, never inside a Dynamic Workflow — a workflow run accepts no external input once started and does not persist past the current session. This holds even for a run whose implementation fan-out did execute inside a Dynamic Workflow: once it returns its worker results (PR URLs, branches, heads), supervision reverts to this loop.
+Long-lived PR/CI/review supervision always runs in this parent loop, never inside a Dynamic Workflow — a workflow does not persist across a Claude Code session exiting (an interrupted one restarts fresh next session), accepts no external input once started, and cannot be woken later by a CI/webhook event (`swarm`, *1. Runtime*: it returns results and supervises nothing). This holds even for a run whose implementation fan-out did execute inside a Dynamic Workflow: once it returns its worker results (PR URLs, branches, heads), supervision reverts to this loop.
 
 The main parent thread must remain active while mutating workers run or active PR events can lead to more in-scope work.
 
@@ -845,7 +843,7 @@ This contract assumes the parent can **see** a worker's checkout and **send it a
 | remote worker sessions | normally no, and never assumed — the session record hands out a repository and no path, and the container is not shared | whichever the recorded capability says — absent for every worker session the observed runtime was asked about; never assumed | only the worker's own pushes, via its dispatch prompt, plus `NEEDS_USER` |
 | Dynamic Workflow fan-out | no — its worktrees are not paths the parent was given | no — workflow agents accept no input mid-run | the script's structure (below) |
 
-So the remote-session tier sits beside the workflow tier for this section's purposes, not beside subagents. A remote worker session cannot be made to checkpoint structurally — nothing in the parent's reach interposes on it — so the honest guarantee is weaker: state that in the checkpoint output rather than reporting invariant 5 as enforced.
+So the remote-session tier sits beside the workflow tier for this section's purposes, not beside subagents: nothing in the parent's reach interposes on it, so the checkpoint output says which lever holds, as invariant 5 requires.
 
 Under a workflow, work is checkpointed only at stage boundaries; report invariant 5 as holding only there.
 
@@ -877,7 +875,7 @@ Do not blindly restack every descendant after every upstream push. Instead:
 - record stale ancestry;
 - restack before descendant diffs/CI/review become misleading;
 - ensure ancestry is correct before merge-ready state;
-- pass each restack push to `supervise-prs` as a caller push, tagged by `references/mechanical-pushes.md` — a restack-only push is mechanical: no review re-trigger, no cycle consumed;
+- pass each restack push to `supervise-prs` as a caller push, tagged as *Mechanical pushes do not consume review* says;
 - use `merge-stack` for authorized merge/restack operations;
 - hold the branch locked while restacking, so `supervise-prs` dispatches no repair to it meanwhile, and pass the new heads before its next *Pass*.
 

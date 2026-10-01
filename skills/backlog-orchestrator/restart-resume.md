@@ -1,6 +1,6 @@
 # backlog-orchestrator — restart and resume
 
-Part of `backlog-orchestrator`'s contract, read when an invocation resumes an earlier run of this orchestration, before the preflight. `SKILL.md` points here from *Mandatory validation preflight*, from the head of *Durable remote state and restart*, beside the classification a restart re-derives, and from *Restart / resume*, and cites this file from *Default usage safeguards* (resuming an adopted branch), *Arming the wait when nothing is in flight* and *Stop conditions* (a returned checkpoint), and *How a worker's report actually reaches you* (which records a restart adopts). Its rules assume `SKILL.md` has been read, and `SKILL.md` assumes them on a restart. The reasoning is in `NOTES.md`, under *Restart / resume*.
+Part of `backlog-orchestrator`'s contract, read when an invocation resumes an earlier run of this orchestration, before the preflight. `SKILL.md` points here from *Mandatory validation preflight* and from *Restart / resume*, beside the classification a restart re-derives, and cites this file from *Default usage safeguards* (resuming an adopted branch), *Arming the wait when nothing is in flight* and *Stop conditions* (a returned checkpoint), and *How a worker's report actually reaches you* (which records a restart adopts). Its rules assume `SKILL.md` has been read, and `SKILL.md` assumes them on a restart. The reasoning is in `NOTES.md`, under *Restart / resume*.
 
 ## The restart sequence
 
