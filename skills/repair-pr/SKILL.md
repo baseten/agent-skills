@@ -15,7 +15,7 @@ This file is the contract; the reasoning behind its rules lives in `NOTES.md` be
 - repair type: `ci`, `review` or `finding`;
 - the evidence matching the type, and evidence means the artifact rather than its absence (`references/absence-is-not-a-verdict.md`): exact failure logs/check summaries for `ci`; review thread(s) for `review`, each marked where its root is one the caller's own review session posted (`references/review-feedback.md`, *The thread-root test*), passed through to `resolve-pr-comment`; for `finding`, the settle-time finding verbatim — a `summarize-wave` `IN_FLIGHT_FIX` action point, or a recorded walkthrough ruling that requires this PR's code to change — with the durable site it lives at;
 - remaining repair-cycle budget;
-- for `review`, the PR's resolved `auto-resolve-comments` with its source, passed through to `resolve-pr-comment` (*Replies held for approval* there); absent → `false`;
+- for `review`, the PR's resolved `auto-resolve-comments` with its source, and the invoking user's account where the caller's map or invocation gives it (`references/posting-identity.md`, *The invoking user's account*), both passed through to `resolve-pr-comment` (*Replies held for approval* there); absent → `false`, and no account;
 - a pass id and model tier (`default` or `strongest`), supplied by the dispatching layer;
 - the PR's `minimize-ci-runs`, where the caller passes it on (*Recovery / checkpointing*); absent → off;
 - expected branch/base when supplied.

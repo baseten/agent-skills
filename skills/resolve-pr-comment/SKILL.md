@@ -216,11 +216,15 @@ what changed and stops there; the question is escalated with its draft
 step 1. **A person is in the thread** where any comment in it, this workflow's
 own writes and a root the caller marked as its own review session's
 (`references/review-feedback.md`, *The thread-root test*) aside, has an author
-that is not a `Bot`:
+that is not a `Bot` and is not the invoking user
+(`references/posting-identity.md`, *The invoking user's account*). **A thread
+whose only person is the invoking user takes the no-hold path**, whatever the
+key: they expect their own review fixed and resolved before a human reviewer
+sees the PR, and the footer still goes on what nobody read:
 
 | a person in the thread | `auto-resolve-comments` | the reply and step 6 |
 | --- | --- | --- |
-| no — every other author is a `Bot` | either | posted now, footer per the approval test, then resolved |
+| no — every other author is a `Bot` or the invoking user | either | posted now, footer per the approval test, then resolved |
 | yes | `true` | the same |
 | yes | `false`, the default | **held**: written, not posted; the thread left open |
 
@@ -230,8 +234,8 @@ bot's follow-up in a thread a person is in: the person is still being answered.
 is posted as if it answered the question and the thread is not resolved, whatever
 the key (*A comment can want both*).
 **Anything not `Bot` is a person**, a machine user posting from an ordinary
-account included: misreading in that direction only holds a reply, the safe
-failure. **This decides nothing about the fix.** What is repaired stays the kind
+account included, and so is every account where the invoking user's is not
+known: misreading in that direction only holds a reply, the safe failure. **This decides nothing about the fix.** What is repaired stays the kind
 test's alone (`references/review-feedback.md`, *What may be auto-fixed*) — the
 person's nit is still fixed and pushed; only the reply and the resolution wait.
 It is not the removed author gate come back.
@@ -526,6 +530,13 @@ owner has read it, marked as their ruling. That is the
 negation this rule is written on — not that the answer never reaches the thread,
 but that it never reaches it on this pass's authority.
 
+**The invoking user's question-shaped change request is not this branch**
+(`references/review-feedback.md`, *What may be auto-fixed*, owns the test): it is
+repaired, and its reply — posted or held by *Replies held for approval* — says
+what was done and anything learned, the one reply longer than step 5's line.
+It answers only the invoking user, who asked; a held reply, in a thread a third
+party is in, says only what changed.
+
 **An acknowledgement is not this branch.** "Thanks, this looks good" asks for no
 prose either, so it is **no-action** and never `NEEDS_USER` (*A comment that
 wants nothing*). Listing it here would make it a `NEEDS_USER` item, since that is
@@ -604,7 +615,10 @@ resolved by this skill.
 Prose is not the same as a request. "Thanks, this looks good", "nice catch",
 "agreed" — an acknowledgement asks for neither a diff nor an answer, so it is
 **no-action**: not repairable, and **not `NEEDS_USER`**. Return it as no-action,
-reply to nothing, resolve nothing, escalate nothing.
+reply to nothing, resolve nothing, escalate nothing. **So is a comment addressed
+to someone else** — "@colleague do you know whether…?", directed by mention to
+an account other than the run and the invoking user: it asks nothing of either,
+and it is handled, not unhandled feedback.
 
 Escalating one is a trap rather than a harmless over-report. It is neither an
 answerable-from-work question nor a choice only the owner can make, so

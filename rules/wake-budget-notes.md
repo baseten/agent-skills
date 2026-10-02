@@ -31,3 +31,7 @@ That seam produced four review findings in a row, each a real unbounded-watcher 
 The conflation underneath was between **how long to keep waking** and **when to wake next**. Only the second differs by cause. So the budget is now single — a wake is unproductive whether it read and found nothing or could not read at all, since both spend money to learn nothing — while the schedule stays per cause (the reset/`Retry-After` floor where the deferral supplied one, the doubling backoff otherwise — whichever is later; a deferral supplying neither bound sets no floor, per `rules/watch-and-read-notes.md`, *Why a floorless deferral is defined rather than left implicit*) and so does the report, because a watch that expired against a contended allowance and one that expired on a quiet PR call for different remedies.
 
 One consequence is worth stating: a wake that could not read never clears the count, because clearing requires an observed delta and it observed nothing. That is what makes the single counter bind on a permanently contended credential, and it is the property the second counter was invented to supply.
+
+## A watch kept past a settled result
+
+**Why a separate, shorter schedule (#183, owner's ruling):** after settle the run waits on a human reviewer, not on CI. Twenty minutes is too eager for that, and eight wakes is longer than anyone waits for a review to be noticed. About 50 minutes, then every 4 hours, three times, covers a working afternoon and stops. It is still a bounded budget with the same unproductive-wake rules, so protected rule 9 holds.

@@ -26,7 +26,7 @@ Added in #154, from a field report on an `implement-issue` run in a Claude Code 
 
 **Why the check-in prompt carries the override:** the check-in is the one wake whose text the run writes. After a compaction the session has only that prompt and whatever the platform's next wake says, and a posture read with no counter-statement beside it is the one the session follows.
 
-**Why the watch ends when the run returns:** the override lasts for the life of the run, and the posture does not. A subscription left armed after the skill returned — a single-issue run that finished with its PR still open, a checkpoint returned for a restart — keeps delivering wakes that carry the posture to a session that is no longer executing the skill, so the one instruction in view is the drive-to-green loop. Unsubscribing costs nothing a resumed run cannot rebuild, since adoption arms the watch again.
+**Why the watch ends when the run returns:** the override lasts for the life of the run, and the posture does not. A subscription left armed after the skill returned — a checkpoint returned for a restart, say — keeps delivering wakes that carry the posture to a session that is no longer executing the skill, so the one instruction in view is the drive-to-green loop. Unsubscribing costs nothing a resumed run cannot rebuild, since adoption arms the watch again.
 
 **Why a spent wake budget ends the subscription too (#155 review):** the budget ends the check-in, and the check-in's prompt was the one place the override was restated. A subscription outliving it keeps delivering the posture to a session with nothing beside it, which is the leak the rest of this section closes; so the stop report is treated as the run's return.
 
@@ -43,3 +43,5 @@ Added in #154, from a field report on an `implement-issue` run in a Claude Code 
 **Why the user is told:** the toggle is visible and says "Auto fix". A user who sees it on and a run that fixes nothing without a budget reads as a broken run; one sentence at subscription prevents the confusion, and the stop sentence answers the obvious next question — whether they can still stop it.
 
 **Why re-requesting a person's review is on the overridden list (#163):** the posture is what told a run to re-request review from the person whose changes-requested review it had fixed. The ban is stated once in the review-trigger rule; it is listed here because a session weighing the posture reads this list, not that rule.
+
+**Why a run that stays to watch after `PR_OPEN` keeps its watch (#183):** the rule ends the watch when the run returns because a session no longer following the skill must not get the posture's wakes. `implement-issue` now stays live after `PR_OPEN`: its check-in runs the skill's own cycle and carries the posture line, so the override still binds. Its watch ends on that skill's own ends, and the stop is reported.

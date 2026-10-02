@@ -68,7 +68,7 @@ On a terminal outcome (`BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`)
 
 # Phase 2 — single-issue PR supervision
 
-**This skill supervises its one PR through `supervise-prs`, and lets that skill run its own loop** — there is no parent here to own one, so arming the subscription and the bounded check-in is that loop's job (NOTES). Invoke it with:
+**This skill supervises its one PR through `supervise-prs`, and lets that skill run its own loop** — there is no parent here to own one, so arming the subscription and the bounded check-in is that loop's job (NOTES) until a `PR_OPEN`, after which this skill keeps the watch (Completion). Invoke it with:
 
 - **PR set**: the one PR, with its repository, branch/base, remote head and the canonical issue URL — adopted on the first pass, which issues any owed trigger and arms the subscription at once;
 - **budgets**: `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles` and `repair-model-escalations`, as *Policy and budgets* resolved them, each with its source;
@@ -88,7 +88,7 @@ Its outcome decides what happens next:
 
 | `supervise-prs` returns | this skill |
 | --- | --- |
-| `finished` | settles |
+| `finished` | settles, then keeps watching (Completion) |
 | `needs-user` | settles — every terminal outcome does. Its outcome is **the pass's own result where a pass produced it** — `FAILED` returns as `FAILED`, `NEEDS_USER` as `NEEDS_USER` — and `NEEDS_USER` otherwise |
 | `held`, `returned`, `unrepaired`, `merged` or `closed`, or `waiting` held for its base to move | settles — that hold is surfaced, not a stall for the monitoring cap |
 | `waiting` or `repairing` at the monitoring cap, or `cannot-watch` | returns the durable checkpoint (Completion) |
@@ -109,7 +109,8 @@ The run settles when its one issue reaches a terminal state: the PR `finished` a
 - **freshness checks**: none apply — this skill runs no integration check and has no authority to update a branch, so the stale-green re-check and the tool-bump rule do not apply;
 - **publish rule**: `hand back` — this skill runs its own evidence-freshness rule (Merge, *Evidence freshness across draft→ready*) on the PR returned as published, and settles again when that rule says;
 - **outstanding recovery refs**: none — this skill captures nothing, so `swarm`'s generic lifecycle decides;
-- **un-settling**: nothing to pass; on a hand-back, Un-settling below governs, with the re-entry rule.
+- **un-settling**: nothing to pass; on a hand-back, Un-settling below governs, with the re-entry rule;
+- **watch state**: where the run will return `PR_OPEN`, that the watch stays armed, what wakes it and how to stop it (Completion).
 
 Its steps, in order, as this skill reads them:
 
@@ -166,7 +167,8 @@ Where the repository opted in through `auto-merge`, evaluate **invariant 12's ga
 
 - Return `PR_OPEN`/healthy when the PR is implemented, correctly linked, and has no known CI/review item a remaining budget could repair — a thread reserved for the owner, deferred repairs included, or holding an approval-pending reply, does not stop `PR_OPEN`; it holds the merge gate — after Settle, whose summary and walkthrough are the gate's own inputs.
 - Return `MERGED` where the gate's merge completed.
-- With persistent monitoring, `supervise-prs`'s loop continues until the PR is finished or terminal, the user stops it, its wake budget is spent, or the monitoring cap elapses. **A user stop unsubscribes the PR and cancels the check-in** (`references/platform-pr-posture.md`, *A user stop still stops*), then returns the durable checkpoint. **Every return of this skill ends the watch** — the PR unsubscribed and the check-in cancelled, whatever the outcome (*The watch ends with the run, not after it*, there); `supervise-prs` handing back to Settle does not.
+- **Settling is not the end of the watch.** With persistent monitoring, the watch ends only on: the PR merged or closed; `BLOCKED`, `BLOCKED_EXTERNAL`, `FAILED` or `NEEDS_USER`; a user stop; the monitoring cap; or a spent wake budget. Then unsubscribe the PR and cancel the check-in (`references/platform-pr-posture.md`, *The watch ends with the run, not after it*); a user stop does so and returns the durable checkpoint (*A user stop still stops*, there). `supervise-prs` handing back to Settle ends nothing.
+- **`PR_OPEN` returns with the watch still armed**: a `finished` PR awaiting a human review or approval is `waiting` for the watch (`supervise-prs`, *Outcomes*). Keep the subscription, and replace the check-in with the bounded cadence `references/wake-budget.md`, *A watch kept past a settled result*, sets. Each check-in runs one `supervise-prs` *Pass* with every Phase 2 input but `wait owner` `caller` and `return on` `every-pass`, its prompt carrying them, the count and the posture line naming this skill. **A human review or comment after settle re-enters supervision**: invoke Phase 2 again for its review repair, then settle again from step 1 on `finished`.
 - Where it returns `cannot-watch`, or stops with the PR still waiting, return a durable checkpoint — never pretend background monitoring continues.
 - Return `NEEDS_USER` with exact PR/issue URLs, the remaining failure, attempts performed, and the recommended next action. **A reserved thread is not a remaining failure** — a comment never yields this outcome (`supervise-prs`, *Outcomes*); it is reported and holds the merge gate.
 
@@ -182,7 +184,7 @@ Return:
 - issue linkage verified, and the form emitted — closing keyword, or non-closing `Part of:` because a coverage finding was reported;
 - **any design finding core returned in place of a re-siting**, forwarded whole — the value, the objecting call sites and where it belongs; a caller that does not carry it is the only reader it would have had;
 - implementation attempts used, and **`supervise-prs`'s report for the PR** (`supervise-prs`, *Report*) — review rounds and CI, review and finding repair cycles against their caps, strongest-model rounds with the locus evidence for each, every review thread reserved for the owner per item kind and every approval-pending reply, final CI and review state, and draft state as created and current with any transition observed and who performed it (a ready-to-draft transition is never this run's);
-- **the supervision's provenance**: that the platform's PR posture was overridden, on the authority of this invocation as the user's instruction; what woke the run — subscription events by kind, the check-in, or both; the current check-in's id and next firing time, or that none is armed and why; and the toggle line for the PR — turned on by this run's subscription at a time and unsubscribed at a time, or still subscribed and why — never a claim that unsubscribing turned it off, and, where that effect is unknown, the instruction to switch it off by hand;
+- **the supervision's provenance**: that the platform's PR posture was overridden, on the authority of this invocation as the user's instruction; what woke the run — subscription events by kind, the check-in, or both; the current check-in's id and next firing time, or that none is armed and why; **on `PR_OPEN`, that the watch is still armed, what wakes it — a human review or comment, a merge or close — and that telling the run to stop ends it**; and the toggle line for the PR — turned on by this run's subscription at a time and unsubscribed at a time, or still subscribed and why — never a claim that unsubscribing turned it off, and, where that effect is unknown, the instruction to switch it off by hand;
 - the resolved policy actually applied — budgets, `auto-merge`, `auto-resolve-comments`, `minimize-ci-runs` — each with its source (caller, repo config, built-in default), plus any policy file present but unhonourable (an unreadable file is authority the owner meant to grant and did not);
 - the merge, where one happened: the gate conditions it passed on, whether the PR was published from draft on the way, and the tracker reconciliation;
 - any edit to the published PR's body — what changed and why — or the drift left unedited, with its suggested replacement;

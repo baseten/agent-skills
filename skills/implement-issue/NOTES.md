@@ -95,3 +95,7 @@ Every "merge the returned identity entries into the map" step exists because a r
 ## Structured result
 
 The resolved policy is reported with sources because an owner should see the authority a run had before they see what it did with it — including a present-but-unhonourable policy file, since a file the run could not read is authority the owner meant to grant and did not. Dependency evidence is reported even on `PR_OPEN` for the reason under Phase 1: nothing else in a standalone run will surface a partial transport view.
+
+## Completion
+
+**Why `PR_OPEN` no longer ends the watch (#183, owner's ruling):** a standalone run settled at `finished` — CI green, the automated reviewer clean — and returned `PR_OPEN`, and "every return ends the watch" unsubscribed it. A human review arrived later and nothing saw it. `finished` answers whether the run can settle; it never answered whether anyone still has something to say. So settling and ending the watch are now separate: the watch ends on merged, closed, a terminal failure outcome, a user stop, the cap or its own budget. The post-settle cadence (`rules/wake-budget.md`, *A watch kept past a settled result*) is slower and shorter than the ordinary backoff because it waits on a person, and it stays bounded, which is protected rule 9. This is the same idea as `backlog-orchestrator`'s *Settled is a resting state, not an exit*, which already had it; the check-in running `supervise-prs`, *Pass*, mirrors that skill's settled wake rather than inventing a second mechanism.

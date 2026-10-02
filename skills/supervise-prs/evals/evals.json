@@ -368,14 +368,14 @@
     },
     {
       "id": 29,
-      "name": "a-trigger-read-back-with-an-added-footer-is-reported-not-reposted",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). At adoption of PR #110 you post the repository's review trigger, `@codex review`, through the GitHub MCP server. Reading the comment back, its body is the trigger followed by a blank line and \"Generated with an MCP client\" — a footer the server added. Two minutes later no review has appeared. What do you do now, and what would change your answer?",
-      "expected_output": "Report the trigger as possibly not fired, naming the transport, and post no later trigger through that transport. Do not re-post now: a second trigger on the same head is a second review request. First establish whether the repository also requests review when a PR is opened (a pull_request: opened workflow or the reviewer's configuration), and let the confirmation window run — a review arriving on the head answers it. Only if the window elapses with no review and nothing else requests one, reissue once through a different mechanism from the invoking user's account and read it back; if no mechanism posts the text alone, surface it as NEEDS_USER for that repository.",
+      "name": "a-trigger-read-back-with-an-added-footer-is-confirmed-by-a-run-not-reposted",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). At adoption of PR #110 you post the repository's review trigger, `@codex review`, through the GitHub MCP server. Reading the comment back, its body is the trigger followed by a blank line and \"Generated with an MCP client\" — a footer the server added. Two minutes later no review has appeared. What do you do now, what would confirm the trigger, and what would change your answer?",
+      "expected_output": "Record the pair as appending a footer on its map entry, and report the trigger as possibly not fired, naming the transport — but do not bar the pair on the read-back alone. Do not re-post now: a second trigger on the same head is a second review request. The trigger is confirmed once the reviewer's run is observed starting on the head (a review, its reply or reaction, or a check run). Establish whether the repository also requests review when a PR is opened, and let the confirmation window run. Only if the window elapses with no run and nothing else requests one, bar the pair and reissue once through a different mechanism from the invoking user's account, reading it back; if no mechanism posts the text alone, surface it as NEEDS_USER for that repository.",
       "assertions": [
-        "the answer reports the trigger as possibly not fired because of the added footer",
+        "the answer reports the trigger as possibly not fired because of the added footer, and records the transport as appending one",
+        "an observed run of the reviewer confirms the trigger; the read-back alone does not bar the pair",
         "the answer does not re-post the trigger immediately",
-        "the answer checks whether the repository also triggers review on pull_request opened before concluding failure",
-        "the answer allows at most one reissue, through a different mechanism, only after the window elapses with no review"
+        "the answer allows at most one reissue, through a different mechanism, only after the window elapses with no run"
       ],
       "files": []
     },
@@ -407,11 +407,11 @@
       "id": 32,
       "name": "the-watch-ends-with-the-run-and-a-composed-return-keeps-it",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two cases. (1) A user invoked you directly on PR #140 with wait owner self; #140 reaches finished and your loop's return on is met. (2) implement-issue invoked you on PR #141 with wait owner self; #141 reaches finished and you return to implement-issue, which will now settle. In each case, what happens to the PR's subscription and the check-in when you return, and who ends them?",
-      "expected_output": "(1) Invoked directly, this skill's return is the run's: unsubscribe #140 and cancel the check-in, since a subscription left armed would wake a session no longer following the skill with the posture as its only instruction. (2) A composed return does not end the run: return #141's subscription armed and report it; implement-issue ends the watch when it returns.",
+      "expected_output": "(1) Invoked directly, this skill's return is the run's: unsubscribe #140 and cancel the check-in, since a subscription left armed would wake a session no longer following the skill with the posture as its only instruction. (2) A composed return does not end the run: return #141's subscription armed and report it. finished is a settle verdict, not the end of the watch: implement-issue ends the watch when its run ends — merged, closed, a terminal failure outcome, a user stop, the cap or a spent wake budget — and keeps it armed past a PR_OPEN.",
       "assertions": [
         "case 1 unsubscribes and cancels the check-in on return",
         "case 2 returns the subscription armed and reports it",
-        "case 2 leaves ending the watch to implement-issue's own return"
+        "case 2 leaves ending the watch to implement-issue, which keeps it past a PR_OPEN"
       ],
       "files": []
     },
@@ -687,6 +687,31 @@
         "web-ci is dispatched",
         "api-ci is not dispatched",
         "the answer says dispatch ignores path filters, so the filters are applied against the PR's changed files"
+      ],
+      "files": []
+    },
+    {
+      "id": 55,
+      "name": "the-owners-own-rounds-spend-no-review-cycle",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #120 was passed review-repair-cycles 2, both already used on rounds from the automated reviewer. The invoking user, whose account the invocation named, now leaves three inline comments on the diff, each asking for a concrete rename. In the same poll the automated reviewer opens one new thread asking for a missing null guard. Question: what do you dispatch, does either pass spend a review cycle, and what does each repair?",
+      "expected_output": "Two passes. The invoking user's three threads go in a pass of their own, dispatched with budget remaining even though the review budget is spent: rounds triggered by the invoking user's own comments count no review-repair-cycles cycle, since they are paced by a person and answer only new content. That pass repairs the renames and counts nothing. The automated reviewer's thread goes in a separate pass that counts as before: with the budget spent, it is classify-only, repairs nothing, and the null guard comes back as a deferred-repair item under NO_CODE_CHANGE. The budget still bounds bot-driven rounds. A later rebuild from trailers would count the owner's pass too, the safe direction.",
+      "assertions": [
+        "the owner's threads are dispatched in their own pass and spend no review cycle",
+        "the owner's renames are repaired despite the spent budget",
+        "the bot's thread still draws on the spent budget and comes back as a deferred repair, not repaired",
+        "the answer keeps the budget binding on bot-driven rounds"
+      ],
+      "files": []
+    },
+    {
+      "id": 56,
+      "name": "a-footer-appending-transport-confirms-by-run-and-strips-before-a-body-edit",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your posting-identity map records the GitHub MCP server's pair as appending its own footer to every write. (a) You post the review trigger through it on PR #130; the read-back shows the trigger text plus the server's footer, and ninety seconds later the automated reviewer's check run starts on the head. Is the trigger confirmed? (b) Later, the PR still a draft, the settle's body reconcile edits the PR body through the same pair; the body currently ends with that server's footer. What do you write? (c) The owner approves a one-line held reply, which you post through the same pair. What do you report about its footer?",
+      "expected_output": "(a) Yes: through a transport that appends a footer, the trigger is confirmed once the reviewer's run is observed starting on the head, not barred by the read-back alone; the run started, so it is confirmed. (b) Strip the body's trailing footer before writing, so the transport's own appended footer does not double it. (c) The approved reply goes out without the run's own footer, but the transport appends one anyway, so report that the posted reply carries the transport's footer, never that it posted none.",
+      "assertions": [
+        "the trigger is confirmed by the observed run, not barred by the read-back",
+        "the body edit strips the trailing footer before writing so it does not double",
+        "the approved reply is reported as carrying the transport's footer"
       ],
       "files": []
     }

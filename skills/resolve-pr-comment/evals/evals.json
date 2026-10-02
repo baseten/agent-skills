@@ -521,6 +521,78 @@
         "the colleague's requested change is still fixed in (b)"
       ],
       "files": []
+    },
+    {
+      "id": 42,
+      "name": "an-owner-only-thread-is-posted-with-the-footer-and-resolved",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). An unattended repair pass invokes you with auto-resolve-comments false and the invoking user's account, owner-dev, passed through from the caller's map. The thread is rooted by owner-dev, a User, asking you to rename `tmp` to `retryDelay`; nobody else has commented in it. You fix it. Is the reply posted now or held, does it carry the footer, and is the thread resolved?",
+      "expected_output": "Posted now, with the attribution footer, and resolved. A thread whose only person is the invoking user takes the no-hold path whatever auto-resolve-comments says: owner-dev is not a person in the thread for the hold test. The footer stays because nobody read the reply text before it posted (the approval test).",
+      "assertions": [
+        "the reply is posted now, not held, despite auto-resolve-comments false",
+        "the reply carries the attribution footer",
+        "the thread is resolved"
+      ],
+      "files": []
+    },
+    {
+      "id": 43,
+      "name": "a-thread-the-owner-and-a-colleague-are-in-is-held",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). An unattended repair pass invokes you with auto-resolve-comments false and the invoking user's account, owner-dev, passed through from the caller's map. The thread is rooted by owner-dev asking for a rename; a colleague, sam, also a User, has replied '+1, and keep the old name as an alias'. You fix both. Is the reply posted now or held?",
+      "expected_output": "Held: written, not posted, and the thread left open. sam is a person other than the invoking user, so the hold applies whenever anyone else is in the thread. Both changes are still fixed and pushed; only the reply and the resolution wait. The held reply says only what changed.",
+      "assertions": [
+        "the reply is held because a colleague is in the thread",
+        "the thread is left open",
+        "the fixes are still pushed"
+      ],
+      "files": []
+    },
+    {
+      "id": 44,
+      "name": "a-comment-addressed-to-someone-else-is-no-action",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). An unattended repair pass invokes you with auto-resolve-comments false and the invoking user's account, owner-dev, passed through from the caller's map. In an owner-only thread, owner-dev's newest comment is '@sam do you know whether the billing service still reads this header?'. What do you do with it?",
+      "expected_output": "Nothing: a comment addressed by mention to someone other than the run and the invoking user is no-action. No reply, no resolve, no escalation; it is returned as a no-action entry, so it is handled and not unhandled feedback.",
+      "assertions": [
+        "no reply is posted",
+        "the thread is not resolved",
+        "it is returned as no-action, not NEEDS_USER and not unhandled"
+      ],
+      "files": []
+    },
+    {
+      "id": 45,
+      "name": "an-owners-question-shaped-change-request-is-fixed",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). An unattended repair pass invokes you with auto-resolve-comments false and the invoking user's account, owner-dev, passed through from the caller's map. owner-dev roots a thread on a test file: 'could we avoid vi.mock here? do any of these already exist as factories?'. Nobody else is in the thread. You find two of the three mocked objects already have factories in test/factories, and none for the third. What do you do, and what does the reply say?",
+      "expected_output": "It is repairable: the invoking user's question-shaped comment proposes a concrete change local to this PR, so make the change — use the two existing factories, add the third, drop vi.mock. The reply says what was done and what was learned, e.g. '2 of 3 factories existed; added the third', with the bare commit SHA and the footer. Owner-only, it is posted and the thread resolved.",
+      "assertions": [
+        "the change is made rather than reserved",
+        "the reply says what was done and what was learned",
+        "the reply is posted and the thread resolved, with the footer"
+      ],
+      "files": []
+    },
+    {
+      "id": 46,
+      "name": "a-third-partys-question-shaped-change-request-stays-reserved",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). An unattended repair pass invokes you with auto-resolve-comments false and the invoking user's account, owner-dev, passed through from the caller's map. A colleague, sam, roots a thread on a test file: 'could we avoid vi.mock here? do any of these already exist as factories?'. What do you do?",
+      "expected_output": "It is NEEDS_USER, reserved for the owner: from anyone but the invoking user, a question-shaped proposal asks whether, which is the owner's call. No change, no reply answering sam, the thread left open, returned as a question item with its draft.",
+      "assertions": [
+        "the thread is reserved as NEEDS_USER, not repaired",
+        "no reply answers the colleague",
+        "the thread is not resolved"
+      ],
+      "files": []
+    },
+    {
+      "id": 47,
+      "name": "an-owners-genuine-question-is-still-reserved",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). An unattended repair pass invokes you with auto-resolve-comments false and the invoking user's account, owner-dev, passed through from the caller's map. owner-dev roots a thread: 'why did you choose polling here instead of a webhook?'. Nobody else is in it. What do you do?",
+      "expected_output": "It is still NEEDS_USER. A genuine open question about intent, design or rationale is reserved whoever asks, the owner included: only the owner's question-shaped requests for a concrete change are repairable. Nothing is posted, the thread is not resolved, and it comes back as a question item with its draft.",
+      "assertions": [
+        "the owner's genuine question is reserved as NEEDS_USER",
+        "no answer is posted in the thread",
+        "the thread is not resolved"
+      ],
+      "files": []
     }
   ]
 }
