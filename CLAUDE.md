@@ -55,7 +55,8 @@ evals (`<skill>#<id>`).
 8. **Merges are opt-in, through the one gate, failing closed.** `settle-and-merge`, *The
    merge gate*; `rules/agent-policy.md`. backlog-orchestrator#0 #2. Under the opt-in
    `minimize-ci-runs`, which only the repository's file turns on, the stale-green
-   re-check narrows to file overlap (`settle-and-merge`, *Merge behavior*).
+   re-check narrows to file overlap (`settle-and-merge`, *Merge behavior*) and a
+   review round carries across mechanical pushes (`rules/ci-and-review-verdicts.md`).
    settle-and-merge#13 #14 #15 #16 #17, implement-issue#18.
 9. **Stranded work reaches a remote ref before any archive; permission holds name the
    literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked

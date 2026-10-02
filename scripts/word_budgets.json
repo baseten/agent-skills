@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 23609,
+      "budget": 23621,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -39,7 +39,7 @@
       "target": 3000
     },
     "skills/merge-stack/SKILL.md": {
-      "budget": 2283,
+      "budget": 2281,
       "target": 3000
     },
     "skills/normalize-github-dependencies/SKILL.md": {
@@ -71,7 +71,7 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 5065,
+      "budget": 5084,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
@@ -83,7 +83,7 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 5959,
+      "budget": 6005,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
@@ -111,7 +111,7 @@
       "target": 1500
     },
     "rules/agent-policy.md": {
-      "budget": 1704,
+      "budget": 1729,
       "target": 1500
     },
     "rules/authored-write-form.md": {

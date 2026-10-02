@@ -626,6 +626,30 @@
         "the resolving push carries the token and CI waits for quiescence on its head"
       ],
       "files": []
+    },
+    {
+      "id": 50,
+      "name": "a-round-with-new-threads-in-the-same-poll-holds-the-trigger",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #98 has `minimize-ci-runs` true and in effect. Its head carries [skip ci], has no run, and is up to date with main, and no pass is in flight. In one consolidated read, the expected review round on this head lands with two new change-request threads, and review budget remains. Question: what happens to review and to CI this pass?",
+      "expected_output": "Review runs first: the two threads are unhandled feedback, so one review repair pass is dispatched. Deferred CI is evaluated after review, and the PR is not quiescent: a pass is now in flight, and the feedback is unhandled. So CI is not triggered this pass. It waits for the repair head to become quiescent.",
+      "assertions": [
+        "a review repair pass is dispatched for the new threads",
+        "deferred CI is evaluated after review in the pass",
+        "CI is not triggered this pass"
+      ],
+      "files": []
+    },
+    {
+      "id": 51,
+      "name": "a-deferred-repair-does-not-hold-the-trigger",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #99 has `minimize-ci-runs` true and in effect. Its head carries [skip ci], has no run, and is up to date with main. review-repair-cycles is spent. The latest round's one change request came back from a classify-only pass as a deferred-repair item, recorded for the owner. No pass is in flight, no round is owed or deferred, and none is outstanding. Question: does CI run?",
+      "expected_output": "Yes, once, by workflow_dispatch, since the branch is current. A deferred repair is handled feedback under review-feedback's Unhandled feedback, so it does not hold the trigger. It is surfaced for the owner, and it still holds the merge gate.",
+      "assertions": [
+        "the deferred repair does not block the CI trigger",
+        "CI is triggered once",
+        "the deferred repair is still surfaced and holds the merge"
+      ],
+      "files": []
     }
   ]
 }

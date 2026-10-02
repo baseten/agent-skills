@@ -165,12 +165,12 @@
     {
       "id": 14,
       "name": "minimize-ci-runs-overlap-runs-ci-once-more-before-the-gate",
-      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #90, `auto-merge` on. The caller's freshness input says the stale-green re-check applies, with authority to update a branch, and its repository's checks run against the branch alone. CI went green on head h1 when the base was b1; main is now at b2. Between b1 and b2, main changed docs/a.md and src/y.ts. The PR changes src/y.ts and test/y.test.ts. It bumps no tool, and every other gate condition holds. The caller passed `minimize-ci-runs` on for #90, with effect in its repository. Question: does the existing green discharge the CI condition, and what do you do?",
-      "expected_output": "No. src/y.ts changed on the base since b1 and the PR changes it, so the green is stale. CI runs once more before the gate opens, by the branch update supervise-prs' Deferred CI names, which the caller authorized. Nothing merges on h1's green.",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #90, `auto-merge` on. The caller's freshness input says the stale-green re-check applies, with authority to update a branch, and its repository's checks run against the PR merged with its base. CI went green on head h1 when the base was b1; main is now at b2. Between b1 and b2, main changed docs/a.md and src/y.ts. The PR changes src/y.ts and test/y.test.ts. It bumps no tool, and every other gate condition holds. The caller passed `minimize-ci-runs` on for #90, with effect in its repository. Question: does the existing green discharge the CI condition, and what do you do?",
+      "expected_output": "No. src/y.ts changed on the base since b1 and the PR changes it, so the green is stale. CI runs once more before the gate opens, always by updating the branch from its base, under the caller's authority. The update's merge commit carries no token, so its run tests the merged tree. It is never a dispatch, which would check out the branch alone, even though the repository's checks run against the merge ref. Nothing merges on h1's green.",
       "assertions": [
         "the answer finds overlap on src/y.ts",
         "the green is treated as stale",
-        "CI runs once more, through the branch update, before the gate opens",
+        "CI runs once more through a branch update from the base, not a dispatch or a plain re-run",
         "the PR is not merged on the old green"
       ]
     },
