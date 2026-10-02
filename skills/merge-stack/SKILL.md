@@ -115,7 +115,7 @@ Also snapshot the current head SHA of every descendant before rewriting begins.
 
 Merge P through the available GitHub integration (`merge_pull_request` / equivalent) or `gh` when available.
 
-**Write the merge's commit message explicitly** wherever the method writes one: a squash or merge message never contains `[skip ci]`, `[ci skip]` or `skip-checks`, so CI on the base always runs after a merge. Never accept a default that concatenates the PR's commit messages, which carry the token where the PR's CI was deferred (`supervise-prs`, *Deferred CI*).
+**Write the merge's commit message explicitly** wherever the method writes one: a squash or merge message never contains `[skip ci]`, `[ci skip]` or `skip-checks`, so CI on the base always runs after a merge. Never accept a default that concatenates the PR's commit messages, which carry the token where the PR's CI was deferred (`supervise-prs`, *Deferred CI*). **Such a PR is never rebase-merged**: a squash or merge commit with that message, whatever method would otherwise apply.
 
 After GitHub confirms the merge:
 

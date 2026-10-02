@@ -17,7 +17,7 @@ This file is the contract. The reasoning behind each rule — incident history, 
 - optional authorization membership — the run's bounded authorized set, or a per-blocker in/out flag;
 - implementation-attempt budget;
 - draft/full PR preference when supplied;
-- `minimize-ci-runs` when the caller passes it on: every commit pushed to the issue branch while its PR is open carries `[skip ci]` in its message (`supervise-prs`, *Deferred CI*);
+- `minimize-ci-runs` when the caller passes it on: every commit pushed to the issue branch while its PR is open, and the head of the last push before the PR is created, carries `[skip ci]` in its message (`supervise-prs`, *Deferred CI*);
 - the caller's posting-identity map when one exists — every `(transport, credential)` entry with its per-kind observations, never a caller-selected pair. Invoked standalone with no map, every transport starts `unestablished` (degraded path per `references/posting-identity.md`).
 
 ## Hard constraints
@@ -189,7 +189,7 @@ different claim from `passed` and from `failed`, and forward it as that.
 Commit and push the implementation first, then run the locally runnable part of
 that set.
 
-**A mass failure across files with nothing in common is an environment hypothesis before it is a code one** — `references/ci-attribution.md`, *The environment hypothesis*, states the test, and it applies to your local run exactly as to a CI check: the tell is in the error rather than the assertion, so check the infrastructure precondition before reading a single test, and the signature raises the hypothesis without settling it, so confirm it independently — the service's own health, or whether the default branch fails the same way — where you can. **Where you cannot confirm it either way, stop and say so** — report the suspected environment failure with the error, its breadth, and what you could not check. Thrashing against a healthy codebase and returning a bare `FAILED` on one are the two outcomes this exists to prevent, and both look like a verdict. Fix in-scope failures within budget, committing each fix as it lands. Push the final implementation commit.
+**A mass failure across files with nothing in common is an environment hypothesis before it is a code one** — `references/ci-attribution.md`, *The environment hypothesis*, states the test, and it applies to your local run exactly as to a CI check: the tell is in the error rather than the assertion, so check the infrastructure precondition before reading a single test, and the signature raises the hypothesis without settling it, so confirm it independently — the service's own health, or whether the default branch fails the same way — where you can. **Where you cannot confirm it either way, stop and say so** — report the suspected environment failure with the error, its breadth, and what you could not check. Thrashing against a healthy codebase and returning a bare `FAILED` on one are the two outcomes this exists to prevent, and both look like a verdict. Fix in-scope failures within budget, committing each fix as it lands. Push the final implementation commit — carrying `[skip ci]` where `minimize-ci-runs` was passed on (*Inputs*).
 
 ## 6. Create and verify PR
 

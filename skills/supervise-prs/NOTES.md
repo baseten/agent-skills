@@ -54,9 +54,11 @@ Extracted in #144 from the three skills that each supervised PRs in their own wo
 
 **Why CI waits for a clean review and then runs once (#179, owner-approved spec):** orchestrated runs started 52 PR runs in one morning on one repository, about a month's allowance — every review-repair push ran CI, giving four to seven runs per PR, and merge-fix and update-branch pushes ran it again. Review does not need CI to have run, so under the opt-in every push this workflow makes carries `[skip ci]` and the run that matters is the one after review has nothing left to say. The trigger is a base update because its merge commit carries no token, and dispatch where the branch is already current; an empty commit or a close-and-reopen would put noise in the history or the timeline for a run the forge can be asked for directly.
 
+**Why the last push before the PR carries the token too (#181, coordinator's ruling):** the PR-opened event runs CI on whatever head the PR opens on, so without it every PR spent one run before review had said anything — the run the key exists to defer.
+
 **Why a skipped head is its own state:** a head with no run reads, to every existing rule, as an empty rollup — not green, and easy to misread as missing or as a failure to repair. Naming it stops a pass being dispatched against CI that was deliberately not run, and keeps the PR `waiting` rather than `finished`.
 
-**Why both forge properties are detected, and why the key then does nothing:** a forge that ignores the token runs CI on every push anyway, and one with no dispatch trigger leaves a current branch with no way to run CI at all — the key would then strand the PR. Neither is knowable from the provider's name (`rules/establish-do-not-assume.md`), so each is read or observed once per repository, and where either is missing the run reports it rather than half-applying the key.
+**Why the repository's properties are detected, and why the key then does nothing:** a forge that ignores the token runs CI on every push anyway, and one with no dispatch trigger leaves a current branch with no way to run CI at all — the key would then strand the PR. A rebase merge lands the PR's tokened commits on the base unchanged, so base CI would skip; where rebase is the only method allowed, no merge message can prevent that (#181, coordinator's ruling). None is knowable from the provider's name (`rules/establish-do-not-assume.md`), so each is read or observed once per repository, and where either is missing the run reports it rather than half-applying the key.
 
 ## Review feedback
 

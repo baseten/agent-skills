@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 23580,
+      "budget": 23584,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -27,19 +27,19 @@
       "target": 1500
     },
     "skills/create-pr/SKILL.md": {
-      "budget": 2032,
+      "budget": 2062,
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 4253,
+      "budget": 4272,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
-      "budget": 4769,
+      "budget": 4791,
       "target": 3000
     },
     "skills/merge-stack/SKILL.md": {
-      "budget": 2234,
+      "budget": 2253,
       "target": 3000
     },
     "skills/normalize-github-dependencies/SKILL.md": {
@@ -83,7 +83,7 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 5774,
+      "budget": 5852,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {

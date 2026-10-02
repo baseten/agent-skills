@@ -552,6 +552,30 @@
         "the report names each repository and which property is missing"
       ],
       "files": []
+    },
+    {
+      "id": 44,
+      "name": "the-pr-opens-on-a-tokened-head-and-no-ci-runs-until-the-trigger",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #86's repository resolved `minimize-ci-runs` true, and the key has effect there. The caller's preflight read a `workflow_dispatch` trigger and a squash-merge setting, and an earlier tokened push started no run. The worker's last push before creating the PR was head d4d4d4d, and the PR opened on it. You adopt the PR. Its review round 1 is pending, and no CI run exists on d4d4d4d. Questions: (a) what should d4d4d4d's commit message carry, and why? (b) how do you read CI at adoption? (c) when does CI first run on this PR?",
+      "expected_output": "(a) [skip ci]: under the key, the worker's last push before the PR is created carries the token, so the PR-opened event skips CI too. (b) CI deferred, not missing or red: no attribution, no cycle, no dispatch, and the PR is waiting. (c) Only when the latest automated round on the current head is clean. This skill then triggers CI once, by a base update or a dispatch.",
+      "assertions": [
+        "the pre-PR head carries [skip ci] so the PR-opened event runs no CI",
+        "CI at adoption is read as deferred, with no repair dispatched",
+        "no CI runs until the one trigger after a clean round"
+      ],
+      "files": []
+    },
+    {
+      "id": 45,
+      "name": "a-rebase-only-repository-gets-no-skip-tokens-and-says-so",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: `minimize-ci-runs` resolved true, from repo config, for PRs in repository C. Its CI workflow declares `workflow_dispatch`, and the forge honours [skip ci]. But the repository's settings allow only rebase merges; squash and merge commits are disabled. Questions: (a) do pushes to C's PRs carry [skip ci]? (b) how is CI run? (c) what does the report say?",
+      "expected_output": "(a) No. A rebase merge would land the PR's tokened commits on the base unchanged and skip base CI, and no explicit merge message can prevent that. So with rebase-only merges the key has no effect in C. (b) As without the key: CI runs as pushes trigger it, and no head is read as deferred. (c) It names C as a repository where the key resolved on and has no effect, because only rebase merges are allowed.",
+      "assertions": [
+        "no skip tokens are pushed in the rebase-only repository",
+        "CI runs as without the key",
+        "the report names the repository and rebase-only merges as the reason"
+      ],
+      "files": []
     }
   ]
 }

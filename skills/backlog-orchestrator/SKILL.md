@@ -658,7 +658,7 @@ On an `IN_FLIGHT_FIX` action point, or a code-changing ruling its row routes her
 
 ## Mechanical pushes do not consume review
 
-This run tags each restack and renumber it pushes by `references/mechanical-pushes.md`'s test, conditions included, and passes it to `supervise-prs` as a caller push; what a mechanical push means for the PR's record is that skill's (*Head moves*). Where a PR's `minimize-ci-runs` has effect, each such push carries `[skip ci]` in its head commit's message, and this run passes the key to any worker dispatched onto a branch whose PR is open (`supervise-prs`, *Deferred CI*).
+This run tags each restack and renumber it pushes by `references/mechanical-pushes.md`'s test, conditions included, and passes it to `supervise-prs` as a caller push; what a mechanical push means for the PR's record is that skill's (*Head moves*). Where a PR's `minimize-ci-runs` has effect, each such push carries `[skip ci]` in its head commit's message, and this run passes the key to every implementation worker in that repository, having made the repository reads *Deferred CI* names before dispatch (`supervise-prs`).
 
 ## Draft state
 
