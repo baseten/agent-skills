@@ -23,8 +23,8 @@ This file is the contract; the reasoning and incident history behind its rules l
 | **budgets, per PR** | the resolved caps for `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles` and `repair-model-escalations`, each with its source. This skill never reads `.claude/agent-policy.json` itself (`references/agent-policy.md`, *Resolution*) | **every cap 0**: the run classifies and reports and pushes nothing, and the report says no budgets were passed |
 | **`auto-resolve-comments`, per PR** | the resolved key, with its source — whether a repaired thread a person is in is replied to and resolved without approval (`resolve-pr-comment`, *Replies held for approval*) | **`false`**: such replies are held |
 | **`minimize-ci-runs`, per PR** | the resolved key, with its source — whether CI is deferred until the PR is quiescent, then run once (*Deferred CI*) | **`false`**: CI runs as pushes trigger it |
-| **counters, per PR** | cycles and escalations already used: **0 for a PR the caller's run created**, otherwise the counters in this skill's last returned record for that PR | rebuilt from the PR's durable evidence at *Adopt* |
-| **posting-identity map** | the run's map (`references/posting-identity.md`) | start empty: every entry `unestablished` |
+| **counters, per PR** | cycles and escalations already used: **0 for a PR the caller's run created**, otherwise the counters in this skill's last returned record for that PR — with that record's own write ids | rebuilt from the PR's durable evidence at *Adopt*, the own write ids `incomplete` |
+| **posting-identity map** | the run's map (`references/posting-identity.md`), with the invoking user's account where the invocation names it (*The invoking user's account* there) | start empty: every entry `unestablished`, and no account |
 | **review routing and trigger state, per PR** | per review convention the PR's routing requires: who performs its rounds — `this skill` (a trigger comment or an invoked review skill) or `caller` (for instance a dispatched review session) — and its trigger state: `issued`, `verified`, `pending`, `deferred` (with who owes the round and the condition it waits on), or `unavailable`; and any round recorded `refused`; for a `caller` round, the ids of the review and inline comments it posted (`references/review-feedback.md`, *The thread-root test*). **A `caller` convention, or a `deferred` round the caller owes, requires `wait owner = caller`**: the round falls due in a pass result, and only a caller running the loop sees it | the routing from the repository, per `references/review-trigger.md`, performed by this skill; the state read off the PR's timeline at *Adopt*; nothing found is `pending` |
 | **repair dispatch** | `direct` — invoke `repair-pr` in this session on a dedicated checkout of the PR branch, and its result comes back; `swarm` — each pass is a `swarm` worker, with whether a worker's return value reaches the run on its tier; or `none` — dispatch nothing, classify and report | `direct` |
 | **head checks** | zero or more checks of the caller's own, each **stated in full**: what it compares, when it runs — `on-repair-head`, before a pass's pushed head is adopted, or `every-pass` — and what each result does: `adopt`, `hold`, or `return to caller` | none |
@@ -64,6 +64,7 @@ per review convention: performed by; trigger state; rounds, each pending/refused
 reserved threads (question items, deferred-repair items), approval-pending replies (one per thread), rejected held replies (thread + fix SHA), mixed-thread fixes left for the owner, and no-action threads — held-reply records (approval-pending, rejected, the no-action that ends one) replace each other per thread, and a later reserved or deferred-repair record turns one into a mixed-thread record (`references/review-feedback.md`, *Approval-pending replies*); every other record stands beside them
 draft state: as-created -> current; promotion convention, or absent
 cycles used/cap: CI · review · finding; review rounds completed; strongest-model rounds used/cap, with locus evidence
+own write ids: every review-thread comment this run posted on the PR; complete / incomplete (a rebuild, or a pass whose ids did not come back)
 mutator: none / pass <id> / caller (locked)
 event subscription: armed — platform posture overridden / unavailable
 toggle: turned on by this run's subscription at <time>; unsubscribed at <time> / still subscribed because <why>
@@ -98,6 +99,7 @@ One pass is one supervision cycle over the tracked set. In order:
 0. **adopt every PR in the set that is not yet tracked** (*Adopt*) — at entry, not at settle;
 1. **take in every pass that returned, whatever its outcome** — adopted, held, `NO_CODE_CHANGE`, `FAILED` or `NEEDS_USER`:
    - merge every posting-identity entry it returned into the map — never replace it: a pass runs on its own transports, and this is the only evidence about them;
+   - add every write id it returned to the PR's own write ids (`references/posting-identity.md`, *The invoking user's account*);
    - record every item it returned (*Review feedback*, step 3) and its body-drift flag, forwarded to the caller as a prompt for the settle's body reconcile (`settle-and-merge`), never as a precondition;
    - release it through the dispatch mechanism;
    - then apply its outcome (*Adopting a head*);
@@ -153,9 +155,9 @@ What a run may auto-fix, the thread-root test, the owner's reservation and what 
 On unhandled feedback, as `references/review-feedback.md`, *Unhandled feedback*, defines it, **dispatch on any such round, including one where nothing looks repairable from the outside**:
 
 1. group the coherent current review round;
-2. `repair dispatch` is `none` → record the round unhandled and report it; the PR's outcome is `unrepaired`. Otherwise dispatch one `repair-pr` pass with `repair type = review`, the threads — each marked where its root is one of those ids — the remaining budget, the PR's `auto-resolve-comments` with its source, and the map (*Repair dispatch*). **The budget gates repairing, not classifying**: dispatch even where the review budget is spent — the pass then classifies and drafts but repairs nothing, and what would have been repairable comes back as **deferred-repair items** under a `NO_CODE_CHANGE` round, never a `needs-user` outcome for the PR (`repair-pr`, *Hard constraints*);
+2. `repair dispatch` is `none` → record the round unhandled and report it; the PR's outcome is `unrepaired`. Otherwise dispatch one `repair-pr` pass with `repair type = review`, the threads — each marked where its root is one of those ids — the remaining budget, the PR's `auto-resolve-comments` with its source, the map, and the PR's own write ids with whether they are complete (*Repair dispatch*); threads whose new content is the invoking user's go in a pass of their own (*Budgets*). **The budget gates repairing, not classifying**: dispatch even where the review budget is spent — the pass then classifies and drafts but repairs nothing, and what would have been repairable comes back as **deferred-repair items** under a `NO_CODE_CHANGE` round, never a `needs-user` outcome for the PR (`repair-pr`, *Hard constraints*);
 3. when the pass returns (*Pass*, step 1), **record every `NEEDS_USER` item and every no-action thread** — a question item with everything `resolve-pr-comment`, *What a question item must contain*, requires, verbatim and with its `html_url` forwarded rather than rebuilt; a deferred-repair item with that `html_url`, the change it asks for and no draft; **a thread that returned two items is recorded once per item and is handled only when both are in** (`resolve-pr-comment`, *A comment can want both*); and every **approval-pending reply item** and *fix pushed — thread left for you* entry, verbatim (`references/review-feedback.md`, *Approval-pending replies*). Recording is what stops a thread being re-grouped into a later round until new content arrives on it;
-4. **count the review cycle only where the pass pushed a repair.** A `NO_CODE_CHANGE` pass consumes no cycle, and its items and drafts are recorded exactly as a pushing pass's are. Count a completed round in `review rounds completed` whenever a round's verdict lands.
+4. **count the review cycle only where the pass pushed a repair**, and never for the invoking user's own round (*Budgets*). A `NO_CODE_CHANGE` pass consumes no cycle, and its items and drafts are recorded exactly as a pushing pass's are. Count a completed round in `review rounds completed` whenever a round's verdict lands.
 
 Review feedback may reference a head a rebase or restack has superseded: locate each finding by content rather than line number, and confirm it still applies to the current head before repairing. **Never derive the classification or write the draft here instead of dispatching** — `resolve-pr-comment` owns both.
 
@@ -224,6 +226,8 @@ When a pass returns having pushed:
 
 **A repair cycle is a pushed repair pass, not a review round.** Report both numbers, and state the cycle count against the cap in every status line that mentions a repair round (`#176 repair 2 of 2`). A round count is never evidence for raising a cap.
 
+**The invoking user's own rounds spend no review cycle.** A `review` pass dispatched only for threads whose new content is the invoking user's (`references/posting-identity.md`, *The invoking user's account*) — decided by who wrote the new content, never by who rooted the thread, so a bot's or anyone else's follow-up inside an owner-rooted thread goes in the budgeted pass — counts no `review-repair-cycles` cycle and is dispatched with budget remaining, even where the budget is spent. Those rounds are paced by a person and each answers only new content, so they end when the owner stops commenting; a round's other threads go in a pass of their own and count as before, so the budget still bounds every bot-driven round. A rebuild from trailers (*Adopt*) cannot tell the two apart and counts every review pass — the safe direction.
+
 **Exhaustion is an outcome for CI and finding repairs, and items for review**: a spent CI or finding budget makes the PR `needs-user`; a spent review budget produces deferred-repair items under a `NO_CODE_CHANGE` round.
 
 ## Wait
@@ -249,7 +253,9 @@ Per PR, one of:
 - **`merged`** / **`closed`** — observed, whoever did it;
 - **`cannot-watch`** — nothing could be armed.
 
-**Terminal** — what `any-terminal` and `all-terminal` count, and what this skill takes no further step on without new input — is: `finished`, `held: check`, `returned`, `unrepaired`, `needs-user`, `merged`, `closed` and `cannot-watch`, and `waiting` held for its base to move (*Deferred CI*), whose new input is a base move.
+**Terminal** — what `any-terminal` and `all-terminal` count, and what this skill takes no further step on without new input; it decides when this skill returns, never when a watch ends — is: `finished`, `held: check`, `returned`, `unrepaired`, `needs-user`, `merged`, `closed` and `cannot-watch`, and `waiting` held for its base to move (*Deferred CI*), whose new input is a base move.
+
+**`finished` is a settle verdict, not the end of the watch.** A `finished` PR still awaiting a human review or approval is `waiting` for watch purposes: its subscription stays armed for a caller that keeps watching it (`implement-issue`, *Completion*), and a human review or comment arriving on it is new input.
 
 ## Report
 

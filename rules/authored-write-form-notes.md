@@ -70,3 +70,5 @@ So the rule is conditional on a capture path existing, and it carries the fallba
 ## The attribution footer marks the writes nobody read
 
 **Why the "attribution already present" bullet exists (moved from the rule, #168):** reading the owner-ruling marker as licence to drop the footer is the mistake it blocks, and an earlier version of this section made it.
+
+**Why a body edit strips a transport's trailing footer, and an approved write reports one (#183):** a transport that appends a footer adds one on every write, so re-writing a body that already ends with one stacks a second. And an approved reply sent through it is not footerless, whatever the run wrote, so the report says what was posted.

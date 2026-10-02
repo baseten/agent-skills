@@ -521,6 +521,126 @@
         "the colleague's requested change is still fixed in (b)"
       ],
       "files": []
+    },
+    {
+      "id": 42,
+      "name": "an-owner-only-thread-is-posted-with-the-footer-and-resolved",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). An unattended repair pass invokes you with auto-resolve-comments false, the invoking user's account, owner-dev, as the invocation named it, and the run's own review-thread write ids on this PR, marked complete. The thread is rooted by owner-dev, a User, asking you to rename `tmp` to `retryDelay`; nobody else has commented in it. You fix it. Is the reply posted now or held, does it carry the footer, and is the thread resolved?",
+      "expected_output": "Posted now, with the attribution footer, and resolved. A thread whose only person is the invoking user takes the no-hold path whatever auto-resolve-comments says: owner-dev is not a person in the thread for the hold test. The footer stays because nobody read the reply text before it posted (the approval test).",
+      "assertions": [
+        "the reply is posted now, not held, despite auto-resolve-comments false",
+        "the reply carries the attribution footer",
+        "the thread is resolved"
+      ],
+      "files": []
+    },
+    {
+      "id": 43,
+      "name": "a-thread-the-owner-and-a-colleague-are-in-is-held",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). An unattended repair pass invokes you with auto-resolve-comments false, the invoking user's account, owner-dev, as the invocation named it, and the run's own review-thread write ids on this PR, marked complete. The thread is rooted by owner-dev asking for a rename; a colleague, sam, also a User, has replied '+1, and keep the old name as an alias'. You fix both. Is the reply posted now or held?",
+      "expected_output": "Held: written, not posted, and the thread left open. sam is a person other than the invoking user, so the hold applies whenever anyone else is in the thread. Both changes are still fixed and pushed; only the reply and the resolution wait. The held reply says only what changed.",
+      "assertions": [
+        "the reply is held because a colleague is in the thread",
+        "the thread is left open",
+        "the fixes are still pushed"
+      ],
+      "files": []
+    },
+    {
+      "id": 44,
+      "name": "a-comment-addressed-to-someone-else-is-no-action",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). An unattended repair pass invokes you with auto-resolve-comments false, the invoking user's account, owner-dev, as the invocation named it, and the run's own review-thread write ids on this PR, marked complete. In an owner-only thread, owner-dev's newest comment is '@sam do you know whether the billing service still reads this header?'. What do you do with it?",
+      "expected_output": "Nothing: a comment addressed by mention to someone other than the run and the invoking user is no-action. No reply, no resolve, no escalation; it is returned as a no-action entry, so it is handled and not unhandled feedback.",
+      "assertions": [
+        "no reply is posted",
+        "the thread is not resolved",
+        "it is returned as no-action, not NEEDS_USER and not unhandled"
+      ],
+      "files": []
+    },
+    {
+      "id": 45,
+      "name": "an-owners-question-shaped-change-request-is-fixed",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). An unattended repair pass invokes you with auto-resolve-comments false, the invoking user's account, owner-dev, as the invocation named it, and the run's own review-thread write ids on this PR, marked complete. owner-dev roots a thread on a test file: 'could we avoid vi.mock here? do any of these already exist as factories?'. Nobody else is in the thread. You find two of the three mocked objects already have factories in test/factories, and none for the third. What do you do, and what does the reply say?",
+      "expected_output": "It is repairable: the invoking user's question-shaped comment proposes a concrete change local to this PR, so make the change — use the two existing factories, add the third, drop vi.mock. The reply says what was done and what was learned, e.g. '2 of 3 factories existed; added the third', with the bare commit SHA and the footer. Owner-only, it is posted and the thread resolved.",
+      "assertions": [
+        "the change is made rather than reserved",
+        "the reply says what was done and what was learned",
+        "the reply is posted and the thread resolved, with the footer"
+      ],
+      "files": []
+    },
+    {
+      "id": 46,
+      "name": "a-third-partys-question-shaped-change-request-stays-reserved",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). An unattended repair pass invokes you with auto-resolve-comments false, the invoking user's account, owner-dev, as the invocation named it, and the run's own review-thread write ids on this PR, marked complete. A colleague, sam, roots a thread on a test file: 'could we avoid vi.mock here? do any of these already exist as factories?'. What do you do?",
+      "expected_output": "It is NEEDS_USER, reserved for the owner: from anyone but the invoking user, a question-shaped proposal asks whether, which is the owner's call. No change, no reply answering sam, the thread left open, returned as a question item with its draft.",
+      "assertions": [
+        "the thread is reserved as NEEDS_USER, not repaired",
+        "no reply answers the colleague",
+        "the thread is not resolved"
+      ],
+      "files": []
+    },
+    {
+      "id": 47,
+      "name": "an-owners-genuine-question-is-still-reserved",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). An unattended repair pass invokes you with auto-resolve-comments false, the invoking user's account, owner-dev, as the invocation named it, and the run's own review-thread write ids on this PR, marked complete. owner-dev roots a thread: 'why did you choose polling here instead of a webhook?'. Nobody else is in it. What do you do?",
+      "expected_output": "It is still NEEDS_USER. A genuine open question about intent, design or rationale is reserved whoever asks, the owner included: only the owner's question-shaped requests for a concrete change are repairable. Nothing is posted, the thread is not resolved, and it comes back as a question item with its draft.",
+      "assertions": [
+        "the owner's genuine question is reserved as NEEDS_USER",
+        "no answer is posted in the thread",
+        "the thread is not resolved"
+      ],
+      "files": []
+    },
+    {
+      "id": 48,
+      "name": "lost-write-ids-make-owner-account-comments-a-persons",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). After a restart, an unattended repair pass invokes you with auto-resolve-comments false and the invoking user's account, owner-dev, as the invocation named it, but the run's own write ids on this PR are marked incomplete; this run posts as owner-dev. Thread (a): a comment by owner-dev reads 'could we use the shared retry helper here?'. Thread (b): a bot asked for a missing null guard, and a later owner-dev comment says 'yes please'. You fix (b). Questions: how is (a) classified, and is (b)'s reply posted or held?",
+      "expected_output": "With the ids incomplete the run cannot show an owner-dev comment is not its own, so no comment under that account counts as the invoking user's. (a) is therefore a person's question-shaped proposal: NEEDS_USER, reserved, not repaired, nothing posted. (b) The fix is pushed, but owner-dev's comment counts as a person in the thread, so the reply is held and the thread left open.",
+      "assertions": [
+        "thread (a) is reserved as NEEDS_USER rather than repaired as the owner's request",
+        "thread (b)'s reply is held, not posted",
+        "the answer ties both to the incomplete write ids, not to the account being unknown"
+      ],
+      "files": []
+    },
+    {
+      "id": 49,
+      "name": "a-reply-posted-before-a-crash-is-not-duplicated",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). In the last session you fixed a bot's thread, posted 'Fixed in a1b2c3d — added the null guard.' under the owner's account, and the session died before the resolve. Now a restarted unattended pass re-dispatches the thread, with the invoking user's account named and the run's own write ids incomplete. Question: do you post another reply, and what happens to the thread?",
+      "expected_output": "No duplicate reply. The requested change is already on the head (step 2), so nothing is re-fixed. The earlier reply cannot be shown to be the run's own, so it counts as a person's comment, and a person is in the thread: any reply is held for approval, not posted. The thread stays open for the owner.",
+      "assertions": [
+        "no second reply is posted",
+        "the change is recognised as already on the head and not re-fixed",
+        "the reply is held because the earlier comment counts as a person's"
+      ],
+      "files": []
+    },
+    {
+      "id": 50,
+      "name": "an-unknown-invoking-user-account-holds",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). An unattended repair pass invokes you with auto-resolve-comments false and no invoking user's account. A thread is rooted by a User account, dev-a, asking for a rename; nobody else commented. You fix it. Is the reply posted or held?",
+      "expected_output": "Held. With the invoking user's account unknown, no comment counts as the invoking user's, so dev-a is a person in the thread, whoever they are. The fix is pushed; the reply is written, not posted, and the thread left open. The account is never inferred from the posting credential.",
+      "assertions": [
+        "the reply is held",
+        "dev-a is treated as a person because the account is unknown",
+        "the account is not inferred from the credential"
+      ],
+      "files": []
+    },
+    {
+      "id": 51,
+      "name": "an-owners-out-of-scope-proposal-is-reserved",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). An unattended repair pass invokes you with auto-resolve-comments false, the invoking user's account, owner-dev, as the invocation named it, and the run's own review-thread write ids on this PR, marked complete. owner-dev roots a thread: 'Could we refactor the whole auth module?'. Nobody else is in it. What do you do?",
+      "expected_output": "Reserve it as NEEDS_USER. Only the owner's question-shaped requests for a concrete, local change are repairable, and local means within this PR's scope and something this pass can make and verify. A whole-module refactor is beyond that bar. Nothing is changed or posted, and the thread stays open.",
+      "assertions": [
+        "the thread is reserved, not repaired",
+        "the answer applies the local-change bar",
+        "nothing is posted and the thread is not resolved"
+      ],
+      "files": []
     }
   ]
 }

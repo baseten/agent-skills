@@ -209,6 +209,17 @@
         "the update is returned to the caller as a caller push"
       ],
       "files": []
+    },
+    {
+      "id": 18,
+      "name": "step-7-states-the-watch-the-caller-passed",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: implement-issue settles its one PR, #57, auto-merge off. It passes as watch state: still armed after this settle, woken by a human review or comment or a merge or close, stopped by telling the run to stop. Question: what does step 7's closing output say about the watch, and what would it say if no watch state had been passed?",
+      "expected_output": "Step 7 states the watch as passed: a settle is not the end of the watch, so it says the watch is still armed, what wakes it, and how to stop it. With no watch state passed, it says nothing about the watch; the caller reports it.",
+      "assertions": [
+        "the closing output says the watch is still armed, what wakes it and how to stop it",
+        "absent the input, nothing is said about the watch and the caller reports it"
+      ],
+      "files": []
     }
   ]
 }

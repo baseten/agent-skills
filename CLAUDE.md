@@ -30,22 +30,31 @@ evals (`<skill>#<id>`).
 
 1. **A write nobody read carries the footer; a run never answers a person's question or
    roots a thread (a dispatched review session's own review excepted, its inline comments
-   belonging to that review's footered body), and holds its reply to, and resolution
-   of, a thread a person is in for approval unless the repository's own config turns
+   belonging to that review's footered body; the invoking user's own question-shaped
+   request for a concrete change to the PR is a change request, its reply saying what
+   was done), and holds its reply to, and resolution of, a thread a person other than
+   the invoking user is in for approval unless the repository's own config turns
    that off.**
-   `rules/authored-write-form.md`, `rules/review-feedback.md`; `resolve-pr-comment`,
-   *Replies held for approval*. create-pr#6, resolve-pr-comment#0 #18 #21 #23 #26
-   #28 #41, review-docs#11, settle-outstanding-decisions#11 #12, backlog-orchestrator#72.
+   `rules/authored-write-form.md`, `rules/review-feedback.md`, `rules/posting-identity.md`,
+   *The invoking user's account*; `resolve-pr-comment`, *Replies held for approval*.
+   create-pr#6, resolve-pr-comment#0 #18 #21 #23 #26 #28 #41 #42 #43 #44 #45 #46 #47
+   #48 #49 #50 #51,
+   review-docs#11, settle-outstanding-decisions#11 #12, backlog-orchestrator#72,
+   supervise-prs#56.
 2. **Identity is observed authorship; own writes are known by id or footer, never content.**
-   `rules/posting-identity.md`; `swarm`, *Blocked workers*. backlog-orchestrator#5 #58.
+   `rules/posting-identity.md`; `swarm`, *Blocked workers*. backlog-orchestrator#5 #58,
+   resolve-pr-comment#48 #49.
 3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
    `backlog-orchestrator`, *Arming the wait when nothing is in flight*.
    backlog-orchestrator#58.
 4. **Never request, re-request or remove a human reviewer.** `rules/review-trigger.md`.
    supervise-prs#33.
 5. **The platform's auto-fix posture is overridden**: only a dispatched `repair-pr`
-   repairs; budgets bound every loop; a spent budget ends in the skill's outcome, never another repair push.
-   `rules/platform-pr-posture.md`. supervise-prs#25 #26, backlog-orchestrator#67.
+   repairs; budgets bound every loop, the invoking user's own review rounds aside, which
+   spend no `review-repair-cycles`; a spent budget ends in the skill's outcome, never
+   another repair push.
+   `rules/platform-pr-posture.md`; `supervise-prs`, *Budgets*. supervise-prs#25 #26 #55 #57,
+   backlog-orchestrator#67.
 6. **A created PR's body is edited only while draft, footered, or under a resolved merge
    opt-in** (`Depends on:` excepted); else drift is reported with a replacement.
    `rules/authored-write-form.md`. settle-and-merge#6 #9, merge-stack#5,
@@ -60,7 +69,8 @@ evals (`<skill>#<id>`).
    settle-and-merge#13 #14 #15 #16 #17, implement-issue#18.
 9. **Stranded work reaches a remote ref before any archive; permission holds name the
    literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked
-   workers*; `rules/wake-budget.md`. backlog-orchestrator#4 #19, swarm#20.
+   workers*; `rules/wake-budget.md`. backlog-orchestrator#4 #19, swarm#20,
+   implement-issue#14 #19 #20 #21.
 
 **A PR changing a protected rule's text says so in its body**, and gets a blind
 rule-by-rule audit plus a pinning-eval round before merge. None is an issue-#49
