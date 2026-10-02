@@ -150,6 +150,65 @@
         "it is not listed as unposted at step 7",
         "the outcome reached supervise-prs through the caller"
       ]
+    },
+    {
+      "id": 13,
+      "name": "minimize-ci-runs-no-overlap-merges-on-the-existing-green",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #90, `auto-merge` on. The caller's freshness input says the stale-green re-check applies, with authority to update a branch, and its repository's checks run against the branch alone. CI went green on head h1 when the base was b1; main is now at b2. Between b1 and b2, main changed docs/a.md and src/x.ts. The PR changes src/y.ts and test/y.test.ts. It bumps no tool, and every other gate condition holds. The caller passed `minimize-ci-runs` on for #90, with effect in its repository. Question: does the existing green discharge the CI condition, and what do you do?",
+      "expected_output": "Yes. Under the key a moved base makes the green stale only on overlap, and the files changed on the base since b1 (docs/a.md, src/x.ts) do not intersect the PR's (src/y.ts, test/y.test.ts). The green discharges the condition and the PR merges on it: no branch update, no new CI run.",
+      "assertions": [
+        "the answer computes overlap as base-changed files since the green's base intersected with the PR's files",
+        "it finds no overlap",
+        "it merges on the existing green without updating the branch or running CI"
+      ]
+    },
+    {
+      "id": 14,
+      "name": "minimize-ci-runs-overlap-runs-ci-once-more-before-the-gate",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #90, `auto-merge` on. The caller's freshness input says the stale-green re-check applies, with authority to update a branch, and its repository's checks run against the PR merged with its base. CI went green on head h1 when the base was b1; main is now at b2. Between b1 and b2, main changed docs/a.md and src/y.ts. The PR changes src/y.ts and test/y.test.ts. It bumps no tool, and every other gate condition holds. The caller passed `minimize-ci-runs` on for #90, with effect in its repository. Question: does the existing green discharge the CI condition, and what do you do?",
+      "expected_output": "No. src/y.ts changed on the base since b1 and the PR changes it, so the green is stale. CI runs once more before the gate opens, always by updating the branch from its base, under the caller's authority. The update's merge commit carries no token, so its run tests the merged tree. It is never a dispatch, which would check out the branch alone, even though the repository's checks run against the merge ref. Nothing merges on h1's green.",
+      "assertions": [
+        "the answer finds overlap on src/y.ts",
+        "the green is treated as stale",
+        "CI runs once more through a branch update from the base, not a dispatch or a plain re-run",
+        "the PR is not merged on the old green"
+      ]
+    },
+    {
+      "id": 15,
+      "name": "minimize-ci-runs-off-keeps-the-existing-stale-green-rule",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #90, `auto-merge` on. The caller's freshness input says the stale-green re-check applies, with authority to update a branch, and its repository's checks run against the branch alone. CI went green on head h1 when the base was b1; main is now at b2. Between b1 and b2, main changed docs/a.md and src/x.ts. The PR changes src/y.ts and test/y.test.ts. It bumps no tool, and every other gate condition holds. The caller passed `minimize-ci-runs` off for #90. Question: does the existing green discharge the CI condition, and what do you do?",
+      "expected_output": "No. With the key off the stale-green rule applies unchanged: the base moved (b1 to b2), so the green is stale whatever files overlap. The checks run against the branch alone, so a re-run would prove nothing; the branch is updated under the caller's authority before anything merges.",
+      "assertions": [
+        "the answer does not use file overlap to decide",
+        "the green is stale because the base moved",
+        "the branch is updated under the caller's authority before merging, not merely re-run"
+      ]
+    },
+    {
+      "id": 16,
+      "name": "a-review-round-carries-forward-across-the-update-under-the-key",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #92, `auto-merge` on, `minimize-ci-runs` on with effect, overlap narrowing in effect. An automated round completed clean on head h1, with no threads. supervise-prs then triggered CI by a conflict-free merge of main into the branch, producing head h2. CI is green on h2, and the review summary still names h1. Every other gate condition holds, and the base has not moved since h2. Question: does the gate pass?",
+      "expected_output": "Yes. Under the key, a round on h1 counts for h2 because every push since h1 is mechanical — here the trigger's clean base update. The thread list on h2 is still read and is empty. CI is green on the current head, so the gate passes and the PR merges.",
+      "assertions": [
+        "the h1 round counts for h2 because the only push since is mechanical",
+        "the threads are still read on the current head",
+        "the gate passes with green CI on h2"
+      ],
+      "files": []
+    },
+    {
+      "id": 17,
+      "name": "key-on-without-effect-keeps-the-existing-stale-green-rule",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #93, `auto-merge` on. The caller passed `minimize-ci-runs` on, but its overlap narrowing has no effect in this repository: branch protection requires branches to be up to date. The stale-green re-check applies, with authority to update a branch, and checks run against the branch alone. CI went green when the base was b1, and main is now at b2. No file changed between b1 and b2 is one the PR changes. Question: does the existing green discharge the CI condition?",
+      "expected_output": "No. With the narrowing without effect, the existing stale-green rule governs unchanged: the base moved, so the green is stale whatever the overlap. The branch is updated under the caller's authority before anything merges, and that update is returned to the caller as a caller push.",
+      "assertions": [
+        "overlap is not used to decide",
+        "the green is stale because the base moved",
+        "the branch is updated under authority before merging",
+        "the update is returned to the caller as a caller push"
+      ],
+      "files": []
     }
   ]
 }

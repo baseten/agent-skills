@@ -36,6 +36,8 @@ Read `CLAUDE.md`/`AGENTS.md` for branch conventions, PR templates, draft/full ru
 
 **That read does not supply the gate.** Where the caller supplied the check set and its outcomes, use them and do not re-derive. Where no caller did — a direct invocation — derive the set here, before running anything and before drafting the body: the base branch's required status checks, falling back to the workflow's check steps and marking the set unproven, mapping each required context to the local command that produces it, and carrying a context with no local equivalent as `not locally runnable` (where the caller is `implement-issue-core`, it derives the set the same way in its *Final local verification*, and passes it). **Never from the `CLAUDE.md`/`AGENTS.md` list read above** — that list describes the gate and drifts from it, so a run built on it is complete against the wrong thing and the gate report then states that completeness as compliance. Run the locally runnable part before opening the PR unless the caller explicitly documents that final verification was already completed by `implement-issue-core`, and hold the set and its outcomes for the gate report under Output.
 
+**Under `minimize-ci-runs`**, where the caller passes it on, the head the PR opens on carries `[skip ci]` in its commit message, so opening it runs no CI (`supervise-prs`, *Deferred CI*).
+
 **Branch naming**: follow documented repo convention; otherwise preserve the current branch — never invent a convention.
 
 # Tracker-specific issue linkage

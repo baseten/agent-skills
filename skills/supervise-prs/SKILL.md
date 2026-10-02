@@ -22,6 +22,7 @@ This file is the contract; the reasoning and incident history behind its rules l
 | **PR set** | the PRs to supervise, each with its repository, branch and base, the head as the caller knows it, and the canonical issue URL where there is one | nothing to supervise: return, naming the missing input |
 | **budgets, per PR** | the resolved caps for `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles` and `repair-model-escalations`, each with its source. This skill never reads `.claude/agent-policy.json` itself (`references/agent-policy.md`, *Resolution*) | **every cap 0**: the run classifies and reports and pushes nothing, and the report says no budgets were passed |
 | **`auto-resolve-comments`, per PR** | the resolved key, with its source — whether a repaired thread a person is in is replied to and resolved without approval (`resolve-pr-comment`, *Replies held for approval*) | **`false`**: such replies are held |
+| **`minimize-ci-runs`, per PR** | the resolved key, with its source — whether CI is deferred until the PR is quiescent, then run once (*Deferred CI*) | **`false`**: CI runs as pushes trigger it |
 | **counters, per PR** | cycles and escalations already used: **0 for a PR the caller's run created**, otherwise the counters in this skill's last returned record for that PR | rebuilt from the PR's durable evidence at *Adopt* |
 | **posting-identity map** | the run's map (`references/posting-identity.md`) | start empty: every entry `unestablished` |
 | **review routing and trigger state, per PR** | per review convention the PR's routing requires: who performs its rounds — `this skill` (a trigger comment or an invoked review skill) or `caller` (for instance a dispatched review session) — and its trigger state: `issued`, `verified`, `pending`, `deferred` (with who owes the round and the condition it waits on), or `unavailable`; and any round recorded `refused`; for a `caller` round, the ids of the review and inline comments it posted (`references/review-feedback.md`, *The thread-root test*). **A `caller` convention, or a `deferred` round the caller owes, requires `wait owner = caller`**: the round falls due in a pass result, and only a caller running the loop sees it | the routing from the repository, per `references/review-trigger.md`, performed by this skill; the state read off the PR's timeline at *Adopt*; nothing found is `pending` |
@@ -58,7 +59,7 @@ A composed skill that is unavailable → the pass reports it and repairs nothing
 PR URL, repository, canonical issue URL where there is one
 branch/base
 remote head SHA
-CI: per check — state, and attribution where red (references/ci-attribution.md)
+CI: per check — state, and attribution where red (references/ci-attribution.md); or deferred / triggered (update | dispatch) at <time> (*Deferred CI*)
 per review convention: performed by; trigger state; rounds, each pending/refused (reason, reset)/complete-with-findings/clean
 reserved threads (question items, deferred-repair items), approval-pending replies (one per thread), rejected held replies (thread + fix SHA), mixed-thread fixes left for the owner, and no-action threads — held-reply records (approval-pending, rejected, the no-action that ends one) replace each other per thread, and a later reserved or deferred-repair record turns one into a mixed-thread record (`references/review-feedback.md`, *Approval-pending replies*); every other record stands beside them
 draft state: as-created -> current; promotion convention, or absent
@@ -88,7 +89,7 @@ A PR enters the tracked set by adoption. **Adoption is complete when the PR exis
    - a round recorded `refused` — nothing, ever (`references/review-trigger.md`, *A refused round*);
    - `unavailable` — nothing: the round cannot be requested, so it is reported as owed and the PR is not `finished` on it;
    - `pending` — issue the trigger per `references/review-trigger.md` and the map, and confirm it took effect.
-5. **Record the repository's promotion convention** for this PR, per `references/draft-state.md`.
+5. **Record the repository's promotion convention** for this PR, per `references/draft-state.md`; where `minimize-ci-runs` resolved on, make *Deferred CI*'s repository reads where the caller has not.
 
 ## Pass
 
@@ -103,7 +104,7 @@ One pass is one supervision cycle over the tracked set. In order:
 2. **take in the caller's pushes** (*Head moves*), the releases, and the held-reply outcomes, recording each;
 3. **read what is due**, once, in one consolidated pass — `references/watch-and-read.md`, *Reading on a change signal* and *Allowances belong to the credential*, decide which PRs are due and how. Fold the result into the records and stamp `last read`. A PR no signal named keeps the state it had; a PR observed merged or closed takes that outcome; **a head move made by neither a pass nor a caller push** is handled under *Head moves*;
 4. **run every `every-pass` head check** and apply its disposition;
-5. **CI** (*CI failure*); **review** (*Review feedback*); **findings** (*Finding repairs*);
+5. **CI** (*CI failure*); **review** (*Review feedback*); **findings** (*Finding repairs*); then **deferred CI** (*Deferred CI*), on what those left;
 6. **promote** where a PR's recorded convention now says to (*Draft state*);
 7. **pass the no-change preflight** before reporting any no-change result (`references/watch-and-read.md`, *The no-change preflight*);
 8. **emit** the records per `state emission`, each stating the instant it describes (`references/establish-do-not-assume.md`, *Every read is a snapshot*), and **return** where `return on` is met.
@@ -123,6 +124,27 @@ One pass is one supervision cycle over the tracked set. In order:
 4. attributed elsewhere with no justified code change → consume no cycle; report it and keep watching. A check confirmed **expected-red after a producer merge** is reported with the refresh it waits on and is surfaced (*Outcomes*); bringing the PR onto that refresh is outside this skill.
 
 **A pass's reported result is a claim; CI on the pushed head is the evidence.** Never let an outcome rest on a failure a pass reported and nobody verified, nor on a pass it claims.
+
+### Deferred CI
+
+**Where a PR's `minimize-ci-runs` resolved `true`, CI is deferred while the PR is still changing, then runs once.** It has effect only in a repository where all of the following hold, each established rather than assumed (`references/establish-do-not-assume.md`) and recorded per repository. Three are read once, before any tokened push — by the caller where a worker pushes before the PR exists, otherwise at *Adopt*:
+
+- **every required check comes from a workflow that declares `workflow_dispatch`** and whose jobs are not gated to `pull_request` events, so a dispatch runs them;
+- **the repository allows a squash or merge-commit merge**, read from its settings — a rebase merge lands tokened commits on the base;
+- **the review trigger is not an Actions workflow on `pull_request` events**, which the token would skip with CI.
+
+The fourth is observed: **the forge's CI honours `[skip ci]`** — a tokened head that started no run within the window a run takes to register, never read off one empty lookup (`references/absence-is-not-a-verdict.md`); until observed it is unknown, not absent. Without any of the four, the key has no effect on that repository's PRs: no token is pushed, CI runs as without it, and the report says so, naming which is missing. **Branch protection requiring branches to be up to date** stops nothing here, but the stale-green overlap narrowing then has no effect in that repository (`settle-and-merge`, *Merge behavior*); record it with the rest.
+
+Where it has effect:
+
+1. **Every push this workflow makes to the PR's branch carries `[skip ci]` in its head commit's message** — a pass's (`repair-pr` takes the key with its dispatch), a worker's, a caller's restack or conflict fix — **and so does the worker's last push before the PR is created**, so the PR-opened event skips CI too. Review is triggered on those heads as on any other.
+2. **A head carrying it, with no run, is `CI deferred`** — not missing, not red, not expected-red: nothing to attribute, no cycle, no dispatch. Required checks the forge shows as expected on that head are this state, never a failure; the PR is `waiting` on it.
+3. **This skill triggers CI once, when the PR is quiescent on its current head**: no repair pass in flight; no unhandled feedback by `references/review-feedback.md`, *Unhandled feedback* — a held reply, a reserved question and a deferred repair are handled, so **a deferred repair left by a spent review budget does not hold the trigger**; no round owed to the caller and none `deferred`; and no automated round the repository's convention expects for this head still outstanding inside its window (`references/review-trigger.md`, *Confirming a trigger took effect*). A round refused, unavailable, never expected, or past its window does not hold the trigger. Under the one-mutator rule (*Adopting a head*):
+   - **update the branch from its base**, on the key's authority: the merge commit carries no skip token, so CI runs. A clean update is mechanical (`references/mechanical-pushes.md`) — no cycle, and the review round carries forward (`references/ci-and-review-verdicts.md`, *A review is clean*). An update that would conflict is not made: the PR is reported conflicted, and the push resolving it carries the token and waits for quiescence on its own head;
+   - **where the branch is already up to date, dispatch the workflow on the branch** (`workflow_dispatch`) — only there, since branch and merged tree are then the same — and confirm a run registered for that head within that window — none is reported, never re-dispatched blind;
+   - **a run already existing for the current head is the trigger's**: never trigger again for that head, after a restart included;
+   - **never an empty commit, and never a close and reopen.**
+4. **A failure of that run is a CI failure** (*CI failure*): the repair push carries the token, review runs where the convention expects it, and once the new head is quiescent CI is triggered once more. Budgets count these pushes exactly as without the key; a trigger counts nothing.
 
 ### Review feedback
 
@@ -163,6 +185,7 @@ When a pass returns having pushed:
 ### Head moves
 
 - **A caller push** is adopted from the input. `mechanical` (`references/mechanical-pushes.md`): no cycle, no reset of the PR's reviewed state, no re-trigger. `substantive`: no cycle, and review is re-triggered (*Review trigger*). Cannot tell → substantive.
+- **This skill's own CI trigger** (*Deferred CI*) — a clean base update — is adopted as a mechanical push: no cycle, no reset, no re-trigger.
 - **A released head** — a pass's push a head check held, released by the caller — is adopted as the new head: the pass's cycle was already counted, and review is re-triggered as for any pass that pushed.
 - **A branch the caller holds locked** takes no dispatch while locked; the PR is `held: lock` until the caller passes the push or drops the lock.
 - **A head move made by neither a pass nor a caller push** — the owner, a bot, another run — is adopted as the new head. It consumes no cycle and resets the reviewed state, since nothing establishes it is mechanical; this skill does not re-trigger for it, because it is not a push this workflow made. **The round for the new head is reported owed, naming who moved the head**, and counts as surfaced for `finished` (*Outcomes*): it holds the PR's merge and never its finishing, so no PR waits without an end on a review nobody here may request. Any pass in flight against the old head is reported as racing it.
@@ -216,7 +239,7 @@ When a pass returns having pushed:
 Per PR, one of:
 
 - **`finished`** — CI green on the head, or every red check confirmed expected-red after a producer merge and reported; every review round the routing requires completed, recorded `refused`, or owed after a head move by neither a pass nor a caller push; every unhandled thread handled — resolved, recorded no-action, reserved for the owner, or holding an approval-pending reply; no pass in flight; **nothing remains that a pass within budget would be dispatched for**. A refused round, a round owed after someone else's head move, a reserved thread, an approval-pending reply and an expected-red check are **surfaced**: each holds the PR's merge and never its finishing;
-- **`waiting`** — on CI, a review round, a publish's classification or an allowance reset, naming which and since when;
+- **`waiting`** — on CI, CI deferred (*Deferred CI*), a review round, a publish's classification or an allowance reset, naming which and since when;
 - **`repairing`** — a pass is in flight;
 - **`held: lock`** — the caller holds the branch; ends when it passes the push or drops the lock;
 - **`held: check`** — a head check held it. It persists — no dispatch and no adoption on that branch — until the caller passes a release;
@@ -233,6 +256,7 @@ Per PR, one of:
 The per-PR record, plus:
 
 - whether it changed this pass;
+- every repository where `minimize-ci-runs` resolved on and has no effect, naming what is missing;
 - every expected-red check with its refresh; every round owed to the caller, with its head;
 - every reserved thread per item kind, verbatim, every approval-pending reply, verbatim, every rejected held reply as *reply not posted — thread open for you*, every mixed-thread fix as *fix pushed — thread left for you (it also asks a question)* or *(a further change is deferred)*, every approved reply left open as *reply posted — thread left open*, and every no-action thread;
 - every refused round with its reason and reset; every repository whose triggering was suppressed;

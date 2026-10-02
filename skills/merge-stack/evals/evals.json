@@ -85,6 +85,29 @@
         "the answer does not treat the empty rollup as green",
         "the answer waits for both required checks to conclude on the current head"
       ]
+    },
+    {
+      "id": 7,
+      "name": "the-merge-message-never-carries-a-skip-token",
+      "prompt": "You are executing the merge-stack skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the user authorizes you to squash-merge PR #95. Its commits include 'Fix lint [skip ci]' and 'Address review [skip ci]', and the forge's default squash message lists every commit message. The repository's policy file does not set `minimize-ci-runs`. Question: what merge message do you use?",
+      "expected_output": "One written explicitly, not the forge's concatenated default, and containing none of [skip ci], [ci skip] or skip-checks, so CI on the base runs after the merge. This holds in every repository, whether or not the key is set.",
+      "assertions": [
+        "the message is written explicitly rather than accepting the concatenated default",
+        "it contains no [skip ci], [ci skip] or skip-checks",
+        "the answer applies this whatever the policy"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "a-tokened-pr-is-never-rebase-merged",
+      "prompt": "You are executing the merge-stack skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the repository allows rebase, squash and merge commits, and you are not told whether any policy key is set. PR #96's commits each carry [skip ci]. The user authorizes the merge and asks for a rebase merge. Question: which method do you use?",
+      "expected_output": "Not rebase. A PR whose commits carry a skip token is never rebase-merged, because a rebase lands those commits on the base and base CI would skip. That holds whatever the policy. Merge by squash or merge commit, with an explicit message carrying no skip token, and say why the requested method was not used.",
+      "assertions": [
+        "no rebase merge is performed, without needing to know the policy",
+        "a squash or merge commit is used with an explicit message free of skip tokens",
+        "the answer gives the reason"
+      ],
+      "files": []
     }
   ]
 }

@@ -370,6 +370,7 @@ The policy file — `.claude/agent-policy.json`, its schema, precedence, resolut
   "lost-worker-redispatches": 1,
   "auto-request-settle": true,
   "auto-resolve-comments": false,
+  "minimize-ci-runs": false,
   "auto-merge": false
 }
 ```
@@ -380,7 +381,7 @@ Keys scope to different objects, and each resolves from the repository that owns
 
 | keys | scope | resolved from |
 | --- | --- | --- |
-| `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-resolve-comments`, `auto-merge` | per PR | the PR's repository |
+| `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-resolve-comments`, `minimize-ci-runs`, `auto-merge` | per PR | the PR's repository |
 | `implementation-attempts`, `model-escalations`, `lost-worker-redispatches` | per issue | the issue's repository |
 | `concurrent-workers`, `concurrent-open-prs`, `new-issue-budget`, `auto-request-settle` | per run | the manifest's repository; an explicit issue set contained in one repository uses that repository; a multi-repo set with no manifest uses the built-ins |
 
@@ -592,13 +593,13 @@ A worker never supervises its own PR and is never resumed to repair it — only 
 **What this run passes `supervise-prs`:**
 
 - **PR set**: every PR this run tracks, with its canonical issue URL;
-- **budgets**: `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles` and `repair-model-escalations` per PR, as this run's preflight resolved them (*Policy keys and defaults*), with their source — and `auto-resolve-comments` per PR, the same way;
+- **budgets**: `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles` and `repair-model-escalations` per PR, as this run's preflight resolved them (*Policy keys and defaults*), with their source — and `auto-resolve-comments` and `minimize-ci-runs` per PR, the same way;
 - **counters**: 0 for a PR this run created; otherwise the counters in `supervise-prs`'s last returned record for that PR, which the state block carries every cycle;
 - **posting-identity map**: the run's whole map — and this run takes back the map it returns and merges it, as it does a worker's (`references/posting-identity.md`);
 - **review routing and trigger state**: as each worker's `create-pr` left it, and `deferred` where this run deferred review (*Implementation worker contract*); a convention performed by dispatched review sessions is passed as performed by the `caller`, with the review and comment ids recorded there (*Review and repair sessions*);
 - **repair dispatch**: `swarm`, with whether a worker's return value reaches this run on the selected tier;
 - **head checks**: the chartered-scope check below;
-- **caller pushes**: every restack (*Stack mutation while PRs are open*) and renumber (`artifact-collisions.md`, *Performing the renumber*) this run pushed since the last pass, and every restack `merge-stack` performed with a gate-authorized merge, tagged as *Mechanical pushes do not consume review* says, with each branch this run is about to mutate held locked;
+- **caller pushes**: every restack (*Stack mutation while PRs are open*) and renumber (`artifact-collisions.md`, *Performing the renumber*) this run pushed since the last pass, every restack `merge-stack` performed with a gate-authorized merge, and every branch update `settle-and-merge` returned, tagged as *Mechanical pushes do not consume review* says, with each branch this run is about to mutate held locked;
 - **findings to repair**: settle findings (*A settle finding is the third repair shape*);
 - **releases**: each PR held by the chartered-scope check whose `DECISION` has been ruled, with the ruling;
 - **wait owner**: `caller`; **return on**: `every-pass`; **state emission**: `every-pass`, because the state block is emitted every cycle;
@@ -657,7 +658,7 @@ On an `IN_FLIGHT_FIX` action point, or a code-changing ruling its row routes her
 
 ## Mechanical pushes do not consume review
 
-This run tags each restack and renumber it pushes by `references/mechanical-pushes.md`'s test, conditions included, and passes it to `supervise-prs` as a caller push; what a mechanical push means for the PR's record is that skill's (*Head moves*).
+This run tags each restack and renumber it pushes by `references/mechanical-pushes.md`'s test, conditions included, and passes it to `supervise-prs` as a caller push; what a mechanical push means for the PR's record is that skill's (*Head moves*). Where a PR's `minimize-ci-runs` has effect, each such push carries `[skip ci]` in its head commit's message, and this run passes the key to every implementation worker in that repository, having made the repository reads *Deferred CI* names before dispatch (`supervise-prs`). Its own restacks and conflict fixes are bound by the workflow-edit ban too (`implement-issue-core`, *Hard constraints*).
 
 ## Draft state
 
@@ -979,10 +980,10 @@ On reaching settled:
    - **findings**: the worker and review findings the run produced;
    - **held-reply records**: the approval-pending, rejected and mixed-thread records `supervise-prs`'s record holds; pass the held-reply outcomes `settle-and-merge` returns to `supervise-prs` as its *held-reply outcomes* input;
    - **posting-identity map**: the run's map (`references/posting-identity.md`);
-   - **resolved policy**: `auto-merge` per PR and `auto-request-settle` for the run, as this run's preflight resolved them (`references/agent-policy.md`) — `auto-merge` off wherever *Model and skill policy* made the gate unreachable;
+   - **resolved policy**: `auto-merge` per PR and `auto-request-settle` for the run, as this run's preflight resolved them (`references/agent-policy.md`) — `auto-merge` off wherever *Model and skill policy* made the gate unreachable — and `minimize-ci-runs` per PR, with whether `supervise-prs` recorded it, and its overlap narrowing, as having effect in that PR's repository;
    - **ranking**: step 5 ranks, with each cross-branch collision this run found, marked independent where `artifact-collisions.md`, *Resolving a collision*, showed it, and the held issue set — anything classified `NEEDS_USER` for a resolved premise;
    - **dependency view, per PR**: the validated preflight's. For boundaries with a working dependency transport this costs the gate nothing new — an unproven boundary over dispatchable scope is a preflight `FAIL` that never reaches dispatch, and a proof invalidated mid-run raises the *unproven dependency view* `NEEDS_USER` the gate's outstanding-item test already refuses, and a frontier advance re-validates before anything new dispatches. `dependency transport unavailable` is passed as unproven on that boundary: proceedable for dispatch, not discharged for merge;
-   - **freshness checks**: the stale-green re-check and its tool-bump rule apply, with authority to update a branch where the repository's checks run against the branch alone; and the integration check under *Cross-branch artifact collisions*, passed with its result, the head SHA of every branch it integrated, and the check itself, so the gate can re-run it where a tip has moved;
+   - **freshness checks**: the stale-green re-check and its tool-bump rule apply, with authority to update a branch where the repository's checks run against the branch alone, and, for the overlap case under `minimize-ci-runs`, wherever the key has effect; and the integration check under *Cross-branch artifact collisions*, passed with its result, the head SHA of every branch it integrated, and the check itself, so the gate can re-run it where a tip has moved;
    - **publish rule**: `three-state`;
    - **outstanding recovery refs, per PR**: those the four-state ender under *Checkpoint compliance* leaves outstanding;
    - **un-settling**: nothing to pass; on a hand-back, *The summary can un-settle the run* and *A settle finding is the third repair shape* govern;

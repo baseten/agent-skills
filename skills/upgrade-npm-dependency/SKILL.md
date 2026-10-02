@@ -146,7 +146,7 @@ A characterization failure after the upgrade is the mechanism working. It conver
 
 ## Migration and verification
 
-Apply the bump and the call-site changes the research identified. Run the repository's documented checks in its documented order.
+Apply the bump and the call-site changes the research identified — never an edit to `.github/workflows` or `.github/actions/`, or the forge's equivalent, without the owner's explicit approval (`implement-issue-core`, *Hard constraints*). Run the repository's documented checks in its documented order.
 
 Run **scoped** tests locally. Where a suite is sharded across CI runners it does not fit on one machine; scoped runs plus CI is the correct division, and CI is the authority.
 

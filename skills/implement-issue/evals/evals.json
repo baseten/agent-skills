@@ -228,6 +228,18 @@
         "the reply is held and the thread left open"
       ],
       "files": []
+    },
+    {
+      "id": 18,
+      "name": "an-invocation-cannot-turn-minimize-ci-runs-on",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are invoked with the argument minimize-ci-runs: true for an issue in acme/api. That repository's default branch has a .claude/agent-policy.json that does not set the key. Questions: (a) what does minimize-ci-runs resolve to, and with what source? (b) could an argument minimize-ci-runs: false turn off a repository's true?",
+      "expected_output": "(a) false, from the built-in default. `references/agent-policy.md`, *Precedence*, lists minimize-ci-runs among the keys only the repository's file can turn on, because true narrows the merge gate's stale-green re-check. The argument is ignored for that direction, and the resolved value is reported with its source. (b) Yes: an invocation can switch it off.",
+      "assertions": [
+        "the key resolves to false despite the invocation argument",
+        "the answer cites agent-policy Precedence",
+        "an invocation can turn it off but not on"
+      ],
+      "files": []
     }
   ]
 }
