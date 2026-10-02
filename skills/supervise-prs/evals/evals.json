@@ -500,6 +500,58 @@
         "thread B is listed with its fix SHA as having a further change deferred"
       ],
       "files": []
+    },
+    {
+      "id": 40,
+      "name": "a-skipped-head-is-deferred-and-ci-waits-for-a-clean-round",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #81 has `minimize-ci-runs` true, from repo config, and the key has effect in its repository: a tokened push was observed starting no run, and the required checks' workflow declares `workflow_dispatch`. A review repair pass returned having pushed head abc1234, whose commit message carries `[skip ci]`. On abc1234 no CI run exists, and the forge shows every required check as expected, waiting for status. Review was re-triggered and its round is pending. Questions: (a) how do you read CI on abc1234, and do you dispatch a CI repair? (b) what is the PR's outcome this pass? (c) the next pass finds the review round on abc1234 complete with no actionable findings: what happens next?",
+      "expected_output": "(a) CI is deferred — not missing, not red, not expected-red. Nothing is attributed, no cycle is counted and no repair is dispatched. (b) waiting, on CI deferred; it is not finished, since CI is not green. (c) The round is clean on the current head, so this skill now triggers CI, once.",
+      "assertions": [
+        "the head is read as CI deferred, not as missing, red or expected-red",
+        "no CI repair is dispatched and no cycle is counted",
+        "the PR is waiting, not finished",
+        "CI is triggered once, only after the clean round on the current head"
+      ],
+      "files": []
+    },
+    {
+      "id": 41,
+      "name": "the-ci-trigger-is-a-base-update-or-a-dispatch-never-an-empty-commit",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: two PRs with `minimize-ci-runs` true and in effect, and the latest automated round on each current head is clean, with CI deferred. PR #82's branch is three commits behind main, and merging main into it is conflict-free. PR #83's branch already contains main's head. A teammate suggests pushing an empty commit to each to start CI. Questions: (a) how do you start CI on each? (b) does #82's trigger count a cycle or re-trigger review? (c) the empty commit?",
+      "expected_output": "(a) #82: update the branch from its base; the merge commit carries no skip token, so CI runs. #83 is already up to date, so dispatch the CI workflow on the branch (workflow_dispatch). (b) No: a clean base update is a mechanical push — no cycle, the review round is kept, no re-trigger. (c) Never: no empty commit, and no closing and reopening the PR.",
+      "assertions": [
+        "#82 is triggered by updating the branch from its base",
+        "#83 is triggered by workflow_dispatch because it is up to date",
+        "the update counts no cycle, keeps the review round and does not re-trigger review",
+        "no empty commit is pushed and no PR is closed and reopened"
+      ],
+      "files": []
+    },
+    {
+      "id": 42,
+      "name": "a-failed-ci-run-goes-back-through-review-before-ci-runs-again",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #84, `minimize-ci-runs` true and in effect, ci-repair-cycles cap 2 with 0 used. The CI run this skill triggered fails on a test, and the failure is attributed to this PR. Questions: (a) what happens, step by step, until CI runs again? (b) what does the CI budget read afterwards, and what did the trigger cost?",
+      "expected_output": "(a) One ci repair pass is dispatched with the key, so its push carries [skip ci] and CI on the new head is deferred. Review is re-triggered for that push, because a pass that pushed is substantive. When that round is clean on the new head, CI is triggered once more, by the same trigger. (b) 1 of 2 CI cycles used: the push counts exactly as it would without the key, and the triggers count nothing.",
+      "assertions": [
+        "the repair push carries [skip ci]",
+        "review is re-triggered on the repair head before CI runs again",
+        "CI is triggered once more only after that round is clean",
+        "the CI cycle is counted as without the key, 1 of 2, and the trigger counts nothing"
+      ],
+      "files": []
+    },
+    {
+      "id": 43,
+      "name": "without-skip-support-or-dispatch-the-key-has-no-effect-and-says-so",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: `minimize-ci-runs` resolved true, from repo config, for PRs in two repositories. In repository A the workflow producing the required checks declares only `pull_request` and `push` triggers. In repository B that workflow declares `workflow_dispatch`, but a repair push whose commit carried `[skip ci]` was observed starting a full CI run. Questions: (a) what does the key do in each repository? (b) what does the report say?",
+      "expected_output": "(a) Nothing in either. A has no dispatch trigger, so a current branch could never be given its one run; B's CI does not honour [skip ci]. In both, CI runs as it would without the key, no token is pushed (in B, from that observation on) and no head is read as deferred. Each property was established by reading the workflow or observing a push, not assumed. (b) It names each repository where the key resolved on and has no effect, and which property is missing: A, no dispatch; B, [skip ci] not honoured.",
+      "assertions": [
+        "the key has no effect in A or B",
+        "CI is read and run as without the key in both",
+        "the answer establishes each property from the workflow or an observed push, not by assumption",
+        "the report names each repository and which property is missing"
+      ],
+      "files": []
     }
   ]
 }

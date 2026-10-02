@@ -17,6 +17,7 @@ This file is the contract. The reasoning behind each rule — incident history, 
 - optional authorization membership — the run's bounded authorized set, or a per-blocker in/out flag;
 - implementation-attempt budget;
 - draft/full PR preference when supplied;
+- `minimize-ci-runs` when the caller passes it on: every commit pushed to the issue branch while its PR is open carries `[skip ci]` in its message (`supervise-prs`, *Deferred CI*);
 - the caller's posting-identity map when one exists — every `(transport, credential)` entry with its per-kind observations, never a caller-selected pair. Invoked standalone with no map, every transport starts `unestablished` (degraded path per `references/posting-identity.md`).
 
 ## Hard constraints
@@ -24,6 +25,7 @@ This file is the contract. The reasoning behind each rule — incident history, 
 - Own exactly one issue; work only in the supplied isolated checkout when orchestrated; preserve the exact supplied base branch.
 - Never broaden scope into dependency/context tickets.
 - Never merge the PR.
+- **Never edit `.github/workflows`, or the forge's equivalent, without the owner's explicit approval** — given in the invocation, or recorded by the owner on the issue. A change the issue needs there is `NEEDS_USER`, naming it. This is where every worker skill takes the rule from.
 - Never enter a long CI/review monitoring loop, **and never delegate one**: a scheduled check-in, trigger, routine, or PR-activity subscription is monitoring arranged rather than performed, and it outlives this invocation exactly as a loop would (NOTES). Return after implementation, checks, PR creation, and durable-state verification, leaving nothing armed behind you.
 
 ## 1. Read issue + repository context

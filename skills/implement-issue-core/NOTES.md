@@ -6,6 +6,8 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 **Why "never delegate a wait" is stated separately from "never wait":** a scheduled check-in, a trigger or routine, or a PR-activity subscription is monitoring *arranged* rather than performed, and it outlives this invocation exactly as a loop would. An earlier wording that bounded duration alone was met and satisfied by a worker that still left a watcher armed — arming a wake is not entering a loop — and the worker often lacks permission to disarm what it armed, which is how a finished worker ends up blocked on a permission prompt for hours after its own PR merged. The caller supervises the PR, whichever caller it is.
 
+**Why workflow edits need the owner (#179):** a change to `.github/workflows` changes what every later run's CI checks and spends, including the CI that is meant to judge this change, so it is not a worker's to infer from what the work seems to need. It is stated here, the worker contract every implementation dispatch carries, and cited by `repair-pr` and `upgrade-npm-dependency`, the other two places a worker decides what to change.
+
 ## Step 2 — dependency precondition
 
 **Why the check runs even when a caller judged the issue READY:** that judgement was computed from a dependency read that can be wrong in a way it cannot detect — a scoped or relayed credential returns a partial list with a success status and no warning — and this worker, already reading both prose and native metadata for one issue, is the cheapest detector in the system for that blind spot.

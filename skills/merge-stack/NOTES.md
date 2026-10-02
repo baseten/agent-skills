@@ -26,6 +26,10 @@ Rewriting C changes C's head SHA, so any D based on C now has an obsolete ancest
 
 A rebase can invalidate approvals or rerun CI, so the status a PR had before its restack says nothing about whether it may merge now. Merging the next node on stale pre-rebase status is how a red or unapproved PR lands; the refresh after every rewrite is what makes entire-stack mode safe to run unattended.
 
+## Why the merge message is written explicitly
+
+**A default for every repository, with or without `minimize-ci-runs` (#179):** a squash merge's default message concatenates the PR's commit messages, and under the key those carry `[skip ci]` — so the merge commit would skip CI on the base, the one run nothing defers. Writing the message explicitly, without any skip token, keeps base CI unconditional; it costs nothing where no PR commit carried one.
+
 ## Failure and recovery
 
 Remote branches and GitHub PR state are the durable record; a resumed session's memory of "what step I was on" is not. Rediscovering actual bases and head SHAs first — and stopping when state is ambiguous — is what prevents replaying a rebase against a branch that was already rewritten, which would rewrite it a second time and corrupt the very diffs the first pass preserved.

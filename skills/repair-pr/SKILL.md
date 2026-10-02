@@ -17,6 +17,7 @@ This file is the contract; the reasoning behind its rules lives in `NOTES.md` be
 - remaining repair-cycle budget;
 - for `review`, the PR's resolved `auto-resolve-comments` with its source, passed through to `resolve-pr-comment` (*Replies held for approval* there); absent → `false`;
 - a pass id and model tier (`default` or `strongest`), supplied by the dispatching layer;
+- the PR's `minimize-ci-runs`, where the caller passes it on (*Recovery / checkpointing*); absent → off;
 - expected branch/base when supplied.
 
 ## Hard constraints
@@ -28,6 +29,7 @@ This file is the contract; the reasoning behind its rules lives in `NOTES.md` be
 - Every authored forge write this pass makes — directly or through `resolve-pr-comment` — follows the posting-identity rule (`references/posting-identity.md`) and the authored-write-form rule beside it (`references/authored-write-form.md`): short, and carrying the attribution footer, since **this pass is unattended by construction** — nobody reads its replies before they are posted, so that rule's approval test answers No for every write it makes, its own and any made through `resolve-pr-comment`. Neither rule is restated here. A reply `resolve-pr-comment` holds for approval is not posted by this pass at all. Select the author from **the caller's map entry for this pass's own selected `(transport, credential)` pair** — `unestablished` where the map carries no such pair — never from an entry for a pair this pass is not writing under; pass that selection into `resolve-pr-comment` (NOTES). The Output read-back still happens and is what the caller merges.
 - **Evidence requiring product or architecture judgment → never guess.** Where that evidence is a `ci` failure or a settle-time `finding`, `NEEDS_USER` is the pass's **outcome**. Where it is a review thread, it is a `NEEDS_USER` **item** carried under the round's own outcome — `NO_CODE_CHANGE` where nothing was repaired, `REPAIRED` where other threads in the round were (*Review repair*, step 2). The distinction is load-bearing: the caller branches on the outcome, and a question-only round returning `NEEDS_USER` as its outcome marks the whole PR `NEEDS_USER` and stops the run from ever settling — which reserving a thread is explicitly not meant to do (`references/review-feedback.md`, *Reserved for the owner*).
 - **Every repair type here takes `resolve-pr-comment`'s scope for a value with several readers, and its rule for a fix lint rejects twice** (step 3 there), not only the `review` type that invokes it. A `ci` or `finding` repair has no reply to carry the readers' inventory, so its method goes in the commit message, which takes the outbound claim check (`references/establish-do-not-assume.md`, *You are about to assert it*) in every repair type; and where the lint rule sends a thread to the owner, the same case here is judgment evidence, so `NEEDS_USER` is the pass's outcome (above).
+- **Never edit `.github/workflows`, or the forge's equivalent, without the owner's explicit approval** (`implement-issue-core`, *Hard constraints*): a repair that needs such an edit is judgment evidence (above).
 - Never select or escalate your own model. A pass that judges itself under-powered reports the locus evidence (Output) and returns (NOTES).
 
 ## CI repair (`repair type = ci`)
@@ -78,7 +80,7 @@ Never widen into other action points or findings the caller did not supply, and 
 
 - Before editing, fetch the remote PR branch and verify the assigned checkout is on/derived from the current remote head — the remote branch is durable state.
 - Every repair that changes code ends with a **pushed commit**. Never return success with repair work existing only in the local worktree (NOTES).
-- **Every commit this pass makes carries three trailers**, beside any the repository requires: `Repair-Pass: <the supplied pass id>`, `Repair-Type: <ci|review|finding>` and `Repair-Model: <default|strongest>`. Pass them to `resolve-pr-comment` for every commit it makes under this pass — it applies them (*4. Commit and push* there). They are how a supervisor rebuilding its counts from the branch after a restart tells a repair pass from any other commit, counts passes rather than commits, and counts escalations (NOTES).
+- **Every commit this pass makes carries three trailers**, beside any the repository requires: `Repair-Pass: <the supplied pass id>`, `Repair-Type: <ci|review|finding>` and `Repair-Model: <default|strongest>`. **Where `minimize-ci-runs` was passed on, every such commit also carries `[skip ci]` in its message** (`supervise-prs`, *Deferred CI*). Pass the trailers, and the token where it applies, to `resolve-pr-comment` for every commit it makes under this pass — it applies them (*4. Commit and push* there). They are how a supervisor rebuilding its counts from the branch after a restart tells a repair pass from any other commit, counts passes rather than commits, and counts escalations (NOTES).
 
 ## Output
 

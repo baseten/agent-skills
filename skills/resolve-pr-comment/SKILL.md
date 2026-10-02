@@ -140,7 +140,7 @@ git add <files>
 git commit -m "<concise description of what was fixed>"
 ```
 
-then push once, `git push -u origin <branch>`. **Under a repair pass that supplied repair trailers** (`repair-pr`, *Recovery / checkpointing*), **every commit this skill makes carries them unchanged** — each per-thread commit, and a single commit where the user asked for one — beside any the repository requires.
+then push once, `git push -u origin <branch>`. **Under a repair pass that supplied repair trailers** (`repair-pr`, *Recovery / checkpointing*), **every commit this skill makes carries them unchanged**, and the `[skip ci]` token where the pass supplied it — each per-thread commit, and a single commit where the user asked for one — beside any the repository requires.
 
 Commit messages should describe the
 fix, not reference the review comment ("Fix off-by-one in pagination", not

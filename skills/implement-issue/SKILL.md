@@ -35,10 +35,10 @@ This file is the contract. The reasoning behind each rule — incident history, 
 
 - Preserve exactly any caller-supplied repository, worktree, branch, base, dependency context, tracker, and budgets.
 - Read the policy file (`references/agent-policy.md` names it, and *Fail-closed handling* its old-name fallback) **once, at run start, from the head of the repository's default branch** — never from the worktree this run writes, and never again afterwards.
-- Keys consumed: `implementation-attempts`, `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-merge`, `auto-request-settle`, `auto-resolve-comments`. Ignore `concurrent-workers`, `concurrent-open-prs` and `new-issue-budget` — no single-issue meaning.
+- Keys consumed: `implementation-attempts`, `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-merge`, `auto-request-settle`, `auto-resolve-comments`, `minimize-ci-runs`. Ignore `concurrent-workers`, `concurrent-open-prs` and `new-issue-budget` — no single-issue meaning.
 - **A caller's complete resolved policy suppresses the read**: use supplied keys as given, each with the source the caller resolved it from; omitted keys take the built-in defaults — except `auto-merge`, which takes **`false`**: an unmentioned permission was not granted.
 - **A partial invocation override suppresses nothing**: read the file and merge the argument over it per key, by `references/agent-policy.md`, *Precedence* — which lists the keys an argument can only switch off. NOT: treating one argument as a resolved policy — that would hand a zero-repair-cycles repository two cycles because its owner narrowed something else (NOTES).
-- Built-in defaults (absent file — the common case): implementation attempts **2** · CI repair **2** · review repair **2** · finding repair **2** · strongest-model repair rounds **1** · `auto-merge` **off** · `auto-request-settle` **on** · `auto-resolve-comments` **off**. Monitoring cap: **8 hours** where persistent monitoring is supported — an invocation property, not a policy key.
+- Built-in defaults (absent file — the common case): implementation attempts **2** · CI repair **2** · review repair **2** · finding repair **2** · strongest-model repair rounds **1** · `auto-merge` **off** · `auto-request-settle` **on** · `auto-resolve-comments` **off** · `minimize-ci-runs` **off**. Monitoring cap: **8 hours** where persistent monitoring is supported — an invocation property, not a policy key.
 
 # Phase 1 — durable implementation
 
@@ -72,7 +72,7 @@ On a terminal outcome (`BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`)
 
 - **PR set**: the one PR, with its repository, branch/base, remote head and the canonical issue URL — adopted on the first pass, which issues any owed trigger and arms the subscription at once;
 - **budgets**: `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles` and `repair-model-escalations`, as *Policy and budgets* resolved them, each with its source;
-- **`auto-resolve-comments`**: as *Policy and budgets* resolved it, with its source;
+- **`auto-resolve-comments`** and **`minimize-ci-runs`**: as *Policy and budgets* resolved them, with their source;
 - **counters**: 0 on a fresh run, since this run created the PR; on any later invocation, the counters in `supervise-prs`'s last returned record;
 - **posting-identity map**: the run's map, every entry core returned included; **merge** the map it returns into the run's, never replace it;
 - **review routing and trigger state**: as core's `create-pr` left them;

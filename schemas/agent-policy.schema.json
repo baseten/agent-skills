@@ -124,6 +124,15 @@
         "resolve-pr-comment"
       ]
     },
+    "minimize-ci-runs": {
+      "type": "boolean",
+      "default": false,
+      "description": "Defer CI until a PR's automated review is clean, then run it once, and re-check a stale green at the merge gate only where the base's changes overlap the PR's files. Has no effect where the forge ignores [skip ci] or the CI workflow cannot be dispatched. Read by: backlog-orchestrator, implement-issue.",
+      "x-read-by": [
+        "backlog-orchestrator",
+        "implement-issue"
+      ]
+    },
     "auto-merge": {
       "type": "boolean",
       "default": false,
