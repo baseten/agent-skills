@@ -59,7 +59,7 @@ A composed skill that is unavailable → the pass reports it and repairs nothing
 PR URL, repository, canonical issue URL where there is one
 branch/base
 remote head SHA
-CI: per check — state, and attribution where red (references/ci-attribution.md); or deferred / triggered (update | dispatch) at <time> (*Deferred CI*)
+CI: per check — state, and attribution where red (references/ci-attribution.md); or deferred / waiting for base to move / triggered (update | dispatch) at <time> (*Deferred CI*)
 per review convention: performed by; trigger state; rounds, each pending/refused (reason, reset)/complete-with-findings/clean
 reserved threads (question items, deferred-repair items), approval-pending replies (one per thread), rejected held replies (thread + fix SHA), mixed-thread fixes left for the owner, and no-action threads — held-reply records (approval-pending, rejected, the no-action that ends one) replace each other per thread, and a later reserved or deferred-repair record turns one into a mixed-thread record (`references/review-feedback.md`, *Approval-pending replies*); every other record stands beside them
 draft state: as-created -> current; promotion convention, or absent
@@ -127,21 +127,21 @@ One pass is one supervision cycle over the tracked set. In order:
 
 ### Deferred CI
 
-**Where a PR's `minimize-ci-runs` resolved `true`, CI is deferred while the PR is still changing, then runs once.** It has effect only in a repository where all of the following hold, each established rather than assumed (`references/establish-do-not-assume.md`) and recorded per repository. Three are read once, before any tokened push — by the caller where a worker pushes before the PR exists, otherwise at *Adopt*:
+**Where a PR's `minimize-ci-runs` resolved `true`, CI is deferred while the PR is still changing, then runs once.** It has effect only in a repository where all of the following hold, each established rather than assumed (`references/establish-do-not-assume.md`) and recorded per repository. Two are read once, before any tokened push — by the caller where a worker pushes before the PR exists, otherwise at *Adopt*:
 
-- **every required check comes from a workflow that declares `workflow_dispatch`** and whose jobs are not gated to `pull_request` events, so a dispatch runs them;
 - **the repository allows a squash or merge-commit merge**, read from its settings — a rebase merge lands tokened commits on the base;
 - **the review trigger is not an Actions workflow on `pull_request` events**, which the token would skip with CI.
 
-The fourth is observed: **the forge's CI honours `[skip ci]`** — a tokened head that started no run within the window a run takes to register, never read off one empty lookup (`references/absence-is-not-a-verdict.md`); until observed it is unknown, not absent. Without any of the four, the key has no effect on that repository's PRs: no token is pushed, CI runs as without it, and the report says so, naming which is missing. **Branch protection requiring branches to be up to date** stops nothing here, but the stale-green overlap narrowing then has no effect in that repository (`settle-and-merge`, *Merge behavior*); record it with the rest.
+The third is observed: **the forge's CI honours `[skip ci]`** — a tokened head that started no run within the window a run takes to register, never read off one empty lookup (`references/absence-is-not-a-verdict.md`); until observed it is unknown, not absent. Without any of the three, the key has no effect on that repository's PRs: no token is pushed, CI runs as without it, and the report says so, naming which is missing. **Branch protection requiring branches to be up to date** stops nothing here, but the stale-green overlap narrowing then has no effect in that repository (`settle-and-merge`, *Merge behavior*); record it with the rest.
 
 Where it has effect:
 
-1. **Every push this workflow makes to the PR's branch carries `[skip ci]` in its head commit's message** — a pass's (`repair-pr` takes the key with its dispatch), a worker's, a caller's restack or conflict fix — **and so does the worker's last push before the PR is created**, so the PR-opened event skips CI too. Review is triggered on those heads as on any other.
+1. **Every push this workflow makes to the PR's branch carries `[skip ci]` in its head commit's message** (the one skip token `references/authored-write-form.md` permits) — a pass's (`repair-pr` takes the key with its dispatch), a worker's, a caller's restack or conflict fix — **and so does the worker's last push before the PR is created**, so the PR-opened event skips CI too. Review is triggered on those heads as on any other.
 2. **A head carrying it, with no run, is `CI deferred`** — not missing, not red, not expected-red: nothing to attribute, no cycle, no dispatch. Required checks the forge shows as expected on that head are this state, never a failure; the PR is `waiting` on it.
 3. **This skill triggers CI once, when the PR is quiescent on its current head**: no repair pass in flight; no unhandled feedback by `references/review-feedback.md`, *Unhandled feedback* — a held reply, a reserved question and a deferred repair are handled, so **a deferred repair left by a spent review budget does not hold the trigger**; no round owed to the caller and none `deferred`; and no automated round the repository's convention expects for this head still outstanding inside its window (`references/review-trigger.md`, *Confirming a trigger took effect*). A round refused, unavailable, never expected, or past its window does not hold the trigger. Under the one-mutator rule (*Adopting a head*):
    - **update the branch from its base**, on the key's authority: the merge commit carries no skip token, so CI runs. A clean update is mechanical (`references/mechanical-pushes.md`) — no cycle, and the review round carries forward (`references/ci-and-review-verdicts.md`, *A review is clean*). An update that would conflict is not made: the PR is reported conflicted, and the push resolving it carries the token and waits for quiescence on its own head;
-   - **where the branch is already up to date, dispatch the workflow on the branch** (`workflow_dispatch`) — only there, since branch and merged tree are then the same — and confirm a run registered for that head within that window — none is reported, never re-dispatched blind;
+   - **where the branch is already up to date, dispatch on the branch** — only there, since branch and merged tree are then the same — **each workflow whose required checks are expected on this head**: a dispatch ignores `paths`/`paths-ignore`, so one whose filters match none of the PR's changed files is not dispatched. Each must declare `workflow_dispatch`, with no job gated to `pull_request` events, read per PR. Confirm a run registered for that head within that window — none is reported, never re-dispatched blind;
+   - **where a workflow it needs is not dispatchable, dispatch nothing and hold the PR**, `waiting` as `CI deferred: waiting for base to move`; when the base next moves, update the branch as above. The first hold in a run for a repository adds a one-line suggestion to the report that the owner add `workflow_dispatch:` to that workflow's triggers — never an edit this run makes (`implement-issue-core`, *Hard constraints*). The hold is not a stall: it counts no cycle, is terminal (*Outcomes*) and is surfaced — it holds its merge, never its caller's settle;
    - **a run already existing for the current head is the trigger's**: never trigger again for that head, after a restart included;
    - **never an empty commit, and never a close and reopen.**
 4. **A failure of that run is a CI failure** (*CI failure*): the repair push carries the token, review runs where the convention expects it, and once the new head is quiescent CI is triggered once more. Budgets count these pushes exactly as without the key; a trigger counts nothing.
@@ -249,14 +249,14 @@ Per PR, one of:
 - **`merged`** / **`closed`** — observed, whoever did it;
 - **`cannot-watch`** — nothing could be armed.
 
-**Terminal** — what `any-terminal` and `all-terminal` count, and what this skill takes no further step on without new input — is: `finished`, `held: check`, `returned`, `unrepaired`, `needs-user`, `merged`, `closed` and `cannot-watch`.
+**Terminal** — what `any-terminal` and `all-terminal` count, and what this skill takes no further step on without new input — is: `finished`, `held: check`, `returned`, `unrepaired`, `needs-user`, `merged`, `closed` and `cannot-watch`, and `waiting` held for its base to move (*Deferred CI*), whose new input is a base move.
 
 ## Report
 
 The per-PR record, plus:
 
 - whether it changed this pass;
-- every repository where `minimize-ci-runs` resolved on and has no effect, naming what is missing;
+- every repository where `minimize-ci-runs` resolved on and has no effect, naming what is missing; every PR held as `CI deferred: waiting for base to move`, and, once per repository in the run, the suggestion to add `workflow_dispatch:` (*Deferred CI*);
 - every expected-red check with its refresh; every round owed to the caller, with its head;
 - every reserved thread per item kind, verbatim, every approval-pending reply, verbatim, every rejected held reply as *reply not posted — thread open for you*, every mixed-thread fix as *fix pushed — thread left for you (it also asks a question)* or *(a further change is deferred)*, every approved reply left open as *reply posted — thread left open*, and every no-action thread;
 - every refused round with its reason and reset; every repository whose triggering was suppressed;

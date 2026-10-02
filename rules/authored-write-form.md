@@ -2,7 +2,7 @@
 
 This is the rule other skills mean when they cite *authored write form*. It is a shared rule, not a skill: held once at `rules/authored-write-form.md` and copied into each applying skill's `references/authored-write-form.md` by `scripts/refresh_shared_rules.sh`. Edit the source, never a copy; check_shared_rules.py fails if a generated copy diverges.
 
-The *posting identity* shared rule decides which **author** a write carries; this decides **what the write looks like** once it is authored — identity is a fact about the credential, form a fact about the text. It covers every authored forge/tracker write made on the run's behalf — PR bodies, timeline comments, review replies, worker reports, recorded rulings — whichever skill or worker performs it. **This file is the rule's only statement; the skills that write defer here rather than restating it.** Two rules: keep it short, and mark the writes nobody read.
+The *posting identity* shared rule decides which **author** a write carries; this decides **what the write looks like** once it is authored — identity is a fact about the credential, form a fact about the text. It covers every authored forge/tracker write made on the run's behalf — PR bodies, commit and merge messages, timeline comments, review replies, worker reports, recorded rulings — whichever skill or worker performs it. **This file is the rule's only statement; the skills that write defer here rather than restating it.** Two rules: keep it short, and mark the writes nobody read.
 
 ## Keep it short
 
@@ -14,6 +14,8 @@ The *posting identity* shared rule decides which **author** a write carries; thi
 - **Never hard-wrap a write that lands in a forge field** — a PR body, an issue body, a review comment. A browser renders a newline inside a paragraph as a line break, so write each paragraph as one long line; code blocks, tables and lists are unaffected. **Expect to get this wrong, and expect nothing to catch it**: the write never reaches the repository's formatter, which trains the opposite habit.
 
 **No write reports verification** — no list, table or sentence saying which checks ran or how they came out (lint, formatting, type checking, test suites, CI) — in a PR body, a comment, a review body or a commit message, **a collapsed `<details>` block included**: run locally or not, passed, failed or `not locally runnable`, whatever the gate's provenance, and whatever a style guide or template asks. The forge's own checks report them; a gate report goes in the structured result returned to the caller. What a template's checks section gets instead is the **testing summary**: only the manual steps a reader has to run, grouped rather than one per assertion, and a line naming which behaviour a new or existing test now pins — never that a suite passes, never a list of test files. A repair's diagnosis of the failure it fixed or declined, and a reply answering a reviewer's question about a test or check, are not verification; they go where their contract puts them.
+
+**No commit or merge message the run writes contains a CI skip token** — `[skip ci]`, `[ci skip]`, `[no ci]`, `[skip actions]`, `[actions skip]` or `skip-checks` — **prose that mentions one included**: GitHub honours it anywhere in the message, so a commit describing the feature skips CI on its PR and on a squash merge. The one exception is the deliberate `[skip ci]` on a push deferred under `minimize-ci-runs` (`supervise-prs`, *Deferred CI*). Name it in prose as *the skip token*.
 
 ## A PR body
 
