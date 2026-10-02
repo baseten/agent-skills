@@ -33,7 +33,7 @@ Both, not either. The subscription is the fast path; the check-in is what makes 
 
 ## A watch kept past a settled result
 
-**A run that has settled and reported its result, and keeps its PR watched for late human review** (`implement-issue`, *Completion*), waits on a person rather than a pipeline, so its check-in takes this schedule in place of the budget and backoff above: **the first check-in about 50 minutes after the last observed delta, then about every 4 hours, stopping after 3 consecutive unproductive wakes**. A delta restarts the schedule at its first step. Everything else in this rule holds unchanged: what counts as unproductive and as a delta, the count in the prompt, the reported stop, and its reading as a cost guard rather than a verdict.
+**A run that has settled and reported its result, and keeps its PR watched for late human review** (`implement-issue`, *Completion*), waits on a person rather than a pipeline, so its check-in takes this schedule in place of the budget and backoff above: **the first check-in about 50 minutes after the last observed delta, then about every 4 hours, ending after 3 consecutive unproductive wakes or 7 days after the result was reported, whichever comes first**. A delta restarts the schedule at its first step and resets the unproductive count, never the 7-day limit; the prompt carries the deadline beside the count. A run's monitoring cap bounds its active loop before the result, and does not reach this watch. Everything else in this rule holds unchanged: what counts as unproductive and as a delta, the count in the prompt, the reported stop, and its reading as a cost guard rather than a verdict.
 
 ## Not a licence to keep a loop warm
 

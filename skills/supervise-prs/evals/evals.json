@@ -370,12 +370,13 @@
       "id": 29,
       "name": "a-trigger-read-back-with-an-added-footer-is-confirmed-by-a-run-not-reposted",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). At adoption of PR #110 you post the repository's review trigger, `@codex review`, through the GitHub MCP server. Reading the comment back, its body is the trigger followed by a blank line and \"Generated with an MCP client\" — a footer the server added. Two minutes later no review has appeared. What do you do now, what would confirm the trigger, and what would change your answer?",
-      "expected_output": "Record the pair as appending a footer on its map entry, and report the trigger as possibly not fired, naming the transport — but do not bar the pair on the read-back alone. Do not re-post now: a second trigger on the same head is a second review request. The trigger is confirmed once the reviewer's run is observed starting on the head (a review, its reply or reaction, or a check run). Establish whether the repository also requests review when a PR is opened, and let the confirmation window run. Only if the window elapses with no run and nothing else requests one, bar the pair and reissue once through a different mechanism from the invoking user's account, reading it back; if no mechanism posts the text alone, surface it as NEEDS_USER for that repository.",
+      "expected_output": "Record the pair as appending a footer, with its exact text, and report the trigger as possibly not fired, naming the transport, but do not bar the pair on the read-back alone. Do not re-post now: a second trigger on the same head is a second review request. Through such a transport the trigger is confirmed only by the reviewer answering it: a reaction or reply to the trigger comment, or a review on the head where nothing else requested one. A check run alone confirms nothing. First establish whether the repository also requests review when a PR is opened (a pull_request: opened workflow or the reviewer's configuration), and let the confirmation window run. Only if the window elapses with no answer and nothing else requests one, bar the pair and reissue once through a different mechanism from the invoking user's account, reading it back; if no mechanism posts the text alone, surface it as NEEDS_USER for that repository.",
       "assertions": [
         "the answer reports the trigger as possibly not fired because of the added footer, and records the transport as appending one",
-        "an observed run of the reviewer confirms the trigger; the read-back alone does not bar the pair",
+        "only a reaction or reply to the trigger, or a review nothing else requested, confirms it; the read-back alone does not bar the pair",
         "the answer does not re-post the trigger immediately",
-        "the answer allows at most one reissue, through a different mechanism, only after the window elapses with no run"
+        "the answer checks whether the repository also triggers review on pull_request opened before concluding failure",
+        "the answer allows at most one reissue, through a different mechanism, only after the window elapses with no answer"
       ],
       "files": []
     },
@@ -706,12 +707,25 @@
     {
       "id": 56,
       "name": "a-footer-appending-transport-confirms-by-run-and-strips-before-a-body-edit",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your posting-identity map records the GitHub MCP server's pair as appending its own footer to every write. (a) You post the review trigger through it on PR #130; the read-back shows the trigger text plus the server's footer, and ninety seconds later the automated reviewer's check run starts on the head. Is the trigger confirmed? (b) Later, the PR still a draft, the settle's body reconcile edits the PR body through the same pair; the body currently ends with that server's footer. What do you write? (c) The owner approves a one-line held reply, which you post through the same pair. What do you report about its footer?",
-      "expected_output": "(a) Yes: through a transport that appends a footer, the trigger is confirmed once the reviewer's run is observed starting on the head, not barred by the read-back alone; the run started, so it is confirmed. (b) Strip the body's trailing footer before writing, so the transport's own appended footer does not double it. (c) The approved reply goes out without the run's own footer, but the transport appends one anyway, so report that the posted reply carries the transport's footer, never that it posted none.",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your posting-identity map records the GitHub MCP server's pair as appending its own footer to every write. (a) You post the review trigger through it on PR #130; the read-back shows the trigger text plus the server's footer. Ninety seconds later a check run starts on the head; a minute after that, the automated reviewer reacts to the trigger comment. Is the trigger confirmed, and by which of those? (b) Later, the PR still a draft, the settle's body reconcile edits the PR body through the same pair; the body currently ends with that server's exact footer text, recorded on the map entry. What do you write? (c) The owner approves a one-line held reply, which you post through the same pair. What do you report about its footer?",
+      "expected_output": "(a) Confirmed by the reaction, not the check run. Through a footer-appending transport a trigger is confirmed only by a reaction or reply to the trigger comment, or by a review on the head where nothing else requested one; a check run alone can belong to another round. The read-back alone bars nothing. (b) Strip that transport's exact known footer text from the end of the body before writing, and no other trailing text, so the transport's own appended footer does not double it. (c) The approved reply goes out without the run's own footer, but the transport appends one anyway, so report that the posted reply carries the transport's footer, never that it posted none.",
       "assertions": [
-        "the trigger is confirmed by the observed run, not barred by the read-back",
-        "the body edit strips the trailing footer before writing so it does not double",
+        "the check run alone does not confirm the trigger",
+        "the reaction to the trigger comment confirms it",
+        "the body edit strips only the transport's exact footer before writing",
         "the approved reply is reported as carrying the transport's footer"
+      ],
+      "files": []
+    },
+    {
+      "id": 57,
+      "name": "a-bot-follow-up-in-an-owner-thread-spends-the-budget",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #121 was passed review-repair-cycles 2, one used. The invocation named the invoking user's account, and the PR's own write ids are complete. A thread rooted earlier by the invoking user, already fixed and resolved, gets reopened: the automated reviewer replies inside it asking for an added test case. Nothing else is new. Which pass does the thread go in, and does it spend a review cycle?",
+      "expected_output": "The budgeted pass. Whether a thread goes in the no-cycle pass is decided by who wrote its new content, never by who rooted it. Here the new content is the bot's, so it is an ordinary review round: dispatched with the remaining budget of 1, and the pushed repair spends the cycle, leaving 0.",
+      "assertions": [
+        "the thread goes in the ordinary budgeted pass despite the owner's root",
+        "the decision rests on who wrote the new content",
+        "the pushed repair spends a review cycle"
       ],
       "files": []
     }

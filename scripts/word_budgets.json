@@ -31,7 +31,7 @@
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 4480,
+      "budget": 4563,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
@@ -55,11 +55,11 @@
       "target": 3000
     },
     "skills/repair-pr/SKILL.md": {
-      "budget": 3429,
+      "budget": 3474,
       "target": 3000
     },
     "skills/resolve-pr-comment/SKILL.md": {
-      "budget": 7235,
+      "budget": 7338,
       "target": 3000
     },
     "skills/review-docs/SKILL.md": {
@@ -83,7 +83,7 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 6375,
+      "budget": 6475,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
@@ -115,7 +115,7 @@
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2029,
+      "budget": 2045,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
@@ -143,7 +143,7 @@
       "target": 1500
     },
     "rules/posting-identity.md": {
-      "budget": 1639,
+      "budget": 1746,
       "target": 1500
     },
     "rules/prose-review-round-budget.md": {
@@ -155,15 +155,15 @@
       "target": 1500
     },
     "rules/review-feedback.md": {
-      "budget": 2765,
+      "budget": 2818,
       "target": 1500
     },
     "rules/review-trigger.md": {
-      "budget": 1651,
+      "budget": 1670,
       "target": 1500
     },
     "rules/wake-budget.md": {
-      "budget": 1257,
+      "budget": 1302,
       "target": 1500
     },
     "rules/watch-and-read.md": {

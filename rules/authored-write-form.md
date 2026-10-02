@@ -53,7 +53,7 @@ Creating a PR is not an edit. After creation:
 | the `Depends on:` line, in any case | **always — that line and only that line**: it is stack metadata |
 | **anything else** — a published PR whose body a person has read, that opt-in off | **never**: report the drift as an action point with a suggested replacement |
 
-An allowed edit to a published PR is reported: which PR, what changed, and why. Both reports are made at settle (`settle-and-merge`, *Merge behavior*), or in the skill's own output where no settle follows. **An allowed edit to a body a person wrote — their draft, say — adds no footer**: the text is still theirs. **An edit through a transport the posting-identity map records as `appends footer` strips the body's trailing footer before writing**, so the transport's own does not stack a second.
+An allowed edit to a published PR is reported: which PR, what changed, and why. Both reports are made at settle (`settle-and-merge`, *Merge behavior*), or in the skill's own output where no settle follows. **An allowed edit to a body a person wrote — their draft, say — adds no footer**: the text is still theirs. **An edit through a transport the posting-identity map records as `appends footer` strips that transport's footer from the end of the body before writing** — its exact known text, never any other trailing text — so the transport's own does not stack a second.
 
 ## The attribution footer marks the writes nobody read
 

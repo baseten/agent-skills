@@ -35,7 +35,7 @@ one the next editor of that contract will not find.
 
 ## Replies held for approval
 
-**Why the reply waits and the fix does not (#174, owner's ruling 2026-10-01):** the kind test is author-blind on purpose, and that is right for the fix. It was wrong for what follows it. The reply goes out under the owner's account to a person, and resolving the thread tells that person the owner considered their point and is done with it. Neither is the run's to say unread. A thread only bots are in has nobody waiting to be told, so it keeps today's path. `auto-resolve-comments: true` restores today's path for people too, for a repository whose owner wants it.
+**Why the reply waits and the fix does not (#174, owner's ruling 2026-10-01):** the kind test is author-blind on purpose, and that is right for the fix. It was wrong for what follows it. The reply goes out under the owner's account to a person, and resolving the thread tells that person the owner considered their point and is done with it. Neither is the run's to say unread. A thread only bots are in has nobody waiting to be told, so it keeps today's path. `auto-resolve-comments: true` restores today's path for people too, for a repository whose owner wants it. #183 later took the invoking user's own threads off the hold (below).
 
 **Why this is not the removed `auto-fix-reviewers` gate:** that key decided what was *fixed* by who wrote the comment, and erred both ways. Here authorship decides nothing about the fix — a person's nit is still repaired and pushed in the same pass — only whether the reply and the resolution wait.
 

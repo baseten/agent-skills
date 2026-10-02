@@ -49,3 +49,5 @@ Added with `review-docs` (Sept 2026). The confirmation step was written for an e
 **Why confirmation is per attempt, on every PR:** one review arriving elsewhere in the run is not evidence the trigger works.
 
 **Why a footer-appending transport is confirmed by a run, not barred (#183):** a read-back with an appended footer shows the body differs, not that the reviewer ignored it. Barring on it alone can push every later trigger off a transport that works, which in some sessions is the only one that posts. Seeing the reviewer's run start is direct evidence; the read-back is only a reason to look for it.
+
+**Why a check run alone does not confirm a footer-appending trigger (blind audit of #184):** a check run on the head can belong to a round a workflow requested on the push, so it says nothing about whether this trigger matched. A reaction or reply to the trigger comment answers that comment; a review counts only where nothing else requested one.

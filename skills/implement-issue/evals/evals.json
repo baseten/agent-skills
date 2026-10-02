@@ -183,10 +183,10 @@
       "id": 14,
       "name": "pr-open-at-finished-keeps-the-watch-armed",
       "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). supervise-prs returned PR #57 finished at 14:00Z: CI green, the automated reviewer's round clean, no human review yet. The repository did not opt into auto-merge, so the settle sequence ran and you return PR_OPEN. supervise-prs had subscribed to the PR and its check-in is armed for 14:20Z. What happens to the subscription and the check-in as you return PR_OPEN, on what cadence does the watch now wake, when does that cadence stop, and what does the structured result say about the watch?",
-      "expected_output": "Settling is not the end of the watch, so PR_OPEN returns with the subscription still armed: a finished PR awaiting human review is waiting for watch purposes. The check-in is replaced by the post-settle cadence wake-budget sets: the first about 50 minutes after the last observed activity, then about every 4 hours, stopping after 3 consecutive check-ins that find nothing new, a delta restarting the schedule. Each check-in runs one supervise-prs Pass with the Phase 2 inputs, its prompt carrying the posture line naming implement-issue and the count. The structured result says the watch is still armed, gives the check-in's id and next firing time, says what wakes it (a human review or comment, a merge or close), and says that telling the run to stop ends it.",
+      "expected_output": "Settling is not the end of the watch, so PR_OPEN returns with the subscription still armed: a finished PR awaiting human review is waiting for watch purposes. The check-in is replaced by the post-settle cadence wake-budget sets: the first about 50 minutes after the last observed activity, then about every 4 hours, ending after 3 consecutive check-ins that find nothing new or 7 days after PR_OPEN, whichever comes first; a delta restarts the schedule and the count, never the 7 days. It is the only check-in. Each check-in runs one supervise-prs Pass with the Phase 2 inputs, wait owner caller, its prompt carrying the posture line naming implement-issue and the count. The structured result says the watch is still armed, gives the check-in's id and next firing time, says what wakes it (a human review or comment, a merge or close), and says that telling the run to stop ends it.",
       "assertions": [
         "the subscription stays armed on returning PR_OPEN",
-        "the check-in follows the post-settle cadence: about 50 minutes, then about every 4 hours, stopping after 3 unproductive wakes",
+        "the check-in follows the post-settle cadence: about 50 minutes, then about every 4 hours, ending after 3 unproductive wakes or 7 days",
         "the answer cites wake-budget for the cadence and keeps it bounded",
         "the structured result says the watch is armed, what wakes it and how to stop it"
       ],
@@ -246,25 +246,39 @@
       "id": 19,
       "name": "a-human-review-after-settle-re-enters-supervision",
       "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You returned PR_OPEN for PR #57 four hours ago and the post-settle watch is armed. A check-in fires and finds that a human colleague has left a review with two inline comments: one asks you to extract a duplicated literal into a constant, the other asks why the retry count is 3. Nothing else changed. What does the run do now, and what happens after the repair?",
-      "expected_output": "Late human feedback re-enters supervision: the run invokes Phase 2 (supervise-prs with its own loop) again for review repair. The constant extraction is repairable and goes to a dispatched repair-pr review pass, counted against review-repair-cycles because the colleague is not the invoking user; its reply is held for approval because a person other than the invoking user is in the thread. The retry-count question is reserved for the owner, never answered. The wake was productive, so the unproductive count resets. When supervise-prs returns finished again, the run settles again from step 1, and returns PR_OPEN with the watch still armed if nothing ended it.",
+      "expected_output": "Late human feedback is repaired by the post-settle check-in's own supervise-prs Pass, run with wait owner caller; Phase 2 is not re-invoked with its own loop, and no second check-in is armed. The constant extraction is repairable and goes to a dispatched repair-pr review pass, counted against review-repair-cycles because the colleague is not the invoking user; its reply is held for approval because a person other than the invoking user is in the thread. The retry-count question is reserved for the owner, never answered. The wake was productive, so the unproductive count resets, but not the 7-day limit. When the PR is finished again, the run settles again from step 1, and the same check-in continues.",
       "assertions": [
-        "the late review re-enters supervise-prs for review repair rather than being ignored or fixed inline",
+        "the late review is repaired by the existing check-in's supervise-prs Pass, not ignored, fixed inline or handed to a new loop",
         "the colleague's question is reserved, not answered",
         "the run settles again once the PR is finished again",
-        "the watch stays armed afterwards"
+        "the same check-in continues afterwards"
       ],
       "files": []
     },
     {
       "id": 20,
       "name": "the-post-settle-watch-ends-on-merged-closed-blocked-or-the-cap",
-      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). After PR_OPEN the post-settle watch is armed on PR #57. Consider four separate cases at a check-in: (a) the owner merged the PR; (b) the PR was closed; (c) a re-entered repair pass returned BLOCKED; (d) the 8-hour monitoring cap elapsed with the PR still awaiting review. Also (e): the PR is still open and finished, the last three check-ins found nothing new. In each case, does the watch end, and what is done with the subscription and the check-in?",
-      "expected_output": "(a)-(d): the watch ends. Merged or closed, a BLOCKED (or BLOCKED_EXTERNAL, FAILED, NEEDS_USER) outcome, and the monitoring cap are the ends of the watch; the PR is unsubscribed and the check-in cancelled, under platform-pr-posture's watch-ends-with-the-run rule, and the result reports it (a merge with tracker reconciliation; a cap stop naming the PR still open and that the expiry is not a verdict). (e) The cadence's budget of 3 consecutive unproductive wakes is spent, so the watch stops too, reported, the PR named still open, unsubscribed with the check-in. A finished PR alone never ends it.",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). After PR_OPEN the post-settle watch is armed on PR #57. Consider four separate cases at a check-in: (a) the owner merged the PR; (b) the PR was closed; (c) a re-entered repair pass returned BLOCKED; (d) 7 days have passed since PR_OPEN with the PR still awaiting review, though the last check-in found a new commit. Also (e): the PR is still open and finished, the last three check-ins found nothing new. And (f): 9 hours after PR_OPEN, the 8-hour monitoring cap has elapsed. In each case, does the watch end, and what is done with the subscription and the check-in?",
+      "expected_output": "(a)-(c): the watch ends: merged or closed, or a BLOCKED (or BLOCKED_EXTERNAL, FAILED, NEEDS_USER) outcome. (d) It ends at 7 days from PR_OPEN: a productive wake resets the unproductive count but never the 7-day limit. (e) It ends after 3 consecutive unproductive check-ins. In each case the PR is unsubscribed and the check-in cancelled, under platform-pr-posture's watch-ends-with-the-run rule, and the result reports it, a time or quiet stop naming the PR still open and saying the expiry is not a verdict. (f) Nothing ends: the 8-hour cap bounds Phase 2's active loop only, not the post-settle watch. A finished PR alone never ends it.",
       "assertions": [
-        "merged, closed, BLOCKED and the monitoring cap each end the watch",
-        "ending the watch unsubscribes the PR and cancels the check-in",
-        "three consecutive unproductive check-ins stop the watch, reported with the PR still open",
-        "finished alone does not end the watch"
+        "merged, closed and BLOCKED each end the watch",
+        "the 7-day limit ends it even after a productive wake",
+        "three consecutive unproductive check-ins end it, reported with the PR still open",
+        "the 8-hour monitoring cap does not end the post-settle watch",
+        "ending the watch unsubscribes the PR and cancels the check-in"
+      ],
+      "files": []
+    },
+    {
+      "id": 21,
+      "name": "a-late-review-leaves-exactly-one-check-in",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). After PR_OPEN on PR #57, the post-settle check-in (id ci-7) is armed. A human review arrives with one repairable comment, delivered by the subscription. Walk through how it is repaired and settled again, and say how many check-ins are armed at the end and which.",
+      "expected_output": "The subscription wake is answered by one supervise-prs Pass with every Phase 2 input, wait owner caller and return on every-pass. That Pass dispatches the repair-pr review pass; its completion is the next event, taken in by the next Pass, which adopts the head and re-triggers review where the convention requires. When the PR is finished again, the run settles again from step 1. Phase 2 is never re-invoked with wait owner self, so supervise-prs arms no check-in of its own. At the end exactly one check-in is armed: the post-settle one, ci-7 or its re-armed successor, on the post-settle cadence with the count reset and the 7-day deadline unchanged.",
+      "assertions": [
+        "the repair runs inside a Pass with wait owner caller",
+        "Phase 2 is not re-invoked with wait owner self",
+        "exactly one check-in is armed at the end, the existing post-settle one",
+        "the run settles again when the PR is finished"
       ],
       "files": []
     }

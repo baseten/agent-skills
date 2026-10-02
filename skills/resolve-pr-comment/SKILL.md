@@ -178,7 +178,10 @@ gh api repos/<owner>/<repo>/pulls/<PR>/comments/<comment_id>/replies \
 ```
 
 Each reply names its thread's own commit (step 2); where the user asked for
-one commit, each names that one.
+one commit, each names that one. **Record the write id of every reply this skill
+posts**, on every path, and return them all (*Output*): they are how the run
+later tells its own replies from the invoking user's comments
+(`references/posting-identity.md`, *The invoking user's account*).
 
 **Whether it is posted now is decided below** (*Replies held for approval*), and
 the templates here are the text either way.
@@ -214,7 +217,7 @@ what changed and stops there; the question is escalated with its draft
 **Who is in the thread decides whether the reply posts now** — each comment's
 `user.type` in the REST API, its author's `__typename` in the GraphQL query of
 step 1. **A person is in the thread** where any comment in it, this workflow's
-own writes and a root the caller marked as its own review session's
+own writes (by the write ids the caller passes) and a root the caller marked as its own review session's
 (`references/review-feedback.md`, *The thread-root test*) aside, has an author
 that is not a `Bot` and is not the invoking user
 (`references/posting-identity.md`, *The invoking user's account*). **A thread
@@ -234,8 +237,10 @@ bot's follow-up in a thread a person is in: the person is still being answered.
 is posted as if it answered the question and the thread is not resolved, whatever
 the key (*A comment can want both*).
 **Anything not `Bot` is a person**, a machine user posting from an ordinary
-account included, and so is every account where the invoking user's is not
-known: misreading in that direction only holds a reply, the safe failure. **This decides nothing about the fix.** What is repaired stays the kind
+account included — every account but the named invoking user's, and theirs too
+wherever *The invoking user's account* does not let a comment count as theirs:
+an unknown account, or lost write ids. Misreading in that direction only holds
+a reply, the safe failure. **This decides nothing about the fix.** What is repaired stays the kind
 test's alone (`references/review-feedback.md`, *What may be auto-fixed*) — the
 person's nit is still fixed and pushed; only the reply and the resolution wait.
 It is not the removed author gate come back.
@@ -616,9 +621,11 @@ Prose is not the same as a request. "Thanks, this looks good", "nice catch",
 "agreed" — an acknowledgement asks for neither a diff nor an answer, so it is
 **no-action**: not repairable, and **not `NEEDS_USER`**. Return it as no-action,
 reply to nothing, resolve nothing, escalate nothing. **So is a comment addressed
-to someone else** — "@colleague do you know whether…?", directed by mention to
-an account other than the run and the invoking user: it asks nothing of either,
-and it is handled, not unhandled feedback.
+to someone else that asks nothing of this PR's code** — "@colleague do you know
+whether…?", directed by mention to an account other than the run and the
+invoking user: it asks nothing of either, and it is handled, not unhandled
+feedback. A mention that also asks for a change ("@sam FYI this should use X")
+is a change request, classified as any other.
 
 Escalating one is a trap rather than a harmless over-report. It is neither an
 answerable-from-work question nor a choice only the owner can make, so
@@ -644,7 +651,7 @@ After completing all steps, summarize:
 - Which comments were resolved
 - The commit SHA(s) applied
 - Confirmation that replies were posted and threads marked resolved, or which
-  were held
+  were held, with **the write id of every reply posted** (step 5)
 - **Every approval-pending reply item**, one entry each, carrying what
   *Replies held for approval* lists — attended, with the person's verdict on it
   and the write id of any reply posted, marked *reply posted — thread left open*
