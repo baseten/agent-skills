@@ -156,6 +156,18 @@
         "the answer requires the owner's explicit approval for workflow edits",
         "the needed change is surfaced as NEEDS_USER, naming it"
       ]
+    },
+    {
+      "id": 13,
+      "name": "a-commit-describing-ci-skipping-never-quotes-the-token",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: your issue asks you to document how the repository's agents defer CI with a skip token. `minimize-ci-runs` was not passed. You are writing the commit message, and the natural summary line is: Document how deferred pushes carry [skip ci]. Question: what does the commit message say, and why?",
+      "expected_output": "It does not contain [skip ci], [ci skip], [no ci], [skip actions], [actions skip] or skip-checks in any form, because the forge honours the token anywhere in the message: this commit, its PR and a squash merge to the base would all skip CI. Describe it in prose as the skip token instead. The only permitted token is the deliberate one on a push deferred under minimize-ci-runs, which does not apply here.",
+      "assertions": [
+        "the commit message contains no skip token, even quoted as prose",
+        "the answer says the forge honours a token anywhere in the message",
+        "the answer names it in prose instead, as the skip token",
+        "the answer limits the exception to a deliberate deferred push under minimize-ci-runs"
+      ]
     }
   ]
 }

@@ -90,20 +90,20 @@ Its outcome decides what happens next:
 | --- | --- |
 | `finished` | settles |
 | `needs-user` | settles — every terminal outcome does. Its outcome is **the pass's own result where a pass produced it** — `FAILED` returns as `FAILED`, `NEEDS_USER` as `NEEDS_USER` — and `NEEDS_USER` otherwise |
-| `held`, `returned`, `unrepaired`, `merged` or `closed` | settles |
+| `held`, `returned`, `unrepaired`, `merged` or `closed`, or `waiting` held for its base to move | settles — that hold is surfaced, not a stall for the monitoring cap |
 | `waiting` or `repairing` at the monitoring cap, or `cannot-watch` | returns the durable checkpoint (Completion) |
 
 Keep the PR's policy line beside that skill's record: `Policy: budgets <source>; auto-merge <on|off> (<source>)`.
 
 # Settle
 
-The run settles when its one issue reaches a terminal state: the PR `finished` as `supervise-prs`, *Outcomes*, defines it — what that definition counts as surfaced holds the merge gate and never the settlement — or a terminal outcome: `BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`. With one issue in scope nothing waits behind its PR, so no settle here is partial. **Every terminal outcome settles, including one Phase 1 returned before supervision began** (NOTES: the failure outcomes carry the most decision-shaped material; the empty case gets `summarize-wave`'s one line). Then run `settle-and-merge`, *The settle sequence*, over this one PR, passing it every input its *Inputs* names, as this skill supplies them:
+The run settles when its one issue reaches a terminal state: the PR `finished` as `supervise-prs`, *Outcomes*, defines it — what that definition counts as surfaced holds the merge gate and never the settlement — or `waiting` held for its base to move (`supervise-prs`, *Deferred CI*), surfaced alike, or a terminal outcome: `BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`. With one issue in scope nothing waits behind its PR, so no settle here is partial. **Every terminal outcome settles, including one Phase 1 returned before supervision began** (NOTES: the failure outcomes carry the most decision-shaped material; the empty case gets `summarize-wave`'s one line). Then run `settle-and-merge`, *The settle sequence*, over this one PR, passing it every input its *Inputs* names, as this skill supplies them:
 
 - **PR set and scope**: scope, the canonical issue URL; PR set, its one PR — or none, where Phase 1 returned before creating one;
 - **findings**: the worker and review findings the run produced;
 - **held-reply records**: the approval-pending, rejected and mixed-thread records `supervise-prs`'s record holds; pass the held-reply outcomes `settle-and-merge` returns to `supervise-prs` as its *held-reply outcomes* input;
 - **posting-identity map**: the run's map;
-- **resolved policy**: `auto-merge`, `auto-request-settle` and `minimize-ci-runs`, resolved for its one PR (Policy and budgets);
+- **resolved policy**: `auto-merge`, `auto-request-settle` and `minimize-ci-runs`, resolved for its one PR (Policy and budgets), with any base-move hold and `workflow_dispatch:` suggestion `supervise-prs` reported;
 - **ranking**: `caller translates` — nothing is ranked, since one PR has no ordering to rank. This skill runs the ruling translation below over the rulings handed back at its step 5 and passes back the translated action points;
 - **dependency view**: the value core's completeness report gives — proven, or unproven on the named boundary with the discharge Merge describes;
 - **freshness checks**: none apply — this skill runs no integration check and has no authority to update a branch, so the stale-green re-check and the tool-bump rule do not apply;
