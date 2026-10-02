@@ -103,7 +103,7 @@ The run settles when its one issue reaches a terminal state: the PR `finished` a
 - **findings**: the worker and review findings the run produced;
 - **held-reply records**: the approval-pending, rejected and mixed-thread records `supervise-prs`'s record holds; pass the held-reply outcomes `settle-and-merge` returns to `supervise-prs` as its *held-reply outcomes* input;
 - **posting-identity map**: the run's map;
-- **resolved policy**: `auto-merge` and `auto-request-settle`, resolved for its one PR (Policy and budgets);
+- **resolved policy**: `auto-merge`, `auto-request-settle` and `minimize-ci-runs`, resolved for its one PR (Policy and budgets);
 - **ranking**: `caller translates` — nothing is ranked, since one PR has no ordering to rank. This skill runs the ruling translation below over the rulings handed back at its step 5 and passes back the translated action points;
 - **dependency view**: the value core's completeness report gives — proven, or unproven on the named boundary with the discharge Merge describes;
 - **freshness checks**: none apply — this skill runs no integration check and has no authority to update a branch, so the stale-green re-check and the tool-bump rule do not apply;
@@ -183,7 +183,7 @@ Return:
 - **any design finding core returned in place of a re-siting**, forwarded whole — the value, the objecting call sites and where it belongs; a caller that does not carry it is the only reader it would have had;
 - implementation attempts used, and **`supervise-prs`'s report for the PR** (`supervise-prs`, *Report*) — review rounds and CI, review and finding repair cycles against their caps, strongest-model rounds with the locus evidence for each, every review thread reserved for the owner per item kind and every approval-pending reply, final CI and review state, and draft state as created and current with any transition observed and who performed it (a ready-to-draft transition is never this run's);
 - **the supervision's provenance**: that the platform's PR posture was overridden, on the authority of this invocation as the user's instruction; what woke the run — subscription events by kind, the check-in, or both; the current check-in's id and next firing time, or that none is armed and why; and the toggle line for the PR — turned on by this run's subscription at a time and unsubscribed at a time, or still subscribed and why — never a claim that unsubscribing turned it off, and, where that effect is unknown, the instruction to switch it off by hand;
-- the resolved policy actually applied — budgets, `auto-merge`, `auto-resolve-comments` — each with its source (caller, repo config, built-in default), plus any policy file present but unhonourable (an unreadable file is authority the owner meant to grant and did not);
+- the resolved policy actually applied — budgets, `auto-merge`, `auto-resolve-comments`, `minimize-ci-runs` — each with its source (caller, repo config, built-in default), plus any policy file present but unhonourable (an unreadable file is authority the owner meant to grant and did not);
 - the merge, where one happened: the gate conditions it passed on, whether the PR was published from draft on the way, and the tracker reconciliation;
 - any edit to the published PR's body — what changed and why — or the drift left unedited, with its suggested replacement;
 - the `summarize-wave` summary and action points, and the `settle-outstanding-decisions` report — rulings recorded, its one-line decline, or that `auto-request-settle` was off;

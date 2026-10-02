@@ -96,6 +96,18 @@
         "it contains no [skip ci], [ci skip] or skip-checks",
         "the answer applies this whatever the policy"
       ]
+    },
+    {
+      "id": 8,
+      "name": "a-tokened-pr-is-never-rebase-merged",
+      "prompt": "You are executing the merge-stack skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the repository has `minimize-ci-runs` in effect and allows rebase, squash and merge commits. PR #96's commits each carry [skip ci]. The user authorizes the merge and asks for a rebase merge. Question: which method do you use?",
+      "expected_output": "Not rebase. Where the key has effect, a PR whose commits carry the token is never rebase-merged, because a rebase lands those commits on the base and base CI would skip. Merge by squash or merge commit, with an explicit message carrying no skip token, and say why the requested method was not used.",
+      "assertions": [
+        "no rebase merge is performed",
+        "a squash or merge commit is used with an explicit message free of skip tokens",
+        "the answer gives the reason"
+      ],
+      "files": []
     }
   ]
 }

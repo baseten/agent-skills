@@ -184,6 +184,31 @@
         "the green is stale because the base moved",
         "the branch is updated under the caller's authority before merging, not merely re-run"
       ]
+    },
+    {
+      "id": 16,
+      "name": "a-review-round-carries-forward-across-the-update-under-the-key",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #92, `auto-merge` on, `minimize-ci-runs` on with effect, overlap narrowing in effect. An automated round completed clean on head h1, with no threads. supervise-prs then triggered CI by a conflict-free merge of main into the branch, producing head h2. CI is green on h2, and the review summary still names h1. Every other gate condition holds, and the base has not moved since h2. Question: does the gate pass?",
+      "expected_output": "Yes. Under the key, a round on h1 counts for h2 because every push since h1 is mechanical — here the trigger's clean base update. The thread list on h2 is still read and is empty. CI is green on the current head, so the gate passes and the PR merges.",
+      "assertions": [
+        "the h1 round counts for h2 because the only push since is mechanical",
+        "the threads are still read on the current head",
+        "the gate passes with green CI on h2"
+      ],
+      "files": []
+    },
+    {
+      "id": 17,
+      "name": "key-on-without-effect-keeps-the-existing-stale-green-rule",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #93, `auto-merge` on. The caller passed `minimize-ci-runs` on, but its overlap narrowing has no effect in this repository: branch protection requires branches to be up to date. The stale-green re-check applies, with authority to update a branch, and checks run against the branch alone. CI went green when the base was b1, and main is now at b2. No file changed between b1 and b2 is one the PR changes. Question: does the existing green discharge the CI condition?",
+      "expected_output": "No. With the narrowing without effect, the existing stale-green rule governs unchanged: the base moved, so the green is stale whatever the overlap. The branch is updated under the caller's authority before anything merges, and that update is returned to the caller as a caller push.",
+      "assertions": [
+        "overlap is not used to decide",
+        "the green is stale because the base moved",
+        "the branch is updated under authority before merging",
+        "the update is returned to the caller as a caller push"
+      ],
+      "files": []
     }
   ]
 }

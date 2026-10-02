@@ -78,3 +78,5 @@ source for whether one happened, and a rule that forbade it outright misfired in
 the opposite direction once already.
 
 **Where the routed convention is a review skill invoked rather than a reviewer triggered** — `review-docs` is the case that exists — existence is that skill's completed pass and the review comment it posts, whose `Reviewed commit:` line is the one item 1 reads. What its decline means is the *review trigger* shared rule's (*Documentation-review routing*).
+
+**Under `minimize-ci-runs`, a round carries forward.** Where a PR's key has effect (`supervise-prs`, *Deferred CI*), a round on head H counts for a later head where every push since H is mechanical by `references/mechanical-pushes.md`, conditions included — the deferred-CI trigger's base update and the merge gate's overlap update among them — so item 1's head match may read H; item 2 still reads the threads as they stand on the current head. It is the rule the dependency gate already applies (`npm-dependency-upgrade-orchestrator`, *Merge*). Without the key, item 1 stands as written.

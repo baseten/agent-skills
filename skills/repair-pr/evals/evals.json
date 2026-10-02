@@ -185,12 +185,24 @@
       "id": 14,
       "name": "a-repair-push-under-minimize-ci-runs-carries-skip-ci",
       "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are dispatched for a ci repair on PR #80 with pass id p-7, tier default, a remaining CI budget of 1, and `minimize-ci-runs` passed on. The fix takes two commits, the code change and a regression test. Questions: (a) what does each commit message carry? (b) after pushing, do you start CI or wait for it?",
-      "expected_output": "(a) Each carries the Repair-Pass: p-7, Repair-Type: ci and Repair-Model: default trailers, and [skip ci]. (b) Neither: return immediately with the new head. Starting CI once review is clean is the supervisor's job, and this pass never waits.",
+      "expected_output": "(a) Each carries the Repair-Pass: p-7, Repair-Type: ci and Repair-Model: default trailers, and [skip ci]. (b) Neither: return immediately with the new head. Starting CI once the PR is quiescent is the supervisor's job, and this pass never waits.",
       "assertions": [
         "every commit carries [skip ci]",
         "every commit carries the three repair trailers",
         "the pass neither triggers nor waits for CI"
       ]
+    },
+    {
+      "id": 15,
+      "name": "a-ci-repair-needing-a-workflow-edit-is-needs-user",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a ci repair on PR #97. The failure is attributable to this PR, and the only fix is changing the Node version in .github/workflows/ci.yml. No approval for workflow edits appears in the invocation, the issue or a ruling on the PR. Question: what do you do?",
+      "expected_output": "Edit nothing under .github/workflows. A repair that needs a workflow edit without the owner's explicit approval is judgment evidence, so the pass's outcome is NEEDS_USER, naming the change. Nothing is pushed and no cycle is consumed.",
+      "assertions": [
+        "the workflow file is not edited",
+        "the outcome is NEEDS_USER naming the change",
+        "nothing is pushed"
+      ],
+      "files": []
     }
   ]
 }

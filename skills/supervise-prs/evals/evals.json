@@ -531,11 +531,11 @@
       "id": 42,
       "name": "a-failed-ci-run-goes-back-through-review-before-ci-runs-again",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #84, `minimize-ci-runs` true and in effect, ci-repair-cycles cap 2 with 0 used. The CI run this skill triggered fails on a test, and the failure is attributed to this PR. Questions: (a) what happens, step by step, until CI runs again? (b) what does the CI budget read afterwards, and what did the trigger cost?",
-      "expected_output": "(a) One ci repair pass is dispatched with the key, so its push carries [skip ci] and CI on the new head is deferred. Review is re-triggered for that push, because a pass that pushed is substantive. When that round is clean on the new head, CI is triggered once more, by the same trigger. (b) 1 of 2 CI cycles used: the push counts exactly as it would without the key, and the triggers count nothing.",
+      "expected_output": "(a) One ci repair pass is dispatched with the key, so its push carries [skip ci] and CI on the new head is deferred. Review is re-triggered for that push only where the repository's convention requires it. Once the new head is quiescent — no pass in flight, no repairable finding open, and no expected round still outstanding inside its window — CI is triggered once more, by the same trigger. (b) 1 of 2 CI cycles used: the push counts exactly as it would without the key, and the triggers count nothing.",
       "assertions": [
         "the repair push carries [skip ci]",
-        "review is re-triggered on the repair head before CI runs again",
-        "CI is triggered once more only after that round is clean",
+        "review is re-triggered on the repair head only where the convention requires it",
+        "CI is triggered once more only when the repair head is quiescent",
         "the CI cycle is counted as without the key, 1 of 2, and the trigger counts nothing"
       ],
       "files": []
@@ -557,11 +557,11 @@
       "id": 44,
       "name": "the-pr-opens-on-a-tokened-head-and-no-ci-runs-until-the-trigger",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #86's repository resolved `minimize-ci-runs` true, and the key has effect there. The caller's preflight read a `workflow_dispatch` trigger and a squash-merge setting, and an earlier tokened push started no run. The worker's last push before creating the PR was head d4d4d4d, and the PR opened on it. You adopt the PR. Its review round 1 is pending, and no CI run exists on d4d4d4d. Questions: (a) what should d4d4d4d's commit message carry, and why? (b) how do you read CI at adoption? (c) when does CI first run on this PR?",
-      "expected_output": "(a) [skip ci]: under the key, the worker's last push before the PR is created carries the token, so the PR-opened event skips CI too. (b) CI deferred, not missing or red: no attribution, no cycle, no dispatch, and the PR is waiting. (c) Only when the latest automated round on the current head is clean. This skill then triggers CI once, by a base update or a dispatch.",
+      "expected_output": "(a) [skip ci]: under the key, the worker's last push before the PR is created carries the token, so the PR-opened event skips CI too. (b) CI deferred, not missing or red: no attribution, no cycle, no dispatch, and the PR is waiting. (c) Only once the PR is quiescent on its current head: round 1 complete or past its window, no repairable finding open, no pass in flight. This skill then triggers CI once, by a base update or a dispatch.",
       "assertions": [
         "the pre-PR head carries [skip ci] so the PR-opened event runs no CI",
         "CI at adoption is read as deferred, with no repair dispatched",
-        "no CI runs until the one trigger after a clean round"
+        "no CI runs until the one trigger, once the PR is quiescent"
       ],
       "files": []
     },
@@ -574,6 +574,56 @@
         "no skip tokens are pushed in the rebase-only repository",
         "CI runs as without the key",
         "the report names the repository and rebase-only merges as the reason"
+      ],
+      "files": []
+    },
+    {
+      "id": 46,
+      "name": "with-no-automated-reviewer-ci-still-runs-once",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #87 has `minimize-ci-runs` true, from repo config, and the key has effect in its repository. Its current head carries [skip ci], has no CI run, and is up to date with main. No repair pass is in flight. The repository has no automated review convention, so no round is expected for any head, and no finding is open. Question: does CI run, and how?",
+      "expected_output": "Yes. The PR is quiescent on its head: no pass in flight, no repairable finding open, and no expected round outstanding, since a round never expected does not hold the trigger. The key keeps its effect; this skill dispatches the workflow on the branch once, the branch being current, and confirms a run registered for that head.",
+      "assertions": [
+        "the key still has effect without an automated reviewer",
+        "the PR is treated as quiescent",
+        "CI is triggered once, by workflow_dispatch since the branch is current"
+      ],
+      "files": []
+    },
+    {
+      "id": 47,
+      "name": "a-refused-round-does-not-hold-the-trigger",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #88 has `minimize-ci-runs` true, from repo config, and the key has effect in its repository. Its current head carries [skip ci], has no CI run, and is up to date with main. No repair pass is in flight. The repository's automated reviewer answered the trigger for this head saying it is out of budget, and the round is recorded refused. No finding is open. Question: does CI run?",
+      "expected_output": "Yes. A refused round does not hold the trigger, so the PR is quiescent and CI is triggered once, by dispatch. The refused round is not re-requested, and it is reported as surfaced. It still holds the merge, never this trigger.",
+      "assertions": [
+        "the refused round does not block the CI trigger",
+        "CI is triggered once",
+        "the refused round is not re-requested"
+      ],
+      "files": []
+    },
+    {
+      "id": 48,
+      "name": "a-held-reply-does-not-block-the-trigger",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #89 has `minimize-ci-runs` true, from repo config, and the key has effect in its repository. Its current head carries [skip ci], has no CI run, and is up to date with main. No repair pass is in flight. The review round on this head completed. Its one thread, from a person, was fixed earlier, and the one-line reply is held for the owner's approval, so the thread is unresolved. No other finding is open. Question: does CI run, and does the held reply change anything?",
+      "expected_output": "Yes, CI is triggered once. A held reply is not a repairable finding open on the head, so the PR is quiescent. The thread stays unresolved and the reply stays held. It holds the merge gate, since an unresolved thread is not a clean review, but not the CI trigger.",
+      "assertions": [
+        "the held-reply thread does not block the CI trigger",
+        "CI is triggered once",
+        "the reply stays held and the thread unresolved",
+        "the held reply still holds the merge gate"
+      ],
+      "files": []
+    },
+    {
+      "id": 49,
+      "name": "a-conflicting-base-update-is-not-made",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #91 has `minimize-ci-runs` true and in effect. It is quiescent on its head, which carries [skip ci], and the branch is behind main. Merging main into it would conflict in src/z.ts. Questions: (a) do you make the update, or dispatch instead? (b) what happens next?",
+      "expected_output": "(a) Neither. The update would conflict, so it is not made, and a dispatch is only for a branch that is already up to date. The PR is reported conflicted. (b) The push that resolves the conflict carries [skip ci]. CI is triggered only once the PR is quiescent on that new head.",
+      "assertions": [
+        "the conflicting update is not made",
+        "no dispatch is used for a branch that is behind",
+        "the PR is reported conflicted",
+        "the resolving push carries the token and CI waits for quiescence on its head"
       ],
       "files": []
     }

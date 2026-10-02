@@ -25,7 +25,7 @@ This file is the contract. The reasoning behind each rule — incident history, 
 - Own exactly one issue; work only in the supplied isolated checkout when orchestrated; preserve the exact supplied base branch.
 - Never broaden scope into dependency/context tickets.
 - Never merge the PR.
-- **Never edit `.github/workflows`, or the forge's equivalent, without the owner's explicit approval** — given in the invocation, or recorded by the owner on the issue. A change the issue needs there is `NEEDS_USER`, naming it. This is where every worker skill takes the rule from.
+- **Never edit `.github/workflows` or `.github/actions/`, or the forge's equivalent, without the owner's explicit approval** — given in the invocation, or recorded by the owner on the issue or as a ruling on the PR. A change the issue needs there is `NEEDS_USER`, naming it. This is where every pusher in a run takes the rule from — workers, repair passes, and an orchestrator's own restacks and conflict fixes.
 - Never enter a long CI/review monitoring loop, **and never delegate one**: a scheduled check-in, trigger, routine, or PR-activity subscription is monitoring arranged rather than performed, and it outlives this invocation exactly as a loop would (NOTES). Return after implementation, checks, PR creation, and durable-state verification, leaving nothing armed behind you.
 
 ## 1. Read issue + repository context
