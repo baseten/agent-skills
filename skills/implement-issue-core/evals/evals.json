@@ -168,6 +168,18 @@
         "the answer names it in prose instead, as the skip token",
         "the answer limits the exception to a deliberate deferred push under minimize-ci-runs"
       ]
+    },
+    {
+      "id": 14,
+      "name": "package-docs-stay-out-of-the-root-readme",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: your issue adds a new package, `packages/billing`. The repository-root README has a section per package describing its API. Question: where do you document the package, and what, if anything, do you add to the root README?",
+      "expected_output": "Document it in `packages/billing/README.md`. Add no row or section to the root README; the one exception is a single link to the package's README.",
+      "assertions": [
+        "the docs go in the package's own README",
+        "no section is added to the root README",
+        "at most one link per package is added to the root"
+      ],
+      "files": []
     }
   ]
 }

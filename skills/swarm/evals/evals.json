@@ -280,6 +280,31 @@
         "the answer names the commit becoming reachable, or PR-9 merging or closing, or a redispatch, as what ends a mismatch hold",
         "the answer does not treat the owner-requested archive by itself as retiring the item"
       ]
+    },
+    {
+      "id": 25,
+      "name": "a-live-repair-pass-ahead-of-its-remote-is-left-alone",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a supervision cycle observes two live workers whose checkouts you can reach. Worker A is an implementation worker: its worktree is clean and its local branch is two commits ahead of the tracked remote. Worker B is a repair-pr pass, not stalled: its worktree is clean and its local branch is three commits ahead, one per review thread, and it has not yet pushed. Questions: (a) what do you do for each? (b) what changes if B's remote head then stays unadvanced past the stalled-head threshold?",
+      "expected_output": "(a) A: push the stranded commits, as for any clean worktree whose push failed or was deferred. B: nothing, neither to its branch nor to a recovery ref. Its local-ahead state is the design working: a repair pass pushes once, at the end, after its local verification, and that push lands the commits. A parent push to the branch would be a second push mid-pass. (b) Stalled, B takes this section's path unchanged, and any capture goes through the tested `checkpoint-capture.sh` script, never a hand-rolled push to the ref.",
+      "assertions": [
+        "A's stranded commits are pushed",
+        "nothing is pushed for live, unstalled B, to its branch or to a recovery ref",
+        "the reason given is that a repair pass pushes once at the end",
+        "once stalled, B takes the existing path with any capture through the script"
+      ],
+      "files": []
+    },
+    {
+      "id": 26,
+      "name": "an-outstanding-capture-survives-a-later-live-repair-pass",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: an earlier worker on branch fix-12 was captured: `refs/checkpoints/fix-12` holds a capture whose content never reached the branch, so it is outstanding. A repair-pr pass is now live on fix-12, not stalled, with a clean worktree one commit ahead of the remote. Question: does anything this cycle touch the recovery ref?",
+      "expected_output": "No. A live, unstalled repair pass's clean-ahead commits are left alone, so nothing is pushed to the ref and the earlier capture stays intact. It stays outstanding and reported until its content is on the remote, under the recovery ref's lifecycle. Pushing the pass's head to that ref would overwrite the outstanding capture.",
+      "assertions": [
+        "nothing is pushed to the recovery ref",
+        "the earlier capture stays intact and outstanding",
+        "the pass's commits are left for its own end-of-pass push"
+      ],
+      "files": []
     }
   ],
   "companions": []

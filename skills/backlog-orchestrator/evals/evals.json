@@ -962,6 +962,31 @@
         "the answer does not improvise a replacement for swarm's dispatch or release"
       ],
       "files": []
+    },
+    {
+      "id": 74,
+      "name": "the-hotspot-rule-is-in-every-dispatch-prompt",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a wave dispatches four workers, each adding a new package under `packages/`. The repository-root README has a table listing every package. You are composing the dispatch prompts. Question: what do they say about documentation, and where does each package's docs go?",
+      "expected_output": "Every dispatch prompt carries `implement-issue-core`'s shared-file hotspot rule, not a paraphrase: never add rows or sections to a file every package touches, such as the root README. Each package's docs go in its own README, which the root links to once. Four workers each adding a row to the root table is four branches conflicting with one another on every merge.",
+      "assertions": [
+        "the dispatch prompt carries the hotspot rule",
+        "workers do not add rows or sections to the root README",
+        "package docs go in the package's own README"
+      ],
+      "files": []
+    },
+    {
+      "id": 75,
+      "name": "the-ci-hygiene-preflight-holds-dispatch-and-proposes-a-fix",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the repository's policy file sets `minimize-ci-runs` true. At the first preflight, before the first parallel wave of three workers, you read its workflows on the base. `ci.yml` has PR-only `concurrency` with `cancel-in-progress`, and path filters on its heavy e2e job. One job, `build`, has no `timeout-minutes`. Questions: (a) do you dispatch the wave? (b) may you add `timeout-minutes` yourself in a preparatory PR? (c) what releases the hold?",
+      "expected_output": "(a) No. A missing hygiene item under the key holds dispatch. Raise a `NEEDS_USER` carrying a one-PR fix proposal: what is missing (`timeout-minutes` on `build`), in which workflow, and the change, with options to dispatch once it lands or to dispatch without it. (b) No. The run never edits workflows itself; it proposes, and the owner makes the change. (c) Only an owner reply choosing one of the offered options.",
+      "assertions": [
+        "dispatch is held",
+        "a NEEDS_USER carries a one-PR fix proposal naming what is missing",
+        "the run does not edit the workflow itself",
+        "only an owner reply choosing an offered option releases the hold"
+      ],
+      "files": []
     }
   ]
 }

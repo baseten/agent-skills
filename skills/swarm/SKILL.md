@@ -723,7 +723,7 @@ in-flight worker — the worktree, the local branch, and the remote:
 | worktree | local vs. tracked remote | state | action |
 |---|---|---|---|
 | dirty | — | completed edits exist only on disk | capture, below |
-| clean | local ahead | committed, push failed or was deferred | push the stranded commits |
+| clean | local ahead | committed, push failed or was deferred | push the stranded commits — **except a live repair pass that is not stalled**: do nothing with them, on its branch or a recovery ref, since it pushes once, at the end, by design (`repair-pr`, *Recovery / checkpointing*). Stalled or lost, it takes this section's path unchanged, any capture through the script |
 | clean | level | nothing saved yet | leave alone unless dispatch was long ago |
 | clean | tracked remote absent | merged and deleted, or never pushed | check whether its head is reachable (*Releasing a worker*) before treating it as stranded. Reachable: nothing to capture, and the releasable test takes it. Not reachable: push the stranded commits |
 

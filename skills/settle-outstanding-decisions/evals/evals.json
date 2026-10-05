@@ -203,6 +203,32 @@
         "supervision classifies the newer question as NEEDS_USER"
       ],
       "files": []
+    },
+    {
+      "id": 15,
+      "name": "a-fail-safe-p2-after-a-spent-budget-recommends-merge-plus-follow-up",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the owner is present. summarize-wave raised a DECISION on PR 40: a P2 review finding whose finding-repair budget is spent. The finding is that a malformed webhook payload is rejected with a 400 where a 422 is more accurate; nothing is written either way. Question: which option do you recommend, and who decides?",
+      "expected_output": "Recommend 'merge plus a follow-up issue', listed first and marked as the lean, beside the other options such as trying again and closing the PR. It is a P2 that fails safe: the payload is rejected and nothing is written. Only the recommendation changes; the owner still decides. If they choose it, the ruling retires the item and the follow-up appears under Owner action items.",
+      "assertions": [
+        "the recommended option is merge plus a follow-up issue",
+        "the reason given is a P2 that fails safe",
+        "the owner still makes the choice",
+        "the follow-up is listed as an owner action item if chosen"
+      ],
+      "files": []
+    },
+    {
+      "id": 16,
+      "name": "a-p1-after-a-spent-budget-recommends-another-pass",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the owner is present. summarize-wave raised a DECISION on PR 41: a P1 finding whose finding-repair budget is spent. On a retry, the refund job can issue the same refund twice. Question: which option do you recommend?",
+      "expected_output": "Another pass, which the caller runs as a finding repair. The finding is a P1 and could produce a wrong financial action that cannot be undone, so merge plus a follow-up is not the lean. Only the recommendation changes; the owner still decides among the options.",
+      "assertions": [
+        "the recommended option is another pass",
+        "merge plus follow-up is not recommended",
+        "the reason cites P1 or the irreversible financial action",
+        "the owner still decides"
+      ],
+      "files": []
     }
   ]
 }

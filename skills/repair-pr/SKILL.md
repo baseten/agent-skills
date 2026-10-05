@@ -18,6 +18,7 @@ This file is the contract; the reasoning behind its rules lives in `NOTES.md` be
 - for `review`, the PR's resolved `auto-resolve-comments` with its source, the invoking user's account where the invocation names it and the write ids of the run's own review-thread comments on this PR, with whether that set is complete (`references/posting-identity.md`, *The invoking user's account*), all passed through to `resolve-pr-comment` (*Replies held for approval* there); absent → `false`, no account, and an incomplete id set;
 - a pass id and model tier (`default` or `strongest`), supplied by the dispatching layer;
 - the PR's `minimize-ci-runs`, where the caller passes it on (*Recovery / checkpointing*); absent → off;
+- a base refresh, where the caller hands one in (`supervise-prs`, *Review feedback*, step 2); absent → none;
 - expected branch/base when supplied.
 
 ## Hard constraints
@@ -39,7 +40,7 @@ This file is the contract; the reasoning behind its rules lives in `NOTES.md` be
 3. unrelated/external/flaky with no justified code change → report that; change nothing;
 4. otherwise make one coherent targeted repair. **Where the repair adds or changes a test, run the checklist in `references/a-passing-test-is-not-a-verified-fix.md` against it, the time rule included** — a repair is the case the checklist is written for, since the fix and its test are written in the same pass and fail-first is satisfied trivially;
 5. run the smallest relevant local verification;
-6. commit only issue-owned changes; push;
+6. commit only issue-owned changes; push once (*Recovery / checkpointing*);
 7. return immediately with the new head SHA and checks run.
 
 Never chase multiple unrelated failures speculatively in one cycle unless they share one clear root cause.
@@ -55,7 +56,7 @@ Never chase multiple unrelated failures speculatively in one cycle unless they s
    - **a thread whose requested change is already on the head** (`resolve-pr-comment`, step 2) is not repair work: nothing is pushed and no cycle consumed for it, and at zero budget it is an approval-pending item, never a deferred repair;
 3. make only the requested/in-scope corrections — **and where one of them is a test, or adds one, run the checklist in `references/a-passing-test-is-not-a-verified-fix.md` against it, the time rule included**; a reviewer asking for a regression test is asking for one that would have caught the defect — **skipped entirely on a classify-only invocation** (zero remaining budget, above);
 4. run relevant local verification — same;
-5. make one commit per thread, as `resolve-pr-comment`, step 2, requires, and push — same, and there is nothing to push;
+5. make one commit per thread, as `resolve-pr-comment`, step 2, requires, and push once (*Recovery / checkpointing*) — same, and there is nothing to push;
 6. verify required replies/thread resolutions were performed, or held for approval;
 7. count the actionable review threads still unresolved on the PR — **including any outside the round supplied to this invocation** — and report the number;
 8. return immediately.
@@ -65,22 +66,23 @@ Never chase multiple unrelated failures speculatively in one cycle unless they s
 
 ## Finding repair (`repair type = finding`)
 
-The evidence is a settle-time finding — an `IN_FLIGHT_FIX` action point from `summarize-wave`, which is also where a prose reviewer's findings arrive after `summarize-wave` classifies them, or a recorded `settle-outstanding-decisions` ruling that requires this PR's code to change, including one that resolves a failing check — supplied verbatim, the way `ci` supplies logs and `review` supplies threads. It names actionable work on this PR that no failing check and no reviewer's review thread carries (NOTES; the caller's budget is its own counter, `finding-repair-cycles`).
+The evidence is a settle-time finding — an `IN_FLIGHT_FIX` action point from `summarize-wave`, which is also where a prose reviewer's findings arrive after `summarize-wave` classifies them, or a recorded `settle-outstanding-decisions` ruling that requires this PR's code to change, including one that resolves a failing check, or a refresh owed whose base update conflicts (`supervise-prs`, *Review feedback*, step 2) — supplied verbatim, the way `ci` supplies logs and `review` supplies threads. It names actionable work on this PR that no failing check and no reviewer's review thread carries (NOTES; the caller's budget is its own counter, `finding-repair-cycles`).
 
 1. read the supplied finding and its durable site. **Where the repair adds or changes a test — a settle-time finding often asks for exactly that — run the checklist in `references/a-passing-test-is-not-a-verified-fix.md` against it, the time rule included**, as the CI branch does;
 2. verify it still holds against the current head — a later push may already have fixed or mooted it, and the finding as supplied is a claim until that read (`references/establish-do-not-assume.md`). Any assertion this pass then makes about existing code — in a reply, a PR body or a commit message — needs the same treatment before it is written: a grep behind it, not a memory (*You are about to assert it*). Where it no longer applies → return `NO_CODE_CHANGE` with the reason; change nothing; no cycle is consumed;
 3. make one coherent targeted repair scoped to the finding — for a ruling, the change the owner's answer implies, never a reopening of the question they ruled on;
 4. run the smallest relevant local verification;
-5. commit only issue-owned changes; push;
+5. commit only issue-owned changes; push once (*Recovery / checkpointing*);
 6. return immediately with the new head SHA and checks run.
 
 Never widen into other action points or findings the caller did not supply, and never resolve or reply to review threads here — a finding is not a thread; where a **reviewer's** thread carries the same work, the caller dispatches `review` instead. A ruling recorded as a reply inside a review thread is still a finding: its site is the thread, but the work comes from the owner's ruling rather than from the root comment, and the reviewer's question is already answered by it. **A ruling that resolves a failing check is a finding too**: the check is its site, but the work comes from the ruling — typically "try again" on a CI failure whose own budget is spent — so it spends `finding-repair-cycles`, never the CI budget.
 
 ## Recovery / checkpointing
 
-- Before editing, fetch the remote PR branch and verify the assigned checkout is on/derived from the current remote head — the remote branch is durable state.
+- Before editing, fetch the remote PR branch and verify the assigned checkout is on/derived from the current remote head — the remote branch is durable state. **Where that head carries a lost pass's capture reconciled onto the branch** (`swarm`, *The recovery ref's lifecycle*), run local verification on it before any reply or resolution: nobody verified it.
 - Every repair that changes code ends with a **pushed commit**. Never return success with repair work existing only in the local worktree (NOTES).
-- **Every commit this pass makes carries three trailers**, beside any the repository requires: `Repair-Pass: <the supplied pass id>`, `Repair-Type: <ci|review|finding>` and `Repair-Model: <default|strongest>`. **Where `minimize-ci-runs` was passed on, every such commit also carries `[skip ci]` in its message** (`supervise-prs`, *Deferred CI*). Pass the trailers, and the token where it applies, to `resolve-pr-comment` for every commit it makes under this pass — it applies them (*4. Commit and push* there). They are how a supervisor rebuilding its counts from the branch after a restart tells a repair pass from any other commit, counts passes rather than commits, and counts escalations (NOTES).
+- **One pass, one push.** Every commit the pass makes — each thread's, and a supplied base refresh — is pushed together, once, at the end, after the pass's local verification has run on the head it pushes; a reply naming a SHA is posted only after that push, so the SHA resolves (`resolve-pr-comment`, step 4). **A supplied refresh is merged in only where the pass pushes a repair**, just before that push. It is returned unmade, still owed to the caller, and the repair pushed without it, where the pass pushes nothing, where its conflict resolution would choose between behaviours (`references/mechanical-pushes.md`), or where it alone turns verification red. **Verification still red at the end of the pass → that one push still happens, so nothing exists only in the worktree, and the outcome is `FAILED`: no reply naming a fix is posted and nothing is resolved.** Replies and resolutions follow a green pass only. The push is one cycle however many commits it carries, a `FAILED` one included (`supervise-prs`, *Budgets*).
+- **Every commit this pass makes carries three trailers**, beside any the repository requires: `Repair-Pass: <the supplied pass id>`, `Repair-Type: <ci|review|finding>` and `Repair-Model: <default|strongest>`. **Where `minimize-ci-runs` was passed on, every such commit also carries `[skip ci]` in its message** (`supervise-prs`, *Deferred CI*). Pass the trailers, the token where it applies, and any supplied refresh to `resolve-pr-comment` for every commit it makes under this pass — it applies them (*4. Commit and push* there). They are how a supervisor rebuilding its counts from the branch after a restart tells a repair pass from any other commit, counts passes rather than commits, and counts escalations (NOTES).
 
 ## Output
 
@@ -88,7 +90,7 @@ Return:
 
 - PR URL; canonical issue URL; repair type;
 - outcome: `REPAIRED` | `NO_CODE_CHANGE` | `FAILED` | `NEEDS_USER`;
-- branch/base; old head SHA; new remote head SHA if changed;
+- branch/base; old head SHA; new remote head SHA if changed; a supplied base refresh, made or returned unmade, with why;
 - repair cycle consumed: yes/no;
 - checks run, here and never in a reply, comment or the PR body (`references/authored-write-form.md`); review threads resolved/replied when relevant;
 - **every approval-pending reply item**, forwarded verbatim from `resolve-pr-comment` (*Replies held for approval*), and every *fix pushed — thread left for you* entry, its `html_url` never rebuilt: the caller records each and holds the merge gate on the thread;

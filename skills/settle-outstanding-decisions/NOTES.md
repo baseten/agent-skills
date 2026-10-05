@@ -34,6 +34,10 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 **Why a fork and its dependents never share a call:** `AskUserQuestion` returns a chunk's answers together, so a fork and a question it can moot, asked in the same call, are answered simultaneously — there is no moment in between at which the dependent one can be retired or reformulated. The owner rules on a choice the first ruling has already eliminated, and the walkthrough records it as though it stood. Hence closing the chunk after the last moot-capable decision and re-running the bar before composing the next.
 
+## The question
+
+**Why a spent-budget finding carries a severity-set recommendation (#180):** before #180 nothing set the lean for a budget-exhausted finding, so it was put to the owner with "try again" reading as the natural answer, whatever the finding was. Each further pass is a push, a CI run and usually a review round, and a minor finding that fails safe (rejects, skips, or is recovered on the next read) costs nobody anything if it lands in a follow-up instead. The recommendation is the only lever: the options and the owner's ruling are unchanged, so no protected rule moves. The P1 and irreversible-or-financial carve-out is what keeps the default from shipping the class of defect a follow-up cannot undo.
+
 ## Recording the ruling
 
 **Why immediate per-chunk recording:** an interrupted walkthrough must not lose the answers already given; batching to the end puts every earlier ruling at risk of the session dying on a later question.

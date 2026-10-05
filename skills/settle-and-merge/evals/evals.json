@@ -220,6 +220,42 @@
         "absent the input, nothing is said about the watch and the caller reports it"
       ],
       "files": []
+    },
+    {
+      "id": 19,
+      "name": "dirty-is-conflicted-whatever-ci-shows",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #95, `auto-merge` on. Its mergeable state reads `dirty`. The check rollup on the head is empty, and every workflow that would run on it declares path filters. Review is clean and every other gate condition holds. Question: does the gate pass, and what holds it?",
+      "expected_output": "No. A `dirty` mergeable state is a merge conflict whatever CI shows or did not run, so the no-conflict condition fails. The empty rollup is not read through the path filters as a legitimately filtered head: the conflict decides it first.",
+      "assertions": [
+        "the gate does not pass",
+        "the condition holding it is the merge conflict",
+        "the empty rollup is not read as filtered-out CI"
+      ],
+      "files": []
+    },
+    {
+      "id": 20,
+      "name": "lazy-refresh-merges-disjoint-prs-first-and-refreshes-only-the-next",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: four PRs pass the gate on existing greens, ranked A, B, C, D, all in one repository where `minimize-ci-runs` and its overlap narrowing have effect, with authority to update a branch. A and C both change `src/core.ts`. B changes only `web/b.ts` and D only `api/d.ts`; neither overlaps any other. Question: in what order do you merge, and which PRs are refreshed, and when?",
+      "expected_output": "Merge back-to-back first, in ranking order, every PR whose files are disjoint from every merge since its green: A, B and D. Nothing merged before any of them overlaps its files, so each green still discharges the condition. A's merge leaves C stale, as it overlaps on `src/core.ts`. C is the only PR refreshed, and only when it is next: one base update, CI once, then the merge. No PR is refreshed merely because an earlier merge left it stale.",
+      "assertions": [
+        "A, B and D merge back-to-back before C",
+        "only C is refreshed",
+        "C is refreshed only when it is next to merge",
+        "no blanket refresh follows each merge"
+      ],
+      "files": []
+    },
+    {
+      "id": 21,
+      "name": "the-refreshed-pr-keeps-its-turn",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: under `minimize-ci-runs` with effect and authority to update branches, PR C was just refreshed because it merges next; its CI is running on the refreshed head. PR E, ranked after C, passes the gate on an existing green whose files are disjoint from every merge since. Question: may E merge while C's CI runs?",
+      "expected_output": "No. The refreshed PR keeps its turn: no other PR merges until C has merged, or failed and been reported. Merging E first would move the base under C's refresh.",
+      "assertions": [
+        "E does not merge while C waits",
+        "C keeps priority until it merges or fails and is reported"
+      ],
+      "files": []
     }
   ]
 }

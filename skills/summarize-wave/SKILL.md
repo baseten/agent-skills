@@ -95,8 +95,9 @@ the work the `NEEDS_USER` item on the PR names: a spent CI budget refuses that P
 work; a spent finding budget refuses every finding on that PR, a recorded ruling's included;
 a finding repair that returned `FAILED` or `NEEDS_USER` refuses that finding. Refused work
 has no dispatch until the owner rules, so its action point is a `DECISION` — try again, which
-the caller runs as a finding repair within the finding budget; take the fix over; or close
-the PR — never `IN_FLIGHT_FIX`. A different finding on the same PR, with its own budget
+the caller runs as a finding repair within the finding budget; take the fix over; merge plus a
+follow-up issue, for a finding rather than a red check (`settle-outstanding-decisions`, *The
+question*, sets the recommendation); or close the PR — never `IN_FLIGHT_FIX`. A different finding on the same PR, with its own budget
 left, stays `IN_FLIGHT_FIX`.
 
 **An action point holding a PR that planned work waits on names that work.** Where issues in the wave's scope that have not started are blocked — directly or through their blockers — by an open PR of this wave held for the owner — a `DECISION` it waits on, a `NEEDS_USER` item raised on it, a charter hold — or by an issue whose worker is held on the owner's authority (the caller's partial-settle definition, where it has one) and whose hold's item is not retired, or survived its release restated to the work unit (`swarm`, *Blocked workers*, its last rule), name them on that item by issue URL, read from the scope's durable dependency graph (*Sources*), and say in the summary that the wave settled with that work still to come. The settle is then partial: the run resumes that work once the item is ruled and its PR moves — or, where the caller reports the ruling cannot move it, the item says what would. Without it, a wave waiting on the owner's answer reads the same as one that is done.

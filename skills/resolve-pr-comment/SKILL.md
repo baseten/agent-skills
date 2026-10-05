@@ -140,7 +140,7 @@ git add <files>
 git commit -m "<concise description of what was fixed>"
 ```
 
-then push once, `git push -u origin <branch>`. **Under a repair pass that supplied repair trailers** (`repair-pr`, *Recovery / checkpointing*), **every commit this skill makes carries them unchanged**, and the `[skip ci]` token where the pass supplied it — each per-thread commit, and a single commit where the user asked for one — beside any the repository requires.
+then push once, `git push -u origin <branch>`, after every thread's commit is made and step 3's checks have run; **no reply naming a SHA is posted before that push** (step 5), so the SHA resolves. Under a repair pass it is the pass's one push: a base refresh the pass supplied is merged in just before it, and step 3's checks run again on the result — where the refresh alone turns them red it is undone and handed back unmade. **Where the checks are still red at the end, the push still happens under a repair pass and no reply or resolution follows** (steps 5-6): the pass returns `FAILED` (`repair-pr`, *Recovery / checkpointing*). **Under a repair pass that supplied repair trailers** (`repair-pr`, *Recovery / checkpointing*), **every commit this skill makes carries them unchanged**, and the `[skip ci]` token where the pass supplied it — each per-thread commit, and a single commit where the user asked for one — beside any the repository requires.
 
 Commit messages should describe the
 fix, not reference the review comment ("Fix off-by-one in pagination", not

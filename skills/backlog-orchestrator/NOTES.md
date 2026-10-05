@@ -68,6 +68,8 @@ The notification half is deliberately subordinate. A subscription dies with the 
 
 **Why a baseline is measured per base (moved in #157):** tickets go stale, and a wrong baseline is worse than none — genuinely new failures hide inside an imaginary one. A number measured on one base and broadcast to another reintroduces the defect from the other direction: a real regression hidden inside a borrowed baseline, or a pre-existing failure reported as new.
 
+**Why the CI-hygiene preflight holds dispatch under `minimize-ci-runs` (#180):** deferring CI saves runs only where the runs that do happen are cheap. A repository without PR-only `concurrency` and `cancel-in-progress` keeps every superseded run going; one without `timeout-minutes` lets a hung job bill to the platform limit; one without path filters runs its heaviest job on a README change. A parallel wave multiplies each of those by the number of PRs, so the check is made once, before the first wave, when it is cheapest. The fix is a workflow edit, which no run makes without the owner (`implement-issue-core`, *Hard constraints*), so the run proposes it and holds, and the hold is released the one way any hold is: an owner reply choosing an offered option (protected rule 3).
+
 ## Escalating to deep validation — triggers in `SKILL.md`, the rest in `deep-validation.md`, *Running an escalation*
 
 **Why escalation is scoped to a subgraph (moved in #157):** the cost objection to deep mode is about breadth, and escalation does not have to be all-or-nothing. The `dependency transport unavailable` exception survives escalation because a deeper read cannot conjure a capability the tracker does not expose.
@@ -158,6 +160,8 @@ that cannot drift.
 **Why the dispatch prompt carries the whole identity map, and the write-form test rather than a slogan (moved in the #157 restatement cut):** the worker's `create-pr` may need an agent-authored entry to create the PR and an invoking-user entry for the author-sensitive review trigger, so selecting one pair either gives the PR the wrong author or leaves a valid trigger path unavailable, and the worker cannot recover what it was not sent. A worker carrying "sign every write" instead of the approval test will footer a body a person edited; one carrying only "sign unattended writes" will decide for itself what counts as attended.
 
 **Why the transport-and-identity paragraph is a citation (restatement cut, #157):** it restated *Transport precedence* and `rules/posting-identity.md`'s observed-authorship rule. The reason it was written stays true: when the platform offers several ways to make the same write, attribution, permissions and downstream automation can all differ between them, invisibly until a write is made and read back, and a credential asked who it is can answer differently from what its writes carry (`rules/posting-identity-notes.md`).
+
+**Why the hotspot rule is carried in every dispatch prompt (#180):** an orchestrated run's CI-minute review traced most of its CI runs to conflict refreshes on shared files, and the repository-root README is the canonical case: every package's worker adds its own row or section there, so each merge conflicts every sibling. The rule lives in `implement-issue-core`, step 4, because the worker is who decides where its docs go; the prompt carries it because a dispatched worker follows the prompt literally.
 
 ## Confirming a trigger that is a skill invocation
 

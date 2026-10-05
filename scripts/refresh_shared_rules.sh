@@ -62,8 +62,9 @@ DRAFT_STATE="backlog-orchestrator settle-and-merge supervise-prs"
 # Skills that dispatch a repair-pr pass, choose its model and count its cycles.
 REPAIR_ROUNDS="supervise-prs"
 
-# Skills that decide whether a push re-triggers review, or is re-reviewed.
-MECHANICAL_PUSHES="review-docs backlog-orchestrator
+# Skills that decide whether a push re-triggers review, or is re-reviewed, or
+# whether a conflict resolution in a refresh is mechanical.
+MECHANICAL_PUSHES="review-docs backlog-orchestrator repair-pr
   npm-dependency-upgrade-orchestrator supervise-prs"
 
 # Skills that issue or re-trigger an automated review, or gate on the rounds
