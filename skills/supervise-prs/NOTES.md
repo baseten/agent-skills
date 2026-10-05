@@ -68,6 +68,8 @@ Extracted in #144 from the three skills that each supervised PRs in their own wo
 
 **Why a reserved thread blocks the gate but not settlement:** the run cannot be required to resolve what policy forbids it touching, so it can still finish and return — but the thread is an unresolved actionable finding wherever that concept is consumed, so its round is not clean and the merge gate stays shut.
 
+**Why a refresh owed rides in the review pass, and why the final round waits for it (#180):** an orchestrated run's CI-minute review traced most of its CI runs to conflict refreshes on shared files and to extra pushes. A caller refresh pushed in the same cycle as a repair pass is two pushes, two CI runs and, where the refresh is substantive, two review rounds, for one head that merges. Handing the refresh to the pass makes it one push (`repair-pr`, *Recovery / checkpointing*). Under `minimize-ci-runs`, a round requested on a head that is about to be refreshed covers a head that never merges, so it is requested on the refreshed head instead, however that push is tagged: a mechanical refresh would otherwise carry forward a round that never ran.
+
 ## Draft state
 
 **Why the trigger comment stayed unconditional:** scoping it to "where promotion is withheld" implies its converse — that promoting asks for the review — and whether a provider acts on a publish is exactly what this document refuses to assume. A run in a promote-convention repository would promote four PRs, treat that as having requested review, and sit on four PRs nobody reads: the seven-hour failure *Adopt* exists to prevent, re-opened through the section next to it.

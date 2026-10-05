@@ -84,6 +84,8 @@ context with no local equivalent carries the outcome `not locally runnable`. Tha
 is a third value on purpose: collapsed into `passed` it is a lie, and dropped from
 the set it re-creates the gap.
 
+**Why no rows or sections in a file every package touches (#180):** parallel branches that each add to the same file conflict with one another on every merge, and each conflict costs a refresh push and a CI run on every sibling. A package's own README is touched by that package's branch alone; the root links to it once, so the root changes once per package rather than on every doc edit.
+
 ## Step 6 — create and verify PR
 
 **Why the derived set travels to `create-pr`:** that skill is a separate literal

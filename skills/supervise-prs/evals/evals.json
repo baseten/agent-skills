@@ -728,6 +728,44 @@
         "the pushed repair spends a review cycle"
       ],
       "files": []
+    },
+    {
+      "id": 58,
+      "name": "a-path-filtered-workflow-that-did-not-trigger-is-not-missing-ci",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #130, `minimize-ci-runs` off. It changes only `docs/guide.md`. Two workflows run on `pull_request`: `docs-lint`, with no filters, and `api-ci`, with `paths: ['api/**']`. Branch protection requires only `docs-lint`. `docs-lint` concluded successfully on the head. `api-ci` has no run on the head. Question: is CI missing or not green, and what is the PR's CI state?",
+      "expected_output": "CI is green. Before reading the absent `api-ci` run as missing CI, the changed files are compared with each workflow's filters. `api-ci`'s filter excludes every changed file, so it legitimately did not trigger, and the checks it produces are satisfied by not applying; protection does not require them by name. `docs-lint`, which has no filter and so should have run, did run and succeeded. Nothing is waited on or dispatched for `api-ci`.",
+      "assertions": [
+        "the changed files are compared with each workflow's path filters before the absence is read",
+        "the api-ci absence is not missing CI",
+        "the PR's CI is green",
+        "nothing waits on api-ci"
+      ],
+      "files": []
+    },
+    {
+      "id": 59,
+      "name": "a-required-check-a-filter-keeps-from-reporting-is-reported-not-waited-on",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #131 changes only `docs/guide.md`. Branch protection requires the check `api-tests` by name. The only workflow producing it declares `paths: ['api/**']`, and no run exists on the head. The forge shows `api-tests` as Expected. Everything else is green, and review is clean. Question: is the PR waiting on CI, and what do you do?",
+      "expected_output": "No, not waiting. The filter kept the only workflow producing `api-tests` off this head, so that required status will never report, and the forge blocks the merge on it. That check is not green and never will be: report it, naming the check, its workflow and the filter, and hold the PR. The remedy is a workflow or protection change, which is the owner's, never this run's. It is surfaced, so it holds the merge without keeping the PR `waiting`; nothing is dispatched or re-run for it.",
+      "assertions": [
+        "the PR is not treated as waiting on CI",
+        "the check, its workflow and the filter are reported",
+        "the PR's merge is held",
+        "no workflow edit, dispatch or re-run is made"
+      ],
+      "files": []
+    },
+    {
+      "id": 60,
+      "name": "the-final-review-round-goes-on-the-refreshed-head",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #132, `minimize-ci-runs` true and in effect, review routed to an automated reviewer this skill triggers. A review repair pass returns having pushed head h3. The caller passed a refresh owed for #132, because it merges next, but the pass returned that refresh unmade. Questions: (a) do you re-trigger review on h3? (b) the caller then pushes a clean, mechanical base update producing h4. Do you trigger review now?",
+      "expected_output": "(a) No. Under the key, review is never triggered on a head with a refresh owed. A round on h3 would review a head that never merges. (b) Yes. The round that h3's push would have requested is requested on the refreshed head h4, even though that push is mechanical, so review and CI both cover the head that merges and neither runs twice.",
+      "assertions": [
+        "review is not triggered on h3",
+        "review is triggered on h4 after the refresh",
+        "the mechanical tag does not suppress that round"
+      ],
+      "files": []
     }
   ]
 }

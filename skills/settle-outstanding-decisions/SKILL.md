@@ -114,6 +114,8 @@ The test for every question: **can the owner answer it without opening another t
 
 Where the run declined a finding or picked a default, lead with the evidence and the choice already made: "the run checked X, found Y, and did Z; ratify or overturn" — never a cold "what do you want?".
 
+**A finding a spent repair budget refused** — the `DECISION` `summarize-wave` raises for it — **is asked with a recommendation set by its severity; only the recommendation changes, and the owner still decides.** For a P2 or P3 that fails safe — the defect rejects, skips, or is recovered on the next read — the recommended option is *merge plus a follow-up issue*, offered beside the others. Another pass is recommended only for a P1, or for a finding that could produce a wrong irreversible or financial action. A red check is not such a finding: the gate refuses it whatever is ruled. A *merge plus follow-up* ruling retires the item like any other, and the follow-up to open is listed under *Owner action items*.
+
 ### `AskUserQuestion`'s constraints shape the mechanics
 
 - **At most 4 questions per call, and fewer where an answer dependency falls inside one.** Chunk the rest into successive calls, highest-stakes first, ordering preserved. The cap is a ceiling, not a target — a chunk closes early wherever Ordering's fork rule requires.

@@ -203,6 +203,32 @@
         "nothing is pushed"
       ],
       "files": []
+    },
+    {
+      "id": 16,
+      "name": "one-push-per-pass-and-replies-after-it",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review, review budget 1 remaining, no base refresh supplied. The round has three threads, all repairable typo and naming fixes. You fix the first and want to push it and reply straight away, so the reviewer sees progress, then do the same for the other two. Questions: (a) how many commits and how many pushes does this pass make, and when? (b) when are the replies posted? (c) how many review cycles does the pass consume?",
+      "expected_output": "(a) Three commits, one per thread, and one push, made at the end of the pass after the local verification is green on the head being pushed. Not a push per thread. (b) Only after that single push, so each reply's SHA resolves on the remote. Each reply names its own thread's commit. (c) One. A cycle is a pushed pass, not a commit or a push per thread.",
+      "assertions": [
+        "the pass makes one commit per thread",
+        "it pushes once, at the end, after local verification is green",
+        "no reply is posted before the push",
+        "the pass consumes one review cycle"
+      ],
+      "files": []
+    },
+    {
+      "id": 17,
+      "name": "a-supplied-refresh-rides-in-the-repair-push",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review, review budget 1 remaining. The caller supplied a base refresh with the dispatch: the PR is behind main, and merging main in is clean. The round has one repairable thread. Questions: (a) is the refresh a separate push, before or after the fix? (b) what if classification had found nothing to repair? (c) what if merging main had conflicted in a way that chooses between two behaviours?",
+      "expected_output": "(a) No. The fix is committed, main is merged in just before the pass's one push, the local checks run again on the result, and one push carries both. One pass, one push, one cycle. (b) Then the pass pushes nothing, returns NO_CODE_CHANGE, consumes no cycle, and returns the refresh unmade. It stays owed to the caller. (c) The refresh is not made. The repair is pushed without it, and the refresh is returned unmade, with why: a resolution that picks between behaviours is substantive, not judgment this pass was dispatched for.",
+      "assertions": [
+        "the refresh and the fix go out in one push in the same pass",
+        "checks run again after the refresh is merged in",
+        "with no repair to make, nothing is pushed and the refresh is returned unmade",
+        "a conflict that chooses between behaviours leaves the refresh unmade and the repair still pushed"
+      ],
+      "files": []
     }
   ]
 }

@@ -280,6 +280,19 @@
         "the answer names the commit becoming reachable, or PR-9 merging or closing, or a redispatch, as what ends a mismatch hold",
         "the answer does not treat the owner-requested archive by itself as retiring the item"
       ]
+    },
+    {
+      "id": 25,
+      "name": "a-live-repair-pass-ahead-of-its-remote-goes-to-the-recovery-ref",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a supervision cycle observes two live workers whose checkouts you can reach. Worker A is an implementation worker: its worktree is clean and its local branch is two commits ahead of the tracked remote. Worker B is a repair-pr pass: its worktree is clean and its local branch is three commits ahead, one per review thread, and it has not yet pushed. Question: what do you do for each, and why do they differ?",
+      "expected_output": "A: push the stranded commits to its branch, as for any clean worktree whose push failed or was deferred. B: its local-ahead state is the design working, since a repair pass pushes once, at the end, after its local verification. Push its local head to its recovery ref, never to its branch: a push to the branch would be a second push mid-pass, starting CI and possibly a review round on a head the pass has not verified or replied on. The recovery ref still gets the work onto a remote ref, and it becomes redundant once the pass's own push lands.",
+      "assertions": [
+        "A's stranded commits are pushed to its branch",
+        "B's local head goes to its recovery ref, not its branch",
+        "the reason given is that a repair pass pushes once at the end",
+        "B's work still reaches a remote ref"
+      ],
+      "files": []
     }
   ],
   "companions": []

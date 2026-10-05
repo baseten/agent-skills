@@ -252,7 +252,7 @@ For `merge entire stack`:
 
 1. discover the full reachable stack first;
 2. snapshot its topology;
-3. repeatedly choose currently root-most mergeable PRs;
+3. repeatedly choose currently root-most mergeable PRs — where the caller's `minimize-ci-runs` has effect, those touching files disjoint from the merges before them first, and refresh only the next to merge, never every sibling a merge left stale (`settle-and-merge`, *Merge behavior*, states it for the gate's merges; `supervise-prs`, *Deferred CI*);
 4. merge one node;
 5. fully restack its remaining descendant subtree;
 6. refresh checks/mergeability for any PR that may be merged next;

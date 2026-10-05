@@ -41,12 +41,23 @@ remembered — and do it before attribution, a budget or a comment sees the even
 
 ## CI is green
 
-**Green means every check the repository actually requires has concluded successfully on the current head.** Enumerate what is required rather than gating on whichever check you happened to read. Two false passes share one root here, and closing only the second leaves the first:
+**Green means every check the repository actually requires has concluded successfully on the current head**, a check a path filter excludes from that head aside (*Path filters*). Enumerate what is required rather than gating on whichever check you happened to read. Two false passes share one root here, and closing only the second leaves the first:
 
 - **an empty or barely populated rollup is not green.** A rollup is populated asynchronously and is briefly empty after a push — particularly one that cancels an in-flight run — and an empty rollup satisfies any predicate of the form "no failures and nothing pending" (the *absence is not a verdict* shared rule). A check that has not registered has not concluded;
 - **one required check concluding is not green** where several are required and another is still pending or failing.
 
 Neither is a pass.
+
+## Path filters
+
+**"No check run on the head" is ambiguous once a workflow declares `paths` or `paths-ignore`.** Before reading it as missing CI, as not green or as a conflict, compare the PR's changed files with each workflow's filters, read from the workflow file as the head carries it:
+
+- **a workflow whose filters exclude every changed file legitimately did not trigger.** It is not missing CI, and a check only it produces is satisfied by not applying, unless branch protection requires that check by name (below). That is not reading a check that never ran as one that succeeded (the *absence is not a verdict* shared rule): the filter, read against the files, positively establishes the check was never owed;
+- **a workflow with no filters, or whose filters match a changed file, should have run.** No run from it is missing CI, never satisfied. A filter that cannot be read counts as matching.
+
+**A required check that never reports because of a filter is reported, not waited on.** Where branch protection requires a check by name and the only workflow producing it was filtered off this head, the forge blocks the merge on a status that is never coming. That check is not green and never will be: report it, its workflow and the filter, and hold the PR, rather than reading it as pending. The remedy is a workflow or protection change, which is the owner's.
+
+**A mergeable state of `dirty` is conflicted, whatever CI shows or did not run.**
 
 ## A review is clean
 
