@@ -30,7 +30,7 @@ Use the trigger the repository documents in its own `CLAUDE.md`/`AGENTS.md`; wit
 
 - **The trigger is the only review action a run takes: it never requests, re-requests or removes a human reviewer on any PR** — including once their changes-requested review is fixed. Code owners a forge requests when a draft is published are the forge's act: the run neither adds nor removes them, and reports any request at `settle-and-merge` step 7, or in the caller's output where no settle follows.
 - **Do not re-trigger merely because subsequent CI checks run.**
-- **Re-trigger after a substantive review-fix round only where repository convention requires it, and never after a mechanical push.** `references/mechanical-pushes.md` is the test for which is which; apply it from there.
+- **Re-trigger after a substantive review-fix round only where repository convention requires it, and never after a mechanical push.** `references/mechanical-pushes.md` is the test for which is which; apply it from there. **One exception, under `minimize-ci-runs` only:** a round owed on a head the supervisor holds a refresh owed for is not requested there; it is held, and requested on the refreshed head once the refresh lands, mechanical or not, so the final review covers the head that merges and neither review nor CI runs twice.
 - **Never re-trigger a round recorded `refused`** (*A refused round*), **nor in a repository where triggering was suppressed** (*Confirming a trigger took effect*).
 
 ## Confirming a trigger took effect

@@ -766,6 +766,53 @@
         "the mechanical tag does not suppress that round"
       ],
       "files": []
+    },
+    {
+      "id": 61,
+      "name": "a-reconciled-capture-of-a-lost-pass-spends-a-cycle",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #140, review-repair-cycles 2, one used. A review pass was lost mid-flight; at release its capture was reconciled onto the branch, producing a new head. Questions: (a) does that reconciled push count against the review budget? (b) a new review pass is dispatched for the same threads: what must it do before replying to or resolving any of them?",
+      "expected_output": "(a) Yes: it counts one cycle of the lost pass's repair type, review, leaving 0 — the same count a rebuild from the trailers would reach after a restart. Review is re-triggered as for any pass that pushed. (b) Run local verification on the reconciled head first, since nobody verified it, and only then reply or resolve.",
+      "assertions": [
+        "the reconciled push counts one review cycle",
+        "the count matches a rebuild from trailers",
+        "the next pass verifies the reconciled head before replying or resolving"
+      ],
+      "files": []
+    },
+    {
+      "id": 62,
+      "name": "a-pr-cannot-filter-itself-out-of-ci",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #141 changes `src/app.ts` and edits `.github/workflows/ci.yml`, adding `paths-ignore: ['src/**']` to its `pull_request` trigger. On the base, `ci.yml` has no filters. Branch protection does not require ci.yml's check by name. No run of ci.yml exists on the head. Question: is CI on the head green?",
+      "expected_output": "No. Filters are read from both base and head, and here they disagree, and the PR changes the workflow file. Either makes ci.yml count as matching: it should have run, so no run of it is missing CI, never satisfied. A PR cannot filter itself out of CI by editing the filter.",
+      "assertions": [
+        "filters are read from both base and head",
+        "the disagreement or the edited workflow file makes it count as matching",
+        "the absent run is missing CI, not green"
+      ],
+      "files": []
+    },
+    {
+      "id": 63,
+      "name": "a-matching-filter-with-no-run-is-missing-ci",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #142, `minimize-ci-runs` off, changes `api/handler.ts`. Workflow `api-ci` declares `paths: ['api/**']` on both base and head. Its window to register has passed and no run of it exists on the head. Question: what is the CI state?",
+      "expected_output": "Missing CI. The filter matches a changed file, so the workflow should have run; no run from it is missing, never satisfied by not applying, and never green.",
+      "assertions": [
+        "the matching filter means the workflow should have run",
+        "the absent run is missing CI",
+        "it is not green"
+      ],
+      "files": []
+    },
+    {
+      "id": 64,
+      "name": "an-unreadable-filter-counts-as-matching",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #143 changes only `docs/a.md`. Workflow `build` has no run on the head. Its workflow file cannot be read from this credential, so its filters are unknown. Question: is the absence of a `build` run legitimate?",
+      "expected_output": "No. A filter that cannot be read counts as matching, so `build` should have run, and its absence is missing CI, not a legitimate skip.",
+      "assertions": [
+        "the unreadable filter counts as matching",
+        "the absent run is missing CI"
+      ],
+      "files": []
     }
   ]
 }

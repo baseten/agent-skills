@@ -229,6 +229,32 @@
         "a conflict that chooses between behaviours leaves the refresh unmade and the repair still pushed"
       ],
       "files": []
+    },
+    {
+      "id": 18,
+      "name": "a-red-gate-pushes-once-and-replies-to-nothing",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review, budget 1 remaining. Two threads, both repairable. You commit both fixes, but the local test suite is still red at the end of the pass and you cannot make it green. Questions: (a) do you push? (b) do you post 'Fixed in <sha>' replies or resolve the threads? (c) what is the outcome, and does it spend a cycle?",
+      "expected_output": "(a) Yes, the pass's one push still happens, so the work is not left only in the worktree. (b) No. No reply naming a fix is posted and nothing is resolved; replies and resolutions follow a green pass only. (c) FAILED, and it spends the cycle, since a cycle is a pushed pass.",
+      "assertions": [
+        "the one push still happens",
+        "no Fixed-in reply is posted and no thread is resolved",
+        "the outcome is FAILED",
+        "the pass spends a cycle"
+      ],
+      "files": []
+    },
+    {
+      "id": 19,
+      "name": "a-refresh-that-alone-turns-the-gate-red-is-handed-back",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review, budget 1 remaining, base refresh supplied. You commit the one fix and the local checks are green. Merging main in is clean, but the checks then fail in a module the PR never touched. Question: what do you push, and what happens to the refresh?",
+      "expected_output": "The refresh alone turned verification red, so it is undone and handed back unmade, still owed to the caller. The repair is pushed without it as the pass's one push, the checks green on that head, and the reply follows. The outcome reports the refresh returned unmade, with why.",
+      "assertions": [
+        "the refresh is undone and returned unmade",
+        "it stays owed to the caller",
+        "the repair is pushed without it",
+        "the reply follows the green push"
+      ],
+      "files": []
     }
   ]
 }

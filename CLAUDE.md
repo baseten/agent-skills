@@ -54,7 +54,7 @@ evals (`<skill>#<id>`).
    spend no `review-repair-cycles`; a spent budget ends in the skill's outcome, never
    another repair push.
    `rules/platform-pr-posture.md`; `supervise-prs`, *Budgets*. supervise-prs#25 #26 #55 #57,
-   backlog-orchestrator#67, repair-pr#16 #17.
+   backlog-orchestrator#67, repair-pr#16 #17 #18, supervise-prs#61.
 6. **A created PR's body is edited only while draft, footered, or under a resolved merge
    opt-in** (`Depends on:` excepted); else drift is reported with a replacement.
    `rules/authored-write-form.md`. settle-and-merge#6 #9, merge-stack#5,
@@ -68,10 +68,10 @@ evals (`<skill>#<id>`).
    review round carries across mechanical pushes (`rules/ci-and-review-verdicts.md`).
    settle-and-merge#13 #14 #15 #16 #17, implement-issue#18. A head with no run is read through
    path filters, failing closed (`rules/ci-and-review-verdicts.md`, *Path filters*).
-   supervise-prs#58 #59, settle-and-merge#19.
+   supervise-prs#58 #59 #62 #63 #64, settle-and-merge#19.
 9. **Stranded work reaches a remote ref before any archive; permission holds name the
    literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked
-   workers*; `rules/wake-budget.md`. backlog-orchestrator#4 #19, swarm#20 #25,
+   workers*; `rules/wake-budget.md`. backlog-orchestrator#4 #19, swarm#20 #25 #26,
    implement-issue#14 #19 #20 #21.
 
 **A PR changing a protected rule's text says so in its body**, and gets a blind

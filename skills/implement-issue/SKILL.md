@@ -106,7 +106,7 @@ The run settles when its one issue reaches a terminal state: the PR `finished` a
 - **resolved policy**: `auto-merge`, `auto-request-settle` and `minimize-ci-runs`, resolved for its one PR (Policy and budgets), with any base-move hold and `workflow_dispatch:` suggestion `supervise-prs` reported;
 - **ranking**: `caller translates` — nothing is ranked, since one PR has no ordering to rank. This skill runs the ruling translation below over the rulings handed back at its step 5 and passes back the translated action points;
 - **dependency view**: the value core's completeness report gives — proven, or unproven on the named boundary with the discharge Merge describes;
-- **freshness checks**: none apply — this skill runs no integration check and has no authority to update a branch, so the stale-green re-check and the tool-bump rule do not apply;
+- **freshness checks**: none apply — this skill runs no integration check and has no authority to update a branch, so the stale-green re-check and the tool-bump rule do not apply, and `settle-and-merge` returns no refresh owed: `supervise-prs`'s *refresh owed* input is always passed empty here;
 - **publish rule**: `hand back` — this skill runs its own evidence-freshness rule (Merge, *Evidence freshness across draft→ready*) on the PR returned as published, and settles again when that rule says;
 - **outstanding recovery refs**: none — this skill captures nothing, so `swarm`'s generic lifecycle decides;
 - **un-settling**: nothing to pass; on a hand-back, Un-settling below governs, with the re-entry rule;

@@ -245,6 +245,17 @@
         "no blanket refresh follows each merge"
       ],
       "files": []
+    },
+    {
+      "id": 21,
+      "name": "the-refreshed-pr-keeps-its-turn",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: under `minimize-ci-runs` with effect and authority to update branches, PR C was just refreshed because it merges next; its CI is running on the refreshed head. PR E, ranked after C, passes the gate on an existing green whose files are disjoint from every merge since. Question: may E merge while C's CI runs?",
+      "expected_output": "No. The refreshed PR keeps its turn: no other PR merges until C has merged, or failed and been reported. Merging E first would move the base under C's refresh.",
+      "assertions": [
+        "E does not merge while C waits",
+        "C keeps priority until it merges or fails and is reported"
+      ],
+      "files": []
     }
   ]
 }
