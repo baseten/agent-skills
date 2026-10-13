@@ -68,7 +68,7 @@ Extracted in #144 from the three skills that each supervised PRs in their own wo
 
 **Why an unrun check never passes (Oct 2026 addendum):** batching moves verification into sessions that may lack a database, a browser or an emulator. A check that cannot run is recorded `not locally runnable` and owed by the integration PR's CI, so the one CI run is also the backstop for everything the sessions could not do; recording it as passed would let the gate open over a check nobody ran. It is reported in run state and never posted on the PR, which the write-form rule forbids.
 
-**Why the integration PR's CI is never re-run here (same request):** it is the one run the mode pays for, and an owner who chose the mode to stay inside a minutes allowance is the one who decides whether a second ~85-minute run is worth it. A repair push carries the token so that decision stays theirs; the PR waits as `CI: owner run owed`, surfaced and terminal, rather than spending it.
+**Why the integration PR's CI re-runs only behind a repair (owner's ruling on #186):** the first design left every re-run to the owner, which a tokened head made unworkable — it has no run to re-run — and left the PR stalled until someone noticed. The owner chose to let the run trigger CI itself, on the condition that the repair budget stays strict. So a run is triggered only on a head a counted repair pushed, once, at quiescence: the budget that bounds repairs bounds runs too, and a spent budget ends in an outcome rather than another run.
 
 ## Review feedback
 
