@@ -372,3 +372,10 @@ The argument for `finding-repair-cycles` being its own counter moved to `rules/r
 **Why the full tier is bisected and then asked about:** the full tier fails on the combination, so no one PR's record is wrong. Bisecting over first-parent merges names the merge that broke it; what to do — a fix issue, open anyway, or leave it — spends `new-issue-budget` or a CI run, both the owner's to spend.
 
 **Why a merge into the branch is not completion:** a closing keyword fires only on the default branch, so the tracker would say open while the run said done; the integration PR carries the linkage and closes them together.
+
+**Why the branch freezes while the integration PR is open (repository-scoped review of #186):** every push to the branch is a `pull_request` synchronize on that PR, so a merge into it, or a level merge, would start the one CI run again — the cost the mode exists to remove. Holding gate-passing PRs until the integration PR merges or closes costs latency on that batch only, and they become the next one.
+
+**Why `MERGED_TO_INTEGRATION` is a state (same review):** a restart classified issues from tracker state and merged-PR evidence, and an issue merged into the branch is neither `DONE` nor in progress; read as either, it is dropped or redispatched. Readiness credits it only within its repository, since a cross-repository dependent cannot build on a branch the other repository's default branch does not contain.
+
+**Why the integration PR merges by merge commit (same review):** "level" is read as the default branch containing the branch's head, which a squash never makes true, so a squash-merged batch would read as unshipped forever and the branch, never reset, could not recover.
+

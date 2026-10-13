@@ -150,7 +150,7 @@
     "minimize-ci-runs": {
       "type": "boolean",
       "default": false,
-      "description": "Deprecated alias: true is ci-mode deferred, false is per-pr. Where ci-mode is also present and disagrees, the repository resolves to per-pr, reported. Only this file turns it on. Read by: backlog-orchestrator, implement-issue.",
+      "description": "Deprecated alias: true is ci-mode deferred, false is per-pr. true beside a ci-mode other than deferred resolves the repository to per-pr, reported. Only this file turns it on. Read by: backlog-orchestrator, implement-issue.",
       "x-read-by": [
         "backlog-orchestrator",
         "implement-issue"

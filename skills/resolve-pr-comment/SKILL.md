@@ -292,7 +292,7 @@ that mode).
 
 ### 6. Resolve the conversation thread
 
-**Resolve only a thread whose reply step 5 posted** — never one whose reply is
+**Resolve only a thread whose reply step 5 posted**, or a deferred finding's whose `Deferred to` reply posted (*Findings deferred to a follow-up*) — never one whose reply is
 held, until that reply is approved and posted. If an approved reply was posted
 and the session died before the resolve, the thread stays open for the owner —
 acceptable, and listed nowhere, since the run that would list it is gone.
@@ -392,7 +392,7 @@ first checking the head for a change already made, which the last row covers:
 | Wants nothing | A no-action entry, exactly as unattended |
 | Deferred under `review-defer-severity` | Filed or linked, replied to and resolved as *Findings deferred to a follow-up* states — the only writes this mode makes, because deferring is that thread's whole handling, not a repair — and returned as a follow-up filed entry |
 | Wants both (*A comment can want both*) | Both entries for the one thread — the change unapplied as a deferred repair, and the question as a `NEEDS_USER` item with its draft. The thread is handled only once the caller has recorded both |
-| Wants a code change **already on the head**, with no comment newer than the fix but the request itself — otherwise the newest comment by anyone but this workflow is classified on every row, this one included, so a follow-up asking for a change already made lands here too | **Never a deferred repair or a budget `NEEDS_USER` item**: the work is done. An approval-pending reply item naming the commit that made the change. **Held even where only bots are in the thread, deliberately**: this mode posts nothing, and the walkthrough or the owner posts it (*Replies held for approval*). A thread that also carries a question gets no held reply: only its question item comes back |
+| Wants a code change **already on the head**, with no comment newer than the fix but the request itself — otherwise the newest comment by anyone but this workflow is classified on every row, this one included, so a follow-up asking for a change already made lands here too | **Never a deferred repair or a budget `NEEDS_USER` item**: the work is done. An approval-pending reply item naming the commit that made the change. **Held even where only bots are in the thread, deliberately**: this mode posts nothing but a deferred finding's writes, and the walkthrough or the owner posts it (*Replies held for approval*). A thread that also carries a question gets no held reply: only its question item comes back |
 
 **The mode has to be explicit, because this skill's default workflow pushes.**
 A caller that wants classification without repair and does not say so gets the
@@ -415,7 +415,7 @@ Where the caller passes `review-defer-severity` at a level other than `off`, wit
 A deferred thread is handled in this order, with no commit, no push and no cycle:
 
 1. **linked, not filed again**, where the caller's follow-ups already hold one for the same reviewer's finding at the same location — a re-raise on a newer head;
-2. otherwise **one follow-up issue is filed** under the follow-up site, in that site's tracker: a one-line title, and a body carrying the finding verbatim, the thread URL, the PR and the severity — an unattended write, footered (`references/authored-write-form.md`);
+2. otherwise **one follow-up issue is filed**, in the follow-up site's tracker and linking that site — **referenced, never made its sub-issue or blocker**, so no run's bounded scope reaches it: a one-line title, and a body carrying the finding verbatim, the thread URL, the PR and the severity — an unattended write, footered (`references/authored-write-form.md`). Filing it is the repository's own authority, given by the key; no other run step opens a tracker issue;
 3. **the reply** `Deferred to <issue URL> — <severity>.`, footered, posted once the issue exists;
 4. **resolved** (step 6).
 
@@ -599,7 +599,7 @@ covers, since what a reviewer reads is one thread with one voice in it.
 
 **No mode resolves the thread.** Attended, resolution of a query thread is the
 user's; unattended, the thread is reserved and a reserved thread is never
-resolved; classify-only resolves nothing at all. So a mixed comment never closes
+resolved; classify-only resolves nothing but a deferred finding, which a mixed comment never is. So a mixed comment never closes
 on a pushed fix, whichever mode handled it.
 
 **Where a person is in it, no reply is held for it at all** — none composed,
@@ -618,7 +618,7 @@ the repairable direction fails silently:
 | `NEEDS_USER` only | A fix the pass could have made and verified is left undone, waiting on a person who was only ever asked for prose |
 
 The resolution rule is what makes this safe, and it is unchanged: a thread is
-never resolved without an applied fix, **and a reserved thread is never resolved
+never resolved without an applied fix or a filed follow-up, **and a reserved thread is never resolved
 at all.** A mixed thread meets the first and fails the second, so unattended the
 fix is pushed and the thread stays open for the owner.
 

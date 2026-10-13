@@ -62,3 +62,6 @@ one the next editor of that contract will not find.
 **Why a regression of the PR's own repair is still repaired:** a finding on lines an earlier repair wrote is the review loop catching its own damage. Deferring it would merge a defect this PR introduced and file it as somebody else's work. The `Repair-Pass:` trailer marks those lines without any judgement.
 
 **Why classify-only still defers:** a spent budget is exactly when an automated reviewer's P2s would otherwise pile up as deferred-repair items holding the gate. Filing, replying and resolving is the thread's whole handling, not a repair, so the budget it never spends is no reason to withhold it.
+
+**Why a follow-up references its site and is never its sub-issue (repository-scoped review of #186):** filed as a sub-issue of the PR's parent, it would sit inside the orchestrator's bounded scope and become READY work the frontier dispatches, spending `new-issue-budget` on findings the owner chose to defer. Referenced, it is visible from the epic and outside every run's scope.
+

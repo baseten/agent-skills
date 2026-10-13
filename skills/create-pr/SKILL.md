@@ -67,6 +67,10 @@ Blocked by: https://github.com/acme/repo/issues/131
 - **Report which form you emitted**, so the caller reconciles completion against it rather than assuming a close.
 - Scope narrowly: a **recorded** coverage finding only — never a PR whose author merely feels uncertain (NOTES).
 
+## The integration PR
+
+**An integration PR** (`backlog-orchestrator`, `integration-branch.md`) **implements no one issue**: it carries the linkage line of every issue in its batch — the closing form where that issue's merged PR fully implemented it, `Part of:` otherwise — and names each batch PR the run did not create. Those lines are required contents and survive the body budget as linkage lines do; nothing else in it may push it past that budget. Its gate is the full tier the caller ran and passes, never re-derived here.
+
 # PR description template
 
 Tracker relationship line(s) first. Immediately after them, if `<parent-pr>` exists, exactly one:

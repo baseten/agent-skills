@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 24205,
+      "budget": 24241,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -19,11 +19,11 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/integration-branch.md": {
-      "budget": 1394,
+      "budget": 1687,
       "target": 1500
     },
     "skills/backlog-orchestrator/restart-resume.md": {
-      "budget": 731,
+      "budget": 760,
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/create-pr/SKILL.md": {
-      "budget": 2095,
+      "budget": 2183,
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
@@ -43,7 +43,7 @@
       "target": 3000
     },
     "skills/merge-stack/SKILL.md": {
-      "budget": 2327,
+      "budget": 2359,
       "target": 3000
     },
     "skills/normalize-github-dependencies/SKILL.md": {
@@ -59,11 +59,11 @@
       "target": 3000
     },
     "skills/repair-pr/SKILL.md": {
-      "budget": 3839,
+      "budget": 3855,
       "target": 3000
     },
     "skills/resolve-pr-comment/SKILL.md": {
-      "budget": 7888,
+      "budget": 7954,
       "target": 3000
     },
     "skills/review-docs/SKILL.md": {
@@ -75,7 +75,7 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 5559,
+      "budget": 5598,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
@@ -87,7 +87,7 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 7439,
+      "budget": 7553,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
@@ -115,7 +115,7 @@
       "target": 1500
     },
     "rules/agent-policy.md": {
-      "budget": 2059,
+      "budget": 2091,
       "target": 1500
     },
     "rules/authored-write-form.md": {
@@ -123,7 +123,7 @@
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
-      "budget": 1562,
+      "budget": 1564,
       "target": 1500
     },
     "rules/ci-attribution.md": {

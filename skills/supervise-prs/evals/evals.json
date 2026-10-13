@@ -832,11 +832,11 @@
       "id": 66,
       "name": "the-integration-pr-runs-ci-once-and-waits-for-the-owner",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the caller adopted PR #40 in acme/print, from `agent-integration` into `main`, under `ci-mode: integration-branch`; it was opened on a head carrying no skip token. Its opening run failed on one e2e shard, attributed to this PR; CI budget remains. Questions: (a) what do you dispatch, and what does the repair push carry? (b) after the push, CI has not run on the new head: do you trigger, dispatch or re-run it? (c) what is the PR's outcome, and is it terminal?",
-      "expected_output": "(a) One ci repair pass within the CI budget; its push to the integration branch carries [skip ci]. (b) No: this skill never re-runs, re-triggers or dispatches CI on the integration PR. (c) waiting as CI: owner re-run owed, terminal and surfaced, until the owner starts a run.",
+      "expected_output": "(a) One ci repair pass within the CI budget; its push to the integration branch carries [skip ci]. (b) No: this skill never re-runs, re-triggers or dispatches CI on the integration PR. (c) waiting as CI: owner run owed, terminal and surfaced, until the owner starts a run.",
       "assertions": [
         "the failure is repaired by one ci pass whose push carries the skip token",
         "CI is not re-run, re-triggered or dispatched by the run",
-        "the PR is waiting as owner re-run owed, and that state is terminal"
+        "the PR is waiting as owner run owed, and that state is terminal"
       ],
       "files": []
     }
