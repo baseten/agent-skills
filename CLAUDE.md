@@ -70,9 +70,9 @@ evals (`<skill>#<id>`).
    the gate opens for a PR into that branch on its local gate record, and never for the default branch
    without `auto-merge` (`rules/agent-policy.md`, *Merge permissions*; `rules/ci-and-review-verdicts.md`,
    *CI is green*). settle-and-merge#22, supervise-prs#65 #66, backlog-orchestrator#76 #77. Under
-   `review-defer-severity`, file-only, a bot's labelled finding at or below the level is resolved into a
+   `review-defer-severity`, file-only, an automated reviewer's labelled finding at or below the level is resolved into a
    follow-up issue, never one a person is in (`resolve-pr-comment`, *Findings deferred to a follow-up*).
-   resolve-pr-comment#52 #53, implement-issue#22. A head with no run is read through
+   resolve-pr-comment#52 #53 #54, implement-issue#22. A head with no run is read through
    path filters, failing closed (`rules/ci-and-review-verdicts.md`, *Path filters*).
    supervise-prs#58 #59 #62 #63 #64, settle-and-merge#19.
 9. **Stranded work reaches a remote ref before any archive; permission holds name the

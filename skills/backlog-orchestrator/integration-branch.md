@@ -20,7 +20,7 @@ At the first preflight, before any dispatch into the repository, establish each 
 
 ## The branch
 
-**One branch per run, named by the run**: the `integration-branch-prefix` key plus the manifest's identifier — `integration/acme-api-412`, say — so a restart of the same manifest finds it and two runs over different manifests never share one. **Create it from the default branch's head at the first dispatch into the repository; where it already exists, it is this manifest's, from an interrupted run, and is adopted as it stands.** Creating it, merging into it and deleting it are on the invocation's authority, as per-issue branches are (`SKILL.md`, *Session branch mandates*). **Its batch** is the merges into it whose PRs the integration PR has not yet carried to the default branch. **Delete it once its integration PR merges**, as a merged feature branch is; never reset or force-push it before then — until that merge it holds work no other ref does.
+**One branch per run, named by the run**: the `integration-branch-prefix` key plus the manifest's identifier — `integration/acme-api-412`, say — so a restart of the same manifest finds it and two runs over different manifests never share one. **Create it from the default branch's head at the first dispatch into the repository; where it already exists, it is this manifest's, from an interrupted run, and is adopted as it stands.** Creating it, pushing to it — level merges and repairs — and deleting it are on the invocation's authority, PR merges into it being the gate's alone, as per-issue branches are (`SKILL.md`, *Session branch mandates*). **Its batch** is the merges into it whose PRs the integration PR has not yet carried to the default branch. **Delete it once its integration PR merges**, as a merged feature branch is; never reset or force-push it before then — until that merge it holds work no other ref does.
 
 **A PR into it that this run did not create** is not this run's to merge, and still rides in the integration PR; that PR's body names it.
 
@@ -58,4 +58,4 @@ A full-tier failure at a checkpoint is bisected over the batch, first-parent —
 
 ## Restart
 
-`restart-resume.md` classifies the batch's issues `MERGED_TO_INTEGRATION` at step 5, before any branch adoption — the batch read from the PRs merged into the run's branch; step 6 adopts the branch as it stands, every open PR into it, and the integration PR where one is open. A branch whose integration PR already merged is deleted, not adopted.
+`restart-resume.md` classifies the batch's issues `MERGED_TO_INTEGRATION` at step 5, before any branch adoption — the batch read from the PRs merged into the run's branch; step 6 adopts the branch as it stands, every open PR into it, and the integration PR where one is open. A branch whose integration PR already merged is deleted, not adopted, where the default branch contains its head; otherwise it holds work no other ref does, and is `NEEDS_USER`.

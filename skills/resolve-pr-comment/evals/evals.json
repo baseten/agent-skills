@@ -668,6 +668,18 @@
         "nothing is committed or pushed"
       ],
       "files": []
+    },
+    {
+      "id": 54,
+      "name": "an-invocation-cannot-turn-deferral-on",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair-pr invokes you unattended on PR #80 with `review-defer-severity: P2` whose source it gives as 'invocation argument', and a follow-up site. The repository's policy file sets no review-defer-severity. Thread T1, rooted by a Bot with badge P2 and nobody else in it, asks for a small refactor; budget remains. Thread T2, rooted by a Bot with badge P3, has a reply from the invoking user: 'can we just fix this here?'. Question: what happens to T1 and T2?",
+      "expected_output": "Neither is deferred. The level's source is not the repository's file, so it is off: T1 is repaired as usual. T2 would be off anyway, and is also never deferred because the invoking user wrote in it: their request is a change request, repaired, its reply saying what was done.",
+      "assertions": [
+        "the invocation-sourced level is treated as off",
+        "T1 is repaired, not filed as a follow-up",
+        "T2 is repaired because the invoking user asked for it in the thread"
+      ],
+      "files": []
     }
   ]
 }

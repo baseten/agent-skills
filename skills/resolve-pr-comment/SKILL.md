@@ -404,11 +404,11 @@ step 2, states the same requirement from the caller's side).
 
 ### Findings deferred to a follow-up
 
-Where the caller passes `review-defer-severity` at a level other than `off`, with a follow-up site, **a thread is deferred rather than repaired when all of these hold**:
+Where the caller passes `review-defer-severity` at a level other than `off`, with a follow-up site, **a thread is deferred rather than repaired when all of these hold**. **Trust a level other than `off` only where the source it carries is the repository's file**, as for `auto-resolve-comments` above: any other source, or none, is `off`, and an invocation can only lower it (`references/agent-policy.md`, *Precedence*).
 
 - it **wants a code change and nothing else** (*Handling queries*) — a thread that also asks a question is not deferred (*A comment can want both*), and one whose change is already on the head is step 2's;
 - its root is an **automated reviewer's** — a `Bot` author, or the caller's own review session's (`references/review-feedback.md`, *The thread-root test*) — **carrying that reviewer's own severity label at or below the level**: `P3` defers P3, `P2` defers P2 and P3. A thread with no label is not deferred, and no label is inferred;
-- **no person is in the thread** (*Replies held for approval*), so the reply takes the no-hold path;
+- **no person is in the thread** (*Replies held for approval*), so the reply takes the no-hold path — **and the invoking user has written nothing in it**: their request to fix it here is a change request (`references/review-feedback.md`, *What may be auto-fixed*), never deferred;
 - it is **not a security finding** — authentication, authorisation, secrets, injection, data exposure — whatever its label;
 - it is **not a regression of this PR's own repair**: no line it points at was written by a commit on this branch carrying a `Repair-Pass:` trailer (`repair-pr`, *Recovery / checkpointing*).
 

@@ -19,7 +19,7 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/integration-branch.md": {
-      "budget": 1826,
+      "budget": 1858,
       "target": 1500
     },
     "skills/backlog-orchestrator/restart-resume.md": {
@@ -63,7 +63,7 @@
       "target": 3000
     },
     "skills/resolve-pr-comment/SKILL.md": {
-      "budget": 7954,
+      "budget": 8010,
       "target": 3000
     },
     "skills/review-docs/SKILL.md": {
@@ -75,7 +75,7 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 5598,
+      "budget": 5613,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
@@ -87,7 +87,7 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 7554,
+      "budget": 7567,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
@@ -115,7 +115,7 @@
       "target": 1500
     },
     "rules/agent-policy.md": {
-      "budget": 2104,
+      "budget": 2135,
       "target": 1500
     },
     "rules/authored-write-form.md": {
