@@ -66,6 +66,8 @@ Extracted in #144 from the three skills that each supervised PRs in their own wo
 
 **Why the per-PR gate is a quick tier and is never re-run for a base move (same run):** the full suite on every PR became the bottleneck — over two hours in a four-CPU container against about fifteen minutes on Actions — and it was re-run each time the integration branch moved under a PR, one PR three times. It caught nothing Codex or the workers' targeted tests had not; waits from a clean review to a merge ran from 0.6 to 5.5 hours. A quick tier per PR and the full tier at the branch's checkpoints fixed it. A record therefore attaches to its head, carries across a mechanical push as a review round does, and the combination is the full tier's job.
 
+**Why an unrun check never passes (Oct 2026 addendum):** batching moves verification into sessions that may lack a database, a browser or an emulator. A check that cannot run is recorded `not locally runnable` and owed by the integration PR's CI, so the one CI run is also the backstop for everything the sessions could not do; recording it as passed would let the gate open over a check nobody ran. It is reported in run state and never posted on the PR, which the write-form rule forbids.
+
 **Why the integration PR's CI is never re-run here (same request):** it is the one run the mode pays for, and an owner who chose the mode to stay inside a minutes allowance is the one who decides whether a second ~85-minute run is worth it. A repair push carries the token so that decision stays theirs; the PR waits as `CI: owner re-run owed`, surfaced and terminal, rather than spending it.
 
 ## Review feedback
