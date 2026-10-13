@@ -10,11 +10,11 @@ Part of `backlog-orchestrator`'s contract, read wherever an in-scope repository'
 
 At the first preflight, before any dispatch into the repository, establish each of these from the default branch's head (`references/establish-do-not-assume.md`) and record them per repository:
 
-1. **the token preconditions** `supervise-prs`, *Deferred CI*, names — a squash or merge-commit merge allowed, a review trigger that is not an Actions workflow on `pull_request` events, and a forge that honours `[skip ci]`, observed on the first tokened push;
+1. **the two token preconditions read from settings** that `supervise-prs`, *Deferred CI*, names — a squash or merge-commit merge allowed, and a review trigger that is not an Actions workflow on `pull_request` events. The third, a forge that honours `[skip ci]`, cannot be read before a tokened push exists, so it holds nothing here: it is observed on the first worker push, and a tokened push that starts a run is reported, the tokens then saving nothing while the local gate still governs;
 2. **no workflow's `push` trigger matches the run's branch name** — every merge into it would otherwise start a run;
 3. **no branch protection or ruleset matching that name requires a check only CI produces, or a PR for a push** — the forge would refuse every merge into it, a required check expected on a ticket PR's head is what a supervisor reads as owed CI, and the run pushes its level merges directly;
 4. **a session can run the per-PR tier** (*The gate, in two tiers*);
-5. **the run's branch is not the default branch** — that is a fail-closed `per-pr` (`references/agent-policy.md`, *Fail-closed handling*).
+5. **the run's branch name is valid and is not the default branch** — a name `git check-ref-format --branch` rejects, or the default branch's, is a fail-closed `per-pr` (`references/agent-policy.md`, *Fail-closed handling*).
 
 **Any missing → hold dispatch into that repository** with a `NEEDS_USER` carrying the CI-cost audit's proposal (`SKILL.md`, *Mandatory validation preflight*): the exact diff — `push: branches: [<default>]`, or a `branches-ignore` for the prefix, say — and the instruction to land it with `[skip ci]` in its message, so the fix costs no run. The options: dispatch once the fix lands, or dispatch under `per-pr` for this run. Only an owner reply choosing one releases it (`SKILL.md`, *Arming the wait when nothing is in flight*). The run never edits a workflow (`implement-issue-core`, *Hard constraints*).
 
