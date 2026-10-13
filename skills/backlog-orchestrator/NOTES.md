@@ -365,7 +365,7 @@ The argument for `finding-repair-cycles` being its own counter moved to `rules/r
 
 ## Integration-branch mode — `integration-branch.md`
 
-**Why an integration branch (Oct 2026, owner's request; a generative-print run):** per-PR CI was the run's cost, and deferring it still paid one full run per PR at quiescence. With every issue PR into an integration branch, reviewed per PR and gated locally, and one CI run on the integration PR, the run spent no Actions minutes until that PR. The branch is never reset or deleted because it is the only ref holding merged work before the integration PR lands.
+**Why an integration branch, and one per run (Oct 2026, owner's request; a generative-print run):** per-PR CI was the run's cost, and deferring it still paid one full run per PR at quiescence. With every issue PR into an integration branch, reviewed per PR and gated locally, and one CI run on the integration PR, the run spent no Actions minutes until that PR. The branch is a feature branch for the run, not a standing staging area (owner's ruling on #186): the run names it from the prefix and its manifest, so two concurrent runs never merge into one branch, freeze each other, or ship each other's half-finished batch, and a restart of the same manifest finds its own. It is deleted once its integration PR merges, which is also why the integration PR may be squash-merged: nothing reads the branch afterwards.
 
 **Why the preconditions hold dispatch (same request):** a `push` trigger matching the integration branch turns every merge into it into a full run, which is the per-PR cost again under another name; branch protection requiring CI checks on it blocks every merge. Both are workflow or settings edits, which are the owner's, so the run proposes the diff and asks for it to land with the skip token so the fix itself costs nothing.
 
@@ -377,5 +377,6 @@ The argument for `finding-repair-cycles` being its own counter moved to `rules/r
 
 **Why `MERGED_TO_INTEGRATION` is a state (same review):** a restart classified issues from tracker state and merged-PR evidence, and an issue merged into the branch is neither `DONE` nor in progress; read as either, it is dropped or redispatched. Readiness credits it only within its repository, since a cross-repository dependent cannot build on a branch the other repository's default branch does not contain.
 
-**Why the integration PR merges by merge commit (same review):** "level" is read as the default branch containing the branch's head, which a squash never makes true, so a squash-merged batch would read as unshipped forever and the branch, never reset, could not recover.
+**Why the full tier is filtered (owner's ruling on #186):** the full tier stands in for the CI the integration PR would run, and that CI selects jobs by its change-set tooling and path filters. Running every suite in a monorepo when the batch touched one package spends hours of session time to check what the integration PR's own CI would never have run.
 
+**Why the integration PR opens when the run's work in the repository is done, not per settle:** a settle merges PRs, and the frontier advance those merges trigger can make dependents READY. Opening the integration PR at that settle would freeze the branch under work about to start, and paying a CI run per settle would multiply the one run the mode exists to pay.

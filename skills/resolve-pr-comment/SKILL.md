@@ -415,7 +415,7 @@ Where the caller passes `review-defer-severity` at a level other than `off`, wit
 A deferred thread is handled in this order, with no commit, no push and no cycle:
 
 1. **linked, not filed again**, where the caller's follow-ups already hold one for the same reviewer's finding at the same location — a re-raise on a newer head;
-2. otherwise **one follow-up issue is filed**, in the follow-up site's tracker and linking that site — **referenced, never made its sub-issue or blocker**, so no run's bounded scope reaches it: a one-line title, and a body carrying the finding verbatim, the thread URL, the PR and the severity — an unattended write, footered (`references/authored-write-form.md`). Filing it is the repository's own authority, given by the key; no other run step opens a tracker issue;
+2. otherwise **one follow-up issue is filed as a sub-issue of the follow-up site**, in its tracker — never as a blocker of anything: a one-line title, and a body carrying the finding verbatim, the thread URL, the PR and the severity — an unattended write, footered (`references/authored-write-form.md`). Filing it is the repository's own authority, given by the key; no other run step opens a tracker issue;
 3. **the reply** `Deferred to <issue URL> — <severity>.`, footered, posted once the issue exists;
 4. **resolved** (step 6).
 

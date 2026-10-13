@@ -263,6 +263,8 @@ External dependencies may be inspected for readiness but are not authorized for 
 
 Do not absorb work merely because it shares a project, repo, label, milestone, or contextual link.
 
+**A follow-up this run filed for a deferred review finding is never in its own scope**, though it is a sub-issue of an in-scope issue (`resolve-pr-comment`, *Findings deferred to a follow-up*): the run knows it by its footered body (`references/posting-identity.md`), and a restart's re-expansion excludes it the same way. A later invocation over the manifest takes it up like any other descendant — that invocation is the owner asking for it.
+
 The root itself is coordination metadata unless it contains independent implementation acceptance criteria.
 
 ## 2. Explicit issue set
@@ -375,7 +377,7 @@ The policy file — `.claude/agent-policy.json`, its schema, precedence, resolut
   "auto-request-settle": true,
   "auto-resolve-comments": false,
   "ci-mode": "per-pr",
-  "integration-branch": "agent-integration",
+  "integration-branch-prefix": "integration/",
   "minimize-ci-runs": false,
   "review-defer-severity": "off",
   "auto-merge": false
@@ -388,7 +390,7 @@ Keys scope to different objects, and each resolves from the repository that owns
 
 | keys | scope | resolved from |
 | --- | --- | --- |
-| `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-resolve-comments`, `ci-mode` with `integration-branch` and its alias `minimize-ci-runs`, `review-defer-severity`, `auto-merge` | per PR | the PR's repository |
+| `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-resolve-comments`, `ci-mode` with `integration-branch-prefix` and its alias `minimize-ci-runs`, `review-defer-severity`, `auto-merge` | per PR | the PR's repository |
 | `implementation-attempts`, `model-escalations`, `lost-worker-redispatches` | per issue | the issue's repository |
 | `concurrent-workers`, `concurrent-open-prs`, `new-issue-budget`, `auto-request-settle` | per run | the manifest's repository; an explicit issue set contained in one repository uses that repository; a multi-repo set with no manifest uses the built-ins |
 
