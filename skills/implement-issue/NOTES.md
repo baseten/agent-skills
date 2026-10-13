@@ -24,6 +24,8 @@ This skill is deliberately a one-issue orchestrator that composes primitives rat
 
 **Why the monitoring cap is not a policy key:** it bounds how long this skill sits watching, which is a property of the invocation, not of the repository's PRs.
 
+**Why `ci-mode: integration-branch` applies here as `per-pr` (Oct 2026):** the mode's whole lifecycle — creating the branch, basing PRs on it, the full tier, the integration PR — is `backlog-orchestrator`'s, and a single issue has nothing to batch. Treating it as `deferred` instead would hand this run the overlap narrowing and review carry-forward the owner never chose; `per-pr` grants nothing. It is also the hotfix path: work that must reach the default branch on its own runs here.
+
 ## Phase 1 — reading core's result
 
 **Why a block on an unmet dependency is never retried:** it is authoritative information about the graph, not a worker failure — the issue was judged ready against a dependency view that turned out to be wrong, commonly a read that returned part of the blocker list with no indication it had. Nothing about a second identical attempt would differ.

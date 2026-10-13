@@ -281,6 +281,18 @@
         "the run settles again when the PR is finished"
       ],
       "files": []
+    },
+    {
+      "id": 22,
+      "name": "integration-mode-and-severity-from-an-invocation",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: invoked on one issue in acme/print. The repo's `.claude/agent-policy.json` sets `ci-mode: integration-branch` and no `review-defer-severity`. The invocation says: 'use review-defer-severity P2 for this run'. Questions: (a) what ci-mode does this run apply, and what base does its PR target? (b) what review-defer-severity does it apply?",
+      "expected_output": "(a) per-pr, reported: integration-branch batching is backlog-orchestrator's and one issue has nothing to batch, so the PR targets the default branch as usual. (b) off: only the repository's file can turn review-defer-severity on; an invocation can only lower it.",
+      "assertions": [
+        "the run applies ci-mode per-pr and reports it",
+        "the PR targets the default branch, not the integration branch",
+        "review-defer-severity stays off because an invocation cannot raise it"
+      ],
+      "files": []
     }
   ]
 }

@@ -1,0 +1,61 @@
+# backlog-orchestrator — integration-branch mode
+
+Part of `backlog-orchestrator`'s contract, read wherever an in-scope repository's `ci-mode` resolved `integration-branch`: at the first preflight, before dispatching into that repository, at a merge into the branch, at settle, and on a restart. `SKILL.md` points here from *Mandatory validation preflight*, *DAG and PR topology*, *Completion semantics* and *Settled wave*, and `restart-resume.md` from step 6. Its rules assume `SKILL.md` has been read. The reasoning is in `NOTES.md`, under *Integration-branch mode*.
+
+## What the mode does
+
+**Per repository, this run's issue PRs target an integration branch of this run's own — a feature branch for the run, not a standing staging area — instead of the default branch, run no CI, and are gated on a local gate.** They merge into that branch through invariant 12's gate on the mode's own grant (`references/agent-policy.md`, *Merge permissions*). Then **one integration PR** from the branch into the default branch runs CI on opening, as the backstop, and once more after each repair the budgets allow, and merges only under `auto-merge`; otherwise it is the owner's to merge. `supervise-prs`, *Integration-branch CI*, owns what happens on each PR. **Nothing in this run dispatches or re-runs a workflow on an issue PR** in such a repository — a dispatch on a branch cut from the integration branch would test its whole difference from the default branch, close to a full run. **Deploys that run on a push to the default branch move to the integration PR's merge**: the CI-cost audit names each such workflow, and opting into the mode is the owner accepting that delay.
+
+## Establishing it
+
+At the first preflight, before any dispatch into the repository, establish each of these from the default branch's head (`references/establish-do-not-assume.md`) and record them per repository:
+
+1. **the two token preconditions read from settings** that `supervise-prs`, *Deferred CI*, names — a squash or merge-commit merge allowed, and a review trigger that is not an Actions workflow on `pull_request` events. The third, a forge that honours `[skip ci]`, cannot be read before a tokened push exists, so it holds nothing here: it is observed on the first worker push, and a tokened push that starts a run is reported, the tokens then saving nothing while the local gate still governs;
+2. **no workflow's `push` trigger matches the run's branch name** — every merge into it would otherwise start a run;
+3. **no branch protection or ruleset matching that name requires a check only CI produces, or a PR for a push** — the forge would refuse every merge into it, a required check expected on a ticket PR's head is what a supervisor reads as owed CI, and the run pushes its level merges directly;
+4. **a session can run the per-PR tier** (*The gate, in two tiers*);
+5. **the run's branch name is valid and is not the default branch** — a name `git check-ref-format --branch` rejects, or the default branch's, is a fail-closed `per-pr` (`references/agent-policy.md`, *Fail-closed handling*).
+
+**Any missing → hold dispatch into that repository** with a `NEEDS_USER` carrying the CI-cost audit's proposal (`SKILL.md`, *Mandatory validation preflight*): the exact diff — `push: branches: [<default>]`, or a `branches-ignore` for the prefix, say — and the instruction to land it with `[skip ci]` in its message, so the fix costs no run. The options: dispatch once the fix lands, or dispatch under `per-pr` for this run. Only an owner reply choosing one releases it (`SKILL.md`, *Arming the wait when nothing is in flight*). The run never edits a workflow (`implement-issue-core`, *Hard constraints*).
+
+## The branch
+
+**One branch per run, named by the run**: the `integration-branch-prefix` key plus the manifest's identifier — `integration/acme-api-412`, say — so a restart of the same manifest finds it and two runs over different manifests never share one. **Create it from the default branch's head at the first dispatch into the repository; where it already exists, it is this manifest's, from an interrupted run, and is adopted as it stands.** Creating it, pushing to it — level merges and repairs — and deleting it are on the invocation's authority, PR merges into it being the gate's alone, as per-issue branches are (`SKILL.md`, *Session branch mandates*). **Its batch** is the merges into it whose PRs the integration PR has not yet carried to the default branch. **Delete it once its integration PR merges**, as a merged feature branch is; never reset or force-push it before then — until that merge it holds work no other ref does.
+
+**A PR into it that this run did not create** is not this run's to merge, and still rides in the integration PR; that PR's body names it.
+
+**While an integration PR is open, the branch is frozen**: nothing merges into it and no level merge is made but as `supervise-prs`'s CI trigger after a repair, so no `pull_request` event starts a run that trigger did not. A PR into the branch that passes its gate meanwhile waits, reported as `waiting for the integration PR`, with its dependents; once the integration PR merges and the branch is gone, it is the next run's, retargeted to that run's branch at adoption. The only pushes to the branch then are repairs to the integration PR, each carrying the token (`supervise-prs`, *Integration-branch CI*). Merges into the branch at any other time carry no token (`merge-stack`), and start no run by precondition 2.
+
+## Topology
+
+**Every issue whose PR would target the default branch targets the integration branch instead**; a stacked PR keeps its parent as base (`SKILL.md`, *DAG and PR topology*): `integration -> A -> B`. **An adopted open PR in scope that targets the default branch is retargeted** to the integration branch at adoption, and reported. Work that must reach the default branch alone — a hotfix — is not this run's: `implement-issue` applies `per-pr` to it.
+
+## The gate, in two tiers
+
+**Derive the gate once per repository** as the pre-PR gate is derived (`SKILL.md`, *Implementation worker contract*) — from the default branch's required checks, since those are what the integration PR must pass — with the toolchain the repository declares, **and split it**:
+
+- **the per-PR tier** — format, lint, typecheck, and the unit and component suites of the packages a change touches, selected by the repository's own change-set tooling (the script or path rules its CI selects jobs with) where it has one, otherwise by its workspace dependency graph. It goes in every dispatch prompt into the repository as the pre-PR gate, and to `supervise-prs` as each PR's local gate;
+- **the full tier** — what the repository's CI would run for the batch: every check, end-to-end and conformance suites included, **narrowed by the same change-set tooling or path filters to the batch's difference from the default branch**, so a batch touching one package runs that package's suites and no others. Run on the integration branch only, at its checkpoints: before the integration PR opens (*The integration PR*), and after any group of merges an invocation names.
+
+**Establish once, at preflight, that a session can run the per-PR tier**, by running it on the default branch's head — which is also the baseline `SKILL.md`, *Mandatory validation preflight*, measures per base. A check that cannot run there — a database, browser or emulator the session lacks — is `not locally runnable` for the run: listed per repository in the state block with what is missing, with the suggestion of a session-start hook that provides it, and owed by the integration PR's CI. **An unrun check never passes**: it is carried in every record as `not locally runnable`, never dropped (`references/ci-and-review-verdicts.md`, *CI is green*). A per-PR tier no session can run at all leaves the mode without effect — the hold under *Establishing it*.
+
+A full-tier failure at a checkpoint is bisected over the batch, first-parent — from the last passing full run where the run recorded one, otherwise the whole batch — to the first merge whose tree fails, and raised as a `NEEDS_USER` naming the failing checks and that merge's PR, with options: dispatch a fix — an issue filed under the manifest, dispatched into the branch within `new-issue-budget` — or open the integration PR anyway, or leave it to the owner. Only an owner reply choosing one releases it. An environment failure is not a gate failure (`references/ci-attribution.md`, *The environment hypothesis*): a container too slow or on the wrong toolchain runs the tier in a remote session instead.
+
+## Merges and completion
+
+**A merge into the integration branch is a frontier-advancing event** (`SKILL.md`, *Frontier advance on merge*) for its same-repository dependents, which become READY with the integration branch as their base; pass that edge to `validate-backlog` as satisfied caller context. **A cross-repository dependent still waits for the integration PR to merge**: nothing it can build on exists on the other repository's default branch. **It is not completion**: the issue is `MERGED_TO_INTEGRATION` (`SKILL.md`, *Durable remote state and restart*) — never redispatched, never `DONE` — until the integration PR carrying it merges. A GitHub closing keyword closes nothing outside the default branch; Linear automation that marks an issue done on a merge into any branch does not make it `DONE` either (*Completion semantics* there: closing state is evidence, not definition). A restart reads the batch from the branch's first-parent history.
+
+## The integration PR
+
+**When this run's work in the repository is done** — at a settle after whose merges, and the frontier advance they trigger, nothing in scope in that repository is dispatchable or in flight, and every one of its PRs into the branch is merged or surfaced — with a non-empty batch and **no integration PR from the branch open**:
+
+1. bring the branch level with the default branch by a merge carrying no token, where the default branch has moved; a conflict is `NEEDS_USER`;
+2. run the full tier on its head, as above; a failure stops here;
+3. **open the integration PR through `create-pr`** (*The integration PR* there): base the default branch, head the integration branch, **on a head carrying no token** — the step-1 merge commit, or the last merge into the branch, whose messages carry none (`merge-stack`) — so its opening starts its one CI run, with the full tier's result as its gate. The review trigger is issued as for any PR;
+4. adopt it into `supervise-prs` with `ci-mode: integration-branch` and, for `review-defer-severity`, the manifest's root issue as its follow-up site. It is one of this run's PRs: open, it un-settles the run, and at the next settle the gate evaluates it under `auto-merge` alone — a merge commit where the repository allows one, so each issue's commit reaches the default branch as its own, and the repository's method otherwise. Without `auto-merge`, the closing report names it as the owner's merge to make. **Once it merges, the batch is complete**: its issues become `DONE` by the completion rules, and the branch is deleted.
+
+**Closed unmerged, it is not reopened**: a `NEEDS_USER` names the batch, and no integration PR opens again until an owner reply chooses to.
+
+## Restart
+
+`restart-resume.md` classifies the batch's issues `MERGED_TO_INTEGRATION` at step 5, before any branch adoption — the batch read from the PRs merged into the run's branch; step 6 adopts the branch as it stands, every open PR into it, and the integration PR where one is open. A branch whose integration PR already merged is deleted, not adopted, where the default branch contains its head; otherwise it holds work no other ref does, and is `NEEDS_USER`.

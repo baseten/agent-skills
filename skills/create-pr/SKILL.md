@@ -36,7 +36,7 @@ Read `CLAUDE.md`/`AGENTS.md` for branch conventions, PR templates, draft/full ru
 
 **That read does not supply the gate.** Where the caller supplied the check set and its outcomes, use them and do not re-derive. Where no caller did — a direct invocation — derive the set here, before running anything and before drafting the body: the base branch's required status checks, falling back to the workflow's check steps and marking the set unproven, mapping each required context to the local command that produces it, and carrying a context with no local equivalent as `not locally runnable` (where the caller is `implement-issue-core`, it derives the set the same way in its *Final local verification*, and passes it). **Never from the `CLAUDE.md`/`AGENTS.md` list read above** — that list describes the gate and drifts from it, so a run built on it is complete against the wrong thing and the gate report then states that completeness as compliance. Run the locally runnable part before opening the PR unless the caller explicitly documents that final verification was already completed by `implement-issue-core`, and hold the set and its outcomes for the gate report under Output.
 
-**Under `minimize-ci-runs`**, where the caller passes it on, the head the PR opens on carries `[skip ci]` in its commit message, so opening it runs no CI (`supervise-prs`, *Deferred CI*).
+**Under `ci-mode` `deferred` or `integration-branch`**, where the caller passes it on, the head the PR opens on carries `[skip ci]` in its commit message, so opening it runs no CI (`supervise-prs`, *Deferred CI*, *Integration-branch CI*). The integration PR itself is the exception: its caller opens it on a head carrying no token, since its opening run is the one CI run it gets.
 
 **Branch naming**: follow documented repo convention; otherwise preserve the current branch — never invent a convention.
 
@@ -66,6 +66,10 @@ Blocked by: https://github.com/acme/repo/issues/131
 - On Linear and other trackers: keep the canonical URL and do not apply the workspace's completion automation; where you cannot tell whether the integration will transition the issue on merge, say so rather than assuming it will not.
 - **Report which form you emitted**, so the caller reconciles completion against it rather than assuming a close.
 - Scope narrowly: a **recorded** coverage finding only — never a PR whose author merely feels uncertain (NOTES).
+
+## The integration PR
+
+**An integration PR** (`backlog-orchestrator`, `integration-branch.md`) **implements no one issue**: it carries the linkage line of every issue in its batch — the closing form where that issue's merged PR fully implemented it, `Part of:` otherwise — and names each batch PR the run did not create. Those lines are required contents and survive the body budget as linkage lines do; nothing else in it may push it past that budget. Its gate is the full tier the caller ran and passes, never re-derived here.
 
 # PR description template
 

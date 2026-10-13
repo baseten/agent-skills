@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 23842,
+      "budget": 24312,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -18,28 +18,32 @@
       "budget": 319,
       "target": 1500
     },
+    "skills/backlog-orchestrator/integration-branch.md": {
+      "budget": 1914,
+      "target": 1500
+    },
     "skills/backlog-orchestrator/restart-resume.md": {
-      "budget": 712,
+      "budget": 760,
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
-      "budget": 1845,
+      "budget": 1934,
       "target": 1500
     },
     "skills/create-pr/SKILL.md": {
-      "budget": 2062,
+      "budget": 2183,
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 4578,
+      "budget": 4638,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
-      "budget": 4870,
+      "budget": 4913,
       "target": 3000
     },
     "skills/merge-stack/SKILL.md": {
-      "budget": 2321,
+      "budget": 2359,
       "target": 3000
     },
     "skills/normalize-github-dependencies/SKILL.md": {
@@ -55,11 +59,11 @@
       "target": 3000
     },
     "skills/repair-pr/SKILL.md": {
-      "budget": 3731,
+      "budget": 3855,
       "target": 3000
     },
     "skills/resolve-pr-comment/SKILL.md": {
-      "budget": 7445,
+      "budget": 8010,
       "target": 3000
     },
     "skills/review-docs/SKILL.md": {
@@ -71,7 +75,7 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 5378,
+      "budget": 5613,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
@@ -83,7 +87,7 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 6744,
+      "budget": 7567,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
@@ -111,15 +115,15 @@
       "target": 1500
     },
     "rules/agent-policy.md": {
-      "budget": 1736,
+      "budget": 2146,
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2045,
+      "budget": 2076,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
-      "budget": 1415,
+      "budget": 1564,
       "target": 1500
     },
     "rules/ci-attribution.md": {
@@ -139,7 +143,7 @@
       "target": 1500
     },
     "rules/platform-pr-posture.md": {
-      "budget": 1337,
+      "budget": 1358,
       "target": 1500
     },
     "rules/posting-identity.md": {
@@ -155,11 +159,11 @@
       "target": 1500
     },
     "rules/review-feedback.md": {
-      "budget": 2818,
+      "budget": 2911,
       "target": 1500
     },
     "rules/review-trigger.md": {
-      "budget": 1724,
+      "budget": 1725,
       "target": 1500
     },
     "rules/wake-budget.md": {

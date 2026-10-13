@@ -124,10 +124,48 @@
         "resolve-pr-comment"
       ]
     },
+    "ci-mode": {
+      "type": "string",
+      "enum": [
+        "per-pr",
+        "deferred",
+        "integration-branch"
+      ],
+      "default": "per-pr",
+      "description": "How a PR's CI is spent. per-pr: CI runs as pushes trigger it. deferred: CI is deferred until the PR is quiescent on its head, then run once, and a stale green is re-checked at the merge gate only where the base's changes overlap the PR's files (supervise-prs, Deferred CI). integration-branch: a backlog-orchestrator run's issue PRs target an integration branch the run creates for itself (integration-branch-prefix), carry [skip ci], are gated on a tiered local gate instead of CI and may merge into that branch through the merge gate, and one PR from it into the default branch runs CI on opening and once per budgeted repair (supervise-prs, Integration-branch CI); implement-issue applies per-pr there. Each mode has effect only where its repository preconditions hold. Only this file sets a mode other than per-pr. Read by: backlog-orchestrator, implement-issue.",
+      "x-read-by": [
+        "backlog-orchestrator",
+        "implement-issue"
+      ]
+    },
+    "integration-branch-prefix": {
+      "type": "string",
+      "default": "integration/",
+      "minLength": 1,
+      "description": "Prefix of the branch a backlog-orchestrator run under ci-mode integration-branch creates for itself: the prefix plus the run's manifest identifier, one branch per run, deleted once its integration PR merges. Ignored under any other ci-mode. Only this file sets it. Read by: backlog-orchestrator.",
+      "x-read-by": [
+        "backlog-orchestrator"
+      ]
+    },
     "minimize-ci-runs": {
       "type": "boolean",
       "default": false,
-      "description": "Defer a PR's CI until the PR is quiescent on its head, then run it once, and re-check a stale green at the merge gate only where the base's changes overlap the PR's files. Has no effect where the forge ignores [skip ci], the repository allows only rebase merges, or the review trigger is a pull_request workflow. A PR already level with its base whose required checks cannot be dispatched waits for the base to move. Also holds a parallel wave for a CI-hygiene fix proposal, refreshes only the PR that merges next, and requests the final review on the refreshed head. Only this file can turn it on. Read by: backlog-orchestrator, implement-issue.",
+      "description": "Deprecated alias: true is ci-mode deferred, false is per-pr. true beside a ci-mode other than deferred resolves the repository to per-pr, reported. Only this file turns it on. Read by: backlog-orchestrator, implement-issue.",
+      "x-read-by": [
+        "backlog-orchestrator",
+        "implement-issue"
+      ],
+      "deprecated": true
+    },
+    "review-defer-severity": {
+      "type": "string",
+      "enum": [
+        "off",
+        "P3",
+        "P2"
+      ],
+      "default": "off",
+      "description": "Severity at or below which an automated reviewer's repairable finding is filed as a follow-up issue and its thread resolved, instead of repaired in the PR: no push, no review cycle, no new round. P0, P1, security findings, findings without a severity label, threads a person is in and regressions of the PR's own earlier repair are repaired as before (resolve-pr-comment, Findings deferred to a follow-up). Only this file turns it on. Read by: backlog-orchestrator, implement-issue.",
       "x-read-by": [
         "backlog-orchestrator",
         "implement-issue"
