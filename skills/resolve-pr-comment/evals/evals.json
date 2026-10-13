@@ -641,6 +641,33 @@
         "nothing is posted and the thread is not resolved"
       ],
       "files": []
+    },
+    {
+      "id": 52,
+      "name": "a-labelled-bot-p2-is-filed-not-fixed",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: invoked unattended by repair-pr on PR #77, remaining budget 1, with `review-defer-severity: P2` from repo config, follow-up site https://github.com/acme/api/issues/10 (the PR's issue's parent), and no follow-ups filed yet. Threads: T1, rooted by chatgpt-codex-connector[bot] (a Bot), badge P2, asks to extract a duplicated helper, no other comments. T2, same bot, badge P1, asks to add a missing null check. T3, same bot, badge P2, asks to rename a variable, and a human reviewer (not the invoking user) replied 'agreed'. T4, same bot, badge P3, asks to tighten a check on lines that a commit on this branch carrying `Repair-Pass: rp-2` wrote. Question: what happens to each thread, and what does the pass push?",
+      "expected_output": "T1 is deferred: one follow-up issue filed under issues/10 (footered, finding verbatim, thread URL, PR, severity), the reply 'Deferred to <issue URL> — P2.' footered, and the thread resolved; no commit. T2 is P1, so it is repaired as usual. T3 has a person in the thread, so it is not deferred: it is repaired, its reply held for approval. T4 is a regression of the PR's own repair, so it is repaired. The pass pushes once, with commits for T2, T3 and T4 only; T1 is returned as a follow-up filed entry.",
+      "assertions": [
+        "T1 is filed as a follow-up issue, replied to with the link and resolved, with no commit",
+        "T2 (P1) is repaired",
+        "T3 is not deferred because a person is in the thread",
+        "T4 is not deferred because its lines were written by a Repair-Pass commit",
+        "T1 is returned as a follow-up filed entry"
+      ],
+      "files": []
+    },
+    {
+      "id": 53,
+      "name": "deferral-still-runs-at-zero-budget",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: invoked by repair-pr in classify-only mode (remaining budget 0) on PR #78, with `review-defer-severity: P2` from repo config and a follow-up site. Threads: T1, rooted by a Bot, badge P2, asks for a small refactor, nobody else in it. T2, rooted by a Bot, no severity badge, asks for a small refactor. Question: what happens to each thread, and what is written?",
+      "expected_output": "T1 is deferred even in classify-only mode: the follow-up issue is filed, the 'Deferred to' reply posted and the thread resolved — the only writes this mode makes — and it is returned as a follow-up filed entry. T2 has no label, so it is not deferred and no label is inferred: it comes back as a deferred-repair item on budget grounds, with no draft, unresolved. No commit and no push.",
+      "assertions": [
+        "T1 is filed, replied to and resolved despite classify-only mode",
+        "T2 is not deferred because it carries no severity label",
+        "T2 is returned as a deferred-repair item, not resolved",
+        "nothing is committed or pushed"
+      ],
+      "files": []
     }
   ]
 }

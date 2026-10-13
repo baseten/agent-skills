@@ -110,7 +110,7 @@ State the commit plan before touching any files.
 
 **Where the requested change is a test, or adds one, run the checklist in `references/a-passing-test-is-not-a-verified-fix.md` against it, the time rule included**. A reviewer asking for a regression test is asking for one that would have caught the defect, and a test written in the same pass as its fix satisfies fail-first trivially.
 
-**Skipped entirely on a classify-only invocation** (below), along with steps 4-6.
+**Skipped entirely on a classify-only invocation** (below), along with steps 4-6. **A thread deferred under `review-defer-severity` is not fixed here** — *Findings deferred to a follow-up* (below) is its whole handling, step 6 included.
 
 - Make the minimal change needed to address each comment.
 - **Where the comment is about what a value means or when it becomes true** —
@@ -382,7 +382,7 @@ whenever its remaining repair budget is zero.
 
 In that mode **steps 3-6 of the workflow do not run**: make no correction, run
 no verification, commit nothing, push nothing, reply to nothing and resolve
-nothing. Return every supplied thread as its classification and nothing else —
+nothing — a deferred finding aside (*Findings deferred to a follow-up*). Return every supplied thread as its classification and nothing else —
 first checking the head for a change already made, which the last row covers:
 
 | Classification | Returned as |
@@ -390,6 +390,7 @@ first checking the head for a change already made, which the last row covers:
 | Wants a code change | The thread with the change it asks for — **not applied**. It comes back as a deferred-repair item, which is a kind of `NEEDS_USER` item and not an alternative to one (*Output*) |
 | Wants an answer | A `NEEDS_USER` item with its draft reply, exactly as unattended |
 | Wants nothing | A no-action entry, exactly as unattended |
+| Deferred under `review-defer-severity` | Filed or linked, replied to and resolved as *Findings deferred to a follow-up* states — the only writes this mode makes, because deferring is that thread's whole handling, not a repair — and returned as a follow-up filed entry |
 | Wants both (*A comment can want both*) | Both entries for the one thread — the change unapplied as a deferred repair, and the question as a `NEEDS_USER` item with its draft. The thread is handled only once the caller has recorded both |
 | Wants a code change **already on the head**, with no comment newer than the fix but the request itself — otherwise the newest comment by anyone but this workflow is classified on every row, this one included, so a follow-up asking for a change already made lands here too | **Never a deferred repair or a budget `NEEDS_USER` item**: the work is done. An approval-pending reply item naming the commit that made the change. **Held even where only bots are in the thread, deliberately**: this mode posts nothing, and the walkthrough or the owner posts it (*Replies held for approval*). A thread that also carries a question gets no held reply: only its question item comes back |
 
@@ -400,6 +401,25 @@ fix. That is how a caller's repair cap is exceeded by the callee: `repair-pr`
 skipping its own steps 3-5 constrains `repair-pr`, not the skill it invoked
 (where the caller is `repair-pr`, its *Review repair (`repair type = review`)*,
 step 2, states the same requirement from the caller's side).
+
+### Findings deferred to a follow-up
+
+Where the caller passes `review-defer-severity` at a level other than `off`, with a follow-up site, **a thread is deferred rather than repaired when all of these hold**:
+
+- it **wants a code change and nothing else** (*Handling queries*) — a thread that also asks a question is not deferred (*A comment can want both*), and one whose change is already on the head is step 2's;
+- its root is an **automated reviewer's** — a `Bot` author, or the caller's own review session's (`references/review-feedback.md`, *The thread-root test*) — **carrying that reviewer's own severity label at or below the level**: `P3` defers P3, `P2` defers P2 and P3. A thread with no label is not deferred, and no label is inferred;
+- **no person is in the thread** (*Replies held for approval*), so the reply takes the no-hold path;
+- it is **not a security finding** — authentication, authorisation, secrets, injection, data exposure — whatever its label;
+- it is **not a regression of this PR's own repair**: no line it points at was written by a commit on this branch carrying a `Repair-Pass:` trailer (`repair-pr`, *Recovery / checkpointing*).
+
+A deferred thread is handled in this order, with no commit, no push and no cycle:
+
+1. **linked, not filed again**, where the caller's follow-ups already hold one for the same reviewer's finding at the same location — a re-raise on a newer head;
+2. otherwise **one follow-up issue is filed** under the follow-up site, in that site's tracker: a one-line title, and a body carrying the finding verbatim, the thread URL, the PR and the severity — an unattended write, footered (`references/authored-write-form.md`);
+3. **the reply** `Deferred to <issue URL> — <severity>.`, footered, posted once the issue exists;
+4. **resolved** (step 6).
+
+**Where the issue cannot be written** — no transport to that tracker, or a refused write — the thread is not deferred: it is classified as without the key, and the failure returned. Return each deferred thread as a **follow-up filed** entry: its `html_url`, the issue URL, filed or linked, and the severity.
 
 ### What a question item must contain
 
@@ -665,6 +685,7 @@ After completing all steps, summarize:
   the audit trail, so this output is the only durable record of the read, and
   without it a supervising or later session cannot tell the observation from the
   recollection this exists to prevent
+- **Every follow-up filed** for a deferred finding, one entry each (*Findings deferred to a follow-up*)
 - **Any thread classified no-action**, one entry each: the thread's API
   `html_url` (*What a question item must contain*, row 1) and why it wants
   nothing. No draft. This is what lets the caller mark it handled so it is not

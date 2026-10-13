@@ -256,6 +256,19 @@
         "C keeps priority until it merges or fails and is reported"
       ],
       "files": []
+    },
+    {
+      "id": 22,
+      "name": "a-pr-into-the-integration-branch-merges-on-its-gate-record",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: backlog-orchestrator passes three PRs in acme/print. Resolved policy: `auto-merge` false, `ci-mode: integration-branch` with branch `agent-integration`, both from repo config, mode established. PR #12 and #13 target `agent-integration`; each has a local gate record on its current head with every locally runnable check passed, a clean review, no conflict, no outstanding items in the wave. Since #12's record, `agent-integration` moved by one merge touching a file #12 also changes. PR #40 is the integration PR into `main`, green on its opening run, clean review. Questions: (a) is the gate evaluated for #12 and #13, and do they merge? (b) does the moved base make #12's green stale? (c) does #40 merge?",
+      "expected_output": "(a) Yes: ci-mode integration-branch is the opt-in for PRs whose base is that branch, and the CI condition reads the local gate record, so both merge through the gate. (b) No: the stale-green re-check does not apply to a PR into the integration branch; the record attaches to the head and the full tier covers the combination. A conflict would still hold it. (c) No: the integration PR's base is the default branch, which only auto-merge opens, and auto-merge is off, so it is the owner's merge to make and is reported as such.",
+      "assertions": [
+        "the gate is evaluated for PRs into the integration branch on the mode's grant despite auto-merge off",
+        "their CI condition is read from the local gate record",
+        "the moved base does not make the record stale",
+        "the integration PR into main does not merge without auto-merge"
+      ],
+      "files": []
     }
   ]
 }

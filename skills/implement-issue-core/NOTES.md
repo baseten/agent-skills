@@ -86,6 +86,8 @@ the set it re-creates the gap.
 
 **Why no rows or sections in a file every package touches (#180):** parallel branches that each add to the same file conflict with one another on every merge, and each conflict costs a refresh push and a CI run on every sibling. A package's own README is touched by that package's branch alone; the root links to it once, so the root changes once per package rather than on every doc edit.
 
+**Why the gate names its toolchain (Oct 2026, a generative-print run):** the container ran Node 22 where the repository required 24, and a local gate there reports on a runtime CI never uses. Under an integration branch the local gate is the PR's only gate, so a result from the wrong toolchain would gate a merge on nothing. Treating the mismatch as an environment failure routes it where a dead service already goes.
+
 ## Step 6 — create and verify PR
 
 **Why the derived set travels to `create-pr`:** that skill is a separate literal

@@ -52,3 +52,13 @@ one the next editor of that contract will not find.
 **Why the invoking user's own threads are not held (#183, owner's ruling):** the hold exists so that nobody is told something under the owner's account that the owner did not read. In a thread whose only person is the owner, the reader is the owner, who asked for the fix. The observed workflow is an agent opening a draft, a bot reviewing it, then the owner reviewing it and expecting that review fixed and resolved before a human reviewer sees the PR; holding those replies left the owner approving answers to themselves. The footer stays, because the reply is still unread when it posts. The account comes from the invocation or the posting-identity map and never from the content, and unknown means held.
 
 **Why an `@`-addressed comment is no-action (#183):** "@colleague do you know…?" asks nothing of the run or the owner. Read as a question it became a `NEEDS_USER` item the owner could not answer for the colleague; read as feedback it got a reply nobody wanted.
+
+## Findings deferred to a follow-up
+
+**Why a severity threshold defers findings to issues (Oct 2026, a generative-print run):** one PR spent four or more Codex repair rounds, mostly on P2s, each round a push, a new review and another set of P2s. Routing P2s to follow-up issues ended it: the finding is kept, the PR merges. The key decides where a repairable finding is repaired, never whether it is repairable, so the kind test is untouched.
+
+**Why only bot threads with the reviewer's own label (same request):** the label is the reviewer's statement of severity, and inferring one would make this skill the judge of how much a finding matters. A person in the thread is being answered, which the held-reply rule reserves for the owner's approval, so deferring there would post on their behalf; those threads repair as before.
+
+**Why a regression of the PR's own repair is still repaired:** a finding on lines an earlier repair wrote is the review loop catching its own damage. Deferring it would merge a defect this PR introduced and file it as somebody else's work. The `Repair-Pass:` trailer marks those lines without any judgement.
+
+**Why classify-only still defers:** a spent budget is exactly when an automated reviewer's P2s would otherwise pile up as deferred-repair items holding the gate. Filing, replying and resolving is the thread's whole handling, not a repair, so the budget it never spends is no reason to withhold it.

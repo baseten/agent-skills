@@ -813,6 +813,32 @@
         "the absent run is missing CI"
       ],
       "files": []
+    },
+    {
+      "id": 65,
+      "name": "an-integration-branch-pr-gets-a-local-gate-never-ci",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #12 in acme/print targets the branch `agent-integration`. Its `ci-mode` resolved `integration-branch` from repo config, the caller established the mode's effect in that repository, and passed the per-PR local gate (format, lint, typecheck, unit tests of touched packages, Node 24). Repair dispatch is `swarm`. A review repair pass pushed head d4e5f6a carrying `[skip ci]`; no CI run exists on it. The re-triggered review round on d4e5f6a has since completed with no findings, and nothing else is due. Questions: (a) how do you read CI on d4e5f6a? (b) what do you start now — a base update, a workflow dispatch, or something else? (c) the gate's typecheck fails: what follows? (d) later the integration branch moves under the PR with no push to its branch: do you run the gate again?",
+      "expected_output": "(a) CI not owed: not missing, red or deferred; nothing attributed, no cycle, no dispatch. (b) Never a base update or dispatch: the PR is quiescent, so the local gate runs once on d4e5f6a through the swarm dispatch mechanism, editing and pushing nothing and spending no cycle, and its per-check result is recorded against the head. (c) A failed check in the record is a CI failure: attributed and, with CI budget left, repaired by a ci pass whose push carries [skip ci]; the gate runs once more when the new head is quiescent. (d) No: the record attaches to the head and a base move does not stale it; the integration branch's full tier covers the combination.",
+      "assertions": [
+        "CI on the head is read as not owed, with no cycle or dispatch",
+        "no base update, workflow dispatch or re-run is started",
+        "the local gate runs once on the quiescent head and its result is recorded against that head",
+        "a failed gate check is handled as a CI failure, repaired with a tokened push within the CI budget",
+        "a base move alone does not re-run the gate"
+      ],
+      "files": []
+    },
+    {
+      "id": 66,
+      "name": "the-integration-pr-runs-ci-once-and-waits-for-the-owner",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the caller adopted PR #40 in acme/print, from `agent-integration` into `main`, under `ci-mode: integration-branch`; it was opened on a head carrying no skip token. Its opening run failed on one e2e shard, attributed to this PR; CI budget remains. Questions: (a) what do you dispatch, and what does the repair push carry? (b) after the push, CI has not run on the new head: do you trigger, dispatch or re-run it? (c) what is the PR's outcome, and is it terminal?",
+      "expected_output": "(a) One ci repair pass within the CI budget; its push to the integration branch carries [skip ci]. (b) No: this skill never re-runs, re-triggers or dispatches CI on the integration PR. (c) waiting as CI: owner re-run owed, terminal and surfaced, until the owner starts a run.",
+      "assertions": [
+        "the failure is repaired by one ci pass whose push carries the skip token",
+        "CI is not re-run, re-triggered or dispatched by the run",
+        "the PR is waiting as owner re-run owed, and that state is terminal"
+      ],
+      "files": []
     }
   ]
 }

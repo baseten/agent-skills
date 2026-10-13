@@ -115,7 +115,7 @@ Also snapshot the current head SHA of every descendant before rewriting begins.
 
 Merge P through the available GitHub integration (`merge_pull_request` / equivalent) or `gh` when available.
 
-**Write the merge's commit message explicitly** wherever the method writes one: a squash or merge message carries no skip token (`references/authored-write-form.md`), so CI on the base always runs after a merge. Never accept a default that concatenates the PR's commit messages, which carry the token where the PR's CI was deferred (`supervise-prs`, *Deferred CI*). **A PR whose commits carry a skip token is never rebase-merged**: a squash or merge commit with that message, whatever method would otherwise apply. Invoked standalone, with no supervising caller, trigger CI once on each restacked descendant whose head carries the token, by *Deferred CI*'s trigger (`supervise-prs`).
+**Write the merge's commit message explicitly** wherever the method writes one: a squash or merge message carries no skip token (`references/authored-write-form.md`), so CI on the base always runs after a merge. Never accept a default that concatenates the PR's commit messages, which carry the token where the PR's CI was deferred or not owed (`supervise-prs`, *Deferred CI*, *Integration-branch CI*). **A PR whose commits carry a skip token is never rebase-merged**: a squash or merge commit with that message, whatever method would otherwise apply. Invoked standalone, with no supervising caller, trigger CI once on each restacked descendant whose head carries the token, by *Deferred CI*'s trigger (`supervise-prs`).
 
 After GitHub confirms the merge:
 
@@ -252,7 +252,7 @@ For `merge entire stack`:
 
 1. discover the full reachable stack first;
 2. snapshot its topology;
-3. repeatedly choose currently root-most mergeable PRs — where the caller's `minimize-ci-runs` has effect, those touching files disjoint from the merges before them first, and refresh only the next to merge, never every sibling a merge left stale (`settle-and-merge`, *Merge behavior*, states it for the gate's merges; `supervise-prs`, *Deferred CI*);
+3. repeatedly choose currently root-most mergeable PRs — where the caller's `ci-mode: deferred` has effect, those touching files disjoint from the merges before them first, and refresh only the next to merge, never every sibling a merge left stale (`settle-and-merge`, *Merge behavior*, states it for the gate's merges; `supervise-prs`, *Deferred CI*);
 4. merge one node;
 5. fully restack its remaining descendant subtree;
 6. refresh checks/mergeability for any PR that may be merged next;

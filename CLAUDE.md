@@ -63,10 +63,16 @@ evals (`<skill>#<id>`).
    create-pr#11, resolve-pr-comment#17.
 8. **Merges are opt-in, through the one gate, failing closed.** `settle-and-merge`, *The
    merge gate*; `rules/agent-policy.md`. backlog-orchestrator#0 #2. Under the opt-in
-   `minimize-ci-runs`, which only the repository's file turns on, the stale-green
+   `ci-mode: deferred` (alias `minimize-ci-runs`), which only the repository's file turns on, the stale-green
    re-check narrows to file overlap (`settle-and-merge`, *Merge behavior*) and a
    review round carries across mechanical pushes (`rules/ci-and-review-verdicts.md`).
-   settle-and-merge#13 #14 #15 #16 #17, implement-issue#18. A head with no run is read through
+   settle-and-merge#13 #14 #15 #16 #17, implement-issue#18. Under `ci-mode: integration-branch`, file-only,
+   the gate opens for a PR into that branch on its local gate record, and never for the default branch
+   without `auto-merge` (`rules/agent-policy.md`, *Merge permissions*; `rules/ci-and-review-verdicts.md`,
+   *CI is green*). settle-and-merge#22, supervise-prs#65 #66, backlog-orchestrator#76 #77. Under
+   `review-defer-severity`, file-only, a bot's labelled finding at or below the level is resolved into a
+   follow-up issue, never one a person is in (`resolve-pr-comment`, *Findings deferred to a follow-up*).
+   resolve-pr-comment#52 #53, implement-issue#22. A head with no run is read through
    path filters, failing closed (`rules/ci-and-review-verdicts.md`, *Path filters*).
    supervise-prs#58 #59 #62 #63 #64, settle-and-merge#19.
 9. **Stranded work reaches a remote ref before any archive; permission holds name the
