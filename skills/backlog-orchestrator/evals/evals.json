@@ -1027,6 +1027,18 @@
       ],
       "id": 78,
       "files": []
+    },
+    {
+      "id": 79,
+      "name": "ci-hygiene-reusable-workflow-and-change-detection",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). First preflight for acme/app, whose policy sets `ci-mode: integration-branch`. `ci.yml` triggers on `pull_request: branches: [main]` and `push: branches: [main]`, with PR-only `concurrency` and `cancel-in-progress`. Its jobs: `changes` (timeout-minutes 5) computes which apps changed; `web` and `api` (timeout-minutes 30 and 60) run only when `needs.changes.outputs.<app> == 'true'`; `ci-required` (timeout-minutes 5, `if: always()`) aggregates them; `deploy` has no `timeout-minutes` and is `uses: ./.github/workflows/deploy.yml`, whose one job sets `timeout-minutes: 30`. No workflow has a `paths` filter. Does the CI-hygiene check hold dispatch?",
+      "expected_output": "No. Every job that runs steps has `timeout-minutes`; `deploy` calls a reusable workflow, cannot take the key, and is satisfied because the called workflow's job carries one. Heavy jobs are kept off PRs that do not touch them by the `changes` job gating them through job-level `if`, which satisfies the path-filter item without any `paths` filter. Concurrency is PR-only with cancel-in-progress. Nothing is missing, so no NEEDS_USER and no hold from hygiene.",
+      "assertions": [
+        "The hygiene check does not hold dispatch.",
+        "The `deploy` job's missing `timeout-minutes` is not a gap, because it calls a reusable workflow whose job carries one.",
+        "Job-level gating by the `changes` job satisfies the path-filter item; no `paths` filter is proposed."
+      ],
+      "files": []
     }
   ]
 }
