@@ -24,7 +24,7 @@ At the first preflight, before any dispatch into the repository, establish each 
 
 **A PR into it that this run did not create** is not this run's to merge, and still rides in the integration PR; that PR's body names it.
 
-**While an integration PR is open, the branch is frozen**: nothing merges into it and no level merge is made but as `supervise-prs`'s CI trigger after a repair, so no `pull_request` event starts a run that trigger did not. A PR into the branch that passes its gate meanwhile waits, reported as `waiting for the integration PR`, with its dependents; once the integration PR merges and the branch is gone, it is the next run's, retargeted to that run's branch at adoption. The only pushes to the branch then are repairs to the integration PR, each carrying the token (`supervise-prs`, *Integration-branch CI*). Merges into the branch at any other time carry no token (`merge-stack`), and start no run by precondition 2.
+**While an integration PR is open, the branch is frozen**: nothing merges into it and no level merge or empty commit is made but as `supervise-prs`'s CI trigger after a repair, so no `pull_request` event starts a run that trigger did not. A PR into the branch that passes its gate meanwhile waits, reported as `waiting for the integration PR`, with its dependents; once the integration PR merges and the branch is gone, it is the next run's, retargeted to that run's branch at adoption. The only pushes to the branch then are repairs to the integration PR, each carrying the token (`supervise-prs`, *Integration-branch CI*). Merges into the branch at any other time carry no token (`merge-stack`), and start no run by precondition 2.
 
 ## Topology
 

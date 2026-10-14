@@ -60,7 +60,7 @@ A composed skill that is unavailable → the pass reports it and repairs nothing
 PR URL, repository, canonical issue URL where there is one
 branch/base
 remote head SHA
-CI: per check — state, and attribution where red (references/ci-attribution.md); or deferred / waiting for base to move / triggered (update | dispatch) at <time> (*Deferred CI*); or not owed / owner run owed (*Integration-branch CI*)
+CI: per check — state, and attribution where red (references/ci-attribution.md); or deferred / triggered (update | empty commit) at <time> (*Deferred CI*); or not owed / owner run owed (*Integration-branch CI*)
 local gate, under integration-branch: the head it ran on, and per check passed / failed / not locally runnable
 follow-ups filed: per deferred thread, its URL and the issue filed or linked
 per review convention: performed by; trigger state; rounds, each pending/refused (reason, reset)/complete-with-findings/clean
@@ -146,10 +146,9 @@ Where it has effect:
 2. **A head carrying it, with no run, is `CI deferred`** — not missing, not red, not expected-red: nothing to attribute, no cycle, no dispatch. Required checks the forge shows as expected on that head are this state, never a failure; the PR is `waiting` on it.
 3. **This skill triggers CI once, when the PR is quiescent on its current head**: no repair pass in flight; no unhandled feedback by `references/review-feedback.md`, *Unhandled feedback* — a held reply, a reserved question and a deferred repair are handled, so **a deferred repair left by a spent review budget does not hold the trigger**; no round owed to the caller and none `deferred`; and no automated round the repository's convention expects for this head still outstanding inside its window (`references/review-trigger.md`, *Confirming a trigger took effect*). A round refused, unavailable, never expected, or past its window does not hold the trigger. Under the one-mutator rule (*Adopting a head*):
    - **update the branch from its base**, on the key's authority: the merge commit carries no skip token, so CI runs. A clean update is mechanical (`references/mechanical-pushes.md`) — no cycle, and the review round carries forward (`references/ci-and-review-verdicts.md`, *A review is clean*). An update that would conflict is not made: the PR is reported conflicted, and the push resolving it carries the token and waits for quiescence on its own head;
-   - **where the branch is already up to date, dispatch on the branch** — only there, since branch and merged tree are then the same — **each workflow whose required checks are expected on this head**: a dispatch ignores `paths`/`paths-ignore`, so one whose filters match none of the PR's changed files is not dispatched. Each must declare `workflow_dispatch`, with no job gated to `pull_request` events, read per PR. Confirm a run registered for that head within that window — none is reported, never re-dispatched blind;
-   - **where a workflow it needs is not dispatchable, dispatch nothing and hold the PR**, `waiting` as `CI deferred: waiting for base to move`; when the base next moves, update the branch as above. The first hold in a run for a repository adds a one-line suggestion to the report that the owner add `workflow_dispatch:` to that workflow's triggers — never an edit this run makes (`implement-issue-core`, *Hard constraints*). The hold is not a stall: it counts no cycle, is terminal (*Outcomes*) and is surfaced — it holds its merge, never its caller's settle;
+   - **where the branch already contains its base's head, push one empty commit carrying no skip token** — the only empty commit any skill here pushes, and only in this case, on the owner's ruling. Its message says it starts the PR's deferred CI run. With the base level there is no merge commit to make, and nothing else counts: GitHub evaluates a required check only from a workflow run triggered by `push`, `pull_request`, `pull_request_review`, `pull_request_target`, `deployment` or `deployment_status`, so a `workflow_dispatch` run on the branch — or a re-run of nothing, a tokened head having no run — satisfies no required check, however green. The commit is mechanical (`references/mechanical-pushes.md`): no cycle, and the review round carries forward. Confirm a run registered for the new head within the window a run takes to register — none is reported, never pushed again blind;
    - **a run already existing for the current head is the trigger's**: never trigger again for that head, after a restart included;
-   - **never an empty commit, and never a close and reopen.**
+   - **never a `workflow_dispatch`, and never a close and reopen.**
 4. **A failure of that run is a CI failure** (*CI failure*): the repair push carries the token, review runs where the convention expects it, and once the new head is quiescent CI is triggered once more. Budgets count these pushes exactly as without the key; a trigger counts nothing.
 
 ### Integration-branch CI
@@ -202,7 +201,7 @@ When a pass returns having pushed:
 ### Head moves
 
 - **A caller push** is adopted from the input. `mechanical` (`references/mechanical-pushes.md`): no cycle, no reset of the PR's reviewed state, no re-trigger, a round held for a refresh owed aside (*Review trigger*). `substantive`: no cycle, and review is re-triggered (*Review trigger*). Cannot tell → substantive.
-- **This skill's own CI trigger** (*Deferred CI*) — a clean base update — is adopted as a mechanical push: no cycle, no reset, no re-trigger, the same exception aside.
+- **This skill's own CI trigger** (*Deferred CI*) — a clean base update, or the empty commit on a level branch — is adopted as a mechanical push: no cycle, no reset, no re-trigger, the same exception aside.
 - **A released head** — a pass's push a head check held, released by the caller — is adopted as the new head: the pass's cycle was already counted, and review is re-triggered as for any pass that pushed.
 - **A lost pass's capture reconciled onto its branch** (`swarm`, *The recovery ref's lifecycle*) counts one cycle of that pass's repair type, as a rebuild from the trailers would after a restart, and is re-triggered as a pass that pushed; the next pass verifies that head before it replies or resolves (`repair-pr`, *Recovery / checkpointing*).
 - **A branch the caller holds locked** takes no dispatch while locked; the PR is `held: lock` until the caller passes the push or drops the lock.
@@ -270,7 +269,7 @@ Per PR, one of:
 - **`merged`** / **`closed`** — observed, whoever did it;
 - **`cannot-watch`** — nothing could be armed.
 
-**Terminal** — what `any-terminal` and `all-terminal` count, and what this skill takes no further step on without new input; it decides when this skill returns, never when a watch ends — is: `finished`, `held: check`, `returned`, `unrepaired`, `needs-user`, `merged`, `closed` and `cannot-watch`, and `waiting` held for its base to move (*Deferred CI*), whose new input is a base move.
+**Terminal** — what `any-terminal` and `all-terminal` count, and what this skill takes no further step on without new input; it decides when this skill returns, never when a watch ends — is: `finished`, `held: check`, `returned`, `unrepaired`, `needs-user`, `merged`, `closed` and `cannot-watch`.
 
 **`finished` is a settle verdict, not the end of the watch.** A `finished` PR still awaiting a human review or approval is `waiting` for watch purposes: its subscription stays armed for a caller that keeps watching it (`implement-issue`, *Completion*), and a human review or comment arriving on it is new input.
 
@@ -279,7 +278,7 @@ Per PR, one of:
 The per-PR record, plus:
 
 - whether it changed this pass;
-- every repository where `ci-mode` resolved `deferred` and has no effect, naming what is missing; every PR held as `CI deferred: waiting for base to move`, and, once per repository in the run, the suggestion to add `workflow_dispatch:` (*Deferred CI*); every local gate record (*Integration-branch CI*);
+- every repository where `ci-mode` resolved `deferred` and has no effect, naming what is missing; every PR whose deferred CI was started by an empty commit (*Deferred CI*); every local gate record (*Integration-branch CI*);
 - every follow-up filed for a deferred finding, with its thread, and every PR whose `review-defer-severity` was `off` for want of a follow-up site;
 - every expected-red check with its refresh; every required check a path filter keeps from reporting, with its workflow and filter; every round owed to the caller, with its head;
 - every reserved thread per item kind, verbatim, every approval-pending reply, verbatim, every rejected held reply as *reply not posted — thread open for you*, every mixed-thread fix as *fix pushed — thread left for you (it also asks a question)* or *(a further change is deferred)*, every approved reply left open as *reply posted — thread left open*, and every no-action thread;
