@@ -461,7 +461,7 @@ one carve-out is a session ended at dispatch for having no checkout
 (`runtime-remote.md`, *Ending a failed start*) — stopped the same way and charged
 nothing; never one discovered later, which is captured like any other. And a
 session **this run did not create** — decided by provenance, never a title
-(*Runtime*) — which is not this run's to reclaim.
+(*Runtime*) — which is not this run's to reclaim, a stopped predecessor's that a caller's resume adopts aside (`backlog-orchestrator`, `restart-resume.md`, step 1).
 
 ### Blocked workers
 
