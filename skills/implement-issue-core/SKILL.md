@@ -181,16 +181,22 @@ derivations that disagree is a defect nobody will notice.
 name contexts — `ci / typecheck`, `coverage/project` — and nothing in them says
 how to produce one locally, so the derived set is not a runnable list. Map each
 required context to the local command that produces it, using the workflow file
-as the map: the job or step whose run reports that context is what to run. A
+as the map: the job or step whose run reports that context is what to run — **all of it**: every step of that job, not only its test command, and every job it `needs`. An aggregating or verdict job's own steps — guard scripts, partition checks, a change-set resolver's tests — are part of its context: a gate of a required `test` job's shards passed while CI failed `test` on a guard script the aggregate ran (alkaline-studio/generative-print#539). A
 required context with **no local equivalent** — an external integration's check,
 anything that needs the PR to exist — is not a gap in the derivation and is not
 silently dropped: carry it with the outcome `not locally runnable`, which is a
 different claim from `passed` and from `failed`, and forward it as that.
 
 Commit and push the implementation first, then run the locally runnable part of
-that set, **under the toolchain the repository declares** — its engines field or
-version files. A container whose runtime differs is an environment failure, not a
-code one (below), and the gate run on it says nothing about the code.
+that set, **under the toolchain CI runs** — the repository's engines field or
+version files, and every runtime the workflow pins beyond them: a browser (a
+`CHROME_BIN`, a setup action, the runner image's preinstalled one, read with the
+test harness's own executable resolution), a database or service image. Install
+CI's version where the session can. Where it cannot, a check that depends on it
+is `not locally runnable`, naming both — `browser mismatch (CI: Chrome 155,
+session: Chromium 1194)` — never passed. A container whose runtime differs is an
+environment failure, not a code one (below), and the gate run on it says nothing
+about the code.
 
 **A mass failure across files with nothing in common is an environment hypothesis before it is a code one** — `references/ci-attribution.md`, *The environment hypothesis*, states the test, and it applies to your local run exactly as to a CI check: the tell is in the error rather than the assertion, so check the infrastructure precondition before reading a single test, and the signature raises the hypothesis without settling it, so confirm it independently — the service's own health, or whether the default branch fails the same way — where you can. **Where you cannot confirm it either way, stop and say so** — report the suspected environment failure with the error, its breadth, and what you could not check. Thrashing against a healthy codebase and returning a bare `FAILED` on one are the two outcomes this exists to prevent, and both look like a verdict. Fix in-scope failures within budget, committing each fix as it lands. Push the final implementation commit — carrying `[skip ci]` where `ci-mode` was passed on (*Inputs*).
 

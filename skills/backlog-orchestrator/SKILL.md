@@ -1043,7 +1043,7 @@ Stop starting new implementation work when:
 
 Being settled is not one of them. A settled run stops starting new work only while nothing is dispatchable; with any of this run's PRs still open it stays live, because a merge **or a close** releases capacity and is what refills the frontier (see Frontier advance on merge). Deliver the ranking on reaching settled, then keep supervising.
 
-If only external CI/review remains and the runtime cannot safely stay active, reconcile durable state and return a restartable checkpoint rather than pretending monitoring will continue. **Any return ends the watch**: unsubscribe every PR this run still holds and cancel its check-in (`references/platform-pr-posture.md`, *The watch ends with the run, not after it*); Restart / resume (`restart-resume.md`) re-arms at adoption.
+If only external CI/review remains and the runtime cannot safely stay active, reconcile durable state and return a restartable checkpoint rather than pretending monitoring will continue. **Any return ends the watch**: unsubscribe every PR this run still holds and cancel its check-in (`references/platform-pr-posture.md`, *The watch ends with the run, not after it*), **and disarm every other wake this session armed** — a scheduled wakeup, a background wait or monitor, a recurring loop — confirming each gone, so nothing wakes this session to act after it has handed back. The checkpoint names this session and every worker session it leaves alive, for the resuming run to adopt. Restart / resume (`restart-resume.md`) re-arms at adoption.
 
 # Progress / checkpoint output
 
@@ -1053,4 +1053,4 @@ If only external CI/review remains and the runtime cannot safely stay active, re
 
 **The two merge routes are not the same authorisation.** `merge-stack` invoked on its own needs the user's authorisation; invariant 12's gate needs the repository's opt-in — `auto-merge`, or `ci-mode: integration-branch` for a PR into that branch — and nothing else from the owner — and where that opt-in is already in the file, there is no authorisation outstanding to ask about. Asking anyway is the failure *Autonomy and interactive prompts* names at the dispatch end of the run, arriving at the merge end instead.
 
-Before returning, reconcile tracker + GitHub remote state and emit the closing report, per the same schema.
+Before returning, reconcile tracker + GitHub remote state, end the watch and disarm every wake (*Stop conditions*), and emit the closing report, per the same schema.

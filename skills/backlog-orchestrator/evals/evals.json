@@ -1039,6 +1039,42 @@
         "Job-level gating by the `changes` job satisfies the path-filter item; no `paths` filter is proposed."
       ],
       "files": []
+    },
+    {
+      "name": "checkpoint-relayed-result-missing-checks",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). acme/app runs under `ci-mode: integration-branch`. The full tier for the batch has five checks: unit-packages, unit-web, browser shard, e2e, guard scripts. You ran unit-packages and unit-web here (both passed) and relayed the rest to a remote gate session, whose result reports `e2e: passed` and nothing else. Is the full tier green, and may the integration PR open?",
+      "expected_output": "No. A checkpoint result records every check in the tier with pass/fail/not run, head SHA and session. The browser shard and guard scripts are absent from the relayed result, so they are `not run`, never green; they are run, or reported, before the integration PR opens.",
+      "assertions": [
+        "The tier is not reported green.",
+        "The browser shard and guard scripts are `not run` because the relayed result omits them.",
+        "The record names the head SHA and the session that ran each check."
+      ],
+      "id": 80,
+      "files": []
+    },
+    {
+      "name": "integration-branch-protection-unreadable-is-observed",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). First preflight for acme/app under `ci-mode: integration-branch`, in a cloud session with no `gh` and no API route to branch protection, rulesets or merge settings. Every other precondition holds, read from the workflow files. Do you hold dispatch? Later, the first merge of an issue PR into the run's integration branch is refused because a ruleset requires a check. What happens?",
+      "expected_output": "No hold: protection on the integration branch and the merge method are observed rather than read when unreadable, and an item observed is not missing. When the first merge into the branch is refused by a ruleset, merges into the branch stop with a NEEDS_USER naming what refused it, while dispatch and review continue.",
+      "assertions": [
+        "Dispatch is not held for the unreadable settings.",
+        "The refused merge stops merges into the integration branch with a NEEDS_USER naming the ruleset's effect.",
+        "Dispatch and review continue after the refusal."
+      ],
+      "id": 81,
+      "files": []
+    },
+    {
+      "name": "hand-back-disarms-and-resume-checks-predecessor",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). (a) Your run must hand back with a restartable checkpoint. It holds PR subscriptions, a check-in, a scheduled wakeup it armed to re-check a gate session, and three live worker sessions. What do you do before returning? (b) Later a new invocation resumes the same manifest from that checkpoint. The runtime's session list shows the orchestrator session the checkpoint names is still active. What does the resuming run do?",
+      "expected_output": "(a) Unsubscribe the PRs, cancel the check-in and disarm the scheduled wakeup and any other wake, confirming each gone; the checkpoint names this orchestrator session and lists the three live worker sessions for adoption. (b) It does not run beside the live predecessor: it raises a NEEDS_USER naming that session, with options to stop it and resume or to leave it and end this invocation.",
+      "assertions": [
+        "Every wake, including the scheduled wakeup, is disarmed before returning.",
+        "The checkpoint names the orchestrator session and the live worker sessions.",
+        "The resuming run raises NEEDS_USER rather than supervising alongside the live predecessor."
+      ],
+      "id": 82,
+      "files": []
     }
   ]
 }
