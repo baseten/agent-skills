@@ -180,6 +180,17 @@
         "at most one link per package is added to the root"
       ],
       "files": []
+    },
+    {
+      "name": "gate-uses-ci-browser-and-aggregate-steps",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Branch protection on main requires `lint` and `test`. In `ci.yml`, `test` is an aggregating job that `needs` four `test shard (n)` jobs and then runs `.github/workflows/ci-guards.sh path-rules`. The browser shard's step sets `GP_CHROMIUM_EXECUTABLE: /usr/bin/google-chrome` (the runner's preinstalled Chrome 155), which the test harness reads, falling back to Playwright's bundled Chromium when it is unset. Your session has Node 24 (matching `.nvmrc`) and Playwright's Chromium 1194, no Google Chrome, cannot install one, and the run has no other session to move the shard to. What is your local gate for `test`, and how do you report the browser shard?",
+      "expected_output": "The gate for `test` is every shard job it needs plus the aggregate job's own steps, including `ci-guards.sh path-rules`. The browser shard cannot run in CI's browser: it is reported `not locally runnable` with the mismatch named (CI: Chrome 155, session: Chromium 1194), never passed, even though Chromium is present.",
+      "assertions": [
+        "The guard script in the aggregate `test` job is part of the local gate.",
+        "The browser shard is `not locally runnable`, naming both browsers, not passed on Chromium."
+      ],
+      "id": 15,
+      "files": []
     }
   ]
 }

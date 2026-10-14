@@ -855,6 +855,18 @@
       ],
       "id": 67,
       "files": []
+    },
+    {
+      "name": "deferred-merge-method-unreadable-is-observed",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #40 in acme/app resolved `ci-mode: deferred`. The session cannot read the repository's merge settings. The review trigger is a comment, not an Actions workflow. Does the key have effect, and what happens if the merge gate's squash merge of #40 is later refused because the repository allows only rebase merges?",
+      "expected_output": "The key has effect: the merge method is observed at the first merge rather than read. The refused squash merge is the observation; #40 is never rebase-merged because its commits carry the token, its outcome is `needs-user`, and the key then has no effect in the repository.",
+      "assertions": [
+        "Unreadable merge settings do not disable the key up front.",
+        "#40 is not rebase-merged after the refusal.",
+        "The refusal makes the key have no effect in the repository and #40's outcome is needs-user."
+      ],
+      "id": 68,
+      "files": []
     }
   ]
 }
