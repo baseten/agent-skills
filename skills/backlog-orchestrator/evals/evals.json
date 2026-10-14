@@ -1066,15 +1066,27 @@
     },
     {
       "name": "hand-back-disarms-and-resume-checks-predecessor",
-      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). (a) Your run must hand back with a restartable checkpoint. It holds PR subscriptions, a check-in, a scheduled wakeup it armed to re-check a gate session, and three live worker sessions. What do you do before returning? (b) Later a new invocation resumes the same manifest from that checkpoint. The runtime's session list shows the orchestrator session the checkpoint names is still active. What does the resuming run do?",
-      "expected_output": "(a) Unsubscribe the PRs, cancel the check-in and disarm the scheduled wakeup and any other wake, confirming each gone; the checkpoint names this orchestrator session and lists the three live worker sessions for adoption. (b) It does not run beside the live predecessor: it raises a NEEDS_USER naming that session, with options to stop it and resume or to leave it and end this invocation.",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). (a) Your run must hand back with a restartable checkpoint. It holds PR subscriptions, a check-in, a background wait it started on a remote gate session's result, and three live worker sessions. What do you do before returning? (b) Later a new invocation resumes the same manifest from that checkpoint. The runtime's session list shows the orchestrator session the checkpoint names is idle, but a routine still fires into it every hour. What does the resuming run do?",
+      "expected_output": "(a) Unsubscribe the PRs, cancel the check-in and stop the background wait and any other wake, confirming each gone; the checkpoint names this orchestrator session and lists the three live worker sessions, which a resuming run adopts. (b) A routine still bound to the predecessor means it has not stopped, whatever its idle state: the resuming run does not run beside it and raises a NEEDS_USER naming it, with options for the owner to stop it (or this run to interrupt it on that reply, never archiving it) and resume, or to leave it and end this invocation.",
       "assertions": [
-        "Every wake, including the scheduled wakeup, is disarmed before returning.",
-        "The checkpoint names the orchestrator session and the live worker sessions.",
-        "The resuming run raises NEEDS_USER rather than supervising alongside the live predecessor."
+        "Every wake, including the background wait, is disarmed before returning.",
+        "The checkpoint names the orchestrator session and the live worker sessions for adoption.",
+        "The routine still firing into the predecessor makes it not stopped, and the resuming run raises NEEDS_USER rather than supervising alongside it."
       ],
       "id": 82,
       "files": []
+    },
+    {
+      "id": 83,
+      "name": "resume-after-clean-hand-back-adopts-workers",
+      "files": [],
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are resuming a manifest from a checkpoint that names orchestrator session S1, records every wake disarmed, and lists worker sessions W1 and W2 (parent_session_id S1) as alive. The session list shows S1 idle, W1 working, W2 idle; no trigger fires into S1. Do you raise a NEEDS_USER about S1? How do you treat W1 and W2, and do you redispatch W1's issue?",
+      "expected_output": "No NEEDS_USER: S1 is idle, its checkpoint records every wake disarmed and nothing fires into it, so it has stopped. W1 and W2 count as this run's sessions in the supervision loop's reconciliation (step 11) because their parent is the stopped predecessor; W1's issue is not redispatched while W1 is alive, and W2 goes through the releasable test.",
+      "assertions": [
+        "No NEEDS_USER is raised about the idle, disarmed predecessor.",
+        "W1 and W2 are treated as this run's sessions, not reported as another run's.",
+        "W1's issue is not redispatched while W1 is alive."
+      ]
     }
   ]
 }

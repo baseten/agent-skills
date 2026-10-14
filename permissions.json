@@ -4,6 +4,7 @@
     "CronDelete",
     "CronList",
     "Skill",
+    "TaskStop",
     "Workflow",
     "mcp__Claude_Code_Remote__archive_session",
     "mcp__Claude_Code_Remote__create_session",

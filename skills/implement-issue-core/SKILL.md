@@ -181,7 +181,7 @@ derivations that disagree is a defect nobody will notice.
 name contexts — `ci / typecheck`, `coverage/project` — and nothing in them says
 how to produce one locally, so the derived set is not a runnable list. Map each
 required context to the local command that produces it, using the workflow file
-as the map: the job or step whose run reports that context is what to run — **all of it**: every step of that job, not only its test command, and every job it `needs`. An aggregating or verdict job's own steps — guard scripts, partition checks, a change-set resolver's tests — are part of its context: a gate of a required `test` job's shards passed while CI failed `test` on a guard script the aggregate ran (alkaline-studio/generative-print#539). A
+as the map: the job or step whose run reports that context is what to run — **all of it**: every step of that job that runs repository code or checks, not only its test command, and every job it `needs`. An aggregating or verdict job's own steps — guard scripts, partition checks, a change-set resolver's tests — are part of its context; a step that only publishes or uploads with CI's credentials is recorded as such, and a step that cannot run makes that step `not locally runnable`, never the whole context: a gate of a required `test` job's shards passed while CI failed `test` on a guard script the aggregate ran (alkaline-studio/generative-print#539). A
 required context with **no local equivalent** — an external integration's check,
 anything that needs the PR to exist — is not a gap in the derivation and is not
 silently dropped: carry it with the outcome `not locally runnable`, which is a
@@ -192,9 +192,11 @@ that set, **under the toolchain CI runs** — the repository's engines field or
 version files, and every runtime the workflow pins beyond them: a browser (a
 `CHROME_BIN`, a setup action, the runner image's preinstalled one, read with the
 test harness's own executable resolution), a database or service image. Install
-CI's version where the session can. Where it cannot, a check that depends on it
-is `not locally runnable`, naming both — `browser mismatch (CI: Chrome 155,
-session: Chromium 1194)` — never passed. A container whose runtime differs is an
+CI's version where the session can; where it cannot, the run is on the wrong
+toolchain, an environment failure (below), and the check moves to a session that
+has it. Only where no session the run can use matches it is the check `not
+locally runnable`, naming both — `browser mismatch (CI: Chrome 155, session:
+Chromium 1194)` — and never passed. A container whose runtime differs is an
 environment failure, not a code one (below), and the gate run on it says nothing
 about the code.
 

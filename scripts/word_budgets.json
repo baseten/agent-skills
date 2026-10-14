@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 24418,
+      "budget": 24405,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -19,11 +19,11 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/integration-branch.md": {
-      "budget": 2189,
+      "budget": 2289,
       "target": 1500
     },
     "skills/backlog-orchestrator/restart-resume.md": {
-      "budget": 855,
+      "budget": 980,
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
@@ -39,11 +39,11 @@
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
-      "budget": 5061,
+      "budget": 5125,
       "target": 3000
     },
     "skills/merge-stack/SKILL.md": {
-      "budget": 2359,
+      "budget": 2386,
       "target": 3000
     },
     "skills/normalize-github-dependencies/SKILL.md": {
@@ -75,7 +75,7 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 5591,
+      "budget": 5652,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
@@ -87,7 +87,7 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 7762,
+      "budget": 7809,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
@@ -143,7 +143,7 @@
       "target": 1500
     },
     "rules/platform-pr-posture.md": {
-      "budget": 1379,
+      "budget": 1414,
       "target": 1500
     },
     "rules/posting-identity.md": {

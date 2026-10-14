@@ -113,7 +113,7 @@ P_BASE_BRANCH = P's base branch
 
 Also snapshot the current head SHA of every descendant before rewriting begins.
 
-Merge P through the available GitHub integration (`merge_pull_request` / equivalent) or `gh` when available.
+Merge P through the available GitHub integration (`merge_pull_request` / equivalent) or `gh` when available. A merge the forge refuses — for its method, or on a rule — is reported with the method and the refusal, never retried by another method.
 
 **Write the merge's commit message explicitly** wherever the method writes one: a squash or merge message carries no skip token (`references/authored-write-form.md`), so CI on the base runs after a merge wherever the base's workflows trigger on a push — an integration branch's do not, by its preconditions. Never accept a default that concatenates the PR's commit messages, which carry the token where the PR's CI was deferred or not owed (`supervise-prs`, *Deferred CI*, *Integration-branch CI*). **A PR whose commits carry a skip token is never rebase-merged**: a squash or merge commit with that message, whatever method would otherwise apply. Invoked standalone, with no supervising caller, trigger CI once on each restacked descendant whose head carries the token, by *Deferred CI*'s trigger (`supervise-prs`) — never on a PR into an integration branch, which runs no CI (*Integration-branch CI* there).
 
