@@ -845,10 +845,11 @@
     {
       "name": "integration-branch-pull-request-filter-drops-token",
       "prompt": "You supervise PR #31 in acme/api, base `integration/acme-api-412`, under `ci-mode: integration-branch` with effect. The caller recorded that acme/api's `pull_request` triggers exclude the branch: `ci.yml` has `pull_request: branches: [main]` and no other workflow triggers on pull_request. A review round on #31 is unhandled and a `repair-pr` pass is about to be dispatched; later, the integration PR from `integration/acme-api-412` into main gets a red check and a CI repair pass. What do you pass each repair pass about the skip token, and what do you do if a CI run appears on #31's new head?",
-      "expected_output": "The pass on #31 is told the repository's pull_request triggers exclude the branch, so its commits carry no skip token. #31's head with no run is CI not owed and is gated locally. A run appearing on #31's untokened head falsifies the record: it is reported and the token applies to every later push into that repository's integration branch. The integration PR's repair commits still carry the token, since its base is main, which the filter still triggers on, and CI is triggered once when it is quiescent.",
+      "expected_output": "The pass on #31 is told the repository's pull_request triggers exclude the branch, so its commits carry no skip token. #31's head with no run is CI not owed and is gated locally. A run appearing on #31's untokened head falsifies the record: it is reported and the token applies to every later push into that repository's integration branch. The integration PR's repair commits still carry the token, since its base is main, which the filter still triggers on, and CI is triggered once when it is quiescent. #31's local gate still governs it; the stray run's result is reported.",
       "assertions": [
         "The repair pass on #31 makes commits without the skip token, because the caller recorded the pull_request triggers as excluding the branch.",
         "A run registering on #31's untokened head is reported and restores the token for later pushes into that repository's integration branch.",
+        "#31 stays governed by its local gate when such a run registers; the run's result is reported, not repaired as #31's CI.",
         "The integration PR's repair commits still carry the skip token, because its base is the default branch.",
         "Nothing dispatches or re-runs a workflow on #31."
       ],
