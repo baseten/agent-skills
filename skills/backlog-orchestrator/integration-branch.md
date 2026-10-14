@@ -16,7 +16,9 @@ At the first preflight, before any dispatch into the repository, establish each 
 4. **a session can run the per-PR tier** (*The gate, in two tiers*);
 5. **the run's branch name is valid and is not the default branch** — a name `git check-ref-format --branch` rejects, or the default branch's, is a fail-closed `per-pr` (`references/agent-policy.md`, *Fail-closed handling*).
 
-**Any missing → hold dispatch into that repository** with a `NEEDS_USER` carrying the CI-cost audit's proposal (`SKILL.md`, *Mandatory validation preflight*): the exact diff — `push: branches: [<default>]`, or a `branches-ignore` for the prefix, say — and the instruction to land it with `[skip ci]` in its message, so the fix costs no run. The options: dispatch once the fix lands, or dispatch under `per-pr` for this run. Only an owner reply choosing one releases it (`SKILL.md`, *Arming the wait when nothing is in flight*). The run never edits a workflow (`implement-issue-core`, *Hard constraints*).
+**Record one more, which holds nothing: whether every workflow's `pull_request` and `pull_request_target` trigger excludes the run's branch** — a `branches` filter naming the default branch, or a `branches-ignore` matching the prefix. Recorded, PRs into the branch carry no token (`supervise-prs`, *Integration-branch CI*, step 1), and the run passes that with the mode to every worker, pass and caller push in the repository; unrecorded, they carry it, and the CI-cost audit proposes the filter.
+
+**Any of the five missing → hold dispatch into that repository** with a `NEEDS_USER` carrying the CI-cost audit's proposal (`SKILL.md`, *Mandatory validation preflight*): the exact diff — `push: branches: [<default>]`, or a `branches-ignore` for the prefix, say — and the instruction to land it with `[skip ci]` in its message, so the fix costs no run. The options: dispatch once the fix lands, or dispatch under `per-pr` for this run. Only an owner reply choosing one releases it (`SKILL.md`, *Arming the wait when nothing is in flight*). The run never edits a workflow (`implement-issue-core`, *Hard constraints*).
 
 ## The branch
 
@@ -24,7 +26,7 @@ At the first preflight, before any dispatch into the repository, establish each 
 
 **A PR into it that this run did not create** is not this run's to merge, and still rides in the integration PR; that PR's body names it.
 
-**While an integration PR is open, the branch is frozen**: nothing merges into it and no level merge or empty commit is made but as `supervise-prs`'s CI trigger after a repair, so no `pull_request` event starts a run that trigger did not. A PR into the branch that passes its gate meanwhile waits, reported as `waiting for the integration PR`, with its dependents; once the integration PR merges and the branch is gone, it is the next run's, retargeted to that run's branch at adoption. The only pushes to the branch then are repairs to the integration PR, each carrying the token (`supervise-prs`, *Integration-branch CI*). Merges into the branch at any other time carry no token (`merge-stack`), and start no run by precondition 2.
+**While an integration PR is open, the branch is frozen**: nothing merges into it and no level merge or empty commit is made but as `supervise-prs`'s CI trigger after a repair, so no `pull_request` event starts a run that trigger did not. A PR into the branch that passes its gate meanwhile waits, reported as `waiting for the integration PR`, with its dependents; once the integration PR merges and the branch is gone, it is the next run's, retargeted to that run's branch at adoption. The only pushes to the branch then are repairs to the integration PR, each carrying the token whatever the filter, since its base is the default branch (`supervise-prs`, *Integration-branch CI*). Merges into the branch at any other time carry no token (`merge-stack`), and start no run by precondition 2.
 
 ## Topology
 

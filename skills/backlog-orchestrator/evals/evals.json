@@ -1015,6 +1015,18 @@
         "without auto-merge the integration PR is left for the owner"
       ],
       "files": []
+    },
+    {
+      "name": "integration-branch-preflight-records-pull-request-filter",
+      "prompt": "First preflight for acme/api, whose `.claude/agent-policy.json` sets `ci-mode: integration-branch`. All five preconditions in integration-branch.md hold. `ci.yml` triggers on `push: branches: [main]` and on a bare `pull_request:` with no branch filter. What does the preflight record and report about the pull_request trigger, does anything hold dispatch, and do worker pushes to issue PRs carry the skip token?",
+      "expected_output": "The pull_request trigger does not exclude the run's integration branch, so the preflight records that, and nothing holds dispatch on it. Worker, repair and caller pushes to PRs into the integration branch carry the skip token. The CI-cost audit reports the unfiltered pull_request trigger and proposes a `branches: [main]` filter (or a branches-ignore for the prefix), noting that it would drop the token from every PR into the branch.",
+      "assertions": [
+        "The unfiltered pull_request trigger does not hold dispatch.",
+        "Pushes to issue PRs into the integration branch carry the skip token.",
+        "The CI-cost audit proposes a pull_request branch filter and says it would drop the token from PRs into the branch."
+      ],
+      "id": 78,
+      "files": []
     }
   ]
 }
