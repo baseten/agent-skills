@@ -517,14 +517,15 @@
     },
     {
       "id": 41,
-      "name": "the-ci-trigger-is-a-base-update-or-a-dispatch-never-an-empty-commit",
+      "name": "the-ci-trigger-is-a-base-update-or-on-a-level-branch-one-empty-commit",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: two PRs with `minimize-ci-runs` true and in effect, and the latest automated round on each current head is clean, with CI deferred. The workflow producing the required checks declares `workflow_dispatch`, with no job gated to `pull_request` events. PR #82's branch is three commits behind main, and merging main into it is conflict-free. PR #83's branch already contains main's head. A teammate suggests pushing an empty commit to each to start CI. Questions: (a) how do you start CI on each? (b) does #82's trigger count a cycle or re-trigger review? (c) the empty commit?",
-      "expected_output": "(a) #82: update the branch from its base; the merge commit carries no skip token, so CI runs. #83 is already up to date, so dispatch the CI workflow on the branch (workflow_dispatch). (b) No: a clean base update is a mechanical push — no cycle, the review round is kept, no re-trigger. (c) Never: no empty commit, and no closing and reopening the PR.",
+      "expected_output": "(a) #82: update the branch from its base; the merge commit carries no skip token, so CI runs. #83 already contains main's head, so there is no merge commit to make: push one empty commit carrying no skip token, which starts a pull_request run. Never workflow_dispatch: GitHub does not count a dispatched run's checks toward a required check. (b) No: a clean base update is a mechanical push — no cycle, the review round is kept, no re-trigger; the empty commit is mechanical the same way. (c) Only on #83, the level branch, and only one. #82 gets the update, not an empty commit. No PR is closed and reopened.",
       "assertions": [
         "#82 is triggered by updating the branch from its base",
-        "#83 is triggered by workflow_dispatch because it is up to date",
-        "the update counts no cycle, keeps the review round and does not re-trigger review",
-        "no empty commit is pushed and no PR is closed and reopened"
+        "#83 is triggered by one empty commit with no skip token, because it is level with main",
+        "neither is triggered by workflow_dispatch",
+        "the update and the empty commit count no cycle, keep the review round and do not re-trigger review",
+        "no empty commit is pushed to #82 and no PR is closed and reopened"
       ],
       "files": []
     },
@@ -558,7 +559,7 @@
       "id": 44,
       "name": "the-pr-opens-on-a-tokened-head-and-no-ci-runs-until-the-trigger",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #86's repository resolved `minimize-ci-runs` true, and the key has effect there. The caller's preflight read a `workflow_dispatch` trigger and a squash-merge setting, and an earlier tokened push started no run. The worker's last push before creating the PR was head d4d4d4d, and the PR opened on it. You adopt the PR. Its review round 1 is pending, and no CI run exists on d4d4d4d. Questions: (a) what should d4d4d4d's commit message carry, and why? (b) how do you read CI at adoption? (c) when does CI first run on this PR?",
-      "expected_output": "(a) [skip ci]: under the key, the worker's last push before the PR is created carries the token, so the PR-opened event skips CI too. (b) CI deferred, not missing or red: no attribution, no cycle, no dispatch, and the PR is waiting. (c) Only once the PR is quiescent on its current head: round 1 complete or past its window, no repairable finding open, no pass in flight. This skill then triggers CI once, by a base update or a dispatch.",
+      "expected_output": "(a) [skip ci]: under the key, the worker's last push before the PR is created carries the token, so the PR-opened event skips CI too. (b) CI deferred, not missing or red: no attribution, no cycle, no dispatch, and the PR is waiting. (c) Only once the PR is quiescent on its current head: round 1 complete or past its window, no repairable finding open, no pass in flight. This skill then triggers CI once, by a base update, or one empty commit where the branch is level with main.",
       "assertions": [
         "the pre-PR head carries [skip ci] so the PR-opened event runs no CI",
         "CI at adoption is read as deferred, with no repair dispatched",
@@ -582,11 +583,12 @@
       "id": 46,
       "name": "with-no-automated-reviewer-ci-still-runs-once",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #87 has `minimize-ci-runs` true, from repo config, and the key has effect in its repository. Its current head carries [skip ci], has no CI run, and is up to date with main. The workflow producing the required checks declares `workflow_dispatch`, with no job gated to `pull_request` events. No repair pass is in flight. The repository has no automated review convention, so no round is expected for any head, and no finding is open. Question: does CI run, and how?",
-      "expected_output": "Yes. The PR is quiescent on its head: no pass in flight, no repairable finding open, and no expected round outstanding, since a round never expected does not hold the trigger. The key keeps its effect; this skill dispatches the workflow on the branch once, the branch being current, and confirms a run registered for that head.",
+      "expected_output": "Yes. The PR is quiescent on its head: no pass in flight, no repairable finding open, and no expected round outstanding, since a round never expected does not hold the trigger. The key keeps its effect; the branch is level with main, so this skill pushes one empty commit carrying no skip token, which starts a pull_request run, and confirms a run registered for that head. It never dispatches: a workflow_dispatch run satisfies no required check.",
       "assertions": [
         "the key still has effect without an automated reviewer",
         "the PR is treated as quiescent",
-        "CI is triggered once, by workflow_dispatch since the branch is current"
+        "CI is triggered once, by one empty commit with no skip token since the branch is level",
+        "CI is not triggered by workflow_dispatch"
       ],
       "files": []
     },
@@ -594,7 +596,7 @@
       "id": 47,
       "name": "a-refused-round-does-not-hold-the-trigger",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #88 has `minimize-ci-runs` true, from repo config, and the key has effect in its repository. Its current head carries [skip ci], has no CI run, and is up to date with main. The workflow producing the required checks declares `workflow_dispatch`, with no job gated to `pull_request` events. No repair pass is in flight. The repository's automated reviewer answered the trigger for this head saying it is out of budget, and the round is recorded refused. No finding is open. Question: does CI run?",
-      "expected_output": "Yes. A refused round does not hold the trigger, so the PR is quiescent and CI is triggered once, by dispatch. The refused round is not re-requested, and it is reported as surfaced. It still holds the merge, never this trigger.",
+      "expected_output": "Yes. A refused round does not hold the trigger, so the PR is quiescent and CI is triggered once, by one empty commit carrying no skip token, since the branch is level with main — never by dispatch. The refused round is not re-requested, and it is reported as surfaced. It still holds the merge, never this trigger.",
       "assertions": [
         "the refused round does not block the CI trigger",
         "CI is triggered once",
@@ -644,7 +646,7 @@
       "id": 51,
       "name": "a-deferred-repair-does-not-hold-the-trigger",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #99 has `minimize-ci-runs` true and in effect. Its head carries [skip ci], has no run, and is up to date with main. The workflow producing the required checks declares `workflow_dispatch`, with no job gated to `pull_request` events. review-repair-cycles is spent. The latest round's one change request came back from a classify-only pass as a deferred-repair item, recorded for the owner. No pass is in flight, no round is owed or deferred, and none is outstanding. Question: does CI run?",
-      "expected_output": "Yes, once, by workflow_dispatch, since the branch is current. A deferred repair is handled feedback under review-feedback's Unhandled feedback, so it does not hold the trigger. It is surfaced for the owner, and it still holds the merge gate.",
+      "expected_output": "Yes, once, by one empty commit with no skip token, since the branch is level with main — never by workflow_dispatch. A deferred repair is handled feedback under review-feedback's Unhandled feedback, so it does not hold the trigger. It is surfaced for the owner, and it still holds the merge gate.",
       "assertions": [
         "the deferred repair does not block the CI trigger",
         "CI is triggered once",
@@ -654,9 +656,9 @@
     },
     {
       "id": 52,
-      "name": "without-workflow-dispatch-a-branch-behind-its-base-is-triggered-by-the-update",
+      "name": "without-workflow-dispatch-the-key-has-effect-and-a-branch-behind-its-base-is-triggered-by-the-update",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #101 has `minimize-ci-runs` true, from repo config. Its repository allows squash merges, its review trigger is a comment, and a tokened push was observed starting no run. The workflow producing the required checks declares only `pull_request` and `push` triggers, with no `workflow_dispatch`. The PR is quiescent on its head, which carries [skip ci] and has no run, and the branch is two commits behind main; merging main in is conflict-free. Questions: (a) does the key have effect in this repository? (b) how does CI run on #101? (c) does the missing dispatch trigger appear in the report?",
-      "expected_output": "(a) Yes. Dispatchability is not a repository precondition; it is needed only where a branch is already level with its base. (b) Update the branch from its base. The merge commit carries no skip token, so CI runs once on the merged tree. The update is mechanical, so no cycle is counted and the review round carries forward. (c) Not as a reason the key has no effect, since it has effect. No hold arose, so no workflow_dispatch suggestion is needed for this PR.",
+      "expected_output": "(a) Yes. workflow_dispatch plays no part in the trigger at all. (b) Update the branch from its base. The merge commit carries no skip token, so CI runs once on the merged tree. The update is mechanical, so no cycle is counted and the review round carries forward. (c) No. Nothing about dispatch is reported, and the repository is not one where the key has no effect.",
       "assertions": [
         "the key has effect despite no workflow_dispatch",
         "CI is triggered by updating the branch from its base",
@@ -667,27 +669,27 @@
     },
     {
       "id": 53,
-      "name": "a-level-pr-with-nothing-dispatchable-waits-for-the-base-to-move",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PRs #102 and #103 are in the same repository, where `minimize-ci-runs` is true and in effect. The workflow producing their required checks has no `workflow_dispatch` trigger. Both are quiescent on tokened heads with no run, and both branches already contain main's head. A teammate suggests an empty commit, or closing and reopening each PR. Questions: (a) what happens to each PR this pass, and what is its outcome? (b) what does the report say about the workflow, and how many times? (c) the caller's monitoring cap is 8 hours: does it wait the cap out on these PRs? (d) an hour later another PR merges into main: what now?",
-      "expected_output": "(a) Nothing is dispatched and no commit is pushed. Each is held, waiting, reported as `CI deferred: waiting for base to move`. No cycle is counted. (b) One line suggests the owner add `workflow_dispatch:` to that workflow's triggers, once for the repository in this run, not once per PR. The run never edits the workflow itself. (c) No. The hold is not a stall: `return on` counts it as terminal, and it is surfaced. It holds each PR's merge but not the caller's settle, and both PRs are listed at settle and when a budget stops the watch. (d) The branches are now behind their base, so each is updated from main; the merge commit runs CI once. No empty commit and no close-and-reopen at any point.",
+      "name": "a-level-pr-gets-one-empty-commit-not-a-hold-or-a-dispatch",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PRs #102 and #103 are in the same repository, where `minimize-ci-runs` is true and in effect. The workflow producing their required checks runs on `pull_request` and declares `workflow_dispatch` too. Both are quiescent on tokened heads with no run, and both branches already contain main's head. main is not expected to move today. A teammate suggests dispatching the workflow on each branch, or closing and reopening each PR. Questions: (a) what starts CI on each PR, and does anything wait for main to move? (b) why not the dispatch? (c) does the push count a cycle or re-trigger review? (d) a second pass finds the run registered on the new head and still in progress: what now?",
+      "expected_output": "(a) One empty commit carrying no skip token on each branch, which starts a pull_request run. Nothing waits for main to move: a level branch has no merge commit to make, so the empty commit is the trigger. (b) GitHub does not count a workflow_dispatch run's checks toward a required status check, even when they pass on the PR head, so a dispatch would spend a run and leave the merge blocked. (c) No: it is mechanical — no cycle, the review round carries forward, no re-trigger. (d) Nothing is pushed again: a run existing for the current head is the trigger's. No PR is closed and reopened at any point.",
       "assertions": [
-        "each PR is held as waiting with the reason `CI deferred: waiting for base to move`",
-        "the workflow_dispatch suggestion appears once for the repository, and the run makes no workflow edit",
-        "no empty commit is pushed and no PR is closed and reopened",
-        "the hold is surfaced and counted terminal, not waited out to the monitoring cap, and both PRs are listed",
-        "after the base moves, each branch is updated from its base and CI runs"
+        "each PR gets one empty commit with no skip token, and neither waits for main to move",
+        "neither PR is dispatched, because a dispatched run satisfies no required check",
+        "no PR is closed and reopened",
+        "the empty commit counts no cycle and does not re-trigger review",
+        "no second empty commit is pushed once a run exists for the head"
       ],
       "files": []
     },
     {
       "id": 54,
-      "name": "a-dispatch-skips-a-path-filtered-workflow-the-head-would-not-run",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #104 has `minimize-ci-runs` true and in effect. It is quiescent on a tokened head, level with main. It changes only `web/app.ts` and `web/app.test.ts`. Two workflows produce required checks, and both declare `workflow_dispatch` with no job gated to `pull_request`: `web-ci` with `paths: ['web/**']`, and `api-ci` with `paths: ['api/**']`. Branch protection requires the checks of both. Question: what do you dispatch, and why?",
-      "expected_output": "Only `web-ci`. A dispatch ignores `paths` and `paths-ignore` filters, so dispatching `api-ci` would run checks the PR's changed files would never have started. Only workflows whose required checks are expected on this head are dispatched. A run is then confirmed registered for the head within the window.",
+      "name": "the-level-trigger-runs-pull-request-path-filters-not-a-dispatch",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #104 has `minimize-ci-runs` true and in effect. It is quiescent on a tokened head, level with main. It changes only `web/app.ts` and `web/app.test.ts`. Two workflows produce required checks, and both declare `workflow_dispatch` with no job gated to `pull_request`: `web-ci` with `paths: ['web/**']`, and `api-ci` with `paths: ['api/**']`. Branch protection requires the checks of both. Question: how is CI started, what runs, and what happens to the api-ci check?",
+      "expected_output": "One empty commit with no skip token, which starts a pull_request run; nothing is dispatched. The pull_request event applies each workflow's own path filters: web-ci runs, and api-ci is filtered off, since no changed file matches api/**. Branch protection requires api-ci's check by name, so that check never reports on this head: it is reported with its workflow and filter, not waited on, and holds the merge until the owner changes the workflow or the protection.",
       "assertions": [
-        "web-ci is dispatched",
-        "api-ci is not dispatched",
-        "the answer says dispatch ignores path filters, so the filters are applied against the PR's changed files"
+        "CI is started by one empty commit, not by dispatch",
+        "web-ci runs and api-ci is filtered off by its own paths filter",
+        "the required api-ci check that a filter keeps from reporting is reported with its workflow and filter, not waited on"
       ],
       "files": []
     },
@@ -838,6 +840,20 @@
         "CI is triggered exactly once on the repaired head, at quiescence",
         "with the CI budget spent, nothing further is pushed or run and the outcome is needs-user"
       ],
+      "files": []
+    },
+    {
+      "name": "integration-branch-pull-request-filter-drops-token",
+      "prompt": "You supervise PR #31 in acme/api, base `integration/acme-api-412`, under `ci-mode: integration-branch` with effect. The caller recorded that acme/api's `pull_request` triggers exclude the branch: `ci.yml` has `pull_request: branches: [main]` and no other workflow triggers on pull_request. A review round on #31 is unhandled and a `repair-pr` pass is about to be dispatched; later, the integration PR from `integration/acme-api-412` into main gets a red check and a CI repair pass. What do you pass each repair pass about the skip token, and what do you do if a CI run appears on #31's new head?",
+      "expected_output": "The pass on #31 is told the repository's pull_request triggers exclude the branch, so its commits carry no skip token. #31's head with no run is CI not owed and is gated locally. A run appearing on #31's untokened head falsifies the record: it is reported and the token applies to every later push into that repository's integration branch. The integration PR's repair commits still carry the token, since its base is main, which the filter still triggers on, and CI is triggered once when it is quiescent. #31's local gate still governs it; the stray run's result is reported.",
+      "assertions": [
+        "The repair pass on #31 makes commits without the skip token, because the caller recorded the pull_request triggers as excluding the branch.",
+        "A run registering on #31's untokened head is reported and restores the token for later pushes into that repository's integration branch.",
+        "#31 stays governed by its local gate when such a run registers; the run's result is reported, not repaired as #31's CI.",
+        "The integration PR's repair commits still carry the skip token, because its base is the default branch.",
+        "Nothing dispatches or re-runs a workflow on #31."
+      ],
+      "id": 67,
       "files": []
     }
   ]
