@@ -191,6 +191,18 @@
       ],
       "id": 15,
       "files": []
+    },
+    {
+      "id": 16,
+      "name": "the-merge-grant-is-forwarded-to-create-pr",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your caller passed the canonical issue URL, the required base, and a merge grant for the PR: its repository resolved `auto-merge: true`. It passed no draft or ready preference. Your implementation is done and checked, and you are about to invoke create-pr. Question: what do you pass it about draft state, and why does it matter?",
+      "expected_output": "Pass the merge grant through to create-pr, alongside everything else its invocation lists, and pass no draft preference, since none was supplied. create-pr opens a PR ready only where it is told a grant resolves, and it never reads the policy file itself, so a grant this hop drops becomes a draft the merge path has to publish later. Inventing a draft preference instead would be worse: a caller's draft preference holds the PR as an explicitly held draft, which the gate never merges.",
+      "assertions": [
+        "the answer forwards the merge grant to create-pr",
+        "the answer passes no draft preference the caller did not supply",
+        "the answer explains that create-pr cannot recover a dropped grant because it does not read the policy file"
+      ],
+      "files": []
     }
   ]
 }

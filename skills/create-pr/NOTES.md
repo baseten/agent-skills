@@ -34,6 +34,10 @@ The PR's creation and the trigger comment are distinct write kinds a platform ma
 
 No supervising workflow promotes a draft on its own judgement (`rules/draft-state.md` owns that rule, including where a repository's own convention instructs promotion), but each tracks as-created beside current state, and the held-draft and publish-as-step-of-merging rules need the distinction this field carries: a workflow cannot tell a PR this run drafted from one a human drafted unless this skill says so. This skill itself ends at creation and never changes draft state.
 
+## Why a merge grant opens the PR ready (#190)
+
+Where the gate can merge a PR, the merge path publishes it anyway, so a draft only postpones a publish to the moment it can cost a wait. Opening it ready removes that step. Only a grant the caller resolved from the policy file does this, because the file is what can authorize a merge; this skill never reads the file itself. A docs rule mandating drafts is an as-created rule, not a hold, so the grant wins and the caller reports the disagreement. An explicit draft preference is a hold and wins over the grant. The code-owner request the forge may make on a ready PR is named here, where it happens, so it is not mistaken for a reviewer request the run made.
+
 ## Substantive vs mechanical pushes
 
 The test and its reasoning moved to `rules/mechanical-pushes.md` and `rules/mechanical-pushes-notes.md` (#140), because `review-docs` applies it too and pointed up into this skill for it. The re-trigger rule that applied it here moved to `rules/review-trigger.md` (#142), which cites the test; this skill now carries it only through that rule.
@@ -62,3 +66,7 @@ run, the body has been drafted and the PR has been created. A direct invocation
 therefore ran the documentation list, created the PR, and only then met the rule
 saying not to — so the rule was unreachable by the path it existed for. A
 derivation that decides what to run belongs where running is decided.
+
+**Why a `ready_for_review`-only required check keeps the draft, and why an unclear docs rule is a hold (#190 blind audit):** opened ready, the PR never publishes, so a required check only a publish starts would never run and the gate could never open; as a draft, the merge path's publish fires it. A docs rule that a PR stays in draft until something happens is a person's decision to hold it, which no merge grant overrides, and a rule that cannot be classified is read as the hold because publishing a PR someone meant to keep back cannot be undone, while holding one costs only the owner's time.
+
+**Why unreadable means draft, and why the draft rule is read from the base (#190 narrow audit):** *Path filters* counts an unreadable workflow as matching, which fails closed for missing CI but fails open here: a `ready_for_review`-only workflow nobody could parse would go undetected and the PR would open ready with a check that never runs. So opening ready needs every base workflow read and the required set proven. The draft rule is read from the base, and its hold also travels as the caller's held-draft preference, because the head is the PR's own text and could edit away the hold that governs it.

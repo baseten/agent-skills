@@ -35,14 +35,15 @@ This file is the contract. The reasoning behind each rule — incident history, 
 
 - Preserve exactly any caller-supplied repository, worktree, branch, base, dependency context, tracker, and budgets.
 - Read the policy file (`references/agent-policy.md` names it, and *Fail-closed handling* its old-name fallback) **once, at run start, from the head of the repository's default branch** — never from the worktree this run writes, and never again afterwards.
-- Keys consumed: `implementation-attempts`, `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-merge`, `auto-request-settle`, `auto-resolve-comments`, `ci-mode` (and its alias `minimize-ci-runs`), `review-defer-severity`. Ignore `concurrent-workers`, `concurrent-open-prs` and `new-issue-budget` — no single-issue meaning. **`ci-mode: integration-branch` applies here as `per-pr`, reported**: batching into an integration branch is `backlog-orchestrator`'s, and one issue has nothing to batch.
+- Keys consumed: `implementation-attempts`, `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-merge`, `publish-triggers-review`, `auto-request-settle`, `auto-resolve-comments`, `ci-mode` (and its alias `minimize-ci-runs`), `review-defer-severity`. Ignore `concurrent-workers`, `concurrent-open-prs` and `new-issue-budget` — no single-issue meaning. **`ci-mode: integration-branch` applies here as `per-pr`, reported**: batching into an integration branch is `backlog-orchestrator`'s, and one issue has nothing to batch.
 - **A caller's complete resolved policy suppresses the read**: use supplied keys as given, each with the source the caller resolved it from; omitted keys take the built-in defaults — except `auto-merge`, which takes **`false`**: an unmentioned permission was not granted.
 - **A partial invocation override suppresses nothing**: read the file and merge the argument over it per key, by `references/agent-policy.md`, *Precedence* — which lists the keys an argument can only switch off. NOT: treating one argument as a resolved policy — that would hand a zero-repair-cycles repository two cycles because its owner narrowed something else (NOTES).
-- Built-in defaults (absent file — the common case): implementation attempts **2** · CI repair **2** · review repair **2** · finding repair **2** · strongest-model repair rounds **1** · `auto-merge` **off** · `auto-request-settle` **on** · `auto-resolve-comments` **off** · `ci-mode` **`per-pr`** · `review-defer-severity` **off**. Monitoring cap: **8 hours** where persistent monitoring is supported — an invocation property, not a policy key.
+- **Resolved `auto-merge: true` opens the PR ready**: pass core the merge grant (`create-pr`, *Creating and verifying the PR*), unless `merge-stack` is unavailable. Where the repository's `CLAUDE.md` or `AGENTS.md` mandates drafts, classify the rule as that section does and report it at run start, never silently: an open-as-draft rule yields to the policy file; a stays-in-draft-until rule, or one that cannot be told apart, holds the PR as a draft, never published or merged — pass core a held-draft preference for it. Classify from the base's docs.
+- Built-in defaults (absent file — the common case): implementation attempts **2** · CI repair **2** · review repair **2** · finding repair **2** · strongest-model repair rounds **1** · `auto-merge` **off** · `publish-triggers-review` **off** · `auto-request-settle` **on** · `auto-resolve-comments` **off** · `ci-mode` **`per-pr`** · `review-defer-severity` **off**. Monitoring cap: **8 hours** where persistent monitoring is supported — an invocation property, not a policy key.
 
 # Phase 1 — durable implementation
 
-Invoke `implement-issue-core` with the canonical issue URL and every supplied constraint — and `ci-mode: deferred` where it resolved so and the repository reads `supervise-prs`, *Deferred CI*, names show it has effect. Never hand-roll implementation here.
+Invoke `implement-issue-core` with the canonical issue URL and every supplied constraint — and `ci-mode: deferred` where it resolved so and the repository reads `supervise-prs`, *Deferred CI*, names show it has effect, and the merge grant where `auto-merge` resolved `true`. Never hand-roll implementation here.
 
 On `PR_OPEN`, the code is already durable remotely. Record: PR URL; branch/base; remote head SHA; tracker linkage verification; draft state as created; implementation attempts used; and **every posting-identity entry core returned, under its `(transport, credential)` key** — never collapsed to one pair (NOTES: Posting identity).
 
@@ -103,11 +104,10 @@ The run settles when its one issue reaches a terminal state: the PR `finished` a
 - **findings**: the worker and review findings the run produced;
 - **held-reply records**: the approval-pending, rejected and mixed-thread records `supervise-prs`'s record holds; pass the held-reply outcomes `settle-and-merge` returns to `supervise-prs` as its *held-reply outcomes* input;
 - **posting-identity map**: the run's map;
-- **resolved policy**: `auto-merge`, `auto-request-settle` and `ci-mode`, resolved for its one PR (Policy and budgets);
+- **resolved policy**: `auto-merge`, `publish-triggers-review`, `auto-request-settle` and `ci-mode`, resolved for its one PR (Policy and budgets);
 - **ranking**: `caller translates` — nothing is ranked, since one PR has no ordering to rank. This skill runs the ruling translation below over the rulings handed back at its step 5 and passes back the translated action points;
 - **dependency view**: the value core's completeness report gives — proven, or unproven on the named boundary with the discharge Merge describes;
 - **freshness checks**: none apply — this skill runs no integration check and has no authority to update a branch, so the stale-green re-check and the tool-bump rule do not apply, and `settle-and-merge` returns no refresh owed: `supervise-prs`'s *refresh owed* input is always passed empty here;
-- **publish rule**: `hand back` — this skill runs its own evidence-freshness rule (Merge, *Evidence freshness across draft→ready*) on the PR returned as published, and settles again when that rule says;
 - **outstanding recovery refs**: none — this skill captures nothing, so `swarm`'s generic lifecycle decides;
 - **un-settling**: nothing to pass; on a hand-back, Un-settling below governs, with the re-entry rule;
 - **watch state**: where the run will return `PR_OPEN`, that the watch stays armed, what wakes it and how to stop it (Completion).
@@ -139,7 +139,7 @@ Its steps, in order, as this skill reads them:
 - **re-invoke `supervise-prs` with every Phase 2 input and the finding as a finding to repair** — verbatim, the action point or the recorded ruling with its site URL — and merge the map it returns. That invocation returns as soon as the finding's pass has returned, whatever `return on` says; that skill dispatches the `finding` pass, counts the `finding-repair-cycles` cycle and re-triggers review where a pushed repair calls for it;
 - a **pushed** repair or a **`NO_CODE_CHANGE`** → settle again **from step 1** — the re-run recomputes the summary, so the gate never sees evidence the repair invalidated, and re-asks nothing (a recorded ruling retires its question at discovery);
 - **`needs-user`** — the finding budget already spent (`NEEDS_USER`), or the pass returned `FAILED` or `NEEDS_USER` (that result) → that is the outcome, carrying the finding and the pass's report beside the summary in hand. It is a settle-phase outcome and returns directly: never settle again on it, so a failed finding repair is never re-dispatched.
-- A draft→ready transition also un-settles the run, whoever performed it — the rule lives in Merge.
+- A publish un-settles the run only where it started something, whoever performed it — Merge, *Evidence on the current head*.
 
 ## Merge
 
@@ -152,11 +152,10 @@ Where the repository opted in through `auto-merge`, evaluate **invariant 12's ga
 - NOT: routing the hold through `summarize-wave`'s classification — its bar treats the caveat as reportable, not as a mandatory `MERGE_RISK` (NOTES).
 - A **proven** view discharges the condition; nothing to hold.
 
-**Evidence freshness across draft→ready.** The gate accepts no evidence older than this PR's latest draft→ready transition, whichever site performed it — the owner at any moment (re-read the forge before the gate), or the merge path's own publish (`settle-and-merge`, *Merge behavior*), which is the rule's next instance rather than a separate step. Settle passes `hand back` as its publish rule, so this rule — not the three-state rule — governs that publish:
+**Evidence on the current head.** The gate reads review and CI evidence on the PR's current head, and a draft→ready transition — the owner's at any moment, or the merge path's own — changes no head, so it invalidates neither. What a publish starts, and what the gate then waits for, is `settle-and-merge`, *Merge behavior*, which governs every publish; re-read the forge's draft state before the gate:
 
-- the transition returns the PR to ordinary supervision: settle again on the next delivered pass (the PR's subscription and check-ins), **never an inline wait**;
-- a review round or CI run the transition triggered must complete and come back clean like any other;
-- terminating case: a read taken no earlier than the next check-in showing the transition triggered nothing — no new round, no new run, head unchanged — **is** the post-transition evidence. Do not re-trigger a review just to manufacture newer artifacts;
+- where that rule says the publish started something, the PR returns to ordinary supervision: settle again on the next delivered pass (the PR's subscription and check-ins), **never an inline wait**;
+- a push after the review still needs re-review (the *review trigger* shared rule), whatever happened to draft state;
 - a run that cannot keep watching returns the durable checkpoint, the PR named as published and awaiting re-evaluation;
 - a re-review that finds something: the PR is not clean, does not merge, and takes the ordinary repair path as a ready PR;
 - an **explicitly held draft** reaches none of this: excluded from the gate outright — neither published nor merged, reported as held.

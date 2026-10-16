@@ -223,7 +223,7 @@ When a pass returns having pushed:
 
 - the convention recorded at adoption is evaluated every pass;
 - a repair pass never touches draft state;
-- **a PR promoted under the convention is reported promoted, stays waiting on review, and is not `finished`** until a later delivered pass classifies whether publishing triggered a round in that repository — never an immediate read. What the caller's own settle rule does with a publish is the caller's;
+- **a PR promoted under the convention is reported promoted**; where the publish starts a review round or a check (`references/draft-state.md`, *Promotion*), it waits on it, not `finished`, until a later delivered pass reads it — never an immediate read. The rest is the caller's settle rule;
 - an explicitly held draft is reported as held, awaiting the owner.
 
 **The review trigger is never optional, promotion or not**: whether a provider acts on a publish is established, not assumed, and on a draft nobody promotes the trigger is the only path left.
@@ -260,7 +260,7 @@ When a pass returns having pushed:
 Per PR, one of:
 
 - **`finished`** — CI green on the head, or every red check confirmed expected-red after a producer merge and reported, or a required check a path filter keeps from ever reporting, reported (`references/ci-and-review-verdicts.md`, *Path filters*); every review round the routing requires completed, recorded `refused`, or owed after a head move by neither a pass nor a caller push; every unhandled thread handled — resolved, recorded no-action, reserved for the owner, or holding an approval-pending reply; no pass in flight; **nothing remains that a pass within budget would be dispatched for**. A refused round, a round owed after someone else's head move, a reserved thread, an approval-pending reply, an expected-red check and a filtered required check are **surfaced**: each holds the PR's merge and never its finishing;
-- **`waiting`** — on CI, CI deferred (*Deferred CI*), a local gate run in flight (*Integration-branch CI*), a review round, a publish's classification or an allowance reset, naming which and since when;
+- **`waiting`** — on CI, CI deferred (*Deferred CI*), a local gate run in flight (*Integration-branch CI*), a review round, what a publish started or an allowance reset, naming which and since when;
 - **`repairing`** — a pass is in flight;
 - **`held: lock`** — the caller holds the branch; ends when it passes the push or drops the lock;
 - **`held: check`** — a head check held it. It persists — no dispatch and no adoption on that branch — until the caller passes a release;

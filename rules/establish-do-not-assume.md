@@ -29,7 +29,7 @@ No sentence to disbelieve: the run reasons from what a tool or provider *probabl
 | a provider's name says what triggers its automated review | that is a property of the repository's configuration, not of the name: **assume nothing does**. Trigger explicitly and verify per PR that the trigger took effect. Where an event was observed producing a review in a repository, record it; where no event-driven review exists, skip the machinery that waits for one rather than timing out against it |
 | an enabled automation performed its action | query the artifact |
 | a capability that is reachable is permitted, or one that is unreachable is absent | *cannot reach it*, *must not write it* and *it is not there* are three states; record which, since a report naming only the first leaves the others to be inferred |
-| a repository documents it — its provider re-reviews on publish, a field is authoritative | **a documented claim is still a claim**: check once and record, never skip checking |
+| a repository documents it — a field is authoritative | **a documented claim is still a claim**: check once and record, never skip checking — bar docs saying a publish starts something, which count as evidence, workflow files winning where they disagree (`settle-and-merge`, *Merge behavior*) |
 
 ## You are about to assert it
 

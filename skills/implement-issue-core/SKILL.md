@@ -16,7 +16,7 @@ This file is the contract. The reasoning behind each rule — incident history, 
 - optional upstream dependency context, with three markings the caller may attach: whether it is the caller's **complete** READY dependency set or a targeted answer (unmarked = targeted); the **provenance** of each edge (caller's own native read, or recorded outside native metadata from an earlier finding); and whether the read behind a complete set had **proven relationship visibility** for the boundaries in play;
 - optional authorization membership — the run's bounded authorized set, or a per-blocker in/out flag;
 - implementation-attempt budget;
-- draft/full PR preference when supplied;
+- draft/full preference and merge grant, when supplied;
 - `ci-mode` when the caller passes it as `deferred` or `integration-branch`: every commit pushed to the issue branch while its PR is open, and the head of the last push before the PR is created, carries `[skip ci]` in its message (`supervise-prs`, *Deferred CI*, *Integration-branch CI*) — under `integration-branch`, unless the caller passes the repository's `pull_request` triggers as excluding the branch (*Integration-branch CI*, step 1);
 - the caller's posting-identity map when one exists — every `(transport, credential)` entry with its per-kind observations, never a caller-selected pair. Invoked standalone with no map, every transport starts `unestablished` (degraded path per `references/posting-identity.md`).
 
@@ -207,7 +207,7 @@ about the code.
 Invoke `create-pr` with:
 
 - **the gate: the derived check set, each check's outcome — including `not locally runnable` where that is the honest one — and where the set came from** — protection or ruleset, or the workflow fallback with its unproven marker. `create-pr` returns the gate report from this and cannot construct it from data it was never given;
-- canonical full issue URL; exact required base; tracker identity when useful; draft/full preference when supplied;
+- canonical full issue URL; exact required base; tracker identity when useful; draft/full preference and merge grant when supplied;
 - **any coverage finding this implementation carried** — a declared dependency satisfied on paper whose capability was absent, and the acceptance criteria left unmet. `create-pr` decides the linkage form from this and cannot decide correctly unseen: the default is a closing keyword, so silence auto-closes an issue you knowingly did not finish (NOTES);
 - **the posting-identity map as this skill holds it** — every entry, as received or `unestablished`. An invocation is read literally: a map left out is a map `create-pr` does not have, and its writes need different entries (agent-authored for the PR; invoking-user for the review trigger), so omitting it degrades both (NOTES).
 

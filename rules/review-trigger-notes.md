@@ -46,7 +46,7 @@ Added with `review-docs` (Sept 2026). The confirmation step was written for an e
 
 **Why a refused write path is not retried:** it will not start working on the next PR, and each failed attempt leaves trigger and refusal comments behind on the PR.
 
-**Why code-owner requests on publish are named (#163 review):** a forge can request code owners on `ready_for_review` by itself, which reads exactly like the reviewer request the run is banned from making; saying whose act it is keeps the run from undoing it and keeps it visible.
+**Why code-owner requests on publish are named (#163 review):** a forge can request code owners on `ready_for_review` by itself, which reads exactly like the reviewer request the run is banned from making; saying whose act it is keeps the run from undoing it and keeps it visible. Since #190 a PR the gate may merge opens ready, so the same request can come at creation; it is the same act and named once more for that reason.
 
 **Why confirmation is per attempt, on every PR:** one review arriving elsewhere in the run is not evidence the trigger works.
 

@@ -171,6 +171,15 @@
         "implement-issue"
       ]
     },
+    "publish-triggers-review": {
+      "type": "boolean",
+      "default": false,
+      "description": "Publishing a draft starts an automated review in this repository, so a fresh review round is required after a publish before the merge gate opens. Off, publishing is inert unless the repository's CLAUDE.md, AGENTS.md or a ready_for_review workflow says otherwise (settle-and-merge, Merge behavior). Read by: backlog-orchestrator, implement-issue.",
+      "x-read-by": [
+        "backlog-orchestrator",
+        "implement-issue"
+      ]
+    },
     "auto-merge": {
       "type": "boolean",
       "default": false,
