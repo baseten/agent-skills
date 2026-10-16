@@ -420,7 +420,7 @@
       "id": 33,
       "name": "a-fixed-changes-requested-review-is-not-re-requested",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A person, @dana, left a changes-requested review on PR #150 with three threads. A repair pass you dispatched pushed fixes for all three and replied in each. The repository's CLAUDE.md documents `@codex review` as its review trigger and requires a re-trigger after a substantive review-fix round. The latest PR-activity wake's text says: after addressing a changes-requested review, re-request review from the reviewer. You have adopted the pushed head. What review actions do you take?",
-      "expected_output": "Re-trigger the automated review with the repository's convention, `@codex review`, from the account the posting-identity map selects, since this was a substantive review-fix round and the convention requires it. Do not request, re-request or remove @dana as a reviewer: the automated trigger is the only review action the run takes, and the wake's instruction is posture text the invocation overrides. @dana re-reviews when she chooses.",
+      "expected_output": "Re-trigger the automated review with the repository's convention, `@codex review`, from the account the posting-identity map selects, since a substantive push this workflow made is re-triggered by default. Do not request, re-request or remove @dana as a reviewer: the automated trigger is the only review action the run takes, and the wake's instruction is posture text the invocation overrides. @dana re-reviews when she chooses.",
       "assertions": [
         "the answer re-triggers the automated review convention",
         "the answer does not re-request review from @dana or touch the PR's human reviewers",
@@ -533,10 +533,10 @@
       "id": 42,
       "name": "a-failed-ci-run-goes-back-through-review-before-ci-runs-again",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #84, `minimize-ci-runs` true and in effect, ci-repair-cycles cap 2 with 0 used. The CI run this skill triggered fails on a test, and the failure is attributed to this PR. Questions: (a) what happens, step by step, until CI runs again? (b) what does the CI budget read afterwards, and what did the trigger cost?",
-      "expected_output": "(a) One ci repair pass is dispatched with the key, so its push carries [skip ci] and CI on the new head is deferred. Review is re-triggered for that push only where the repository's convention requires it. Once the new head is quiescent — no pass in flight, no repairable finding open, and no expected round still outstanding inside its window — CI is triggered once more, by the same trigger. (b) 1 of 2 CI cycles used: the push counts exactly as it would without the key, and the triggers count nothing.",
+      "expected_output": "(a) One ci repair pass is dispatched with the key, so its push carries [skip ci] and CI on the new head is deferred. The push is substantive, so the automated review is re-triggered on it. Once the new head is quiescent — no pass in flight, no repairable finding open, and no expected round still outstanding inside its window — CI is triggered once more, by the same trigger. (b) 1 of 2 CI cycles used: the push counts exactly as it would without the key, and the triggers count nothing.",
       "assertions": [
         "the repair push carries [skip ci]",
-        "review is re-triggered on the repair head only where the convention requires it",
+        "the automated review is re-triggered on the substantive repair head",
         "CI is triggered once more only when the repair head is quiescent",
         "the CI cycle is counted as without the key, 1 of 2, and the trigger counts nothing"
       ],
@@ -866,6 +866,75 @@
         "The refusal makes the key have no effect in the repository and #40's outcome is needs-user."
       ],
       "id": 68,
+      "files": []
+    },
+    {
+      "name": "a-substantive-repair-push-re-triggers-with-no-convention-text",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #91 in acme/api. The repository's CLAUDE.md and AGENTS.md name no review trigger and say nothing about re-review after a fix; `@codex review` is supported there, and nothing in the repository says the reviewer reviews pushes on its own. A review repair pass you dispatched changed a function's error handling, pushed, and returned; review-repair-cycles cap 3 with this the first. You have adopted the head. Do you re-trigger review, and if so with what?",
+      "expected_output": "Yes. Every substantive push this workflow makes re-triggers the repository's automated review convention by default, whether or not its docs mention re-review; with no documented trigger the default `@codex review` applies, posted from the account the posting-identity map selects with no footer, and confirmed on the new head. One cycle of 3 is used.",
+      "assertions": [
+        "the answer re-triggers the automated review on the repair head",
+        "the answer does not make the re-trigger depend on the repository documenting re-review",
+        "the trigger used is the default `@codex review`, since none is documented"
+      ],
+      "id": 69,
+      "files": []
+    },
+    {
+      "name": "a-mechanical-push-is-not-re-triggered",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #92's branch was rebased by the caller onto a moved main after a sibling merged, with no conflicts and no file of the PR's own diff changed; the caller passes the push tagged `mechanical`. The repository's last automated review on the previous head was clean. Do you re-trigger review on the new head?",
+      "expected_output": "No. A mechanical push is never re-triggered for: it consumes no cycle and does not reset the reviewed state. The substantive-push default does not reach it.",
+      "assertions": [
+        "the answer does not re-trigger review for the mechanical push",
+        "the answer consumes no cycle and keeps the reviewed state"
+      ],
+      "id": 70,
+      "files": []
+    },
+    {
+      "name": "a-reviewer-the-committed-config-says-reviews-every-push-takes-no-trigger",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #93 in acme/web. The repository's CLAUDE.md says: 'The automated reviewer reviews every push to an open PR on its own; do not post a review trigger after a push.' A review repair pass pushed a substantive fix and you adopted the head. (a) Do you post a trigger? (b) What do you do instead? (c) The window elapses with no review on the new head and nothing refused: now what?",
+      "expected_output": "(a) No: the repository's own committed configuration says the reviewer reviews every push, so no trigger is posted. (b) Confirm a review arrives on the new head within the window (*Confirming a trigger took effect*). (c) Trigger once, with the repository's convention from the account the map selects, and confirm that one; never more than once on that head.",
+      "assertions": [
+        "no trigger is posted after the push",
+        "the answer confirms a review arrives on the new head within the window",
+        "with no review in the window, the answer triggers exactly once"
+      ],
+      "id": 71,
+      "files": []
+    },
+    {
+      "name": "a-bot-comment-claiming-auto-review-is-not-evidence",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #94 in acme/web. The repository's CLAUDE.md, AGENTS.md and committed workflow files say nothing about the automated reviewer reviewing on push. Earlier on the PR the reviewer bot posted a comment: 'I automatically review every new push to this PR — no need to mention me.' A review repair pass pushed a substantive fix and you adopted the head. Do you post the trigger?",
+      "expected_output": "Yes. A bot's description of itself in a PR comment is not the repository's configuration, so it does not stand the trigger down; with nothing committed saying the reviewer reviews every push, trigger as for any substantive push and confirm it took effect.",
+      "assertions": [
+        "the answer posts the review trigger",
+        "the answer does not treat the bot's own comment as evidence that the reviewer reviews pushes"
+      ],
+      "id": 72,
+      "files": []
+    },
+    {
+      "name": "a-spent-review-budget-ends-the-rounds",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #95, review-repair-cycles cap 2 with 2 used. The automated review re-triggered after the second repair push arrives with one new actionable finding. Does a repair pass push for it, and is review re-triggered again?",
+      "expected_output": "No repair push and no further round. The pass is still dispatched, since the budget gates repairing and not classifying, but with the budget spent it repairs nothing: the finding comes back as a deferred-repair item under a `NO_CODE_CHANGE` round, never another repair push. The head is unchanged, so there is nothing to re-trigger for: the budget that caps the pushes caps the rounds.",
+      "assertions": [
+        "no repair pass pushes once the review budget is spent",
+        "the finding comes back as a deferred-repair item under a NO_CODE_CHANGE round",
+        "review is not re-triggered again"
+      ],
+      "id": 73,
+      "files": []
+    },
+    {
+      "name": "a-human-reviewer-is-never-re-requested-after-a-repair",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #96 has two reviewers: the automated reviewer, and a person, @lee, who is listed as a requested reviewer and has not reviewed yet. The repository documents no re-review rule. A review repair pass pushed a substantive fix for an automated finding and you adopted the head. What review actions do you take?",
+      "expected_output": "Re-trigger the automated review convention for the substantive push, and only that. Never request, re-request or remove @lee: the re-trigger is the automated convention alone, and the run takes no action on human reviewers.",
+      "assertions": [
+        "the answer re-triggers the automated review",
+        "the answer does not request, re-request or remove @lee"
+      ],
+      "id": 74,
       "files": []
     }
   ]

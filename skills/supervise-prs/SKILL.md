@@ -201,18 +201,17 @@ When a pass returns having pushed:
 
 ### Head moves
 
-- **A caller push** is adopted from the input. `mechanical` (`references/mechanical-pushes.md`): no cycle, no reset of the PR's reviewed state, no re-trigger, a round held for a refresh owed aside (*Review trigger*). `substantive`: no cycle, and review is re-triggered (*Review trigger*). Cannot tell → substantive.
+- **A caller push** is adopted from the input. `mechanical` (`references/mechanical-pushes.md`): no cycle, no reset of the PR's reviewed state, no re-trigger, a round held for a refresh owed aside (*Review trigger*). `substantive`: no cycle; re-triggered (*Review trigger*). Cannot tell → substantive.
 - **This skill's own CI trigger** (*Deferred CI*) — a clean base update, or the empty commit on a level branch — is adopted as a mechanical push: no cycle, no reset, no re-trigger, the same exception aside.
-- **A released head** — a pass's push a head check held, released by the caller — is adopted as the new head: the pass's cycle was already counted, and review is re-triggered as for any pass that pushed.
-- **A lost pass's capture reconciled onto its branch** (`swarm`, *The recovery ref's lifecycle*) counts one cycle of that pass's repair type, as a rebuild from the trailers would after a restart, and is re-triggered as a pass that pushed; the next pass verifies that head before it replies or resolves (`repair-pr`, *Recovery / checkpointing*).
+- **A released head** — a pass's push a head check held, released by the caller — is adopted as the new head: the pass's cycle was already counted; re-triggered (*Review trigger*).
+- **A lost pass's capture reconciled onto its branch** (`swarm`, *The recovery ref's lifecycle*) counts one cycle of that pass's repair type, as a rebuild from the trailers would after a restart; re-triggered (*Review trigger*); the next pass verifies that head before it replies or resolves (`repair-pr`, *Recovery / checkpointing*).
 - **A branch the caller holds locked** takes no dispatch while locked; the PR is `held: lock` until the caller passes the push or drops the lock.
 - **A head move made by neither a pass nor a caller push** — the owner, a bot, another run — is adopted as the new head. It consumes no cycle and resets the reviewed state, since nothing establishes it is mechanical; this skill does not re-trigger for it, because it is not a push this workflow made. **The round for the new head is reported owed, naming who moved the head**, and counts as surfaced for `finished` (*Outcomes*): it holds the PR's merge and never its finishing, so no PR waits without an end on a review nobody here may request. Any pass in flight against the old head is reported as racing it.
 
 ### Review trigger
 
-`references/review-trigger.md` governs every trigger and re-trigger — which convention, from which account, only where repository convention requires one, and never after a CI run or a mechanical push (*Re-triggers*). Confirm each took effect (*Confirming a trigger took effect*), at adoption and after every re-trigger. This skill's own additions:
+`references/review-trigger.md` governs every trigger and re-trigger — which convention, from which account, after which pushes, and the reviewer that needs none (*Re-triggers*). Confirm each took effect (*Confirming a trigger took effect*), at adoption and after every re-trigger. This skill's own additions:
 
-- **re-trigger after every substantive head move this workflow made** — a pass of any type that pushed, or a caller push tagged `substantive` — and after nothing else;
 - **never** where the round is `deferred`, a round on the PR is recorded `refused`, or triggering was suppressed in its repository. A `NO_CODE_CHANGE` pass left the head unchanged, so a re-trigger would request another review of identical code;
 - **under `ci-mode: deferred`** (*Deferred CI*), **never on a head with a refresh owed**: the round is held for the refreshed head (`references/review-trigger.md`, *Re-triggers*, states the exception);
 - **select the trigger's author from the map as it stands after the pass's entries were merged** — a pass can establish the invoking-user path the run lacked;
