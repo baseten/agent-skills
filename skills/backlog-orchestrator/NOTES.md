@@ -74,6 +74,8 @@ The notification half is deliberately subordinate. A subscription dies with the 
 
 **Why the CI-hygiene check also reports cost (Oct 2026, a generative-print run):** a daily scheduled full suite cost about 85 billed minutes every day the default branch moved — most of a month's allowance on its own — and nothing in the run noticed. Another session's PR drew some thirty `pull_request` runs in two days, most cancelled by `cancel-in-progress` after three to six minutes, and a cancelled run still bills every job it started. Neither is a hold: the owner may want the cron. Reporting it at preflight is what makes it visible before the month is spent. Dispatches are attributed by actor because under `deferred` the supervisor's own quiescence dispatch is a full run per PR — four dispatches billed some 415 minutes in one day on that repository — and an unattributed dispatch cannot be told from a person's.
 
+**Why a merge grant is resolved at preflight and carried into the dispatch prompt (#190):** the worker's `create-pr` opens the PR ready only where it is told a grant resolves, and it never reads the policy file, so the grant has to travel the chain from the preflight that resolved it. A docs rule mandating drafts is reported here, where policy is read, because the policy file wins and the owner aligns the docs; following either silently would hide the disagreement. The reasoning for opening ready at all is `create-pr/NOTES.md`'s.
+
 ## Escalating to deep validation — triggers in `SKILL.md`, the rest in `deep-validation.md`, *Running an escalation*
 
 **Why escalation is scoped to a subgraph (moved in #157):** the cost objection to deep mode is about breadth, and escalation does not have to be all-or-nothing. The `dependency transport unavailable` exception survives escalation because a deeper read cannot conjure a capability the tracker does not expose.
@@ -199,7 +201,7 @@ The notes on why every read is a snapshot moved to `rules/establish-do-not-assum
 
 ## Draft state
 
-The reasoning for the shared rule this section applies — the forge-timeline read, the scoped three-state reference, when the convention is read, and why the repository's convention wins — moved with the rule to `rules/draft-state-notes.md` (#138). What stays here is about what stays here.
+The reasoning for the shared rule this section applies — the forge-timeline read, the scoped publish-rule reference (since #190 the classification only), when the convention is read, and why the repository's convention wins — moved with the rule to `rules/draft-state-notes.md` (#138). What stays here is about what stays here.
 
 The note on why the trigger comment stays unconditional moved to `supervise-prs/NOTES.md`, *Draft state* (#144).
 

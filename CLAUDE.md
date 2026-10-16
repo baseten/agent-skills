@@ -62,7 +62,13 @@ evals (`<skill>#<id>`).
 7. **No forge write reports verification; SHAs are bare.** `rules/authored-write-form.md`.
    create-pr#11, resolve-pr-comment#17.
 8. **Merges are opt-in, through the one gate, failing closed.** `settle-and-merge`, *The
-   merge gate*; `rules/agent-policy.md`. backlog-orchestrator#0 #2. Under the opt-in
+   merge gate*; `rules/agent-policy.md`. backlog-orchestrator#0 #2. The gate reads review on the current
+   head: a publish changes no head and is inert unless the repository's own configuration (policy file,
+   `CLAUDE.md`/`AGENTS.md`, a `ready_for_review` workflow) says it starts a review or a check, never a
+   bot's comment; a push after review still needs re-review; under a merge grant `create-pr` opens the PR
+   ready, and a held draft is never published or merged (`settle-and-merge`, *Merge behavior*;
+   `implement-issue`, *Evidence on the current head*; `rules/draft-state.md`). settle-and-merge#2 #23 #24
+   #25 #26 #27, create-pr#12 #13 #14, implement-issue#23, backlog-orchestrator#16 #32 #84. Under the opt-in
    `ci-mode: deferred` (alias `minimize-ci-runs`), which only the repository's file turns on, the stale-green
    re-check narrows to file overlap (`settle-and-merge`, *Merge behavior*) and a
    review round carries across mechanical pushes (`rules/ci-and-review-verdicts.md`).

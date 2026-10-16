@@ -34,6 +34,10 @@ The PR's creation and the trigger comment are distinct write kinds a platform ma
 
 No supervising workflow promotes a draft on its own judgement (`rules/draft-state.md` owns that rule, including where a repository's own convention instructs promotion), but each tracks as-created beside current state, and the held-draft and publish-as-step-of-merging rules need the distinction this field carries: a workflow cannot tell a PR this run drafted from one a human drafted unless this skill says so. This skill itself ends at creation and never changes draft state.
 
+## Why a merge grant opens the PR ready (#190)
+
+Where the gate can merge a PR, the merge path publishes it anyway, so a draft only postpones a publish to the moment it can cost a wait. Opening it ready removes that step. Only a grant the caller resolved from the policy file does this, because the file is what can authorize a merge; this skill never reads the file itself. A docs rule mandating drafts is an as-created rule, not a hold, so the grant wins and the caller reports the disagreement. An explicit draft preference is a hold and wins over the grant. The code-owner request the forge may make on a ready PR is named here, where it happens, so it is not mistaken for a reviewer request the run made.
+
 ## Substantive vs mechanical pushes
 
 The test and its reasoning moved to `rules/mechanical-pushes.md` and `rules/mechanical-pushes-notes.md` (#140), because `review-docs` applies it too and pointed up into this skill for it. The re-trigger rule that applied it here moved to `rules/review-trigger.md` (#142), which cites the test; this skill now carries it only through that rule.

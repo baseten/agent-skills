@@ -117,3 +117,5 @@ Moved here from `backlog-orchestrator`, *Every read is a snapshot*, with its not
 **Moved from the rule (#168):** the retry-on-a-timer incident is the entry above; the job was right to want to know and wrong about how to find out.
 
 **Also moved from the rule (#168):** a probe is cheap, but cheap is not free — which is why it stays inside the consuming skill's read budget; and a timestamp matters because, in a repository with concurrent tracks, the instant a state report describes expires in minutes.
+
+**Why what a publish starts is excepted from the documented-claim row (#190):** that row's own example used to be a provider re-reviewing on publish, and the rule it gave — check once and record — is what made a run wait a pass on every first publish and then trust a bot's comment as the check. A repository's own docs and workflow files are now what `settle-and-merge`, *Merge behavior*, reads to decide whether a publish starts anything, so that one question is answered by the repository's say-so and not by observation. A provider describing itself in a comment is not the repository's say-so.

@@ -155,6 +155,43 @@
         "the gate report, with every check's outcome including not locally runnable and the unproven provenance, is returned in the skill's result",
         "the answer places the gate report in neither the body nor any comment"
       ]
+    },
+    {
+      "id": 12,
+      "name": "auto-merge-opens-the-pr-ready",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue-core invokes you, unattended, for https://github.com/acme/web/issues/310 in a work repository. Its caller passed a merge grant for the PR: the repository resolved `auto-merge: true`. No draft or ready preference was passed, and the repository's CLAUDE.md and AGENTS.md say nothing about drafts. The repository has a CODEOWNERS file. Questions: (a) does the PR open as a draft or ready? (b) what does the merge path's publish step later do for it? (c) the forge then requests reviews from two code owners - is that the run requesting reviewers, and does it remove them?",
+      "expected_output": "(a) Ready. A merge grant opens the PR ready, which beats the work-repository draft default; report the as-created state as ready, decided by the merge grant. (b) Nothing: there is no draft to publish, so the merge path's publish step is a no-op for this PR. (c) No. Opening a PR ready can make the forge request code owners' reviews, and that is the forge's act; this skill requests no reviewer itself and neither adds nor removes the code owners.",
+      "assertions": [
+        "The answer opens the PR ready because of the merge grant",
+        "The answer reports the as-created state as ready, decided by the merge grant",
+        "The answer says the merge path's publish step is a no-op for this PR",
+        "The answer treats the code-owner requests as the forge's act and neither makes nor removes reviewer requests"
+      ],
+      "files": []
+    },
+    {
+      "id": 13,
+      "name": "an-integration-branch-pr-opens-ready",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A backlog-orchestrator worker's implement-issue-core invokes you for https://github.com/acme/api/issues/412, with required base `integration/acme-api-412`, the run's integration branch. The repository sets `ci-mode: integration-branch` and `auto-merge: false`, and the caller passed a merge grant for this PR because its base is the integration branch. No draft preference was passed and the docs say nothing about drafts. Questions: (a) draft or ready? (b) later the run opens the integration PR from that branch into `main`, and its caller passes no merge grant - draft or ready?",
+      "expected_output": "(a) Ready: `ci-mode: integration-branch` grants the gate for a PR into the run's integration branch, so the caller's merge grant opens it ready, reported as decided by the merge grant. (b) The integration PR goes into the default branch, which the mode never grants, and with `auto-merge: false` there is no grant, so it takes the ordinary rule: the docs say nothing, and a work repository defaults to draft.",
+      "assertions": [
+        "The answer opens the PR into the integration branch ready because of the merge grant",
+        "The answer gives the integration PR into the default branch no merge grant under auto-merge false",
+        "The answer applies the ordinary draft/full rule where no grant was passed"
+      ],
+      "files": []
+    },
+    {
+      "id": 14,
+      "name": "no-merge-grant-opens-a-draft-as-before",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue-core invokes you for https://github.com/acme/web/issues/320 in a work repository whose policy leaves `auto-merge` false. The caller passed no merge grant and no draft preference, and the repository's docs say nothing about drafts. Question: does the PR open as a draft or ready, and what decided it?",
+      "expected_output": "As a draft. With no merge grant, draft or ready follows the repository's docs, and where they are silent a work repository defaults to draft. Report the as-created state as draft, decided by the default. This is the behaviour from before merge grants opened PRs ready: nothing changes for a repository with no grant.",
+      "assertions": [
+        "The answer opens the PR as a draft",
+        "The answer reports the default as what decided it",
+        "The answer does not open it ready without a merge grant"
+      ],
+      "files": []
     }
   ]
 }

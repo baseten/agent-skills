@@ -293,6 +293,18 @@
         "review-defer-severity stays off because an invocation cannot raise it"
       ],
       "files": []
+    },
+    {
+      "id": 23,
+      "name": "a-push-after-the-review-still-needs-re-review",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your PR opened ready, since the repository sets `auto-merge: true`. The automated review came back clean on head `91c0d3e`. A CI repair pass then pushed `a47e2b8`, which changes the code the review read. CI is green on `a47e2b8` and nothing is outstanding. A teammate says: publishing never forces a re-review any more and the review was clean, so the gate is open - merge it. Question: does the PR merge now?",
+      "expected_output": "No. The gate reads review evidence on the current head, and the clean review is on `91c0d3e`, not on `a47e2b8`. What the rule removed was a re-review forced by publishing, which changes no head; a push that changes the reviewed code still needs re-review under the review-trigger rule. So review is re-triggered on `a47e2b8`, and the PR merges only once that round comes back clean, on a later delivered pass.",
+      "assertions": [
+        "The answer refuses to merge on a review of an earlier head",
+        "The answer distinguishes a publish, which changes no head, from a push, which does",
+        "The answer requires a re-review on the current head before the gate opens"
+      ],
+      "files": []
     }
   ]
 }
