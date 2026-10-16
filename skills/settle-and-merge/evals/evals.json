@@ -357,6 +357,16 @@
         "The answer does not re-request the clean review"
       ],
       "files": []
+    },
+    {
+      "id": 30,
+      "name": "the-fresh-round-trigger-waits-out-the-confirmation-window",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Under `publish-triggers-review: true`, PR-18 was published on the last pass. On this delivered pass no review round has appeared yet, and the review-trigger rule's confirmation window since the publish has not elapsed. Question: do you trigger a review now?",
+      "expected_output": "No. The run triggers a round only where none has appeared within the confirmation window of the review-trigger rule's *Confirming a trigger took effect*; the window has not elapsed, so the round the publish started may still arrive, and triggering now risks a double review. Keep waiting on later passes; trigger once the window passes with none.",
+      "assertions": [
+        "The answer does not trigger a review before the confirmation window has elapsed"
+      ],
+      "files": []
     }
   ]
 }
