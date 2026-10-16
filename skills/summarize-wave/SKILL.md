@@ -19,7 +19,7 @@ Read-only over the wave's durable state: it ranks nothing, merges nothing, and �
 
 ## Inputs
 
-- the wave's scope: manifest/root issue URL, or the explicit issue set — or, for a run with no issue, the brief it was built from (`implement-issue`, *Phase 1, from an existing branch*);
+- the wave's scope: manifest/root issue URL, or the explicit issue set — or, for a run with no issue, the brief it was built from, as its PR body's `Source:` line records it (`implement-issue`, *Phase 1, from an existing branch*);
 - its PRs;
 - worker outcomes and review findings from the run, where available.
 

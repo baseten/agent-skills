@@ -21,10 +21,10 @@
       "id": 1,
       "name": "existing-pr-is-not-shipped-here",
       "prompt": "You are executing the ship-branch skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given; its companion implement-issue is beside it). The user asks you to ship branch `feat-y`. It already has an open PR with review threads. Question: what happens, and where does the user go to have that PR supervised?",
-      "expected_output": "implement-issue's existing-branch preflight refuses a branch that already has an open PR (NEEDS_USER, nothing adopted); ship-branch does not adopt it either. Supervising an existing PR is supervise-prs, directly.",
+      "expected_output": "implement-issue's existing-branch preflight refuses a branch that already has an open PR (NEEDS_USER, nothing adopted); ship-branch does not adopt it either. supervise-prs can supervise an existing PR, but repairs nothing unless resolved budgets are passed, and no skill here resolves them for an existing PR — so it is not offered as an equivalent route.",
       "assertions": [
         "The answer does not adopt or supervise the existing PR through this skill",
-        "The answer points to supervise-prs for supervising an existing PR"
+        "The answer does not present bare supervise-prs as an equivalent supervised route, noting it repairs nothing without passed budgets"
       ],
       "files": []
     }

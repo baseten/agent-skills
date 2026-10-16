@@ -137,6 +137,17 @@
         "the next step is the author's edit, not the run's"
       ],
       "files": []
+    },
+    {
+      "id": 11,
+      "name": "issue-less-run-summarizes-against-its-source-line",
+      "prompt": "You are executing the summarize-wave skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A restarted session is asked to summarize one settled PR that implement-issue opened from an existing branch with no issue. The caller passes no manifest or issue set; the PR body carries `Source: https://acme.slack.com/archives/C1/p123` and no closing keyword. Question: do you refuse for want of a scope, and what scope does your report name?",
+      "expected_output": "Do not refuse: for a run with no issue the scope is the brief, read from the PR body's Source: line (a durable source, so a restarted session reaches the same scope). The report names the Slack permalink as the wave's scope, and no issue-graph rule (blocked unstarted issues) applies since the scope has no issues.",
+      "assertions": [
+        "The answer accepts the brief as the scope rather than refusing or inventing an issue",
+        "The answer reads the brief from the PR body's Source: line, not from session memory"
+      ],
+      "files": []
     }
   ]
 }

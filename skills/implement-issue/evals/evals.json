@@ -346,7 +346,7 @@
       "id": 27,
       "name": "existing-branch-with-open-pr-is-refused-not-adopted",
       "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The user asks you to take their branch `feat-x`, which already has work committed, through the supervised PR process. You find an open PR whose head is `feat-x`, with two review threads from a colleague and one CI repair already pushed. Question: do you supervise that PR, and with what counters?",
-      "expected_output": "Neither: the existing-branch preflight fails because an open PR already has the branch as head. Adopting an existing PR is not this entry's — its counters are not 0 — so the run returns NEEDS_USER naming the PR, opening nothing and settling nothing. (Supervising it is supervise-prs's, directly.)",
+      "expected_output": "Neither: the existing-branch preflight fails because an open PR already has the branch as head. Adopting an existing PR is not this entry's — its counters are not 0 — so the run returns NEEDS_USER naming the PR, opening nothing and settling nothing.",
       "assertions": [
         "The answer does not supervise or adopt the existing PR under this entry",
         "The answer returns NEEDS_USER at preflight naming the open PR, with nothing opened or settled"

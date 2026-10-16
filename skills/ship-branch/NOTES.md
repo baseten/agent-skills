@@ -14,4 +14,4 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 ## Boundaries
 
-**Why an existing PR goes to `supervise-prs` rather than here:** see `implement-issue/NOTES.md`, *Phase 1, from an existing branch* — its counters are already spent, and this path passes 0.
+**Why an existing PR is not this skill's:** see `implement-issue/NOTES.md`, *Phase 1, from an existing branch* — its counters are already spent, and this path passes 0. `supervise-prs` alone is not a substitute: it defaults to zero budgets, so the boundary says so rather than pointing there as a route.

@@ -31,11 +31,11 @@
       "target": 1500
     },
     "skills/create-pr/SKILL.md": {
-      "budget": 2490,
+      "budget": 2543,
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 5110,
+      "budget": 5241,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
@@ -59,7 +59,7 @@
       "target": 3000
     },
     "skills/repair-pr/SKILL.md": {
-      "budget": 3875,
+      "budget": 3883,
       "target": 3000
     },
     "skills/resolve-pr-comment/SKILL.md": {
@@ -75,19 +75,19 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 5612,
+      "budget": 5655,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
-      "budget": 5660,
+      "budget": 5677,
       "target": 3000
     },
     "skills/ship-branch/SKILL.md": {
-      "budget": 287,
+      "budget": 282,
       "target": 3000
     },
     "skills/summarize-wave/SKILL.md": {
-      "budget": 2228,
+      "budget": 2236,
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {

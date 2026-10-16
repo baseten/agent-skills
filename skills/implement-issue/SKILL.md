@@ -81,20 +81,20 @@ Where the invocation names an **existing branch** — work already committed, no
 
 Where the invocation names neither an issue URL nor that there is none, ask once: the answer is the confirmation `create-pr` requires before an issue-less PR (*Tracker-specific issue linkage*).
 
-**Then invoke `create-pr`** with the issue URL or that confirmation, and the base, merge grant, held-draft preference and `ci-mode` Phase 1 would pass core. Pass no gate record: it derives the required checks and runs them itself (*Before creating the PR*). On success record what Phase 1 records on `PR_OPEN`, implementation attempts `not applicable`. A stop is `NEEDS_USER` with its reason, and settles as a Phase 1 terminal outcome does.
+**Then invoke `create-pr`** with the existing branch, the issue URL — or that confirmation and the brief — and the base, merge grant and held-draft preference Phase 1 would pass core. Pass no gate record: it derives the required checks and runs them itself (*Before creating the PR*). **Pass no `ci-mode`**: the branch is pushed as it stands, so its opening head carries no skip token, and under `deferred` the run that opening starts is that head's trigger (`supervise-prs`, *Deferred CI*, step 3). On success record what Phase 1 records on `PR_OPEN`, and the routed documentation review's result `create-pr` returned; implementation attempts `not applicable`. **The brief's durable home is the PR body's `Source:` line** (`create-pr`, *PR description template*): a later settle, or a resumed run, reads it there. A stop is `NEEDS_USER` with its reason, and settles as a Phase 1 terminal outcome does.
 
-**No dependency read is made**, issue or not — core never ran — so the view is unproven by construction (Merge).
+**No dependency read is made**, issue or not — core never ran — so the view is unproven by construction (Merge). Where `auto-merge` resolved `true`, say so at run start: the PR merges only once the owner answers for that view.
 
 # Phase 2 — single-issue PR supervision
 
 **This skill supervises its one PR through `supervise-prs`, and lets that skill run its own loop** — there is no parent here to own one, so arming the subscription and the bounded check-in is that loop's job (NOTES) until a `PR_OPEN`, after which this skill keeps the watch (Completion). Invoke it with:
 
-- **PR set**: the one PR, with its repository, branch/base, remote head and the canonical issue URL where there is one — adopted on the first pass, which issues any owed trigger and arms the subscription at once;
+- **PR set**: the one PR, with its repository, branch/base, remote head and the canonical issue URL where there is one, otherwise the brief — adopted on the first pass, which issues any owed trigger and arms the subscription at once;
 - **budgets**: `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles` and `repair-model-escalations`, as *Policy and budgets* resolved them, each with its source;
 - **`auto-resolve-comments`**, **`ci-mode`** and **`review-defer-severity`**: as *Policy and budgets* resolved them, with their source — the last with the issue's parent, or the issue itself where it has none, as its follow-up site — with no issue there is no site, so it is `off` for this PR, reported;
 - **counters**: 0 on a fresh run, since this run created the PR; on any later invocation, the counters in `supervise-prs`'s last returned record;
 - **posting-identity map**: the run's map, every entry core — or, from an existing branch, `create-pr` — returned included; **merge** the map it returns into the run's, never replace it;
-- **review routing and trigger state**: as core's `create-pr` left them;
+- **review routing and trigger state**: as `create-pr` left them;
 - **repair dispatch**: `direct`; **head checks**: none;
 - **wait owner**: `self` until the first `PR_OPEN`, `caller` after it (Completion); **monitoring cap**: 8 hours where persistent monitoring is supported, none otherwise — it bounds this active loop, never the post-settle watch; **return on**: `any-terminal`, `every-pass` after `PR_OPEN`; **state emission**: `every-pass`;
 - **findings to repair**: none now — Settle hands one in when it un-settles (below).
@@ -168,7 +168,7 @@ Where the repository opted in through `auto-merge`, evaluate **invariant 12's ga
 - core reported completeness **unproven**, on any boundary → the condition holds the gate exactly as a `MERGE_RISK`. The PR does not merge; return naming the boundary and the discharge.
 - The discharge must answer for the **whole view**: a re-run whose dependency transport can read the graph and prove the boundary, or the owner explicitly answering for the view itself — a decision-shaped hold the walkthrough can put to them and record, the recorded ruling retiring the hold as any translated constraint, never opening the gate. NOT: one confirmed edge — a targeted answer proves no omissions, and the known-true-case proof needs a working transport (`implement-issue-core`, *Back the completeness of the set*).
 - NOT: routing the hold through `summarize-wave`'s classification — its bar treats the caveat as reportable, not as a mandatory `MERGE_RISK` (NOTES).
-- **from an existing branch** → unproven, held as above; only the owner answering for the view discharges it, since no re-run of this entry reads a graph.
+- **from an existing branch** → unproven, held as above; only the owner answering for the view discharges it — the `DECISION` `settle-and-merge` seeds the walkthrough with (its step 4) — since no re-run of this entry reads a graph.
 - A **proven** view discharges the condition; nothing to hold.
 
 **Evidence on the current head.** The gate reads review and CI evidence on the PR's current head, and a draft→ready transition — the owner's at any moment, or the merge path's own — changes no head, so it invalidates neither. What a publish starts, and what the gate then waits for, is `settle-and-merge`, *Merge behavior*, which governs every publish; re-read the forge's draft state before the gate:
@@ -179,7 +179,7 @@ Where the repository opted in through `auto-merge`, evaluate **invariant 12's ga
 - a re-review that finds something: the PR is not clean, does not merge, and takes the ordinary repair path as a ready PR;
 - an **explicitly held draft** reaches none of this: excluded from the gate outright — neither published nor merged, reported as held.
 
-**Executing the merge** follows `settle-and-merge`, *Merge behavior*, which scopes the gate's `merge-stack` authorization to exactly this PR. A merge ends supervision: reconcile tracker completion, then return the merge with the gate conditions it passed on.
+**Executing the merge** follows `settle-and-merge`, *Merge behavior*, which scopes the gate's `merge-stack` authorization to exactly this PR. A merge ends supervision: reconcile tracker completion where there is an issue, then return the merge with the gate conditions it passed on.
 
 # Completion
 
@@ -199,7 +199,7 @@ Return:
 - canonical issue URL and tracker, or the brief and `none`; whether the run entered from an existing branch; repository;
 - outcome: `PR_OPEN` | `MERGED` | `BLOCKED` | `BLOCKED_EXTERNAL` | `FAILED` | `NEEDS_USER`;
 - branch/base; PR URL/number; remote head SHA;
-- issue linkage verified, and the form emitted — closing keyword, or non-closing `Part of:` because a coverage finding was reported;
+- issue linkage verified, and the form emitted — closing keyword, non-closing `Part of:` because a coverage finding was reported, or none, with no issue;
 - **any design finding core returned in place of a re-siting**, forwarded whole — the value, the objecting call sites and where it belongs; a caller that does not carry it is the only reader it would have had;
 - implementation attempts used, and **`supervise-prs`'s report for the PR** (`supervise-prs`, *Report*) — review rounds and CI, review and finding repair cycles against their caps, strongest-model rounds with the locus evidence for each, every review thread reserved for the owner per item kind and every approval-pending reply, final CI and review state, and draft state as created and current with any transition observed and who performed it (a ready-to-draft transition is never this run's);
 - **the supervision's provenance**: that the platform's PR posture was overridden, on the authority of this invocation as the user's instruction; what woke the run — subscription events by kind, the check-in, or both; the current check-in's id and next firing time, or that none is armed and why; **on `PR_OPEN`, that the watch is still armed, what wakes it — a human review or comment, a merge or close — and that telling the run to stop ends it**; and the toggle line for the PR — turned on by this run's subscription at a time and unsubscribed at a time, or still subscribed and why — never a claim that unsubscribing turned it off, and, where that effect is unknown, the instruction to switch it off by hand;
@@ -209,7 +209,7 @@ Return:
 - the `summarize-wave` summary and action points, and the `settle-outstanding-decisions` report — rulings recorded, its one-line decline, or that `auto-request-settle` was off;
 - the run's **full posting-identity map** — every entry observed by core, each repair pass, the walkthrough, and a gate-authorized `merge-stack` invocation, under its `(transport, credential)` key; carry all entries, `unestablished` where no authored write was read back (NOTES: why nothing may be collapsed);
 - whether the blocker set's completeness was backed or left unproven, and on what boundary;
-- the routed documentation review's result, exactly as core reported it — round, status, and any findings with their evidence. It reaches `summarize-wave` through this line and nowhere else, and **no routed review** is a different state from **a routed review that found nothing**;
-- dependencies checked and any source disagreements, exactly as core reported them — including on `PR_OPEN` (NOTES);
+- the routed documentation review's result, exactly as core — or, from an existing branch, `create-pr` — reported it — round, status, and any findings with their evidence. It reaches `summarize-wave` through this line and nowhere else, and **no routed review** is a different state from **a routed review that found nothing**;
+- dependencies checked and any source disagreements, exactly as core reported them — including on `PR_OPEN` (NOTES); from an existing branch, none checked;
 - blocker/failure details, including the dependency class each block was judged under;
 - recommended user action when needed.
