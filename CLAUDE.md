@@ -48,13 +48,13 @@ evals (`<skill>#<id>`).
    `backlog-orchestrator`, *Arming the wait when nothing is in flight*.
    backlog-orchestrator#58.
 4. **Never request, re-request or remove a human reviewer.** `rules/review-trigger.md`.
-   supervise-prs#33.
+   supervise-prs#33 #74.
 5. **The platform's auto-fix posture is overridden**: only a dispatched `repair-pr`
    repairs; budgets bound every loop, the invoking user's own review rounds aside, which
    spend no `review-repair-cycles`; a spent budget ends in the skill's outcome, never
    another repair push.
    `rules/platform-pr-posture.md`; `supervise-prs`, *Budgets*. supervise-prs#25 #26 #55 #57,
-   backlog-orchestrator#67, repair-pr#16 #17 #18, supervise-prs#61.
+   backlog-orchestrator#67, repair-pr#16 #17 #18, supervise-prs#61 #73.
 6. **A created PR's body is edited only while draft, footered, or under a resolved merge
    opt-in** (`Depends on:` excepted); else drift is reported with a replacement.
    `rules/authored-write-form.md`. settle-and-merge#6 #9, merge-stack#5,

@@ -118,6 +118,8 @@ The reasoning for the rule this section applies — why promotion is never the r
 
 ## Outcomes
 
+**Why *Head moves* and *Review trigger* cite the re-trigger rule rather than restate it (#191):** this skill said to re-trigger after every pass that pushed while the shared rule said to do so only where repository convention required it, and a run reading the rule left repaired PRs unreviewed. The default now lives in `rules/review-trigger.md`, *Re-triggers*, with its reasoning in that rule's notes; this skill keeps only which head moves are this workflow's.
+
 **Why a round owed after someone else's push is surfaced (#144 round 2):** this skill may not re-trigger for a push this workflow did not make, and the reviewer may never act on it; counting that round as outstanding would leave the PR waiting with no end. Surfaced, it is reported with who moved the head and holds the merge, as a refused round does.
 
 **Why `unrepaired` is its own outcome (#144 review):** with `repair dispatch = none` a red check is not a budget exhausted and not a judgement call — nothing was attempted — so `needs-user` would misreport it, and `waiting` would hide that nothing is going to change it. The npm orchestrator reported such a PR and did not escalate it; the outcome says exactly that.
