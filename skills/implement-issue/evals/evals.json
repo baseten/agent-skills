@@ -320,12 +320,12 @@
     },
     {
       "id": 25,
-      "name": "merge-stack-unavailable-passes-no-grant",
+      "name": "merge-stack-unavailable-under-auto-merge-blocks-at-preflight",
       "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). At run start the work repository's policy file resolves `auto-merge: true`, but `merge-stack` is not installed. The docs say nothing about drafts. Question: do you pass core a merge grant, and does the PR open as a draft or ready?",
-      "expected_output": "No grant, so a draft. With `merge-stack` unavailable the gate is unreachable for this run, and a PR the run cannot merge gains nothing from opening ready; the missing required skill is reported. With no grant, create-pr follows the ordinary rule, and a work repository with silent docs defaults to draft.",
+      "expected_output": "BLOCKED at preflight, naming merge-stack. Under a resolved `auto-merge: true` the gate is reachable, so merge-stack is a required skill, and a required skill unavailable returns BLOCKED before any implementation (Required skills). No PR opens, so no merge grant is ever passed and nothing is opened ready.",
       "assertions": [
-        "The answer passes no merge grant because merge-stack is unavailable",
-        "The answer has the PR open as a draft"
+        "The answer returns BLOCKED at preflight naming merge-stack as the missing required skill",
+        "The answer opens no PR and passes no merge grant"
       ],
       "files": []
     }
