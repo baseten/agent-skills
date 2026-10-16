@@ -44,7 +44,7 @@ The test and its reasoning moved to `rules/mechanical-pushes.md` and `rules/mech
 
 ## Why an unlinkable PR stops rather than ships
 
-An implementation PR that cannot be linked to an exact issue would be an orphan the recovery and completion machinery cannot see — restart logic, completion semantics, and coverage reconciliation all key on the linkage. The ad-hoc exception exists only for directly-invoked PRs after the user confirms there is no issue.
+An implementation PR that cannot be linked to an exact issue would be an orphan the recovery and completion machinery cannot see — restart logic, completion semantics, and coverage reconciliation all key on the linkage. The ad-hoc exception exists only after the user confirms there is no issue. A caller may relay that confirmation (Oct 2026, for `implement-issue`'s existing-branch entry, which asks for it when the invocation is silent): what matters is that the user, not a workflow, decided the work has no issue. A workflow that merely lacks an issue URL has no such confirmation and still stops — that is the orphan the rule exists to prevent.
 
 ## Before creating the PR
 

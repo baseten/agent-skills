@@ -50,7 +50,7 @@ Every implementation PR is unambiguously linked to the exact canonical issue URL
 | Linear | preserve the **full Linear issue URL** near the top of the body and follow the workspace's documented linking convention, preserving any recognized identifier in title/body. Never invent GitHub `Closes:` semantics for a Linear issue — completion automation is workspace-specific |
 | other | follow documented integration semantics; with no reliable convention, retain the full canonical URL and report that automatic status transition cannot be guaranteed |
 
-If an implementation PR cannot be linked to an exact issue, **stop** rather than creating an orphan (NOTES). Directly-invoked ad-hoc PRs with no tracked issue are the exception only after the user confirms there is no issue.
+If an implementation PR cannot be linked to an exact issue, **stop** rather than creating an orphan (NOTES). Ad-hoc PRs with no tracked issue are the exception only after the user confirms there is no issue — directly, or through a caller passing that confirmation as the user gave it (`implement-issue`, *Phase 1, from an existing branch*), never a caller's own judgement that there is none.
 
 ## A PR shipping against a coverage finding links but does not close
 

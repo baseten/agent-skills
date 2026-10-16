@@ -31,11 +31,11 @@
       "target": 1500
     },
     "skills/create-pr/SKILL.md": {
-      "budget": 2461,
+      "budget": 2490,
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 4640,
+      "budget": 5110,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
@@ -75,15 +75,19 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 5603,
+      "budget": 5612,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
       "budget": 5660,
       "target": 3000
     },
+    "skills/ship-branch/SKILL.md": {
+      "budget": 287,
+      "target": 3000
+    },
     "skills/summarize-wave/SKILL.md": {
-      "budget": 2207,
+      "budget": 2228,
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {

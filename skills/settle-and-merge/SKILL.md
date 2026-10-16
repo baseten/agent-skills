@@ -17,7 +17,7 @@ This file is the contract; the reasoning and incident history behind its rules l
 
 | input | what the caller passes | where it is absent |
 | --- | --- | --- |
-| **PR set and scope** | the scope the PRs were built for — a manifest, an issue URL — and the PRs to settle, which may be none | no scope: there is nothing to settle against, so return, naming the missing input. **An empty PR set with a scope still settles**: step 2 runs and `summarize-wave` writes its one line, and the walkthrough and gate have nothing to act on |
+| **PR set and scope** | the scope the PRs were built for — a manifest, an issue URL, or the brief of a run with no issue — and the PRs to settle, which may be none | no scope: there is nothing to settle against, so return, naming the missing input. **An empty PR set with a scope still settles**: step 2 runs and `summarize-wave` writes its one line, and the walkthrough and gate have nothing to act on |
 | **findings** | the worker and review findings the run produced | summarize from durable state alone, and say the run's own findings were not passed |
 | **held-reply records** | from `supervise-prs`'s record: every approval-pending reply item, verbatim, which step 4 passes to the walkthrough; and every rejected held reply and mixed-thread fix, which step 7 only lists. Each held reply's outcome from the walkthrough — approved with its write id, or rejected as thread and fix SHA — is returned to the caller for `supervise-prs` to record | none to ask or list; say they were not passed |
 | **posting-identity map** | the run's map (`references/posting-identity.md`) | start from an empty map: every entry is `unestablished`, and writes degrade as that rule states |
