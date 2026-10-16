@@ -777,7 +777,8 @@
       "assertions": [
         "the reconciled push counts one review cycle",
         "the count matches a rebuild from trailers",
-        "the next pass verifies the reconciled head before replying or resolving"
+        "the next pass verifies the reconciled head before replying or resolving",
+        "the reconciled head re-triggers the automated review, as a pass that pushed"
       ],
       "files": []
     },
@@ -935,6 +936,75 @@
         "the answer does not request, re-request or remove @lee"
       ],
       "id": 74,
+      "files": []
+    },
+    {
+      "name": "deferred-ci-waits-for-the-repair-heads-review-round",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #97 resolved `ci-mode: deferred` with effect. The repository's CLAUDE.md and AGENTS.md say nothing about review triggers or re-review. The CI run this skill triggered at quiescence fails on a test attributed to this PR; ci-repair-cycles cap 2, 0 used. A ci repair pass pushes a substantive fix with the skip token and you adopt the head. Does the new head get a review round, and when does CI run again?",
+      "expected_output": "Yes: the push is substantive, so the automated review is re-triggered on it by default — no convention text is needed. That round is owed for the head, so the PR is not quiescent until it arrives or its window elapses; only then is CI triggered once more. CI does not fire before the round.",
+      "assertions": [
+        "the repair head gets a re-triggered automated review round",
+        "CI is not triggered on the repair head before that round arrives or its window elapses",
+        "the answer does not treat the round as not expected because the repository documents no re-review"
+      ],
+      "id": 75,
+      "files": []
+    },
+    {
+      "name": "a-failed-pass-that-pushed-red-is-not-re-triggered",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #98, review-repair-cycles cap 3 with 1 used. A review repair pass ends with local verification still red; as its contract requires it pushes once anyway and returns `FAILED`. Do you re-trigger the automated review on that head? What does the PR's record read?",
+      "expected_output": "No re-trigger: the head is known red and the PR's outcome is `needs-user`, carrying the pass's result, so a review of it would be wasted. The pass pushed, so its cycle is spent: 2 of 3 used.",
+      "assertions": [
+        "the answer does not re-trigger review on the FAILED pass's red head",
+        "the PR's outcome is needs-user",
+        "the FAILED pass that pushed spends its cycle"
+      ],
+      "id": 76,
+      "files": []
+    },
+    {
+      "name": "a-released-head-re-triggers",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #99: a review pass pushed a fix that added a new module; the caller's on-repair-head check held it, so nothing was adopted. The caller now releases the head. The repository documents no re-review rule. What do you count and trigger?",
+      "expected_output": "Adopt the released head as the new head. Its cycle was already counted when the pass pushed, so count nothing more. It is a substantive push this workflow made, so re-trigger the automated review on it.",
+      "assertions": [
+        "the released head is adopted",
+        "no further cycle is counted",
+        "the automated review is re-triggered on the released head"
+      ],
+      "id": 77,
+      "files": []
+    },
+    {
+      "name": "a-substantive-caller-push-re-triggers",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The caller passes a push on PR #100 tagged `substantive`: it re-resolved the lockfile after a sibling merged, changing installed versions. The repository documents no re-review rule. What do you count and trigger?",
+      "expected_output": "Adopt it: no cycle, since it is the caller's push, but it is a substantive push this workflow made, so re-trigger the automated review on it. It is paced by the caller, not by a budget.",
+      "assertions": [
+        "no cycle is counted for the caller push",
+        "the automated review is re-triggered on it"
+      ],
+      "id": 78,
+      "files": []
+    },
+    {
+      "name": "an-owner-round-push-re-triggers",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #101, review-repair-cycles cap 2 with 2 used. The invoking user, who owns the PR, roots a new review thread asking for a rename of a public function. A review pass dispatched for that thread alone pushes the rename. The repository documents no re-review rule. Does the pass spend a cycle, and do you re-trigger the automated review?",
+      "expected_output": "No cycle: the invoking user's own rounds spend no review-repair-cycles, so it is dispatched despite the spent budget. The push is substantive and this workflow made it, so the automated review is re-triggered. The rounds stay bounded because a person paces them.",
+      "assertions": [
+        "the owner-round pass spends no review cycle",
+        "the automated review is re-triggered on its push"
+      ],
+      "id": 79,
+      "files": []
+    },
+    {
+      "name": "ambiguous-or-stale-auto-review-config-means-trigger",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #102 in acme/web. The repository's CLAUDE.md, last edited a year ago, says 'the reviewer usually picks up new pushes'. The reviewer's trigger configuration committed in the repository now lists only `pull_request: opened`. A review pass pushed a substantive fix and you adopted the head. Do you post the trigger?",
+      "expected_output": "Yes. The sources disagree, and the docs say it only loosely, so you cannot tell that the reviewer reviews every push — and cannot tell → trigger. Post the convention's trigger and confirm it took effect.",
+      "assertions": [
+        "the answer posts the review trigger",
+        "the answer treats the loose and conflicting configuration as not establishing review on every push"
+      ],
+      "id": 80,
       "files": []
     }
   ]
