@@ -1099,6 +1099,19 @@
         "the answer does not treat the docs' open-as-draft rule as an explicitly held draft"
       ],
       "files": []
+    },
+    {
+      "id": 85,
+      "name": "a-stays-in-draft-until-docs-rule-is-a-hold",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). At the run's first preflight the repository's `.claude/agent-policy.json` sets `auto-merge: true`. Its AGENTS.md says: 'Dependency PRs stay in draft until platform signs off.' One issue in the wave is a dependency bump. Its PR later has a clean review and green CI, and nothing is outstanding. Questions: (a) what do you report at preflight? (b) does the dependency PR open as a draft or ready? (c) does the gate merge it?",
+      "expected_output": "(a) Report the AGENTS.md rule at preflight, classified: it is not a plain open-as-draft rule but one that a kind of PR stays in draft until something happens, which is a hold. (b) Draft: the merge grant does not override a hold, so its create-pr opens it as a draft. (c) No. It is an explicitly held draft, excluded from the gate however clean its review and CI, never published or merged, and reported as held, awaiting the owner. Other PRs in the wave are unaffected and open ready under the grant.",
+      "assertions": [
+        "the answer classifies the stays-in-draft-until rule as a hold, not an as-created rule",
+        "the answer reports it at preflight",
+        "the answer opens the dependency PR as a draft despite the grant",
+        "the answer never publishes or merges it and reports it as held"
+      ],
+      "files": []
     }
   ]
 }

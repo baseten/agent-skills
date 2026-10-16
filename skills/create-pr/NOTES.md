@@ -66,3 +66,5 @@ run, the body has been drafted and the PR has been created. A direct invocation
 therefore ran the documentation list, created the PR, and only then met the rule
 saying not to — so the rule was unreachable by the path it existed for. A
 derivation that decides what to run belongs where running is decided.
+
+**Why a `ready_for_review`-only required check keeps the draft, and why an unclear docs rule is a hold (#190 blind audit):** opened ready, the PR never publishes, so a required check only a publish starts would never run and the gate could never open; as a draft, the merge path's publish fires it. A docs rule that a PR stays in draft until something happens is a person's decision to hold it, which no merge grant overrides, and a rule that cannot be classified is read as the hold because publishing a PR someone meant to keep back cannot be undone, while holding one costs only the owner's time.

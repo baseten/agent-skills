@@ -192,6 +192,18 @@
         "The answer does not open it ready without a merge grant"
       ],
       "files": []
+    },
+    {
+      "id": 15,
+      "name": "a-ready-for-review-only-required-check-keeps-the-draft",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue-core invokes you for https://github.com/acme/web/issues/330 and passes a merge grant: the repository resolved `auto-merge: true`. On the base, `.github/workflows/a11y.yml` triggers on `pull_request` with `types: [ready_for_review]` only and produces `a11y`, which branch protection requires. No other workflow produces it. The docs say nothing about drafts. Questions: (a) draft or ready? (b) how does `a11y` ever run before the merge?",
+      "expected_output": "(a) Draft. A merge grant opens the PR ready only where no required check comes solely from a `ready_for_review` trigger, read from the base's workflow files with `types` as part of the trigger. Opened ready, this PR would never be published and `a11y` would never run, so the gate could never open. Report the as-created state as draft and why. (b) When the gate's other conditions pass, the merge path publishes the draft, which fires `a11y`; the check is owed after the publish, and the merge waits for it to pass on the current head.",
+      "assertions": [
+        "The answer opens the PR as a draft despite the merge grant",
+        "The answer reads the trigger, including `types`, from the base's workflow files",
+        "The answer has the merge path's publish fire the check, with the merge waiting for it"
+      ],
+      "files": []
     }
   ]
 }

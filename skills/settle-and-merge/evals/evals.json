@@ -298,7 +298,7 @@
     {
       "id": 25,
       "name": "a-ready-for-review-workflow-gates-only-on-the-checks-it-starts",
-      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). At step 6 the gate is evaluated for PR-13, a draft nobody has ever marked ready, in a repository that opted into auto-merge. Its automated review is clean on its current head, and every required check has passed there except `e2e`, which has never run. `.github/workflows/e2e.yml`, on both the base and the head, triggers on `pull_request` with `types: [ready_for_review]` only, and branch protection requires `e2e`. The policy file does not set `publish-triggers-review`, and the docs say nothing about publishing. Question: what does the merge path do, what does the merge wait for, and is the review re-requested?",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). At step 6 the gate is evaluated for PR-13, a draft nobody has ever marked ready, in a repository that opted into auto-merge; create-pr opened it as a draft because the required check below comes only from a `ready_for_review` trigger. Its automated review is clean on its current head, and every required check has passed there except `e2e`, which has never run. `.github/workflows/e2e.yml`, on both the base and the head, triggers on `pull_request` with `types: [ready_for_review]` only, and branch protection requires `e2e`. The policy file does not set `publish-triggers-review`, and the docs say nothing about publishing. Question: what does the merge path do, what does the merge wait for, and is the review re-requested?",
       "expected_output": "The workflow file is the repository's own configuration saying publishing starts something, so it counts, read from the base and the head as path filters are read. Only the checks that event starts gate the merge: `e2e` is owed after the publish, not before it, so it does not hold the publish. The merge path publishes PR-13, and the merge waits on a later delivered pass, never inline, for `e2e` to conclude successfully on the current head, read by the gate's CI condition like any other run. Nothing else is awaited: the clean review on the unchanged head still satisfies the review condition and is not re-requested, and no reviewer is requested.",
       "assertions": [
         "The answer publishes PR-13 rather than holding it for the never-run `e2e` check",
@@ -331,6 +331,30 @@
         "The answer classifies it as an explicitly held draft because it is a draft that has been ready",
         "The answer reads the transition from the forge timeline rather than the rebuilt record",
         "The answer reports it as held, awaiting the owner"
+      ],
+      "files": []
+    },
+    {
+      "id": 28,
+      "name": "a-ready-for-review-only-check-missing-after-a-push-is-held",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR-16 was opened as a draft in an auto-merge repository because its required check `e2e` comes only from `.github/workflows/e2e.yml`, which triggers on `pull_request` with `types: [ready_for_review]`. The merge path published it, `e2e` passed on head `5d2c9e1`, and before the merge a repair pass pushed `b81f04a`. The review is clean on `b81f04a` and every other required check is green there; `e2e` has no run on `b81f04a`. Question: does PR-16 merge, and do you wait for `e2e`?",
+      "expected_output": "No, and no. `types` is part of the trigger: that workflow runs on a publish and never on a push, so no `e2e` run is coming for `b81f04a`. It is not filtered off and not satisfied by the earlier run on `5d2c9e1`, which attaches to another commit. It is missing CI: report it, naming the `ready_for_review` trigger, and hold the PR, failing closed rather than waiting on a status that never arrives. The remedy, a workflow or protection change or the owner's own action, is the owner's.",
+      "assertions": [
+        "The answer does not merge PR-16",
+        "The answer does not satisfy `e2e` with the run on the earlier head",
+        "The answer reports `e2e` as missing CI, naming the ready_for_review trigger, rather than waiting on it"
+      ],
+      "files": []
+    },
+    {
+      "id": 29,
+      "name": "a-workflow-outweighs-a-doc-saying-publishing-starts-nothing",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). At step 6 the gate is evaluated for PR-17, a draft in an auto-merge repository. Its review is clean on its current head. The base's AGENTS.md says 'Marking a PR ready triggers nothing; merge on the existing review.' The base's `.github/workflows/smoke.yml` triggers on `pull_request` with `types: [ready_for_review]` and produces `smoke`, which branch protection requires. The policy file does not set `publish-triggers-review`. Question: is publishing inert here?",
+      "expected_output": "No. Docs count only as evidence that a publish starts something; a doc saying it starts nothing never outweighs a workflow file that shows it does, and the workflow is what actually runs. So the publish starts `smoke`: the merge path publishes PR-17, and the merge waits on a later delivered pass, never inline, for `smoke` on the current head. The clean review stands and is not re-requested.",
+      "assertions": [
+        "The answer lets the workflow file win over the AGENTS.md statement",
+        "The answer makes the merge wait for `smoke` on the current head",
+        "The answer does not re-request the clean review"
       ],
       "files": []
     }
