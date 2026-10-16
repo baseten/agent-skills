@@ -367,6 +367,17 @@
         "The answer does not trigger a review before the confirmation window has elapsed"
       ],
       "files": []
+    },
+    {
+      "id": 31,
+      "name": "unproven-dependency-view-seeds-a-walkthrough-decision",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue settles one PR opened from an existing branch. Its repository resolved `auto-merge: true`; CI is green and review clean on the current head; the dependency-view input is `unproven: no dependency read made`, discharge: the owner answering for the view. `auto-request-settle` is on and the owner is present. summarize-wave's summary has no DECISION items. Question: what do you pass the walkthrough, and does the PR merge at step 6 if the owner answers that the view is complete?",
+      "expected_output": "Step 4 seeds settle-outstanding-decisions with a DECISION naming the unproven boundary and asking the owner to answer for the view, since the repository opted into auto-merge and nothing upstream raises it. The owner's recorded answer retires the dependency-view hold; with every other condition met, the gate passes at step 6 and the PR merges through merge-stack. Without that answer, the PR does not merge.",
+      "assertions": [
+        "The answer passes the walkthrough a DECISION for the unproven dependency view, though the summary had none",
+        "The answer merges only on the owner's recorded answer for the view, never on green CI and clean review alone"
+      ],
+      "files": []
     }
   ]
 }

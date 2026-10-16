@@ -38,6 +38,14 @@ Seven Codex review rounds on [PR #27](https://github.com/baseten/agent-skills/pu
 | 14 | Posting identity for the merge's own authored writes | **Supplied** — *Merge behavior* passes the run's map to `merge-stack` and merges the per-kind observations it returns; the publish flip and any other authored write are covered by *Posting identity*'s general rule, which the skills defer to rather than restating | **Supplied by a different mechanism** — the *Merge* section's closing paragraph does the same for its one invocation |
 | 15 | Tracker reconciliation after a merge | **Supplied** — "reconcile tracker completion after every merge, gate-authorized ones included", under *Completion semantics*' whole-issue proviso; a coverage-finding PR's `Part of:` linkage (verified at creation) keeps a degraded merge from closing its issue | **Supplied by a different mechanism** — "reconcile tracker completion, then return the merge with the gate conditions it passed on"; the same linkage-form verification arrives through `implement-issue-core` → `create-pr` |
 
+### implement-issue's existing-branch entry (Oct 2026)
+
+Not a new consumer — `implement-issue` still evaluates the gate — but three rows change supplier when it enters from an existing branch (*Phase 1, from an existing branch*), so the column was walked again. Every other row is supplied as for `implement-issue`.
+
+- **Row 2** — supplied as before, with the scope being the brief, recorded in the PR body's `Source:` line, where there is no issue.
+- **Row 12** — core never runs, so the view is unproven by construction. The discharge is the owner's answer, and `settle-and-merge` step 4 now seeds the walkthrough with that `DECISION`; before, nothing raised it, a gap latent in core's unproven case too.
+- **Row 15** — no tracker to reconcile where there is no issue.
+
 ## Findings and their fixes
 
 Three cells came back **not supplied at all**. All three are fixed in the change this document ships with.

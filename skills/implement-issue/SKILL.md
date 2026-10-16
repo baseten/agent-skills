@@ -1,11 +1,11 @@
 ---
 name: implement-issue
-description: Single-issue orchestrator for one tracked issue from its canonical full URL. Composes implement-issue-core for issue→code→checks→durable PR, then supervises the PR through supervise-prs, with bounded repair-pr passes, until it is healthy, merged where its repository opted into auto-merge, blocked, or needs user input. Budgets and review/merge policy come from the repository's .claude/agent-policy.json. Useful standalone and as a one-issue workflow.
+description: Single-issue orchestrator for one tracked issue from its canonical full URL — or for work already committed to a branch that has no PR, from an issue or a brief. Composes implement-issue-core for issue→code→checks→durable PR (create-pr alone, for an existing branch), then supervises the PR through supervise-prs, with bounded repair-pr passes, until it is healthy, merged where its repository opted into auto-merge, blocked, or needs user input. Budgets and review/merge policy come from the repository's .claude/agent-policy.json. Useful standalone and as a one-issue workflow.
 ---
 
 # Implement Issue
 
-Orchestrate exactly one tracked issue end-to-end: implement it to a durable PR, supervise that PR's CI and review through `supervise-prs`, repair within budgets, and merge only through invariant 12's gate (`settle-and-merge`, *The merge gate*) where the repository opted in.
+Orchestrate exactly one tracked issue end-to-end: implement it to a durable PR, supervise that PR's CI and review through `supervise-prs`, repair within budgets, and merge only through invariant 12's gate (`settle-and-merge`, *The merge gate*) where the repository opted in. Given an **existing branch** instead, *Phase 1, from an existing branch* replaces implementation and every later phase runs as written.
 
 This file is the contract. The reasoning behind each rule — incident history, arguments, and answers to "why not the obvious other reading?" — lives in `NOTES.md` beside it, keyed by these section names. Read a section's note before changing its rules or when applying them to a case the contract does not obviously cover. NOTES.md explains; it never overrides.
 
@@ -27,7 +27,8 @@ This file is the contract. The reasoning behind each rule — incident history, 
 - Invoking this skill authorizes implementation and PR creation for the supplied issue, unless the user says otherwise.
 - It authorizes a merge **only** where the PR's own repository opted in via `auto-merge` in `.claude/agent-policy.json`. The key is shared with `backlog-orchestrator` deliberately — scoped to invariant 12's gate, not to the skill evaluating it — so a config predating this skill grants it too (NOTES).
 - An invocation argument or caller can narrow `auto-merge`, never widen it, as `references/agent-policy.md`, *Precedence*, rules for every key it lists. Without the opt-in this skill merges nothing; everything else stays the user's separate `merge-stack` authorization.
-- The issue's **full URL is canonical identity** everywhere. Short keys are display only, never durable state.
+- On an existing branch, invoking it authorizes pushing that branch as it stands and opening its PR — never rewriting its history.
+- The issue's **full URL is canonical identity** everywhere. Short keys are display only, never durable state. With no issue, the brief stands in for it (*Phase 1, from an existing branch*).
 
 ## Policy and budgets
 
@@ -67,16 +68,33 @@ On a terminal outcome (`BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`)
 - **Report disagreements by kind, with direction:** a *visibility* disagreement (a source named an edge another lacked) means the transport may be partial — name the edge and the sources, and say the run's dependency view is unproven, never a generic mismatch line. An *availability* disagreement in the obsolete-constraint direction (caller asserted unmet; worker found it available) names the dependency and that the block rests on the caller's assertion — standalone, that caller is usually the user, the only one who can retire it.
 - Strongest-model retry of implementation belongs to the surrounding session, never to this skill — no unbounded model-escalation loop. The bounded repair escalation below is a separate per-PR mechanism.
 
+# Phase 1, from an existing branch
+
+Where the invocation names an **existing branch** — work already committed, no PR yet — this replaces Phase 1. An issue URL is optional; with none, the **brief** — the work's source as the user gave it, a Slack permalink or their prose, verbatim — stands in for it wherever a later phase names the issue.
+
+**Preflight, before anything is pushed or opened.** Return `NEEDS_USER` naming what failed — opening nothing and settling nothing — unless all hold:
+
+- it is not the default branch, and has commits its base lacks — the base the invocation names, otherwise the default branch;
+- no open PR has it as head. **Adopting an existing PR is not this entry's**: its spent counters are not 0;
+- no tracked file has uncommitted changes: they are not the work, and this run neither commits nor discards them;
+- it is not behind or diverged from its remote branch. Ahead, or never pushed → push it; never force-push.
+
+Where the invocation names neither an issue URL nor that there is none, ask once: the answer is the confirmation `create-pr` requires before an issue-less PR (*Tracker-specific issue linkage*).
+
+**Then invoke `create-pr`** with the existing branch, the issue URL — or that confirmation and the brief — and the base, merge grant and held-draft preference Phase 1 would pass core. Pass no gate record: it derives the required checks and runs them itself (*Before creating the PR*). **Pass no `ci-mode`**: the branch is pushed as it stands, so its opening head carries no skip token, and under `deferred` the run that opening starts is that head's trigger (`supervise-prs`, *Deferred CI*, step 3). On success record what Phase 1 records on `PR_OPEN`, and the routed documentation review's result `create-pr` returned; implementation attempts `not applicable`. **The brief's durable home is the PR body's `Source:` line** (`create-pr`, *PR description template*): a later settle, or a resumed run, reads it there. A stop is `NEEDS_USER` with its reason, and settles as a Phase 1 terminal outcome does.
+
+**No dependency read is made**, issue or not — core never ran — so the view is unproven by construction (Merge). Where `auto-merge` resolved `true`, say so at run start: the PR merges only once the owner answers for that view.
+
 # Phase 2 — single-issue PR supervision
 
 **This skill supervises its one PR through `supervise-prs`, and lets that skill run its own loop** — there is no parent here to own one, so arming the subscription and the bounded check-in is that loop's job (NOTES) until a `PR_OPEN`, after which this skill keeps the watch (Completion). Invoke it with:
 
-- **PR set**: the one PR, with its repository, branch/base, remote head and the canonical issue URL — adopted on the first pass, which issues any owed trigger and arms the subscription at once;
+- **PR set**: the one PR, with its repository, branch/base, remote head and the canonical issue URL where there is one, otherwise the brief — adopted on the first pass, which issues any owed trigger and arms the subscription at once;
 - **budgets**: `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles` and `repair-model-escalations`, as *Policy and budgets* resolved them, each with its source;
-- **`auto-resolve-comments`**, **`ci-mode`** and **`review-defer-severity`**: as *Policy and budgets* resolved them, with their source — the last with the issue's parent, or the issue itself where it has none, as its follow-up site;
+- **`auto-resolve-comments`**, **`ci-mode`** and **`review-defer-severity`**: as *Policy and budgets* resolved them, with their source — the last with the issue's parent, or the issue itself where it has none, as its follow-up site — with no issue there is no site, so it is `off` for this PR, reported;
 - **counters**: 0 on a fresh run, since this run created the PR; on any later invocation, the counters in `supervise-prs`'s last returned record;
-- **posting-identity map**: the run's map, every entry core returned included; **merge** the map it returns into the run's, never replace it;
-- **review routing and trigger state**: as core's `create-pr` left them;
+- **posting-identity map**: the run's map, every entry core — or, from an existing branch, `create-pr` — returned included; **merge** the map it returns into the run's, never replace it;
+- **review routing and trigger state**: as `create-pr` left them;
 - **repair dispatch**: `direct`; **head checks**: none;
 - **wait owner**: `self` until the first `PR_OPEN`, `caller` after it (Completion); **monitoring cap**: 8 hours where persistent monitoring is supported, none otherwise — it bounds this active loop, never the post-settle watch; **return on**: `any-terminal`, `every-pass` after `PR_OPEN`; **state emission**: `every-pass`;
 - **findings to repair**: none now — Settle hands one in when it un-settles (below).
@@ -98,15 +116,15 @@ Keep the PR's policy line beside that skill's record: `Policy: budgets <source>;
 
 # Settle
 
-The run settles when its one issue reaches a terminal state: the PR `finished` as `supervise-prs`, *Outcomes*, defines it — what that definition counts as surfaced holds the merge gate and never the settlement or a terminal outcome: `BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`. With one issue in scope nothing waits behind its PR, so no settle here is partial. **Every terminal outcome settles, including one Phase 1 returned before supervision began** (NOTES: the failure outcomes carry the most decision-shaped material; the empty case gets `summarize-wave`'s one line). Then run `settle-and-merge`, *The settle sequence*, over this one PR, passing it every input its *Inputs* names, as this skill supplies them:
+The run settles when its one issue reaches a terminal state: the PR `finished` as `supervise-prs`, *Outcomes*, defines it — what that definition counts as surfaced holds the merge gate and never the settlement or a terminal outcome: `BLOCKED` / `BLOCKED_EXTERNAL` / `FAILED` / `NEEDS_USER`. With one issue in scope nothing waits behind its PR, so no settle here is partial. **Every terminal outcome settles, including one Phase 1 returned before supervision began** (NOTES: the failure outcomes carry the most decision-shaped material; the empty case gets `summarize-wave`'s one line) — bar an existing-branch preflight stop, which precedes the run (*Phase 1, from an existing branch*). Then run `settle-and-merge`, *The settle sequence*, over this one PR, passing it every input its *Inputs* names, as this skill supplies them:
 
-- **PR set and scope**: scope, the canonical issue URL; PR set, its one PR — or none, where Phase 1 returned before creating one;
+- **PR set and scope**: scope, the canonical issue URL, or the brief; PR set, its one PR — or none, where Phase 1 returned before creating one;
 - **findings**: the worker and review findings the run produced;
 - **held-reply records**: the approval-pending, rejected and mixed-thread records `supervise-prs`'s record holds; pass the held-reply outcomes `settle-and-merge` returns to `supervise-prs` as its *held-reply outcomes* input;
 - **posting-identity map**: the run's map;
 - **resolved policy**: `auto-merge`, `publish-triggers-review`, `auto-request-settle` and `ci-mode`, resolved for its one PR (Policy and budgets);
 - **ranking**: `caller translates` — nothing is ranked, since one PR has no ordering to rank. This skill runs the ruling translation below over the rulings handed back at its step 5 and passes back the translated action points;
-- **dependency view**: the value core's completeness report gives — proven, or unproven on the named boundary with the discharge Merge describes;
+- **dependency view**: the value core's completeness report gives — proven, or unproven on the named boundary with the discharge Merge describes; from an existing branch, unproven, no dependency read made;
 - **freshness checks**: none apply — this skill runs no integration check and has no authority to update a branch, so the stale-green re-check and the tool-bump rule do not apply, and `settle-and-merge` returns no refresh owed: `supervise-prs`'s *refresh owed* input is always passed empty here;
 - **outstanding recovery refs**: none — this skill captures nothing, so `swarm`'s generic lifecycle decides;
 - **un-settling**: nothing to pass; on a hand-back, Un-settling below governs, with the re-entry rule;
@@ -115,7 +133,7 @@ The run settles when its one issue reaches a terminal state: the PR `finished` a
 Its steps, in order, as this skill reads them:
 
 1. **reconcile** tracker and remote state — everything after computes from durable truth, not this session's cache — and the PR body against its diff, whether or not `repair-pr` flagged drift: whether the body may be edited is that skill's *Merge behavior* (its step 1);
-2. **invoke `summarize-wave`** (canonical issue URL, this PR, the worker and review findings) and **act on its action points before anything below** (its steps 2–3). A one-issue run is a wave of one; nothing in that skill reads differently at this size;
+2. **invoke `summarize-wave`** (the scope, this PR, the worker and review findings) and **act on its action points before anything below** (its steps 2–3). A one-issue run is a wave of one; nothing in that skill reads differently at this size;
 3. **request `settle-outstanding-decisions`**, seeded with the summary and passed the run's posting-identity map, unless `auto-request-settle` resolved off — and **merge every identity entry it returns into the map, all of them** (`references/posting-identity.md`): a ruling can be the first authored write through a transport this run never used, and step 4's merge reads the map. The option gates only the request; attendance is that skill's own precondition — an unattended settle gets its one-line decline, and the decisions stay at their durable sites (its step 4);
 4. **translate rulings into gate consequences** (below) when its step 5 hands them back, passing back the translated action points, then evaluate the merge gate where the repository opted in (its step 6; see Merge);
 5. **return** — the summary and action points first, then the rulings or the decline (its step 7).
@@ -150,6 +168,7 @@ Where the repository opted in through `auto-merge`, evaluate **invariant 12's ga
 - core reported completeness **unproven**, on any boundary → the condition holds the gate exactly as a `MERGE_RISK`. The PR does not merge; return naming the boundary and the discharge.
 - The discharge must answer for the **whole view**: a re-run whose dependency transport can read the graph and prove the boundary, or the owner explicitly answering for the view itself — a decision-shaped hold the walkthrough can put to them and record, the recorded ruling retiring the hold as any translated constraint, never opening the gate. NOT: one confirmed edge — a targeted answer proves no omissions, and the known-true-case proof needs a working transport (`implement-issue-core`, *Back the completeness of the set*).
 - NOT: routing the hold through `summarize-wave`'s classification — its bar treats the caveat as reportable, not as a mandatory `MERGE_RISK` (NOTES).
+- **from an existing branch** → unproven, held as above; only the owner answering for the view discharges it — the `DECISION` `settle-and-merge` seeds the walkthrough with (its step 4) — since no re-run of this entry reads a graph.
 - A **proven** view discharges the condition; nothing to hold.
 
 **Evidence on the current head.** The gate reads review and CI evidence on the PR's current head, and a draft→ready transition — the owner's at any moment, or the merge path's own — changes no head, so it invalidates neither. What a publish starts, and what the gate then waits for, is `settle-and-merge`, *Merge behavior*, which governs every publish; re-read the forge's draft state before the gate:
@@ -160,7 +179,7 @@ Where the repository opted in through `auto-merge`, evaluate **invariant 12's ga
 - a re-review that finds something: the PR is not clean, does not merge, and takes the ordinary repair path as a ready PR;
 - an **explicitly held draft** reaches none of this: excluded from the gate outright — neither published nor merged, reported as held.
 
-**Executing the merge** follows `settle-and-merge`, *Merge behavior*, which scopes the gate's `merge-stack` authorization to exactly this PR. A merge ends supervision: reconcile tracker completion, then return the merge with the gate conditions it passed on.
+**Executing the merge** follows `settle-and-merge`, *Merge behavior*, which scopes the gate's `merge-stack` authorization to exactly this PR. A merge ends supervision: reconcile tracker completion where there is an issue, then return the merge with the gate conditions it passed on.
 
 # Completion
 
@@ -177,10 +196,10 @@ This is a status report, so what it says a PR, a thread or a check *is now* need
 
 Return:
 
-- canonical issue URL; tracker; repository;
+- canonical issue URL and tracker, or the brief and `none`; whether the run entered from an existing branch; repository;
 - outcome: `PR_OPEN` | `MERGED` | `BLOCKED` | `BLOCKED_EXTERNAL` | `FAILED` | `NEEDS_USER`;
 - branch/base; PR URL/number; remote head SHA;
-- issue linkage verified, and the form emitted — closing keyword, or non-closing `Part of:` because a coverage finding was reported;
+- issue linkage verified, and the form emitted — closing keyword, non-closing `Part of:` because a coverage finding was reported, or none, with no issue;
 - **any design finding core returned in place of a re-siting**, forwarded whole — the value, the objecting call sites and where it belongs; a caller that does not carry it is the only reader it would have had;
 - implementation attempts used, and **`supervise-prs`'s report for the PR** (`supervise-prs`, *Report*) — review rounds and CI, review and finding repair cycles against their caps, strongest-model rounds with the locus evidence for each, every review thread reserved for the owner per item kind and every approval-pending reply, final CI and review state, and draft state as created and current with any transition observed and who performed it (a ready-to-draft transition is never this run's);
 - **the supervision's provenance**: that the platform's PR posture was overridden, on the authority of this invocation as the user's instruction; what woke the run — subscription events by kind, the check-in, or both; the current check-in's id and next firing time, or that none is armed and why; **on `PR_OPEN`, that the watch is still armed, what wakes it — a human review or comment, a merge or close — and that telling the run to stop ends it**; and the toggle line for the PR — turned on by this run's subscription at a time and unsubscribed at a time, or still subscribed and why — never a claim that unsubscribing turned it off, and, where that effect is unknown, the instruction to switch it off by hand;
@@ -190,7 +209,7 @@ Return:
 - the `summarize-wave` summary and action points, and the `settle-outstanding-decisions` report — rulings recorded, its one-line decline, or that `auto-request-settle` was off;
 - the run's **full posting-identity map** — every entry observed by core, each repair pass, the walkthrough, and a gate-authorized `merge-stack` invocation, under its `(transport, credential)` key; carry all entries, `unestablished` where no authored write was read back (NOTES: why nothing may be collapsed);
 - whether the blocker set's completeness was backed or left unproven, and on what boundary;
-- the routed documentation review's result, exactly as core reported it — round, status, and any findings with their evidence. It reaches `summarize-wave` through this line and nowhere else, and **no routed review** is a different state from **a routed review that found nothing**;
-- dependencies checked and any source disagreements, exactly as core reported them — including on `PR_OPEN` (NOTES);
+- the routed documentation review's result, exactly as core — or, from an existing branch, `create-pr` — reported it — round, status, and any findings with their evidence. It reaches `summarize-wave` through this line and nowhere else, and **no routed review** is a different state from **a routed review that found nothing**;
+- dependencies checked and any source disagreements, exactly as core reported them — including on `PR_OPEN` (NOTES); from an existing branch, none checked;
 - blocker/failure details, including the dependency class each block was judged under;
 - recommended user action when needed.

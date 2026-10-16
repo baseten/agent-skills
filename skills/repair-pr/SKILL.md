@@ -11,7 +11,7 @@ This file is the contract; the reasoning behind its rules lives in `NOTES.md` be
 
 ## Inputs
 
-- PR URL; canonical issue URL; repository; dedicated checkout/worktree for the PR branch;
+- PR URL; canonical issue URL where there is one; repository; dedicated checkout/worktree for the PR branch;
 - repair type: `ci`, `review` or `finding`;
 - the evidence matching the type, and evidence means the artifact rather than its absence (`references/absence-is-not-a-verdict.md`): exact failure logs/check summaries for `ci`; review thread(s) for `review`, each marked where its root is one the caller's own review session posted (`references/review-feedback.md`, *The thread-root test*), passed through to `resolve-pr-comment`; for `finding`, the settle-time finding verbatim — a `summarize-wave` `IN_FLIGHT_FIX` action point, or a recorded walkthrough ruling that requires this PR's code to change — with the durable site it lives at;
 - remaining repair-cycle budget;
@@ -89,7 +89,7 @@ Never widen into other action points or findings the caller did not supply, and 
 
 Return:
 
-- PR URL; canonical issue URL; repair type;
+- PR URL; canonical issue URL where there is one; repair type;
 - outcome: `REPAIRED` | `NO_CODE_CHANGE` | `FAILED` | `NEEDS_USER`;
 - branch/base; old head SHA; new remote head SHA if changed; a supplied base refresh, made or returned unmade, with why;
 - repair cycle consumed: yes/no;
