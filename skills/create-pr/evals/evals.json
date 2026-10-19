@@ -247,6 +247,17 @@
         "The answer stops on the second, treating a caller's own judgement as no confirmation"
       ],
       "files": []
+    },
+    {
+      "id": 20,
+      "name": "issue-less-pr-carries-source-and-keeps-the-existing-branch-name",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue, from its existing-branch entry, invokes you on the pushed branch `toast-fix` with the user's own confirmation that there is no issue and the brief `https://acme.slack.com/archives/C9/p456`. The repository's CLAUDE.md documents a branch convention `<user>/<ticket>-<slug>`. Question: what branch does the PR open from, and what linkage or scope lines does the body carry?",
+      "expected_output": "The PR opens from `toast-fix` unchanged: an existing branch a caller passes is preserved whatever the convention, since it is already pushed. The body carries no closing keyword or invented issue link, no Chartered scope line (no issue), and a one-line `Source:` with the Slack permalink as a required line.",
+      "assertions": [
+        "The answer opens the PR from `toast-fix` without renaming or recreating the branch",
+        "The answer puts a `Source:` line with the permalink in the body, and no issue linkage or Chartered scope line"
+      ],
+      "files": []
     }
   ]
 }

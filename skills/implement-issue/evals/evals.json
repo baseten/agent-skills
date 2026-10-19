@@ -364,6 +364,29 @@
         "In (B) the answer asks once whether there is an issue before opening the PR, rather than opening an issue-less PR or refusing"
       ],
       "files": []
+    },
+    {
+      "id": 29,
+      "name": "existing-branch-under-deferred-ci-pushes-no-skip-token",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The user asks you to take their existing branch `perf-cache` (clean tree, pushed, ahead of the default branch, no open PR, issue URL supplied) through the supervised process. The repository's policy file resolves `ci-mode: deferred` (with effect in the repository) and `auto-merge: true`. The branch's head commit message has no `[skip ci]`. Question: what do you pass create-pr, do you add or amend any commit before the PR opens, what happens to CI when it opens, and what do you tell the user at run start?",
+      "expected_output": "Pass create-pr the branch, issue URL, base and the merge grant, but no ci-mode. Do not add or amend any commit: the branch is pushed as it stands and never rewritten. Opening the PR starts one CI run on the untokened head, and supervise-prs counts that existing run as the head's deferred-CI trigger, so it never triggers again for that head. At run start say that, because no dependency read is made, the PR merges only once the owner answers for the dependency view.",
+      "assertions": [
+        "The answer passes create-pr no ci-mode and adds or amends no commit to carry a skip token",
+        "The answer treats the CI run started by opening as that head's deferred-CI trigger rather than triggering again",
+        "The answer tells the user at run start that auto-merge waits on the owner answering for the dependency view"
+      ],
+      "files": []
+    },
+    {
+      "id": 30,
+      "name": "issue-less-resettle-reads-scope-from-the-source-line",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A run opened an issue-less PR from an existing branch last week and returned PR_OPEN with its watch armed. Now the post-settle check-in fires in a fresh session: a colleague's review arrived and the PR's supervise-prs pass repaired it, so it is `finished` again. The session holds the PR URL and the Phase 2 inputs from the check-in prompt, but no copy of the original brief. The PR body has the line `Source: https://acme.slack.com/archives/C1/p789`. Question: do you settle again, and what scope do you pass settle-and-merge?",
+      "expected_output": "Settle again from step 1. The scope is the brief, read from the PR body's `Source:` line (its durable home), not refused for want of an issue URL or reconstructed from memory: pass the Slack permalink as the scope to settle-and-merge and summarize-wave.",
+      "assertions": [
+        "The answer settles again rather than stopping for a missing scope",
+        "The answer passes the permalink read from the PR body's `Source:` line as the scope"
+      ],
+      "files": []
     }
   ]
 }
