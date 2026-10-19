@@ -54,11 +54,11 @@
       "id": 4,
       "name": "missing-base-and-missing-issue-stop",
       "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two sub-scenarios. (A) An orchestrator supplied required base branch 'feat/parent-work', but it does not exist in the repository. (B) A workflow (not a direct user) invokes you for an implementation PR but can supply no issue URL at all — the work has no tracked issue. Question: for each, do you create the PR, and if not, what do you do instead?",
-      "expected_output": "(A) Stop — a supplied base that does not exist is never silently replaced with the default branch. (B) Stop — an implementation PR that cannot be linked to an exact issue is not created; the ad-hoc exception exists only for directly-invoked PRs after the USER confirms there is no issue, which a workflow invocation is not.",
+      "expected_output": "(A) Stop — a supplied base that does not exist is never silently replaced with the default branch. (B) Stop — an implementation PR that cannot be linked to an exact issue is not created; the ad-hoc exception needs the USER's confirmation that there is no issue — given directly, or relayed by a caller that obtained it — and a workflow that merely lacks an issue URL has none.",
       "assertions": [
         "For (A) the answer stops and does not fall back to the default branch",
         "For (B) the answer does not create an orphan implementation PR from a workflow invocation",
-        "The answer scopes the no-issue exception to direct user invocation with explicit user confirmation, which does not apply here"
+        "The answer scopes the no-issue exception to explicit user confirmation (direct, or relayed by the caller as the user gave it), which does not apply here"
       ],
       "files": []
     },
@@ -234,6 +234,28 @@
       "expected_output": "Draft, held: the rule can be read neither as a plain open-as-draft rule nor as a clear stays-in-draft-until rule, and a docs draft rule that cannot be told apart is a hold. Never published or merged; reported.",
       "assertions": [
         "The answer treats the unclassifiable rule as a hold and opens a draft"
+      ],
+      "files": []
+    },
+    {
+      "id": 19,
+      "name": "relayed-user-confirmation-allows-issue-less-pr",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue, running its existing-branch entry, invokes you on a pushed branch with no issue URL. It passes the user's own words from this run: 'no ticket, it came from a Slack thread'. Separately, in another run, a workflow invokes you with no issue URL and passes only its own note: 'probably no issue for this'. Question: do you create each PR, and with what linkage?",
+      "expected_output": "The first: yes — the user's confirmation that there is no issue, relayed as they gave it, satisfies the ad-hoc exception; the PR carries no closing keyword or invented linkage, and the output reports there is no issue. The second: stop — a caller's own judgement is not the user's confirmation, so it is an orphan.",
+      "assertions": [
+        "The answer creates the first PR on the relayed user confirmation, with no invented issue linkage",
+        "The answer stops on the second, treating a caller's own judgement as no confirmation"
+      ],
+      "files": []
+    },
+    {
+      "id": 20,
+      "name": "issue-less-pr-carries-source-and-keeps-the-existing-branch-name",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue, from its existing-branch entry, invokes you on the pushed branch `toast-fix` with the user's own confirmation that there is no issue and the brief `https://acme.slack.com/archives/C9/p456`. The repository's CLAUDE.md documents a branch convention `<user>/<ticket>-<slug>`. Question: what branch does the PR open from, and what linkage or scope lines does the body carry?",
+      "expected_output": "The PR opens from `toast-fix` unchanged: an existing branch a caller passes is preserved whatever the convention, since it is already pushed. The body carries no closing keyword or invented issue link, no Chartered scope line (no issue), and a one-line `Source:` with the Slack permalink as a required line.",
+      "assertions": [
+        "The answer opens the PR from `toast-fix` without renaming or recreating the branch",
+        "The answer puts a `Source:` line with the permalink in the body, and no issue linkage or Chartered scope line"
       ],
       "files": []
     }

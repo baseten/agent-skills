@@ -1,0 +1,32 @@
+{
+  "skill_name": "ship-branch",
+  "description": "Decision-scenario regression evals; assertions check decisions, not wording. Run against any rewrite of SKILL.md before merging it.",
+  "companions": [
+    "implement-issue"
+  ],
+  "evals": [
+    {
+      "id": 0,
+      "name": "delegates-to-implement-issue-existing-branch-entry",
+      "prompt": "You are executing the ship-branch skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given; its companion implement-issue is beside it). The user, on branch `fix-csv-export` with two pushed commits and no PR, says: 'ship this — context is in this Slack thread <permalink>, no ticket'. Question: what do you invoke, with what inputs, and what do you do about supervising CI and review yourself?",
+      "expected_output": "Invoke implement-issue with the existing branch fix-csv-export, no base (default branch), the Slack permalink as the brief, and that the user said there is no issue. This skill supervises nothing itself: implement-issue's existing-branch entry opens the PR with create-pr and runs supervision, settle and the merge gate. Return its structured result unchanged.",
+      "assertions": [
+        "The answer invokes implement-issue with the branch as an existing branch and the permalink as the brief",
+        "The answer passes that the user said there is no issue",
+        "The answer does not run supervision, settle or merge steps itself outside implement-issue"
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "existing-pr-is-not-shipped-here",
+      "prompt": "You are executing the ship-branch skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given; its companion implement-issue is beside it). The user asks you to ship branch `feat-y`. It already has an open PR with review threads. Question: what happens, and where does the user go to have that PR supervised?",
+      "expected_output": "implement-issue's existing-branch preflight refuses a branch that already has an open PR (NEEDS_USER, nothing adopted); ship-branch does not adopt it either. supervise-prs can supervise an existing PR, but repairs nothing unless resolved budgets are passed, and no skill here resolves them for an existing PR — so it is not offered as an equivalent route.",
+      "assertions": [
+        "The answer does not adopt or supervise the existing PR through this skill",
+        "The answer does not present bare supervise-prs as an equivalent supervised route, noting it repairs nothing without passed budgets"
+      ],
+      "files": []
+    }
+  ]
+}

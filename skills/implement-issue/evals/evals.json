@@ -328,6 +328,65 @@
         "The answer opens no PR and passes no merge grant"
       ],
       "files": []
+    },
+    {
+      "id": 26,
+      "name": "existing-branch-no-issue-auto-merge-holds-on-dependency-view",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The user says: 'ship my branch `fix-toast-timeout` — it's from a Slack thread, there's no issue: <Slack permalink>'. The branch is pushed, three commits ahead of the default branch, no open PR has it as head, and the working tree is clean. The repository's policy file resolves `auto-merge: true`, `merge-stack` is installed, and the docs say nothing about drafts. Later, CI goes green and review is clean on the current head with no outstanding decision. Question: what do you invoke to open the PR, does it open ready or draft, what scope does settle run against, and does the PR merge without anything further from the user?",
+      "expected_output": "Phase 1 from an existing branch replaces implementation: no implement-issue-core; create-pr is invoked with the user's no-issue confirmation (given in the invocation, so not asked again) and the merge grant, so it opens ready. Settle's scope and summarize-wave's scope are the brief (the Slack permalink). No dependency read was made, so the dependency view is unproven and the gate holds the PR as a MERGE_RISK would; it does not merge until the owner answers for the view, despite green CI and clean review.",
+      "assertions": [
+        "The answer opens the PR with create-pr, not implement-issue-core",
+        "The answer opens the PR ready because auto-merge resolved true",
+        "The answer uses the brief (the Slack permalink) as the scope in place of an issue URL",
+        "The answer does not merge the PR on green CI and clean review alone: the unproven dependency view holds the gate until the owner answers for it"
+      ],
+      "files": []
+    },
+    {
+      "id": 27,
+      "name": "existing-branch-with-open-pr-is-refused-not-adopted",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The user asks you to take their branch `feat-x`, which already has work committed, through the supervised PR process. You find an open PR whose head is `feat-x`, with two review threads from a colleague and one CI repair already pushed. Question: do you supervise that PR, and with what counters?",
+      "expected_output": "Neither: the existing-branch preflight fails because an open PR already has the branch as head. Adopting an existing PR is not this entry's — its counters are not 0 — so the run returns NEEDS_USER naming the PR, opening nothing and settling nothing.",
+      "assertions": [
+        "The answer does not supervise or adopt the existing PR under this entry",
+        "The answer returns NEEDS_USER at preflight naming the open PR, with nothing opened or settled"
+      ],
+      "files": []
+    },
+    {
+      "id": 28,
+      "name": "existing-branch-dirty-tree-or-missing-issue-confirmation",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two sub-scenarios, each from an existing branch with commits ahead of the default branch and no open PR. (A) `git status` shows a modified tracked file and an untracked `.idea/` directory; the user named an issue URL. (B) The tree is clean except for an untracked `.idea/`; the user said only 'put this branch through the PR process', naming no issue and not saying there is none. Question: in each, what do you do before opening a PR?",
+      "expected_output": "(A) Return NEEDS_USER at preflight naming the modified tracked file: uncommitted tracked changes are not the work and the run neither commits nor discards them; the untracked .idea/ alone would not stop it. Nothing is pushed or opened. (B) Preflight passes (untracked files do not count); ask once whether there is an issue — the answer is create-pr's no-issue confirmation or supplies the URL — before invoking create-pr.",
+      "assertions": [
+        "In (A) the answer stops with NEEDS_USER before pushing or opening anything, and neither commits nor discards the change",
+        "In (A) the answer attributes the stop to the modified tracked file, not to the untracked directory",
+        "In (B) the answer asks once whether there is an issue before opening the PR, rather than opening an issue-less PR or refusing"
+      ],
+      "files": []
+    },
+    {
+      "id": 29,
+      "name": "existing-branch-under-deferred-ci-pushes-no-skip-token",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The user asks you to take their existing branch `perf-cache` (clean tree, pushed, ahead of the default branch, no open PR, issue URL supplied) through the supervised process. The repository's policy file resolves `ci-mode: deferred` (with effect in the repository) and `auto-merge: true`. The branch's head commit message has no `[skip ci]`. Question: what do you pass create-pr, do you add or amend any commit before the PR opens, what happens to CI when it opens, and what do you tell the user at run start?",
+      "expected_output": "Pass create-pr the branch, issue URL, base and the merge grant, but no ci-mode. Do not add or amend any commit: the branch is pushed as it stands and never rewritten. Opening the PR starts one CI run on the untokened head, and supervise-prs counts that existing run as the head's deferred-CI trigger, so it never triggers again for that head. At run start say that, because no dependency read is made, the PR merges only once the owner answers for the dependency view.",
+      "assertions": [
+        "The answer passes create-pr no ci-mode and adds or amends no commit to carry a skip token",
+        "The answer treats the CI run started by opening as that head's deferred-CI trigger rather than triggering again",
+        "The answer tells the user at run start that auto-merge waits on the owner answering for the dependency view"
+      ],
+      "files": []
+    },
+    {
+      "id": 30,
+      "name": "issue-less-resettle-reads-scope-from-the-source-line",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A run opened an issue-less PR from an existing branch last week and returned PR_OPEN with its watch armed. Now the post-settle check-in fires in a fresh session: a colleague's review arrived and the PR's supervise-prs pass repaired it, so it is `finished` again. The session holds the PR URL and the Phase 2 inputs from the check-in prompt, but no copy of the original brief. The PR body has the line `Source: https://acme.slack.com/archives/C1/p789`. Question: do you settle again, and what scope do you pass settle-and-merge?",
+      "expected_output": "Settle again from step 1. The scope is the brief, read from the PR body's `Source:` line (its durable home), not refused for want of an issue URL or reconstructed from memory: pass the Slack permalink as the scope to settle-and-merge and summarize-wave.",
+      "assertions": [
+        "The answer settles again rather than stopping for a missing scope",
+        "The answer passes the permalink read from the PR body's `Source:` line as the scope"
+      ],
+      "files": []
     }
   ]
 }

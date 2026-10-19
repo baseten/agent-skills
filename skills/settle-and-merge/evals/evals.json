@@ -367,6 +367,28 @@
         "The answer does not trigger a review before the confirmation window has elapsed"
       ],
       "files": []
+    },
+    {
+      "id": 31,
+      "name": "unproven-dependency-view-seeds-a-walkthrough-decision",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue settles one PR opened from an existing branch. Its repository resolved `auto-merge: true`; CI is green and review clean on the current head; the dependency-view input is `unproven: no dependency read made`, discharge: the owner answering for the view. `auto-request-settle` is on and the owner is present. summarize-wave's summary has no DECISION items. Question: what do you pass the walkthrough, and does the PR merge at step 6 if the owner answers that the view is complete?",
+      "expected_output": "Step 4 seeds settle-outstanding-decisions with a DECISION naming the unproven boundary and asking the owner to answer for the view, since the repository opted into auto-merge and nothing upstream raises it. The owner's recorded answer retires the dependency-view hold; with every other condition met, the gate passes at step 6 and the PR merges through merge-stack. Without that answer, the PR does not merge.",
+      "assertions": [
+        "The answer passes the walkthrough a DECISION for the unproven dependency view, though the summary had none",
+        "The answer merges only on the owner's recorded answer for the view, never on green CI and clean review alone"
+      ],
+      "files": []
+    },
+    {
+      "id": 32,
+      "name": "unproven-dependency-view-without-auto-merge-asks-nothing",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). backlog-orchestrator settles a wave of three PRs. The run's dependency transport was unavailable, so each PR's dependency-view input is `unproven: dependency transport unavailable`, discharge: the owner answering for the view. The repository's resolved policy has `auto-merge: false`. `auto-request-settle` is on and the owner is present. The summary carries one DECISION about a naming choice. Question: what does step 4 pass the walkthrough, and does anything merge?",
+      "expected_output": "Step 4 passes the summary (with its one naming DECISION), the posting-identity map and any approval-pending held replies — and no dependency-view DECISION: seeding is only for PRs whose repository opted into auto-merge, and with auto-merge off no gate is evaluated, so the question would answer nothing. Nothing merges; step 6 evaluates no gate for these PRs.",
+      "assertions": [
+        "The answer does not add a dependency-view DECISION to the walkthrough, because auto-merge is off",
+        "The answer merges nothing"
+      ],
+      "files": []
     }
   ]
 }
