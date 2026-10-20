@@ -59,6 +59,8 @@ So the rule is conditional on a capture path existing, and it carries the fallba
 
 **Why this rule names the posting-identity and review-feedback rules path-neutrally (#168):** it names them to say which rule owns a neighbouring question — authorship, and the thread-root discriminator — not because a skill applying this rule must apply either to do so. Cited as `references/…` paths, each was copied into every skill carrying this one. Five of those — `normalize-github-dependencies`, `review-skill`, `summarize-wave`, `upgrade-npm-dependency`, `validate-backlog` — make authored forge writes and had reached the posting-identity rule only through this one. Posting identity is a protected rule (repository `CLAUDE.md`, *Protected rules*), so the owner ruled on #168 that no skill making an authored write may lose it: each of the five now declares it and cites it where it writes. A skill must reach the posting-identity rule by its own citation at its write, not through this rule's scope sentence. The restructure in the same change moved the reasons below out of the rule; the entries above already held the rest.
 
+**Why a tracker issue a write names is a link (#195):** orchestrator writes kept naming an issue as a bare identifier ("this belongs in ENG-123"), and every reader then had to look it up. A forge auto-links `#123` only inside its own repository, so a PR or issue named anywhere else needs the link as well.
+
 ## A PR body
 
 **Also moved from the rule (#168):** most PR bodies come in far under the 300-word ceiling; and a capture is the only part of a body the diff cannot supply, which is why it is asked for wherever the repository provides a way.
