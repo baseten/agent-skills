@@ -259,7 +259,8 @@ python3 scripts/check_word_budgets.py                # no contract outgrows its 
 python3 scripts/test_check_word_budgets.py           # and each of that check's guards can fail
 bash skills/swarm/scripts/test-checkpoint-capture.sh
 bash scripts/test_bootstrap_stamp.sh
-shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh scripts/test_bootstrap_stamp.sh
+bash scripts/test_bootstrap_instructions.sh
+shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh scripts/test_bootstrap_stamp.sh scripts/test_bootstrap_instructions.sh
 bash scripts/eval_reminder.sh origin/main
 ```
 
