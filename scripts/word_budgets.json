@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 24560,
+      "budget": 24623,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -19,7 +19,7 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/integration-branch.md": {
-      "budget": 2307,
+      "budget": 2331,
       "target": 1500
     },
     "skills/backlog-orchestrator/restart-resume.md": {
@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/create-pr/SKILL.md": {
-      "budget": 2543,
+      "budget": 2551,
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
@@ -39,7 +39,7 @@
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
-      "budget": 5143,
+      "budget": 5182,
       "target": 3000
     },
     "skills/merge-stack/SKILL.md": {
@@ -91,7 +91,7 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 7872,
+      "budget": 8039,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
@@ -127,7 +127,7 @@
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
-      "budget": 1626,
+      "budget": 1637,
       "target": 1500
     },
     "rules/ci-attribution.md": {
@@ -139,7 +139,7 @@
       "target": 1500
     },
     "rules/establish-do-not-assume.md": {
-      "budget": 1531,
+      "budget": 1571,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {

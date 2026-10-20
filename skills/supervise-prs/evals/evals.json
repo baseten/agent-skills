@@ -1006,6 +1006,55 @@
       ],
       "id": 80,
       "files": []
+    },
+    {
+      "id": 81,
+      "name": "a-worker-gate-record-at-the-head-is-not-re-run",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #41 in acme/api targets `integration/api-3`; its `ci-mode` resolved `integration-branch` from repo config, the caller established the mode's effect, and passed the per-PR local gate (format, lint, typecheck, the API unit suite; Postgres 16, Python 3.12). The caller also passed #41's worker gate record: the gate report its implementing worker returned, every one of those four checks `passed` at head a1b2c3d. #41's remote head is a1b2c3d, no CI run exists on it, a review round on a1b2c3d completed clean, and the PR is quiescent. Repair dispatch is `direct`, and this container runs the API suite in about 11 minutes. Questions: (a) what does the gate run on a1b2c3d run? (b) what is #41's local gate record, and who does it name as having run each check? (c) the caller's restack then pushes a1b2c3d's content onto the moved integration branch as e5f6a7b, tagged mechanical: what runs?",
+      "expected_output": "(a) Nothing: the worker gate record is the record for every check it reports passed at the current head, and a pass is never re-run to confirm it; the gate run runs only checks the record leaves, and it leaves none. (b) All four passed at a1b2c3d, each with the worker's session as the one that ran it. (c) Nothing: the record carries across a mechanical push, so e5f6a7b is covered without a new run.",
+      "assertions": [
+        "the answer runs none of the four checks on a1b2c3d, including the API suite",
+        "the answer records each check as passed at a1b2c3d with the worker's session as the runner",
+        "the answer runs nothing after the mechanical restack"
+      ],
+      "files": []
+    },
+    {
+      "id": 82,
+      "name": "a-worker-gate-record-covers-only-its-passes-at-a-current-head",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #42 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite. The caller passed #42's worker gate record from its implementing worker: format `passed` at b2c3d4e; lint `passed` at 9f8e7d6; typecheck `failed` at b2c3d4e; the API unit suite is absent from the report. #42's remote head is b2c3d4e; the one commit from 9f8e7d6 to b2c3d4e changes application code. No CI run exists on b2c3d4e and the PR is quiescent. Questions: (a) which checks does the gate run on b2c3d4e run, and which does it not? (b) is the worker's `failed` typecheck a CI failure to repair now?",
+      "expected_output": "(a) It runs lint (passed at an earlier head with a substantive push since), typecheck (reported other than passed) and the API unit suite (omitted, so not run, never passed); it does not run format, which passed at the current head. (b) No: only a pass is taken from the worker's record; typecheck is run by the gate, and only a failure in that run is a CI failure.",
+      "assertions": [
+        "the answer does not re-run format",
+        "the answer runs lint because its pass is at an earlier head with a substantive push since",
+        "the answer runs the omitted API unit suite and never treats it as passed",
+        "the answer runs typecheck in the gate rather than repairing on the worker's failed outcome"
+      ],
+      "files": []
+    },
+    {
+      "id": 83,
+      "name": "a-repair-pass-verification-is-not-the-gate-record",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #43 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite. A `ci` repair pass pushed head c3d4e5f carrying `[skip ci]` and returned that it ran the API unit tests for the module it changed, all passing, on c3d4e5f. No worker gate record exists for c3d4e5f. The PR is now quiescent on it. Question: what does the gate run on c3d4e5f run?",
+      "expected_output": "The whole per-PR gate — format, lint, typecheck and the API unit suite. A repair pass's verification is not the record: it runs the smallest relevant check, not the tier.",
+      "assertions": [
+        "the answer runs the full per-PR gate on c3d4e5f",
+        "the answer does not accept the repair pass's own verification as the record"
+      ],
+      "files": []
+    },
+    {
+      "id": 84,
+      "name": "a-worker-pass-counts-only-under-the-callers-toolchain",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #45 in acme/web targets `integration/web-2` under `ci-mode: integration-branch` with effect. The caller passed the per-PR local gate — lint, typecheck, the unit suite, and the browser suite — with the toolchain CI runs (Node 24, Chrome 155), and passed the end-to-end suite as `not locally runnable` (no session has its database). It also passed #45's worker gate record, all at #45's current head f6a7b8c: lint, typecheck and the unit suite `passed` under Node 24; the browser suite `passed` under Node 24 with Playwright's bundled Chromium; the end-to-end suite `passed`. The PR is quiescent and nothing has been pushed since. Questions: (a) which checks does the gate run on f6a7b8c run? (b) how is the end-to-end suite recorded? (c) if repair dispatch were `none`, what would #45's outcome be, and what would it be had every check been passed under Chrome 155 and the end-to-end suite been reported `not locally runnable`?",
+      "expected_output": "(a) Only the browser suite: its pass was under another toolchain than the one the caller passed, so the record leaves it; lint, typecheck and the unit suite stand as passed and are not re-run. (b) `not locally runnable`, owed by the integration PR's CI — a worker's pass never makes a check the caller passed as not locally runnable a pass. (c) With checks left to run, `unrepaired`, naming the browser suite; with none left, no gate run is needed and `none` does not make it unrepaired.",
+      "assertions": [
+        "the answer runs the browser suite because the worker's pass was on a different browser than the caller's toolchain",
+        "the answer does not re-run lint, typecheck or the unit suite",
+        "the answer keeps the end-to-end suite as not locally runnable despite the worker's pass",
+        "the answer makes the outcome under none unrepaired only where checks are left to run"
+      ],
+      "files": []
     }
   ]
 }

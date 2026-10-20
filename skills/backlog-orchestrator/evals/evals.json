@@ -1112,6 +1112,18 @@
         "the answer never publishes or merges it and reports it as held"
       ],
       "files": []
+    },
+    {
+      "id": 86,
+      "name": "a-worker-gate-report-reaches-supervise-prs-under-an-integration-branch",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: acme/api resolved `ci-mode: integration-branch` with effect; the run's branch is `integration/api-3` and its per-PR tier is format, lint, typecheck and the API unit suite. Workers run on a tier whose return values reach this run. Worker W7 returns PR #44 into `integration/api-3` with a gate report listing all four checks `passed` at #44's pushed head d4e5f6a. This container has four cores and one Postgres, and the API unit suite takes it 8-13 minutes. Questions: (a) do you accept the return? (b) what, about #44's checks, do you pass to supervise-prs? (c) will the API unit suite be run again on d4e5f6a before #44 can merge into the integration branch?",
+      "expected_output": "(a) Yes: the gate report carries every derived check. (b) Besides the per-PR tier as the local gate, #44's worker gate record: the gate report W7 returned, each check passed at d4e5f6a. (c) No: for a PR into the integration branch, which runs no CI, the report's passes are the evidence, and supervise-prs's local gate runs only checks the record leaves — none here. The full tier at the integration branch's checkpoint and the integration PR's CI are the backstop.",
+      "assertions": [
+        "the answer passes W7's gate report to supervise-prs as #44's worker gate record",
+        "the answer does not re-run the API unit suite on d4e5f6a",
+        "the answer names the full-tier checkpoint or the integration PR's CI as what catches a false pass"
+      ],
+      "files": []
     }
   ]
 }
