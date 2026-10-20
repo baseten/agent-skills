@@ -1017,7 +1017,7 @@
     },
     {
       "name": "integration-branch-preflight-records-pull-request-filter",
-      "prompt": "First preflight for acme/api, whose `.claude/agent-policy.json` sets `ci-mode: integration-branch`. All five preconditions in integration-branch.md hold. `ci.yml` triggers on `push: branches: [main]` and on a bare `pull_request:` with no branch filter. What does the preflight record and report about the pull_request trigger, does anything hold dispatch, and do worker pushes to issue PRs carry the skip token?",
+      "prompt": "First preflight for acme/api, whose `.claude/agent-policy.json` sets `ci-mode: integration-branch`. All six preconditions in integration-branch.md hold. `ci.yml` triggers on `push: branches: [main]` and on a bare `pull_request:` with no branch filter. What does the preflight record and report about the pull_request trigger, does anything hold dispatch, and do worker pushes to issue PRs carry the skip token?",
       "expected_output": "The pull_request trigger does not exclude the run's integration branch, so the preflight records that, and nothing holds dispatch on it. Worker, repair and caller pushes to PRs into the integration branch carry the skip token. The CI-cost audit reports the unfiltered pull_request trigger and proposes a `branches: [main]` filter (or a branches-ignore for the prefix), noting that it would drop the token from every PR into the branch.",
       "assertions": [
         "The unfiltered pull_request trigger does not hold dispatch.",
@@ -1110,6 +1110,47 @@
         "the answer reports it at preflight",
         "the answer opens the dependency PR as a draft despite the grant",
         "the answer never publishes or merges it and reports it as held"
+      ],
+      "files": []
+    },
+    {
+      "id": 86,
+      "name": "remote-workers-in-flight-arm-the-check-in-at-dispatch",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the run dispatched four implementation workers as Claude Code Remote sessions (swarm tier 2) at 09:00. No PR is open yet and nothing has settled. At 09:25 one worker stops on a permission prompt; `get_session` would show `status_bucket: BLOCKED` and `pending_action.tool_name` reading `Bash(pnpm install --frozen-lockfile)`. Questions: (a) at 09:00, after dispatching, what wake do you arm, and at what interval — and does it double when firings find nothing? (b) when is the block surfaced, how is it named, and do you restart or redispatch that worker? (c) is this check-in a second watch beside the one you arm at settle? (d) by 11:00 the other three workers have returned and their PRs are open; the blocked worker is still held — what interval does the next check-in use?",
+      "expected_output": "(a) A worker on the remote tier never delivers its completion or its block to the run, so the native wait has no event source: the run arms its scheduled check-in at dispatch, at 20 minutes, the wake budget's first step, held rather than doubled while such a worker is working; the unproductive-wake count and budget still apply. (b) On the first firing after the block (by about 09:40), which runs the loop's next cycle — pulling reports, reading each remote head, reading blocked state and the session list. It is raised as NEEDS_USER naming the task, the session's URL and the literal pending tool string `Bash(pnpm install --frozen-lockfile)`, and the worker is held for the owner, never restarted or redispatched on the run's authority. (c) No: it is the run's one check-in, armed early; at settle the same check-in continues under the ordinary backoff. (d) No worker is working any more — the one left is held and waits on a person — so the ordinary backoff resumes at the step the unproductive count gives.",
+      "assertions": [
+        "the answer arms a scheduled check-in at dispatch because remote-session completions and blocks do not reach the run",
+        "the interval is 20 minutes and is held, not doubled, while a remote worker is working, with the unproductive-wake budget still binding",
+        "the block surfaces on the next firing, within one interval, named with the literal pending tool string and the session's URL",
+        "the permission-blocked worker is held for the owner and not restarted or redispatched",
+        "the in-flight check-in is the run's one check-in, not a second watch",
+        "once the only remote worker left is held for the owner, the check-in returns to the doubling backoff"
+      ],
+      "files": []
+    },
+    {
+      "id": 87,
+      "name": "check-ins-are-one-shot-and-re-armed-with-latest-state",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: remote workers are in flight. A teammate proposes arming a single recurring trigger every 20 minutes whose prompt is today's 08:00 state block — 'it saves re-arming each time'. Question: is that acceptable, and what do you arm instead? Does the answer differ once the run has settled?",
+      "expected_output": "No. Every check-in is one-shot and each firing arms the next with a prompt written then, carrying the consecutive-unproductive count and the latest durable state (the in-flight sessions with their last observed heads, the PR set and per-PR state, open items and the run's write ids, the release step and the posture line). A recurring trigger fires the prompt it was armed with, so it carries state from hours earlier and a count that never rises, and the budget never binds. The same holds after settle.",
+      "assertions": [
+        "the answer rejects the recurring trigger with a fixed prompt",
+        "each firing re-arms a one-shot check-in whose prompt carries the latest state and the unproductive count",
+        "the answer gives the reason: a fixed prompt carries stale state and a count that never rises",
+        "the answer applies the same rule to settled and in-flight check-ins"
+      ],
+      "files": []
+    },
+    {
+      "id": 88,
+      "name": "integration-preflight-pushes-while-owner-present",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: first preflight for acme/print with `ci-mode: integration-branch`; preflight items 1 to 5 hold and the run's branch `integration/acme-print-12` does not exist yet. The owner is at the keyboard. Questions: (a) what does the preflight do about the branch before any dispatch, and why now? (b) the fast-forward push stops on a permission prompt — what do you report? (c) the owner declines to allow it — what happens to dispatch into acme/print?",
+      "expected_output": "(a) It establishes that the session may push to the run's branch by making a creation and an update push, the two kinds the run makes before deleting it: create the branch at the first parent of the default branch's head, then fast-forward it to that head, adding no commit of its own. It does so at preflight because the owner is likeliest present then, mid-run nobody is, and the run may not work around a platform-owned permission prompt. (b) The prompt at once, naming the literal tool string and the command it stopped, so the owner can allow it for the run rather than once. (c) The item is missing, so dispatch into that repository is held with a NEEDS_USER naming that push, with options to dispatch once it is allowed (the pushes repeated and passing first) or to run under per-pr for this run; only an owner reply choosing one releases it.",
+      "assertions": [
+        "the preflight creates the branch and fast-forwards it, a creation and an update push, with no commit of its own",
+        "the reason given is that the owner is present at preflight and absent mid-run, and the run may not work around a permission prompt",
+        "the permission prompt is reported with its literal tool string and the command",
+        "a refused push holds dispatch into the repository with options to dispatch once allowed or to use per-pr"
       ],
       "files": []
     }

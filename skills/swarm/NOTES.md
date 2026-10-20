@@ -48,6 +48,10 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 **Why escalation keys on something an earlier attempt wrote:** that is the signal the previous attempt was shallow and the root was never understood, and it is the one place model strength is the binding constraint rather than one variable among several. An escalated attempt still consumes its retry, or escalating becomes a way to buy extra attempts.
 
+## Supervision: one watcher, and it is the parent
+
+**Why tier 2 states a cadence (owner feedback, Oct 2026):** a permission-blocked remote worker went undetected for three and a half hours because nothing woke the parent while workers were in flight — *Blocked workers* and the stalled-head thresholds were read every cycle, and no cycle ran. The cadence and its bound are the *wake budget* rule's (`rules/wake-budget-notes.md`); this paragraph puts it at the decision point that reads the thresholds. The #66 ruling below stands: the fix is detection, not recovery. Invoked directly, swarm carries no copy of that rule, so its eight-wake budget does not bind there; the end condition stated in place — every worker returned, held, or two hours unmoved — is the bound, which keeps protected rule 9.
+
 ## Countermanding the worker's ambient supervision posture
 
 **Why the countermand is needed at all (moved from the contract in #157):** prompt literalism cuts both ways. A prompt that omits a required default gets a worker that skips it; a prompt that omits a required *contradiction* gets a worker that follows whatever its own session told it. The ambient instruction arrives with the runtime rather than from any skill the run dispatches, and it is correct for the sessions it was written for. It appears in none of the worker skills, so searching them for the behaviour finds nothing that could be causing it — the dispatch prompt is the only place in the system that sees both instructions at once, and the gap is delegation, not duration. One watcher, held by the layer that owns supervision: two parties watching the same thing is not redundancy, it is each assuming the other will act.

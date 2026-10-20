@@ -26,7 +26,7 @@ The `SKILL.md` files are dense and not easily human readable. That is deliberate
 - `rules/ci-attribution.md` — whether a red check is the PR's own failure: per check, an environment hypothesis confirmed before it counts (the default branch or unrelated branches failing the same job), expected-red after a producer merge in another repository, and a narrowing signature read rather than retried.
 - `rules/watch-and-read.md` — when a supervising run arms the watch on what it tracks (on adoption, followed by a reconciling read), the no-change preflight that stops it reporting quiet over something nothing was listening to, and when it reads, within allowances that belong to the credential rather than the run.
 - `rules/platform-pr-posture.md` — invoking a supervising skill is the user's instruction that overrides the drive-to-green posture a platform attaches to a PR-activity subscription: what the override reaches and what it leaves standing, every wake answered by the skill's own cycle, the watch ended with the run, and what the run tells the user.
-- `rules/wake-budget.md` — the subscription and bounded check-in a run with nothing in flight arms: one unproductive-wake budget, a backoff from 20 minutes to 4 hours (with a slower, shorter schedule for a watch kept past a settled result), what counts as a delta, and the report when a watch stops.
+- `rules/wake-budget.md` — the subscription and bounded one-shot check-in a run arms when nothing in flight will wake it: one unproductive-wake budget, a backoff from 20 minutes to 4 hours (held at 20 minutes while a remote worker is working — in flight and not held for the owner — with a slower, shorter schedule for a watch kept past a settled result), what counts as a delta, and the report when a watch stops.
 
 The posting-identity, agent-policy and review-feedback rules were extracted from `backlog-orchestrator` in #134, for the same reason: standalone skills such as `create-pr`, `merge-stack` and `resolve-pr-comment` applied them by pointing into an orchestrator they never run under. `rules/draft-state.md` followed in #138, so that `settle-and-merge`'s gate and `implement-issue` stopped pointing up into it for the held-draft definition. `rules/repair-rounds.md` (from `backlog-orchestrator`) and `rules/mechanical-pushes.md` (from `create-pr`) followed in #140, so that `implement-issue` and `review-docs` stopped pointing up into a skill they never run under, or that invokes them. `rules/review-trigger.md` (from `create-pr`) followed in #142, because the orchestrators and `implement-issue` issue triggers under it too, `npm-dependency-upgrade-orchestrator` on PRs that never pass through `create-pr`. The verdict, attribution, watch and wake rules followed in #144, with the snapshot rule added to `rules/establish-do-not-assume.md` and trigger confirmation to `rules/review-trigger.md`: `swarm`, `settle-and-merge`, `repair-pr` and `review-docs` pointed into `backlog-orchestrator`, or held a second copy, for rules that PR supervision applies wherever it runs.
 
@@ -554,8 +554,9 @@ named tool that stopped, not a default.
   tool that looks allowlisted is the symptom; check the literal server segment
   in the pending tool name before assuming the entry is wrong.
 - **Scheduled wakes have two implementations.** `backlog-orchestrator` arms a
-  check-in when a run settles and disarms it once every PR is merged or closed
-  (see Arming the wait when nothing is in flight), and `implement-issue` keeps one
+  check-in when a run settles, or earlier while a remote worker is in flight, and
+  disarms it once every PR is merged or closed and no worker is in flight (see Arming the wait when nothing
+  is in flight), and `implement-issue` keeps one
   armed after `PR_OPEN` (its *Completion*). Depending on the session that
   is either the Claude Code Remote trigger tools (`create_trigger`,
   `list_triggers`, `delete_trigger`, `send_later`) or the built-in Routines tools

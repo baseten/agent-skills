@@ -305,6 +305,19 @@
         "the pass's commits are left for its own end-of-pass push"
       ],
       "files": []
+    },
+    {
+      "id": 27,
+      "name": "tier-2-parent-runs-a-cycle-every-twenty-minutes",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: invoked directly, you dispatched three tasks as remote worker sessions (tier 2) and have nothing else to wait on. Questions: (a) what wakes you to read their state, and how often? (b) two workers returned; the third reads WORKING but its remote head has not moved for two and a half hours — when does the watch end, and what do you return?",
+      "expected_output": "(a) Nothing arrives on its own: a tier-2 worker's report is pulled and a permission prompt raises no event, so the parent runs its cycle every 20 minutes while one is in flight, as a one-shot check-in each firing re-arms with the latest state, never a recurring trigger with a fixed prompt, reading blocked state and the remote heads against Checkpoint compliance's elapsed-time thresholds. (b) The worker was reported at 30 minutes unmoved and raised NEEDS_USER at two hours; with every worker still in flight past two hours unmoved, the watch ends and returns the restartable checkpoint naming that session as alive, with its URL and last observed head.",
+      "assertions": [
+        "the answer schedules its own cycle every 20 minutes while a tier-2 worker is in flight, because completions and blocks are not delivered",
+        "each firing re-arms a one-shot check-in carrying the latest state",
+        "the stalled worker is NEEDS_USER at two hours",
+        "the watch ends once every worker still in flight has gone two hours unmoved, returning a restartable checkpoint naming the session as alive"
+      ],
+      "files": []
     }
   ],
   "companions": []

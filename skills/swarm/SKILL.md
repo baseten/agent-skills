@@ -179,6 +179,19 @@ the queue needs. *Releasing a worker* defines the act per tier and the test.
 Release is driven by the session list, not the run's memory, and belongs in the
 prompt the run writes for its own check-in, since that survives compaction.
 
+**On tier 2 nothing wakes the parent when a worker finishes or blocks**: its
+report is pulled (*How a worker's report actually reaches you*), and a permission
+prompt raises no event. So while one is working — in flight and not held — the
+parent runs its cycle every 20 minutes, the interval the *wake budget* shared
+rule holds for it, on the caller's bounded check-in where it has one
+(`backlog-orchestrator`, *Arming the wait when nothing is in flight*), so
+*Blocked workers* and Checkpoint compliance's elapsed-time thresholds are read
+within one interval. Each firing arms the next as a one-shot carrying the latest
+state, never a recurring trigger with a fixed prompt. Invoked directly, it ends
+once every worker has returned, is held — watched then as *Blocked workers*' last
+rule bounds it — or has gone two hours with its remote head unmoved, with the
+restartable checkpoint that rule describes.
+
 **Arm the watch when the task enters the tracked set, not when the run settles;
 pass the no-change preflight before reporting any no-change result; and read on
 a change signal, within the credential's allowances.**
@@ -270,7 +283,8 @@ not the worker's failure** and does not spend that task's lost-worker budget.
 workers* is a backstop and the release reconciliation reads the runtime's session
 list (*Runtime*; `backlog-orchestrator`'s supervision loop step 11). A quiet
 session list is not proof the countermand held (`runtime-remote.md`). The parent
-arming its own subscription and check-in when a run settles (`backlog-orchestrator`,
+arming its own subscription and check-in when a run settles, or from a tier-2
+worker's dispatch (`backlog-orchestrator`,
 *Arming the wait when nothing is in flight*) is this same ownership, not an
 exception to it.
 
