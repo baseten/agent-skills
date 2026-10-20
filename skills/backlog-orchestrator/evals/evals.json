@@ -1112,6 +1112,19 @@
         "the answer never publishes or merges it and reports it as held"
       ],
       "files": []
+    },
+    {
+      "id": 86,
+      "name": "the-per-pr-tier-is-filtered-as-ci-filters-it",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). acme/mono resolves `ci-mode: integration-branch`. CI on `main`: `format.yml` (no filters) produces required `format`; `ci.yml`'s `pull_request` trigger has `paths: ['packages/**', 'apps/**', 'package.json', 'pnpm-lock.yaml']` and produces required `lint`, `typecheck` and `test` (a `turbo run test --filter=...[origin/main]` step selects affected packages). You are deriving the gate at preflight. Questions: (a) at preflight, which checks of the per-PR tier do you run on `main`'s head to establish a session can run it? (b) for a worker whose change edits only `docs/adr/0007.md`, what does its per-PR gate run? (c) for a worker changing `packages/core/src/a.ts`, are `lint` and `typecheck` narrowed to `packages/core`?",
+      "expected_output": "(a) All of them, unfiltered: the preflight gates no change, it establishes that a session can run each check, so a filter over an empty change would skip everything and prove nothing. (b) Only `format`: `lint`, `typecheck` and `test` come from a workflow CI would not run for a docs-only change, so they are recorded `filtered off`, failing closed where a filter cannot be read. (c) No: format, lint and typecheck run as CI's commands run them, not narrowed to the touched package; only the unit and component suites are narrowed to the affected packages by the change-set tooling.",
+      "assertions": [
+        "at preflight the answer runs the per-PR tier unfiltered",
+        "for the docs-only change the answer runs only format and records the rest filtered off",
+        "the answer does not narrow lint and typecheck to the touched package",
+        "the answer narrows the test suites by the repository's change-set tooling"
+      ],
+      "files": []
     }
   ]
 }

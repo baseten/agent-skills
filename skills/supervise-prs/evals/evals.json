@@ -1006,6 +1006,19 @@
       ],
       "id": 80,
       "files": []
+    },
+    {
+      "id": 81,
+      "name": "an-integration-branch-gate-run-records-a-filtered-off-check",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #31 in acme/web targets `integration/web-9`; ci-mode integration-branch has effect. The caller passed the per-PR tier: `lint / format`, `lint / eslint`, `ci / typecheck`, `ci / unit`. On the default branch `.github/workflows/ci.yml` has a `pull_request` trigger with `paths-ignore: ['**/*.md', 'docs/**']`; `.github/workflows/lint.yml` has no path filters. PR #31's head changes only `docs/setup.md` and `README.md` and touches no workflow file; it is quiescent and has no gate record. Questions: (a) which checks does the gate run execute, and what is recorded for the others? (b) given format and eslint pass, is the PR's CI condition green?",
+      "expected_output": "(a) It runs `lint / format` and `lint / eslint`. Every changed file matches `ci.yml`'s `paths-ignore`, so `ci / typecheck` and `ci / unit` are what CI would not run for this change: they are recorded `filtered off`, naming the workflow and filter, and not run — by the test `implement-issue-core`, *Final local verification*, states. (b) Yes: the record's green excludes `filtered off` checks, which are neither passed nor owed by this PR; whether CI owed them is read on the integration PR's CI, over the batch's files, by *Path filters*.",
+      "assertions": [
+        "the answer runs only lint / format and lint / eslint",
+        "the answer records ci / typecheck and ci / unit as filtered off rather than passed or not run",
+        "the answer reads the record as green with the filtered-off checks excluded",
+        "the answer leaves whether those checks were owed to the integration PR's CI"
+      ],
+      "files": []
     }
   ]
 }

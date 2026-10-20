@@ -130,6 +130,7 @@ Follow repository branch naming conventions; prefer including the issue key/numb
 
 Implement only the issue scope; run required local checks.
 
+- **Iterate on the narrowest selection the repository's tooling offers for the files you changed** — a related-tests mode (`vitest related <files>`, say), a package or file filter — never the whole gate or a whole suite per edit or per fix. A narrow run is not the gate and is never reported as it; the gate runs once, on the final head (*Final local verification*).
 - **Commit before you check, not after.** Once an edit is complete, commit and push before any typecheck/lint/test run — checks take minutes, and those are the minutes a container disappears in (NOTES).
 - A commit is a save, not a claim of correctness: green is not a precondition, and neither is coherence. Prefer coherent checkpoints; never defer a push to obtain one.
 - Checkpoint after meaningful coherent milestones (schema/API portion, component/service, tests added, before a long debugging phase). Goal: bounded loss — at most the work since the last checkpoint.
@@ -187,8 +188,12 @@ anything that needs the PR to exist — is not a gap in the derivation and is no
 silently dropped: carry it with the outcome `not locally runnable`, which is a
 different claim from `passed` and from `failed`, and forward it as that.
 
+**Apply CI's own filters to the set, per change.** A required context, or a part of one (a job it `needs`, a step), that CI would not run for this change is recorded `filtered off`, naming the workflow or job and the filter, and not run: a workflow whose `paths` or `paths-ignore` the change's files — its diff against the PR's base, on the final head — do not trigger, read as `references/ci-and-review-verdicts.md`, *Path filters*, reads them; or a job the repository's change-set tooling (a change-detection job gating it through `if`, the script CI selects jobs with) would skip for those files. **It fails closed as that section does**: a filter or change-set result unreadable or unreproducible locally, a workflow file the change touches, or filters differing between base and head each mean the part runs. `branches` filters are not applied: under `integration-branch` they exclude the base the gate stands in for. So a docs-only change runs only what the filters still select — the format check, say. `filtered off` is never `passed`: under `per-pr` the merge gate reads CI, which applies the same filter — and a required context whose whole workflow is filtered off never reports there, the hold *Path filters* names, so report it with its workflow and filter rather than waiting for the PR to find it — and under `integration-branch` *CI is green* there reads the record. Filtering a caller-supplied gate is not re-deriving it.
+
+**Run the gate once, on the final head**, the one you push and report. A failing check is fixed by iterating narrowly, then the gate runs once more on the new head. A confirmed environment failure (below) is cleared by re-running only the checks it failed, once the environment is healthy or the check has moved; an unconfirmed one is reported, not re-run in hope.
+
 Commit and push the implementation first, then run the locally runnable part of
-that set, **under the toolchain CI runs** — the repository's engines field or
+that set not filtered off, **under the toolchain CI runs** — the repository's engines field or
 version files, and every runtime the workflow pins beyond them: a browser (a
 `CHROME_BIN`, a setup action, the runner image's preinstalled one, read with the
 test harness's own executable resolution), a database or service image. Install
@@ -206,7 +211,7 @@ about the code.
 
 Invoke `create-pr` with:
 
-- **the gate: the derived check set, each check's outcome — including `not locally runnable` where that is the honest one — and where the set came from** — protection or ruleset, or the workflow fallback with its unproven marker. `create-pr` returns the gate report from this and cannot construct it from data it was never given;
+- **the gate: the derived check set, each check's outcome — including `not locally runnable` or `filtered off` where that is the honest one — and where the set came from** — protection or ruleset, or the workflow fallback with its unproven marker. `create-pr` returns the gate report from this and cannot construct it from data it was never given;
 - canonical full issue URL; exact required base; tracker identity when useful; draft/full preference and merge grant when supplied;
 - **any coverage finding this implementation carried** — a declared dependency satisfied on paper whose capability was absent, and the acceptance criteria left unmet. `create-pr` decides the linkage form from this and cannot decide correctly unseen: the default is a closing keyword, so silence auto-closes an issue you knowingly did not finish (NOTES);
 - **the posting-identity map as this skill holds it** — every entry, as received or `unestablished`. An invocation is read literally: a map left out is a map `create-pr` does not have, and its writes need different entries (agent-authored for the PR; invoking-user for the review trigger), so omitting it degrades both (NOTES).

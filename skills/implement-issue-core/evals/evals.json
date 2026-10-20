@@ -203,6 +203,44 @@
         "the answer explains that create-pr cannot recover a dropped grant because it does not read the policy file"
       ],
       "files": []
+    },
+    {
+      "id": 17,
+      "name": "a-check-ci-would-filter-off-the-change-is-recorded-not-run",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Direct invocation, per-pr mode, acme/platform. Your change edits only `docs/api/auth.md`. Branch protection on `main` requires two contexts: `lint / format` from `.github/workflows/lint.yml`, which has no path filters, and `api / test` from `.github/workflows/api.yml`, whose `pull_request` trigger has `paths: ['apps/api/**', 'packages/db/**']` on both `main` and your head; your change does not touch either workflow file. `api / test` runs the full API suite, about forty minutes. Question: which checks does your final local verification run, and what does the gate you hand to create-pr say for each?",
+      "expected_output": "Run only `lint / format`. `api / test` is a required context whose workflow CI would not run for this change — no changed file matches its `paths`, read the way *Path filters* reads it, and the filters agree between base and head with the workflow file untouched — so it is recorded `filtered off`, naming `api.yml` and its `paths` filter, and not run. It is forwarded with that outcome, never as `passed` and never dropped; under per-pr the merge gate reads CI on the head, which applies the same filter. Because `api / test` is required by name and its whole workflow is filtered off, it will never report on the PR — the hold *Path filters* names — so the worker reports that, with the workflow and filter, rather than presenting the PR as clear to merge.",
+      "assertions": [
+        "the answer runs lint / format",
+        "the answer does not run the API test suite",
+        "the answer records api / test with an outcome distinct from passed (filtered off), naming the workflow and its paths filter",
+        "the answer keeps api / test in the gate handed to create-pr rather than dropping it",
+        "the answer reports that the required api / test will never report on the PR under per-pr, a hold to surface"
+      ],
+      "files": []
+    },
+    {
+      "id": 18,
+      "name": "an-unreproducible-change-set-result-means-the-check-runs",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Orchestrated, per-pr. The caller supplied the gate: required contexts `ci / typecheck` and `ci / e2e`. In `.github/workflows/ci.yml`, job `e2e` has `needs: changes` and `if: needs.changes.outputs.web == 'true'`; job `changes` runs `scripts/ci/changed-areas.sh`, which calls the forge's API with a CI-only token to list changed areas, and you cannot run it locally or tell from the script what it would output for your change, which edits `apps/web/src/date.ts` and a test beside it. Questions: (a) is `ci / e2e` run or recorded `filtered off`? (b) does applying filters mean you re-derive the caller's gate?",
+      "expected_output": "(a) It runs. A change-set result that cannot be read or reproduced locally fails closed: the part runs, exactly as an unreadable filter counts as matching under *Path filters*. Only a skip established from the filters or the tooling's own result for these files is recorded `filtered off`. (b) No: the set stays the caller's; filtering decides per change which of its parts run, which is not a re-derivation.",
+      "assertions": [
+        "the answer runs ci / e2e because the change-set result cannot be established locally",
+        "the answer does not record ci / e2e as filtered off on a guess about the script's output",
+        "the answer keeps the caller-supplied gate as the set rather than re-deriving it"
+      ],
+      "files": []
+    },
+    {
+      "id": 19,
+      "name": "iterate-narrowly-and-clear-a-confirmed-environment-failure-by-its-checks",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Per-pr, acme/api, a Node repository using vitest. The derived gate is `ci / format`, `ci / typecheck` and `ci / test` (the full API suite, about forty minutes against a local Postgres). (a) You are midway through implementing and have just edited `src/billing/invoice.ts`; what do you run now? (b) Later, on your final head, the gate's `ci / test` fails in 212 tests across unrelated files, all with `ECONNREFUSED 127.0.0.1:5432`. You check and the local Postgres container has exited; you restart it and it is healthy. `ci / format` and `ci / typecheck` passed in that gate run. What do you re-run?",
+      "expected_output": "(a) The narrowest selection the tooling offers for the changed files — `vitest related src/billing/invoice.ts`, perhaps with that package's typecheck — not the whole gate or the full suite; a narrow run is not the gate and is never reported as it. The gate runs once, on the final head. (b) This is a mass failure with the tell in the error, an environment hypothesis, and you confirmed it independently (the database had exited). Once the environment is healthy, re-run only the check it failed, `ci / test`, on the same head — not the whole gate; format and typecheck results stand.",
+      "assertions": [
+        "in (a) the answer runs a narrow selection for the changed file rather than the full suite or the whole gate",
+        "in (b) the answer treats the failure as an environment failure, confirmed by the exited database",
+        "in (b) the answer re-runs only ci / test after restoring the database, not the whole gate"
+      ],
+      "files": []
     }
   ]
 }
