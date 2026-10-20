@@ -389,6 +389,19 @@
         "The answer merges nothing"
       ],
       "files": []
+    },
+    {
+      "id": 33,
+      "name": "a-gate-record-with-checks-at-different-heads-is-green",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: backlog-orchestrator passes PR #51 in acme/api, base `integration/api-3`. Resolved policy: `ci-mode: integration-branch` with effect, the integration branch's integration PR not open, merges into it not stopped; `auto-merge` false. #51's head is c3c3c3c. Its local gate record, as supervise-prs returned it: format `passed` at a1a1a1a (the implementing worker's session); lint, typecheck and the unit suite `passed` at b2b2b2b (the supervisor's gate run). The caller's pushes since record a1a1a1a→b2b2b2b as substantive (a repair) and b2b2b2b→c3c3c3c as mechanical (a restack). A review round on b2b2b2b is clean and its threads are resolved. Questions: (a) is #51's CI condition green? (b) would it be green had the a1a1a1a→b2b2b2b push been mechanical? (c) may the gate open for #51 at all with `auto-merge` false?",
+      "expected_output": "(a) No: format's pass is at a1a1a1a, and a substantive push since means it does not count for c3c3c3c; the record is not green until format passes at a head with only mechanical pushes since — each check is read on its own head. (b) Yes: every locally runnable check passed at a head with only mechanical pushes since, format at a1a1a1a and the rest at b2b2b2b; that the record mixes heads, and that one pass is a worker's, does not make it not green. (c) Yes: `ci-mode: integration-branch` is the merge opt-in for a PR whose base is that branch; `auto-merge` governs only the default branch.",
+      "assertions": [
+        "the answer reads (a) as not green because format's pass is behind a substantive push",
+        "the answer reads (b) as green despite the checks sitting at different heads",
+        "the answer does not refuse the record for containing a worker's pass",
+        "the answer lets the gate open for a PR into the integration branch without auto-merge"
+      ],
+      "files": []
     }
   ]
 }

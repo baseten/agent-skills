@@ -77,7 +77,7 @@ evals (`<skill>#<id>`).
    settle-and-merge#13 #14 #15 #16 #17, implement-issue#18. Under `ci-mode: integration-branch`, file-only,
    the gate opens for a PR into that branch on its local gate record, and never for the default branch
    without `auto-merge` (`rules/agent-policy.md`, *Merge permissions*; `rules/ci-and-review-verdicts.md`,
-   *CI is green*). settle-and-merge#22, supervise-prs#65 #66 #81 #82 #83 #84, backlog-orchestrator#76 #77 #86,
+   *CI is green*). settle-and-merge#22 #33, supervise-prs#65 #66 #81 #82 #83 #84, backlog-orchestrator#76 #77 #86,
    implement-issue-core#17. Under
    `review-defer-severity`, file-only, an automated reviewer's labelled finding at or below the level is resolved into a
    follow-up issue, never one a person is in (`resolve-pr-comment`, *Findings deferred to a follow-up*).
