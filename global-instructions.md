@@ -1,0 +1,1 @@
+- When you name a tracker issue, make it a link to the issue, never a bare identifier such as `ENG-123`. That holds in a chat reply as much as in a PR, comment or message you write. Use the URL the tracker returned, or its canonical issue URL. A PR or issue named outside its own repository is a link too, since `#123` auto-links only there.

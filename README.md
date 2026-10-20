@@ -76,6 +76,7 @@ CLAUDE.md         how to change a skill, and what a complete fix means here
 AGENTS.md         pointer to CLAUDE.md, for agents whose convention looks for it
 docs/             audits and workflows that outlive one PR
 permissions.json
+global-instructions.md  the block bootstrap.sh keeps in ~/.claude/CLAUDE.md
 bootstrap.sh
 scripts/          repo-level checks (run in CI, runnable locally)
 .github/workflows/
@@ -107,6 +108,12 @@ from the detector rather than the harness.
 and **reports** a skill this repository has retired rather than removing it,
 because nothing in a script can tell its own stale copy from one you wrote
 yourself under the same name.
+
+The one thing it replaces is its own marked block in `~/.claude/CLAUDE.md`,
+which carries `global-instructions.md`: rules for what a session says rather
+than what a skill writes, such as linking every issue a chat reply names. The
+markers make that block provably its own, so a re-run swaps it in place and
+leaves the rest of the file alone.
 
 
 ## Changing the skills
@@ -158,7 +165,8 @@ python3 scripts/check_word_budgets.py --report       # no contract outgrows its 
 python3 scripts/test_check_word_budgets.py            # and each of its guards can actually fail
 bash skills/swarm/scripts/test-checkpoint-capture.sh
 bash scripts/test_bootstrap_stamp.sh                  # bootstrap.sh's install stamp, against a scratch HOME
-shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh scripts/test_bootstrap_stamp.sh
+bash scripts/test_bootstrap_instructions.sh          # bootstrap.sh's managed block in ~/.claude/CLAUDE.md
+shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh scripts/test_bootstrap_stamp.sh scripts/test_bootstrap_instructions.sh
 bash scripts/eval_reminder.sh origin/main             # advisory, never fails
 ```
 

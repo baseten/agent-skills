@@ -7,7 +7,8 @@
 #   rm -rf /tmp/agent-skills
 #
 # Every directory under skills/ containing a SKILL.md is installed. Adding a
-# skill needs no edit here — create the directory and it ships.
+# skill needs no edit here — create the directory and it ships. It also keeps
+# one marked block in ~/.claude/CLAUDE.md; see "Global instructions" below.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -224,6 +225,50 @@ else
 fi
 if [ -f "$SETTINGS_FILE" ]; then
   chmod 600 "$SETTINGS_FILE"
+fi
+
+# --- Global instructions ---
+#
+# A few rules govern what a session says, not only what a skill writes - a chat
+# reply naming an issue, say - and no skill is loaded for that, so they go in
+# ~/.claude/CLAUDE.md, which every session reads. That file is yours, so this
+# manages one marked block in it and touches nothing outside the markers: a
+# re-run replaces the block rather than appending a second. A file holding a
+# begin marker without its end, or more than one block, is left untouched and
+# reported, because nothing here can tell where the block was meant to stop.
+# Written through rather than moved into place, so a CLAUDE.md that is a
+# symlink stays one.
+INSTRUCTIONS_FILE="$SCRIPT_DIR/global-instructions.md"
+USER_CLAUDE_MD="$CLAUDE_DIR/CLAUDE.md"
+BEGIN_MARK="<!-- agent-skills:begin - managed by agent-skills bootstrap.sh; edits inside are replaced -->"
+END_MARK="<!-- agent-skills:end -->"
+
+if [ -f "$INSTRUCTIONS_FILE" ]; then
+  block="$(mktemp)"
+  { echo "$BEGIN_MARK"; cat "$INSTRUCTIONS_FILE"; echo "$END_MARK"; } > "$block"
+  [ -e "$USER_CLAUDE_MD" ] || : > "$USER_CLAUDE_MD"
+  begins="$(grep -c '^<!-- agent-skills:begin' "$USER_CLAUDE_MD" || true)"
+  ends="$(grep -c '^<!-- agent-skills:end' "$USER_CLAUDE_MD" || true)"
+  if [ "$begins" = 0 ] && [ "$ends" = 0 ]; then
+    [ -s "$USER_CLAUDE_MD" ] && echo >> "$USER_CLAUDE_MD"
+    cat "$block" >> "$USER_CLAUDE_MD"
+    echo "Global instructions added to $USER_CLAUDE_MD"
+  elif [ "$begins" = 1 ] && [ "$ends" = 1 ] \
+       && [ "$(grep -n '^<!-- agent-skills:begin' "$USER_CLAUDE_MD" | cut -d: -f1)" \
+            -lt "$(grep -n '^<!-- agent-skills:end' "$USER_CLAUDE_MD" | cut -d: -f1)" ]; then
+    awk -v blk="$block" '
+      /^<!-- agent-skills:begin/ { while ((getline l < blk) > 0) print l; skip = 1; next }
+      skip && /^<!-- agent-skills:end/ { skip = 0; next }
+      !skip { print }
+    ' "$USER_CLAUDE_MD" > "$block.new"
+    cat "$block.new" > "$USER_CLAUDE_MD"
+    rm -f "$block.new"
+    echo "Global instructions updated in $USER_CLAUDE_MD"
+  else
+    echo "WARNING: $USER_CLAUDE_MD has unbalanced or repeated agent-skills markers." >&2
+    echo "Leaving it untouched - fix the markers by hand and re-run." >&2
+  fi
+  rm -f "$block"
 fi
 
 # --- Extra GitHub MCP server ---
