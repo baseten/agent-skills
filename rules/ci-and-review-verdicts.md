@@ -72,8 +72,10 @@ without the second read.
 
 1. **Existence is the summary comment, always.** Require a `Reviewed commit:`
    matching the current head. No match → `NOT REVIEWED`; request the round and
-   never merge — **except a round recorded `refused`, which is not re-requested**
-   (the *review trigger* shared rule, *A refused round*). This read is not
+   never merge — **except a round recorded `refused`, which is not re-requested,
+   and one already requested and unanswered, re-requested at most once per
+   head, only on a stall or a reissue** (the *review trigger* shared rule, *A
+   refused round*, *A stalled round*). This read is not
    skippable, because a thread does not say *which round produced it*: a
    resolved, non-outdated thread left by an earlier round or by a person
    satisfies any existence test built on threads, and a new trigger that

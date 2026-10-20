@@ -91,7 +91,7 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 7872,
+      "budget": 8012,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
@@ -127,7 +127,7 @@
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
-      "budget": 1626,
+      "budget": 1648,
       "target": 1500
     },
     "rules/ci-attribution.md": {
@@ -167,7 +167,7 @@
       "target": 1500
     },
     "rules/review-trigger.md": {
-      "budget": 1891,
+      "budget": 2510,
       "target": 1500
     },
     "rules/wake-budget.md": {
