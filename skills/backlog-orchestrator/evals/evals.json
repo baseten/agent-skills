@@ -1124,6 +1124,19 @@
         "the answer names the full-tier checkpoint or the integration PR's CI as what catches a false pass"
       ],
       "files": []
+    },
+    {
+      "id": 87,
+      "name": "a-remote-workers-gate-report-arrives-as-a-gate-note",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: acme/api resolved `ci-mode: integration-branch` with effect; the per-PR tier is format, lint, typecheck and the API unit suite. Workers run in remote sessions, whose return values do not reach this run. Questions: (a) what does the dispatch prompt into acme/api say about the gate report? (b) W9's session ends with PR #62 open at head 8b8b8b8; fetching its branch's gate-note ref shows format, lint and typecheck passed at 8b8b8b8 under the CI toolchain, and nothing for the unit suite. Do you reject #62, and what do you pass supervise-prs? (c) W10's PR #63 has no note at all: what then?",
+      "expected_output": "(a) It requires the gate report as a gate note — a git note on the head under refs/notes/agent-gate/<branch>, one line per check with outcome, head, toolchain and session, fetched before writing, never force-pushed — written out in the prompt, not as a pointer. (b) Not rejected: the note's three passes go to supervise-prs as #62's worker gate record, and the missing unit suite is left to the local gate supervise-prs runs. (c) No worker gate record: the local gate supervise-prs runs is the whole record, every check run.",
+      "assertions": [
+        "the answer has the dispatch prompt require the gate report as a git note on the head",
+        "the answer passes the note's passes as the worker gate record without rejecting the PR for the missing check",
+        "the answer leaves the unit suite to the supervisor's gate run",
+        "the answer runs the full local gate for the PR with no note"
+      ],
+      "files": []
     }
   ]
 }

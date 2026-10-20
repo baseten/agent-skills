@@ -305,6 +305,18 @@
         "the pass's commits are left for its own end-of-pass push"
       ],
       "files": []
+    },
+    {
+      "id": 27,
+      "name": "a-gate-note-push-is-allowed-beside-push-nothing",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a caller asks you to dispatch a remote worker session whose only task is to run a PR's local gate on head 9c9c9c9 of branch `feat/scan-12` and write its result as a gate note to `refs/notes/agent-gate/feat/scan-12`. It must not change the branch. Question: what push lines does the worker prompt carry, and may the worker push the notes ref?",
+      "expected_output": "The push-nothing variant — the worker must not push to the branch — plus the gate-note line naming refs/notes/agent-gate/feat/scan-12: that one push is allowed whatever the push line says, and is never forced. Before dispatch, verify the session can push that ref (sink verification); where it cannot, dispatch the task on a tier whose return value reaches the run.",
+      "assertions": [
+        "the answer forbids pushing to the branch",
+        "the answer allows pushing the named notes ref and forbids forcing it",
+        "the answer verifies at dispatch that the session can push the ref"
+      ],
+      "files": []
     }
   ],
   "companions": []

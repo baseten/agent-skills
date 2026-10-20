@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 24623,
+      "budget": 24698,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -19,7 +19,7 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/integration-branch.md": {
-      "budget": 2331,
+      "budget": 2395,
       "target": 1500
     },
     "skills/backlog-orchestrator/restart-resume.md": {
@@ -75,7 +75,7 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 5655,
+      "budget": 5858,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
@@ -91,11 +91,11 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 8039,
+      "budget": 8176,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
-      "budget": 8662,
+      "budget": 8691,
       "target": 8000
     },
     "skills/swarm/runtime-remote.md": {
@@ -123,11 +123,11 @@
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2122,
+      "budget": 2151,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
-      "budget": 1637,
+      "budget": 1650,
       "target": 1500
     },
     "rules/ci-attribution.md": {

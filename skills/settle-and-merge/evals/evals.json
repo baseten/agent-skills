@@ -402,6 +402,19 @@
         "the answer lets the gate open for a PR into the integration branch without auto-merge"
       ],
       "files": []
+    },
+    {
+      "id": 34,
+      "name": "a-clean-merge-onto-the-tip-still-gets-the-merged-tip-check",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: backlog-orchestrator passes PRs #30 and #31 in acme/scanner, both based on `integration/scan-1`, with authority to update branches, under `ci-mode: integration-branch` with effect (integration PR not open, merges not stopped). Both have green local gate records on their current heads and clean reviews; nothing is outstanding in the wave. Since #30's record was made, sibling #35 merged into `integration/scan-1`, making `signalCandle` and `tickSize` required. `git merge-tree` reports #30 merging cleanly onto the current tip. #30 touches packages `core` and `strategy`; #31 touches `docs` only and has no test files related to its changes. Questions: (a) does a clean textual merge and a green record let #30 merge? (b) on #30 merged onto the tip, typecheck of `strategy` fails on #30's new test, which omits the now-required fields. What happens to #30, and to #31? (c) where does that check run?",
+      "expected_output": "(a) No: before every merge into the integration branch the merged-tip check runs — #30 merged onto the current tip in a scratch checkout, nothing pushed, under CI's toolchain: typecheck core and strategy and run the touched/related test files; its pass is part of the CI condition, clean textual merge or not. (b) #30's CI condition is not met: it is held alone, and — under the caller's authority to update branches — its branch is updated from the tip and the update returned as a caller push tagged substantive, since a check failed on its tree, so its supervisor's gate meets the failure on its own head and it is repaired as CI; without authority it is reported held, naming the check and the tip. It is not a MERGE_RISK, so #31 is not held: its merged-tip check (typecheck of touched packages, no related tests) passes and it merges. (c) In this session — it is short.",
+      "assertions": [
+        "the answer runs the merged-tip check despite the clean textual merge",
+        "the answer holds #30 alone and updates its branch from the tip, returning that push tagged substantive rather than mechanical",
+        "the answer does not hold #31 because of #30's failure",
+        "the answer runs the check in this session"
+      ],
+      "files": []
     }
   ]
 }

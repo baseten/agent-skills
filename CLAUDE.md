@@ -59,8 +59,8 @@ evals (`<skill>#<id>`).
    opt-in** (`Depends on:` excepted); else drift is reported with a replacement.
    `rules/authored-write-form.md`. settle-and-merge#6 #9, merge-stack#5,
    backlog-orchestrator#71.
-7. **No forge write reports verification; SHAs are bare.** `rules/authored-write-form.md`.
-   create-pr#11, resolve-pr-comment#17.
+7. **No forge write a reader is shown reports verification (a gate note is none); SHAs are bare.** `rules/authored-write-form.md`.
+   create-pr#11, resolve-pr-comment#17, supervise-prs#85, swarm#27.
 8. **Merges are opt-in, through the one gate, failing closed.** `settle-and-merge`, *The
    merge gate*; `rules/agent-policy.md`. backlog-orchestrator#0 #2. The gate reads review on the current
    head: a publish changes no head and is inert unless the repository's own configuration (policy file,
@@ -77,7 +77,7 @@ evals (`<skill>#<id>`).
    settle-and-merge#13 #14 #15 #16 #17, implement-issue#18. Under `ci-mode: integration-branch`, file-only,
    the gate opens for a PR into that branch on its local gate record, and never for the default branch
    without `auto-merge` (`rules/agent-policy.md`, *Merge permissions*; `rules/ci-and-review-verdicts.md`,
-   *CI is green*). settle-and-merge#22 #33, supervise-prs#65 #66 #81 #82 #83 #84, backlog-orchestrator#76 #77 #86,
+   *CI is green*). settle-and-merge#22 #33 #34, supervise-prs#65 #66 #81 #82 #83 #84 #85, backlog-orchestrator#76 #77 #86 #87,
    implement-issue-core#17. Under
    `review-defer-severity`, file-only, an automated reviewer's labelled finding at or below the level is resolved into a
    follow-up issue, never one a person is in (`resolve-pr-comment`, *Findings deferred to a follow-up*).

@@ -251,6 +251,8 @@ the contrary.
   were not given, including to fix or revert something you broke; stop and
   report instead. | Push nothing. This is a review session: your deliverable is
   the review on the pull request.]
+- [Where you are told to write a gate note: push it to <ref> as well. That one
+  push is allowed whatever the line above says; never force it.]
 - Attribute your own commits and written output to yourself — your own model
   and session. Never copy an attribution line from this prompt or from the
   orchestrating run; it describes a different session.

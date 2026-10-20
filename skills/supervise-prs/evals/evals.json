@@ -1055,6 +1055,18 @@
         "the answer makes the outcome under none unrepaired only where checks are left to run"
       ],
       "files": []
+    },
+    {
+      "id": 85,
+      "name": "a-remote-gate-runs-result-is-its-gate-note",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #61 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite (Python 3.12, Postgres 16). No worker gate record was passed. Repair dispatch is `swarm`, and swarm's selected tier is remote sessions, whose return value does not reach this run. #61 is quiescent on head 7a7a7a7. Questions: (a) where does the gate run execute, and how does its result reach you? (b) the gate session ends, and fetching `refs/notes/agent-gate/<#61's branch>` finds no note on 7a7a7a7: what is #61's local gate record? (c) may the gate session post its results as a PR comment instead?",
+      "expected_output": "(a) As a remote swarm worker whose task is the gate alone — preferred, since a run in this session dies with its container; its result is a gate note: a git note on 7a7a7a7 under refs/notes/agent-gate/<branch>, one line per check with outcome, head, toolchain and session, fetched before writing and never force-pushed. (b) No result: every check `not run`, never passed, so the CI condition is not green. (c) No: no write reports verification on the PR; the gate note is the one place a result leaves a session.",
+      "assertions": [
+        "the answer has the gate run's result arrive as a git note on the head under refs/notes/agent-gate",
+        "the answer records every check as not run when no note is found",
+        "the answer refuses posting the results on the PR"
+      ],
+      "files": []
     }
   ]
 }
