@@ -258,6 +258,23 @@
         "The answer puts a `Source:` line with the permalink in the body, and no issue linkage or Chartered scope line"
       ],
       "files": []
+    },
+    {
+      "id": 21,
+      "name": "a-direct-invocation-records-filtered-off-and-keeps-it-out-of-the-body",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Direct invocation, no caller-supplied gate. acme/docs-site, base `main`. The branch edits only `docs/intro.md`. Branch protection on `main` requires `lint / markdown` (from `.github/workflows/lint.yml`, no filters) and `ci / test` (from `.github/workflows/ci.yml`, whose only trigger is `pull_request` with `paths: ['src/**']`); neither workflow file differs between `main` and the head, and the branch touches neither. The repository's PR template has a `## Checks` section. Questions: (a) what do you run before opening the PR, and what is recorded for `ci / test`? (b) what goes in the template's `## Checks` section, and where does each check's outcome go? (c) had `ci.yml`'s filters been unreadable, what changes?",
+      "expected_output": "(a) Derive the set from branch protection: `lint / markdown` and `ci / test`. CI's `pull_request` filter would not run `ci.yml` for this PR's whole diff (only `docs/intro.md`), so `ci / test` is recorded `filtered off`, naming the workflow and filter, and not run — never `passed`. Run `lint / markdown`. Under per-pr the whole workflow producing required `ci / test` is filtered off, so it never reports on the PR — a hold the forge will keep — reported with its workflow and filter beside the gate report in the returned result. (b) Only the testing summary — manual steps and what a test pins — never a list of checks or outcomes, `filtered off` included. The outcomes go in the gate report in the structured result. (c) It fails closed: `ci / test` is not filtered off and runs.",
+      "assertions": [
+        "the answer records ci / test as filtered off and does not run it or record it passed",
+        "the answer runs lint / markdown before opening the PR",
+        "the answer reports the hold on ci / test in the returned result, not in the PR body",
+        "the answer puts no check outcome, filtered off included, in the PR body",
+        "the answer runs ci / test where the filters cannot be read"
+      ],
+      "files": []
     }
+  ],
+  "companions": [
+    "implement-issue-core"
   ]
 }

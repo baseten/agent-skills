@@ -1006,6 +1006,72 @@
       ],
       "id": 80,
       "files": []
+    },
+    {
+      "id": 81,
+      "name": "an-integration-branch-gate-run-records-a-filtered-off-check",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #31 in acme/web targets `integration/web-9`; ci-mode integration-branch has effect. The caller passed the per-PR tier: `lint / format`, `lint / eslint`, `ci / typecheck`, `ci / unit`. On the default branch `.github/workflows/ci.yml` has a `pull_request` trigger with `paths-ignore: ['**/*.md', 'docs/**']`; `.github/workflows/lint.yml` has no path filters. PR #31's head changes only `docs/setup.md` and `README.md` and touches no workflow file; it is quiescent and has no gate record. Questions: (a) which checks does the gate run execute, and what is recorded for the others? (b) given format and eslint pass, is the PR's CI condition green?",
+      "expected_output": "(a) It runs `lint / format` and `lint / eslint`. Every changed file matches `ci.yml`'s `paths-ignore`, so `ci / typecheck` and `ci / unit` are what CI would not run for this change: they are recorded `filtered off`, naming the workflow and filter, and not run — by the test `implement-issue-core`, *Final local verification*, states. (b) Yes: the record's green excludes `filtered off` checks, which are neither passed nor owed by this PR; whether CI owed them is read on the integration PR's CI, over the batch's files, by *Path filters*.",
+      "assertions": [
+        "the answer runs only lint / format and lint / eslint",
+        "the answer records ci / typecheck and ci / unit as filtered off rather than passed or not run",
+        "the answer reads the record as green with the filtered-off checks excluded",
+        "the answer leaves whether those checks were owed to the integration PR's CI"
+      ],
+      "files": []
+    },
+    {
+      "id": 82,
+      "name": "a-filtered-off-entry-is-re-read-across-a-mechanical-push",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #44 in acme/shop targets `integration/shop-3`; ci-mode integration-branch has effect, dispatch mechanism `direct`. The caller passed the per-PR tier: `lint / format` (from `lint.yml`, no path filters) and `ci / test` (from `ci.yml`, whose `pull_request` trigger has `paths: ['packages/**', 'pnpm-lock.yaml']`). #44's commits change only `docs/guide.md`. Its gate record on head A: `lint / format` passed, `ci / test` `filtered off` (`ci.yml` `paths`). Two pushes follow, in order. (1) Head B: a repair answering a review finding, which edits `docs/guide.md` again. (2) Head C: a lockfile regeneration after the base moved — a mechanical push by `references/mechanical-pushes.md` — which changes `pnpm-lock.yaml`. Questions: (a) on head B, what diff do you test the filters against, and what is recorded for `ci / test`? (b) on head C, does the record from B carry forward unchanged, and what do you run? (c) is #44's CI condition green on C before that?",
+      "expected_output": "(a) B is a substantive push, so it needs a new record. The filters are tested against the PR's whole diff against its base (three-dot, merge base), not the repair push's own diff; that diff is still only `docs/guide.md`, so `ci / test` is again recorded `filtered off`, naming `ci.yml` and its `paths`, and `lint / format` runs. (b) The record carries across the mechanical push except its `filtered off` entry: the filters are re-read for C's diff, which now includes `pnpm-lock.yaml`, which `ci.yml`'s `paths` select, so `ci / test` is `not run` on C and the gate runs it once on that head. `lint / format`'s pass carries forward. (c) No: a `filtered off` entry the filters now select, or one nobody re-read, is `not run` — a check this PR's gate must pass — so the record is not green until `ci / test` passes on C.",
+      "assertions": [
+        "in (a) the answer tests the filters against the PR's whole diff against its base, not the repair push's own diff",
+        "in (a) the answer records ci / test filtered off again on head B",
+        "in (b) the answer re-reads the filters for head C and finds pnpm-lock.yaml selected",
+        "in (b) the answer runs ci / test once on head C rather than carrying the filtered-off entry forward",
+        "in (c) the answer does not read the record as green before ci / test passes on C"
+      ],
+      "files": []
+    },
+    {
+      "id": 83,
+      "name": "a-toolchain-mismatch-voids-the-sessions-passes",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #52 in acme/viz targets `integration/viz-2`; ci-mode integration-branch has effect, dispatch mechanism `swarm`, which has remote sessions. The caller passed the per-PR tier: `ci / typecheck`, `ci / browser (1)` and `ci / browser (2)`. CI runs the browser shards on the runner's preinstalled Chrome 155 via `CHROME_BIN`. The gate run for head D ran in a container: `ci / typecheck` passed, `ci / browser (1)` passed, `ci / browser (2)` failed on a shader content-hash mismatch. You then find the container launched Playwright's bundled Chromium 1194, not Chrome 155, and confirm it independently: `CHROME_BIN` was unset and the harness fell back. A remote session has Chrome 155. Question: what moves to the remote session, and what does the record for D hold until it returns?",
+      "expected_output": "The confirmed cause is a runtime differing from CI's, which voids every result that session produced, passes included — not only the failed shard. So the whole gate moves to the remote session, once for this head: `ci / browser (1)`'s pass under Chromium is not kept, and neither is the rest of that session's run. Until it returns, nothing from the container counts toward green on D. Failing there too, the PR's outcome is `needs-user`, naming the gate and the environment.",
+      "assertions": [
+        "the answer treats the mismatch as a confirmed environment failure",
+        "the answer moves the whole gate, not only ci / browser (2), to the remote session",
+        "the answer does not keep ci / browser (1)'s container pass in the record",
+        "the answer moves it once for the head, ending in needs-user if it fails there too"
+      ],
+      "files": []
+    },
+    {
+      "id": 84,
+      "name": "a-gate-runs-outage-moves-the-passes-that-used-the-service",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #61 in acme/shop targets `integration/shop-4`; ci-mode integration-branch has effect, dispatch mechanism `swarm`, which has remote sessions. The caller passed the per-PR tier: `ci / format` and `ci / typecheck` (jobs that start no service and read no config naming one), `ci / api-unit` and `ci / api-db` (both jobs declare `services: postgres`; `api-db`'s suite uses `it.skipIf(!dbUp)`), and `ci / web` (vitest under jsdom; its job declares no service and its config names none). The gate run for head E ran in a container on CI's toolchain: `ci / api-unit` failed with `ECONNREFUSED 127.0.0.1:5432` across unrelated files; the other four passed. You confirm independently that the container's Postgres exited and cannot restart (its volume is full). Question: what moves to the remote session, how many times, and which passes stay in the record for E?",
+      "expected_output": "A confirmed outage moves a re-run once for this head, scoped by cause: the check it failed, `ci / api-unit`, and every check that passed but uses the service that went down — `ci / api-db`, whose job declares Postgres and whose suite skips without it, so its pass may have run nothing. `ci / format`, `ci / typecheck` and `ci / web` start and name no service, so their passes stay in the record against E with the container's session. It is not a toolchain mismatch, so the whole gate does not move. A check the returned result leaves out is `not run`, never passed. Failing there too, the PR's outcome is `needs-user`, naming the gate and the environment.",
+      "assertions": [
+        "the answer moves ci / api-unit and ci / api-db, not only the failed check",
+        "the answer keeps ci / format, ci / typecheck and ci / web's passes in the record",
+        "the answer does not move the whole gate",
+        "the answer moves it once for the head, ending in needs-user if it fails there too"
+      ],
+      "files": []
+    },
+    {
+      "id": 85,
+      "name": "a-filtered-off-entry-counts-only-for-the-head-its-filters-were-read-for",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #70 in acme/web targets `integration/web-5`; ci-mode integration-branch has effect, dispatch `direct`. The per-PR tier is `lint / format` (from `lint.yml`, no path filters) and `ci / test` (from `ci.yml`, whose `pull_request` trigger has `paths: ['src/**', 'package-lock.json']`). The gate record in this session's state block reads: `lint / format` passed on head A (session s1); `ci / test` filtered off (`ci.yml` `paths`), filters last read for head A. Since A there have been two pushes, B and C, each a mechanical push by `references/mechanical-pushes.md` (a clean base update, then a restack); nothing in the record shows a filter read for B or C. The head is C. Questions: (a) is #70's CI condition green on C as the record stands? (b) what do you do? (c) if the filters, read for C, still leave `ci / test` off, what does the record show and is it green? (d) if they now select it?",
+      "expected_output": "(a) No. `lint / format`'s pass carries forward, since every push since A is mechanical, but a `filtered off` entry counts only for the head its filters were last read for; stamped with A, it is `not run` on C, a check this PR's gate must pass. (b) Re-read the filters for C's diff — the PR's whole diff against its base. (c) The entry is restamped to C, still `filtered off`, and the record is green: format passed, the filtered-off check excluded. (d) `ci / test` is `not run` on C and the gate runs it once there; green only once it passes.",
+      "assertions": [
+        "the answer does not read the record as green on C with the entry stamped for A",
+        "the answer carries lint / format's pass across the mechanical pushes",
+        "the answer re-reads the filters for C's whole diff against the base",
+        "the answer restamps the entry to C where the filters still leave it off, and runs ci / test once on C where they select it"
+      ],
+      "files": []
     }
   ]
 }

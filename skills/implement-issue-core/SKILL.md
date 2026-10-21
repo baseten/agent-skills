@@ -130,6 +130,7 @@ Follow repository branch naming conventions; prefer including the issue key/numb
 
 Implement only the issue scope; run required local checks.
 
+- **Iterate on the narrowest selection the repository's tooling offers for the files you changed** — a related-tests mode (`vitest related <files>`, say), a package or file filter — never the whole gate or a whole suite per edit or per fix. A narrow run is not the gate and is never reported as it; the gate runs once, on the final head (*Final local verification*).
 - **Commit before you check, not after.** Once an edit is complete, commit and push before any typecheck/lint/test run — checks take minutes, and those are the minutes a container disappears in (NOTES).
 - A commit is a save, not a claim of correctness: green is not a precondition, and neither is coherence. Prefer coherent checkpoints; never defer a push to obtain one.
 - Checkpoint after meaningful coherent milestones (schema/API portion, component/service, tests added, before a long debugging phase). Goal: bounded loss — at most the work since the last checkpoint.
@@ -187,14 +188,18 @@ anything that needs the PR to exist — is not a gap in the derivation and is no
 silently dropped: carry it with the outcome `not locally runnable`, which is a
 different claim from `passed` and from `failed`, and forward it as that.
 
+**Apply CI's own filters to the set, per change.** A required context, or a part of one (a job it `needs`, a step), that CI would not run for this change is recorded `filtered off`, naming the workflow or job and the filter, and not run: a workflow none of whose `pull_request` and `pull_request_target` triggers the change's files trigger by their `paths` or `paths-ignore` — **the change's files are the PR's whole diff, its head against the merge base with the PR's base (`git diff <base>...<head>`), never one push's diff**, and another trigger's filters are not CI's for a PR — read as `references/ci-and-review-verdicts.md`, *Path filters*, reads them; or a job the repository's change-set tooling (a change-detection job gating it through `if`, the script CI selects jobs with) would skip for those files. **It fails closed as that section does**: a filter or change-set result unreadable or unreproducible locally — tooling CI runs against a base other than the PR's included — a workflow file the change touches, or filters differing between base and head each mean the part runs. `branches` filters are not applied: under `integration-branch` they exclude the base the gate stands in for. So a docs-only change runs only what the filters still select — the format check, say. `filtered off` is never `passed`: under `per-pr` the merge gate reads CI, which applies the same filter — and a required context whose whole workflow is filtered off never reports there, the hold *Path filters* names, so report it with its workflow and filter in the returned result, with the gate report (*Output*), never in a forge write, rather than waiting for the PR to find it — and under `integration-branch` *CI is green* there reads the record. Filtering a caller-supplied gate is not re-deriving it.
+
+**Run the gate once, on the final head**, the one you push and report. A failing check is fixed by iterating narrowly, then the gate runs once more on the new head. A confirmed environment failure (below) is cleared by a re-run, once per head, once the environment is healthy or the checks have moved. **After an outage** — a service the gate needs went down — it covers the checks that failed **and every check that passed but uses that service**, since a suite can skip what it cannot reach and still pass. A check uses the service where its job or command declares or starts it — a workflow `services:` entry, a container or compose step, a setup script bringing it up — or where the repository's configuration ties its suite to it: a test setup, config file or environment variable naming the service's host, port or URL. **Cannot tell, it re-runs.** A container too slow to finish re-runs the checks it failed; a check that finished, finished. **A toolchain or runtime differing from CI's** voids every result that session produced, passes included, so the whole gate re-runs where the toolchain matches. Failing again, report it as the environment failure, with the error; an unconfirmed one is reported, not re-run in hope.
+
 Commit and push the implementation first, then run the locally runnable part of
-that set, **under the toolchain CI runs** — the repository's engines field or
+that set not filtered off, **under the toolchain CI runs** — the repository's engines field or
 version files, and every runtime the workflow pins beyond them: a browser (a
 `CHROME_BIN`, a setup action, the runner image's preinstalled one, read with the
 test harness's own executable resolution), a database or service image. Install
 CI's version where the session can; where it cannot, the run is on the wrong
-toolchain, an environment failure (below), and the check moves to a session that
-has it. Only where no session the run can use matches it is the check `not
+toolchain, an environment failure (below), and the whole gate re-runs in a
+session that has it (above). Only where no session the run can use matches it is the check `not
 locally runnable`, naming both — `browser mismatch (CI: Chrome 155, session:
 Chromium 1194)` — and never passed. A container whose runtime differs is an
 environment failure, not a code one (below), and the gate run on it says nothing
@@ -206,7 +211,7 @@ about the code.
 
 Invoke `create-pr` with:
 
-- **the gate: the derived check set, each check's outcome — including `not locally runnable` where that is the honest one — and where the set came from** — protection or ruleset, or the workflow fallback with its unproven marker. `create-pr` returns the gate report from this and cannot construct it from data it was never given;
+- **the gate: the derived check set, each check's outcome — including `not locally runnable` or `filtered off` where that is the honest one — and where the set came from** — protection or ruleset, or the workflow fallback with its unproven marker. `create-pr` returns the gate report from this and cannot construct it from data it was never given;
 - canonical full issue URL; exact required base; tracker identity when useful; draft/full preference and merge grant when supplied;
 - **any coverage finding this implementation carried** — a declared dependency satisfied on paper whose capability was absent, and the acceptance criteria left unmet. `create-pr` decides the linkage form from this and cannot decide correctly unseen: the default is a closing keyword, so silence auto-closes an issue you knowingly did not finish (NOTES);
 - **the posting-identity map as this skill holds it** — every entry, as received or `unestablished`. An invocation is read literally: a map left out is a map `create-pr` does not have, and its writes need different entries (agent-authored for the PR; invoking-user for the review trigger), so omitting it degrades both (NOTES).
@@ -235,7 +240,7 @@ Return structured state:
 - draft state as created, exactly as `create-pr` reported it;
 - **the routed documentation review's result, exactly as `create-pr` reported it** — its round, its status, and any `FALSE_CLAIM` / `FALSE_PREMISE` / `NEEDS_AUTHOR` findings with their evidence. This skill is one hop on the way to the recorder: `summarize-wave` turns those findings into `IN_FLIGHT_FIX` / `MERGE_RISK` / `DECISION`, and the merge gate refuses to open over them. A hop that drops them loses an actionable finding silently, and a remote worker's report is built from this contract, so the loss survives into the parent's view of a PR it believes reviewed. Forward it whether or not a review ran: **no routed review** and **a routed review that found nothing** are different states, and only one of them means the document was read.
 - the posting identities `create-pr` observed, **every entry under its `(transport, credential)` key, carried through unchanged** — invoking-user and `unestablished` entries included. This is an observation about *writes*, distinct from the read-side credential identity above, and the caller cannot re-derive it: your transports are not its transports;
-- **the gate report, exactly as `create-pr` returned it** — here and never in the PR body or any comment (`references/authored-write-form.md`);
+- **the gate report, exactly as `create-pr` returned it**, and with it, under `per-pr`, each required context whose whole workflow is `filtered off`, with its workflow and filter — a hold the forge will keep (*Final local verification*) — here and never in the PR body or any comment (`references/authored-write-form.md`);
 - checkpoints pushed (count/SHAs when useful); implementation attempts used;
 - blocker/failure details;
 - on `NEEDS_USER`, **which kind** — unverifiable prerequisite, or unproven dependency view — and the recommended user action. The kinds demand opposite caller responses, and inferring the kind from an empty blocker list is how the expensive one gets handled as the cheap one.
