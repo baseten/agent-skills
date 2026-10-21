@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 24560,
+      "budget": 24986,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -19,19 +19,19 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/integration-branch.md": {
-      "budget": 2307,
+      "budget": 2584,
       "target": 1500
     },
     "skills/backlog-orchestrator/restart-resume.md": {
-      "budget": 1016,
+      "budget": 1093,
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
-      "budget": 1982,
+      "budget": 2034,
       "target": 1500
     },
     "skills/create-pr/SKILL.md": {
-      "budget": 2543,
+      "budget": 2551,
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
@@ -39,7 +39,7 @@
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
-      "budget": 5143,
+      "budget": 5182,
       "target": 3000
     },
     "skills/merge-stack/SKILL.md": {
@@ -75,7 +75,7 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 5655,
+      "budget": 5964,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
@@ -91,15 +91,15 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 7872,
+      "budget": 8603,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
-      "budget": 8662,
+      "budget": 9153,
       "target": 8000
     },
     "skills/swarm/runtime-remote.md": {
-      "budget": 1292,
+      "budget": 1301,
       "target": 1500
     },
     "skills/upgrade-npm-dependency/SKILL.md": {
@@ -119,15 +119,15 @@
       "target": 1500
     },
     "rules/agent-policy.md": {
-      "budget": 2187,
+      "budget": 2191,
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2122,
+      "budget": 2199,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
-      "budget": 1626,
+      "budget": 1650,
       "target": 1500
     },
     "rules/ci-attribution.md": {
@@ -139,7 +139,7 @@
       "target": 1500
     },
     "rules/establish-do-not-assume.md": {
-      "budget": 1531,
+      "budget": 1571,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {

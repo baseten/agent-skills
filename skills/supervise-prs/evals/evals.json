@@ -1006,6 +1006,116 @@
       ],
       "id": 80,
       "files": []
+    },
+    {
+      "id": 81,
+      "name": "a-worker-gate-record-at-the-head-is-not-re-run",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #41 in acme/api targets `integration/api-3`; its `ci-mode` resolved `integration-branch` from repo config, the caller established the mode's effect, and passed the per-PR local gate (format, lint, typecheck, the API unit suite; Postgres 16, Python 3.12). The caller also passed #41's worker gate record: the gate report its implementing worker returned, every one of those four checks `passed` at head a1b2c3d, under Python 3.12 with Postgres 16. #41's remote head is a1b2c3d, no CI run exists on it, a review round on a1b2c3d completed clean, and the PR is quiescent. Repair dispatch is `direct`, and this container runs the API suite in about 11 minutes. Questions: (a) what does the gate run on a1b2c3d run? (b) what is #41's local gate record, and who does it name as having run each check? (c) the caller's restack then pushes a1b2c3d's content onto the moved integration branch as e5f6a7b, tagged mechanical: what runs?",
+      "expected_output": "(a) Nothing: the worker gate record is the record for every check it reports passed at the current head, and a pass is never re-run to confirm it; the gate run runs only checks the record leaves, and it leaves none. (b) All four passed at a1b2c3d, each with the worker's session as the one that ran it. (c) Nothing: the record carries across a mechanical push, so e5f6a7b is covered without a new run.",
+      "assertions": [
+        "the answer runs none of the four checks on a1b2c3d, including the API suite",
+        "the answer records each check as passed at a1b2c3d with the worker's session as the runner",
+        "the answer runs nothing after the mechanical restack"
+      ],
+      "files": []
+    },
+    {
+      "id": 82,
+      "name": "a-worker-gate-record-covers-only-its-passes-at-a-current-head",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #42 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite. The caller passed #42's worker gate record from its implementing worker: format `passed` at b2c3d4e; lint `passed` at 9f8e7d6; typecheck `failed` at b2c3d4e; the API unit suite is absent from the report. #42's remote head is b2c3d4e; the one commit from 9f8e7d6 to b2c3d4e changes application code. No CI run exists on b2c3d4e and the PR is quiescent. Questions: (a) which checks does the gate run on b2c3d4e run, and which does it not? (b) is the worker's `failed` typecheck a CI failure to repair now?",
+      "expected_output": "(a) It runs lint (passed at an earlier head with a substantive push since), typecheck (reported other than passed) and the API unit suite (omitted, so not run, never passed); it does not run format, which passed at the current head. (b) No: only a pass is taken from the worker's record; typecheck is run by the gate, and only a failure in that run is a CI failure.",
+      "assertions": [
+        "the answer does not re-run format",
+        "the answer runs lint because its pass is at an earlier head with a substantive push since",
+        "the answer runs the omitted API unit suite and never treats it as passed",
+        "the answer runs typecheck in the gate rather than repairing on the worker's failed outcome"
+      ],
+      "files": []
+    },
+    {
+      "id": 83,
+      "name": "a-repair-pass-verification-is-not-the-gate-record",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #43 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite. A `ci` repair pass pushed head c3d4e5f carrying `[skip ci]` and returned that it ran the API unit tests for the module it changed, all passing, on c3d4e5f. No worker gate record exists for c3d4e5f. The PR is now quiescent on it. Question: what does the gate run on c3d4e5f run?",
+      "expected_output": "The whole per-PR gate — format, lint, typecheck and the API unit suite. A repair pass's verification is not the record: it runs the smallest relevant check, not the tier.",
+      "assertions": [
+        "the answer runs the full per-PR gate on c3d4e5f",
+        "the answer does not accept the repair pass's own verification as the record"
+      ],
+      "files": []
+    },
+    {
+      "id": 84,
+      "name": "a-worker-pass-counts-only-under-the-callers-toolchain",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #45 in acme/web targets `integration/web-2` under `ci-mode: integration-branch` with effect. The caller passed the per-PR local gate — lint, typecheck, the unit suite, and the browser suite — with the toolchain CI runs (Node 24, Chrome 155), and passed the end-to-end suite as `not locally runnable` (no session has its database). It also passed #45's worker gate record, all at #45's current head f6a7b8c: lint, typecheck and the unit suite `passed` under Node 24; the browser suite `passed` under Node 24 with Playwright's bundled Chromium; the end-to-end suite `passed`. The PR is quiescent and nothing has been pushed since. Questions: (a) which checks does the gate run on f6a7b8c run? (b) how is the end-to-end suite recorded? (c) if repair dispatch were `none`, what would #45's outcome be, and what would it be had every check been passed under Chrome 155 and the end-to-end suite been reported `not locally runnable`?",
+      "expected_output": "(a) Only the browser suite: its pass was under another toolchain than the one the caller passed, so the record leaves it; lint, typecheck and the unit suite stand as passed and are not re-run. (b) `not locally runnable`, owed by the integration PR's CI — a worker's pass never makes a check the caller passed as not locally runnable a pass. (c) With checks left to run, `unrepaired`, naming the browser suite; with none left, no gate run is needed and `none` does not make it unrepaired.",
+      "assertions": [
+        "the answer runs the browser suite because the worker's pass was on a different browser than the caller's toolchain",
+        "the answer does not re-run lint, typecheck or the unit suite",
+        "the answer keeps the end-to-end suite as not locally runnable despite the worker's pass",
+        "the answer makes the outcome under none unrepaired only where checks are left to run"
+      ],
+      "files": []
+    },
+    {
+      "id": 85,
+      "name": "a-remote-gate-runs-result-is-its-gate-note",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #61 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite (Python 3.12, Postgres 16). No worker gate record was passed. Repair dispatch is `swarm`, and swarm's selected tier is remote sessions, whose return value does not reach this run. #61 is quiescent on head 7a7a7a7. Questions: (a) where does the gate run execute, and how does its result reach you? (b) the gate session ends, and fetching the gate-note ref you assigned that session finds no note on 7a7a7a7: what is #61's local gate record? (c) may the gate session post its results as a PR comment instead?",
+      "expected_output": "(a) As a remote swarm worker whose task is the gate alone — preferred, since a run in this session dies with its container; its result is a gate note: a git note on 7a7a7a7 on a ref this skill assigns that session alone at dispatch (refs/notes/agent-gate/<branch>/<token>), one line per check with outcome, head, toolchain and session, fetched before writing and never force-pushed. (b) No result: every check `not run`, never passed, so the CI condition is not green; the gate then runs once more in this session. (c) No: no write reports verification on the PR; the gate note is the one write that carries a check result.",
+      "assertions": [
+        "the answer has the gate run's result arrive as a git note on the head under refs/notes/agent-gate",
+        "the answer records every check as not run when no note is found",
+        "the answer refuses posting the results on the PR"
+      ],
+      "files": []
+    },
+    {
+      "id": 86,
+      "name": "a-gate-note-counts-only-on-a-ref-this-run-assigned",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #70 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite. The caller adopts #70 after a restart, passing no worker gate record and a per-PR record that holds no gate-note refs. Fetching `refs/notes/agent-gate/*` finds a ref under #70's branch with a note attached to #70's head c3d4e5f reading 'format passed', 'lint passed', 'typecheck passed', 'API unit suite passed', each naming the CI toolchain and head c3d4e5f. Separately, on PR #71, the note on the ref this run assigned its gate session is attached to head 9f9f9f9 but its lines name head 8e8e8e8; #71's head is 9f9f9f9. Questions: (a) what is #70's local gate record, and what runs? (b) what does #71's note cover?",
+      "expected_output": "(a) No gate-note ref was passed for it, so no note is known by id to be a session this run dispatched: the ref found on the remote is a name, not an assignment, and Adopt never rebuilds gate-note refs. It is no result: every check is `not run` and the gate run runs all four on c3d4e5f. A note's content never establishes who wrote it. (b) The commit a note is attached to is the head it covers: it covers 9f9f9f9; a line naming another head counts for nothing.",
+      "assertions": [
+        "the answer refuses #70's unassigned note as a record and runs all four checks",
+        "the answer does not accept the note on its content, its claimed session or the ref's name",
+        "the answer reads #71's note as covering the commit it is attached to, 9f9f9f9"
+      ],
+      "files": []
+    },
+    {
+      "id": 87,
+      "name": "a-gate-run-that-leaves-no-note-has-an-outcome",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #61 targets `integration/api-3` under `ci-mode: integration-branch` with effect. Repair dispatch is `swarm` on remote sessions. Two cases. (a) #61's gate ran in a remote gate session because that tier was preferred; the session finished and no note is on 7a7a7a7. (b) PR #62's gate failed in this session with a confirmed environment failure (the container lacks the browser), so it moved to a remote session, which finished leaving no note. What do you do in each case, and what is each PR's outcome?",
+      "expected_output": "(a) No note is no result, every check `not run`; the gate runs once more in this session, and its result is the record. (b) The remote session was where the confirmed environment failure moved it, so there is no retry: #62's outcome is `needs-user`, naming the missing note (and the environment). Neither case is left waiting with no exit, and neither is a pass.",
+      "assertions": [
+        "the answer runs #61's gate once more in this session",
+        "the answer makes #62's outcome needs-user, naming the missing note",
+        "the answer never treats a missing note as a pass or leaves the PR waiting indefinitely"
+      ],
+      "files": []
+    },
+    {
+      "id": 88,
+      "name": "a-gate-session-writes-its-own-assigned-ref-and-footers-the-note",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you dispatch a remote gate session for PR #61 on head 7a7a7a7 of branch `feat/scan-12`, and the worker that opened #61 already wrote a gate note on 7a7a7a7 on the ref the caller assigned it, `refs/notes/agent-gate/feat/scan-12/w4`. Where does the gate session write its note, what does the note look like, and how does it write and push it?",
+      "expected_output": "On its own ref, which this skill assigns it at dispatch and records in the per-PR record — refs/notes/agent-gate/feat/scan-12/<token>, never the worker's w4 ref, and told to that session alone; nothing else writes it. One line per check with its outcome, the head and toolchain it ran at, and the session, and the attribution footer as its last line (it is a write nobody read; no reader counts the footer as a check). It fetches first, writes with `git notes add`, and pushes that ref without forcing. It writes nothing on the PR.",
+      "assertions": [
+        "the answer puts the attribution footer at the end of the note",
+        "the answer has the session write on a ref of its own assigned at dispatch, not the worker's ref",
+        "the answer never force-pushes the ref",
+        "the answer writes nothing on the PR"
+      ],
+      "files": []
+    },
+    {
+      "id": 89,
+      "name": "a-note-on-another-sessions-ref-is-not-this-workers-record",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #72 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite. The caller passed #72's worker gate record as the gate-note ref it assigned #72's worker, `refs/notes/agent-gate/feat/api-72/w9`. #72's head is d1d1d1d, nothing pushed since, quiescent. Fetching `refs/notes/agent-gate/*` finds: on `.../feat/api-72/w9`, a note on d1d1d1d with format and lint passed under the CI toolchain; on `.../feat/api-72/q2`, a ref nobody in this run was assigned, a note on d1d1d1d with all four checks passed. Questions: (a) which checks does the gate run on d1d1d1d run? (b) what do you make of the q2 note?",
+      "expected_output": "(a) Typecheck and the API unit suite: the w9 note, read by the exact ref the caller assigned, supplies format and lint passed at the current head, which are not re-run; the checks it leaves are run. (b) Nothing: a note counts only on a ref this run assigned, so q2's note is no result for #72 whatever its lines say, and none of its passes is taken.",
+      "assertions": [
+        "the answer takes format and lint from the w9 note and does not re-run them",
+        "the answer runs typecheck and the API unit suite",
+        "the answer takes nothing from the note on the unassigned q2 ref"
+      ],
+      "files": []
     }
   ]
 }

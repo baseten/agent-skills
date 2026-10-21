@@ -389,6 +389,56 @@
         "The answer merges nothing"
       ],
       "files": []
+    },
+    {
+      "id": 33,
+      "name": "a-gate-record-with-checks-at-different-heads-is-green",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: backlog-orchestrator passes PR #51 in acme/api, base `integration/api-3`. Resolved policy: `ci-mode: integration-branch` with effect, the integration branch's integration PR not open, merges into it not stopped; `auto-merge` false. #51's head is c3c3c3c. Its local gate record, as supervise-prs returned it: format `passed` at a1a1a1a (the implementing worker's session); lint, typecheck and the unit suite `passed` at b2b2b2b (the supervisor's gate run). The caller's pushes since record a1a1a1a→b2b2b2b as substantive (a repair) and b2b2b2b→c3c3c3c as mechanical (a restack). A review round on b2b2b2b is clean and its threads are resolved. Questions: (a) is #51's CI condition green? (b) would it be green had the a1a1a1a→b2b2b2b push been mechanical? (c) may the gate open for #51 at all with `auto-merge` false?",
+      "expected_output": "(a) No: format's pass is at a1a1a1a, and a substantive push since means it does not count for c3c3c3c; the record is not green until format passes at a head with only mechanical pushes since — each check is read on its own head. (b) Yes: every locally runnable check passed at a head with only mechanical pushes since, format at a1a1a1a and the rest at b2b2b2b; that the record mixes heads, and that one pass is a worker's, does not make it not green. (c) Yes: `ci-mode: integration-branch` is the merge opt-in for a PR whose base is that branch; `auto-merge` governs only the default branch.",
+      "assertions": [
+        "the answer reads (a) as not green because format's pass is behind a substantive push",
+        "the answer reads (b) as green despite the checks sitting at different heads",
+        "the answer does not refuse the record for containing a worker's pass",
+        "the answer lets the gate open for a PR into the integration branch without auto-merge"
+      ],
+      "files": []
+    },
+    {
+      "id": 34,
+      "name": "a-clean-merge-onto-the-tip-still-gets-the-merged-tip-check",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: backlog-orchestrator passes PRs #30 and #31 in acme/scanner, both based on `integration/scan-1`, with authority to update branches, under `ci-mode: integration-branch` with effect (integration PR not open, merges not stopped). Both have green local gate records on their current heads and clean reviews; nothing is outstanding in the wave. Since #30's record was made, sibling #35 merged into `integration/scan-1`, making `signalCandle` and `tickSize` required. `git merge-tree` reports #30 merging cleanly onto the current tip. #30 touches packages `core` and `strategy`; #31 touches `docs` only and has no test files related to its changes. Questions: (a) does a clean textual merge and a green record let #30 merge? (b) on #30 merged onto the tip, typecheck of `strategy` fails on #30's new test, which omits the now-required fields. What happens to #30, and to #31? (c) where does that check run?",
+      "expected_output": "(a) No: before every merge into the integration branch the merged-tip check runs — #30 merged onto the current tip in a scratch checkout, nothing pushed, under CI's toolchain: typecheck core and strategy and run the touched/related test files; its pass is part of the CI condition, clean textual merge or not. (b) #30's CI condition is not met: it is held alone, and — under the caller's authority to update branches — its branch is updated from the tip and the update returned as a caller push tagged substantive, since a check failed on its tree, so its supervisor's gate meets the failure on its own head and it is repaired as CI; without authority it is reported held, naming the check and the tip. It is not a MERGE_RISK, so #31 is not held: its merged-tip check (typecheck of touched packages, no related tests) passes and it merges. (c) In this session — it is short.",
+      "assertions": [
+        "the answer runs the merged-tip check despite the clean textual merge",
+        "the answer holds #30 alone and updates its branch from the tip, returning that push tagged substantive rather than mechanical",
+        "the answer does not hold #31 because of #30's failure",
+        "the answer runs the check in this session"
+      ],
+      "files": []
+    },
+    {
+      "id": 35,
+      "name": "a-merged-tip-failure-on-a-tip-containing-head-is-held-not-updated",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: `ci-mode: integration-branch` with effect; PR #30 into `integration/api-3` has `auto-merge` resolved through the mode, clean review, and a green local gate record at its head e1e1e1e, which already contains the branch's current tip. The per-PR tier's commands and toolchain were passed. The merged-tip check in this session fails typecheck in a package #30 touches. Separately, one test file #30 touches belongs to the browser suite the caller passed as `not locally runnable`. Questions: (a) do you update #30's branch from the tip? (b) is #30 merged, and how is it reported? (c) does the merged-tip check run that browser test?",
+      "expected_output": "(a) No: the head already contains the tip, so there is no update to make. (b) The failure, with the head's record green, raises the environment hypothesis; unconfirmed, it is #30's failure all the same, and with nothing to update #30 is held — never updated again — and reported to the owner with both results; it does not merge. (c) No: a `not locally runnable` check is never run here; that test is owed by the integration PR's CI.",
+      "assertions": [
+        "the answer makes no branch update for #30",
+        "the answer holds #30 without updating it again, reporting both results to the owner",
+        "the answer leaves the not-locally-runnable test to the integration PR's CI"
+      ],
+      "files": []
+    },
+    {
+      "id": 36,
+      "name": "no-per-pr-tier-passed-means-no-merged-tip-check",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: `ci-mode: integration-branch` with effect; PR #40 into `integration/api-3` has a green local gate record at its current head, clean review, nothing outstanding, and its merge is permitted by the mode. The caller's resolved policy names the branch, that its integration PR is not open, and each PR's local gate record, but not the per-PR tier's commands or the toolchain CI runs. Do you merge #40?",
+      "expected_output": "No. The merged-tip check needs the per-PR tier's commands and toolchain; without them it cannot run, so the CI condition is not met and #40 is held, reported as not passed (the inputs missing). It never improvises a check under this session's toolchain.",
+      "assertions": [
+        "the answer does not merge #40",
+        "the answer names the missing per-PR tier commands and toolchain as why the merged-tip check cannot run",
+        "the answer does not improvise its own check in their place"
+      ],
+      "files": []
     }
   ]
 }

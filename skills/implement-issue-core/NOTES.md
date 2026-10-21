@@ -90,6 +90,8 @@ the set it re-creates the gap.
 
 **Why the toolchain is CI's, browser included, and a check is the whole job (integration PR alkaline-studio/generative-print#539 (Oct 2026)):** both full-tier checkpoints passed locally and the integration PR's CI failed twice. First, CI launched the runner's preinstalled Chrome 155 via `CHROME_BIN` while every gate session used Playwright's bundled Chromium 1194; Chrome's `Math.exp` differs from Node's in the last bit, values interpolated into shader source changed a content hash, and the app fell back to a live render — reproduced locally only after installing Chrome stable and pointing the suites' executable variable at it. The old text named only version files, so a session with *a* browser counted as passing. Second, with that fixed, only the aggregating `test` job failed: it also runs the repository's guard scripts, and `path-rules` rejected a package script one PR had added. The gate had run the shards and nothing of the aggregate's own steps. Each failure cost an ~85-billed-minute run; the point of the gate is to predict that run.
 
+**Why each outcome names the head it ran at (Oct 2026):** under an integration branch a worker's passes stand as the PR's gate record without being re-run (`supervise-prs`, *Integration-branch CI*, step 3), and a record attaches to a head. A worker that ran the suite, then committed a fix, has passes for a tree that no longer exists; without the SHA the report would read as covering the pushed head.
+
 ## Step 6 — create and verify PR
 
 **Why the derived set travels to `create-pr`:** that skill is a separate literal
