@@ -1081,6 +1081,30 @@
         "the answer posts no further trigger on that head"
       ],
       "files": []
+    },
+    {
+      "id": 87,
+      "name": "a-mechanical-push-does-not-renew-a-carried-rounds-stall-allowance",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #128 in acme/web runs under `ci-mode: deferred`; this skill performs its Codex review convention. You posted `@codex review` on head aaa111; Codex's in-progress reaction appeared on it, and 25 minutes later you re-triggered once for the stall. Since then you made the deferred-CI trigger's clean base update, a mechanical push, so the head is now bbb222 and the round on aaa111 carries forward to it; bbb222's own timeline has no trigger on it. Both requests on aaa111 still show Codex's reaction, the re-trigger's for 30 minutes now, and no review exists. On this pass, do you post a trigger? What do you record and report?",
+      "expected_output": "No trigger. The mechanical update carried the round forward from aaa111, and a move the round carries forward across resets nothing: the round and its spent stall allowance travel together, and its triggers are counted on every head it spans, so aaa111's two triggers mean the one further request is spent. A mechanical push is never a reason to re-trigger. The re-trigger has had its own time (its signal past 20 minutes) with no answer, so the round is reported stalled, naming both requests and since when; nothing requests it again, and it is surfaced — holding the merge, not the PR's finishing.",
+      "assertions": [
+        "the answer posts no trigger on bbb222",
+        "the answer treats the stall allowance as spent because the round carried forward from aaa111, not renewed by the mechanical push",
+        "the answer reports the round stalled and surfaced, holding the merge"
+      ],
+      "files": []
+    },
+    {
+      "id": 88,
+      "name": "a-stall-re-trigger-gets-its-own-time-and-no-read-back-reissue",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #129 in acme/web; this skill performs its Codex review convention. The round on head ccc333 stalled and you re-triggered it. The re-trigger's read-back shows the transport appended an attribution footer, so you recorded the pair `appends footer` and reported the trigger as possibly not fired. (a) The next pass runs 3 minutes later: the original request still shows Codex's in-progress reaction and the re-trigger shows nothing yet. Is the round now reported stalled after its re-trigger? (b) A pass 25 minutes after the re-trigger finds the re-trigger's confirmation window elapsed with no reaction, reply or review, nothing else requesting review, and the original still showing its reaction. Do you reissue the trigger through a different mechanism?",
+      "expected_output": "(a) No. A round is reported stalled after its re-trigger only once the re-trigger has had its own time — its own signal past 20 minutes, or its confirmation window elapsed with none. Three minutes in, it is waiting on the re-trigger. (b) No reissue: the read-back reissue is never made where the round already carries its one further request, and the stall re-trigger was that request, so a reissue would be a third request on the head. Bar the pair from further triggers, keep the trigger reported possibly not fired, and report the round stalled — both requests and since when — surfaced: it holds the merge, and posting another by hand is the owner's call.",
+      "assertions": [
+        "at (a) the answer does not yet report the round stalled after its re-trigger",
+        "at (b) the answer does not reissue the trigger through another mechanism",
+        "at (b) the answer reports the round stalled and surfaced, holding the merge"
+      ],
+      "files": []
     }
   ]
 }

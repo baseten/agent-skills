@@ -389,6 +389,18 @@
         "The answer merges nothing"
       ],
       "files": []
+    },
+    {
+      "id": 33,
+      "name": "a-clean-review-beside-a-request-still-in-progress-does-not-pass-the-gate",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue settles its one PR, #131, in a repository whose policy has `auto-merge: true`. CI is green on the current head ddd444; there is no conflict, no outstanding DECISION, MERGE_RISK or NEEDS_USER item, no recovery ref, no held draft, and the dependency view is proven. Review history on ddd444: Codex's review stalled, the supervisor re-triggered it once, and the re-trigger has answered with a summary comment carrying `Reviewed commit: ddd444` and no threads. The original request still shows Codex's in-progress reaction and has not answered. Does the gate pass, and does #131 merge?",
+      "expected_output": "No. A `Reviewed commit:` matching the head is not enough while another review request on that head still shows its provider's in-progress signal: that request can still root findings on ddd444, so the review is not clean and the gate does not pass. #131 does not merge in this pass; it is reported held on the open review request, until that request answers or the owner rules. No trigger is posted.",
+      "assertions": [
+        "the gate does not pass",
+        "the condition holding it is the review request still in progress on the head",
+        "#131 is not merged"
+      ],
+      "files": []
     }
   ]
 }

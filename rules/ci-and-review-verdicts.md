@@ -71,11 +71,15 @@ object and no threads, so no endpoint can distinguish *clean* from *never ran*
 without the second read.
 
 1. **Existence is the summary comment, always.** Require a `Reviewed commit:`
-   matching the current head. No match → `NOT REVIEWED`; request the round and
-   never merge — **except a round recorded `refused`, which is not re-requested,
-   and one already requested and unanswered, re-requested at most once per
-   head, only on a stall or a reissue** (the *review trigger* shared rule, *A
-   refused round*, *A stalled round*). This read is not
+   matching the current head. No match → `NOT REVIEWED`: never merge, and
+   request the round — **except a round recorded `refused`, which is not
+   re-requested, and one this workflow already requested and unanswered, which
+   gets at most one further request, only where the *review trigger* shared
+   rule allows one** (*A refused round*, *Re-triggers*, *A stalled round*).
+   **A match is not enough while another review request on that head still
+   shows its provider's in-progress signal and has not answered**, whatever
+   mark remains after an answer: it can still root findings on the same commit,
+   so the review is not clean until that request answers. This read is not
    skippable, because a thread does not say *which round produced it*: a
    resolved, non-outdated thread left by an earlier round or by a person
    satisfies any existence test built on threads, and a new trigger that
