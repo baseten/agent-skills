@@ -233,8 +233,8 @@
     {
       "id": 19,
       "name": "iterate-narrowly-and-clear-a-confirmed-environment-failure-by-its-checks",
-      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Per-pr, acme/api, a Node repository using vitest. The derived gate is `ci / format`, `ci / typecheck` and `ci / test` (the full API suite, about forty minutes against a local Postgres). (a) You are midway through implementing and have just edited `src/billing/invoice.ts`; what do you run now? (b) Later, on your final head, the gate's `ci / test` fails in 212 tests across unrelated files, all with `ECONNREFUSED 127.0.0.1:5432`. You check and the local Postgres container has exited; you restart it and it is healthy. `ci / format` and `ci / typecheck` passed in that gate run. What do you re-run?",
-      "expected_output": "(a) The narrowest selection the tooling offers for the changed files — `vitest related src/billing/invoice.ts`, perhaps with that package's typecheck — not the whole gate or the full suite; a narrow run is not the gate and is never reported as it. The gate runs once, on the final head. (b) This is a mass failure with the tell in the error, an environment hypothesis, and you confirmed it independently (the database had exited). Once the environment is healthy, re-run only the check it failed, `ci / test`, on the same head — not the whole gate; format and typecheck results stand.",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Per-pr, acme/api, a Node repository using vitest. The derived gate is `ci / format`, `ci / typecheck` and `ci / test` (the full API suite, about forty minutes against a local Postgres). In `.github/workflows/ci.yml` only the `test` job declares a `postgres` service; the `format` and `typecheck` jobs run `pnpm format:check` and `tsc --noEmit`, start nothing, and no config they read names a database. (a) You are midway through implementing and have just edited `src/billing/invoice.ts`; what do you run now? (b) Later, on your final head, the gate's `ci / test` fails in 212 tests across unrelated files, all with `ECONNREFUSED 127.0.0.1:5432`. You check and the local Postgres container has exited; you restart it and it is healthy. `ci / format` and `ci / typecheck` passed in that gate run. What do you re-run?",
+      "expected_output": "(a) The narrowest selection the tooling offers for the changed files — `vitest related src/billing/invoice.ts`, perhaps with that package's typecheck — not the whole gate or the full suite; a narrow run is not the gate and is never reported as it. The gate runs once, on the final head. (b) This is a mass failure with the tell in the error, an environment hypothesis, and you confirmed it independently (the database had exited). Once the environment is healthy, re-run the check it failed, `ci / test`, once on the same head — not the whole gate; format and typecheck neither start nor name Postgres, so they did not use the service that went down and their results stand.",
       "assertions": [
         "in (a) the answer runs a narrow selection for the changed file rather than the full suite or the whole gate",
         "in (b) the answer treats the failure as an environment failure, confirmed by the exited database",
@@ -252,6 +252,19 @@
         "the answer runs build / test because the pull_request trigger has no filters",
         "the answer re-runs the whole gate, build / lint included, in the session with CI's browser",
         "the answer bounds the re-run to once for the head and reports a second failure"
+      ],
+      "files": []
+    },
+    {
+      "id": 21,
+      "name": "an-outage-re-runs-the-passes-that-used-the-dead-service",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Per-pr, acme/api, a Node repository using vitest; the session runs CI's toolchain. The derived gate, all from `.github/workflows/ci.yml`: `ci / lint` (its job runs `pnpm lint`, declares no service, and nothing it reads names one); `ci / unit` (its job declares `services: redis`); `ci / integration` (its job declares `services: redis`, and its suite wraps every test in `describe.skipIf(!redisReachable)`); and `ci / contract` (its job runs `pnpm test:contract` and declares no service, but that script loads `.env.contract`, which this session cannot read, and you cannot tell whether it connects to Redis). On your final head, in one session, `ci / unit` fails 90 tests across unrelated files with `ECONNREFUSED 127.0.0.1:6379`; `ci / lint`, `ci / integration` and `ci / contract` pass. You find the local Redis container had exited, restart it, and it is healthy. Questions: (a) which checks do you re-run, and why each? (b) how many times, and what if they fail again?",
+      "expected_output": "(a) A confirmed outage: the re-run covers the check that failed and every check that passed but uses the service that went down. `ci / unit` failed, so it re-runs. `ci / integration` passed but its job declares Redis, and a suite that skips what it cannot reach reports `passed` having run nothing, so it re-runs. Whether `ci / contract` uses Redis cannot be told, so it re-runs too (fail closed). `ci / lint` starts no service and names none, so its pass stands. It is not a toolchain mismatch, so the whole gate does not re-run on that ground. (b) Once for this head; failing again, report it as the environment failure, with the error.",
+      "assertions": [
+        "the answer re-runs ci / unit and ci / integration, the latter because its job declares the Redis service",
+        "the answer re-runs ci / contract because whether it uses Redis cannot be told",
+        "the answer keeps ci / lint's pass rather than re-running it",
+        "the answer re-runs once for the head and reports a second failure as the environment failure"
       ],
       "files": []
     }

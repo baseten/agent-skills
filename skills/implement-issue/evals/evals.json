@@ -3,7 +3,8 @@
   "description": "Decision-scenario regression evals. Each prompt describes a run state and asks what the skill requires next; assertions check the decision, not the wording. Run them against any rewrite of SKILL.md before merging it: the rewrite passes only if every scenario still resolves the same way.",
   "companions": [
     "settle-and-merge",
-    "supervise-prs"
+    "supervise-prs",
+    "create-pr"
   ],
   "evals": [
     {
@@ -385,6 +386,19 @@
       "assertions": [
         "The answer settles again rather than stopping for a missing scope",
         "The answer passes the permalink read from the PR body's `Source:` line as the scope"
+      ],
+      "files": []
+    },
+    {
+      "id": 31,
+      "name": "an-existing-branch-passes-no-gate-and-create-pr-filters-it",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are asked to ship `alex/fix-typos`, a pushed branch in acme/site with no PR and no issue; the user confirms there is none and gives a one-line brief. Per-pr. The branch's only change is to `docs/faq.md`. Branch protection on `main` requires `build / lint` (from `lint.yml`, no filters) and `build / test` (from `build.yml`, whose `pull_request` trigger has `paths: ['src/**']`); neither workflow file differs between `main` and the branch. Questions: (a) what gate record and `ci-mode` do you pass `create-pr`? (b) what does the gate run before the PR opens, and what is `build / test`'s outcome?",
+      "expected_output": "(a) No gate record and no `ci-mode`: `create-pr` derives the required checks and runs the part not filtered off itself, and the branch is pushed as it stands. (b) `create-pr` derives `build / lint` and `build / test` from protection; `build.yml`'s `pull_request` paths select nothing in the branch's whole diff against `main`, so `build / test` is recorded `filtered off` and not run, never passed. `build / lint` runs. Under per-pr, `build / test` is required and its whole workflow is filtered off, so it never reports and the forge holds the PR on it: `create-pr` returns that hold with its gate report, and supervision reports it rather than waiting on it.",
+      "assertions": [
+        "the answer passes create-pr no gate record and no ci-mode",
+        "the answer has create-pr derive the set from branch protection",
+        "the answer records build / test as filtered off, neither run nor passed",
+        "the answer surfaces that the forge will hold the PR on build / test, reported rather than waited on"
       ],
       "files": []
     }

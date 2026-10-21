@@ -1125,6 +1125,32 @@
         "the answer narrows the test suites by the repository's change-set tooling"
       ],
       "files": []
+    },
+    {
+      "id": 87,
+      "name": "a-checkpoints-environment-re-run-is-bounded-and-scoped",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). acme/shop resolves `ci-mode: integration-branch`. You run the full tier on `integration/shop-4` at the checkpoint before the integration PR opens, in a container on CI's toolchain. `e2e / checkout` fails with `ECONNREFUSED 127.0.0.1:6379` across unrelated specs; `e2e / search` passed (its job declares `services: redis`); `unit / core` passed (its job declares no service and its config names none). You confirm independently that the container's Redis exited and cannot be restarted. A remote session is available. Questions: (a) what re-runs, where, and how many times? (b) the remote re-run fails `e2e / checkout` again with the same error; what now, and may the integration PR open?",
+      "expected_output": "(a) An environment failure, not a gate failure, so no bisection. Confirmed as an outage, it re-runs in the remote session once for this checkpoint: `e2e / checkout`, which failed, and `e2e / search`, which passed but uses the Redis service that went down. `unit / core` uses no service, so its pass stands. (b) No further re-run. It is a `NEEDS_USER` naming the checks and the environment, with options: re-run once the owner has fixed the environment, open the integration PR anyway (its CI runs every check), or leave it to the owner. The integration PR does not open on its own: only an owner reply choosing one of those options releases it.",
+      "assertions": [
+        "the answer re-runs e2e / checkout and e2e / search in the remote session, and keeps unit / core's pass",
+        "the answer re-runs once for the checkpoint rather than retrying",
+        "on the second failure the answer raises NEEDS_USER naming the checks and the environment, with options",
+        "the answer holds the integration PR until an owner reply chooses an offered option"
+      ],
+      "files": []
+    },
+    {
+      "id": 88,
+      "name": "a-remote-workers-pr-report-leaves-out-the-filtered-off-hold",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). acme/api resolves `ci-mode: per-pr`. Workers run as remote sessions whose return value does not reach this run. You are writing the dispatch prompt for a worker whose issue is a docs-only change. You know from the derived gate that required `api / test` comes from `api.yml`, whose `pull_request` trigger has `paths: ['apps/api/**']`, so `implement-issue-core` will record it `filtered off` and return, with its gate report, the hold that the forge will keep on it. The worker will also return an acceptance criterion it left unmet. Questions: (a) what does your prompt tell the worker to record on its PR before returning, and how is it stated? (b) does that comment mention `api / test`, its filter or the hold? (c) how does this run learn about the hold?",
+      "expected_output": "(a) The judgment part of its result, on its PR, stated as a subtraction rather than an enumeration: `implement-issue-core`'s entire Output contract minus what this run can read for itself (branch, PR, session record fields) and minus the gate report, which is never posted. So the unmet acceptance criterion goes in. (b) No: the per-pr `filtered off` hold is part of the gate report in core's Output, so the subtraction removes it; naming which check did not run and why is verification in a forge write (`references/authored-write-form.md`). (c) From the forge: supervising the PR reads the required check that never reports through *Path filters*, which names the workflow and filter and holds the PR.",
+      "assertions": [
+        "the answer states the PR report as core's Output minus the gate report, not as an enumeration",
+        "the answer's PR report omits api / test, its filter and the filtered-off hold",
+        "the answer includes the unmet acceptance criterion in the PR report",
+        "the answer has this run learn of the hold from the forge's path-filter reading"
+      ],
+      "files": []
     }
   ]
 }
