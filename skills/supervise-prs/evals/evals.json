@@ -1006,6 +1006,18 @@
       ],
       "id": 80,
       "files": []
+    },
+    {
+      "id": 81,
+      "name": "a-remote-repair-pass-arms-the-check-in-at-dispatch-when-this-skill-owns-the-wait",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You were invoked directly with wait owner = self and repair dispatch = swarm; swarm runs each pass as a remote worker session (tier 2), whose return value does not reach this run. A CI failure on PR #40 is this PR's, so you dispatch one repair-pr pass at 14:00. (a) What wake do you arm, when, and at what interval while the pass is working? (b) How would that differ with wait owner = caller?",
+      "expected_output": "(a) The pass's completion never reaches the run, so the wake the wake-budget rule requires is armed from that pass's dispatch, not only once nothing is in flight: the PR subscriptions already armed at adoption plus the one bounded check-in, every 20 minutes while the pass is working, one-shot and re-armed with the latest state, under the count and budget, its prompt carrying the posture line and each PR's durable state. (b) With wait owner = caller this skill arms no check-in and runs no loop; the caller's single wake re-runs Pass.",
+      "assertions": [
+        "with wait owner = self, the check-in is armed at the remote pass's dispatch",
+        "the interval is 20 minutes while the pass is working, under the wake budget's count and budget",
+        "with wait owner = caller this skill arms no check-in"
+      ],
+      "files": []
     }
   ]
 }

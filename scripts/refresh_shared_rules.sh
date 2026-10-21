@@ -85,8 +85,9 @@ CI_ATTRIBUTION="backlog-orchestrator
 # results, and read its state within the credential's allowances.
 WATCH_AND_READ="swarm backlog-orchestrator supervise-prs"
 
-# Skills that arm a recurring check-in and bound it.
-WAKE_BUDGET="backlog-orchestrator supervise-prs npm-dependency-upgrade-orchestrator implement-issue"
+# Skills that arm a check-in and bound it.
+WAKE_BUDGET="backlog-orchestrator supervise-prs npm-dependency-upgrade-orchestrator implement-issue
+  swarm"
 
 # Skills whose session arms a PR-activity subscription, receives its wakes, or
 # reports to the user that the platform's posture was overridden.
