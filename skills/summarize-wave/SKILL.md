@@ -100,6 +100,8 @@ follow-up issue, for a finding rather than a red check (`settle-outstanding-deci
 question*, sets the recommendation); or close the PR — never `IN_FLIGHT_FIX`. A different finding on the same PR, with its own budget
 left, stays `IN_FLIGHT_FIX`.
 
+**A review round reported stalled after its one re-trigger has no dispatch either**, and its action point is the `DECISION` the supervisor raised for it, with the options it offered — merge without the unanswered request, re-trigger once more, or leave it waiting (`supervise-prs`, *Outcomes*) — never an `IN_FLIGHT_FIX`.
+
 **An action point holding a PR that planned work waits on names that work.** Where issues in the wave's scope that have not started are blocked — directly or through their blockers — by an open PR of this wave held for the owner — a `DECISION` it waits on, a `NEEDS_USER` item raised on it, a charter hold — or by an issue whose worker is held on the owner's authority (the caller's partial-settle definition, where it has one) and whose hold's item is not retired, or survived its release restated to the work unit (`swarm`, *Blocked workers*, its last rule), name them on that item by issue URL, read from the scope's durable dependency graph (*Sources*), and say in the summary that the wave settled with that work still to come. The settle is then partial: the run resumes that work once the item is ruled and its PR moves — or, where the caller reports the ruling cannot move it, the item says what would. Without it, a wave waiting on the owner's answer reads the same as one that is done.
 
 Drop the merely informational: "worth keeping an eye on" is not an action point.

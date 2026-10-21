@@ -71,9 +71,20 @@ object and no threads, so no endpoint can distinguish *clean* from *never ran*
 without the second read.
 
 1. **Existence is the summary comment, always.** Require a `Reviewed commit:`
-   matching the current head. No match → `NOT REVIEWED`; request the round and
-   never merge — **except a round recorded `refused`, which is not re-requested**
-   (the *review trigger* shared rule, *A refused round*). This read is not
+   matching the current head. No match → `NOT REVIEWED`: never merge — a
+   stalled round an owner reply chose to merge without apart — and request the
+   round — **except a round recorded `refused`, which is not re-requested, and
+   one this workflow already requested and unanswered, which gets no further
+   request but the one the *review trigger* shared rule allows, or one an owner
+   reply chose from its stalled round's `DECISION`**
+   (*A refused round*, *Re-triggers*, *A stalled round*). **A match is not
+   enough while another review request on any head the round spans is
+   unanswered and shows its provider's mark, running or queued, or is a trigger
+   still inside its confirmation window**, whatever mark remains after an
+   answer: it can still root findings on the code the round reviewed, so the
+   review is not clean until that request answers or an owner reply chooses,
+   from its stalled round's `DECISION`, to merge without it — nothing else
+   releases it (*A stalled round*). This read is not
    skippable, because a thread does not say *which round produced it*: a
    resolved, non-outdated thread left by an earlier round or by a person
    satisfies any existence test built on threads, and a new trigger that
@@ -81,7 +92,7 @@ without the second read.
 2. **Severity is the threads, always.** Any unresolved thread means not clean,
    whatever the summary says, and an owner-reserved thread holds the gate
    regardless of the rest.
-3. Both, or the PR does not merge. They are either/or as *sources* — each is
+3. Both — existence released only as item 1 allows — or the PR does not merge. They are either/or as *sources* — each is
    empty exactly where the other carries the answer — and both as *conditions*.
 
 **The summary comment is never evidence of severity.** A review that found things
@@ -93,4 +104,4 @@ the opposite direction once already.
 
 **Where the routed convention is a review skill invoked rather than a reviewer triggered** — `review-docs` is the case that exists — existence is that skill's completed pass and the review comment it posts, whose `Reviewed commit:` line is the one item 1 reads. What its decline means is the *review trigger* shared rule's (*Documentation-review routing*).
 
-**Under `ci-mode` `deferred` or `integration-branch`, a round carries forward.** Where a PR's mode has effect (`supervise-prs`, *Deferred CI*, *Integration-branch CI*), a round on head H counts for a later head where every push since H is mechanical by `references/mechanical-pushes.md`, conditions included — the deferred-CI trigger's base update and the merge gate's overlap update among them — so item 1's head match may read H; item 2 still reads the threads as they stand on the current head. It is the rule the dependency gate already applies (`npm-dependency-upgrade-orchestrator`, *Merge*). Under `per-pr`, item 1 stands as written.
+**Under `ci-mode` `deferred` or `integration-branch`, a round carries forward.** Where a PR's mode has effect (`supervise-prs`, *Deferred CI*, *Integration-branch CI*), a round on head H counts for a later head where every push since H is mechanical by `references/mechanical-pushes.md`, conditions included — the deferred-CI trigger's base update and the merge gate's overlap update among them — so item 1's head match may read H. **A round spans the head it was requested on and every later head it counts for** — here, or at a gate that carries rounds the same way — and item 1's hold reads requests on all of them; item 2 still reads the threads as they stand on the current head. It is the rule the dependency gate already applies (`npm-dependency-upgrade-orchestrator`, *Merge*). Under `per-pr`, item 1 stands as written, and outside such a gate a round spans only the head it was requested on.
