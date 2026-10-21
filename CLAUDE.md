@@ -40,7 +40,7 @@ evals (`<skill>#<id>`).
    create-pr#6, resolve-pr-comment#0 #18 #21 #23 #26 #28 #41 #42 #43 #44 #45 #46 #47
    #48 #49 #50 #51,
    review-docs#11, settle-outstanding-decisions#11 #12, backlog-orchestrator#72,
-   supervise-prs#56 #88.
+   supervise-prs#56 #88, swarm#30.
 2. **Identity is observed authorship; own writes are known by id or footer, never content.**
    `rules/posting-identity.md`; `swarm`, *Blocked workers*; `supervise-prs`, *Integration-branch CI*, step 3.
    backlog-orchestrator#5 #58,

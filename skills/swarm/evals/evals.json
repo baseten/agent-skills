@@ -343,6 +343,19 @@
         "the answer records the unrunnable check not run with its reason on its line"
       ],
       "files": []
+    },
+    {
+      "id": 30,
+      "name": "a-gate-sessions-prompt-carries-the-notes-form-and-footer",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a caller dispatches a remote gate session to run PR #61's local gate (format, lint, typecheck) on head 7a7a7a7 of branch `feat/scan-12`, with its result as a gate note on `refs/notes/agent-gate/feat/scan-12/g7`, the ref the caller minted for it alone. The session runs the gate's commands and no skill. Nobody has pushed that ref yet. Questions: (a) what does the filled prompt tell the session to write on each line of the note, and on its last line? (b) how does it write and push the note?",
+      "expected_output": "(a) The template's gate-note line carries the form itself: a git note on the head it was given, 7a7a7a7, one line per check with its outcome, the head and toolchain it ran at, the session, and any reason or question, and the session's attribution footer as the last line. (b) Fetch the ref only where it exists (here it does not yet), add the note with `git notes add`, push refs/notes/agent-gate/feat/scan-12/g7 and no other ref, never forced; nothing on the PR.",
+      "assertions": [
+        "the answer has the prompt itself state the note's per-check line form, head and toolchain included",
+        "the answer puts the attribution footer as the note's last line",
+        "the answer does not fail or stop because the ref does not exist yet",
+        "the answer pushes only the assigned ref, never forced"
+      ],
+      "files": []
     }
   ],
   "companions": []

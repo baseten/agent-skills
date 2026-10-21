@@ -91,11 +91,11 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 8570,
+      "budget": 8603,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
-      "budget": 9105,
+      "budget": 9153,
       "target": 8000
     },
     "skills/swarm/runtime-remote.md": {
@@ -123,7 +123,7 @@
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2195,
+      "budget": 2199,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
