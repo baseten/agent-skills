@@ -51,7 +51,7 @@
       "target": 3000
     },
     "skills/npm-dependency-upgrade-orchestrator/SKILL.md": {
-      "budget": 5299,
+      "budget": 5306,
       "target": 8000
     },
     "skills/plan-merge-order/SKILL.md": {
@@ -91,7 +91,7 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 8119,
+      "budget": 8123,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
@@ -167,7 +167,7 @@
       "target": 1500
     },
     "rules/review-trigger.md": {
-      "budget": 2915,
+      "budget": 2974,
       "target": 1500
     },
     "rules/wake-budget.md": {
