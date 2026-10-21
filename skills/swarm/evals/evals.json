@@ -319,6 +319,19 @@
         "the check-in carries the wake budget's unproductive count and budget, and its stop is reported"
       ],
       "files": []
+    },
+    {
+      "id": 28,
+      "name": "a-recorded-can-reach-governs-a-tier-2-question-hold",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: invoked directly, you are supervising three remote worker sessions (tier 2). At startup the session records showed `sources` with no path, but the operator running this self-hosted pool supplied the mount path where each worker's checkout is visible to you, you confirmed you can read it, and the run recorded the checkout capability as *can reach*; the channel is recorded absent. Worker W has been running for 70 minutes, has pushed one checkpoint, and has uncommitted edits in its worktree; it has now stopped on an `AskUserQuestion` asking which of two API shapes to use. It fails the releasable test, and a task is waiting for a free slot. Question: which path of Blocked workers do you take with W, and in what order? Does `runtime-remote.md`'s statement that the tier-2 detection can never establish *can reach* change the answer?",
+      "expected_output": "Step 3, a decision prompt nothing can answer, on its reachable path, because the capability recorded at startup governs however it was established — the operator's path — and no rule re-derives it from the tier. The one-directional detection limits what the session record proves, not what the run records. So recover the slot: capture W's uncommitted work to a remote recovery ref with the ref-neutral sequence, never a plain commit; verify the capture; only then archive the session; end the ref by its ender under The recovery ref's lifecycle; redispatch the same work unit from the latest durable remote state, now including the capture, with the question countermand in place, preserving its role and remaining budget; and record the question it stopped on as a finding about the dispatch prompt. Not NEEDS_USER with the container retained, which is the unreachable path.",
+      "assertions": [
+        "the answer takes step 3's reachable path because the recorded capability governs, not the tier, and says the detection's one-directionality does not override the record",
+        "the answer captures W's uncommitted work to a remote ref and verifies it before archiving the session",
+        "the answer redispatches the same work unit from durable remote state including the capture, with the question countermand",
+        "the answer does not resolve W as NEEDS_USER with its container retained"
+      ],
+      "files": []
     }
   ],
   "companions": []

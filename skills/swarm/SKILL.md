@@ -87,9 +87,12 @@ detected. Apply it from there.
 established at startup — not assumed — recorded on the run's state and reported:
 
 - **the checkout** — whether the parent can reach a worker's checkout. On tier 2
-  the detection can establish *cannot reach* and never *can reach*; absent a
+  the session record can establish *cannot reach* and never *can reach*; absent a
   path, it is *cannot reach*, and every rule that needs parent-side worktree
-  access takes its unreachable branch.
+  access takes its unreachable branch. **What is recorded governs, however it was
+  established**: a run that recorded *can reach* — an operator supplied a path —
+  takes the reachable branch on tier 2 as on any tier, and no rule re-derives the
+  answer from the tier.
 - **the channel** — whether the parent can send the worker a message. It is
   present only when both halves are: the target accepts inbound messages, and
   this session holds a send tool and a listing resolves the target — enough to
@@ -403,7 +406,8 @@ regression to look for.** A worker is releasable when both hold, and not before:
      `NEEDS_USER` branches under *Blocked workers* instead;
 2. **nothing is stranded in its worktree.** Where the worktree is reachable,
    Checkpoint compliance establishes it. **Where it is not — on tier 2, every
-   worker — the observable remote state stands in for it.** The session must also
+   worker unless the run recorded *can reach* (*Remote worker session
+   arguments*) — the observable remote state stands in for it.** The session must also
    not be `RUNNING` (the paragraph beginning *Two things are never archived*,
    below).
 
@@ -509,7 +513,8 @@ Read the blocked state explicitly each cycle, and resolve it in this order:
 3. **Neither, and the prompt is one nothing can answer** — an `AskUserQuestion` or
    equivalent, asking for a decision rather than a permission. Interrupting leaves
    the prompt pending. **Settle first whether the run can reach this worker's
-   checkout** (*Remote worker session arguments*); the two paths end differently
+   checkout — by the capability recorded at startup, however it was established,
+   never by the tier** (*Remote worker session arguments*); the two paths end differently
    and neither is the exception to the other:
 
    **Where the checkout is reachable — recover the slot; do not resolve it as
@@ -754,7 +759,8 @@ arguments*). Where it cannot, the remote head is the only observable; do not rea
 the section's silence as permission to guess — durability there is the worker's to
 satisfy, and enforcement is the dispatch prompt. **Make a stalled head actionable —
 in elapsed time, never in cycles** (the loop has no minimum interval): a tier-2
-worker whose remote head has not advanced for **30 minutes** is reported as such,
+worker — whatever its checkout capability, since its completion still never
+reaches the run — whose remote head has not advanced for **30 minutes** is reported as such,
 and at **2 hours** is `NEEDS_USER`, naming the session, its last observed head,
 and how long it has been unchanged. Both thresholds run from the last observed
 advance (or dispatch, or adoption), across at least two observations; a burst of cycles inside

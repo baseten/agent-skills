@@ -10,7 +10,7 @@ The block always carries:
 |---|---|
 | as of | **first line**: the UTC instant the block describes — a composite of reads taken around that moment, not a fact about now (*Every read is a snapshot*) |
 | run budget | newly started against `new-issue-budget` |
-| open-PR slots | against `concurrent-open-prs`, counted as that budget counts — open PRs plus implementation workers in flight — and, after a restart, that it may be over the cap by up to `concurrent-workers` |
+| open-PR slots | against `concurrent-open-prs`, counted as that budget counts — open PRs plus implementation workers in flight — and, after a restart on a runtime with no session list to adopt a predecessor's workers from, that it may be over the cap by up to `concurrent-workers` (`SKILL.md`, *Default usage safeguards*) |
 | held READY issues | for each READY issue that is held, what holds it: `concurrent-open-prs`, `concurrent-workers`, `new-issue-budget`, a capacity limit, or a named hold for a human — a reader's next move differs for each |
 | workers in flight | by kind |
 | worker sessions | created / archived / alive |
