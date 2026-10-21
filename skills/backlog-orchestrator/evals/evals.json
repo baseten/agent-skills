@@ -624,7 +624,7 @@
       "id": 48,
       "name": "a-quiet-wake-still-reports-what-is-waiting-on-the-owner",
       "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your run settled and armed a check-in. Four wakes in, durable state has not moved on any PR: same heads, same CI conclusions, same thread set, same mergeability. Three DECISION items have been outstanding with the owner since before the first wake, and every remaining PR's merge depends on them. Your backoff is now at 160 minutes. You re-read each item's issue: no reply has arrived at any of them. What does this wake report, and do you keep backing off? This wake is a scheduled one; nobody is attending the session.",
-      "expected_output": "The wake correctly counts as unproductive on durable state and correctly advances the backoff on that basis - but it does not go silent about the owner's queue. An outstanding DECISION is not durable state: it does not change until someone answers it, and the wake re-read each item's site and found no reply, which is why the unproductive-wake machinery cannot see it, and a run can be right on every wake and never once say that three decisions have been sitting there throughout. So this wake reports the outstanding DECISION and NEEDS_USER counts on the same lengthening cadence, even while reporting no other change. And it does not re-run the settle sequence here. Quiescence with open decisions is a settle trigger on an attended turn or a real state change, and this is neither: settle-outstanding-decisions declines on a scheduled wake for want of anybody to ask, and step 8 forbids re-deriving settled state that has not changed, so re-running would recompute a summary, a walkthrough and a ranking, ask nobody, change nothing, and repeat until the wake budget died. Report the counts, advance the backoff, and leave the sequence for an attended turn or an actual delta.",
+      "expected_output": "The wake correctly counts as unproductive on durable state and correctly advances the backoff on that basis - but it does not go silent about the owner's queue. An outstanding DECISION is not durable state: it does not change until someone answers it, and the wake re-read each item's site and found no reply, which is why the unproductive-wake machinery cannot see it, and a run can be right on every wake and never once say that three decisions have been sitting there throughout. So this wake reports the outstanding DECISION and NEEDS_USER counts on the same cadence, even while reporting no other change. And it does not re-run the settle sequence here. Quiescence with open decisions is a settle trigger on an attended turn or a real state change, and this is neither: settle-outstanding-decisions declines on a scheduled wake for want of anybody to ask, and step 8 forbids re-deriving settled state that has not changed, so re-running would recompute a summary, a walkthrough and a ranking, ask nobody, change nothing, and repeat until the wake budget died. Report the counts, advance the backoff, and leave the sequence for an attended turn or an actual delta.",
       "assertions": [
         "the answer reports the outstanding DECISION and NEEDS_USER counts on a wake that is otherwise quiet",
         "the answer explains that an outstanding decision is not durable state and so is invisible to the unproductive-wake test",
@@ -1131,13 +1131,14 @@
     {
       "id": 87,
       "name": "check-ins-are-one-shot-and-re-armed-with-latest-state",
-      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: remote workers are in flight. A teammate proposes arming a single recurring trigger every 20 minutes whose prompt is today's 08:00 state block — 'it saves re-arming each time'. Question: is that acceptable, and what do you arm instead? Does the answer differ once the run has settled?",
-      "expected_output": "No. Every check-in is one-shot and each firing arms the next with a prompt written then, carrying the consecutive-unproductive count and the latest durable state (the in-flight sessions with their last observed heads, the PR set and per-PR state, open items and the run's write ids, the release step and the posture line). A recurring trigger fires the prompt it was armed with, so it carries state from hours earlier and a count that never rises, and the budget never binds. The same holds after settle.",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: remote workers are in flight. A teammate proposes arming a single recurring trigger every 20 minutes whose prompt is today's 08:00 state block — 'it saves re-arming each time'. Question: is that acceptable, and what do you arm instead? Does the answer differ once the run has settled? And at 10:05, between firings, a PR subscription wakes the run and its cycle finds a new review thread — what happens to the check-in pending for 10:20?",
+      "expected_output": "No. Every check-in is one-shot and each firing arms the next with a prompt written then, carrying the consecutive-unproductive count and the latest durable state (the in-flight sessions with their last observed heads, the PR set and per-PR state, open items and the run's write ids, the release step and the posture line). A recurring trigger fires the prompt it was armed with, so it carries state from hours earlier and a count that never rises, and the budget never binds. The same holds after settle. A cycle woken by the subscription re-arms the check-in the same way, replacing the pending one with a prompt written then; it never leaves the stale one pending or arms a second beside it.",
       "assertions": [
         "the answer rejects the recurring trigger with a fixed prompt",
         "each firing re-arms a one-shot check-in whose prompt carries the latest state and the unproductive count",
         "the answer gives the reason: a fixed prompt carries stale state and a count that never rises",
-        "the answer applies the same rule to settled and in-flight check-ins"
+        "the answer applies the same rule to settled and in-flight check-ins",
+        "a cycle woken by something other than the check-in replaces the pending check-in with a freshly written one, never leaving it or adding a second"
       ],
       "files": []
     },
@@ -1151,6 +1152,45 @@
         "the reason given is that the owner is present at preflight and absent mid-run, and the run may not work around a permission prompt",
         "the permission prompt is reported with its literal tool string and the command",
         "a refused push holds dispatch into the repository with options to dispatch once allowed or to use per-pr"
+      ],
+      "files": []
+    },
+    {
+      "id": 89,
+      "name": "an-integration-branch-with-open-prs-into-it-is-not-deleted-at-return",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: acme/api runs under `ci-mode: integration-branch`; the preflight created `integration/acme-api-412` level with the default branch. Three ticket PRs are open into it, none merged, all waiting on human review, and no worker is in flight. The wake budget is spent and the run returns its restartable checkpoint. The branch's batch is empty and its head is contained in the default branch. Do you delete the branch? What changes if, instead, the owner moves acme/api to `per-pr` and you retarget those three PRs to the default branch first?",
+      "expected_output": "No. A branch with open PRs into it holds their target: deleting a PR's base closes the PR, and a resume would recreate the branch without reopening them. It is deleted only when its batch is empty, its head is in the default branch, no open PR targets it and no in-flight worker was dispatched onto it; otherwise it is left for the next invocation to adopt. After a move to per-pr that first retargets the three PRs, nothing targets it, so with an empty batch and a contained head it is deleted then.",
+      "assertions": [
+        "the branch is not deleted at return while open PRs target it",
+        "the reason given is that deleting a PR's base closes it (or the PRs would be lost)",
+        "the branch is left for the next invocation to adopt",
+        "after the per-pr move retargets the PRs, the empty branch is deleted"
+      ],
+      "files": []
+    },
+    {
+      "id": 90,
+      "name": "a-worker-raised-for-an-unmoved-head-lets-the-backoff-resume",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: two remote implementation workers (swarm tier 2) are in flight and the in-flight check-in is firing every 20 minutes. One returns and its PR opens, waiting on human review. The other reads WORKING but its remote head has not moved since 09:00; at 11:00 it is raised NEEDS_USER for the unmoved head. No other worker is in flight, nothing is held for the owner, and every firing since 09:20 found no delta. Questions: (a) after 11:00, what interval does the next check-in use, and why? (b) is that worker still 'working' for the cadence rule? (c) does a change in the session's last-activity timestamp, with its status still WORKING and its head unmoved, count as a delta?",
+      "expected_output": "(a) The doubling backoff resumes at the step the unproductive count gives, not 20 minutes: a worker already raised NEEDS_USER for an unmoved head waits on a person, as a held one does, so holding 20 minutes would spend the budget in 160 minutes and end the watch on a PR waiting on a day-away reviewer. (b) No: working means in flight, not held for the owner and not already raised NEEDS_USER for an unmoved head. (c) No: the delta source is the runtime status value (working, blocked, returned), the remote head and the written report, never an activity timestamp, so the firing is unproductive and the count rises.",
+      "assertions": [
+        "after the worker is raised NEEDS_USER for its unmoved head, the check-in returns to the backoff at the step the count gives",
+        "the worker raised for an unmoved head no longer counts as working",
+        "a changed activity timestamp with unchanged status and head is not a delta",
+        "the budget and count still bind"
+      ],
+      "files": []
+    },
+    {
+      "id": 91,
+      "name": "a-resumed-run-adopting-live-remote-workers-arms-the-check-in",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you resume an orchestration whose predecessor session has stopped and handed back cleanly. Its checkpoint names two live remote worker sessions (tier 2) whose parent_session_id is that orchestrator; they are still WORKING. No issue is dispatchable yet, so this run dispatches nothing new. What wake do you arm after adopting them, at what interval, and why?",
+      "expected_output": "Adopting the two live sessions makes them this run's, and adoption arms the in-flight check-in exactly as dispatch would: their completions and any permission block never reach the run, so without it nothing would wake the run to read them. It is the run's one check-in, every 20 minutes while one is working, one-shot and re-armed with the latest state, under the wake budget's count and budget, with the backoff once each is held or raised for an unmoved head. Their issues are not redispatched while they are alive.",
+      "assertions": [
+        "the answer arms the check-in on adopting the live remote sessions, though nothing is dispatched",
+        "the interval is 20 minutes while one is working, under the count and budget",
+        "the reason given is that remote completions and blocks never reach the run",
+        "the adopted workers' issues are not redispatched while alive"
       ],
       "files": []
     }

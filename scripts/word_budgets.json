@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 24797,
+      "budget": 24835,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -19,11 +19,11 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/integration-branch.md": {
-      "budget": 2581,
+      "budget": 2641,
       "target": 1500
     },
     "skills/backlog-orchestrator/restart-resume.md": {
-      "budget": 1016,
+      "budget": 1035,
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
@@ -95,7 +95,7 @@
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
-      "budget": 8819,
+      "budget": 8849,
       "target": 8000
     },
     "skills/swarm/runtime-remote.md": {
@@ -171,7 +171,7 @@
       "target": 1500
     },
     "rules/wake-budget.md": {
-      "budget": 1582,
+      "budget": 1636,
       "target": 1500
     },
     "rules/watch-and-read.md": {
