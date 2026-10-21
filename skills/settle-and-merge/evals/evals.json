@@ -393,12 +393,49 @@
     {
       "id": 33,
       "name": "a-clean-review-beside-a-request-still-in-progress-does-not-pass-the-gate",
-      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue settles its one PR, #131, in a repository whose policy has `auto-merge: true`. CI is green on the current head ddd444; there is no conflict, no outstanding DECISION, MERGE_RISK or NEEDS_USER item, no recovery ref, no held draft, and the dependency view is proven. Review history on ddd444: Codex's review stalled, the supervisor re-triggered it once, and the re-trigger has answered with a summary comment carrying `Reviewed commit: ddd444` and no threads. The original request still shows Codex's in-progress reaction and has not answered. Does the gate pass, and does #131 merge?",
-      "expected_output": "No. A `Reviewed commit:` matching the head is not enough while another review request on that head still shows its provider's in-progress signal: that request can still root findings on ddd444, so the review is not clean and the gate does not pass. #131 does not merge in this pass; it is reported held on the open review request, until that request answers or the owner rules. No trigger is posted.",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue settles its one PR, #131, in a repository whose policy has `auto-merge: true`. CI is green on the current head ddd444; there is no conflict, no DECISION, MERGE_RISK or NEEDS_USER item raised — the supervisor's pass that would raise one for this round has not run —, no recovery ref, no held draft, and the dependency view is proven. Review history on ddd444: Codex's review stalled, the supervisor re-triggered it once, and the re-trigger has answered with a summary comment carrying `Reviewed commit: ddd444` and no threads. The original request still shows Codex's in-progress reaction and has not answered. Does the gate pass, and does #131 merge?",
+      "expected_output": "No. A `Reviewed commit:` matching the head is not enough while another review request on a head the round spans is unanswered and still shows its provider's mark: that request can still root findings on ddd444, so the review is not clean and the gate does not pass. #131 does not merge in this pass; it is reported held on the open review request, until that request answers or an owner reply chooses, from the stalled round's DECISION, to merge without it. No trigger is posted.",
       "assertions": [
         "the gate does not pass",
         "the condition holding it is the review request still in progress on the head",
         "#131 is not merged"
+      ],
+      "files": []
+    },
+    {
+      "id": 34,
+      "name": "a-stalled-round-releases-only-on-an-owner-reply-choosing-an-offered-option",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue settles its one PR, #132, in a repository whose policy has `auto-merge: true`. CI is green on the current head fff666; there is no conflict, no MERGE_RISK or NEEDS_USER item, no recovery ref, no held draft, and the dependency view is proven. Codex's review of fff666 stalled, the supervisor re-triggered it once, and neither request has answered — no summary comment names fff666 and no threads exist. The supervisor reported the round stalled and raised it as a DECISION offering: merge without the unanswered requests, re-trigger once more, or leave it waiting. (a) Nobody is present to run the walkthrough, and the only reply on the item is from a teammate who is not the owner: \"fine to merge, codex is flaky\". Does #132 merge? (b) In a later attended settle, the walkthrough asks the owner, who chooses \"merge without the unanswered requests\", and the ruling is recorded on the PR. Nothing else has changed. Does the gate pass, and does #132 merge?",
+      "expected_output": "(a) No. A stalled round holds the merge until a request answers or an owner reply chooses one of the offered options; a teammate's reply is not the owner's, so nothing is released, the DECISION is still outstanding, and with no `Reviewed commit:` on fff666 the review is NOT REVIEWED. #132 is held, reported with the open DECISION. (b) Yes. The owner's recorded ruling choosing to merge without the unanswered requests retires the DECISION, releases the hold, and stands in for the round's completion for those requests on the heads the round spans — and nothing else; every other gate condition still governs, and here each holds, so the gate passes and #132 merges through merge-stack.",
+      "assertions": [
+        "at (a) the gate does not pass and #132 is not merged",
+        "at (a) the answer does not treat the teammate's reply as releasing the hold",
+        "at (b) the answer treats the owner's recorded choice to merge without the round as releasing the review hold and the round-completed condition",
+        "at (b) the answer still requires every other gate condition, and merges #132 because they hold"
+      ],
+      "files": []
+    },
+    {
+      "id": 35,
+      "name": "the-in-flight-hold-reads-every-head-a-deferred-round-spans",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Evaluate only the merge gate, as it stands now, for PR #134; it is in acme/web, runs under `ci-mode: deferred`, with the mode and its overlap narrowing in effect, in a repository whose policy has `auto-merge: true`. On head ggg777 the run posted `@codex review` (request A) and, five minutes later, the owner posted `@codex review` by hand (request B). B answered with a summary comment carrying `Reviewed commit: ggg777` and no threads. A has shown Codex's in-progress reaction for 12 minutes and has not answered. The supervisor then made the deferred-CI trigger's clean base update, a mechanical push, so the head is now hhh888, CI is green on hhh888, and the round on ggg777 carries forward to it. There is no conflict, no DECISION, MERGE_RISK or NEEDS_USER item, no recovery ref, no held draft, and the dependency view is proven. Does the gate pass for #134, and does it merge?",
+      "expected_output": "No. Item 1's head match may read ggg777 because the round carries forward across the mechanical update, and that round spans ggg777 and hhh888. Request A on ggg777 is unanswered and still shows Codex's mark, so it can still root findings on the code the round reviewed: the review is not clean, whatever head the request sits on. #134 does not merge; it is reported held on the open request, waiting on it within its own time. No trigger is posted.",
+      "assertions": [
+        "the gate does not pass",
+        "the answer holds on request A although it sits on the earlier head ggg777 rather than the current head",
+        "#134 is not merged"
+      ],
+      "files": []
+    },
+    {
+      "id": 36,
+      "name": "a-queued-or-unconfirmed-re-trigger-holds-the-gate",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Evaluate only the merge gate, as it stands now, for PR #135, in a repository whose policy has `auto-merge: true`. CI is green on the current head iii999; there is no conflict, no DECISION, MERGE_RISK or NEEDS_USER item, no recovery ref, no held draft, and the dependency view is proven. Codex's first review request on iii999 showed its in-progress reaction for 25 minutes, so the supervisor re-triggered it. Two minutes after the re-trigger, the first request answered with a summary comment carrying `Reviewed commit: iii999` and no threads. (a) The re-trigger's Codex check run on iii999 is in `queued`, a state Codex's convention reports separately from `in_progress`. Does the gate pass? (b) Instead, the re-trigger shows no reaction, check or reply yet, and its confirmation window has not elapsed. Does the gate pass?",
+      "expected_output": "(a) No. The re-trigger is unanswered and shows the provider's mark — queued is a mark that it was taken up and can still answer — so the review is not clean and #135 does not merge; it waits on that request within its own time. (b) No. A trigger still inside its confirmation window holds as well: it may yet be taken up and answer on iii999. #135 is held, waiting on the re-trigger. In neither case is another trigger posted.",
+      "assertions": [
+        "at (a) the gate does not pass while the re-trigger is queued",
+        "at (b) the gate does not pass while the re-trigger is inside its confirmation window",
+        "#135 is not merged in either case"
       ],
       "files": []
     }

@@ -1009,15 +1009,16 @@
     },
     {
       "id": 81,
-      "name": "a-review-stalled-in-progress-is-re-triggered-once-per-head",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #120 in acme/web; this skill performs its Codex review convention. After a repair pass pushed head abc123 you posted `@codex review` and adopted the head. Codex's account put its reaction on the trigger comment 3 minutes later, the reaction's creation time recorded by the forge, and no review or reply has come since. (a) The check-in fires 25 minutes after that reaction appeared: what do you do, and what do you record? (b) The next pass, 40 minutes later, finds both requests still showing the reaction and no review on abc123: what now, and what does the PR's outcome become?",
-      "expected_output": "(a) The review has shown its provider's in-progress signal on the current head for more than 20 minutes, measured from the reaction's own timestamp, so it is stalled: re-trigger once — the convention's trigger text alone, from the account the map selects, read back and confirmed like any trigger. Record the stall re-trigger on the convention's line with head abc123 and the time, and report it. (b) Do not trigger again: the head's one further request is spent, and nothing — no later pass, wake, re-adoption or restart — requests abc123 again. Report the round stalled, naming both requests and since when. Nobody here may request it again, so it is surfaced: it holds the PR's merge but not its finishing, and whether to post one by hand is the owner's.",
+      "name": "a-review-stalled-in-progress-is-re-triggered-once-per-round",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #120 in acme/web; this skill performs its Codex review convention. After a repair pass pushed head abc123 you posted `@codex review` and adopted the head. Codex's account put its reaction on the trigger comment 3 minutes later, the reaction's creation time recorded by the forge, and no review or reply has come since. (a) The check-in fires 25 minutes after that reaction appeared: what do you do, and what do you record? (b) The next pass, 40 minutes later, finds both requests still showing the reaction — the re-trigger's for 35 minutes — and no review on abc123; CI is green and nothing else is outstanding. What now, and what does the PR's outcome become?",
+      "expected_output": "(a) The review has shown its provider's in-progress signal on the current head for more than 20 minutes, measured from the reaction's own timestamp, so it is stalled: re-trigger once — the convention's trigger text alone, from the account the map selects, read back and confirmed like any trigger. Record the stall re-trigger on the convention's line with head abc123 and the time, and report it. (b) Do not trigger again: the round's one further request is spent, and nothing — no later pass, wake, re-adoption or restart — requests that round again. Report the round stalled, naming both requests and since when, and raise it to the owner as a DECISION offering: merge without the unanswered request, re-trigger once more, or leave it waiting. The PR is `finished`, with the round surfaced: it holds the PR's merge but not its finishing, until a request answers or an owner reply chooses one of those options.",
       "assertions": [
         "at (a) the answer re-triggers the review exactly once, as an ordinary trigger from the account the map selects",
         "the answer measures the 20 minutes from the in-progress signal, not from the trigger's posting",
         "the answer records the stall re-trigger with its head and time and reports it",
-        "at (b) the answer posts no further trigger on that head, on this or any later pass",
-        "at (b) the answer reports the round stalled and surfaced: it holds the merge without keeping the PR waiting"
+        "at (b) the answer posts no further trigger for that round, on this or any later pass",
+        "at (b) the answer reports the round stalled and surfaced: it holds the merge without keeping the PR waiting",
+        "at (b) the answer raises the stalled round to the owner as a DECISION whose options include merging without the unanswered request, re-triggering once more, and leaving it waiting"
       ],
       "files": []
     },
@@ -1038,19 +1039,19 @@
       "id": 83,
       "name": "a-second-trigger-on-the-head-spends-the-stall-allowance-across-a-restart",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The run restarted, and you are adopting PR #124 with no counters passed. Its timeline shows head def456 pushed by a repair pass, then `@codex review` posted by the run, then 30 minutes later `@codex review` posted again by the owner by hand. Codex's in-progress reaction has been on the owner's comment for 25 minutes and no review of def456 exists. Do you re-trigger? What does the rebuilt record say?",
-      "expected_output": "No. The rebuild reads two triggers posted since def456 was pushed, so that head's one further request is spent — whoever posted the second, the owner included. The record's stall re-trigger is rebuilt as spent on def456; the round is reported stalled after it and surfaced, holding the merge, and nothing triggers def456 again.",
+      "expected_output": "No. The rebuild reads two triggers posted since def456 was pushed, so the round's one further request is spent — whoever posted the second, the owner included. The record's stall re-trigger is rebuilt as spent on def456; the owner's trigger has had its own time (its signal past 20 minutes), so the round is reported stalled after it, raised to the owner as a DECISION and surfaced, holding the merge, and nothing on the run's initiative triggers it again.",
       "assertions": [
         "the answer does not re-trigger the review",
-        "the answer counts the owner's manual trigger as spending the head's one further request",
+        "the answer counts the owner's manual trigger as spending the round's one further request",
         "the rebuilt record shows the stall re-trigger spent for that head, from the timeline"
       ],
       "files": []
     },
     {
       "id": 84,
-      "name": "two-answers-on-one-head-are-one-round-and-a-head-move-renews-the-allowance",
+      "name": "two-answers-on-one-round-are-one-round-and-a-new-round-renews-the-allowance",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). On PR #125 the review stalled on head 777aaa and you re-triggered it once. The second request answered first with a clean review of 777aaa. Ten minutes later the first request answered too, with a review of 777aaa rooting one thread asking for a missing null check. (a) How many review rounds completed, and is the review clean? (b) What happens to the thread? (c) The review repair pushes head 888bbb and you re-trigger review on it; 25 minutes after Codex's in-progress reaction appears on that trigger there is still no answer. May you re-trigger?",
-      "expected_output": "(a) One round, counted once in review rounds completed: the two answers are one round on 777aaa. Either summary establishes the head was reviewed, but the late answer's thread is feedback, so the round is not clean. (b) It is unhandled feedback like any reviewer's: dispatch the review repair pass, within budget. (c) Yes, once: a head move resets the once-per-head allowance, so 888bbb carries its own one stall re-trigger; the earlier head's spent allowance does not carry over, and nothing else about the rounds is reset by the move.",
+      "expected_output": "(a) One round, counted once in review rounds completed: the two answers are one round on 777aaa. Either summary establishes the head was reviewed, but the late answer's thread is feedback, so the round is not clean. (b) It is unhandled feedback like any reviewer's: dispatch the review repair pass, within budget. (c) Yes, once: the repair push is substantive, so 888bbb needs a new round, and a head move that needs a new round resets the once-per-round allowance — that round carries its own one stall re-trigger; the earlier round's spent allowance does not carry over, and nothing else about the rounds is reset by the move.",
       "assertions": [
         "the answer counts the two answers on one head as a single completed round",
         "the answer treats the late answer's thread as feedback that makes the round not clean",
@@ -1072,13 +1073,13 @@
     {
       "id": 86,
       "name": "a-clean-answer-beside-a-request-still-in-progress-holds-the-merge",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). On PR #127 the review stalled on head 999ccc and you re-triggered it once. The re-trigger has answered with a clean review of 999ccc; the original request still shows Codex's in-progress reaction and has not answered. CI is green, no thread is unresolved, nothing is in flight. Is the round complete, and what is the PR's outcome? May its merge proceed?",
-      "expected_output": "The round is complete, counted once: the clean answer establishes the review of 999ccc. But the other request on the same head is still in progress and could still root findings on that commit, so the round holds the merge, surfaced. With nothing else outstanding the PR is finished, reported with the open request; the merge waits until that request answers or the owner rules. No trigger is posted: the head's one further request is spent.",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). On PR #127 the review stalled on head 999ccc and you re-triggered it once. The re-trigger has answered with a clean review of 999ccc; the original request has shown Codex's in-progress reaction for 50 minutes and has not answered. CI is green, no thread is unresolved, nothing is in flight. Is the round complete, and what is the PR's outcome? May its merge proceed?",
+      "expected_output": "The round is complete, counted once: the clean answer establishes the review of 999ccc. But the other request on the round is unanswered and still shows its mark, and could still root findings on that commit, so the round holds the merge, surfaced. That request stalled long since, and the round's one further request has had its own time, so the round is stalled: raised to the owner as a DECISION offering merge without the unanswered request, re-trigger once more, or leave it waiting. With nothing else outstanding the PR is finished, reported with the open request; the merge waits until that request answers or an owner reply chooses one of those options. No trigger is posted: the round's one further request is spent.",
       "assertions": [
         "the answer counts the round complete once on the clean answer",
         "the answer holds the merge while the other request is still in progress",
         "the answer reports the PR finished with the open request surfaced, not waiting",
-        "the answer posts no further trigger on that head"
+        "the answer posts no further trigger for that round"
       ],
       "files": []
     },
@@ -1086,7 +1087,7 @@
       "id": 87,
       "name": "a-mechanical-push-does-not-renew-a-carried-rounds-stall-allowance",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #128 in acme/web runs under `ci-mode: deferred`; this skill performs its Codex review convention. You posted `@codex review` on head aaa111; Codex's in-progress reaction appeared on it, and 25 minutes later you re-triggered once for the stall. Since then you made the deferred-CI trigger's clean base update, a mechanical push, so the head is now bbb222 and the round on aaa111 carries forward to it; bbb222's own timeline has no trigger on it. Both requests on aaa111 still show Codex's reaction, the re-trigger's for 30 minutes now, and no review exists. On this pass, do you post a trigger? What do you record and report?",
-      "expected_output": "No trigger. The mechanical update carried the round forward from aaa111, and a move the round carries forward across resets nothing: the round and its spent stall allowance travel together, and its triggers are counted on every head it spans, so aaa111's two triggers mean the one further request is spent. A mechanical push is never a reason to re-trigger. The re-trigger has had its own time (its signal past 20 minutes) with no answer, so the round is reported stalled, naming both requests and since when; nothing requests it again, and it is surfaced — holding the merge, not the PR's finishing.",
+      "expected_output": "No trigger. The mechanical update carried the round forward from aaa111, and a move the round carries forward across resets nothing: the round and its spent stall allowance travel together, and its triggers are counted on every head it spans, so aaa111's two triggers mean the one further request is spent. A mechanical push is never a reason to re-trigger. The re-trigger has had its own time (its signal past 20 minutes) with no answer, so the round is reported stalled, naming both requests and since when, and raised to the owner as a DECISION; nothing requests it again on the run's initiative, and it is surfaced — holding the merge, not the PR's finishing.",
       "assertions": [
         "the answer posts no trigger on bbb222",
         "the answer treats the stall allowance as spent because the round carried forward from aaa111, not renewed by the mechanical push",
@@ -1098,11 +1099,25 @@
       "id": 88,
       "name": "a-stall-re-trigger-gets-its-own-time-and-no-read-back-reissue",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #129 in acme/web; this skill performs its Codex review convention. The round on head ccc333 stalled and you re-triggered it. The re-trigger's read-back shows the transport appended an attribution footer, so you recorded the pair `appends footer` and reported the trigger as possibly not fired. (a) The next pass runs 3 minutes later: the original request still shows Codex's in-progress reaction and the re-trigger shows nothing yet. Is the round now reported stalled after its re-trigger? (b) A pass 25 minutes after the re-trigger finds the re-trigger's confirmation window elapsed with no reaction, reply or review, nothing else requesting review, and the original still showing its reaction. Do you reissue the trigger through a different mechanism?",
-      "expected_output": "(a) No. A round is reported stalled after its re-trigger only once the re-trigger has had its own time — its own signal past 20 minutes, or its confirmation window elapsed with none. Three minutes in, it is waiting on the re-trigger. (b) No reissue: the read-back reissue is never made where the round already carries its one further request, and the stall re-trigger was that request, so a reissue would be a third request on the head. Bar the pair from further triggers, keep the trigger reported possibly not fired, and report the round stalled — both requests and since when — surfaced: it holds the merge, and posting another by hand is the owner's call.",
+      "expected_output": "(a) No. A round is reported stalled after its re-trigger only once the re-trigger has had its own time — its own signal past 20 minutes, or its confirmation window elapsed with none. Three minutes in, it is waiting on the re-trigger. (b) No reissue: the read-back reissue is never made where the round already carries its one further request, and the stall re-trigger was that request, so a reissue would be a third request on the head. Bar the pair from further triggers, keep the trigger reported possibly not fired, and report the round stalled — both requests and since when — raised to the owner as a DECISION offering merge without the unanswered request, re-trigger once more, or leave it waiting, and surfaced: it holds the merge.",
       "assertions": [
         "at (a) the answer does not yet report the round stalled after its re-trigger",
         "at (b) the answer does not reissue the trigger through another mechanism",
         "at (b) the answer reports the round stalled and surfaced, holding the merge"
+      ],
+      "files": []
+    },
+    {
+      "id": 89,
+      "name": "only-an-owner-reply-choosing-an-offered-option-moves-a-stalled-round",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #133 in acme/web; this skill performs its Codex review convention. Its round on head eee555 stalled, you re-triggered it once, and the re-trigger has had its own time with no answer; the original still shows Codex's in-progress reaction. The round was reported stalled and raised to the owner as a DECISION on the PR offering three options: merge without the unanswered request, re-trigger once more, or leave it waiting. (a) A teammate who is not the owner replies on the item: \"just kick codex again\". What do you do on the next pass? (b) Later the owner replies on the item choosing \"re-trigger once more\". What do you do, and does it breach the round's once-per-round allowance? (c) Two passes later the owner's chosen trigger shows Codex's reaction for 5 minutes and nothing has answered; the pass after that is a restart with no counters passed. Do you post anything? (d) Twenty-five minutes after that reaction appeared, still no answer. What now?",
+      "expected_output": "(a) Nothing is posted: only an owner reply choosing one of the offered options moves a stalled round, and a teammate's reply is not the owner's — report it and keep the hold. (b) Post exactly one trigger, as an ordinary one — the convention's text from the account the map selects, read back and confirmed — and record it as the trigger the owner's reply chose. It is the owner's request, not the round's allowance spent twice, so it does not breach the once-per-round bound. The hold on the merge stands until a request answers. (c) No: the timeline already shows one trigger after the owner's reply, so the restart counts it and posts nothing; the new request is waiting, within its own time. (d) The round is still held once that trigger has had its own time, so it is stalled again: report it and raise it to the owner as a DECISION with the same options; nothing is re-triggered without a new owner reply choosing it.",
+      "assertions": [
+        "at (a) the answer posts no trigger and keeps the hold, because the reply is not the owner's",
+        "at (b) the answer posts exactly one trigger in response to the owner's choice",
+        "at (b) the answer treats the owner-chosen trigger as the owner's request, not a breach of the once-per-round allowance",
+        "at (c) the answer posts nothing, counting the trigger already on the timeline after the owner's reply",
+        "at (d) the answer raises the stalled round to the owner again rather than re-triggering on its own"
       ],
       "files": []
     }
