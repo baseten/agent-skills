@@ -418,12 +418,12 @@
     },
     {
       "id": 35,
-      "name": "a-merged-tip-failure-on-a-tip-containing-head-is-an-environment-hypothesis",
+      "name": "a-merged-tip-failure-on-a-tip-containing-head-is-held-not-updated",
       "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: `ci-mode: integration-branch` with effect; PR #30 into `integration/api-3` has `auto-merge` resolved through the mode, clean review, and a green local gate record at its head e1e1e1e, which already contains the branch's current tip. The per-PR tier's commands and toolchain were passed. The merged-tip check in this session fails typecheck in a package #30 touches. Separately, one test file #30 touches belongs to the browser suite the caller passed as `not locally runnable`. Questions: (a) do you update #30's branch from the tip? (b) is #30 merged, and how is it reported? (c) does the merged-tip check run that browser test?",
-      "expected_output": "(a) No: the head already contains the tip, so there is no update to make. (b) The failure, with the head's record green, is an environment hypothesis rather than a code failure: #30 is held and reported with both results, never updated again; it does not merge. (c) No: a `not locally runnable` check is never run here; that test is owed by the integration PR's CI.",
+      "expected_output": "(a) No: the head already contains the tip, so there is no update to make. (b) The failure, with the head's record green, raises the environment hypothesis; unconfirmed, it is #30's failure all the same, and with nothing to update #30 is held — never updated again — and reported to the owner with both results; it does not merge. (c) No: a `not locally runnable` check is never run here; that test is owed by the integration PR's CI.",
       "assertions": [
         "the answer makes no branch update for #30",
-        "the answer holds #30 as an environment hypothesis, reporting both results",
+        "the answer holds #30 without updating it again, reporting both results to the owner",
         "the answer leaves the not-locally-runnable test to the integration PR's CI"
       ],
       "files": []

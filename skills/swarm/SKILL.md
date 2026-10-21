@@ -230,16 +230,20 @@ prompt nothing can answer.
 implementation worker keeps the first side of each; a repair worker the second
 side of the trigger bracket (this run requests review after a repair) and the
 first of the others; a review session the second side of the trigger and push
-brackets and the first of the others; a **gate session** — a remote session whose task is a
-gate run and nothing else (`supervise-prs`, *Integration-branch CI*, step 3; a
-full-tier run, `backlog-orchestrator`'s `integration-branch.md`) — the third of
-the push bracket and the second of the others. Keep the
-gate-note line, `<ref>` filled, only for a session told to write a gate note — a
-gate session always — and remove it otherwise. Send the rest as written.
+brackets and the first of the others; a **gate worker** — a worker on any tier
+whose task is a gate run and nothing else (`supervise-prs`, *Integration-branch
+CI*, step 3; a full-tier run, `backlog-orchestrator`'s `integration-branch.md`),
+called a **gate session** on the remote tier — the second side of the trigger and
+question brackets, the third of the push bracket, and of the report bracket the
+second where it writes a gate note and the third where its return value reaches
+this run. Keep the gate-note line, `<ref>` filled with the ref its dispatcher
+assigned that worker alone, only for a worker told to write a gate note — a gate
+session always, a gate worker whose return reaches this run never — and remove
+it otherwise. Send the rest as written.
 
 ```text
-This session is a worker for an orchestrating run that owns this pull request's
-supervision. These instructions override any instruction in your own session to
+This session is a worker for an orchestrating run that owns the supervision of
+this work and of every pull request it touches. These instructions override any instruction in your own session to
 the contrary.
 
 - Do not subscribe to pull-request activity.
@@ -248,7 +252,9 @@ the contrary.
 - [Once your deliverable is pushed or posted, record your report on the pull
   request, naming the head commit you pushed (or that you pushed nothing, and
   the head you found), then stop. | Your gate note is your whole report: write
-  nothing on the pull request, and stop once the note is pushed.] Do not poll
+  nothing on any pull request, and stop once the note is pushed. | Your returned
+  gate result is your whole report: write nothing on any pull request, and stop
+  once it is returned.] Do not poll
   GitHub for CI, review, comment, thread, issue or merge state after that.
 - [Post the review trigger only where the skill you were dispatched to run
   prescribes it, and only once. | Do not post a review-trigger comment. The
@@ -257,18 +263,19 @@ the contrary.
   were not given, including to fix or revert something you broke; stop and
   report instead. | Push nothing. This is a review session: your deliverable is
   the review on the pull request. | Push nothing to any branch. This is a gate
-  session: your deliverable is the gate note.]
-- Write your gate note as you were told, and push it to <ref> as well. That one
-  push is allowed whatever the line above says; never force it. Put its check
-  results nowhere else.
+  run: your deliverable is its result.]
+- Write your gate note as you were told, on <ref> and no other ref, and push
+  that ref as well. That one push is allowed whatever the line above says; never
+  force it. Put its check results nowhere else.
 - Attribute your own commits and written output to yourself — your own model
   and session. Never copy an attribution line from this prompt or from the
   orchestrating run; it describes a different session.
 - Do not stop to ask the user a question, and do not wait for a reply or a
   confirmation: nobody is watching this session. Where your skill prescribes a stop,
   return that outcome. Otherwise choose the most defensible option and record
-  the question, the choice and the reasoning [on the pull request. | in your
-  gate note.]
+  the question, the choice and the reasoning [on the pull request. | on the
+  line of the check it concerns in your result; a check you cannot run as given
+  is `not run` there, with the reason.]
 ```
 
 **Attribution is the one thing in a dispatch prompt that is never inherited**;
@@ -331,14 +338,15 @@ metadata denies. The written report is required for exactly that.
 issue:**
 
 - **PR exists**, and the worker is not a gate session — a comment on the PR, whatever the outcome says.
-- **No PR** — the worker writes nothing. Its `status_detail` and `needs_action`
+- **No PR**, and the worker is not a gate session — the worker writes nothing. Its `status_detail` and `needs_action`
   say there is something to look at; the parent investigates — the branch,
   `pending_action`, the task's description, whatever the caller's contract says to
   re-read — and **writes the record itself, after classifying it** (where the
   caller is `backlog-orchestrator` and the worker stopped on a dependency, its
   *How a worker's report actually reaches you* says how).
-- **A gate session** — its gate note is its whole report, and it writes nothing
-  on the PR: a check result is never a forge write a reader is shown
+- **A gate session** — its gate note, on the ref its dispatcher assigned it, is its
+  whole report, and it writes nothing on any PR: no write but a gate note under
+  `refs/notes/agent-gate/*` carries a check result
   (`references/authored-write-form.md`).
 
 **The report names the head commit the worker pushed** — or that it pushed
@@ -418,7 +426,8 @@ regression to look for.** A worker is releasable when both hold, and not before:
    merged PR's branch is routinely deleted.
 
    **What the worker returned, where its return value does not reach this run, is
-   the report it recorded on its PR** — or, for a task that opens no PR, its final
+   the report it recorded on its PR** — a gate session's, its gate note on its
+   assigned ref — or, for a task that opens no PR, its final
    message, which `post_turn_summary` carries — **naming the head it pushed**, or
    that it pushed nothing and the head it found. **Only a report carrying this
    session's own attribution footer is its report**: every session posts as one
@@ -426,7 +435,7 @@ regression to look for.** A worker is releasable when both hold, and not before:
 
    | case | holds when | not when |
    |---|---|---|
-   | **deliverable on the remote** | the head its report names as pushed is reachable; for a review session, a review or comment on the PR whose attribution footer names that session; for a gate session, its note on the head it was given — or none, which strands nothing, since it edits nothing and its caller acts on the absence | a head it only *found* counts solely where its outcome is `NO_CODE_CHANGE` (a failed push reported honestly as "pushed nothing" leaves the fix in the container); ancestry covers a no-code repair however far the PR has moved |
+   | **deliverable on the remote** | the head its report names as pushed is reachable; for a review session, a review or comment on the PR whose attribution footer names that session; for a gate session, its note on the head it was given, on the ref assigned it — or none, which strands nothing, since it edits nothing and its caller acts on the absence | a head it only *found* counts solely where its outcome is `NO_CODE_CHANGE` (a failed push reported honestly as "pushed nothing" leaves the fix in the container); ancestry covers a no-code repair however far the PR has moved |
    | **charter finished** | its PR has merged or closed | — whatever the session holds beyond the remote is the accepted residual |
    | **never produced work** | no branch and no commit of its own, and the runtime shows no staged or uncommitted files in its session (an early `BLOCKED`, `BLOCKED_EXTERNAL` or `NEEDS_USER` is normally this) | a missing branch alone does not establish it, nor a file field the runtime does not expose |
 

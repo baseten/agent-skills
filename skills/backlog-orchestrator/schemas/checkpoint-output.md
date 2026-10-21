@@ -12,16 +12,16 @@ The block always carries:
 | run budget | newly started against `new-issue-budget` |
 | open-PR slots | against `concurrent-open-prs`, counted as that budget counts — open PRs plus implementation workers in flight — and, after a restart, that it may be over the cap by up to `concurrent-workers` |
 | held READY issues | for each READY issue that is held, what holds it: `concurrent-open-prs`, `concurrent-workers`, `new-issue-budget`, a capacity limit, or a named hold for a human — a reader's next move differs for each |
-| workers in flight | by kind |
+| workers in flight | by kind, and for each worker told to write a gate note, its assigned gate-note ref (`SKILL.md`, *Implementation worker contract*, Before dispatch, step 5) |
 | worker sessions | created / archived / alive |
 | active PRs | each with CI and review state, and its gate line (*Progress / checkpoint output*) |
-| per-PR supervision state | each PR's repair counters, trigger states and gate-note commits as `supervise-prs` last returned them — the counters the next pass and a restart are passed |
+| per-PR supervision state | each PR's repair counters, trigger states and gate-note refs as `supervise-prs` last returned them — the counters the next pass and a restart are passed, and the refs no restart can recover without this block (`restart-resume.md`, step 6) |
 | review-session ids | per PR, each dispatched review session's review id and inline comment ids, as its report named them |
 | check-in | the check-in state with its id, next firing time and unproductive-wake count split by kind |
 | what woke this cycle | the event or the check-in |
 | PR posture | the posture line, that the platform's PR posture is overridden and on what authority, and each PR's toggle line (`references/platform-pr-posture.md`, *Saying so*). This run gives its one-time notice in the first state block after the first subscription this run itself makes, and records it there |
 | deferred reads | whenever reads were deferred on a refused allowance: which PRs went unread this cycle, and when the allowance resets |
-| integration branch | per repository under `ci-mode: integration-branch` (`integration-branch.md`): the branch, the PRs merged into it since it last matched the default branch, its last full-tier run and result, with the gate-note commits behind it, every per-PR-tier check no session here can run with what it lacks, whether merges into it are stopped by an observed refusal with the item raised, and the integration PR's state |
+| integration branch | per repository under `ci-mode: integration-branch` (`integration-branch.md`): the branch, the PRs merged into it since it last matched the default branch, its last full-tier run and result, with the gate-note ref assigned to each full-tier run in flight or behind that result, every per-PR-tier check no session here can run with what it lacks, whether merges into it are stopped by an observed refusal with the item raised, and the integration PR's state |
 
 It also carries what these sections require the block to name: each session archived this cycle, by id and charter, each session left alive with its diagnostics, and the triggers bound to this run's sessions (*Parent supervision loop*, step 11); a surfaced held worker's session as alive, with its URL and what it is waiting on (*Settled wave*); and, on every wake, the outstanding `DECISION` and `NEEDS_USER` counts (*Arming the wait when nothing is in flight*).
 

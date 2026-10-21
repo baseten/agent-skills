@@ -309,8 +309,8 @@
     {
       "id": 27,
       "name": "a-gate-note-push-is-allowed-beside-push-nothing",
-      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a caller asks you to dispatch a remote worker session whose only task is to run a PR's local gate on head 9c9c9c9 of branch `feat/scan-12` and write its result as a gate note to `refs/notes/agent-gate/feat/scan-12`. It must not change the branch. Question: what push lines does the worker prompt carry, and may the worker push the notes ref?",
-      "expected_output": "The push-nothing variant — the worker must not push to the branch — plus the gate-note line naming refs/notes/agent-gate/feat/scan-12: that one push is allowed whatever the push line says, and is never forced. Before dispatch, verify the session can push that ref (sink verification); where it cannot, dispatch the task on a tier whose return value reaches the run.",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a caller asks you to dispatch a remote worker session whose only task is to run a PR's local gate on head 9c9c9c9 of branch `feat/scan-12` and write its result as a gate note to `refs/notes/agent-gate/feat/scan-12/g7`, the ref the caller assigned it alone. It must not change the branch. Question: what push lines does the worker prompt carry, and may the worker push the notes ref?",
+      "expected_output": "The third side of the push bracket (push nothing to any branch; a gate run) — the worker must not push to the branch — plus the gate-note line naming refs/notes/agent-gate/feat/scan-12/g7 and no other ref: that one push is allowed whatever the push line says, and is never forced. Before dispatch, verify the session can push that ref (sink verification); where it cannot, dispatch the task on a tier whose return value reaches the run.",
       "assertions": [
         "the answer forbids pushing to the branch",
         "the answer allows pushing the named notes ref and forbids forcing it",
@@ -321,13 +321,26 @@
     {
       "id": 28,
       "name": "a-gate-session-writes-nothing-on-the-pr",
-      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a caller dispatches a remote session whose only task is to run PR #61's local gate on head 7a7a7a7 of branch `feat/scan-12` and write the result as a gate note to `refs/notes/agent-gate/feat/scan-12`. Fill in the countermand template for it. Questions: (a) which side of each bracket does the prompt keep, and what does it say about pushing? (b) once the note is pushed, does the session record a report on PR #61, and may it list the checks that passed there? (c) the session finishes and no note is on the remote: is it releasable?",
-      "expected_output": "(a) A gate session: the second side of the report bracket (the gate note is the whole report; write nothing on the PR), the second side of the trigger bracket (post no review trigger), and the third side of the push bracket (push nothing to any branch; the deliverable is the gate note); the gate-note line is kept with <ref> filled as refs/notes/agent-gate/feat/scan-12, allowing that one push, never forced, with check results nowhere else. (b) No: it writes nothing on the PR; check results never go in a forge write a reader is shown. (c) Yes: it edited nothing, so nothing is stranded; the missing note is the caller's to act on.",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a caller dispatches a remote session whose only task is to run PR #61's local gate on head 7a7a7a7 of branch `feat/scan-12` and write the result as a gate note to `refs/notes/agent-gate/feat/scan-12/g7`, the ref the caller assigned it alone. Fill in the countermand template for it. Questions: (a) which side of each bracket does the prompt keep, and what does it say about pushing? (b) once the note is pushed, does the session record a report on PR #61, and may it list the checks that passed there? (c) the session finishes and no note is on the remote: is it releasable?",
+      "expected_output": "(a) A gate session: the second side of the report bracket (the gate note is the whole report; write nothing on any PR), the second side of the trigger bracket (post no review trigger), the third side of the push bracket (push nothing to any branch; the deliverable is the gate run's result), and the second side of the question bracket (a question goes on the line of the check it concerns); the gate-note line is kept with <ref> filled as refs/notes/agent-gate/feat/scan-12/g7, allowing that one push to that ref alone, never forced, with check results nowhere else. (b) No: it writes nothing on the PR; no write but a gate note under refs/notes/agent-gate/* carries check results. (c) Yes: it edited nothing, so nothing is stranded; the missing note is the caller's to act on.",
       "assertions": [
         "the answer keeps the gate-session sides: no PR report, no trigger, push nothing to any branch",
-        "the answer keeps the gate-note line with the notes ref filled in and forbids forcing it",
+        "the answer keeps the gate-note line with the assigned notes ref filled in and forbids forcing it",
         "the answer has the session write nothing on the PR, check results included",
         "the answer treats a gate session with no note as releasable, leaving the absence to the caller"
+      ],
+      "files": []
+    },
+    {
+      "id": 29,
+      "name": "a-gate-worker-whose-return-reaches-the-run-writes-no-note",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a caller under `ci-mode: integration-branch` asks you to dispatch a worker whose only task is to run PR #61's local gate on head 7a7a7a7 of branch `feat/scan-12`. The tier you select is in-process subagents, whose return value reaches the caller. Fill in the countermand template for it. Questions: (a) which side of each bracket does the prompt keep, and does it carry the gate-note line? (b) where do the worker's check results go, and may it post them on PR #61? (c) one check needs a database the subagent lacks: what does the worker do with it?",
+      "expected_output": "(a) A gate worker whose return reaches the run: the third side of the report bracket (its returned gate result is its whole report; write nothing on any PR), the second side of the trigger bracket (no review trigger), the third side of the push bracket (push nothing to any branch), and the second side of the question bracket; the gate-note line is removed, since it writes no note. (b) In its returned result only; never on the PR — no write but a gate note under refs/notes/agent-gate/* carries a check result, and this worker writes none. (c) It records that check `not run`, with the reason, on that check's line of its result, and does not ask or substitute another check.",
+      "assertions": [
+        "the answer keeps the gate worker's sides, with the report side that returns the result",
+        "the answer removes the gate-note line",
+        "the answer has the worker write nothing on the PR, check results included",
+        "the answer records the unrunnable check not run with its reason on its line"
       ],
       "files": []
     }
