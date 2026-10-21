@@ -19,7 +19,7 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/integration-branch.md": {
-      "budget": 2404,
+      "budget": 2442,
       "target": 1500
     },
     "skills/backlog-orchestrator/restart-resume.md": {
@@ -31,15 +31,15 @@
       "target": 1500
     },
     "skills/create-pr/SKILL.md": {
-      "budget": 2569,
+      "budget": 2585,
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 5241,
+      "budget": 5245,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
-      "budget": 5520,
+      "budget": 5645,
       "target": 3000
     },
     "skills/merge-stack/SKILL.md": {
@@ -75,7 +75,7 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 5655,
+      "budget": 5667,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
@@ -91,7 +91,7 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 7905,
+      "budget": 7999,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
@@ -123,11 +123,11 @@
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2122,
+      "budget": 2124,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
-      "budget": 1719,
+      "budget": 1732,
       "target": 1500
     },
     "rules/ci-attribution.md": {

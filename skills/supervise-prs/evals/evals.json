@@ -1019,6 +1019,33 @@
         "the answer leaves whether those checks were owed to the integration PR's CI"
       ],
       "files": []
+    },
+    {
+      "id": 82,
+      "name": "a-filtered-off-entry-is-re-read-across-a-mechanical-push",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #44 in acme/shop targets `integration/shop-3`; ci-mode integration-branch has effect, dispatch mechanism `direct`. The caller passed the per-PR tier: `lint / format` (from `lint.yml`, no path filters) and `ci / test` (from `ci.yml`, whose `pull_request` trigger has `paths: ['packages/**', 'pnpm-lock.yaml']`). #44's commits change only `docs/guide.md`. Its gate record on head A: `lint / format` passed, `ci / test` `filtered off` (`ci.yml` `paths`). Two pushes follow, in order. (1) Head B: a repair answering a review finding, which edits `docs/guide.md` again. (2) Head C: a lockfile regeneration after the base moved — a mechanical push by `references/mechanical-pushes.md` — which changes `pnpm-lock.yaml`. Questions: (a) on head B, what diff do you test the filters against, and what is recorded for `ci / test`? (b) on head C, does the record from B carry forward unchanged, and what do you run? (c) is #44's CI condition green on C before that?",
+      "expected_output": "(a) B is a substantive push, so it needs a new record. The filters are tested against the PR's whole diff against its base (three-dot, merge base), not the repair push's own diff; that diff is still only `docs/guide.md`, so `ci / test` is again recorded `filtered off`, naming `ci.yml` and its `paths`, and `lint / format` runs. (b) The record carries across the mechanical push except its `filtered off` entry: the filters are re-read for C's diff, which now includes `pnpm-lock.yaml`, which `ci.yml`'s `paths` select, so `ci / test` is `not run` on C and the gate runs it once on that head. `lint / format`'s pass carries forward. (c) No: a `filtered off` entry the filters now select, or one nobody re-read, is `not run` — a check this PR's gate must pass — so the record is not green until `ci / test` passes on C.",
+      "assertions": [
+        "in (a) the answer tests the filters against the PR's whole diff against its base, not the repair push's own diff",
+        "in (a) the answer records ci / test filtered off again on head B",
+        "in (b) the answer re-reads the filters for head C and finds pnpm-lock.yaml selected",
+        "in (b) the answer runs ci / test once on head C rather than carrying the filtered-off entry forward",
+        "in (c) the answer does not read the record as green before ci / test passes on C"
+      ],
+      "files": []
+    },
+    {
+      "id": 83,
+      "name": "a-toolchain-mismatch-voids-the-sessions-passes",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #52 in acme/viz targets `integration/viz-2`; ci-mode integration-branch has effect, dispatch mechanism `swarm`, which has remote sessions. The caller passed the per-PR tier: `ci / typecheck`, `ci / browser (1)` and `ci / browser (2)`. CI runs the browser shards on the runner's preinstalled Chrome 155 via `CHROME_BIN`. The gate run for head D ran in a container: `ci / typecheck` passed, `ci / browser (1)` passed, `ci / browser (2)` failed on a shader content-hash mismatch. You then find the container launched Playwright's bundled Chromium 1194, not Chrome 155, and confirm it independently: `CHROME_BIN` was unset and the harness fell back. A remote session has Chrome 155. Question: what moves to the remote session, and what does the record for D hold until it returns?",
+      "expected_output": "The confirmed cause is a runtime differing from CI's, which voids every result that session produced, passes included — not only the failed shard. So the whole gate moves to the remote session, once for this head: `ci / browser (1)`'s pass under Chromium is not kept, and neither is the rest of that session's run. Until it returns, nothing from the container counts toward green on D. Failing there too, the PR's outcome is `needs-user`, naming the gate and the environment.",
+      "assertions": [
+        "the answer treats the mismatch as a confirmed environment failure",
+        "the answer moves the whole gate, not only ci / browser (2), to the remote session",
+        "the answer does not keep ci / browser (1)'s container pass in the record",
+        "the answer moves it once for the head, ending in needs-user if it fails there too"
+      ],
+      "files": []
     }
   ]
 }
