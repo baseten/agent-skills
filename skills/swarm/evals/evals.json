@@ -317,6 +317,19 @@
         "the answer verifies at dispatch that the session can push the ref"
       ],
       "files": []
+    },
+    {
+      "id": 28,
+      "name": "a-gate-session-writes-nothing-on-the-pr",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a caller dispatches a remote session whose only task is to run PR #61's local gate on head 7a7a7a7 of branch `feat/scan-12` and write the result as a gate note to `refs/notes/agent-gate/feat/scan-12`. Fill in the countermand template for it. Questions: (a) which side of each bracket does the prompt keep, and what does it say about pushing? (b) once the note is pushed, does the session record a report on PR #61, and may it list the checks that passed there? (c) the session finishes and no note is on the remote: is it releasable?",
+      "expected_output": "(a) A gate session: the second side of the report bracket (the gate note is the whole report; write nothing on the PR), the second side of the trigger bracket (post no review trigger), and the third side of the push bracket (push nothing to any branch; the deliverable is the gate note); the gate-note line is kept with <ref> filled as refs/notes/agent-gate/feat/scan-12, allowing that one push, never forced, with check results nowhere else. (b) No: it writes nothing on the PR; check results never go in a forge write a reader is shown. (c) Yes: it edited nothing, so nothing is stranded; the missing note is the caller's to act on.",
+      "assertions": [
+        "the answer keeps the gate-session sides: no PR report, no trigger, push nothing to any branch",
+        "the answer keeps the gate-note line with the notes ref filled in and forbids forcing it",
+        "the answer has the session write nothing on the PR, check results included",
+        "the answer treats a gate session with no note as releasable, leaving the absence to the caller"
+      ],
+      "files": []
     }
   ],
   "companions": []

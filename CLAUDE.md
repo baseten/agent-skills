@@ -40,10 +40,11 @@ evals (`<skill>#<id>`).
    create-pr#6, resolve-pr-comment#0 #18 #21 #23 #26 #28 #41 #42 #43 #44 #45 #46 #47
    #48 #49 #50 #51,
    review-docs#11, settle-outstanding-decisions#11 #12, backlog-orchestrator#72,
-   supervise-prs#56.
+   supervise-prs#56 #88.
 2. **Identity is observed authorship; own writes are known by id or footer, never content.**
-   `rules/posting-identity.md`; `swarm`, *Blocked workers*. backlog-orchestrator#5 #58,
-   resolve-pr-comment#48 #49.
+   `rules/posting-identity.md`; `swarm`, *Blocked workers*; `supervise-prs`, *Integration-branch CI*, step 3.
+   backlog-orchestrator#5 #58,
+   resolve-pr-comment#48 #49, supervise-prs#86.
 3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
    `backlog-orchestrator`, *Arming the wait when nothing is in flight*.
    backlog-orchestrator#58.
@@ -60,7 +61,7 @@ evals (`<skill>#<id>`).
    `rules/authored-write-form.md`. settle-and-merge#6 #9, merge-stack#5,
    backlog-orchestrator#71.
 7. **No forge write a reader is shown reports verification (a gate note is none); SHAs are bare.** `rules/authored-write-form.md`.
-   create-pr#11, resolve-pr-comment#17, supervise-prs#85, swarm#27.
+   create-pr#11, resolve-pr-comment#17, supervise-prs#85, swarm#27 #28.
 8. **Merges are opt-in, through the one gate, failing closed.** `settle-and-merge`, *The
    merge gate*; `rules/agent-policy.md`. backlog-orchestrator#0 #2. The gate reads review on the current
    head: a publish changes no head and is inert unless the repository's own configuration (policy file,
@@ -75,9 +76,10 @@ evals (`<skill>#<id>`).
    re-check narrows to file overlap (`settle-and-merge`, *Merge behavior*) and a
    review round carries across mechanical pushes (`rules/ci-and-review-verdicts.md`).
    settle-and-merge#13 #14 #15 #16 #17, implement-issue#18. Under `ci-mode: integration-branch`, file-only,
-   the gate opens for a PR into that branch on its local gate record, and never for the default branch
+   the gate opens for a PR into that branch on its local gate record (a worker's own passes
+   included) and its merged-tip check, and never for the default branch
    without `auto-merge` (`rules/agent-policy.md`, *Merge permissions*; `rules/ci-and-review-verdicts.md`,
-   *CI is green*). settle-and-merge#22 #33 #34, supervise-prs#65 #66 #81 #82 #83 #84 #85, backlog-orchestrator#76 #77 #86 #87,
+   *CI is green*). settle-and-merge#22 #33 #34 #35 #36, supervise-prs#65 #66 #81 #82 #83 #84 #85 #86 #87, backlog-orchestrator#76 #77 #86 #87 #88 #89,
    implement-issue-core#17. Under
    `review-defer-severity`, file-only, an automated reviewer's labelled finding at or below the level is resolved into a
    follow-up issue, never one a person is in (`resolve-pr-comment`, *Findings deferred to a follow-up*).
@@ -87,7 +89,7 @@ evals (`<skill>#<id>`).
 9. **Stranded work reaches a remote ref before any archive; permission holds name the
    literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked
    workers*; `rules/wake-budget.md`. backlog-orchestrator#4 #19, swarm#20 #25 #26,
-   implement-issue#14 #19 #20 #21.
+   implement-issue#14 #19 #20 #21, supervise-prs#87.
 
 **A PR changing a protected rule's text says so in its body**, and gets a blind
 rule-by-rule audit plus a pinning-eval round before merge. None is an issue-#49

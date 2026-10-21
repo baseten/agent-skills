@@ -117,9 +117,10 @@ instruction, the weaker side of an argument with a session's own system prompt.
 **So write the countermands into the session's system prompt at creation**:
 `create_session` takes an `append_system_prompt`, the one lever at the same level
 as the instruction it answers. All three go there — the supervision ban, branch
-protection and the question posture, as `SKILL.md`'s template states them — and
-the dispatch prompt restates them rather than carrying them alone. This holds for
-implementation, review and repair sessions alike.
+protection, with the gate-note line where one is kept, and the question posture,
+as `SKILL.md`'s template states them — and the dispatch prompt restates them
+rather than carrying them alone. This holds for implementation, review, repair
+and gate sessions alike.
 
 **Expect residue.** Appending does not delete the instruction already present,
 some environments ignore the parameter, and a worker weighing two same-level

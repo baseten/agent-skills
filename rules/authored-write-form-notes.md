@@ -71,6 +71,9 @@ So the rule is conditional on a capture path existing, and it carries the fallba
 
 ## The attribution footer marks the writes nobody read
 
+
+**Why a gate note carries the footer (pre-merge audit of #197, round 1):** a gate note is text a session wrote and no person approved, so the approval test puts a footer on it. That holds even though no reader of the PR is shown it. The blind audit found the note format left no room for one. Exempting the note would have narrowed protected rule 1. Instead, a footer ends each writer's appended block, and nothing that reads the note counts the footer as a check.
+
 **Why the "attribution already present" bullet exists (moved from the rule, #168):** reading the owner-ruling marker as licence to drop the footer is the mistake it blocks, and an earlier version of this section made it.
 
 **Why a body edit strips a transport's trailing footer, and an approved write reports one (#183):** a transport that appends a footer adds one on every write, so re-writing a body that already ends with one stacks a second. And an approved reply sent through it is not footerless, whatever the run wrote, so the report says what was posted.

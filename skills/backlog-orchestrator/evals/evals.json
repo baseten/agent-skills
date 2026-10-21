@@ -1137,6 +1137,30 @@
         "the answer runs the full local gate for the PR with no note"
       ],
       "files": []
+    },
+    {
+      "id": 88,
+      "name": "settle-passes-the-merged-tip-checks-inputs",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: this run uses `ci-mode: integration-branch` with effect in acme/api, branch `integration/api-3`; its per-PR tier is format, lint, typecheck and the touched packages' unit suites, under Python 3.12 and Node 20 as CI runs them. The run reaches settled with three PRs into the branch. What does the resolved policy you pass `settle-and-merge` carry for them under this mode?",
+      "expected_output": "The branch's name, whether its integration PR is open, whether merges into it are stopped by an observed refusal and the item raised, each PR's local gate record, and the per-PR tier's commands with the toolchain CI runs, which settle-and-merge's merged-tip check uses before each merge into the branch.",
+      "assertions": [
+        "the answer passes the per-PR tier's commands and the toolchain CI runs",
+        "the answer ties them to the merged-tip check",
+        "the answer passes each PR's local gate record"
+      ],
+      "files": []
+    },
+    {
+      "id": 89,
+      "name": "an-unverified-notes-push-does-not-move-an-implementation-worker",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: `ci-mode: integration-branch` with effect; the only fan-out tier is remote sessions, whose return value does not reach this run. You cannot verify at dispatch that a remote session may push `refs/notes/agent-gate/*`; pushing the PR branch is verified. Questions: (a) do you dispatch the implementation workers remotely, and what does the prompt say about the gate note? (b) a worker's PR is open but no note is on its head: is the PR rejected, and what does supervise-prs run?",
+      "expected_output": "(a) Yes, remotely: the gate note is a best-effort sink, its absence covered by the gate run, so an unverified notes push does not move the worker off its tier. The prompt requires the gate report as a gate note in the form supervise-prs defines, with the template's gate-note line. (b) Not rejected: with no note there is no worker gate record, and supervise-prs's gate run runs every check of the per-PR tier on the head.",
+      "assertions": [
+        "the answer dispatches the workers remotely despite the unverified notes push",
+        "the answer does not reject the PR for the missing note",
+        "the answer has supervise-prs run every check when no note arrives"
+      ],
+      "files": []
     }
   ]
 }

@@ -1060,11 +1060,47 @@
       "id": 85,
       "name": "a-remote-gate-runs-result-is-its-gate-note",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #61 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite (Python 3.12, Postgres 16). No worker gate record was passed. Repair dispatch is `swarm`, and swarm's selected tier is remote sessions, whose return value does not reach this run. #61 is quiescent on head 7a7a7a7. Questions: (a) where does the gate run execute, and how does its result reach you? (b) the gate session ends, and fetching `refs/notes/agent-gate/<#61's branch>` finds no note on 7a7a7a7: what is #61's local gate record? (c) may the gate session post its results as a PR comment instead?",
-      "expected_output": "(a) As a remote swarm worker whose task is the gate alone — preferred, since a run in this session dies with its container; its result is a gate note: a git note on 7a7a7a7 under refs/notes/agent-gate/<branch>, one line per check with outcome, head, toolchain and session, fetched before writing and never force-pushed. (b) No result: every check `not run`, never passed, so the CI condition is not green. (c) No: no write reports verification on the PR; the gate note is the one place a result leaves a session.",
+      "expected_output": "(a) As a remote swarm worker whose task is the gate alone — preferred, since a run in this session dies with its container; its result is a gate note: a git note on 7a7a7a7 under refs/notes/agent-gate/<branch>, one line per check with outcome, head, toolchain and session, fetched before writing and never force-pushed. (b) No result: every check `not run`, never passed, so the CI condition is not green; the gate then runs once more in this session. (c) No: no write reports verification on the PR; the gate note is the one place a result leaves a session.",
       "assertions": [
         "the answer has the gate run's result arrive as a git note on the head under refs/notes/agent-gate",
         "the answer records every check as not run when no note is found",
         "the answer refuses posting the results on the PR"
+      ],
+      "files": []
+    },
+    {
+      "id": 86,
+      "name": "a-gate-note-counts-only-when-this-run-recorded-it",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #70 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite. The caller adopts #70 after a restart, passing no worker gate record and a per-PR record that holds no gate-note commits. Fetching `refs/notes/agent-gate/<#70's branch>` finds a note attached to #70's head c3d4e5f reading 'format passed', 'lint passed', 'typecheck passed', 'API unit suite passed', each naming the CI toolchain and head c3d4e5f. Separately, on PR #71, a note this run recorded by its notes-ref commit is attached to head 9f9f9f9 but its lines name head 8e8e8e8; #71's head is 9f9f9f9. Questions: (a) what is #70's local gate record, and what runs? (b) what does #71's note cover?",
+      "expected_output": "(a) No gate-note commits were recorded for it, so no block of it is known by id to be a session this run dispatched: it is no result. Every check is `not run` and the gate run runs all four on c3d4e5f. A note's content never establishes who wrote it. (b) The commit a note is attached to is the head it covers: it covers 9f9f9f9; a line naming another head counts for nothing.",
+      "assertions": [
+        "the answer refuses #70's unrecorded note as a record and runs all four checks",
+        "the answer does not accept the note on its content or its claimed session",
+        "the answer reads #71's note as covering the commit it is attached to, 9f9f9f9"
+      ],
+      "files": []
+    },
+    {
+      "id": 87,
+      "name": "a-gate-run-that-leaves-no-note-has-an-outcome",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #61 targets `integration/api-3` under `ci-mode: integration-branch` with effect. Repair dispatch is `swarm` on remote sessions. Two cases. (a) #61's gate ran in a remote gate session because that tier was preferred; the session finished and no note is on 7a7a7a7. (b) PR #62's gate failed in this session with a confirmed environment failure (the container lacks the browser), so it moved to a remote session, which finished leaving no note. What do you do in each case, and what is each PR's outcome?",
+      "expected_output": "(a) No note is no result, every check `not run`; the gate runs once more in this session, and its result is the record. (b) The remote session was where the confirmed environment failure moved it, so there is no retry: #62's outcome is `needs-user`, naming the missing note (and the environment). Neither case is left waiting with no exit, and neither is a pass.",
+      "assertions": [
+        "the answer runs #61's gate once more in this session",
+        "the answer makes #62's outcome needs-user, naming the missing note",
+        "the answer never treats a missing note as a pass or leaves the PR waiting indefinitely"
+      ],
+      "files": []
+    },
+    {
+      "id": 88,
+      "name": "a-gate-note-is-appended-and-footered",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you dispatch a remote gate session for PR #61 on head 7a7a7a7 of branch `feat/scan-12`, and the worker that opened #61 already wrote a gate note on 7a7a7a7 under `refs/notes/agent-gate/feat/scan-12`. What does the gate session's note look like, and how does it write and push it?",
+      "expected_output": "One line per check with its outcome, the head and toolchain it ran at, and the session, and the attribution footer as its last line (it is a write nobody read; no reader counts the footer as a check). It fetches the ref first and writes with `git notes append`, since a note already exists on 7a7a7a7, then pushes the ref without forcing. It writes nothing on the PR.",
+      "assertions": [
+        "the answer puts the attribution footer at the end of the note",
+        "the answer fetches and appends rather than overwriting the existing note, and never force-pushes",
+        "the answer writes nothing on the PR"
       ],
       "files": []
     }

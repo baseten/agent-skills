@@ -126,6 +126,14 @@ The spend ceiling deliberately does not move on a merge. Merging work already pa
 
 ## Implementation worker contract
 
+**Why the gate note is best-effort, why a gate session is a third shape, and why settle is passed the per-PR tier (pre-merge audit of #197, round 1):** the audit found three gaps.
+
+1. Swarm's sink rule would have pulled every remote implementation worker off its tier while the notes push could not be verified. A missing note is already covered, because the gate run runs every check the note leaves, so the note is marked best-effort.
+2. The *two shapes* of dispatched session no longer listed everything that is dispatched. A gate session is the third shape: no `outcome_branch`, and its notes ref is its only push.
+3. `settle-and-merge`'s merged-tip check declared the per-PR tier's commands and toolchain as an input, but this run never passed them. It also never granted the authority to update a branch whose merged-tip check failed, so every such failure would have been held, and the repair route its NOTES describe would never have run.
+
+The gate-note commits now ride in the check-in prompt and the state block, because `supervise-prs` counts a note only between commits its dispatcher recorded.
+
 **Why a recorded design choice names its failure paths (Sept 2026):** a run ruled that a submit path should create a plan and then submit against its id — right on the reason it beat the alternative, and silent on what persists when the submit fails after the plan exists, or what a retry does to it. The worker implemented the ruling as given, which is what a ruling is for, so the one party positioned to check the shape's failure paths was the one that chose it.
 
 **Why a refused review is its own state here:** the shared rule explains why a refusal is an answer; what is skill-specific is that this run's remedy — report the PR as owing a round — is only reachable from a state that does not block settlement, and that every re-trigger path had to be closed for the rule to mean anything.
