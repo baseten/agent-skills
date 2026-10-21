@@ -92,11 +92,13 @@ established at startup — not assumed — recorded on the run's state and repor
   access takes its unreachable branch. **What is recorded governs, however it was
   established**: a run that recorded *can reach* — an operator supplied a path —
   takes the reachable branch on tier 2 as on any tier, and no rule re-derives the
-  answer from the tier. On tier 2 it is recorded **per session**, only for a path
-  shown to hold that session's checkout — its `sources` repository and dispatched
-  branch, at or past its last observed remote head — and re-checked so before any
-  archive it decides; a session without one, an empty-`sources` one included,
-  takes the unreachable branch.
+  answer from the tier. On tier 2 it is recorded **per session, at its dispatch**,
+  only for a path the operator declares a live mount of that session's container —
+  never a copy or a sync — holding its `sources` repository and dispatched branch
+  at or past the remote head read then. It is re-checked against the remote head
+  read immediately before any archive it decides, and a failed re-check records
+  that session *cannot reach* first; a session without such a path, an
+  empty-`sources` one included, takes the unreachable branch.
 - **the channel** — whether the parent can send the worker a message. It is
   present only when both halves are: the target accepts inbound messages, and
   this session holds a send tool and a listing resolves the target — enough to
@@ -410,8 +412,8 @@ regression to look for.** A worker is releasable when both hold, and not before:
      `NEEDS_USER` branches under *Blocked workers* instead;
 2. **nothing is stranded in its worktree.** Where the worktree is reachable,
    Checkpoint compliance establishes it. **Where it is not — on tier 2, every
-   worker unless the run recorded *can reach* (*Remote worker session
-   arguments*) — the observable remote state stands in for it.** The session must also
+   worker unless that session is recorded *can reach*, re-checked before the
+   archive (*Remote worker session arguments*) — the observable remote state stands in for it.** The session must also
    not be `RUNNING` (the paragraph beginning *Two things are never archived*,
    below).
 

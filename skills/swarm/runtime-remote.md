@@ -71,9 +71,10 @@ contract knows of carries such a path, so it is classed unreachable too until an
 operator establishes a path by means this contract does not yet define. Do not
 infer reachability from `environment_kind`, which speaks to separate containers,
 not shared mounts. **This limits what the detection proves, not what the run
-records**: where the run's state records *can reach* — an operator's path — that
-record governs every rule that reads the checkout capability, *Blocked workers*'
-capture-then-archive included (`SKILL.md`, *Remote worker session arguments*).
+records**: where the run's state records *can reach* for a session — an
+operator's live mount, recorded and re-checked per session as `SKILL.md`, *Remote
+worker session arguments*, requires — that record governs every rule that reads the checkout capability, *Blocked workers*'
+capture-then-archive included.
 
 **The channel — two halves, both required.**
 
