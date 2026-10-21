@@ -85,7 +85,7 @@ evals (`<skill>#<id>`).
    supervise-prs#58 #59 #62 #63 #64, settle-and-merge#19.
 9. **Stranded work reaches a remote ref before any archive; permission holds name the
    literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked
-   workers*; `rules/wake-budget.md`. backlog-orchestrator#4 #19 #86 #87 #88 #90 #91 #93,
+   workers*; `rules/wake-budget.md`. backlog-orchestrator#4 #19 #86 #87 #88 #90 #91 #93 #94,
    swarm#20 #25 #26 #27 #28, implement-issue#14 #19 #20 #21, supervise-prs#81,
    npm-dependency-upgrade-orchestrator#22.
 

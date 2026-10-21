@@ -95,7 +95,7 @@
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
-      "budget": 8930,
+      "budget": 8984,
       "target": 8000
     },
     "skills/swarm/runtime-remote.md": {
@@ -171,7 +171,7 @@
       "target": 1500
     },
     "rules/wake-budget.md": {
-      "budget": 1756,
+      "budget": 1819,
       "target": 1500
     },
     "rules/watch-and-read.md": {

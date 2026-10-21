@@ -92,7 +92,11 @@ established at startup — not assumed — recorded on the run's state and repor
   access takes its unreachable branch. **What is recorded governs, however it was
   established**: a run that recorded *can reach* — an operator supplied a path —
   takes the reachable branch on tier 2 as on any tier, and no rule re-derives the
-  answer from the tier.
+  answer from the tier. On tier 2 it is recorded **per session**, only for a path
+  shown to hold that session's checkout — its `sources` repository and dispatched
+  branch, at or past its last observed remote head — and re-checked so before any
+  archive it decides; a session without one, an empty-`sources` one included,
+  takes the unreachable branch.
 - **the channel** — whether the parent can send the worker a message. It is
   present only when both halves are: the target accepts inbound messages, and
   this session holds a send tool and a listing resolves the target — enough to

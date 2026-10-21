@@ -1219,6 +1219,18 @@
         "the answer ends the 20-minute cadence on the worker stopping (the 30-minute report and two-hour NEEDS_USER), returning, or being held, not on elapsed time while it works"
       ],
       "files": []
+    },
+    {
+      "id": 94,
+      "name": "a-check-in-left-armed-at-return-fires-into-nothing",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: at 14:00 the owner stopped the run while three PRs were open. The run returned a restartable checkpoint at 14:02 recording the stop; its pending one-shot check-in, armed at 12:30 for 16:30, could not be cancelled on this runtime, so the checkpoint reports it as a wake still bound to the run. At 16:30 it fires, and its prompt — written at 12:30 — tells you to run the supervision cycle over the three PRs and re-arm. One PR has a new red CI run. Question: what does this firing do, and what does it arm?",
+      "expected_output": "Nothing and nothing. Every check-in prompt opens with a liveness guard: the run's latest checkpoint or stop record (14:02) is newer than the prompt (12:30) and says the run was stopped, so the firing acts on nothing — no cycle, no repair for the red CI, no review trigger, no dispatch — arms no further check-in, and ends. The red CI is left for a resumed run, which re-arms at adoption. A user stop arms nothing further, and the watch ends with the run.",
+      "assertions": [
+        "the firing reads the run's latest checkpoint or stop record before acting and finds it newer than its prompt",
+        "it runs no cycle and takes no action on the red CI or the PRs",
+        "it arms no further check-in and ends"
+      ],
+      "files": []
     }
   ]
 }
