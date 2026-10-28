@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 24560,
+      "budget": 24962,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -19,15 +19,15 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/integration-branch.md": {
-      "budget": 2307,
+      "budget": 2641,
       "target": 1500
     },
     "skills/backlog-orchestrator/restart-resume.md": {
-      "budget": 1016,
+      "budget": 1086,
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
-      "budget": 1982,
+      "budget": 1999,
       "target": 1500
     },
     "skills/create-pr/SKILL.md": {
@@ -51,7 +51,7 @@
       "target": 3000
     },
     "skills/npm-dependency-upgrade-orchestrator/SKILL.md": {
-      "budget": 5261,
+      "budget": 5284,
       "target": 8000
     },
     "skills/plan-merge-order/SKILL.md": {
@@ -91,15 +91,15 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 7872,
+      "budget": 7888,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
-      "budget": 8662,
+      "budget": 9056,
       "target": 8000
     },
     "skills/swarm/runtime-remote.md": {
-      "budget": 1292,
+      "budget": 1347,
       "target": 1500
     },
     "skills/upgrade-npm-dependency/SKILL.md": {
@@ -171,7 +171,7 @@
       "target": 1500
     },
     "rules/wake-budget.md": {
-      "budget": 1302,
+      "budget": 1888,
       "target": 1500
     },
     "rules/watch-and-read.md": {

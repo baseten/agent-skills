@@ -267,6 +267,19 @@
         "the answer has the check-in's prompt state the override"
       ],
       "files": []
+    },
+    {
+      "id": 22,
+      "name": "remote-upgrade-agents-arm-the-check-in-at-dispatch",
+      "prompt": "You are executing the npm-dependency-upgrade-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You dispatched three upgrade agents through swarm as remote worker sessions (tier 2) at 10:00; no PR is open yet. Their reports are pulled, never delivered. What wake does this run arm, when, and at what interval while they work? What does each firing do?",
+      "expected_output": "Because those agents' completions do not reach the run, the wake the wake-budget rule requires is armed from their dispatch, not once none is running: a bounded one-shot check-in every 20 minutes while one is working, re-armed with the latest state under the count and budget, plus the subscriptions supervise-prs arms as PRs appear. Each firing runs this run's next cycle (supervise-prs' Pass over any PRs, and swarm's reading of the workers' reports, heads and blocked state). It is the run's one wait; supervise-prs arms none of its own.",
+      "assertions": [
+        "the check-in is armed at the remote agents' dispatch, not only once none is running",
+        "the interval is 20 minutes while one is working, under the count and budget",
+        "each firing runs the run's next cycle, reading the workers",
+        "it is the run's one wait; supervise-prs arms none of its own"
+      ],
+      "files": []
     }
   ]
 }

@@ -85,8 +85,10 @@ evals (`<skill>#<id>`).
    supervise-prs#58 #59 #62 #63 #64, settle-and-merge#19.
 9. **Stranded work reaches a remote ref before any archive; permission holds name the
    literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked
-   workers*; `rules/wake-budget.md`. backlog-orchestrator#4 #19, swarm#20 #25 #26,
-   implement-issue#14 #19 #20 #21.
+   workers*; `rules/wake-budget.md`. backlog-orchestrator#4 #19 #86 #87 #88 #90 #91 #93 #94
+   #95,
+   swarm#20 #25 #26 #27 #28, implement-issue#14 #19 #20 #21, supervise-prs#81,
+   npm-dependency-upgrade-orchestrator#22.
 
 **A PR changing a protected rule's text says so in its body**, and gets a blind
 rule-by-rule audit plus a pinning-eval round before merge. None is an issue-#49

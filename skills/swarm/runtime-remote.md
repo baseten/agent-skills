@@ -63,14 +63,19 @@ state and reported (`SKILL.md`, *Report*).
 
 **The checkout.** A session record's `sources` carries the repository it was given
 and **no filesystem path**, and each session runs in its own container
-(`environment_kind`). **The detection is one-directional: it establishes *cannot
-reach* and can never establish *can reach*** — so absent a path the answer is
-*cannot reach*. A self-hosted pool that mounts worker files where the parent can
-see them would be genuinely reachable, but no field this contract knows of
-carries such a path, so it is classed unreachable too until an operator
-establishes a path by means this contract does not yet define. Do not infer
-reachability from `environment_kind`, which speaks to separate containers, not
-shared mounts.
+(`environment_kind`). **The detection is one-directional: the session record
+establishes *cannot reach* and can never establish *can reach*** — so absent a
+path the answer is *cannot reach*. A self-hosted pool that mounts worker files
+where the parent can see them would be genuinely reachable, but no field this
+contract knows of carries such a path, so it is classed unreachable too until an
+operator declares a live mount, as `SKILL.md`, *Remote worker session arguments*,
+defines. Do not
+infer reachability from `environment_kind`, which speaks to separate containers,
+not shared mounts. **This limits what the detection proves, not what the run
+records**: where the run's state records *can reach* for a session — an
+operator's live mount, recorded and re-checked per session as `SKILL.md`, *Remote
+worker session arguments*, requires — that record governs every rule that reads the checkout capability, *Blocked workers*'
+capture-then-archive included.
 
 **The channel — two halves, both required.**
 

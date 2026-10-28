@@ -87,9 +87,18 @@ detected. Apply it from there.
 established at startup — not assumed — recorded on the run's state and reported:
 
 - **the checkout** — whether the parent can reach a worker's checkout. On tier 2
-  the detection can establish *cannot reach* and never *can reach*; absent a
+  the session record can establish *cannot reach* and never *can reach*; absent a
   path, it is *cannot reach*, and every rule that needs parent-side worktree
-  access takes its unreachable branch.
+  access takes its unreachable branch. **What is recorded governs, however it was
+  established**: a run that recorded *can reach* — an operator supplied a path —
+  takes the reachable branch on tier 2 as on any tier, and no rule re-derives the
+  answer from the tier. On tier 2 it is recorded **per session, at its dispatch**,
+  only for a path the operator declares a live mount of that session's container —
+  never a copy or a sync — holding its `sources` repository and dispatched branch
+  at or past the remote head read then. It is re-checked against the remote head
+  read immediately before any archive it decides, and a failed re-check records
+  that session *cannot reach* first; a session without such a path, an
+  empty-`sources` one included, takes the unreachable branch.
 - **the channel** — whether the parent can send the worker a message. It is
   present only when both halves are: the target accepts inbound messages, and
   this session holds a send tool and a listing resolves the target — enough to
@@ -178,6 +187,22 @@ waiting is the parent's job and costs nothing, while an idle worker holds a slot
 the queue needs. *Releasing a worker* defines the act per tier and the test.
 Release is driven by the session list, not the run's memory, and belongs in the
 prompt the run writes for its own check-in, since that survives compaction.
+
+**On tier 2 nothing wakes the parent when a worker finishes or blocks**: its
+report is pulled (*How a worker's report actually reaches you*), and a permission
+prompt raises no event. So from its dispatch, or a caller's adoption of it, the parent runs its cycle on one
+check-in — the caller's where it has one (`backlog-orchestrator`, *Arming the
+wait when nothing is in flight*), its own invoked directly — under
+`references/wake-budget.md`, *A subscription and a check-in, both*: every 20
+minutes while one is working, from its dispatch — from its own pending check-in's firing
+where the runtime cannot cancel it, a time reported as the earliest a block can be seen — so *Blocked workers* and Checkpoint compliance's
+elapsed-time thresholds are read within one interval; the backoff once every one
+left is held or raised for an unmoved head; one-shot, each firing re-arming it
+with the latest state; and that rule's count, budget and reported stop. Invoked
+directly, the watch ends on that budget, or once every worker has returned, is
+held — watched then as *Blocked workers*' last rule bounds it — or has gone two
+hours with its remote head unmoved, with the restartable checkpoint that rule
+describes.
 
 **Arm the watch when the task enters the tracked set, not when the run settles;
 pass the no-change preflight before reporting any no-change result; and read on
@@ -270,7 +295,8 @@ not the worker's failure** and does not spend that task's lost-worker budget.
 workers* is a backstop and the release reconciliation reads the runtime's session
 list (*Runtime*; `backlog-orchestrator`'s supervision loop step 11). A quiet
 session list is not proof the countermand held (`runtime-remote.md`). The parent
-arming its own subscription and check-in when a run settles (`backlog-orchestrator`,
+arming its own subscription and check-in when a run settles, or from a tier-2
+worker's dispatch or adoption (`backlog-orchestrator`,
 *Arming the wait when nothing is in flight*) is this same ownership, not an
 exception to it.
 
@@ -387,7 +413,8 @@ regression to look for.** A worker is releasable when both hold, and not before:
      `NEEDS_USER` branches under *Blocked workers* instead;
 2. **nothing is stranded in its worktree.** Where the worktree is reachable,
    Checkpoint compliance establishes it. **Where it is not — on tier 2, every
-   worker — the observable remote state stands in for it.** The session must also
+   worker unless that session is recorded *can reach*, re-checked before the
+   archive (*Remote worker session arguments*) — the observable remote state stands in for it.** The session must also
    not be `RUNNING` (the paragraph beginning *Two things are never archived*,
    below).
 
@@ -493,7 +520,8 @@ Read the blocked state explicitly each cycle, and resolve it in this order:
 3. **Neither, and the prompt is one nothing can answer** — an `AskUserQuestion` or
    equivalent, asking for a decision rather than a permission. Interrupting leaves
    the prompt pending. **Settle first whether the run can reach this worker's
-   checkout** (*Remote worker session arguments*); the two paths end differently
+   checkout — by the capability recorded for it, on tier 2 per session at dispatch, however it was established,
+   never by the tier** (*Remote worker session arguments*); the two paths end differently
    and neither is the exception to the other:
 
    **Where the checkout is reachable — recover the slot; do not resolve it as
@@ -580,8 +608,8 @@ it.
 **The hold bounds the work, not the watch.** The parent keeps supervising a held
 worker, since its resuming is state the run acts on: on the caller's bounded
 check-in where it has one (`backlog-orchestrator`'s unproductive-wake budget,
-*Arming the wait when nothing is in flight*); invoked directly, on the
-elapsed-time observations Checkpoint compliance defines for a stalled head,
+*Arming the wait when nothing is in flight*); invoked directly, on its own
+(*Supervision*), to the elapsed-time observations Checkpoint compliance defines for a stalled head,
 measured from when the hold was raised, the bound spent at its two-hour threshold
 once nothing else is in flight. When the bound is spent, return a restartable
 checkpoint naming each held session as alive, with its URL, the literal tool
@@ -738,10 +766,11 @@ arguments*). Where it cannot, the remote head is the only observable; do not rea
 the section's silence as permission to guess — durability there is the worker's to
 satisfy, and enforcement is the dispatch prompt. **Make a stalled head actionable —
 in elapsed time, never in cycles** (the loop has no minimum interval): a tier-2
-worker whose remote head has not advanced for **30 minutes** is reported as such,
+worker — whatever its checkout capability, since its completion still never
+reaches the run — whose remote head has not advanced for **30 minutes** is reported as such,
 and at **2 hours** is `NEEDS_USER`, naming the session, its last observed head,
 and how long it has been unchanged. Both thresholds run from the last observed
-advance (or dispatch), across at least two observations; a burst of cycles inside
+advance (or dispatch, or adoption), across at least two observations; a burst of cycles inside
 one minute is one observation. Where a channel exists, nudge first (*Enforce, do
 not re-ask*). This is not a capture and does not pretend to be one.
 

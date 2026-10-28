@@ -305,6 +305,33 @@
         "the pass's commits are left for its own end-of-pass push"
       ],
       "files": []
+    },
+    {
+      "id": 27,
+      "name": "tier-2-parent-runs-a-cycle-every-twenty-minutes",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: invoked directly, you dispatched three tasks as remote worker sessions (tier 2) and have nothing else to wait on. Questions: (a) what wakes you to read their state, and how often? (b) two workers returned; the third reads WORKING but its remote head has not moved for two and a half hours — when does the watch end, and what do you return?",
+      "expected_output": "(a) Nothing arrives on its own: a tier-2 worker's report is pulled and a permission prompt raises no event, so from dispatch the parent runs its cycle on its own check-in under the wake-budget rule: every 20 minutes while one is working, as a one-shot each firing re-arms with the latest state, never a recurring trigger with a fixed prompt, reading blocked state and the remote heads against Checkpoint compliance's elapsed-time thresholds, under that rule's unproductive count and budget. (b) The worker was reported at 30 minutes unmoved and raised NEEDS_USER at two hours; with every worker still in flight past two hours unmoved — or the budget spent first — the watch ends, reported, and returns the restartable checkpoint naming that session as alive, with its URL and last observed head.",
+      "assertions": [
+        "the answer schedules its own cycle every 20 minutes while a tier-2 worker is in flight, because completions and blocks are not delivered",
+        "each firing re-arms a one-shot check-in carrying the latest state",
+        "the stalled worker is NEEDS_USER at two hours",
+        "the watch ends once every worker still in flight has gone two hours unmoved, returning a restartable checkpoint naming the session as alive",
+        "the check-in carries the wake budget's unproductive count and budget, and its stop is reported"
+      ],
+      "files": []
+    },
+    {
+      "id": 28,
+      "name": "a-recorded-can-reach-governs-a-tier-2-question-hold",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: invoked directly, you are supervising three remote worker sessions (tier 2). At startup the session records showed `sources` with no path, but the operator running this self-hosted pool supplied, for each worker session, a path it declares a live mount of that session's container; at each dispatch you confirmed the path holds that session's `sources` repository and dispatched branch at or past the remote head read then, and the run recorded the checkout capability as *can reach* for each session; the channel is recorded absent. Worker W has been running for 70 minutes, has pushed one checkpoint, and has uncommitted edits in its worktree; it has now stopped on an `AskUserQuestion` asking which of two API shapes to use. It fails the releasable test, and a task is waiting for a free slot. Question: which path of Blocked workers do you take with W, and in what order? Does `runtime-remote.md`'s statement that the tier-2 detection can never establish *can reach* change the answer?",
+      "expected_output": "Step 3, a decision prompt nothing can answer, on its reachable path, because the capability recorded at startup governs however it was established — the operator's path — and no rule re-derives it from the tier. The one-directional detection limits what the session record proves, not what the run records. So recover the slot: re-check that W's path still holds its checkout at or past the remote head read now, then capture W's uncommitted work to a remote recovery ref with the ref-neutral sequence, never a plain commit; verify the capture; only then archive the session; end the ref by its ender under The recovery ref's lifecycle; redispatch the same work unit from the latest durable remote state, now including the capture, with the question countermand in place, preserving its role and remaining budget; and record the question it stopped on as a finding about the dispatch prompt. Not NEEDS_USER with the container retained, which is the unreachable path.",
+      "assertions": [
+        "the answer takes step 3's reachable path because the recorded capability governs, not the tier, and says the detection's one-directionality does not override the record",
+        "the answer captures W's uncommitted work to a remote ref and verifies it before archiving the session",
+        "the answer redispatches the same work unit from durable remote state including the capture, with the question countermand",
+        "the answer does not resolve W as NEEDS_USER with its container retained"
+      ],
+      "files": []
     }
   ],
   "companions": []
