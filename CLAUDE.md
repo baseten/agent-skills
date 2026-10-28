@@ -60,8 +60,9 @@ evals (`<skill>#<id>`).
    opt-in** (`Depends on:` excepted); else drift is reported with a replacement.
    `rules/authored-write-form.md`. settle-and-merge#6 #9, merge-stack#5,
    backlog-orchestrator#71.
-7. **No forge write reports verification, bar a gate note under `refs/notes/agent-gate/*`; SHAs are bare.** `rules/authored-write-form.md`.
-   create-pr#11, resolve-pr-comment#17, supervise-prs#85, swarm#27 #28 #29.
+7. **No forge write reports verification, bar a gate note under `refs/notes/agent-gate/*` and, in a `NEEDS_USER` or `DECISION` hold item, the failed or unrun check it holds on with its commits; SHAs are bare.** `rules/authored-write-form.md`.
+   create-pr#11, resolve-pr-comment#17, supervise-prs#85, swarm#27 #28 #29,
+   backlog-orchestrator#92 #93 #94, settle-and-merge#35 #37.
 8. **Merges are opt-in, through the one gate, failing closed.** `settle-and-merge`, *The
    merge gate*; `rules/agent-policy.md`. backlog-orchestrator#0 #2. The gate reads review on the current
    head: a publish changes no head and is inert unless the repository's own configuration (policy file,

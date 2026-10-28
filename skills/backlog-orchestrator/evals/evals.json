@@ -1191,12 +1191,37 @@
       "id": 92,
       "name": "a-full-tier-run-that-leaves-no-note-names-its-options",
       "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: this run's work in acme/api is done; the integration branch `integration/api-3` has a non-empty batch and no integration PR. The full tier failed in this session with a confirmed environment failure (the container lacks the browser the end-to-end suite needs), so it was dispatched to a remote gate session on the branch's head with an assigned gate-note ref. That session finished and no note is on its ref. What do you do, and what releases it?",
-      "expected_output": "There is no retry in this session, since the environment failure is what sent it remote: raise a NEEDS_USER naming the missing note and the environment, with options — dispatch the full tier to a remote session once more, open the integration PR with the full tier not run and its CI the only gate, or leave the batch to the owner. Only an owner reply choosing one of those releases it; the integration PR does not open meanwhile.",
+      "expected_output": "There is no retry in this session, since the environment failure is what sent it remote: raise a NEEDS_USER naming the missing note, the head it was due on and the environment, and no check outcome beyond the full tier not run, with options — dispatch the full tier to a remote session once more, open the integration PR with the full tier not run and its CI the only gate, or leave the batch to the owner. Only an owner reply choosing one of those releases it; the integration PR does not open meanwhile.",
       "assertions": [
         "the answer raises NEEDS_USER naming the missing note",
         "the answer offers concrete options for the owner to choose between",
         "the answer releases it only on an owner reply choosing an offered option",
         "the answer does not open the integration PR on its own"
+      ],
+      "files": []
+    },
+    {
+      "id": 93,
+      "name": "a-full-tier-hold-names-the-failing-check-and-its-commit",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: `ci-mode: integration-branch` with effect in acme/api. At a checkpoint the full tier ran on `integration/api-3` at head 4c4c4c4: format, lint, typecheck and the unit suites passed; the end-to-end suite `e2e:checkout` failed. Bisecting over the batch's first-parent merges finds the first failing tree at merge commit 9e9e9e9, which merged PR #52. You raise this on the manifest's root issue for the owner. What does the item say, and what may it not say?",
+      "expected_output": "A NEEDS_USER naming the failing check (`e2e:checkout`), the commit it failed on (9e9e9e9, bare) and that merge's PR (#52), with the options — dispatch a fix issue under the manifest within new-issue-budget, open the integration PR anyway, or leave it to the owner — released only by an owner reply choosing one. The write-form rule's hold-item carve-out lets it name the failing check and its commit because the owner cannot rule without them; it lists none of the checks that passed and no run's results, and carries the footer.",
+      "assertions": [
+        "the answer's item names the failing check e2e:checkout",
+        "the answer's item names the commit the check failed on, or that merge's PR",
+        "the answer's item lists none of the checks that passed",
+        "the answer offers options and releases only on an owner reply choosing one"
+      ],
+      "files": []
+    },
+    {
+      "id": 94,
+      "name": "a-hold-item-listing-the-passing-checks-is-refused",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: same checkpoint as before — on `integration/api-3` the full tier at head 4c4c4c4 has `e2e:checkout` failing, first failing at merge commit 9e9e9e9 (PR #52), and format, lint, typecheck and the unit suites passing. A draft of the NEEDS_USER for the root issue reads: \"Full tier at 4c4c4c4: format ✅ lint ✅ typecheck ✅ unit ✅ e2e:checkout ❌ — first failing at 9e9e9e9 (#52). Options: …\". May you post it as written? If not, what do you post?",
+      "expected_output": "No. A hold item may name only the check it holds on and the commit it ran on; listing the passing checks is a write reporting verification, which the write-form rule bans in any comment. Post it with the passes removed: e2e:checkout failing, first at 9e9e9e9 (bare), merged by #52, with the same options and the footer.",
+      "assertions": [
+        "the answer refuses to post the draft as written",
+        "the answer names listing the passing checks as what the write-form rule forbids",
+        "the answer keeps the failing check and the commit 9e9e9e9 in the item it posts"
       ],
       "files": []
     }

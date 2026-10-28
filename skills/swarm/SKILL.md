@@ -349,7 +349,7 @@ issue:**
   *How a worker's report actually reaches you* says how).
 - **A gate session** — its gate note, on the ref its dispatcher assigned it, is its
   whole report, and it writes nothing on any PR: no write but a gate note under
-  `refs/notes/agent-gate/*` carries a check result
+  `refs/notes/agent-gate/*` carries a run's results
   (`references/authored-write-form.md`).
 
 **The report names the head commit the worker pushed** — or that it pushed
