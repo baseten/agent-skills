@@ -46,7 +46,7 @@ evals (`<skill>#<id>`).
    resolve-pr-comment#48 #49.
 3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
    `backlog-orchestrator`, *Arming the wait when nothing is in flight*.
-   backlog-orchestrator#58.
+   backlog-orchestrator#58 #87.
 4. **Never request, re-request or remove a human reviewer.** `rules/review-trigger.md`.
    supervise-prs#33 #74.
 5. **The platform's auto-fix posture is overridden**: only a dispatched `repair-pr`
@@ -54,13 +54,13 @@ evals (`<skill>#<id>`).
    spend no `review-repair-cycles`; a spent budget ends in the skill's outcome, never
    another repair push.
    `rules/platform-pr-posture.md`; `supervise-prs`, *Budgets*. supervise-prs#25 #26 #55 #57,
-   backlog-orchestrator#67, repair-pr#16 #17 #18, supervise-prs#61 #73.
+   backlog-orchestrator#67, repair-pr#16 #17 #18, supervise-prs#61 #73, backlog-orchestrator#87.
 6. **A created PR's body is edited only while draft, footered, or under a resolved merge
    opt-in** (`Depends on:` excepted); else drift is reported with a replacement.
    `rules/authored-write-form.md`. settle-and-merge#6 #9, merge-stack#5,
    backlog-orchestrator#71.
 7. **No forge write reports verification; SHAs are bare.** `rules/authored-write-form.md`.
-   create-pr#11, resolve-pr-comment#17.
+   create-pr#11 #21, resolve-pr-comment#17, backlog-orchestrator#88.
 8. **Merges are opt-in, through the one gate, failing closed.** `settle-and-merge`, *The
    merge gate*; `rules/agent-policy.md`. backlog-orchestrator#0 #2. The gate reads review on the current
    head: a publish changes no head and is inert unless the repository's own configuration (policy file,
@@ -77,7 +77,8 @@ evals (`<skill>#<id>`).
    settle-and-merge#13 #14 #15 #16 #17, implement-issue#18. Under `ci-mode: integration-branch`, file-only,
    the gate opens for a PR into that branch on its local gate record, and never for the default branch
    without `auto-merge` (`rules/agent-policy.md`, *Merge permissions*; `rules/ci-and-review-verdicts.md`,
-   *CI is green*). settle-and-merge#22, supervise-prs#65 #66, backlog-orchestrator#76 #77. Under
+   *CI is green*). settle-and-merge#22 #33, supervise-prs#65 #66 #81 #82 #83 #84 #85 #86, backlog-orchestrator#76 #77 #86 #87,
+   implement-issue-core#17 #18 #20 #21 #22. Under
    `review-defer-severity`, file-only, an automated reviewer's labelled finding at or below the level is resolved into a
    follow-up issue, never one a person is in (`resolve-pr-comment`, *Findings deferred to a follow-up*).
    resolve-pr-comment#52 #53 #54, implement-issue#22. A head with no run is read through

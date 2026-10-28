@@ -203,6 +203,82 @@
         "the answer explains that create-pr cannot recover a dropped grant because it does not read the policy file"
       ],
       "files": []
+    },
+    {
+      "id": 17,
+      "name": "a-check-ci-would-filter-off-the-change-is-recorded-not-run",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Direct invocation, per-pr mode, acme/platform. Your change edits only `docs/api/auth.md`. Branch protection on `main` requires two contexts: `lint / format` from `.github/workflows/lint.yml`, which has no path filters, and `api / test` from `.github/workflows/api.yml`, whose `pull_request` trigger has `paths: ['apps/api/**', 'packages/db/**']` on both `main` and your head; your change does not touch either workflow file. `api / test` runs the full API suite, about forty minutes. Question: which checks does your final local verification run, and what does the gate you hand to create-pr say for each?",
+      "expected_output": "Run only `lint / format`. `api / test` is a required context whose workflow CI would not run for this change — no changed file matches its `paths`, read the way *Path filters* reads it, and the filters agree between base and head with the workflow file untouched — so it is recorded `filtered off`, naming `api.yml` and its `paths` filter, and not run. It is forwarded with that outcome, never as `passed` and never dropped; under per-pr the merge gate reads CI on the head, which applies the same filter. Because `api / test` is required by name and its whole workflow is filtered off, it will never report on the PR — the hold *Path filters* names — so the worker reports that, with the workflow and filter, rather than presenting the PR as clear to merge.",
+      "assertions": [
+        "the answer runs lint / format",
+        "the answer does not run the API test suite",
+        "the answer records api / test with an outcome distinct from passed (filtered off), naming the workflow and its paths filter",
+        "the answer keeps api / test in the gate handed to create-pr rather than dropping it",
+        "the answer reports that the required api / test will never report on the PR under per-pr, a hold to surface"
+      ],
+      "files": []
+    },
+    {
+      "id": 18,
+      "name": "an-unreproducible-change-set-result-means-the-check-runs",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Orchestrated, per-pr. The caller supplied the gate: required contexts `ci / typecheck` and `ci / e2e`. In `.github/workflows/ci.yml`, job `e2e` has `needs: changes` and `if: needs.changes.outputs.web == 'true'`; job `changes` runs `scripts/ci/changed-areas.sh`, which calls the forge's API with a CI-only token to list changed areas, and you cannot run it locally or tell from the script what it would output for your change, which edits `apps/web/src/date.ts` and a test beside it. Questions: (a) is `ci / e2e` run or recorded `filtered off`? (b) does applying filters mean you re-derive the caller's gate?",
+      "expected_output": "(a) It runs. A change-set result that cannot be read or reproduced locally fails closed: the part runs, exactly as an unreadable filter counts as matching under *Path filters*. Only a skip established from the filters or the tooling's own result for these files is recorded `filtered off`. (b) No: the set stays the caller's; filtering decides per change which of its parts run, which is not a re-derivation.",
+      "assertions": [
+        "the answer runs ci / e2e because the change-set result cannot be established locally",
+        "the answer does not record ci / e2e as filtered off on a guess about the script's output",
+        "the answer keeps the caller-supplied gate as the set rather than re-deriving it"
+      ],
+      "files": []
+    },
+    {
+      "id": 19,
+      "name": "iterate-narrowly-and-clear-a-confirmed-environment-failure-by-its-checks",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Per-pr, acme/api, a Node repository using vitest. The derived gate is `ci / format`, `ci / typecheck` and `ci / test` (the full API suite, about forty minutes against a local Postgres). In `.github/workflows/ci.yml` only the `test` job declares a `postgres` service; the `format` and `typecheck` jobs run `pnpm format:check` and `tsc --noEmit`, start nothing, and no config they read names a database. (a) You are midway through implementing and have just edited `src/billing/invoice.ts`; what do you run now? (b) Later, on your final head, the gate's `ci / test` fails in 212 tests across unrelated files, all with `ECONNREFUSED 127.0.0.1:5432`. You check and the local Postgres container has exited; you restart it and it is healthy. `ci / format` and `ci / typecheck` passed in that gate run. What do you re-run?",
+      "expected_output": "(a) The narrowest selection the tooling offers for the changed files — `vitest related src/billing/invoice.ts`, perhaps with that package's typecheck — not the whole gate or the full suite; a narrow run is not the gate and is never reported as it. The gate runs once, on the final head. (b) This is a mass failure with the tell in the error, an environment hypothesis, and you confirmed it independently (the database had exited). Once the environment is healthy, re-run the check it failed, `ci / test`, once on the same head — not the whole gate; format and typecheck neither start nor name Postgres, so they did not use the service that went down and their results stand.",
+      "assertions": [
+        "in (a) the answer runs a narrow selection for the changed file rather than the full suite or the whole gate",
+        "in (b) the answer treats the failure as an environment failure, confirmed by the exited database",
+        "in (b) the answer re-runs only ci / test after restoring the database, not the whole gate"
+      ],
+      "files": []
+    },
+    {
+      "id": 20,
+      "name": "only-the-pull-request-trigger-filters-a-check-off",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Direct invocation, per-pr mode, acme/site. Your change edits only `docs/faq.md`. Branch protection on `main` requires `build / lint` and `build / test`, both from `.github/workflows/build.yml`, which is identical on `main` and your head and which your change does not touch: `on: { push: { branches: [main], paths: ['src/**'] }, pull_request: {} }`. Later, on your final head, `build / test` fails in 180 tests across unrelated files with `ENOENT: chrome` — the session has no browser while CI's runner has Chrome 155 — and `build / lint`, run in that same session, passed. A second session with Chrome 155 is available. Questions: (a) is `build / test` filtered off for your change? (b) after confirming the browser is missing, what do you re-run, and how many times?",
+      "expected_output": "(a) No. Only the `pull_request` (or `pull_request_target`) trigger's filters are CI's for a PR; the `push` trigger's `paths` say nothing about what the PR runs, and the `pull_request` trigger here has no filters, so `build / test` runs. (b) A missing or differing browser is a toolchain/runtime mismatch with CI, which voids every result of that session, passes included — so the whole gate re-runs in the session with Chrome 155, not only `build / test`. Once for that head; failing again, it is reported as the environment failure with the error.",
+      "assertions": [
+        "the answer does not record build / test filtered off on the push trigger's paths",
+        "the answer runs build / test because the pull_request trigger has no filters",
+        "the answer re-runs the whole gate, build / lint included, in the session with CI's browser",
+        "the answer bounds the re-run to once for the head and reports a second failure"
+      ],
+      "files": []
+    },
+    {
+      "id": 21,
+      "name": "an-outage-re-runs-the-passes-that-used-the-dead-service",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Per-pr, acme/api, a Node repository using vitest; the session runs CI's toolchain. The derived gate, all from `.github/workflows/ci.yml`: `ci / lint` (its job runs `pnpm lint`, declares no service, and nothing it reads names one); `ci / unit` (its job declares `services: redis`); `ci / integration` (its job declares `services: redis`, and its suite wraps every test in `describe.skipIf(!redisReachable)`); and `ci / contract` (its job runs `pnpm test:contract` and declares no service, but that script loads `.env.contract`, which this session cannot read, and you cannot tell whether it connects to Redis). On your final head, in one session, `ci / unit` fails 90 tests across unrelated files with `ECONNREFUSED 127.0.0.1:6379`; `ci / lint`, `ci / integration` and `ci / contract` pass. You find the local Redis container had exited, restart it, and it is healthy. Questions: (a) which checks do you re-run, and why each? (b) how many times, and what if they fail again?",
+      "expected_output": "(a) A confirmed outage: the re-run covers the check that failed and every check that passed but uses the service that went down. `ci / unit` failed, so it re-runs. `ci / integration` passed but its job declares Redis, and a suite that skips what it cannot reach reports `passed` having run nothing, so it re-runs. Whether `ci / contract` uses Redis cannot be told, so it re-runs too (fail closed). `ci / lint` starts no service and names none, so its pass stands. It is not a toolchain mismatch, so the whole gate does not re-run on that ground. (b) Once for this head; failing again, report it as the environment failure, with the error.",
+      "assertions": [
+        "the answer re-runs ci / unit and ci / integration, the latter because its job declares the Redis service",
+        "the answer re-runs ci / contract because whether it uses Redis cannot be told",
+        "the answer keeps ci / lint's pass rather than re-running it",
+        "the answer re-runs once for the head and reports a second failure as the environment failure"
+      ],
+      "files": []
+    },
+    {
+      "name": "a-workflow-with-no-pull-request-trigger-is-never-filtered-off",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Orchestrated, ci-mode integration-branch, acme/site. The caller supplied the gate: required contexts `lint / format` (from `lint.yml`, `on: { pull_request: {} }`) and `guard / schema` (from `guard.yml`, `on: { merge_group: {}, push: { branches: [main] } }`, whose one job runs `scripts/check-schema.sh`, which runs fine locally). Your change edits only `docs/faq.md`. Question: which checks do you run, and how is `guard / schema` recorded?",
+      "expected_output": "Both. `lint / format` runs: its pull_request trigger has no filters. `guard / schema` comes from a workflow with no `pull_request` or `pull_request_target` trigger at all, so no PR filter excluded it and it is never `filtered off` — reading 'none of its PR triggers fire' as filtered off would let the record go green over a required check nobody ran. It runs, and is recorded passed or failed on its result.",
+      "assertions": [
+        "the answer does not record guard / schema as filtered off",
+        "the answer runs guard / schema locally",
+        "the answer runs lint / format"
+      ],
+      "files": [],
+      "id": 22
     }
   ]
 }

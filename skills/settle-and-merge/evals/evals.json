@@ -389,6 +389,18 @@
         "The answer merges nothing"
       ],
       "files": []
+    },
+    {
+      "id": 33,
+      "name": "a-filtered-off-record-entry-is-not-a-pass-and-not-owed",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). backlog-orchestrator passes PR #14 in acme/print, base `integration/print-7`; resolved policy `ci-mode: integration-branch` with effect, `auto-merge` false. #14's local gate record on its current head: `format` passed, `lint` passed, `test / api` `filtered off` (workflow `api.yml`, `paths: ['apps/api/**']`; the PR changes only `apps/web/**`). Review is clean, no conflict, nothing outstanding in the wave, and no integration PR from `integration/print-7` is open. Questions: (a) is #14's CI condition green, and does it merge? (b) does the gate treat `test / api` as having passed? (c) where is it settled whether `test / api` was owed?",
+      "expected_output": "(a) Yes: the record's green excludes `filtered off` checks, so every other check passing on the head makes it green, and the mode's grant opens the gate for a PR into the integration branch — it merges. (b) No: `filtered off` is neither passed nor owed by this PR. (c) On the integration PR's CI, over the batch's files, read by *Path filters*: if another PR in the batch touches `apps/api/**` CI runs it there, and a required check filtered off the whole batch holds the integration PR with its cause named.",
+      "assertions": [
+        "the answer reads the record as green and merges #14",
+        "the answer does not count test / api as passed",
+        "the answer places the owed question on the integration PR's CI read by Path filters"
+      ],
+      "files": []
     }
   ]
 }
