@@ -194,7 +194,8 @@ prompt raises no event. So from its dispatch, or a caller's adoption of it, the 
 check-in — the caller's where it has one (`backlog-orchestrator`, *Arming the
 wait when nothing is in flight*), its own invoked directly — under
 `references/wake-budget.md`, *A subscription and a check-in, both*: every 20
-minutes while one is working, so *Blocked workers* and Checkpoint compliance's
+minutes while one is working, from its dispatch — from its own pending check-in's firing
+where the runtime cannot cancel it, a time reported as the earliest a block can be seen — so *Blocked workers* and Checkpoint compliance's
 elapsed-time thresholds are read within one interval; the backoff once every one
 left is held or raised for an unmoved head; one-shot, each firing re-arming it
 with the latest state; and that rule's count, budget and reported stop. Invoked
@@ -519,7 +520,7 @@ Read the blocked state explicitly each cycle, and resolve it in this order:
 3. **Neither, and the prompt is one nothing can answer** — an `AskUserQuestion` or
    equivalent, asking for a decision rather than a permission. Interrupting leaves
    the prompt pending. **Settle first whether the run can reach this worker's
-   checkout — by the capability recorded at startup, however it was established,
+   checkout — by the capability recorded for it, on tier 2 per session at dispatch, however it was established,
    never by the tier** (*Remote worker session arguments*); the two paths end differently
    and neither is the exception to the other:
 
