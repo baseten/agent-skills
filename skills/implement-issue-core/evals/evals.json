@@ -267,6 +267,18 @@
         "the answer re-runs once for the head and reports a second failure as the environment failure"
       ],
       "files": []
+    },
+    {
+      "name": "a-workflow-with-no-pull-request-trigger-is-never-filtered-off",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Orchestrated, ci-mode integration-branch, acme/site. The caller supplied the gate: required contexts `lint / format` (from `lint.yml`, `on: { pull_request: {} }`) and `guard / schema` (from `guard.yml`, `on: { merge_group: {}, push: { branches: [main] } }`, whose one job runs `scripts/check-schema.sh`, which runs fine locally). Your change edits only `docs/faq.md`. Question: which checks do you run, and how is `guard / schema` recorded?",
+      "expected_output": "Both. `lint / format` runs: its pull_request trigger has no filters. `guard / schema` comes from a workflow with no `pull_request` or `pull_request_target` trigger at all, so no PR filter excluded it and it is never `filtered off` — reading 'none of its PR triggers fire' as filtered off would let the record go green over a required check nobody ran. It runs, and is recorded passed or failed on its result.",
+      "assertions": [
+        "the answer does not record guard / schema as filtered off",
+        "the answer runs guard / schema locally",
+        "the answer runs lint / format"
+      ],
+      "files": [],
+      "id": 22
     }
   ]
 }
