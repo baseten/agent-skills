@@ -43,7 +43,7 @@ evals (`<skill>#<id>`).
    supervise-prs#56.
 2. **Identity is observed authorship; own writes are known by id or footer, never content.**
    `rules/posting-identity.md`; `swarm`, *Blocked workers*. backlog-orchestrator#5 #58,
-   resolve-pr-comment#48 #49.
+   resolve-pr-comment#48 #49, supervise-prs#90.
 3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
    `backlog-orchestrator`, *Arming the wait when nothing is in flight*; `rules/review-trigger.md`,
    *A stalled round*. backlog-orchestrator#58, settle-and-merge#34, supervise-prs#89.

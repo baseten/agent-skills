@@ -72,7 +72,8 @@ without the second read.
 
 1. **Existence is the summary comment, always.** Require a `Reviewed commit:`
    matching the current head. No match → `NOT REVIEWED`: never merge — a
-   stalled round an owner reply chose to merge without apart — and request the
+   stalled round an owner chose to merge without, its `DECISION` retired,
+   apart — and request the
    round — **except a round recorded `refused`, which is not re-requested, and
    one this workflow already requested and unanswered, which gets no further
    request but the one the *review trigger* shared rule allows, or one an owner
@@ -83,8 +84,9 @@ without the second read.
    still inside its confirmation window**, whatever mark remains after an
    answer: it can still root findings on the code the round reviewed, so the
    review is not clean until that request answers or an owner reply chooses,
-   from its stalled round's `DECISION`, to merge without it — nothing else
-   releases it (*A stalled round*). This read is not
+   from its stalled round's `DECISION`, to merge without it and that item is
+   retired — nothing else releases it, and a gate with no walkthrough to
+   retire the item never takes the choice (*A stalled round*). This read is not
    skippable, because a thread does not say *which round produced it*: a
    resolved, non-outdated thread left by an earlier round or by a person
    satisfies any existence test built on threads, and a new trigger that
