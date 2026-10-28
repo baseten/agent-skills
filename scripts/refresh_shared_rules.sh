@@ -79,7 +79,8 @@ CI_AND_REVIEW_VERDICTS="
 # Skills that decide whether a red check - on CI or in a local run - is the
 # change's own failure.
 CI_ATTRIBUTION="backlog-orchestrator
-  npm-dependency-upgrade-orchestrator repair-pr implement-issue-core supervise-prs"
+  npm-dependency-upgrade-orchestrator repair-pr implement-issue-core supervise-prs
+  settle-and-merge"
 
 # Skills that supervise what they track: arm its watch, report no-change
 # results, and read its state within the credential's allowances.

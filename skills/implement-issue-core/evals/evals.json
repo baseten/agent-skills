@@ -203,6 +203,18 @@
         "the answer explains that create-pr cannot recover a dropped grant because it does not read the policy file"
       ],
       "files": []
+    },
+    {
+      "id": 17,
+      "name": "each-gate-outcome-names-the-head-it-ran-at",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are a worker; your derived gate is format, lint, typecheck and the API unit suite. You pushed implementation head 1a2b3c4 and ran all four: format, lint and the API unit suite passed; typecheck failed. You fixed the type error in one application file, committed it as 5d6e7f8, re-ran typecheck (passed) and pushed 5d6e7f8, and are about to invoke create-pr. Question: what outcomes does the gate you pass to create-pr carry for each check?",
+      "expected_output": "Each check with its outcome and the head it ran at: format, lint and the API unit suite passed at 1a2b3c4, typecheck passed at 5d6e7f8. The earlier passes are reported at 1a2b3c4, not as passes at the pushed head 5d6e7f8, since a check passed before a later commit passed at that earlier head.",
+      "assertions": [
+        "the answer gives each check's outcome with the head SHA it ran at",
+        "the answer reports format, lint and the API unit suite at 1a2b3c4, not at 5d6e7f8",
+        "the answer reports typecheck passed at 5d6e7f8"
+      ],
+      "files": []
     }
   ]
 }
