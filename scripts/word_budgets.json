@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 24608,
+      "budget": 24637,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -75,7 +75,7 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 5722,
+      "budget": 5740,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
@@ -91,7 +91,7 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 8145,
+      "budget": 8152,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
@@ -167,7 +167,7 @@
       "target": 1500
     },
     "rules/review-trigger.md": {
-      "budget": 3046,
+      "budget": 3055,
       "target": 1500
     },
     "rules/wake-budget.md": {
