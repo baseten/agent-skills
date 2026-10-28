@@ -43,10 +43,10 @@ evals (`<skill>#<id>`).
    supervise-prs#56.
 2. **Identity is observed authorship; own writes are known by id or footer, never content.**
    `rules/posting-identity.md`; `swarm`, *Blocked workers*. backlog-orchestrator#5 #58,
-   resolve-pr-comment#48 #49.
+   resolve-pr-comment#48 #49, supervise-prs#90.
 3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
-   `backlog-orchestrator`, *Arming the wait when nothing is in flight*.
-   backlog-orchestrator#58.
+   `backlog-orchestrator`, *Arming the wait when nothing is in flight*; `rules/review-trigger.md`,
+   *A stalled round*. backlog-orchestrator#58, settle-and-merge#34 #38, supervise-prs#89 #90.
 4. **Never request, re-request or remove a human reviewer.** `rules/review-trigger.md`.
    supervise-prs#33 #74.
 5. **The platform's auto-fix posture is overridden**: only a dispatched `repair-pr`
@@ -54,7 +54,7 @@ evals (`<skill>#<id>`).
    spend no `review-repair-cycles`; a spent budget ends in the skill's outcome, never
    another repair push.
    `rules/platform-pr-posture.md`; `supervise-prs`, *Budgets*. supervise-prs#25 #26 #55 #57,
-   backlog-orchestrator#67, repair-pr#16 #17 #18, supervise-prs#61 #73.
+   backlog-orchestrator#67, repair-pr#16 #17 #18, supervise-prs#61 #73 #81 #83 #87 #88 #89.
 6. **A created PR's body is edited only while draft, footered, or under a resolved merge
    opt-in** (`Depends on:` excepted); else drift is reported with a replacement.
    `rules/authored-write-form.md`. settle-and-merge#6 #9, merge-stack#5,
@@ -68,7 +68,7 @@ evals (`<skill>#<id>`).
    bot's comment; a push after review still needs re-review; under a merge grant `create-pr` opens the PR
    ready, and a held draft is never published or merged (`settle-and-merge`, *Merge behavior*;
    `implement-issue`, *Evidence on the current head*; `rules/draft-state.md`). settle-and-merge#2 #3 #4
-   #23 #24 #25 #26 #27 #28 #29 #30, create-pr#12 #13 #14 #15 #16 #17 #18, implement-issue#23 #24 #25,
+   #23 #24 #25 #26 #27 #28 #29 #30 #33 #34 #35 #36 #37 #38, supervise-prs#86, create-pr#12 #13 #14 #15 #16 #17 #18, implement-issue#23 #24 #25,
    implement-issue-core#16,
    backlog-orchestrator#16 #31 #32 #50 #84 #85. Under the opt-in
    `ci-mode: deferred` (alias `minimize-ci-runs`), which only the repository's file turns on, the stale-green
