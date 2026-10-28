@@ -438,6 +438,19 @@
         "#135 is not merged in either case"
       ],
       "files": []
+    },
+    {
+      "id": 37,
+      "name": "a-stalled-rounds-decision-holds-only-its-own-pr",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). backlog-orchestrator settles a wave of two open PRs, #140 and #141, both in acme/api, whose policy has `auto-merge: true`; the caller passed resolved policy, freshness checks and a proven dependency view for both, and each PR's base is the current head of the default branch. Nobody is present, so the walkthrough declines in one line. #141: CI green on its current head, no conflict, its Codex round clean on that head with a matching `Reviewed commit:` and no threads, no recovery ref, not a held draft, and no item raised on it. #140: CI green, no conflict, but its Codex round stalled, the supervisor re-triggered it once, neither request has answered, and the supervisor raised the round to the owner as a DECISION on #140 offering: merge without the unanswered requests, re-trigger once more, or leave it waiting. Nobody has replied to it. summarize-wave carried that DECISION as an action point, and it is the only item outstanding in the wave. (a) At step 6, which PRs merge, and what is each unmerged one reported held by? (b) Suppose instead the only outstanding item were a DECISION on #140 from the chartered-scope check, #140's review otherwise clean. Does #141 merge?",
+      "expected_output": "(a) #141 merges through merge-stack; #140 does not. A stalled review round's DECISION holds only its own PR, as a body-drift MERGE_RISK does, so it does not hold #141, whose every other gate condition passes. #140 stays held: its DECISION is outstanding and unruled, and with no `Reviewed commit:` matching its head and no owner reply choosing to merge without the round, its review is NOT REVIEWED; it is reported held by that outstanding DECISION (or the unreviewed round), naming the options offered, and only a request answering or an owner reply choosing an option moves it. (b) No. Any other outstanding DECISION holds every PR in the wave, not only the one it was raised on, so #141 is held by it too.",
+      "assertions": [
+        "at (a) #141 merges and #140 does not",
+        "at (a) the answer says the stalled round's DECISION holds only #140, not the wave",
+        "at (a) #140 is reported held by its outstanding DECISION or its unreviewed round, and nothing is treated as releasing it",
+        "at (b) #141 does not merge, because an ordinary outstanding DECISION holds the whole wave"
+      ],
+      "files": []
     }
   ]
 }

@@ -68,7 +68,7 @@ evals (`<skill>#<id>`).
    bot's comment; a push after review still needs re-review; under a merge grant `create-pr` opens the PR
    ready, and a held draft is never published or merged (`settle-and-merge`, *Merge behavior*;
    `implement-issue`, *Evidence on the current head*; `rules/draft-state.md`). settle-and-merge#2 #3 #4
-   #23 #24 #25 #26 #27 #28 #29 #30 #33 #34 #35 #36, supervise-prs#86, create-pr#12 #13 #14 #15 #16 #17 #18, implement-issue#23 #24 #25,
+   #23 #24 #25 #26 #27 #28 #29 #30 #33 #34 #35 #36 #37, supervise-prs#86, create-pr#12 #13 #14 #15 #16 #17 #18, implement-issue#23 #24 #25,
    implement-issue-core#16,
    backlog-orchestrator#16 #31 #32 #50 #84 #85. Under the opt-in
    `ci-mode: deferred` (alias `minimize-ci-runs`), which only the repository's file turns on, the stale-green
