@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 25365,
+      "budget": 25529,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 2164,
+      "budget": 2397,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -57,6 +57,10 @@
     "skills/npm-dependency-upgrade-orchestrator/SKILL.md": {
       "budget": 5261,
       "target": 8000
+    },
+    "skills/owner-steps/SKILL.md": {
+      "budget": 1142,
+      "target": 3000
     },
     "skills/plan-merge-order/SKILL.md": {
       "budget": 1716,
@@ -95,11 +99,11 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 7909,
+      "budget": 7927,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
-      "budget": 9497,
+      "budget": 9580,
       "target": 8000
     },
     "skills/swarm/runtime-remote.md": {
@@ -144,6 +148,10 @@
     },
     "rules/establish-do-not-assume.md": {
       "budget": 1531,
+      "target": 1500
+    },
+    "rules/manual-step-issues.md": {
+      "budget": 577,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {

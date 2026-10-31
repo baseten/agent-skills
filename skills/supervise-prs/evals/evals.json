@@ -1006,6 +1006,19 @@
       ],
       "id": 80,
       "files": []
+    },
+    {
+      "id": 81,
+      "name": "a-swarm-repair-prompt-carries-the-send-clause-only-from-its-input",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the caller passed `repair dispatch: swarm`, saying a worker's return value does not reach the run on its tier. (a) The input also says the caller's return channel is present, with caller session id session_01Orch. (b) The input says nothing about a return channel. You are composing a repair pass's dispatch prompt. Question: does the prompt carry swarm's send clause in each case, and what does the caller do on the push?",
+      "expected_output": "(a) Yes: the prompt carries swarm's send clause with session_01Orch, beside the requirement to record the judgment on the PR before returning. The push wakes the caller, who re-reads that PR record before acting on it - the push is never the record. (b) No send clause: the input does not establish a return channel, and this skill reads nothing from the caller's contract to infer one. The record on the PR is still required in both cases.",
+      "assertions": [
+        "in (a) the prompt carries the send clause with the caller's id",
+        "in (b) the prompt carries no send clause because the input does not say the channel is present",
+        "the answer keeps the on-PR record required in both cases",
+        "the answer treats the push as a trigger for re-reading the record"
+      ],
+      "files": []
     }
   ]
 }

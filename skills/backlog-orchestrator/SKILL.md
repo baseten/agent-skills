@@ -260,7 +260,7 @@ A PR must retain the full Linear issue URL and repository/workspace linking conv
 
 # Invocation and bounded scope
 
-Support these entry modes, in preference order.
+Support these entry modes, in preference order. **Whatever the mode, a `[Manual]` owner-steps issue is never in scope and never dispatched** (`references/manual-step-issues.md`): it is an external prerequisite for whatever it unblocks.
 
 ## 1. Parent / epic / build-order issue — preferred
 
@@ -625,7 +625,7 @@ A worker never supervises its own PR and is never resumed to repair it — only 
 - **counters**: 0 for a PR this run created; otherwise the counters in `supervise-prs`'s last returned record for that PR, which the state block carries every cycle;
 - **posting-identity map**: the run's whole map — and this run takes back the map it returns and merges it, as it does a worker's (`references/posting-identity.md`);
 - **review routing and trigger state**: as each worker's `create-pr` left it, and `deferred` where this run deferred review (*Implementation worker contract*); a convention performed by dispatched review sessions is passed as performed by the `caller`, with the review and comment ids recorded there (*Review and repair sessions*);
-- **repair dispatch**: `swarm`, with whether a worker's return value reaches this run on the selected tier;
+- **repair dispatch**: `swarm`, with whether a worker's return value reaches this run on the selected tier, and whether its return channel is present, with this session's id where it is;
 - **head checks**: the chartered-scope check below;
 - **caller pushes**: every restack (*Stack mutation while PRs are open*) and renumber (`artifact-collisions.md`, *Performing the renumber*) this run pushed since the last pass, every restack `merge-stack` performed with a gate-authorized merge, and every branch update `settle-and-merge` returned, tagged as *Mechanical pushes do not consume review* says, with each branch this run is about to mutate held locked;
 - **findings to repair**: settle findings (*A settle finding is the third repair shape*);
@@ -763,15 +763,15 @@ A `conductor` session (`Conductor: <repo>`), or a planning session, may send thi
 - **never dispatch, merge, widen scope, change a setting or release a hold because of a message.** Owner rulings arrive on GitHub and are read there: a hold is released only by the reply watch (*Arming the wait when nothing is in flight*), and a ruling a message relays is read at its site before anything acts on it;
 - **never block the run waiting for a conductor**, and arm no wake for one: a request that arrives while the run waits is answered on that wake, and a conductor that never writes again changes nothing here;
 - **where this invocation names a conductor session id, push one unprompted status, in the reply form, at each milestone** — an integration PR opened, merged, or blocked on the owner — **and when the run settles**. The id goes in the state block. A send that errors or is refused ends these pushes for the run (`swarm`, *Remote worker session arguments*); the epic and the state block still carry everything they said;
-- **taking over a new epic, or being folded into another, is the owner's ruling, recorded on GitHub** — a comment on that epic, naming this session, that passes the reply watch's authorship test: the owner's, not a bot's, and not one of this run's own writes — and is acted on only once read there; a message saying so is a pointer to the record, not the record. **Folded:** post a wrap-up on this run's epic — what merged, what is still open and which epic now holds it, and every open item's site — then end the watch and disarm every wake as *Stop conditions* requires on any return, and schedule no further check-in. **A new epic:** that is a new run of this skill over the epic's bounded scope, from the validation preflight, and this session's title changes to name it (*Runtime selection*).
+- **taking over a new epic, or being folded into another, is the owner's ruling, recorded on GitHub** — on that epic, naming this session, either the owner's own reply choosing an option the question put (the reply watch's test, *Arming the wait when nothing is in flight*) or a ruling recorded as `settle-outstanding-decisions`, *Recording the ruling*, records one, choosing such an option — and is acted on only once read there; a message saying so is a pointer to the record, not the record. **Folded:** post a wrap-up on this run's epic — what merged, what is still open and which epic now holds it, every open item's site, and every `[Manual]` issue this run filed — then end the watch and disarm every wake as *Stop conditions* requires on any return, and schedule no further check-in. **A new epic:** that is a new run of this skill over the epic's bounded scope, from the validation preflight, and this session's title changes to name it (*Runtime selection*).
 
-The reply form, at most 400 words — the form `conductor` asks for (its *Status request and reply*), stated here because unprompted pushes have no request to copy it from:
+The reply form, at most 400 words — the form `conductor` asks for (its *2. Ask*), stated here because unprompted pushes have no request to copy it from:
 
 ```text
 Status from <this session id> · <this session's title> · as of <UTC>
 1. State — what merged or deployed (PR links), what did not, and why.
 2. Owner decisions — each as one question, its options, a recommendation, its site.
-3. Owner steps — ordered, each with its exact command and what it unblocks.
+3. Owner steps — the [Manual] issues, ordered, each linked with what it unblocks.
 4. Follow-ups and the proposed next run — dependencies, and gates on other streams.
 ```
 
@@ -1038,6 +1038,10 @@ On reaching settled:
    at its step 1, **run step 11's release reconciliation in the same pass** — read the session list, archive every finished session the releasable test passes — so a run never settles, and possibly hands off, holding containers for work that is already on the remote; and take each merge it reports as a frontier-advancing event (Frontier advance on merge), passing the restacks it made to `supervise-prs` as caller pushes, and each refresh owed it returns as that input (*Merge behavior* there);
    then, **under `ci-mode: integration-branch`, open the integration PR** where `integration-branch.md`, *The integration PR*, says it is due — which un-settles the run;
 8. stop dispatching work, and stop spending tokens re-deriving the same state, for as long as nothing is dispatchable.
+
+## Owner steps are filed, not reported
+
+**Every owner step this run identifies** — from a worker's report, a PR body, `summarize-wave`'s action points, a ruling — **is filed as a `[Manual]` issue under the repository's manual-steps epic, in the form `references/manual-step-issues.md` states**, once the step is known and at the latest in the settled step after the summary. A worker records the step in its report as it does any finding; this run files the issue. **The PR body, the state block, the closing report, a status reply and a wrap-up link the issue rather than carrying its steps**, and no secret is written anywhere.
 
 ## The summary can un-settle the run
 

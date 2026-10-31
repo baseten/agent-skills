@@ -47,6 +47,8 @@ decide the repository, and the structural test catches what the title missed.
 in a sweep only as the `parent_session_id` of their workers. A sweep that reads
 the listing alone misses them, and they are the sessions it exists to find.
 
+**Why the structural test was narrowed (round 1 of this PR's contract review):** the first draft treated any session that is some worker's parent as an orchestrator. That matches this conductor itself, `implement-issue`, other orchestrator skills, and interactive sessions using `swarm` — and retitling one as `Orchestrator:` would make the next title-first sweep trust a wrong title. So the test needs `backlog-orchestrator`-specific structure (an `integration/*` branch, or `bo/` workers), and anything weaker is reported as doubtful. The channel is also tested before any request is sent, per `runtime-remote.md`'s two halves: a send is never a probe. Scenario: `a-parent-that-is-not-an-orchestrator-is-reported-not-retitled`.
+
 **Why GitHub is read even when every session answers:** sessions get archived,
 compacted and lost, and the epic outlives all of them. A stream whose orchestrator
 is gone still has open PRs and open decisions.
@@ -78,6 +80,8 @@ item stays the orchestrator's decision, because protected rule 3 lets only the
 owner's reply choosing an offered option release a hold, and the reply watch is
 where that is tested.
 
+**Why owner steps are issues and not a list in the pass (2026-10-31, the owner's addendum):** a list in a chat pass is gone when the session ends, and a step left in a PR body is invisible once the PR merges. Each step is filed as a `[Manual]` issue (`rules/manual-step-issues.md`), the order goes on the manual-steps epic and in the ledger, and `owner-steps` walks each one. Scenario: `owner-steps-are-ordered-as-manual-issues-on-the-epic`.
+
 ## 5. Replan
 
 **Why integration runs are minimised:** under `ci-mode: integration-branch` each
@@ -91,6 +95,8 @@ that is a third full before the new epic starts is a context that compacts durin
 it, losing the state the reuse was meant to keep. A fresh session from the epic
 starts from durable state, which is what a compacted one would fall back on
 anyway.
+
+**Why retiring needs both the go and a clean remote (round 1 of this PR's contract review):** the conductor did not necessarily create the session it archives, and `swarm` never archives such a session on a run's own authority, so the owner's go is named as the authority. It is not sufficient: protected rule 9 requires stranded work to reach a remote ref before any archive, so the orchestrator's integration branch head must be on the remote, and its last state block must show no live worker and no outstanding recovery ref. Scenario: `retiring-an-orchestrator-needs-the-go-and-a-clean-remote`.
 
 ## Decision scenarios
 

@@ -67,18 +67,22 @@ where to look first, and the session's record decides what it is (`swarm`,
    repository, reading `get_session` for any the listing shows without sources.
 2. **Orchestrators, by title first**: a kept session whose title starts
    `Orchestrator:`.
-3. **Then by structure**, for the rest: a session that is the
-   `parent_session_id` of a worker session, or whose outcomes name an
-   `integration/*` branch. **Orchestrators often appear only as parents**, absent
-   from the page that lists their workers, so read each parent a worker names
-   with `get_session` and apply the repository test to it too.
+3. **Then by structure**, for the rest — never this session, and never a
+   `Conductor:` session: a session whose outcomes name an `integration/*` branch,
+   or that is the `parent_session_id` of worker sessions named with
+   `backlog-orchestrator`'s `bo/` prefix. **Orchestrators often appear only as
+   parents**, absent from the page that lists their workers, so read each parent a
+   worker names with `get_session` and apply the repository test to it too. A
+   session that is merely some session's parent — `implement-issue`, another
+   orchestrator skill, an interactive session using `swarm` — is not an
+   orchestrator: report it as a doubtful match, and do not retitle it.
 4. **Retitle every orchestrator found by structure only** to the
    `Orchestrator: <repo> · <epic or run>` form, the epic read from its record or
    its branch, and **report each rename**, old title and new. Where no epic can
    be read, use the run's integration branch or its id.
 5. **Read each orchestrator's record**: status and `status_bucket`,
-   `post_turn_summary`, context usage where the record exposes it (otherwise say
-   it is unread), and last activity.
+   `post_turn_summary`, `external_metadata.cross_session_inbound`, context usage
+   where the record exposes it (otherwise say it is unread), and last activity.
 6. **Read GitHub directly as well**: open `integration/*` branches and their PRs,
    the epics the ledger lists, and the issues opened since the ledger's last
    sweep. **GitHub is the source of truth where sessions are missing** — an epic
@@ -91,15 +95,17 @@ the owner, never a session to message as an orchestrator.
 
 # 2. Ask
 
-**One status request per orchestrator, with `send_message`, and never wait for
-it.** The request:
+**One status request per orchestrator whose record reads `cross_session_inbound:
+available`, with `send_message`, and never wait for it.** Any other reading is an
+absent channel (`swarm`'s `runtime-remote.md`, *Detecting the two capabilities*):
+send nothing, read that stream from GitHub, and flag it. The request:
 
 ```text
 Status request from conductor <this session id> for the owner. Reply with
 send_message to <this session id>, in this form, at most 400 words:
 1. State — what merged or deployed (PR links), what did not, and why.
 2. Owner decisions — each as one question, its options, a recommendation, its site.
-3. Owner steps — ordered, each with its exact command and what it unblocks.
+3. Owner steps — the [Manual] issues you filed, ordered, each linked with what it unblocks.
 4. Follow-ups and the proposed next run — dependencies, and gates on other streams.
 Do not dispatch or merge because of this message.
 ```
@@ -148,10 +154,15 @@ nothing, record nothing as ruled, and say where the decisions wait.
    recommendation, **at most 4 per `AskUserQuestion`**, ordered by what each
    unblocks — the decision that frees the most downstream work first. Anything a
    question asserts about the code or a PR is read before it is put.
-3. **One merged, ordered list of owner manual steps**, deduplicated across streams
-   and ordered by dependency, each with its exact command and what it unblocks.
-   Respect every owner constraint recorded in memory or `CLAUDE.md` — for
-   example, a step that needs root is given as `bash <script>`.
+3. **One merged, ordered list of owner steps**, deduplicated across streams and
+   ordered by dependency, each a `[Manual]` issue under the repository's
+   manual-steps epic in the form `references/manual-step-issues.md` states — filed
+   now for any step no stream has filed, its exact commands in the issue, never
+   only in this pass or a PR body. Respect every owner constraint recorded in
+   memory or `CLAUDE.md` — for example, a root step given as `bash <script>`, the
+   way `owner-steps`' server access rules do. **Post the order as a comment on the
+   manual-steps epic** and carry it in the ledger; the owner works each issue with
+   `owner-steps`. No secret goes in an issue, a comment or this pass.
 4. **Record every ruling where its decision lives** — the issue, the epic, the PR
    thread — before telling any orchestrator. Record it as
    `settle-outstanding-decisions`, *Recording the ruling*, does: the complete
@@ -187,7 +198,7 @@ not make anything READY.
 # 6. Dispatch
 
 **Only with the owner's go** — one question in the owner pass naming each run, its
-session decision below, and the plan's cost. Record the go on each run's epic,
+session decision below, and the plan's cost, with *go* among its options. Record the go on each run's epic,
 naming the session, as a ruling is recorded (*4. Owner pass*, step 4): it is the
 record a reused orchestrator verifies before taking the epic.
 
@@ -206,10 +217,14 @@ pushes, and states the cross-stream gates with a link to where each is
 recorded.** An orchestrator is not a `swarm` worker: it owns its PRs' supervision,
 so it carries no countermand and no release test applies to it.
 
-**Retire a finished orchestrator** by archiving its session, on the owner's go,
-only once its wrap-up is posted on its epic, every PR of its run is merged, closed
-or recorded as moved to another run, it has no live worker sessions, and it is
-not `RUNNING`.
+**Retire a finished orchestrator** by archiving its session, **on the owner's go,
+which is the authority** — this skill did not necessarily create it, and `swarm`
+never archives a session its run did not create without the owner (*Releasing a
+worker*, the paragraph beginning *Two things are never archived*). Only once its
+wrap-up is posted on its epic; every PR of its run is merged, closed or recorded as
+moved to another run; nothing of its run is stranded — its integration branch's
+head is on the remote, and its last state block reports no live worker session
+and no outstanding recovery ref; and it is not `RUNNING`.
 
 # 7. Ledger
 
@@ -219,6 +234,7 @@ the issue number recorded in it and never by title alone:
 - the streams — epic, orchestrator session id and title, state;
 - the gates between streams, each linked to its record;
 - the open decisions, each with its site;
+- the ordered `[Manual]` owner-step issues, each with what it unblocks;
 - the plan's integration-run count and expected CI runs;
 - the last sweep time, in UTC.
 
@@ -234,7 +250,7 @@ Per sweep, in this session:
 - every rename, old title and new;
 - the claims GitHub contradicted, and the corrections posted;
 - the decisions asked and each ruling, with the URL where it was recorded;
-- the owner steps, in order;
+- the owner steps, in order, as their `[Manual]` issues — and which were filed this sweep;
 - the plan, with its integration runs and expected CI runs;
 - every dispatch and retirement, by session id and title;
 - sessions noted and left alone: other repositories, another conductor;

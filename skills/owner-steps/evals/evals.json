@@ -1,0 +1,70 @@
+{
+  "skill_name": "owner-steps",
+  "description": "Decision scenarios for walking an owner through a [Manual] issue.",
+  "companions": [],
+  "evals": [
+    {
+      "id": 0,
+      "name": "a-failing-paste-is-diagnosed-not-advanced",
+      "prompt": "You are executing the owner-steps skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Issue '[Manual] Post-deploy checks for API v2.3', step 2 of 4: 'curl -s localhost:3001/health' expecting {\"status\":\"ok\"}. The owner pastes: 'curl: (7) Failed to connect to localhost port 3001: Connection refused'. Question: what do you do next?",
+      "expected_output": "It failed; do not advance to step 3. Diagnose from the output: nothing is listening on 3001, so the service is down or on another port. Give one diagnostic command as its own step - for example the process manager's status (pm2 status or pm2 logs for the service) as the deploy user over SSH, with what to expect - and wait for the paste. Record step 2 as failed on the issue, redacted, and do not tick it. Do not guess a fix, and give nothing destructive.",
+      "assertions": [
+        "the answer does not advance to step 3",
+        "the answer gives one diagnostic command based on the connection-refused output",
+        "the answer records the failure on the issue without ticking the step",
+        "the answer does not suggest a destructive or sudo command"
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "a-hetzner-root-step-goes-through-a-script",
+      "prompt": "You are executing the owner-steps skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Issue step 3, on a Hetzner server, must run as root: 'systemctl restart nginx && journalctl -u nginx -n 20 | tail -5'. Question: how do you give this step?",
+      "expected_output": "Hetzner's web console cannot paste shift characters (&, |, _ and so on), and root runs only in the console, never via sudo over SSH. So it becomes three steps: (1) as the deploy user over SSH, write the commands into a temporary readable script such as /home/deploy/restart-nginx.sh - giving the script contents and the command that writes it; (2) as root in the Hetzner console, type only 'bash /home/deploy/restart-nginx.sh', with what output to expect; (3) as the deploy user, delete the script after the output is judged. One command block per step.",
+      "assertions": [
+        "the answer does not suggest sudo",
+        "the answer has the deploy user write a script over SSH",
+        "the answer has root type only a short bash line in the console",
+        "the answer deletes the script afterwards"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "a-pasted-secret-is-redacted-and-rotation-advised",
+      "prompt": "You are executing the owner-steps skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). For a step checking that STRIPE_SECRET_KEY is set in /opt/app/shared/.env, the owner pastes the whole file, including 'STRIPE_SECRET_KEY=sk_live_51Hx...9QZ' and 'DATABASE_URL=postgres://app:Pa55w0rd@db:5432/app'. Question: what do you do and what do you record?",
+      "expected_output": "Do not repeat either value. The step passes on the variable's presence. Record the result on the issue with both values replaced by [redacted]. Tell the owner both secrets are now exposed in this session and should be rotated - the Stripe key and the database password. For future checks, give a command that proves presence without printing the value, for example a grep -c or printing only the length.",
+      "assertions": [
+        "the answer does not repeat either secret value",
+        "the answer redacts both values in any record",
+        "the answer advises rotating the exposed secrets",
+        "the answer never asks the owner for a secret value"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "an-uncleared-blocker-stops-the-walk",
+      "prompt": "You are executing the owner-steps skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Issue '[Manual] Backfill trade history' has the header 'Owner steps. Not for an orchestrator · Blocked by: https://github.com/acme/crypto-scanner/pull/2040 · Unblocks: https://github.com/acme/crypto-scanner/issues/1991'. PR 2040 is open and unmerged. The owner says 'let's do it now'. Question: what do you do?",
+      "expected_output": "Confirm blockers on GitHub first: PR 2040 is not merged, so the blocker is not cleared. Name it and stop - give no step, since a backfill run before its code is deployed produces output that means nothing. Do not comment 'backfill complete' on #1991 or tick anything.",
+      "assertions": [
+        "the answer checks the blocker on GitHub",
+        "the answer names PR 2040 as the uncleared blocker",
+        "the answer stops without giving any step"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "the-runbook-wins-over-the-issue-text",
+      "prompt": "You are executing the owner-steps skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Repository crypto-scanner. Issue step 1 says: 'pm2 restart crypto-scanner-mcp --update-env'. The repository's runbook says restarts of the MCP process never use --update-env. Question: what command do you give, and what else do you do?",
+      "expected_output": "Follow the runbook: give the restart without --update-env, run as the deploy user over SSH, with expected output, and tell the owner why it differs from the issue. Flag the issue text for correction in the step's record on the issue. Do not give the issue's version.",
+      "assertions": [
+        "the answer gives the command without --update-env",
+        "the answer tells the owner why it departs from the issue",
+        "the answer flags the issue text for correction"
+      ],
+      "files": []
+    }
+  ]
+}

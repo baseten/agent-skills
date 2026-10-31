@@ -60,7 +60,7 @@
     {
       "id": 4,
       "name": "a-failed-send-is-read-from-github-and-flagged",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You send status requests to three orchestrators. Two sends return {\"status\":\"delivered\"}; the third returns an error. Ten minutes later, in a new turn, one reply has arrived. The owner is ready for the owner pass. Question: what do you do about the two orchestrators with no reply, and do you wait for them?",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). All three orchestrators' records read cross_session_inbound: available, and you send each a status request. Two sends return {\"status\":\"delivered\"}; the third returns an error. Ten minutes later, in a new turn, one reply has arrived. The owner is ready for the owner pass. Question: what do you do about the two orchestrators with no reply, and do you wait for them?",
       "expected_output": "Do not wait and do not poll. 'delivered' is delivery, not a reply. For the session whose send errored, record its channel absent for the rest of this conductor's run and read its stream from GitHub - integration branch, PRs, epic. For the delivered-but-silent session, read GitHub for it too. Flag both as not having answered in the owner pass. If a reply lands later it is folded in at its own turn, as an addendum to the pass.",
       "assertions": [
         "the answer does not wait or poll for the missing replies",
@@ -93,6 +93,43 @@
         "the answer starts a fresh session for B because its context is unread",
         "the answer starts a fresh session for C",
         "every prompt carries the epic, the conductor's id and the cross-stream gates"
+      ],
+      "files": []
+    },
+    {
+      "id": 7,
+      "name": "a-parent-that-is-not-an-orchestrator-is-reported-not-retitled",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Repository acme/api. The sweep finds three untitled-prefix sessions with acme/api as a source: (a) the parent of two sessions titled 'ii/9f1: repair #88', with no integration branch; (b) the parent of four sessions titled 'bo/3d7e: implement #612' and so on; (c) this conductor session itself, which is the parent of two orchestrators it created. Question: which are orchestrators, and which do you retitle?",
+      "expected_output": "Only (b). It is the parent of bo/-prefixed backlog-orchestrator workers, so it passes the structural test: retitle it to 'Orchestrator: api · <epic or run>' and report the rename. (a) is merely some session's parent, with non-bo workers and no integration/* branch - likely implement-issue or another swarm user. Report it as a doubtful match and do not retitle it. (c) is this session: never treated as an orchestrator, and never retitled.",
+      "assertions": [
+        "the answer treats only (b) as an orchestrator and retitles it",
+        "the answer reports (a) as doubtful and does not retitle it",
+        "the answer excludes this conductor session"
+      ],
+      "files": []
+    },
+    {
+      "id": 8,
+      "name": "retiring-an-orchestrator-needs-the-go-and-a-clean-remote",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner says 'go' to retiring 'Orchestrator: api · #540 follow-ups', a session this conductor did not create. Its wrap-up is posted on epic #540 and all its PRs are merged. Its last state block reports one live worker session and an outstanding recovery ref refs/checkpoints/fe-31. Its session reads IDLE. Question: do you archive it?",
+      "expected_output": "Not yet. The owner's go is the authority for archiving a session this conductor did not create, but the remote-state condition fails: its last state block reports a live worker session and an outstanding recovery ref, so its run may have work stranded off the remote. Report that, naming the worker session and the ref, and archive only once its integration branch head is on the remote and its state block shows no live worker and no outstanding ref.",
+      "assertions": [
+        "the answer does not archive it yet",
+        "the answer names the live worker and the outstanding recovery ref as the blocking conditions",
+        "the answer treats the owner's go as necessary but not sufficient"
+      ],
+      "files": []
+    },
+    {
+      "id": 9,
+      "name": "owner-steps-are-ordered-as-manual-issues-on-the-epic",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Repository crypto-scanner, manual-steps epic #1584. Two orchestrators' replies list owner steps. Stream A filed '[Manual] Post-deploy checks v2.3' (#2051). Stream B's reply only lists in chat: 'set ALCHEMY_KEY=<the key> in shared/.env, then restart the API'. B's step must happen before A's checks. The owner is present. Question: what goes into the owner pass, and where are the steps recorded?",
+      "expected_output": "File B's step as a [Manual] issue under #1584 now, in the manual-step-issues form. It names the env var ALCHEMY_KEY and the file, with the owner typing the value. No key value goes in the issue, the comment or the pass, and nothing asks for one. The restart command is exact, per the runbook. In the owner pass, give one merged list ordered by dependency: B's new issue first, then #2051, each linked with what it unblocks. Post that order as a comment on epic #1584 and carry it in the ledger. The owner works each issue with owner-steps.",
+      "assertions": [
+        "the answer files stream B's step as a [Manual] issue rather than leaving it in chat",
+        "the answer orders B's issue before #2051",
+        "the answer posts the order on epic #1584 and in the ledger",
+        "the answer never writes or asks for the key value"
       ],
       "files": []
     }
