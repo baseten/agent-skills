@@ -105,6 +105,19 @@
       ],
       "minimum": 0
     },
+    "conductor-clear-at": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 99,
+      "default": null,
+      "description": "Percent of the conductor session's max_tokens at which it proposes a context clear to the operator. Absent or null: the lower of 50% of max_tokens and 60% of the session's auto-compact threshold. Read by: conductor.",
+      "x-read-by": [
+        "conductor"
+      ]
+    },
     "auto-request-settle": {
       "type": "boolean",
       "default": true,

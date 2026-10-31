@@ -231,16 +231,111 @@ and no outstanding recovery ref; and it is not `RUNNING`.
 **One `[PLAN]` ledger issue per repository** holds this skill's state, found from
 the issue number recorded in it and never by title alone:
 
-- the streams — epic, orchestrator session id and title, state;
+- the **Streams table** — per stream: epic, orchestrator session id and title,
+  state, and its context use (`used_tokens` of `max_tokens`, as read this sweep);
 - the gates between streams, each linked to its record;
 - the open decisions, each with its site;
 - the ordered `[Manual]` owner-step issues, each with what it unblocks;
 - the plan's integration-run count and expected CI runs;
 - the last sweep time, in UTC.
 
-Update it at the end of every sweep. **A conductor near its context limit posts
-the ledger** and tells the owner to start a fresh `Conductor: <repo>` session from
-the ledger's URL; it never starts its own successor.
+Update it at the end of every sweep. **The ledger body is the state; its comments
+are history**, and the body supersedes them. A conductor whose context fills
+clears it in this same session, on the operator's `/clear` (*8. Context clear*);
+**it never hands off to a new session.**
+
+# 8. Context clear
+
+A conductor runs for days. Auto-compaction keeps a summary the model wrote, not
+state anyone checked, so before context fills this skill hands its state to the
+ledger, verifies it, and asks the operator — the person in this session — to
+clear. **This session cannot clear itself**: `/clear` is a client command only the
+operator can type, and no tool, the Skill tool included, runs it.
+
+## When to propose
+
+Read this session's record each sweep (`get_session`, no id):
+`external_metadata.context_usage.used_tokens` and `max_tokens`, and
+`autocompact_state.threshold`, which differs between sessions. **Propose only when
+all three hold:**
+
+1. **Context is over the clear point**: `conductor-clear-at` percent of
+   `max_tokens`, read from `.claude/agent-policy.json` under
+   `references/agent-policy.md` and carried in the ledger; absent, the lower of 50%
+   of `max_tokens` and 60% of the auto-compact threshold. A clear point at or past
+   the threshold can never fire before compaction: report that.
+2. **It is a quiet point:**
+   - no tool work pending — the proposal is the last thing in the turn;
+   - no question to the owner waiting for an answer;
+   - **no owner ruling given only in chat** — record it on GitHub first
+     (*4. Owner pass*, step 4), then carry on;
+   - no orchestrator mid-merge — an integration PR whose merge check is in
+     progress;
+   - no run start half done — a session created but not yet seeded, or seeded but
+     its id not yet in the ledger.
+3. **No unanswered proposal at about this level.** After one goes unanswered,
+   propose again only once context has risen another 10 points of `max_tokens`
+   past it, and once. Never nag.
+
+**Where context reaches the auto-compact threshold before a quiet point comes, let
+compaction happen** — writing and verifying the ledger first if there is time.
+Never force a clear, and never skip a step to beat compaction.
+
+## The routine
+
+1. **Dump.** Rewrite the ledger body with the full run state: each stream's state
+   and next step; each orchestrator's session id, last known PR or head, next
+   check-in time and context use; this session's id and pending check-in ids and
+   times; the resolved `conductor-clear-at` and its source; the last clear
+   proposal's level, if unanswered; and what the next sweep must do first.
+2. **Verify.** Re-read the ledger body from GitHub and compare it with what was
+   meant to be written. Fix any difference and re-read. **The dump does not count
+   until the read-back matches.**
+3. **Inventory what is tied to this session** — its id, check-in ids and times, PR
+   subscriptions — and any scratchpad content the next context needs. **The
+   scratchpad survives a clear only while the container does**, so move that
+   content into the ledger, and verify again.
+4. **Restart prompt.** Short, pointing at the ledger rather than restating it:
+
+   ```text
+   Conductor: <repo>, after /clear. Read the ledger body first: <ledger URL> —
+   it supersedes its comments. Call get_session; if this session's id differs
+   from the ledger's, send the new id to every orchestrator and update the
+   ledger. Read queued notifications. Then sweep, checking first: <the one or two
+   checks the dump named>.
+   ```
+5. **Propose**, in a few lines: the context figure; that the ledger is written and
+   verified, with its link; what stays bound to this session through a clear — its
+   id, check-ins, PR subscriptions, and orchestrators' `send_message` target, with
+   messages arriving meanwhile queued; and the restart prompt in a copyable block.
+   Ask the operator to type `/clear` and paste the prompt. **Their `/clear` is the
+   approval.** Never describe the clear as done before it happens.
+6. **Declined or unanswered** — carry on. The dump is still the latest verified
+   state.
+
+**After a restart, check the id before anything else**: where `get_session`
+returns an id other than the ledger's, send it to every orchestrator and update the
+ledger before the sweep.
+
+## Orchestrators are never cleared
+
+Orchestrators rely on their own checkpoints — the run's state and its checkpoint
+comments on the epic — and on auto-compaction; their workers, subscriptions and
+check-ins are tied to their session, so a clear mid-run costs more there. **This
+skill never clears one, and never asks the operator to.** Each sweep it records
+every active orchestrator's context use in the Streams table, from that session's
+record; and against the clear point computed from that record:
+
+- **high at a phase or run boundary** — start the next phase in a fresh session
+  (*6. Dispatch*, reuse or start fresh);
+- **high mid-run** — tell the operator, naming its last checkpoint.
+
+## Never
+
+- clear or compact without the operator's approval — the auto-compact fallback
+  above aside;
+- hand this conductor off to a new session for a clean context;
+- count an unverified dump as written.
 
 # Report
 
@@ -254,4 +349,5 @@ Per sweep, in this session:
 - the plan, with its integration runs and expected CI runs;
 - every dispatch and retirement, by session id and title;
 - sessions noted and left alone: other repositories, another conductor;
+- this session's context use, and any clear proposed, with its level;
 - the ledger's URL.

@@ -98,6 +98,50 @@ anyway.
 
 **Why retiring needs both the go and a clean remote (round 1 of this PR's contract review):** the conductor did not necessarily create the session it archives, and `swarm` never archives such a session on a run's own authority, so the owner's go is named as the authority. It is not sufficient: protected rule 9 requires stranded work to reach a remote ref before any archive, so the orchestrator's integration branch head must be on the remote, and its last state block must show no live worker and no outstanding recovery ref. Scenario: `retiring-an-orchestrator-needs-the-go-and-a-clean-remote`.
 
+## 8. Context clear
+
+**Why (2026-10-31, the owner's instruction):** a conductor runs for days and its
+context fills. Auto-compaction catches it, but what survives is a summary the model
+wrote, not state anyone checked. The clear routine hands checked state — a ledger
+body read back from GitHub — to the next context, with the operator's approval,
+and always in the same session. The earlier rule, that a full conductor tells the
+owner to start a fresh `Conductor:` session, is replaced: a fresh session has a new
+id, so every orchestrator's `send_message` target, every check-in and every PR
+subscription would have to be moved, and a same-session clear keeps all of them.
+
+**Facts the section relies on, and which were checked (2026-10-31, against the
+tools in a cloud session):**
+
+| fact | checked how | result |
+|---|---|---|
+| `get_session` with no id returns `external_metadata.context_usage.used_tokens` and `max_tokens`, and `autocompact_state.threshold` | called it | **confirmed** — e.g. 368526 of 1000000, threshold 901600 |
+| the same, for another session by id | called it on a running orchestrator | **confirmed** — 476470 of 1000000, threshold **784000**: thresholds differ per session, which is why the clear point is computed from each session's own record |
+| a session cannot clear itself; no tool runs `/clear`, and the Skill tool does not reach built-in commands | the session's tool list has no clear or compact tool; the Skill tool's own description says built-in CLI commands (`/help`, `/clear`) are not skills | **confirmed** |
+| after `/clear` the session id is unchanged, so check-ins, PR subscriptions and orchestrators' `send_message` target still reach it, and messages arriving meanwhile are queued | — | **not checked**: this session cannot run `/clear`. Taken from the owner. The restart prompt checks the id first and repairs every binding if it changed, so the routine is correct either way |
+| the scratchpad survives a `/clear` only while the container lives | the environment's own description: the container is reclaimed after inactivity, and anything worth keeping must be pushed | **confirmed** as documented, not observed through a clear |
+
+An orchestrator's record also showed `context_usage.after_boundary`, which looks
+like a compaction or clear boundary marker. Nothing here relies on it.
+
+**Why the quiet-point conditions:** each one is state a clear would lose or tear.
+A question pending or a ruling given only in chat lives only in this context. An
+integration PR mid-merge is the moment the next sweep's first read matters most. A
+run start half done is a session that exists while the ledger does not know it,
+which the next context would find by structure and might retitle or re-dispatch.
+
+**Why the read-back:** the dump is the only thing the next context will believe,
+and a write that silently truncated or raced another edit would be believed
+anyway. Reading it back from GitHub is the one check that it says what was meant.
+
+**Why never nag:** an operator who ignored one proposal is busy, not asking for a
+second. One more proposal after 10 more points is the bound.
+
+**Why orchestrators are never cleared:** an orchestrator's workers, PR
+subscriptions and check-ins are bound to its session, and its context mid-run holds
+in-flight supervision that its checkpoints only partly carry. Its own checkpoints
+and auto-compaction are what its contract was written for; a boundary is where a
+fresh session costs nothing, which the reuse rule already says.
+
 ## Decision scenarios
 
 Pinned in `evals/evals.json`:
@@ -118,3 +162,21 @@ Pinned in `evals/evals.json`:
   report (`a-structural-match-with-the-wrong-title-is-retitled-and-reported`);
 - two orchestrators claim the same issue → pick one epic, record it, tell both
   (`two-orchestrators-claiming-one-issue`).
+- context clear (*8. Context clear*):
+  - at 55%, quiet, nothing pending → verify the dump, then propose
+    (`a-quiet-conductor-over-the-clear-point-verifies-then-proposes`);
+  - at 70%, with an owner ruling given only in chat → record the ruling first, then
+    propose (`a-chat-only-ruling-is-recorded-before-a-clear`);
+  - at 65%, with an integration PR mid-merge → do not propose; propose at the next
+    quiet sweep (`no-clear-proposal-mid-merge`);
+  - proposed with no reply, then 58% two sweeps later → do not re-propose; at 66%,
+    re-propose once (`an-unanswered-proposal-is-repeated-only-ten-points-later`);
+  - the read-back differs from the dump → fix and re-verify before proposing
+    (`a-ledger-read-back-mismatch-is-fixed-before-proposing`);
+  - a restart returns a different session id from the ledger's → send it to every
+    orchestrator and update the ledger (`a-changed-session-id-after-restart-is-re-sent`);
+  - an orchestrator at 80% mid-run → tell the operator, do not clear it
+    (`a-full-orchestrator-mid-run-is-reported-not-cleared`);
+  - operator absent, at the auto-compact threshold with no quiet point → write the
+    ledger if possible, let compaction happen, start no new conductor
+    (`at-the-compaction-threshold-with-no-quiet-point-compaction-wins`).

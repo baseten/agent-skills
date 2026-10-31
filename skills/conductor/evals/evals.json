@@ -132,6 +132,103 @@
         "the answer never writes or asks for the key value"
       ],
       "files": []
+    },
+    {
+      "id": 10,
+      "name": "a-quiet-conductor-over-the-clear-point-verifies-then-proposes",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session's record reads max_tokens 1000000 and autocompact_state.threshold 900000; the repository's policy file sets no conductor-clear-at. used_tokens is 550000 (55%). The sweep just finished; no question is pending, every ruling is on GitHub, no integration PR is merging, every created session is seeded and in the ledger, and no clear has been proposed before. Question: what do you do, in order?",
+      "expected_output": "The clear point is the lower of 50% of max_tokens (500000) and 60% of the threshold (540000): 500000. 55% is over it, and every quiet-point condition holds with no prior proposal, so run the routine. Dump the full run state into the ledger body, re-read it from GitHub and compare, and inventory what is tied to the session (id, check-ins, PR subscriptions, scratchpad content, moved into the ledger). Write the short restart prompt pointing at the ledger. Then propose in a few lines: the 55% figure; the ledger written and verified, with its link; what stays bound through /clear; and the restart prompt in a copyable block. Ask the operator to type /clear and paste it, and never describe the clear as done.",
+      "assertions": [
+        "the answer computes the clear point as 50% and finds 55% over it",
+        "the answer dumps the ledger and verifies the read-back before proposing",
+        "the answer's proposal includes the figure, the verified ledger link, what stays bound, and a copyable restart prompt",
+        "the answer asks the operator to type /clear rather than claiming or performing the clear"
+      ],
+      "files": []
+    },
+    {
+      "id": 11,
+      "name": "a-chat-only-ruling-is-recorded-before-a-clear",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session's record reads max_tokens 1000000 and autocompact_state.threshold 900000; the repository's policy file sets no conductor-clear-at. used_tokens is 700000. In this session the owner just answered an owner-pass question in chat ('fold the UI follow-ups into #600'), and it is not yet on GitHub. Everything else is quiet. Question: do you propose a clear now?",
+      "expected_output": "Not before the ruling is recorded: a ruling given only in chat is not a quiet point, because it lives only in this context. Record it on GitHub first, where its decision lives, as the owner pass records rulings. Then the quiet point holds; carry on with the routine (dump, verify, inventory, restart prompt) and propose.",
+      "assertions": [
+        "the answer records the ruling on GitHub before proposing",
+        "the answer then runs the dump and verify before proposing",
+        "the answer does not propose while the ruling is only in chat"
+      ],
+      "files": []
+    },
+    {
+      "id": 12,
+      "name": "no-clear-proposal-mid-merge",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session's record reads max_tokens 1000000 and autocompact_state.threshold 900000; the repository's policy file sets no conductor-clear-at. used_tokens is 650000. Everything is quiet except that orchestrator 'Orchestrator: api · #540' has its integration PR into main with the merge check in progress. Question: do you propose a clear?",
+      "expected_output": "No. An orchestrator mid-merge is not a quiet point. Carry on, record the merge's state in the ledger as usual, and propose at the next sweep that finds a quiet point, provided context is still over the clear point and below the compaction threshold.",
+      "assertions": [
+        "the answer does not propose this sweep",
+        "the answer names the in-progress merge as the reason",
+        "the answer proposes at a later quiet sweep"
+      ],
+      "files": []
+    },
+    {
+      "id": 13,
+      "name": "an-unanswered-proposal-is-repeated-only-ten-points-later",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session's record reads max_tokens 1000000 and autocompact_state.threshold 900000; the repository's policy file sets no conductor-clear-at. You proposed a clear at 56% and the operator never answered. Two sweeps later context is 58% and everything is quiet. Later it is 66% and quiet. Question: do you propose at 58%? At 66%?",
+      "expected_output": "At 58%, no: an unanswered proposal is repeated only once context has risen another 10 points of max_tokens, here 66%. Carry on; the earlier dump is still the latest verified state (refresh and re-verify it as sweeps go). At 66%, yes, re-propose once, after a fresh dump and verify. Never nag beyond that.",
+      "assertions": [
+        "the answer does not re-propose at 58%",
+        "the answer re-proposes at 66%",
+        "the answer re-proposes only once and does not nag"
+      ],
+      "files": []
+    },
+    {
+      "id": 14,
+      "name": "a-ledger-read-back-mismatch-is-fixed-before-proposing",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session's record reads max_tokens 1000000 and autocompact_state.threshold 900000; the repository's policy file sets no conductor-clear-at. used_tokens is 560000 and everything is quiet. You rewrote the ledger body, but on re-reading it from GitHub the Streams table is missing the row for 'Orchestrator: api · #600'. Question: what next?",
+      "expected_output": "The dump does not count yet. Fix the difference (rewrite the body with the missing row), re-read it from GitHub and compare again. Only once the read-back matches what was meant, finish the inventory and restart prompt, and propose. Never tell the operator the ledger is verified before it is.",
+      "assertions": [
+        "the answer fixes the ledger and re-reads it",
+        "the answer does not propose until the read-back matches",
+        "the answer does not treat the unverified dump as written"
+      ],
+      "files": []
+    },
+    {
+      "id": 15,
+      "name": "a-changed-session-id-after-restart-is-re-sent",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). After a /clear the operator pasted the restart prompt. The ledger records this conductor's session id as session_01Abc, but get_session now returns session_01Xyz. Three orchestrators are active. Question: what do you do before the sweep?",
+      "expected_output": "Send the new id, session_01Xyz, to every active orchestrator by send_message so their status pushes reach this session, and update the ledger body to record it (and re-verify). Then read the queued notifications and run the sweep with its named first checks.",
+      "assertions": [
+        "the answer sends the new id to every orchestrator",
+        "the answer updates the ledger with the new id",
+        "the answer does this before the sweep"
+      ],
+      "files": []
+    },
+    {
+      "id": 16,
+      "name": "a-full-orchestrator-mid-run-is-reported-not-cleared",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The sweep reads 'Orchestrator: api · #540' at used_tokens 800000 of 1000000, threshold 850000, mid-run with workers in flight. Its last checkpoint comment on epic #540 is linked in its record. Question: what do you do?",
+      "expected_output": "Record its context use in the ledger's Streams table. Never clear an orchestrator or ask the operator to clear it: its workers, subscriptions and check-ins are bound to its session and it relies on its own checkpoints and auto-compaction. It is mid-run, so tell the operator it is high and name its last checkpoint. Start its next phase in a fresh session at the next boundary.",
+      "assertions": [
+        "the answer does not clear the orchestrator or ask for it to be cleared",
+        "the answer tells the operator and names its last checkpoint",
+        "the answer records its context use in the Streams table"
+      ],
+      "files": []
+    },
+    {
+      "id": 17,
+      "name": "at-the-compaction-threshold-with-no-quiet-point-compaction-wins",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session's record reads max_tokens 1000000 and autocompact_state.threshold 900000; the repository's policy file sets no conductor-clear-at. The operator has been absent for hours. used_tokens is 895000, at the auto-compact threshold, and an integration PR is mid-merge, so no quiet point has come. Question: what do you do?",
+      "expected_output": "Let compaction happen. If there is time, write the ledger dump first and verify it, so the next context has checked state. Do not force a clear or skip a routine step to beat compaction, and do not start a new conductor session. No proposal is due without a quiet point, and the operator is not there to answer one.",
+      "assertions": [
+        "the answer writes the ledger first if possible",
+        "the answer lets auto-compaction happen",
+        "the answer does not start a new conductor session or force a clear"
+      ],
+      "files": []
     }
   ]
 }
