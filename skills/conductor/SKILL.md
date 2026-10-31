@@ -261,9 +261,12 @@ all three hold:**
 
 1. **Context is over the clear point**: `conductor-clear-at` percent of
    `max_tokens`, read from `.claude/agent-policy.json` under
-   `references/agent-policy.md` and carried in the ledger; absent, the lower of 50%
-   of `max_tokens` and 60% of the auto-compact threshold. A clear point at or past
-   the threshold can never fire before compaction: report that.
+   `references/agent-policy.md` — at this skill's start and again at each restart
+   after a clear, which is a restart's fresh read; the ledger's copy is for
+   reporting only. **Absent or null**, the clear point is the lower of 50% of
+   `max_tokens` and 60% of the auto-compact threshold. A configured point at or
+   past the threshold could never fire before compaction: use that default
+   instead, and report it.
 2. **It is a quiet point:**
    - no tool work pending — the proposal is the last thing in the turn;
    - no question to the owner waiting for an answer;
@@ -284,30 +287,35 @@ Never force a clear, and never skip a step to beat compaction.
 ## The routine
 
 1. **Dump.** Rewrite the ledger body with the full run state: each stream's state
-   and next step; each orchestrator's session id, last known PR or head, next
-   check-in time and context use; this session's id and pending check-in ids and
-   times; the resolved `conductor-clear-at` and its source; the last clear
-   proposal's level, if unanswered; and what the next sweep must do first.
+   and next step; each orchestrator's session id, last known PR or head, its
+   channel state (absent for the run, or not), whether it answered this sweep,
+   and its context use; this session's id; the resolved `conductor-clear-at` and
+   its source; the last clear proposal's level, if unanswered; and what the next
+   sweep must do first.
 2. **Verify.** Re-read the ledger body from GitHub and compare it with what was
    meant to be written. Fix any difference and re-read. **The dump does not count
    until the read-back matches.**
-3. **Inventory what is tied to this session** — its id, check-in ids and times, PR
-   subscriptions — and any scratchpad content the next context needs. **The
+3. **Inventory what is tied to this session** — its id, and any check-in or PR
+   subscription bound to it, with ids and times. **This skill arms no wake of its
+   own**; what is inventoried was set up otherwise, such as a scheduled sweep the
+   operator created. Inventory too any scratchpad content the next context needs. **The
    scratchpad survives a clear only while the container does**, so move that
    content into the ledger, and verify again.
 4. **Restart prompt.** Short, pointing at the ledger rather than restating it:
 
    ```text
    Conductor: <repo>, after /clear. Read the ledger body first: <ledger URL> —
-   it supersedes its comments. Call get_session; if this session's id differs
-   from the ledger's, send the new id to every orchestrator and update the
-   ledger. Read queued notifications. Then sweep, checking first: <the one or two
-   checks the dump named>.
+   it supersedes its comments. Re-read conductor-clear-at from the policy file.
+   Call get_session; if this session's id differs from the ledger's, send the new
+   id to every orchestrator and update the ledger. Read queued notifications.
+   Then sweep, checking first: <the one or two checks the dump named>.
    ```
 5. **Propose**, in a few lines: the context figure; that the ledger is written and
-   verified, with its link; what stays bound to this session through a clear — its
-   id, check-ins, PR subscriptions, and orchestrators' `send_message` target, with
-   messages arriving meanwhile queued; and the restart prompt in a copyable block.
+   verified, with its link; what is expected to stay bound to this session through
+   a clear — its id, any check-ins and PR subscriptions, and orchestrators'
+   `send_message` target, with messages arriving meanwhile queued — and that the
+   restart prompt checks the id rather than assuming it; and the restart prompt in a
+   copyable block.
    Ask the operator to type `/clear` and paste the prompt. **Their `/clear` is the
    approval.** Never describe the clear as done before it happens.
 6. **Declined or unanswered** — carry on. The dump is still the latest verified
@@ -315,7 +323,9 @@ Never force a clear, and never skip a step to beat compaction.
 
 **After a restart, check the id before anything else**: where `get_session`
 returns an id other than the ledger's, send it to every orchestrator and update the
-ledger before the sweep.
+ledger before the sweep. The message says it is this conductor's new id and is sent
+from that id, which is what lets an orchestrator adopt it (`backlog-orchestrator`,
+*Status requests from a conductor*).
 
 ## Orchestrators are never cleared
 
@@ -324,11 +334,14 @@ comments on the epic — and on auto-compaction; their workers, subscriptions an
 check-ins are tied to their session, so a clear mid-run costs more there. **This
 skill never clears one, and never asks the operator to.** Each sweep it records
 every active orchestrator's context use in the Streams table, from that session's
-record; and against the clear point computed from that record:
+record. Context unread counts as high, as it does in *6. Dispatch*:
 
-- **high at a phase or run boundary** — start the next phase in a fresh session
-  (*6. Dispatch*, reuse or start fresh);
-- **high mid-run** — tell the operator, naming its last checkpoint.
+- **at a phase or run boundary**, *6. Dispatch*'s reuse test decides — over about
+  30% is a fresh session, on the owner's go;
+- **mid-run, over the default clear point computed from that session's own record**
+  (the lower of 50% of its `max_tokens` and 60% of its threshold;
+  `conductor-clear-at` is this session's key, not its) — tell the operator, naming
+  its last checkpoint.
 
 ## Never
 

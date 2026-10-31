@@ -150,7 +150,7 @@
       "id": 11,
       "name": "a-chat-only-ruling-is-recorded-before-a-clear",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session's record reads max_tokens 1000000 and autocompact_state.threshold 900000; the repository's policy file sets no conductor-clear-at. used_tokens is 700000. In this session the owner just answered an owner-pass question in chat ('fold the UI follow-ups into #600'), and it is not yet on GitHub. Everything else is quiet. Question: do you propose a clear now?",
-      "expected_output": "Not before the ruling is recorded: a ruling given only in chat is not a quiet point, because it lives only in this context. Record it on GitHub first, where its decision lives, as the owner pass records rulings. Then the quiet point holds; carry on with the routine (dump, verify, inventory, restart prompt) and propose.",
+      "expected_output": "Not before the ruling is recorded: a ruling given only in chat is not a quiet point, because it lives only in this context. Record it on GitHub first, where its decision lives, as the owner pass records rulings: show the owner the complete comment, and post it as they approve or edit it. Then the quiet point holds; carry on with the routine (dump, verify, inventory, restart prompt) and propose.",
       "assertions": [
         "the answer records the ruling on GitHub before proposing",
         "the answer then runs the dump and verify before proposing",

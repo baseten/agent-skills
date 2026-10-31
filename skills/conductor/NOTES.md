@@ -123,6 +123,30 @@ tools in a cloud session):**
 An orchestrator's record also showed `context_usage.after_boundary`, which looks
 like a compaction or clear boundary marker. Nothing here relies on it.
 
+**What the review of this section changed (2026-10-31):** a repository-wide
+contradiction pass found eight problems before merge, all fixed:
+- **Re-sending a new id did nothing:** an orchestrator had no rule for adopting
+  one. `backlog-orchestrator` now adopts a conductor id only from that id's own
+  platform-supplied sender, after checking its record, never from an id named in
+  a message's text.
+- **When the key is read:** `rules/agent-policy.md` names run-starting skills and
+  reads them once. The conductor is now listed, and a post-clear restart is its
+  fresh read; the ledger's copy reports and never decides.
+- **Range and null:** an out-of-range value is defaulted under the rule's
+  fail-closed list, `null` means absent, and a point past the compaction
+  threshold falls back to the default.
+- **Orchestrator thresholds:** these were measured against this session's key.
+  Now *6. Dispatch*'s reuse test decides at a boundary, and mid-run uses the
+  default computed from the orchestrator's own record, unread counting as high.
+- **Wakes:** the dump listed check-ins and subscriptions the skill never arms.
+  The skill still arms none, which keeps protected rule 9 out of play; the
+  inventory records what someone else set up.
+- **Channel state:** the next context needs the channel state and
+  answered-this-sweep flags, or it would message sessions marked unreachable.
+- **An unchecked fact stated as certain:** the proposal said the id survives a
+  clear. NOTES has that as unchecked, so the proposal now says it is expected and
+  the restart prompt checks.
+
 **Why the quiet-point conditions:** each one is state a clear would lose or tear.
 A question pending or a ruling given only in chat lives only in this context. An
 integration PR mid-merge is the moment the next sweep's first read matters most. A
