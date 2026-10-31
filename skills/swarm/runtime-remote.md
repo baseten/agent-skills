@@ -107,6 +107,26 @@ instead (`SKILL.md`, *Blocked workers*, step 3).
 **Record how each session's channel was decided, and report it**: a run that read
 the field as absent and one that never read it look identical otherwise.
 
+**The return channel — worker to parent — is the same two halves, mirrored.**
+Its target's half is this session's own record: one `get_session` with no id at
+startup, its `cross_session_inbound` tested for `available` exactly as above. Its
+caller's half is the worker's: holding `send_message` (the claude-code-remote
+tool) — which the worker establishes from its own toolset and this run cannot
+see. So where this session reads `available`, record the return channel present,
+pass this session's id in the template's send clause, and expect pushes that may
+never come; elsewhere, record it absent and remove the clause. A worker this run
+created can also address it as `@parent`, but pass the id regardless: a worker
+adopted on a resume was created by the predecessor, and its `@parent` is that
+session.
+
+**What was observed (2026-10-31)**: `send_message` delivered both ways between
+cloud sessions — four idle orchestrator sessions answered a status request with
+`send_message`, each reply arriving as a new turn within about three minutes —
+and every session record read `cross_session_inbound: available`. A send's
+`{"status":"delivered"}` is delivery, not a reply. The `ListAgents` tool
+description still says a cloud session cannot message any session back; that is
+stale, and it is not evidence either way.
+
 ## The countermand on this tier
 
 A Claude Code Remote worker session inherits a system prompt telling it to
