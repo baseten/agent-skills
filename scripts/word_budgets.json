@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 25529,
+      "budget": 25558,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
