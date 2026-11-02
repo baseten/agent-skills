@@ -163,7 +163,9 @@ git rev-parse --short HEAD   # or HEAD~1, HEAD~2 as needed
 **Re-read each thread immediately before posting its reply, and again before
 resolving it** (step 6): a comment by anyone but this workflow that the deciding
 read did not see re-decides the thread's row from that read, and a person found
-there holds the reply and the resolution (*Replies held for approval*).
+there holds the reply and the resolution (*Replies held for approval*); for a reply
+the owner already approved, a comment they did not see sends it back to them, and
+the thread is resolved only where both re-reads are clean.
 
 In a remote/web session, use `mcp__github__add_reply_to_pull_request_comment`
 with the resolved `owner`/`repo`, `pullNumber`, `commentId`, and a `body`

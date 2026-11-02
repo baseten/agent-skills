@@ -468,11 +468,12 @@
     {
       "id": 37,
       "name": "a-coordinated-run-posts-its-review-trigger-without-asking",
-      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A conductor coordinates this run. The repository's CLAUDE.md names '@codex review' as its review trigger. The PR is ready for review. Separately, you have a two-sentence reply drafted to a human reviewer's question in a thread they started. auto-resolve-comments is unset. Question: which of these do you post now, and how?",
-      "expected_output": "Post the review trigger now, exactly '@codex review' with no footer, through the invoking user's account as the review-trigger rule requires: it is a token, not prose, and is never put to the owner as a draft for approval. Hold the reply to the human reviewer: a thread another person is in has its reply and resolution held for the owner's approval; it goes to the conductor's owner pass with its full text. Replies that do post read as the owner's own words, marked only by the footer, so they are short and factual.",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A conductor coordinates this run. The repository's CLAUDE.md names '@codex review' as its review trigger. The PR is ready for review. In one thread a human reviewer asked 'why not cache this per tenant?'; you have a two-sentence answer drafted. In another thread the same reviewer asked for a rename, which a repair pass made and pushed, and its 'Fixed in <sha>' reply is ready. auto-resolve-comments is unset. Question: what do you post now, and how?",
+      "expected_output": "Post the review trigger now, exactly '@codex review' with no footer, through the invoking user's account as the review-trigger rule requires: it is a token, not prose, and is never put to the owner as a draft for approval. Do not post the drafted answer to the reviewer's question - a run never answers a person's question on any path; it is a question item for the owner. Hold the 'Fixed in' reply and the thread's resolution for the owner's approval, because a person other than the invoking user is in that thread; it goes to the conductor's owner pass with its full text.",
       "assertions": [
         "the answer posts the trigger without asking for approval and without a footer",
-        "the answer holds the reply to the human's thread for the owner's approval",
+        "the answer never posts the drafted answer to the reviewer's question",
+        "the answer holds the fix reply and the resolution for the owner's approval",
         "the answer does not resolve the human's thread"
       ],
       "files": []

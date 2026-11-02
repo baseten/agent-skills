@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 25786,
+      "budget": 25800,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -27,11 +27,11 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
-      "budget": 2123,
+      "budget": 2129,
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 5385,
+      "budget": 5516,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -39,7 +39,7 @@
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 5581,
+      "budget": 5659,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
@@ -47,7 +47,7 @@
       "target": 3000
     },
     "skills/merge-stack/SKILL.md": {
-      "budget": 2386,
+      "budget": 2418,
       "target": 3000
     },
     "skills/normalize-github-dependencies/SKILL.md": {
@@ -71,7 +71,7 @@
       "target": 3000
     },
     "skills/resolve-pr-comment/SKILL.md": {
-      "budget": 8128,
+      "budget": 8157,
       "target": 3000
     },
     "skills/review-docs/SKILL.md": {
@@ -83,7 +83,7 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 6211,
+      "budget": 6226,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
@@ -127,7 +127,7 @@
       "target": 1500
     },
     "rules/agent-policy.md": {
-      "budget": 2535,
+      "budget": 2663,
       "target": 1500
     },
     "rules/authored-write-form.md": {
@@ -151,19 +151,19 @@
       "target": 1500
     },
     "rules/manual-step-issues.md": {
-      "budget": 654,
+      "budget": 655,
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 2077,
+      "budget": 2367,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
-      "budget": 425,
+      "budget": 445,
       "target": 1500
     },
     "rules/platform-pr-posture.md": {
-      "budget": 1417,
+      "budget": 1442,
       "target": 1500
     },
     "rules/posting-identity.md": {
@@ -187,7 +187,7 @@
       "target": 1500
     },
     "rules/wake-budget.md": {
-      "budget": 1551,
+      "budget": 1596,
       "target": 1500
     },
     "rules/watch-and-read.md": {

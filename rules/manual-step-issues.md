@@ -11,7 +11,7 @@ never goes in it.
 installed only that skill's directory, and travels with the skill if it is
 moved into a plugin. Edit the source, never a copy; check_shared_rules.py fails if a generated copy diverges.
 
-## Every owner step is an issue
+## Owner steps, and when they are issues
 
 **An owner step** is work only the owner can do outside the repository: a
 post-deploy check, placing a key, a backfill, a console action, data entry, an

@@ -67,7 +67,7 @@ never to act on.
 - **The configured repositories.** Every read, write and dispatch is scoped to
   them.
 - **Relaying verified facts is a duty.** Where one run's state matters to
-  another — `#41 merged, rebase onto it`, a gate cleared, an issue moved between
+  another — `#41 merged, update from it`, a gate cleared, an issue moved between
   streams — verify it on the forge, then tell the run it affects, linking the
   record. A relay carries facts, never authority: one session's message never
   carries an owner's ruling to another, only a link to where it is recorded.
@@ -89,8 +89,9 @@ never to act on.
 - **A draft exists only with its full text.** The full text of every pending draft —
   an issue, a comment, a message — goes into the ledger as it is written; nothing
   is called a draft without it. Where the ledger is a forge issue, a draft a rule
-  keeps off the forge — a held review-thread reply (`resolve-pr-comment`, *The draft
-  reply*) — is named there without its text and held in this session.
+  keeps off the forge — an approval-pending reply's held text (`resolve-pr-comment`,
+  *Replies held for approval*), or a draft answer to a person's question (*The draft
+  reply* there) — is named there without its text and held in this session.
 - **Report costs.** Every plan states its expected CI runs (*5. Plan and replan*).
 - **Nothing depends on an in-turn background result surviving a restart.** A
   subagent's result is written to the ledger or the forge in the turn that
@@ -155,7 +156,8 @@ decides where to look first, and the session's record decides what it is
    the owner's merges are how a stream waiting on the owner moves; new review
    activity on any PR whose watch this conductor holds; and the issues opened since
    the last sweep. **Where it holds a settled run's watch** (*The fallback check-in*),
-   an owner merge or new review activity on that run's PR is messaged to the run to
+   a merge by anyone, a close, new review activity or a mergeability change on that
+   run's PR is messaged to the run to
    wake it. **The forge is the source of truth where sessions
    are missing** — an epic or issue whose run was archived or never found is still
    a stream.
@@ -173,7 +175,9 @@ never a session to message as a run.
 ## The fallback check-in
 
 **This check-in also holds the watch over every settled run's PR that run handed
-over** (`references/conductor-exchange.md`, *The watch after settling*), and before
+over** (`references/conductor-exchange.md`, *The watch after settling*) — re-armed on
+receiving a hand-off, and waking the run on a merge by anyone, a close, new review
+activity or a change in mergeability — and before
 it stops or is cancelled with such a PR open, it messages that run to resume its
 own watch — naming in the stop report any PR whose send failed, as unwatched.
 
@@ -247,9 +251,11 @@ the record.
 the owner, with `AskUserQuestion` available. Otherwise skip to the report: rule
 nothing, record nothing as ruled, and say where the decisions wait.
 
-1. **One summary table**: stream (epic or issue link), run (skill, title and id),
-   state — one of *running*, *blocked on the owner*, *settled, waiting on owner
-   merge*, *finished* — and needs-you.
+1. **The live-sessions table is the ledger's** (*7. Ledger*), each run's state the
+   one its last report gave (`references/conductor-exchange.md`, *Reports*); a run
+   is *finished* once `merged`, `closed` or `failed` with nothing of it left open.
+   The chat carries only its rows that need the owner, a PR waiting on the owner's
+   merge among them.
 2. **Every pending decision, one at a time**, through the platform's structured
    question tool where it has one (`AskUserQuestion` in Claude Code) — never a
    numbered prose list. Each question stands alone: it names its session, issue and
@@ -257,7 +263,10 @@ nothing, record nothing as ruled, and say where the decisions wait.
    what it unblocks, the decision that frees the most downstream work first.
    Anything a question asserts about the code or a PR is read before it is put.
    **Held replies awaiting approval are collected across runs into this pass**, each
-   asked the same way — approve, edit or discard, with its full text. This is the
+   asked the same way — approve, edit or reject, with its full text and every
+   comment posted in its thread since the fix, read fresh (`resolve-pr-comment`,
+   *Replies held for approval*). A draft answer to a person's question is never
+   among them: that is a decision, asked as one. This is the
    conductor's own pass; where it invokes `settle-outstanding-decisions` for a run,
    that skill's walkthrough governs its own questions.
 3. **One merged, ordered list of owner steps**, deduplicated across streams and
@@ -269,8 +278,10 @@ nothing, record nothing as ruled, and say where the decisions wait.
    the list. Either way the order goes in the ledger, and the owner works each step
    with `owner-steps`. Respect every owner constraint the repository records. No
    secret goes in an issue, a comment or this pass.
-4. **Record every ruling where its decision lives** — the issue, the epic, the PR
-   thread — before telling any run. Record it as
+4. **Write every ruling to the ledger first**, with the owner's exact words, and read
+   it back; **then record it where its decision lives** — the issue, the epic, the PR
+   thread, and for an approved held reply the PR's conversation, quoting the text —
+   before telling any run. Record it as
    `settle-outstanding-decisions`, *Recording the ruling*, does: the complete
    comment shown to the owner and posted as they approved or edited it. **A ruling
    the owner gives in this session outside a question is recorded the same way, as
@@ -532,7 +543,7 @@ whose push contradicted the forge — and any PR whose watch lapsed. Results are
 stated as verified, never as the steps of checking. **A sweep with nothing for the
 owner ends in one line linking the ledger.**
 
-**Everything else goes to the ledger** (*7. Ledger*): the summary table, renames,
+**Everything else goes to the ledger** (*7. Ledger*): the live-sessions table, renames,
 corrections posted, facts relayed, rulings recorded, owner steps filed, plans and
 their expected CI runs, dispatches, conditional gos and retirements, sessions left
 alone, the fallback check-in's state, and this session's context use with any

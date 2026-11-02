@@ -129,6 +129,7 @@ For direct child C, preserve:
 
 ```text
 C_HEAD_OLD = C's head SHA before rewrite
+D_HEAD_OLD = each grandchild D's head SHA before its rewrite
 ```
 
 Then rebase only C's own commits, dropping P's now-merged commits:
@@ -163,10 +164,12 @@ If rebase conflicts:
 After a clean rebase:
 
 ```bash
-git push --force-with-lease origin <C_HEAD_BRANCH>
+git push --force-with-lease=<C_HEAD_BRANCH>:<C_HEAD_OLD> origin <C_HEAD_BRANCH>
 ```
 
-Never use an unconditional `--force`.
+Never use an unconditional `--force`, and never a bare `--force-with-lease`: a
+background fetch can advance the remote-tracking ref a bare lease checks, and
+then it protects nothing.
 
 Then update C's PR base from `P_HEAD_BRANCH` to `P_BASE_BRANCH` using GitHub MCP/API.
 
@@ -193,7 +196,7 @@ As with the direct-child rebase, confirm `C_HEAD_OLD` is actually an ancestor of
 
 ```bash
 git rebase --onto <C_HEAD_NEW> <C_HEAD_OLD> <D_HEAD_BRANCH>
-git push --force-with-lease origin <D_HEAD_BRANCH>
+git push --force-with-lease=<D_HEAD_BRANCH>:<D_HEAD_OLD> origin <D_HEAD_BRANCH>
 ```
 
 Its `Depends on:` URL remains C's PR URL because the logical parent PR has not changed.

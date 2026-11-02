@@ -287,7 +287,7 @@
         "merge"
       ],
       "default": "rebase",
-      "description": "How a run brings a stale PR branch up to its base: rebase with a pinned force-with-lease, or merge the base in. A merge commit is kept wherever a rule needs one (rules/agent-policy.md, Branch updates); never the merge method or the integration branch. An invocation may set merge only. Read by: backlog-orchestrator, implement-issue, settle-and-merge, supervise-prs.",
+      "description": "How a run brings a stale PR branch up to its base: rebase with a pinned force-with-lease, or merge the base in. A merge is kept wherever a rule needs one (rules/agent-policy.md, Branch updates); never the merge method or the integration branch. An invocation may set merge only; a value outside the enum resolves to merge. Read by: backlog-orchestrator, implement-issue, settle-and-merge, supervise-prs.",
       "x-read-by": [
         "backlog-orchestrator",
         "implement-issue",

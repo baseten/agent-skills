@@ -3,7 +3,7 @@
 Reasoning for `rules/manual-step-issues.md`. Deliberately *not* bundled into
 each skill: the audience is a person editing the rule, who has this checkout.
 
-## Every owner step is an issue
+## Owner steps, and when they are issues
 
 **Why an issue, and why a shared rule (2026-10-31):** owner steps — post-deploy
 checks, keys, backfills, console actions — were surfacing in PR bodies, wrap-up
