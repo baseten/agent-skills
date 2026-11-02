@@ -420,10 +420,10 @@
       "id": 35,
       "name": "a-merged-tip-failure-on-a-tip-containing-head-is-held-not-updated",
       "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: `ci-mode: integration-branch` with effect; PR #30 into `integration/api-3` has `auto-merge` resolved through the mode, clean review, and a green local gate record at its head e1e1e1e, which already contains the branch's current tip. The per-PR tier's commands and toolchain were passed. The merged-tip check in this session fails typecheck in a package #30 touches. Separately, one test file #30 touches belongs to the browser suite the caller passed as `not locally runnable`. Questions: (a) do you update #30's branch from the tip? (b) is #30 merged, and how is it reported? (c) does the merged-tip check run that browser test?",
-      "expected_output": "(a) No: the head already contains the tip, so there is no update to make. (b) The failure, with the head's record green, raises the environment hypothesis; unconfirmed, it is #30's failure all the same, and with nothing to update #30 is held — never updated again — and reported to the owner naming the failing check (typecheck) and the head e1e1e1e, not the gate record's passes; it does not merge. (c) No: a `not locally runnable` check is never run here; that test is owed by the integration PR's CI.",
+      "expected_output": "(a) No: the head already contains the tip, so there is no update to make. (b) The failure, with the head's record green, raises the environment hypothesis; unconfirmed, it is #30's failure all the same, and with nothing to update #30 is held — never updated again — and raised as a `NEEDS_USER` naming the failing check (typecheck) and the head e1e1e1e, not the gate record's passes; it does not merge. (c) No: a `not locally runnable` check is never run here; that test is owed by the integration PR's CI.",
       "assertions": [
         "the answer makes no branch update for #30",
-        "the answer holds #30 without updating it again, reporting the failing check and its head to the owner, not the gate record's passes",
+        "the answer holds #30 without updating it again, raising a NEEDS_USER that names the failing check and its head, not the gate record's passes",
         "the answer leaves the not-locally-runnable test to the integration PR's CI"
       ],
       "files": []
@@ -443,12 +443,28 @@
     {
       "id": 37,
       "name": "a-tip-containing-head-hold-names-only-the-failing-check",
-      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: `ci-mode: integration-branch` with effect; PR #44 into `integration/api-3` has head 6b6b6b6, which already contains the branch's current tip, and a green local gate record at that head (format, lint, typecheck, unit all passed). The caller passed the per-PR tier's commands and toolchain and authority to update branches. The merged-tip check fails `typecheck` on 6b6b6b6; the environment hypothesis is raised and cannot be confirmed. What happens to #44, and what does the report to the owner say?",
-      "expected_output": "#44 is held: the failure is this PR's all the same, and with the tip already in its head there is nothing to update, so the branch is not updated again. The report to the owner names the failing check (typecheck) and the head it failed on (6b6b6b6, bare); it does not list the gate record's passing checks, which the write-form rule's hold-item carve-out never admits.",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: `ci-mode: integration-branch` with effect; PR #44 into `integration/api-3` has head 6b6b6b6, which already contains the branch's current tip, and a green local gate record at that head (format, lint, typecheck, unit all passed). The caller passed the per-PR tier's commands and toolchain and authority to update branches. The merged-tip check fails `typecheck` on 6b6b6b6; the environment hypothesis is raised and cannot be confirmed. What happens to #44, what is raised to the owner, and what releases it?",
+      "expected_output": "#44 is held: the failure is this PR's all the same, and with the tip already in its head there is nothing to update, so the branch is not updated again. It is raised as a `NEEDS_USER` naming the failing check (typecheck) and the head it failed on (6b6b6b6, bare), with options: dispatch a fix (an issue filed and dispatched into the branch within `new-issue-budget`), or leave it held for the owner. It does not list the gate record's passing checks, which the write-form rule's hold-item carve-out never admits. Only an owner reply choosing an option releases it.",
       "assertions": [
         "the answer holds #44 and does not update its branch",
-        "the answer's report names the failing check typecheck and the head 6b6b6b6",
-        "the answer's report does not list the gate record's passing checks"
+        "the answer raises a NEEDS_USER naming the failing check typecheck and the head 6b6b6b6",
+        "the answer's NEEDS_USER offers options, one dispatching a fix as a filed issue",
+        "the answer's item does not list the gate record's passing checks",
+        "the answer releases the hold only on an owner reply choosing an option"
+      ],
+      "files": []
+    },
+    {
+      "id": 38,
+      "name": "a-merged-tip-failure-without-update-authority-is-a-needs-user",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: `ci-mode: integration-branch` with effect; PR #51 into `integration/api-3` has head 7c7c7c7, a green local gate record at that head and a clean review. The branch's tip has moved to 8d8d8d8 since #51 branched. The caller passed the per-PR tier's commands and toolchain but no authority to update branches. The merged-tip check — #51 merged onto 8d8d8d8 in scratch — fails `unit`. Is #51 merged or updated, and what does the owner see?",
+      "expected_output": "#51 is not merged and its branch is not updated: without authority this skill never updates a branch. It is held and raised as a `NEEDS_USER` naming the failing check (unit), the head 7c7c7c7 and the tip 8d8d8d8 it was merged onto, never the gate record's passes, with options: update the branch from the tip, or leave it held for the owner. Only an owner reply choosing an option releases it.",
+      "assertions": [
+        "the answer neither merges nor updates #51",
+        "the answer raises a NEEDS_USER naming unit, the head 7c7c7c7 and the tip 8d8d8d8",
+        "the answer offers updating the branch from the tip as an option",
+        "the answer lists none of the gate record's passing checks",
+        "the answer releases the hold only on an owner reply choosing an option"
       ],
       "files": []
     }
