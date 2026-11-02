@@ -261,6 +261,18 @@
     },
     {
       "id": 21,
+      "name": "the-gate-report-carries-each-checks-head-and-toolchain",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: implement-issue-core invokes you with its gate: format and lint passed at 4d4d4d4 under Node 24; typecheck passed at 5e5e5e5 under Node 24; the e2e suite `not locally runnable` (browser mismatch, CI: Chrome 155, session: Chromium 1194); the set came from the base branch's ruleset. The pushed head is 5e5e5e5. Question: what does the gate report you return say for each check, and where does it go?",
+      "expected_output": "Every check with its outcome and the head and toolchain it ran at — format and lint passed at 4d4d4d4 (Node 24), typecheck passed at 5e5e5e5 (Node 24), e2e not locally runnable with both browsers named — and that the set came from the ruleset; built from the set the caller passed, not re-derived. It is returned in the structured output only, never written into the PR body or any comment.",
+      "assertions": [
+        "the answer reports each check at the head it ran at, not all at 5e5e5e5",
+        "the answer names the toolchain for each check",
+        "the answer keeps the gate report out of the PR body and comments"
+      ],
+      "files": []
+    },
+    {
+      "id": 22,
       "name": "a-direct-invocation-records-filtered-off-and-keeps-it-out-of-the-body",
       "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Direct invocation, no caller-supplied gate. acme/docs-site, base `main`. The branch edits only `docs/intro.md`. Branch protection on `main` requires `lint / markdown` (from `.github/workflows/lint.yml`, no filters) and `ci / test` (from `.github/workflows/ci.yml`, whose only trigger is `pull_request` with `paths: ['src/**']`); neither workflow file differs between `main` and the head, and the branch touches neither. The repository's PR template has a `## Checks` section. Questions: (a) what do you run before opening the PR, and what is recorded for `ci / test`? (b) what goes in the template's `## Checks` section, and where does each check's outcome go? (c) had `ci.yml`'s filters been unreadable, what changes?",
       "expected_output": "(a) Derive the set from branch protection: `lint / markdown` and `ci / test`. CI's `pull_request` filter would not run `ci.yml` for this PR's whole diff (only `docs/intro.md`), so `ci / test` is recorded `filtered off`, naming the workflow and filter, and not run — never `passed`. Run `lint / markdown`. Under per-pr the whole workflow producing required `ci / test` is filtered off, so it never reports on the PR — a hold the forge will keep — reported with its workflow and filter beside the gate report in the returned result. (b) Only the testing summary — manual steps and what a test pins — never a list of checks or outcomes, `filtered off` included. The outcomes go in the gate report in the structured result. (c) It fails closed: `ci / test` is not filtered off and runs.",
@@ -273,8 +285,5 @@
       ],
       "files": []
     }
-  ],
-  "companions": [
-    "implement-issue-core"
   ]
 }

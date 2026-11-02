@@ -10,7 +10,7 @@ A report is a claim about a world the reporter may not be able to see, whoever w
 
 | the claim | what settles it |
 |---|---|
-| a worker: *all gates passed* | CI on the pushed head |
+| a worker: *all gates passed* | CI on the pushed head — except into an integration branch, which runs none: there a per-check report at the head and toolchain each ran at is accepted unsettled, and the full tier at the branch's next checkpoint settles it (`supervise-prs`, *Integration-branch CI*, step 3) |
 | a worker: *pushed* | the remote branch's head being the commit the worker claims — a branch that exists may carry an earlier push |
 | a reviewer: *fixed in `<sha>`* | the ref resolving **and** its diff containing the fix — a commit that exists is not a commit that did the thing |
 | a prior session's carried note | the thing it describes, re-read now |
