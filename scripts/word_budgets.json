@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 25720,
+      "budget": 25786,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -19,7 +19,7 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/integration-branch.md": {
-      "budget": 2930,
+      "budget": 2941,
       "target": 1500
     },
     "skills/backlog-orchestrator/restart-resume.md": {
@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 4945,
+      "budget": 5385,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -39,7 +39,7 @@
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 5453,
+      "budget": 5581,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
@@ -59,7 +59,7 @@
       "target": 8000
     },
     "skills/owner-steps/SKILL.md": {
-      "budget": 1223,
+      "budget": 1226,
       "target": 3000
     },
     "skills/plan-merge-order/SKILL.md": {
@@ -67,11 +67,11 @@
       "target": 3000
     },
     "skills/repair-pr/SKILL.md": {
-      "budget": 3883,
+      "budget": 3904,
       "target": 3000
     },
     "skills/resolve-pr-comment/SKILL.md": {
-      "budget": 8010,
+      "budget": 8128,
       "target": 3000
     },
     "skills/review-docs/SKILL.md": {
@@ -83,7 +83,7 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 6173,
+      "budget": 6211,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
@@ -99,7 +99,7 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 9308,
+      "budget": 9317,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
@@ -127,7 +127,7 @@
       "target": 1500
     },
     "rules/agent-policy.md": {
-      "budget": 2220,
+      "budget": 2535,
       "target": 1500
     },
     "rules/authored-write-form.md": {
@@ -151,19 +151,19 @@
       "target": 1500
     },
     "rules/manual-step-issues.md": {
-      "budget": 641,
+      "budget": 654,
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 1331,
+      "budget": 2077,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
-      "budget": 372,
+      "budget": 425,
       "target": 1500
     },
     "rules/platform-pr-posture.md": {
-      "budget": 1414,
+      "budget": 1417,
       "target": 1500
     },
     "rules/posting-identity.md": {
@@ -187,7 +187,7 @@
       "target": 1500
     },
     "rules/wake-budget.md": {
-      "budget": 1493,
+      "budget": 1551,
       "target": 1500
     },
     "rules/watch-and-read.md": {

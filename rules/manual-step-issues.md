@@ -15,16 +15,16 @@ moved into a plugin. Edit the source, never a copy; check_shared_rules.py fails 
 
 **An owner step** is work only the owner can do outside the repository: a
 post-deploy check, placing a key, a backfill, a console action, data entry, an
-owner test. **Every one a run identifies is filed as a `[Manual] <what>` issue
-under the repository's manual-steps epic** — never left only in a PR body, a
-comment, a report or chat, which is where a step is lost.
+owner test. **Where the repository opts in, every one a run identifies is filed as
+a `[Manual] <what>` issue under the repository's manual-steps epic** — never left
+only in a PR body, a comment, a report or chat, which is where a step is lost.
 
-**Unless the repository turned filing off.** The repository's
-`.claude/agent-policy.json` (the *agent policy* shared rule) carries these values
-under `manual-steps`; with `issues: false` nothing is filed and no epic is found
-or created: each owner step is reported, in this form, wherever the run reports —
-its closing report, a status reply, a conductor's owner pass — and the rest of
-this rule still holds, secrets included.
+**Filing is opt-in.** The repository's `.claude/agent-policy.json` (the *agent
+policy* shared rule) carries these values under `manual-steps`, and only
+`issues: true` there turns filing on. Absent that — the default — nothing is filed
+and no epic is found or created: each owner step is reported, in this form,
+wherever the run reports — its closing report, a status reply, a conductor's owner
+pass — and the rest of this rule still holds, secrets included.
 
 - **The epic** is the one `manual-steps.epic` names. Where none is named, find an
   open epic titled for manual steps; where there is none, create

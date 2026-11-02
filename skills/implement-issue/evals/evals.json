@@ -426,6 +426,56 @@
         "the answer treats the title as a finding aid, not identity"
       ],
       "files": []
+    },
+    {
+      "id": 34,
+      "name": "a-coordinated-run-reports-in-the-fixed-form-and-stops-after-merge",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A conductor (session_01Cd) coordinates this run on https://github.com/acme/api/issues/2011; this session is session_01Wk. Its PR #2040 merged a minute ago, verified on GitHub. One follow-up issue, #2050, was filed; it lacks a link to a design doc nobody has written yet. Question: what do you send, and what do you do next?",
+      "expected_output": "Push one report in the fixed form, about #2011 only: header https://claude.ai/code/session_01Wk · issue #2011 link · PR #2040 link; state: merged; the four parts, with follow-up #2050 linked (the missing doc link is not blocked-on-owner - nothing needs the owner to act). No prose after the form, and no offer to start #2050 or any other work: picking the next issue is the conductor's. End the turn with 'final status: merged · <PR #2040 link>' and stop.",
+      "assertions": [
+        "the answer sends one report in the fixed form with the three-link header",
+        "the answer gives the state as merged and does not mark the missing link blocked-on-owner",
+        "the answer does not offer or ask to start other work",
+        "the answer ends with a one-line final status and stops"
+      ],
+      "files": []
+    },
+    {
+      "id": 35,
+      "name": "a-relayed-ruling-authorises-only-the-listed-acts",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A conductor relays, linking an 'Owner ruling (2026-11-02, given to the conductor interactively, relayed here)' comment on PR #2040 authored by the owner's account and quoting the owner: 'Mark it ready, rebase it on main, update the description to mention the flag, and merge it.' The repository's policy has auto-merge false and no branch-update key. PR #2040 was opened as a draft and has never been ready; its body is the run's own text and still carries the attribution footer. Question: which of these do you do?",
+      "expected_output": "Verify the ruling at its record (marker, owner's account, not this run's write). Then: mark the PR ready (not an explicitly held draft); rebase it on main by the default branch-update convention, rebase with a force-push-with-lease, the one allowed force-push; edit the body, since it still carries the footer and the body-edit table allows that. Do not merge: a relay never authorises a merge, and auto-merge is off. Report the merge as declined and why.",
+      "assertions": [
+        "the answer marks the PR ready and rebases with force-with-lease",
+        "the answer edits the body only because the body-edit rule allows it here",
+        "the answer does not merge",
+        "the answer verifies the ruling at its record before acting"
+      ],
+      "files": []
+    },
+    {
+      "id": 36,
+      "name": "a-settled-run-hands-its-watch-to-the-conductor-only-on-a-delivered-push",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A conductor (session_01Cd) coordinates this run. PR #2040 is settled, healthy and waiting on the owner's merge; auto-merge is off. You send the 'settled, waiting on owner merge' report. Case (a): send_message returns {\"status\":\"delivered\"}. Case (b): the send errors. Question: what happens to this run's check-in and subscription in each case?",
+      "expected_output": "(a) Hand the watch to the conductor: cancel this run's check-in, end its PR subscription as the stop rules end them, record that the conductor holds the watch, and go quiet; the conductor's sweep wakes it on the owner's merge or new review activity. (b) The push failed, so keep this run's own watch exactly as before - the bounded post-settle check-in and subscription - and pushes end for the run.",
+      "assertions": [
+        "in (a) the answer cancels its check-in and records that the conductor holds the watch",
+        "in (b) the answer keeps its own watch",
+        "the answer never leaves the PR unwatched"
+      ],
+      "files": []
+    },
+    {
+      "id": 37,
+      "name": "a-coordinated-run-posts-its-review-trigger-without-asking",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A conductor coordinates this run. The repository's CLAUDE.md names '@codex review' as its review trigger. The PR is ready for review. Separately, you have a two-sentence reply drafted to a human reviewer's question in a thread they started. auto-resolve-comments is unset. Question: which of these do you post now, and how?",
+      "expected_output": "Post the review trigger now, exactly '@codex review' with no footer, through the invoking user's account as the review-trigger rule requires: it is a token, not prose, and is never put to the owner as a draft for approval. Hold the reply to the human reviewer: a thread another person is in has its reply and resolution held for the owner's approval; it goes to the conductor's owner pass with its full text. Replies that do post read as the owner's own words, marked only by the footer, so they are short and factual.",
+      "assertions": [
+        "the answer posts the trigger without asking for approval and without a footer",
+        "the answer holds the reply to the human's thread for the owner's approval",
+        "the answer does not resolve the human's thread"
+      ],
+      "files": []
     }
   ]
 }

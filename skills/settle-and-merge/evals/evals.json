@@ -553,6 +553,19 @@
         "the answer names the outstanding DECISION as settleable by the owner running the walkthrough"
       ],
       "files": []
+    },
+    {
+      "id": 46,
+      "name": "a-stale-branch-is-rebased-only-where-no-merge-commit-is-needed",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The caller passed authority to update stale branches. Checks run against the branch alone. Repository policy: ci-mode per-pr, branch-update unset. PR #70's base moved; every commit on it was authored by this run's worker, none carries a repair-pass trailer, it has no child PRs and no live worker. PR #71's base also moved; it carries a commit from a repair pass with its trailer. Question: how is each branch updated, and how is each push classified?",
+      "expected_output": "PR #70: by the default branch-update, rebase onto the base and push with --force-with-lease pinned to the head recorded before the rebase (never a bare lease or --force). It is mechanical only where git merge-tree --write-tree <new base> <old head> equals the new head's tree; otherwise substantive. PR #71: a merge, because a branch carrying a repair-pass trailer keeps a merge commit whatever branch-update says. Both are returned as branch updates for the caller's push record.",
+      "assertions": [
+        "the answer rebases #70 with a lease pinned to the recorded head",
+        "the answer classifies #70's rebase as mechanical only by the tree-equality check",
+        "the answer merges the base into #71 because of the repair trailer",
+        "the answer never uses a bare --force"
+      ],
+      "files": []
     }
   ]
 }

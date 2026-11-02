@@ -13,7 +13,7 @@ never sees a secret.**
 
 The issue is a `[Manual]` issue in the form `references/manual-step-issues.md`
 states; that rule says what each part means. **Where the repository files no
-such issues** (`manual-steps.issues` is `false`), walk the steps the owner gives,
+such issues** (`manual-steps.issues` is not `true`, the default), walk the steps the owner gives,
 in the same form, exactly as below — but the record is this session's report:
 there is no issue to comment on, tick or close. This file is the contract; the
 reasoning lives in `NOTES.md`, keyed by section.

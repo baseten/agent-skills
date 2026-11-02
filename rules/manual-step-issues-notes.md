@@ -19,7 +19,7 @@ owner at a server; an issue that mixes a root console step with a later check
 that waits on a deploy cannot be finished in one session, and its *Done when*
 never reads true at the end of one.
 
-**Why filing is optional (owner's ruling, 2026-11-02):** the rule was written for
+**Why filing is opt-in (owner's rulings, 2026-11-02):** the first ruling made filing optional with the default on; a later one turned the default off, because creating issues and an epic is an outward write a repository that never asked for it should not get from upgrading a skill. A repository opts in with `manual-steps.issues: true`. The earlier reasoning: the rule was written for
 the owner's own repositories, where a manual-steps epic is how they work. A work
 deployment that tracks such steps elsewhere turns it off with
 `manual-steps.issues: false` in its policy file. The form and the secret rule

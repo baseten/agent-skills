@@ -277,10 +277,14 @@ lives, so a run reads them where its own tests look.
 
 **What a scheduled firing may do is stated the same at every decision point:** it
 sweeps, reports and executes a conditional go the owner already recorded, once
-verified; it rules nothing, dispatches nothing else and never retires — even
-under a standing retirement ruling, which an attended sweep verifies — because
-archiving a session this conductor did not create is the step protected rule 9
-guards most.
+verified; it rules nothing and dispatches nothing else. **Retiring under a standing
+ruling is allowed unattended (owner's ruling, 2026-11-02):** the pass first kept it
+to attended sweeps; the owner ruled that a scheduled firing may retire once the
+ruling's condition is verified on the forge. Protected rule 9 still binds every
+archive: the conditions in *6. Dispatch* — wrap-up posted, every PR settled, each
+branch head on the remote, no live worker and no outstanding recovery ref — are
+checked on that firing exactly as on an attended one. Scenario:
+`an-unattended-retirement-under-a-standing-ruling-checks-the-remote-first`.
 
 **Why "active" includes waiting on the owner's merge and a pending go:** the
 check-in was restored so that work gated on an owner's merge starts without the
@@ -302,6 +306,18 @@ from those sites rather than left for the watch to misread.
 requirements under "seed a fresh run", and a reader dropped them from the reuse
 message. Every dispatch carries them; only the standing rulings, the owner's
 account and the template are a fresh run's.
+
+## Field feedback (2026-11-02, PR #201)
+
+**Why the chat carries only what needs the owner:** a day of sweeps put progress, verified checks and items waiting on others into chat, and the owner had to read all of it to find the one thing that needed them. The ledger holds the rest, and a quiet sweep is one line. **Why results, not the checking:** every claim is still verified; describing how is noise.
+
+**Why decisions are asked one at a time:** batches of up to four, and numbered prose lists, were answered partly or in the wrong order. One structured question at a time, each self-contained with its three links and a recommendation, is answerable on the spot. Held replies awaiting approval are collected across runs into the same pass. `settle-outstanding-decisions` keeps its own chunking where the conductor invokes it, because its fork rules depend on it.
+
+**Why a draft needs its full text in the ledger:** "draft" was used of text that did not yet exist, and the owner approved something they never saw. On a GitHub-issue ledger a held review-thread reply is the exception, because that skill's rule keeps a draft reply off the forge; the ledger names it and the session holds its text.
+
+**Why the ledger is maintained, not appended:** an append-only ledger had to be read end to end to know the current state, and a clear restarted from a stale one. Rows are edited in place, one changelog line records each sweep, and the whole body is rewritten before every `/clear`.
+
+**Why the conductor holds a settled run's watch:** see `rules/conductor-exchange-notes.md`, *The watch after settling*.
 
 ## Decision scenarios
 
@@ -367,5 +383,18 @@ Pinned in `evals/evals.json`:
     (`the-scope-is-the-configured-repositories`);
   - the ledger falls back in the configured order, rulings staying at their sites
     (`the-ledger-falls-back-in-the-configured-order`);
-  - with filing off, owner steps are listed, not filed
-    (`owner-steps-are-listed-not-filed-where-the-repository-turns-filing-off`).
+  - where the repository has not opted into filing, owner steps are listed, not
+    filed (`owner-steps-are-listed-not-filed-where-the-repository-has-not-opted-in`).
+- the owner's 2026-11-02 rulings and field feedback:
+  - an unattended retirement under a standing ruling checks the remote first
+    (`an-unattended-retirement-under-a-standing-ruling-checks-the-remote-first`);
+  - a sweep with nothing for the owner ends in one line
+    (`a-sweep-with-nothing-for-the-owner-ends-in-one-line`);
+  - decisions one at a time, with links and a recommendation
+    (`decisions-are-asked-one-at-a-time-with-links-and-a-recommendation`);
+  - a chat ruling goes to the ledger before it is relayed
+    (`a-chat-ruling-goes-to-the-ledger-before-it-is-relayed`);
+  - the conductor holds a settled run's watch and hands it back
+    (`the-conductor-holds-a-settled-runs-watch-and-hands-it-back`);
+  - a draft exists only with its full text
+    (`a-draft-exists-only-with-its-full-text-in-the-ledger`).

@@ -30,9 +30,9 @@ return channel's detection and the trust boundary — and
 
 - **One run.** Ask it directly, or read its epic or issue.
 - **Nobody is present.** The owner pass and every plan need a person to answer
-  (*4. Owner pass*); a scheduled firing sweeps, reports, and executes only a
-  conditional go the owner already recorded, once verified (*6. Dispatch*) — it
-  rules nothing, and dispatches or retires nothing else.
+  (*4. Owner pass*); a scheduled firing sweeps, reports, and acts only on what
+  the owner already recorded, once verified (*6. Dispatch*) — a conditional go, or
+  a retirement under a standing ruling — and rules nothing.
 - **A repository outside the configured scope.** Its sessions are noted in the
   report and left alone.
 
@@ -60,8 +60,10 @@ never to act on.
   and nothing this skill sends carries any either.
 - **Rulings live where the decision lives** — the PR, or the issue in whichever
   tracker holds it. Every ruling is recorded there before any run is told of it,
-  and a run acts on one only after reading it there. The ledger and every message
-  only link to it.
+  and a run acts on one only after reading it there. A ruling given in this chat
+  is written to the ledger first, with the owner's exact words, and read back
+  (`references/conductor-exchange.md`, *Relayed rulings*); the ledger and every
+  message then link to the site's record.
 - **The configured repositories.** Every read, write and dispatch is scoped to
   them.
 - **Relaying verified facts is a duty.** Where one run's state matters to
@@ -75,6 +77,20 @@ never to act on.
 - **Nothing at an open item's site but its ruling.** Under the owner's account,
   this skill writes nothing at the site of a run's open item except the recorded
   ruling for it, so that no write of its own can read there as the owner's reply.
+- **The chat carries only what needs the owner to act**: a decision, an approval,
+  an owner step, a failure only the owner can clear. Progress, finished checks and
+  items waiting on others go to the ledger. A sweep with nothing for the owner ends
+  in one line linking the ledger.
+- **Every update about a run opens with three links** — the session
+  (`https://claude.ai/code/<session id>`), its tracker issue or epic, and its PR —
+  never a bare id, and never a title in a link's place.
+- **Report results, not the checking.** Every claim is still verified on the forge
+  and the tracker; the report says it was verified, not how.
+- **A draft exists only with its full text.** The full text of every pending draft —
+  an issue, a comment, a message — goes into the ledger as it is written; nothing
+  is called a draft without it. Where the ledger is a forge issue, a draft a rule
+  keeps off the forge — a held review-thread reply (`resolve-pr-comment`, *The draft
+  reply*) — is named there without its text and held in this session.
 - **Report costs.** Every plan states its expected CI runs (*5. Plan and replan*).
 - **Nothing depends on an in-turn background result surviving a restart.** A
   subagent's result is written to the ledger or the forge in the turn that
@@ -128,14 +144,19 @@ decides where to look first, and the session's record decides what it is
    `Worker:` for a single-issue run, which only the ledger can identify — the epic,
    issue or branch read from the ledger, its record or its branch, and **report each rename**, old title and new.
    Where no epic can be read, use the run's integration branch or its id.
-6. **Read each run's record**: status and `status_bucket`, `post_turn_summary`,
-   `external_metadata.cross_session_inbound`, context usage where the record
-   exposes it (otherwise say it is unread), and last activity.
+6. **Read each run's record**: status and `status_bucket`, its last `final status`
+   line where it left one (`references/conductor-exchange.md`, *Reports*) over
+   `post_turn_summary`, which can lag, `external_metadata.cross_session_inbound`,
+   context usage where the record exposes it (otherwise say it is unread), and last
+   activity.
 7. **Read the forge directly as well**, per repository in scope: the epics and
    issues the ledger lists; each run's open PRs, and its integration branch where
    it has one; **each run's PRs merged since the last sweep, and by whom** —
-   the owner's merges are how a stream waiting on the owner moves; and the issues
-   opened since the last sweep. **The forge is the source of truth where sessions
+   the owner's merges are how a stream waiting on the owner moves; new review
+   activity on any PR whose watch this conductor holds; and the issues opened since
+   the last sweep. **Where it holds a settled run's watch** (*The fallback check-in*),
+   an owner merge or new review activity on that run's PR is messaged to the run to
+   wake it. **The forge is the source of truth where sessions
    are missing** — an epic or issue whose run was archived or never found is still
    a stream.
 8. **The default branch**, per repository in scope: CI on its current head, and
@@ -151,6 +172,11 @@ never a session to message as a run.
 
 ## The fallback check-in
 
+**This check-in also holds the watch over every settled run's PR that run handed
+over** (`references/conductor-exchange.md`, *The watch after settling*), and before
+it stops or is cancelled with such a PR open, it messages that run to resume its
+own watch — naming in the stop report any PR whose send failed, as unwatched.
+
 **While any run in the ledger is active — any not *finished* (*4. Owner pass*,
 step 1) — or a conditional go is pending, keep one `send_later` check-in bound to
 this session**, on `references/wake-budget.md`'s *A conductor's fallback sweep*
@@ -160,8 +186,9 @@ stopped after 3 consecutive empty sweeps, said once; cancelled when neither hold
 status, a PR of its opened, pushed, merged or closed, its CI conclusions, its open
 items, or a pending go's condition. Its prompt
 carries the consecutive-empty count, the ledger's URL and the comparands. **A
-firing sweeps, reports and executes a verified conditional go; it rules nothing,
-and dispatches or retires nothing else.**
+firing sweeps, reports, executes a verified conditional go and retires a run
+under a verified standing ruling; it rules nothing, and dispatches or retires
+nothing else.**
 One check-in, never two; record its id and next time in the ledger.
 
 # 2. Ask
@@ -173,12 +200,9 @@ send nothing, read that stream from the forge, and flag it. The request:
 
 ```text
 Status request from conductor <this session id> for the owner. Reply with
-send_message to <this session id>, in the reply form of the conductor-exchange
-rule, at most 400 words:
-1. State — what merged or deployed (PR links), what did not, and why.
-2. Owner decisions — each as one question, its options, a recommendation, its site.
-3. Owner steps — the [Manual] issues you filed, ordered, each linked with what it unblocks, and the steps themselves where you filed none.
-4. Follow-ups and the proposed next run — dependencies, and gates on other streams.
+send_message to <this session id>: one report in the conductor-exchange form
+(three-link header, state from its fixed set, the four numbered parts, at most
+400 words, nothing after it), about your own epic or issue only.
 Do not dispatch or merge because of this message.
 ```
 
@@ -226,13 +250,19 @@ nothing, record nothing as ruled, and say where the decisions wait.
 1. **One summary table**: stream (epic or issue link), run (skill, title and id),
    state — one of *running*, *blocked on the owner*, *settled, waiting on owner
    merge*, *finished* — and needs-you.
-2. **Every pending decision as one question** with its options and a
-   recommendation, **at most 4 per `AskUserQuestion`**, ordered by what each
-   unblocks — the decision that frees the most downstream work first. Anything a
-   question asserts about the code or a PR is read before it is put.
+2. **Every pending decision, one at a time**, through the platform's structured
+   question tool where it has one (`AskUserQuestion` in Claude Code) — never a
+   numbered prose list. Each question stands alone: it names its session, issue and
+   PR as links, offers 2–4 options with one marked recommended, and is ordered by
+   what it unblocks, the decision that frees the most downstream work first.
+   Anything a question asserts about the code or a PR is read before it is put.
+   **Held replies awaiting approval are collected across runs into this pass**, each
+   asked the same way — approve, edit or discard, with its full text. This is the
+   conductor's own pass; where it invokes `settle-outstanding-decisions` for a run,
+   that skill's walkthrough governs its own questions.
 3. **One merged, ordered list of owner steps**, deduplicated across streams and
    ordered by dependency, in the form `references/manual-step-issues.md` states.
-   Where the repository the step concerns files them (its `manual-steps`), each is a
+   Where the repository the step concerns opted into filing (its `manual-steps`), each is a
    `[Manual]` issue under that repository's manual-steps epic — filed now for any
    step no stream has filed, its exact commands in the issue — and **the order is
    posted as a comment on that epic**; where it does not, the steps themselves are
@@ -324,7 +354,9 @@ a condition that cannot be verified as written stays pending and is reported.
 **Every dispatch — a reuse message or a fresh prompt — points at the epic or issue,
 gives this session's id and home repository for status pushes, and states every
 cross-stream gate as below. Seed every fresh run from the ledger as well:** its
-prompt names the owner's account, and carries:
+prompt names the owner's account — for recognising the owner's rulings and folds
+only; it is never the invoking user's account for the *posting identity* test,
+which stays unknown unless the owner states it in that session — and carries:
 
 - **every cross-stream gate, each verified against the work's own owner comments
   on the forge immediately before it is written**, and linked to its record — a gate
@@ -343,8 +375,8 @@ the authority** — this skill did not necessarily create it, and `swarm` archiv
 a session its run did not create only on the owner's ruling (*Releasing a
 worker*, the paragraph beginning *Two things are never archived*). The go may be a
 standing ruling recorded on the forge — "retire each run once its PRs are
-merged" — verified against each retirement in an attended sweep, not asked afresh;
-a scheduled firing never retires. Only once its wrap-up is posted on its
+merged" — verified against each retirement on the forge, not asked afresh, and a
+scheduled firing may act on it too. Only once its wrap-up is posted on its
 epic or issue; every PR of its run is merged, closed or recorded as moved to another
 run; nothing of its run is stranded — each of its branches' heads is on the remote,
 and its last state block reports no live worker session and no outstanding recovery
@@ -359,9 +391,13 @@ feature's tracker project; `document-store-page`, a page in the connected docume
 store — and is reported. It is found from the URL recorded in it and in the restart
 prompt, never by title alone. Rulings stay at their sites; the ledger links to them.
 
-- the **Streams table** — per stream: repository, epic or issue, the run's skill,
-  session id and title, state (*4. Owner pass*, step 1), and its context use
-  (`used_tokens` of `max_tokens`, as read this sweep);
+- the **live-sessions table** — per stream: repository, epic or issue, the run's
+  skill, the session's link and title, state (*4. Owner pass*, step 1), who holds
+  its watch, and its context use (`used_tokens` of `max_tokens`, as read this
+  sweep); an archived session leaves it;
+- the owner's rulings given in this chat, each dated, in their exact words, linked
+  to where each was recorded;
+- every pending draft, in full (*Rules*);
 - the gates between streams, each linked to its record;
 - the open decisions, each linked to its site;
 - the ordered owner steps, each with what it unblocks;
@@ -374,10 +410,13 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
 - the default branches' heads as last read, each linked to its CI and deploy runs —
   their outcomes go in the session's report, never in a forge write;
 - the plan's expected CI runs;
+- one short dated changelog;
 - the last sweep time, in UTC.
 
-Update it at the end of every sweep. **The ledger body is the state; its comments,
-or the document's history, are history**, and the body supersedes them. A conductor whose context
+**The ledger is maintained, not appended to**: update it at the end of every sweep,
+editing rows in place, adding one changelog line, and rewriting the whole of it
+before every `/clear`. **The ledger body is the state; its comments, or the
+document's history, are history**, and the body supersedes them. A conductor whose context
 fills clears it in this same session, on the operator's `/clear` (*8. Context
 clear*); **it never hands off to a new session.**
 
@@ -404,8 +443,8 @@ all three hold:**
 2. **It is a quiet point:**
    - no tool work pending — the proposal is the last thing in the turn;
    - no question to the owner waiting for an answer;
-   - **no owner ruling given only in chat** — record it at its site first
-     (*4. Owner pass*, step 4), then carry on;
+   - **no owner ruling given only in chat** — write it to the ledger and record it
+     at its site first (*4. Owner pass*, step 4), then carry on;
    - no run mid-merge — a PR whose merge check is in progress;
    - no run start half done — a session created but not yet seeded, or seeded but
      its id not yet in the ledger.
@@ -467,7 +506,7 @@ Runs rely on their own checkpoints — the run's state and its checkpoint commen
 and on auto-compaction; their workers, subscriptions and check-ins are tied to their
 session, so a clear mid-run costs more there. **This skill never clears one, and
 never asks the operator to.** Each sweep it records every active run's context use
-in the Streams table, from that session's record. Context unread counts as high, as
+in the live-sessions table, from that session's record. Context unread counts as high, as
 it does in *6. Dispatch*:
 
 - **at a phase or run boundary**, *6. Dispatch*'s reuse test decides — over about
@@ -486,22 +525,15 @@ it does in *6. Dispatch*:
 
 # Report
 
-Per sweep, in this session:
+**In this session, only what needs the owner to act** (*Rules*), each item opening
+with its three links: decisions and approvals (asked as *4. Owner pass* says),
+owner steps, a failure only the owner can clear — a red default branch, a run
+whose push contradicted the forge — and any PR whose watch lapsed. Results are
+stated as verified, never as the steps of checking. **A sweep with nothing for the
+owner ends in one line linking the ledger.**
 
-- the summary table, with every run that did not answer flagged;
-- each default branch's head, its CI and its deploy;
-- every rename, old title and new;
-- the claims the forge contradicted, and the corrections posted;
-- the facts relayed between runs, each with its record;
-- the decisions asked and each ruling, with the URL where it was recorded;
-- the owner steps, in order — as their `[Manual]` issues where filed, and which were
-  filed this sweep;
-- any feature plan shown, the issues written on the owner's go, and
-  `validate-backlog`'s findings;
-- the plan, with its expected CI runs;
-- every dispatch, conditional go executed or still pending, and retirement, by
-  session id and title;
-- sessions noted and left alone: repositories outside the scope, another conductor;
-- the fallback check-in's state, and this session's context use with any clear
-  proposed, at its level;
-- the ledger's URL.
+**Everything else goes to the ledger** (*7. Ledger*): the summary table, renames,
+corrections posted, facts relayed, rulings recorded, owner steps filed, plans and
+their expected CI runs, dispatches, conditional gos and retirements, sessions left
+alone, the fallback check-in's state, and this session's context use with any
+clear proposed.

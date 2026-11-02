@@ -39,7 +39,9 @@ called out, ask which comment(s) to target before proceeding.
 
 ### 1. Gather context
 
-In a remote/web session (no `gh` CLI access), use the GitHub MCP tools:
+In a remote/web session (no `gh` CLI access), use the GitHub MCP tools — and
+read each author's type as *Replies held for approval* requires, which a bare
+login from them does not supply:
 
 - `mcp__github__pull_request_read` (method `get`) for PR metadata
 - `mcp__github__pull_request_read` (method `get_review_comments`) for review
@@ -158,6 +160,11 @@ git rev-parse --short HEAD   # or HEAD~1, HEAD~2 as needed
 
 ### 5. Reply to each comment
 
+**Re-read each thread immediately before posting its reply, and again before
+resolving it** (step 6): a comment by anyone but this workflow that the deciding
+read did not see re-decides the thread's row from that read, and a person found
+there holds the reply and the resolution (*Replies held for approval*).
+
 In a remote/web session, use `mcp__github__add_reply_to_pull_request_comment`
 with the resolved `owner`/`repo`, `pullNumber`, `commentId`, and a `body`
 referencing the commit SHA, bare (`references/authored-write-form.md`), and
@@ -220,7 +227,10 @@ step 1. **A person is in the thread** where any comment in it, this workflow's
 own writes (by the write ids the caller passes) and a root the caller marked as its own review session's
 (`references/review-feedback.md`, *The thread-root test*) aside, has an author
 that is not a `Bot` and is not the invoking user
-(`references/posting-identity.md`, *The invoking user's account*). **A thread
+(`references/posting-identity.md`, *The invoking user's account*). **Where the read
+carries no author type** — a transport that returns a bare login — **no author
+counts as a `Bot`**: read the type from the GraphQL query of step 1 where the
+session can, and otherwise hold. A login's shape is never its type. **A thread
 whose only person is the invoking user takes the no-hold path**, whatever the
 key: they expect their own review fixed and resolved before a human reviewer
 sees the PR, and the footer still goes on what nobody read:

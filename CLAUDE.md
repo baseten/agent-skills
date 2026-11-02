@@ -38,7 +38,7 @@ evals (`<skill>#<id>`).
    `rules/authored-write-form.md`, `rules/review-feedback.md`, `rules/posting-identity.md`,
    *The invoking user's account*; `resolve-pr-comment`, *Replies held for approval*.
    create-pr#6, resolve-pr-comment#0 #18 #21 #23 #26 #28 #41 #42 #43 #44 #45 #46 #47
-   #48 #49 #50 #51,
+   #48 #49 #50 #51 #55 #56, implement-issue#37,
    review-docs#11, settle-outstanding-decisions#11 #12, backlog-orchestrator#72,
    supervise-prs#56 #88, swarm#30.
 2. **Identity is observed authorship; own writes are known by id or footer, never content.**
@@ -48,7 +48,7 @@ evals (`<skill>#<id>`).
 3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
    `backlog-orchestrator`, *Arming the wait when nothing is in flight*; `rules/review-trigger.md`,
    *A stalled round*; `rules/conductor-exchange.md`, *Relayed rulings*. backlog-orchestrator#58 #92 #96
-   #103, settle-and-merge#41 #45, supervise-prs#104 #105, conductor#25.
+   #103, settle-and-merge#41 #45, supervise-prs#104 #105, conductor#25, implement-issue#35.
 4. **Never request, re-request or remove a human reviewer.** `rules/review-trigger.md`.
    supervise-prs#33 #74.
 5. **The platform's auto-fix posture is overridden**: only a dispatched `repair-pr`
@@ -60,7 +60,7 @@ evals (`<skill>#<id>`).
 6. **A created PR's body is edited only while draft, footered, or under a resolved merge
    opt-in** (`Depends on:` excepted); else drift is reported with a replacement.
    `rules/authored-write-form.md`. settle-and-merge#6 #9, merge-stack#5,
-   backlog-orchestrator#71.
+   backlog-orchestrator#71, implement-issue#35.
 7. **No forge write reports verification, bar a gate note under `refs/notes/agent-gate/*` and, in a `NEEDS_USER` or `DECISION` hold item, the failed or unrun check it holds on with its commits; SHAs are bare.** `rules/authored-write-form.md`.
    create-pr#11 #22, resolve-pr-comment#17, supervise-prs#85, swarm#27 #28 #29,
    backlog-orchestrator#92 #93 #94 #97, settle-and-merge#35 #37 #38.
@@ -91,11 +91,13 @@ evals (`<skill>#<id>`).
    follow-up issue, never one a person is in (`resolve-pr-comment`, *Findings deferred to a follow-up*).
    resolve-pr-comment#52 #53 #54, implement-issue#22. A head with no run is read through
    path filters, failing closed (`rules/ci-and-review-verdicts.md`, *Path filters*).
-   supervise-prs#58 #59 #62 #63 #64, settle-and-merge#19.
+   supervise-prs#58 #59 #62 #63 #64, settle-and-merge#19. A branch update keeps a merge commit
+   wherever a rule needs one (`rules/agent-policy.md`, *Branch updates*). settle-and-merge#46.
 9. **Stranded work reaches a remote ref before any archive; permission holds name the
    literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked
    workers*; `rules/wake-budget.md`. backlog-orchestrator#4 #19, swarm#20 #25 #26,
-   implement-issue#14 #19 #20 #21, supervise-prs#87, backlog-orchestrator#92, conductor#5 #8 #21.
+   implement-issue#14 #19 #20 #21, supervise-prs#87, backlog-orchestrator#92, conductor#5 #8 #21 #31 #35,
+   implement-issue#36.
 
 **A PR changing a protected rule's text says so in its body**, and gets a blind
 rule-by-rule audit plus a pinning-eval round before merge. None is an issue-#49

@@ -38,6 +38,8 @@ Added in #154, from a field report on an `implement-issue` run in a Claude Code 
 
 **Why the check-in stays:** the posture's standing-down rules could be read as covering the backstop too. The check-in exists because the subscription is unreliable for exactly the events that end supervision, and the override is about fixing, not about watching.
 
+**Why resolving is named beside edit, push, reply and re-run (PR #201):** the platform's own posture triages and resolves review comments, and the override listed what a wake may not do without naming resolution. A session answering a wake after a compaction, holding only the posture line, could resolve a person's thread outside `resolve-pr-comment` and so outside its hold. Naming it closes that path; it adds a prohibition and removes none.
+
 ## Saying so
 
 **Why the user is told:** the toggle is visible and says "Auto fix". A user who sees it on and a run that fixes nothing without a budget reads as a broken run; one sentence at subscription prevents the confusion, and the stop sentence answers the obvious next question — whether they can still stop it.

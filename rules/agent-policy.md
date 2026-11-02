@@ -43,6 +43,22 @@ A skill that starts a run — `backlog-orchestrator`, `implement-issue`, `npm-de
 
 Report the resolved policy per PR in the checkpoint output, with its source — invocation argument, repo config, or built-ins — so an auto-merge is visible in the record before it is a surprise.
 
+## Branch updates
+
+**`branch-update` (per PR, `rebase` or `merge`, default `rebase`)** says how a run brings a stale PR branch up to its base, or restacks a child onto its parent outside `merge-stack`. **`rebase`** rebases onto the base and pushes with `--force-with-lease=<branch>:<the head recorded before the rebase>` — never a bare lease, never `--force` — and is the one force-push any rule allows a run on a PR branch. **`merge`** merges the base in. An invocation may set `merge` for a run; only the repository's file sets `rebase` where its default does not already hold. The key governs branch updates only: never the merge method, and never the integration branch.
+
+**A merge commit is kept, whatever the key says, wherever a rule needs one** — each stated at its own decision point, and the key is not read there:
+
+- the `ci-mode: deferred` trigger and overlap update, whose untokened merge commit is what starts CI on the merged tree (`supervise-prs`, *Deferred CI*; `settle-and-merge`, *Merge behavior*);
+- any update under `deferred` or `integration-branch` whose head commit does not carry the skip token, so a rebase would push an untokened head;
+- the integration branch, which is never rebased or force-pushed (`backlog-orchestrator`'s `integration-branch.md`);
+- a base refresh inside a `repair-pr` pass, which stays append-only;
+- a branch carrying a commit with a repair-pass trailer, since a rebase can drop one and the counters are rebuilt from them;
+- a parent with open child PRs, and a branch a live or unreleased worker reported a head on;
+- a branch with any commit this run, or its workers, did not author — an adopted PR, an existing branch handed to `implement-issue` — whose history is not the run's to rewrite.
+
+**A rebase is a caller push**, made by the branch's single mutator under its lock, and is mechanical only as the *mechanical pushes* rule, which `supervise-prs` applies, says.
+
 ## Merge permissions
 
 **`auto-merge`** — whether invariant 12's gate can open for this repository's PRs. `false`: the run never merges a PR into the default branch, and nothing else unless `ci-mode: integration-branch` grants it below. `true` permits a merge only through the gate `settle-and-merge`, *The merge gate*, defines — the key is the opt-in the gate requires, never a bypass of its other conditions. This file is the only place `true` can come from (*Precedence*). Resolved `true` — or `auto-merge-dependencies` for a dependency PR under its gate — it also permits editing a published PR's body (the *authored write form* shared rule, *Editing a PR body after it is created*). Execution mechanics live in `settle-and-merge`, *Merge behavior*.

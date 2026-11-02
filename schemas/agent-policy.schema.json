@@ -165,8 +165,8 @@
       "properties": {
         "issues": {
           "type": "boolean",
-          "default": true,
-          "description": "File every owner step as a [Manual] issue. false: owner steps are reported where the run reports, and never filed."
+          "default": false,
+          "description": "File every owner step as a [Manual] issue. Off by default: owner steps are reported where the run reports, and never filed."
         },
         "epic": {
           "type": [
@@ -229,7 +229,7 @@
         }
       },
       "default": null,
-      "description": "Per-repository values for owner steps: whether they are filed as [Manual] issues, under which epic, and how the live server is reached. Absent or null: issues filed, the epic found by title or created, and owner-steps' server-access defaults. Never a secret. Read by: backlog-orchestrator, conductor, owner-steps.",
+      "description": "Per-repository values for owner steps: whether they are filed as [Manual] issues (opt-in), under which epic, and how the live server is reached. Absent or null: nothing filed, and owner-steps' server-access defaults. Never a secret. Read by: backlog-orchestrator, conductor, owner-steps.",
       "x-read-by": [
         "backlog-orchestrator",
         "conductor",
@@ -278,6 +278,21 @@
       "x-read-by": [
         "backlog-orchestrator",
         "conductor"
+      ]
+    },
+    "branch-update": {
+      "type": "string",
+      "enum": [
+        "rebase",
+        "merge"
+      ],
+      "default": "rebase",
+      "description": "How a run brings a stale PR branch up to its base: rebase with a pinned force-with-lease, or merge the base in. A merge commit is kept wherever a rule needs one (rules/agent-policy.md, Branch updates); never the merge method or the integration branch. An invocation may set merge only. Read by: backlog-orchestrator, implement-issue, settle-and-merge, supervise-prs.",
+      "x-read-by": [
+        "backlog-orchestrator",
+        "implement-issue",
+        "settle-and-merge",
+        "supervise-prs"
       ]
     },
     "minimize-ci-runs": {

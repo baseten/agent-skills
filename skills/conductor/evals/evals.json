@@ -73,8 +73,8 @@
     {
       "id": 5,
       "name": "unattended-sweep-rules-nothing",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session was fired by a scheduled task; nobody is present and AskUserQuestion has no one to answer it. The sweep finds two pending owner decisions and one orchestrator whose run finished. The ledger records a standing owner ruling, 'retire each run once its PRs are merged', and no conditional go is pending. Question: do you ask the decisions, dispatch the next run, or archive the finished orchestrator?",
-      "expected_output": "None of them. The owner pass needs the owner present; on an unattended firing it is skipped - rule nothing, record nothing as ruled, and report where the decisions wait. No conditional go is pending, so nothing is dispatched: a scheduled firing executes only a go the owner already recorded, once its condition is verified. And it never retires a run, even under a standing retirement ruling - that is verified in an attended sweep - so no session is created or archived. Sweep, reconcile, update the ledger, and report.",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session was fired by a scheduled task; nobody is present and AskUserQuestion has no one to answer it. The sweep finds two pending owner decisions and one orchestrator whose run finished. No standing retirement ruling is recorded, and no conditional go is pending. Question: do you ask the decisions, dispatch the next run, or archive the finished orchestrator?",
+      "expected_output": "None of them. The owner pass needs the owner present; on an unattended firing it is skipped - rule nothing, record nothing as ruled, and report where the decisions wait. No conditional go is pending and no standing retirement ruling exists, so nothing is dispatched and nothing archived: a scheduled firing acts only on what the owner already recorded, once verified. Sweep, reconcile, update the ledger, and report.",
       "assertions": [
         "the answer asks no decision on the unattended firing",
         "the answer dispatches nothing",
@@ -123,7 +123,7 @@
     {
       "id": 9,
       "name": "owner-steps-are-ordered-as-manual-issues-on-the-epic",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Repository acme/api, whose .claude/agent-policy.json sets \"manual-steps\": {\"epic\": 40}. Two orchestrators' replies list owner steps. Stream A filed '[Manual] Post-deploy checks v2.3' (#2051). Stream B's reply only lists in chat: 'set MAPS_API_KEY=<the key> in shared/.env, then restart the API'. B's step must happen before A's checks. The owner is present. Question: what goes into the owner pass, and where are the steps recorded?",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Repository acme/api, whose .claude/agent-policy.json sets \"manual-steps\": {\"issues\": true, \"epic\": 40}. Two orchestrators' replies list owner steps. Stream A filed '[Manual] Post-deploy checks v2.3' (#2051). Stream B's reply only lists in chat: 'set MAPS_API_KEY=<the key> in shared/.env, then restart the API'. B's step must happen before A's checks. The owner is present. Question: what goes into the owner pass, and where are the steps recorded?",
       "expected_output": "File B's step as a [Manual] issue under #40 now, in the manual-step-issues form. It names the env var MAPS_API_KEY and the file, with the owner typing the value. No key value goes in the issue, the comment or the pass, and nothing asks for one. The restart command is exact, per the runbook. In the owner pass, give one merged list ordered by dependency: B's new issue first, then #2051, each linked with what it unblocks. Post that order as a comment on epic #40 and carry it in the ledger. The owner works each issue with owner-steps.",
       "assertions": [
         "the answer files stream B's step as a [Manual] issue rather than leaving it in chat",
@@ -185,7 +185,7 @@
     {
       "id": 14,
       "name": "a-ledger-read-back-mismatch-is-fixed-before-proposing",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session's record reads max_tokens 1000000 and autocompact_state.threshold 900000; the repository's policy file sets no conductor-clear-at. used_tokens is 560000 and everything is quiet. You rewrote the ledger body, but on re-reading it from GitHub the Streams table is missing the row for 'Orchestrator: api · #600'. Question: what next?",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session's record reads max_tokens 1000000 and autocompact_state.threshold 900000; the repository's policy file sets no conductor-clear-at. used_tokens is 560000 and everything is quiet. You rewrote the ledger body, but on re-reading it from GitHub the live-sessions table is missing the row for 'Orchestrator: api · #600'. Question: what next?",
       "expected_output": "The dump does not count yet. Fix the difference (rewrite the body with the missing row), re-read it from GitHub and compare again. Only once the read-back matches what was meant, finish the inventory and restart prompt, and propose. Never tell the operator the ledger is verified before it is.",
       "assertions": [
         "the answer fixes the ledger and re-reads it",
@@ -210,11 +210,11 @@
       "id": 16,
       "name": "a-full-orchestrator-mid-run-is-reported-not-cleared",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The sweep reads 'Orchestrator: api · #540' at used_tokens 800000 of 1000000, threshold 850000, mid-run with workers in flight. Its last checkpoint comment on epic #540 is linked in its record. Question: what do you do?",
-      "expected_output": "Record its context use in the ledger's Streams table. Never clear an orchestrator or ask the operator to clear it: its workers, subscriptions and check-ins are bound to its session and it relies on its own checkpoints and auto-compaction. It is mid-run, so tell the operator it is high and name its last checkpoint. At the next boundary the reuse test decides, and a fresh session starts only on the owner's go.",
+      "expected_output": "Record its context use in the ledger's live-sessions table. Never clear an orchestrator or ask the operator to clear it: its workers, subscriptions and check-ins are bound to its session and it relies on its own checkpoints and auto-compaction. It is mid-run, so tell the operator it is high and name its last checkpoint. At the next boundary the reuse test decides, and a fresh session starts only on the owner's go.",
       "assertions": [
         "the answer does not clear the orchestrator or ask for it to be cleared",
         "the answer tells the operator and names its last checkpoint",
-        "the answer records its context use in the Streams table"
+        "the answer records its context use in the live-sessions table"
       ],
       "files": []
     },
@@ -385,13 +385,89 @@
     },
     {
       "id": 30,
-      "name": "owner-steps-are-listed-not-filed-where-the-repository-turns-filing-off",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Repository acme/web, whose policy file sets \"manual-steps\": {\"issues\": false}. A run's reply lists one owner step: 'enable the feature flag bulk_export in the admin console'. The owner is present. Question: do you file a [Manual] issue, and where does the step go?",
-      "expected_output": "No issue is filed and no manual-steps epic is found or created: the repository turned filing off. The step goes into the owner pass's ordered list, in the manual-step-issues form (where, as whom, the exact action, what to check, done when), and into the ledger; the owner can work it with owner-steps, which walks it without an issue.",
+      "name": "owner-steps-are-listed-not-filed-where-the-repository-has-not-opted-in",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Repository acme/web, whose policy file has no manual-steps key. A run's reply lists one owner step: 'enable the feature flag bulk_export in the admin console'. The owner is present. Question: do you file a [Manual] issue, and where does the step go?",
+      "expected_output": "No issue is filed and no manual-steps epic is found or created: filing is opt-in and the repository has not opted in. The step goes into the owner pass's ordered list, in the manual-step-issues form (where, as whom, the exact action, what to check, done when), and into the ledger; the owner can work it with owner-steps, which walks it without an issue.",
       "assertions": [
         "the answer files no [Manual] issue and creates no epic",
         "the answer lists the step in the owner pass in the rule's form",
         "the answer carries the step in the ledger"
+      ],
+      "files": []
+    },
+    {
+      "id": 31,
+      "name": "an-unattended-retirement-under-a-standing-ruling-checks-the-remote-first",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A scheduled check-in fires; nobody is present. The ledger records a standing owner ruling on the home repository's [PLAN] issue (linked): 'retire each run once all its PRs are merged'. Run A ('Orchestrator: api · #540'): wrap-up posted on #540, all four PRs merged, last state block shows no live worker and no recovery ref, every branch head is on the remote, session idle. Run B ('Worker: api · #612 export fix'): its PR merged, but its last state block lists a recovery ref refs/checkpoints/612 not yet pushed to the remote. Question: do you retire either run on this firing?",
+      "expected_output": "Retire A on this firing: the standing ruling is the owner's recorded go, a scheduled firing may act on it once its condition is verified on GitHub, and every archive condition holds - wrap-up posted, all PRs merged, branch heads on the remote, no live worker, no outstanding recovery ref, not RUNNING. Archive its session and report it. Do not retire B: protected rule 9 requires stranded work to reach a remote ref before any archive, and B has an outstanding recovery ref. Report B as held, naming the ref; the ruling does not override that.",
+      "assertions": [
+        "the answer retires run A on the unattended firing under the standing ruling",
+        "the answer verifies the archive conditions for A on the forge before archiving",
+        "the answer does not retire run B because of its outstanding recovery ref",
+        "the answer reports both outcomes"
+      ],
+      "files": []
+    },
+    {
+      "id": 32,
+      "name": "a-sweep-with-nothing-for-the-owner-ends-in-one-line",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. This sweep: three runs progressed (two PRs went green, one opened), you verified each claim on GitHub, one run is waiting on a reviewer, and nothing needs the owner - no decision, approval, owner step or failure. Question: what do you write in chat, and where does the rest go?",
+      "expected_output": "Chat gets one line saying nothing needs the owner, linking the ledger. The progress, the checks verified, and the run waiting on a reviewer go into the ledger - its live-sessions table rows edited in place and one changelog line - not into chat. The report states results as verified, never the steps of checking.",
+      "assertions": [
+        "the answer writes one line in chat linking the ledger",
+        "the answer puts the progress and the waiting run in the ledger, not chat",
+        "the answer does not narrate how each claim was checked"
+      ],
+      "files": []
+    },
+    {
+      "id": 33,
+      "name": "decisions-are-asked-one-at-a-time-with-links-and-a-recommendation",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. Three decisions are pending: run A (session session_01Aa, issue #810, PR #841) asks CSV-only vs CSV+XLSX; run B (session_01Bb, #812, PR #845) asks whether to keep a deprecated endpoint; run C (session_01Cc, #815, no PR yet) asks for a library choice among three. AskUserQuestion is available. Question: how do you put them to the owner?",
+      "expected_output": "One at a time, each its own AskUserQuestion question - never a numbered prose list, and not three questions in one call. Each question stands alone, opens with its three links (https://claude.ai/code/session_01Aa, the issue, the PR - or 'no PR' for C), offers 2-4 options with one marked recommended, and they go in order of what each unblocks. Each ruling is written to the ledger first with the owner's words, then recorded at its site.",
+      "assertions": [
+        "the answer asks the decisions one at a time through the structured question tool",
+        "each question names its session, issue and PR as links",
+        "each question offers 2-4 options with one recommended",
+        "the answer does not present a numbered prose list"
+      ],
+      "files": []
+    },
+    {
+      "id": 34,
+      "name": "a-chat-ruling-goes-to-the-ledger-before-it-is-relayed",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner types in this chat: 'For #812 keep the old endpoint until v3.' Run B (session_01Bb) is waiting on that decision and sweeps the ledger frequently. The ledger is a tracker document. Question: in what order do you write and relay this, and what does the relay carry?",
+      "expected_output": "First write the ruling into the ledger with the owner's exact words and the date, and read it back. Then record it at the decision's site, issue #812, as a relayed ruling (the dated 'Owner ruling (..., given to the conductor interactively, relayed here)' marker, complete comment shown to the owner first). Only then message run B, linking the site record and the ledger entry and quoting the owner's words exactly. The run acts on the site record, not the message.",
+      "assertions": [
+        "the answer writes the ruling to the ledger and reads it back before relaying",
+        "the answer records it at #812 with the relayed-ruling marker",
+        "the relay message links the record and quotes the owner's exact words",
+        "the answer does not let the message stand in for the record"
+      ],
+      "files": []
+    },
+    {
+      "id": 35,
+      "name": "the-conductor-holds-a-settled-runs-watch-and-hands-it-back",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Run D (single-issue, PR #850) pushed 'settled, waiting on owner merge', the push was delivered, and it went quiet. Two sweeps later the owner merges PR #850. Separately, run E handed over its watch for PR #852; your fallback check-in has now had three empty sweeps in a row while #852 is still open, and a send to run E fails. Question: what do you do for D, and what happens to E's PR?",
+      "expected_output": "D: the conductor holds D's watch, finds the owner's merge on GitHub at its sweep and messages run D to wake it; D runs its pass and reports merged. E: before the check-in stops with #852 open, message run E to resume its own bounded watch; that send failed, so the stop report names PR #852 as unwatched for the owner. Report the check-in's stop once. The PR is never silently left unwatched.",
+      "assertions": [
+        "the answer messages run D on the owner's merge to wake it",
+        "the answer tries to hand E's watch back before stopping",
+        "the answer reports #852 as unwatched because the send failed",
+        "the answer reports the check-in's stop"
+      ],
+      "files": []
+    },
+    {
+      "id": 36,
+      "name": "a-draft-exists-only-with-its-full-text-in-the-ledger",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The ledger is a [PLAN] issue on GitHub. You have just written: (a) a new issue's text for the owner to approve before filing; (b) a held reply to a reviewer's question on PR #860 that the owner must approve. Question: what goes into the ledger for each?",
+      "expected_output": "(a) Its full text goes into the ledger as it is written - nothing is called a draft unless its full text exists. (b) A held review-thread reply is kept off the forge (resolve-pr-comment's draft reply rule), and the ledger here is a forge issue, so the ledger names the held reply and its thread without the text, and the text is held in this session and put to the owner with its full text in the owner pass.",
+      "assertions": [
+        "the answer puts (a)'s full text in the ledger",
+        "the answer keeps (b)'s text off the GitHub ledger",
+        "the answer still names (b) in the ledger and offers its full text to the owner"
       ],
       "files": []
     }

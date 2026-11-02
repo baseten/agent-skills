@@ -387,6 +387,7 @@ The policy file — `.claude/agent-policy.json`, its schema, precedence, resolut
   "auto-resolve-comments": false,
   "ci-mode": "per-pr",
   "integration-branch-prefix": "integration/",
+  "branch-update": "rebase",
   "minimize-ci-runs": false,
   "review-defer-severity": "off",
   "publish-triggers-review": false,
@@ -401,7 +402,7 @@ Keys scope to different objects, and each resolves from the repository that owns
 
 | keys | scope | resolved from |
 | --- | --- | --- |
-| `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-resolve-comments`, `ci-mode` with `integration-branch-prefix` and its alias `minimize-ci-runs`, `review-defer-severity`, `publish-triggers-review`, `auto-merge` | per PR | the PR's repository |
+| `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-resolve-comments`, `branch-update`, `ci-mode` with `integration-branch-prefix` and its alias `minimize-ci-runs`, `review-defer-severity`, `publish-triggers-review`, `auto-merge` | per PR | the PR's repository |
 | `implementation-attempts`, `model-escalations`, `lost-worker-redispatches` | per issue | the issue's repository |
 | `manual-steps` | per owner step | the repository the step concerns |
 | `concurrent-workers`, `concurrent-open-prs`, `new-issue-budget`, `auto-request-settle` | per run | the manifest's repository; an explicit issue set contained in one repository uses that repository; a multi-repo set with no manifest uses the built-ins |
@@ -739,7 +740,7 @@ Remote Git checkpoints remain mandatory regardless of runtime, because no platfo
 
 Step 16's native task/event wait is sufficient while workers are running: their completions are the events. A **settled** run has none — no worker will finish, no CI will fire, and the merge it is waiting on may be a day away.
 
-**Before a settled-and-undispatchable run stops doing work, it arms the wake `references/wake-budget.md` requires** — a PR-activity subscription over this run's own PR set, which `supervise-prs` armed per PR at adoption, so this step confirms the set is complete and arms anything missing, and a bounded scheduled check-in as the backstop — under that rule's budget and backoff, which bind **every recurring check-in this skill's runs arm, parent-side or worker-side**. What this run adds:
+**Where a conductor coordinates the run, the wake below is handed to it once the run is settled and waiting on the owner's merge, and re-armed when it hands it back** (`references/conductor-exchange.md`, *The watch after settling*). Otherwise, **before a settled-and-undispatchable run stops doing work, it arms the wake `references/wake-budget.md` requires** — a PR-activity subscription over this run's own PR set, which `supervise-prs` armed per PR at adoption, so this step confirms the set is complete and arms anything missing, and a bounded scheduled check-in as the backstop — under that rule's budget and backoff, which bind **every recurring check-in this skill's runs arm, parent-side or worker-side**. What this run adds:
 
 - **the check-in runs `supervise-prs`, *Pass*, and re-reads the frontier**, and acts on what it finds. Its prompt carries what that skill's comparison needs — the PR set and each PR's durable state (`supervise-prs`, *Wait*) — and the inputs this run passes it, as the last state block recorded them: budgets, counters, trigger states, the chartered-scope check's text, the run's own write ids the reply watch filters, hold retirement records included, and every gate-note ref this run or `supervise-prs` assigned — per PR, per worker still in flight, and for the full tier (`supervise-prs`, *Integration-branch CI*, step 3);
 - **it also re-reads each held worker session** (`swarm`, *Blocked workers*) — one observed to have resumed, been released or been redispatched retires its item on that section's closing rule, and un-settles the run;
@@ -902,6 +903,7 @@ Do not blindly restack every descendant after every upstream push. Instead:
 
 - **never restack a branch whose `supervise-prs` record shows a mutator** — a repair pass in flight; wait for it to return, then lock the branch before restacking;
 - record stale ancestry;
+- restack by the PR's `branch-update` (`references/agent-policy.md`, *Branch updates*) — a merge wherever that section keeps one, a parent with open children included;
 - restack before descendant diffs/CI/review become misleading;
 - ensure ancestry is correct before merge-ready state;
 - pass each restack push to `supervise-prs` as a caller push, tagged as *Mechanical pushes do not consume review* says;
@@ -1027,7 +1029,7 @@ On reaching settled:
 
 ## Owner steps are filed, not reported
 
-**Every owner step this run identifies** — from a worker's report, a PR body, `summarize-wave`'s action points, a ruling — **is filed as a `[Manual]` issue under the repository's manual-steps epic, in the form `references/manual-step-issues.md` states**, once the step is known and at the latest in the settled step after the summary. A worker records the step in its report as it does any finding; this run files the issue. **The PR body, the state block, the closing report, a status reply and a wrap-up link the issue rather than carrying its steps**, and no secret is written anywhere. **Where the repository's `manual-steps` turns filing off**, that rule's exception applies: nothing is filed, and the closing report and any status reply carry each step in its form instead.
+**Every owner step this run identifies** — from a worker's report, a PR body, `summarize-wave`'s action points, a ruling — **is filed as a `[Manual]` issue under the repository's manual-steps epic, in the form `references/manual-step-issues.md` states**, once the step is known and at the latest in the settled step after the summary. A worker records the step in its report as it does any finding; this run files the issue. **The PR body, the state block, the closing report, a status reply and a wrap-up link the issue rather than carrying its steps**, and no secret is written anywhere. **Filing is opt-in** (`manual-steps.issues`, off by default): where the repository has not opted in, nothing is filed, and the closing report and any status reply carry each step in its form instead.
 
 ## The summary can un-settle the run
 

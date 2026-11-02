@@ -87,3 +87,21 @@ are restored on restart, because the merge and settle pushes usually fire there.
 moved here, the line saying a declined request reaches the owner in the run's
 output stayed only in `swarm`, and a reader replied to the conductor alone. It is
 restated at the decision point.
+
+## Reports
+
+**Why the form is fixed (field feedback, 2026-11-02):** a day of running a conductor showed reports that ran on past the form, covered other issues, offered to start the next one, and called a missing link "blocked". Each cost the owner a read to find what, if anything, needed them. The three-link header lets a reader open the session, issue and PR without searching; the fixed state set makes a sweep's table mechanical; `blocked-on-owner` means the owner must act and nothing else; and choosing the next work is the conductor's, so a run never offers it. The final-status line exists because the platform's turn summary was seen reading "drafting…" on an idle session.
+
+## The watch after settling
+
+**Why the conductor takes the watch (owner's ruling, 2026-11-02):** a settled run and the conductor were both polling the same PR. Once a run is settled and waiting on the owner's merge, the conductor's hourly sweep already reads that PR, so the run's own check-in only duplicates it. The hand-off happens only on a delivered push, so a run whose conductor never heard keeps its watch; and the conductor hands the watch back before its own check-in stops, naming any PR it could not, so the hand-off never leaves a PR unwatched. Protected rule 9's bound is unchanged: each side's watch stays under the *wake budget* rule.
+
+## Writes
+
+**Why the trigger is never put up for approval (field feedback):** the approval test exists to stop unread prose going out under the owner's name. A review trigger is a fixed token whose exact text the repository documents; there is nothing in it to read, and holding it for approval only delayed review. The trigger rule already exempts it from the footer for the same reason. **Why replies are kept short:** under the usual posting identity a reply reads as the owner's own words, marked only by the footer.
+
+## What a relay can authorise
+
+**Why a short list, inside the protected rules (owner's ruling, 2026-11-02):** runs were stalling on acts the owner had plainly asked for in the conductor's chat. The owner listed what a relayed ruling may authorise. Each item is fenced by the rule that already governs it, so none widens: marking ready stops at an explicitly held draft (protected rule 8); a body edit only where the body-edit table already allows (protected rule 6); a branch update by the repository's convention, the lease pinned; an approved reply under the hold rule (protected rule 1); a session's own pending review. A merge is never on the list. The relay must pass the owner's-reply test, as a hold release does (protected rule 3). Where the owner's list met a protected rule — publishing a held draft, editing a published body a person has read — the rule won, and the collision is reported for the owner.
+
+**Why a chat ruling goes to the ledger first (field feedback):** a run read the ledger seconds before the conductor saved a ruling to it, found nothing, and stalled. Writing the ledger first, with the owner's exact words, then recording at the decision's site, then relaying with both links, means a run that looks finds the ruling wherever it looks. The site record still decides.
