@@ -20,7 +20,7 @@
       "id": 1,
       "name": "a-hetzner-root-step-goes-through-a-script",
       "prompt": "You are executing the owner-steps skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Issue step 3, on a Hetzner server, must run as root: 'systemctl restart nginx && journalctl -u nginx -n 20 | tail -5'. Question: how do you give this step?",
-      "expected_output": "Hetzner's web console cannot paste shift characters (&, |, _ and so on), and root runs only in the console, never via sudo over SSH. So it becomes three steps: (1) as the deploy user over SSH, write the commands into a temporary readable script such as /home/deploy/restart-nginx.sh - giving the script contents and the command that writes it; (2) as root in the Hetzner console, type only 'bash /home/deploy/restart-nginx.sh', with what output to expect; (3) as the deploy user, delete the script after the output is judged. One command block per step.",
+      "expected_output": "Hetzner's web console cannot paste shift characters (&, |, _ and so on), and root runs only in the console, never via sudo over SSH. So it becomes three steps: (1) as the deploy user over SSH, write the commands into a temporary readable script such as /home/<user>/restart-nginx.sh - giving the script contents and the command that writes it; (2) as root in the Hetzner console, type only 'bash /home/<user>/restart-nginx.sh', with what output to expect; (3) as the deploy user, delete the script after the output is judged. One command block per step.",
       "assertions": [
         "the answer does not suggest sudo",
         "the answer has the deploy user write a script over SSH",
