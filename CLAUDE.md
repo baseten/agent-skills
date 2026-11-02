@@ -65,7 +65,10 @@ evals (`<skill>#<id>`).
    merge gate*; `rules/agent-policy.md`. backlog-orchestrator#0 #2. The gate reads review on the current
    head: a publish changes no head and is inert unless the repository's own configuration (policy file,
    `CLAUDE.md`/`AGENTS.md`, a `ready_for_review` workflow) says it starts a review or a check, never a
-   bot's comment; a push after review still needs re-review; under a merge grant `create-pr` opens the PR
+   bot's comment; a push after review still needs re-review; a review request still unanswered on a head the round spans keeps it unclean, and a
+   stalled round's `DECISION` holds only its own PR, whose owner's choice to merge without the unanswered request stands in
+   for that round's completion and for nothing else (`rules/review-trigger.md`, *A stalled round*; settle-and-merge#34 #37
+   #38, supervise-prs#89); under a merge grant `create-pr` opens the PR
    ready, and a held draft is never published or merged (`settle-and-merge`, *Merge behavior*;
    `implement-issue`, *Evidence on the current head*; `rules/draft-state.md`). settle-and-merge#2 #3 #4
    #23 #24 #25 #26 #27 #28 #29 #30 #33 #34 #35 #36 #37 #38, supervise-prs#86, create-pr#12 #13 #14 #15 #16 #17 #18, implement-issue#23 #24 #25,
