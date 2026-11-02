@@ -28,6 +28,8 @@ Durable evidence, not the orchestrator's recollection, because a restarted sessi
 
 **Why an uneditable body drift is a `MERGE_RISK` carrying a replacement (#163, owner's ruling 2026-09-30):** the run may no longer rewrite a published body a person has read, so the fix is the author's, and the replacement is what makes it a minute's work; the merge still holds on it, as it did when the run edited instead.
 
+**Why a review round stalled after its re-trigger is a `DECISION` (round 2 of the pre-merge audit of #200, owner's ruling):** the round holds the merge, nobody in the run may request it again on its own initiative, and what moves it — merge without the unanswered request, re-trigger once more, or wait — is the owner's choice. Classed as anything else, the walkthrough would never ask it and the gate would stay shut on a question nobody put; classed `IN_FLIGHT_FIX`, the caller would look for a dispatch that does not exist. It holds only its own PR, by the owner's later ruling (`settle-and-merge` NOTES, *The merge gate*), so the action point says so: read as an ordinary `DECISION`, it would be reported as holding the whole wave.
+
 **Why merely-informational items are dropped:** a list padded with observations trains the reader to skim past the real items.
 
 **Why a held worker stops holding its dependents when its item retires (#151):** `swarm`, *Blocked workers*, now retires a hold's `NEEDS_USER` item when the worker is observed to resume, be released or be redispatched. A worker that resumed is ordinary in-flight work again, so naming its issue's dependents as waiting on the owner would report a partial settle over an answer already given. The clause cites the retirement rather than restating it.
