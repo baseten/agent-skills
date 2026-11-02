@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 5615,
+      "budget": 5686,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -59,7 +59,7 @@
       "target": 8000
     },
     "skills/owner-steps/SKILL.md": {
-      "budget": 1228,
+      "budget": 1249,
       "target": 3000
     },
     "skills/plan-merge-order/SKILL.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 2469,
+      "budget": 2542,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {

@@ -129,7 +129,8 @@ decides where to look first, and the session's record decides what it is
    scope, reading `get_session` for any the listing shows without sources.
 2. **Runs by ledger record first**: a session whose id the ledger records as a run
    this conductor dispatched or adopted is that run, whatever its title or
-   structure.
+   structure. **Adopted** is recorded only from the owner's go naming the session id,
+   never from a title or a structure match.
 3. **Then by title**: a kept session whose title starts `Orchestrator:` or
    `Worker:` — never a `bo/` session, which is a run's own worker.
 4. **Then by structure**, for the rest — never this session, and never a
@@ -351,7 +352,9 @@ the owner's choice of an option put to them, recorded the same way under the own
 account, its condition stated as facts the forge can show: a PR
 merged, an issue closed, every PR of a named wave merged. The ledger carries it.
 **A later sweep, a scheduled one included, executes it once the condition is
-verified on the forge**, and reports that it did. The go is the owner's recorded
+verified on the forge** — and only after re-reading the go at its site by the comment
+id the ledger recorded: authored by the owner's account, unedited, and not
+superseded by a later owner comment; a go found only in the ledger stays pending — and reports that it did. The go is the owner's recorded
 choice; the sweep only verifies the condition, never widens or reinterprets it, and
 a condition that cannot be verified as written stays pending and is reported.
 
@@ -397,7 +400,7 @@ epic or issue; every PR of its run is merged, closed or recorded as moved to ano
 run; nothing of its run is stranded — each of its branches' heads, taken from its last
 state block or result, or from a report it builds from durable state where the
 channel is open, is reachable on the remote, `list_sessions` shows no live worker of
-it,
+it, the session holds no uncommitted work (`swarm`, *Releasing a worker*),
 and its last state block reports no live worker session and no outstanding recovery
 ref; and it is not `RUNNING`.
 

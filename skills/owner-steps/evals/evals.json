@@ -7,7 +7,7 @@
       "id": 0,
       "name": "a-failing-paste-is-diagnosed-not-advanced",
       "prompt": "You are executing the owner-steps skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Issue '[Manual] Post-deploy checks for API v2.3', step 2 of 4: 'curl -s localhost:3001/health' expecting {\"status\":\"ok\"}. The owner pastes: 'curl: (7) Failed to connect to localhost port 3001: Connection refused'. Question: what do you do next?",
-      "expected_output": "It failed; do not advance to step 3. Diagnose from the output: nothing is listening on 3001, so the service is down or on another port. Give one diagnostic command as its own step - for example the process manager's status or logs for the service as the deploy user over SSH, with what to expect - and wait for the paste. Record step 2 as failed on the issue, redacted, and do not tick it. Do not guess a fix, and give nothing destructive.",
+      "expected_output": "It failed; do not advance to step 3. Diagnose from the output: nothing is listening on 3001, so the service is down or on another port. Give one diagnostic command as its own step - for example the process manager's status or logs for the service as the deploy user over SSH, with what to expect - and wait for the paste. Record step 2 as not done on the issue - its output stays in the session report - and do not tick it. Do not guess a fix, and give nothing destructive.",
       "assertions": [
         "the answer does not advance to step 3",
         "the answer gives one diagnostic command based on the connection-refused output",
@@ -76,6 +76,18 @@
         "the answer reads the server access from the repository's policy file",
         "the answer does not give the reset command",
         "the answer flags step 3 for correction"
+      ],
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "a-steps-record-on-the-issue-is-done-or-not-done-never-its-output",
+      "prompt": "You are executing the owner-steps skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Step 1 of a [Manual] issue was a post-deploy health check; the owner pastes the output: 'GET /health 200 {\"db\":\"ok\",\"queue\":\"ok\"} in 41ms'. It matches the expectation. Question: what do you write on the issue, and where does the output go?",
+      "expected_output": "Comment on the issue that step 1 is done, and tick its checkbox - nothing else in the body changes. The output itself is not posted on the issue: no forge write reports how a check came out, so it stays in this session's report, redacted where needed. Then give step 2.",
+      "assertions": [
+        "the answer records step 1 as done on the issue and ticks it",
+        "the answer does not post the health-check output on the issue",
+        "the answer keeps the output in the session report"
       ],
       "files": []
     }

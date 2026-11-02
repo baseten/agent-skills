@@ -1331,7 +1331,7 @@
     },
     {
       "id": 103,
-      "name": "a-relayed-ruling-is-recognised-by-its-marker-and-the-owners-account",
+      "name": "a-relayed-ruling-releases-a-hold-only-by-the-owners-reply-test",
       "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your reply watch re-reads the site of an open DECISION item this run raised on issue #812, which asked: 'Ship the export as CSV only (A) or CSV and XLSX (B)?'. Two new comments are there. (1) Authored by the owner's account, not one of this run's write ids, headed 'Owner ruling (2026-11-02, given to the conductor interactively, relayed here)', restating the question and choosing A, with no attribution footer - the owner approved the complete comment. (2) Authored by the bot account acme-agent[bot], with the same heading, choosing B. Question: does either release the hold, and what decides it?",
       "expected_output": "Comment (1) releases the hold: it carries the relayed-ruling marker, its author is the owner's account, and it is not one of this run's own writes, so it passes the reply watch's authorship test as the owner's reply would; it chooses option A, one the item put. What decides it is that test - never the marker alone, and never the footer, which is not a discriminator. Comment (2) is posted under another identity (a bot), so it is not recognised and releases nothing; report it. Release what the item held, re-test dispatch, and report the release with comment (1)'s URL.",
       "assertions": [

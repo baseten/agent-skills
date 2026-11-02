@@ -323,6 +323,8 @@ account and the template are a fresh run's.
 
 **Why the ledger never carries a check's outcome:** a ledger kept as a GitHub issue is a forge write, and protected rule 7 bars any forge write reporting how a check came out. A run's row carries its state from the fixed set and links to its checks. **Why unattended retirement is limited to runs the ledger records:** sweep step 3 finds runs by title too, and a title is never evidence; a scheduled firing archives only a session this conductor dispatched or adopted, with its heads taken from durable state and tested for reachability, and no live worker of it in the session list. **Why a conditional go must be an offered option under the owner's account:** a scheduled firing that executes it starts dispatch, which protected rule 3 releases only on the owner's choice of an offered option.
 
+**What the re-audit added (PR #201):** a conditional go is re-read at its site by the comment id the ledger recorded before a scheduled firing executes it, because a ledger row is an editable body and must not be what starts dispatch; "adopted" is recorded only from the owner's go naming the session id, so an unattended retirement never rests on a title; and retirement also requires the session to hold no uncommitted work, swarm's test for work never pushed, stated here because the pointer is not read at this decision point.
+
 ## Decision scenarios
 
 Pinned in `evals/evals.json`:

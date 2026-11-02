@@ -1,6 +1,6 @@
 ---
 name: owner-steps
-description: Walk the owner through one `[Manual]` owner-steps issue, one step at a time, while they run each command on the live server or console and paste the output back — confirm its blockers are cleared on GitHub, give each exact command with where and as whom to run it and what to expect, judge each pasted result against that expectation and diagnose a failure rather than advancing, record each result redacted on the issue and tick it, and close the issue only when its "Done when" holds. It follows the repository's runbooks and its recorded server access (by default SSH as the deploy user without sudo; root only in the provider's web console, through a short script where the console cannot paste), never suggests an unrequested destructive command, and never asks for or repeats a secret. Use when the owner wants to work through a manual step, a `[Manual]` issue, a post-deploy check, a backfill or a key placement.
+description: Walk the owner through one `[Manual]` owner-steps issue, one step at a time, while they run each command on the live server or console and paste the output back — confirm its blockers are cleared on GitHub, give each exact command with where and as whom to run it and what to expect, judge each pasted result against that expectation and diagnose a failure rather than advancing, record each step done or not done on the issue, with its output kept redacted in the session, and tick it, and close the issue only when its "Done when" holds. It follows the repository's runbooks and its recorded server access (by default SSH as the deploy user without sudo; root only in the provider's web console, through a short script where the console cannot paste), never suggests an unrequested destructive command, and never asks for or repeats a secret. Use when the owner wants to work through a manual step, a `[Manual]` issue, a post-deploy check, a backfill or a key placement.
 ---
 
 # Owner steps
@@ -104,9 +104,9 @@ Read the output against the expectation:
 
 # 4. Record
 
-After each judged step, **comment the result on the issue, redacted**: the step, done
-or not done, and the deciding lines of output with anything secret-looking replaced by
-`[redacted]`. **Then tick that step's checkbox in the issue body**, changing
+After each judged step, **comment the result on the issue**: the step, done or not done — never
+the output itself, which stays in this session's report, redacted, since no forge
+write reports how a check came out (`references/authored-write-form.md`). **Then tick that step's checkbox in the issue body**, changing
 nothing else in it. Both are authored writes under
 `references/authored-write-form.md` and `references/posting-identity.md`.
 

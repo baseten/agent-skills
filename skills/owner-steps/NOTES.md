@@ -68,4 +68,4 @@ Pinned in `evals/evals.json`:
   root step given as is on a console that pastes, and the recorded command refused
   (`server-access-comes-from-the-repository-policy`).
 
-**Why a step's record says done, not passed (protected-rule audit, PR #201):** a forge write never reports verification (protected rule 7). An owner step's record states what was done and the deciding output, redacted, which is evidence for the next reader rather than a verdict.
+**Why a step's record says done or not done, and keeps the output in the session (protected-rule audit and re-audit, PR #201):** a forge write never reports verification (protected rule 7), and a post-deploy check's output is exactly that. The issue records whether each step was done; the output, redacted, stays in this session's report. Scenario: `a-steps-record-on-the-issue-is-done-or-not-done-never-its-output`.
