@@ -47,7 +47,8 @@ evals (`<skill>#<id>`).
    resolve-pr-comment#48 #49, supervise-prs#86 #89 #105, backlog-orchestrator#90 #91.
 3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
    `backlog-orchestrator`, *Arming the wait when nothing is in flight*; `rules/review-trigger.md`,
-   *A stalled round*. backlog-orchestrator#58 #92 #96, settle-and-merge#41 #45, supervise-prs#104 #105.
+   *A stalled round*; `rules/conductor-exchange.md`, *Relayed rulings*. backlog-orchestrator#58 #92 #96
+   #103, settle-and-merge#41 #45, supervise-prs#104 #105, conductor#25.
 4. **Never request, re-request or remove a human reviewer.** `rules/review-trigger.md`.
    supervise-prs#33 #74.
 5. **The platform's auto-fix posture is overridden**: only a dispatched `repair-pr`
@@ -94,7 +95,7 @@ evals (`<skill>#<id>`).
 9. **Stranded work reaches a remote ref before any archive; permission holds name the
    literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked
    workers*; `rules/wake-budget.md`. backlog-orchestrator#4 #19, swarm#20 #25 #26,
-   implement-issue#14 #19 #20 #21, supervise-prs#87, backlog-orchestrator#92.
+   implement-issue#14 #19 #20 #21, supervise-prs#87, backlog-orchestrator#92, conductor#5 #8 #21.
 
 **A PR changing a protected rule's text says so in its body**, and gets a blind
 rule-by-rule audit plus a pinning-eval round before merge. None is an issue-#49

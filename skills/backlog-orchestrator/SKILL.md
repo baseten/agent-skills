@@ -135,7 +135,7 @@ Report which tier was selected and, on tier 2, which lever invariant 5 rests on.
 `bo/a41f: api#348`. The convention and the reason the name is never what a sweep
 matches on are `swarm`, *Runtime: take what is there, and say which*.
 
-**This session's own title is `Orchestrator: <repo> · <epic or #issue>`**, set at startup where the session has `set_session_title` and is not already titled so, and again when it takes on a new epic — the form and when it changes are `references/conductor-exchange.md`, *The run's title*. It is how a person and a conductor's sweep find orchestrators, and like a worker's name it is for finding, never for deciding what is this run's.
+**This session's own title is `Orchestrator: <repo> · <epic or run>`**, set at startup where the session has `set_session_title` and is not already titled so, and again when it takes on a new epic — the form and when it changes are `references/conductor-exchange.md`, *The run's title*. It is how a person and a conductor's sweep find orchestrators, and like a worker's name it is for finding, never for deciding what is this run's.
 
 `swarm`, *Remote worker session arguments*, owns the rest of what a worker session is created with and checked against — the explicit source, the checkout verification, ending a failed start, and the two capabilities, checkout reachability and the message channel, that the rest of this document divides on. Apply it from there.
 
@@ -403,7 +403,7 @@ Keys scope to different objects, and each resolves from the repository that owns
 | --- | --- | --- |
 | `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles`, `repair-model-escalations`, `auto-resolve-comments`, `ci-mode` with `integration-branch-prefix` and its alias `minimize-ci-runs`, `review-defer-severity`, `publish-triggers-review`, `auto-merge` | per PR | the PR's repository |
 | `implementation-attempts`, `model-escalations`, `lost-worker-redispatches` | per issue | the issue's repository |
-| `manual-steps` | per owner step | the repository the step is filed in: the manifest's |
+| `manual-steps` | per owner step | the repository the step concerns |
 | `concurrent-workers`, `concurrent-open-prs`, `new-issue-budget`, `auto-request-settle` | per run | the manifest's repository; an explicit issue set contained in one repository uses that repository; a multi-repo set with no manifest uses the built-ins |
 
 ### Review feedback
@@ -749,7 +749,7 @@ Step 16's native task/event wait is sufficient while workers are running: their 
 - **a quiet wake is silent about state and never silent about what is waiting on the owner.** An outstanding `DECISION` or `NEEDS_USER` item is not durable state, so the unproductive-wake test cannot see it: every wake reports (in the state block) the outstanding `DECISION` and `NEEDS_USER` counts and the approval-pending reply count, on the same lengthening cadence as the wake itself, even when it reports nothing else. **Quiescence with open decisions or approval-pending replies is a settle trigger on an attended turn or a real state change, never on a quiet unattended wake**: a run whose only remaining movement depends on an answer nobody has been asked for settles and routes the items through the settled step — but on a scheduled wake `settle-outstanding-decisions` declines for want of anybody to ask, and step 8 forbids re-deriving settled state that has not changed. The counts are reported on every wake; the sequence re-runs only where someone is there or something actually moved;
 - **write the release step into the wake's own prompt, as well as the count** (`swarm`, *4. Supervision*, on why). Each re-armed prompt names step 11 — read the session list by provenance, apply the releasable test, archive what passes, report what was archived — and the settled step sweeps once more before returning;
 - **the wake's prompt carries the posture line** (`references/platform-pr-posture.md`, *Saying so*), naming this skill — the check-in is the one wake whose text this run writes;
-- **the wake's prompt carries, beside the count and the comparands the budget rule requires, each open item's site, the newest reply already seen there, and the ids of this run's own writes**, since the posting-identity map that tells an owner's reply from the run's own post lives in session memory, and a firing without it reads the run's own review trigger as the owner's answer.
+- **the wake's prompt carries, beside the count and the comparands the budget rule requires, each open item's site, the newest reply already seen there, the ids of this run's own writes, and any conductor's id and home repository**, since the posting-identity map that tells an owner's reply from the run's own post lives in session memory, and a firing without it reads the run's own review trigger as the owner's answer.
 
 **When neither can be armed**, reconcile durable state and return the restartable checkpoint the budget rule requires, naming the resume frontier and the PRs whose merges would advance it. Restart / resume (`restart-resume.md`) adopts that and re-derives readiness from durable truth.
 

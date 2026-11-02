@@ -73,8 +73,8 @@
     {
       "id": 5,
       "name": "unattended-sweep-rules-nothing",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session was fired by a scheduled task; nobody is present and AskUserQuestion has no one to answer it. The sweep finds two pending owner decisions and one orchestrator whose run finished. Question: do you ask the decisions, dispatch the next run, or archive the finished orchestrator?",
-      "expected_output": "None of them. The owner pass needs the owner present; on an unattended firing it is skipped - rule nothing, record nothing as ruled, and report where the decisions wait. Dispatch and retirement both need the owner's go, which only the owner pass obtains, so no session is created or archived. Sweep, reconcile, update the ledger, and report.",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session was fired by a scheduled task; nobody is present and AskUserQuestion has no one to answer it. The sweep finds two pending owner decisions and one orchestrator whose run finished. The ledger records a standing owner ruling, 'retire each run once its PRs are merged', and no conditional go is pending. Question: do you ask the decisions, dispatch the next run, or archive the finished orchestrator?",
+      "expected_output": "None of them. The owner pass needs the owner present; on an unattended firing it is skipped - rule nothing, record nothing as ruled, and report where the decisions wait. No conditional go is pending, so nothing is dispatched: a scheduled firing executes only a go the owner already recorded, once its condition is verified. And it never retires a run, even under a standing retirement ruling - that is verified in an attended sweep - so no session is created or archived. Sweep, reconcile, update the ledger, and report.",
       "assertions": [
         "the answer asks no decision on the unattended firing",
         "the answer dispatches nothing",
@@ -210,7 +210,7 @@
       "id": 16,
       "name": "a-full-orchestrator-mid-run-is-reported-not-cleared",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The sweep reads 'Orchestrator: api · #540' at used_tokens 800000 of 1000000, threshold 850000, mid-run with workers in flight. Its last checkpoint comment on epic #540 is linked in its record. Question: what do you do?",
-      "expected_output": "Record its context use in the ledger's Streams table. Never clear an orchestrator or ask the operator to clear it: its workers, subscriptions and check-ins are bound to its session and it relies on its own checkpoints and auto-compaction. It is mid-run, so tell the operator it is high and name its last checkpoint. Start its next phase in a fresh session at the next boundary.",
+      "expected_output": "Record its context use in the ledger's Streams table. Never clear an orchestrator or ask the operator to clear it: its workers, subscriptions and check-ins are bound to its session and it relies on its own checkpoints and auto-compaction. It is mid-run, so tell the operator it is high and name its last checkpoint. At the next boundary the reuse test decides, and a fresh session starts only on the owner's go.",
       "assertions": [
         "the answer does not clear the orchestrator or ask for it to be cleared",
         "the answer tells the operator and names its last checkpoint",
@@ -233,13 +233,14 @@
     {
       "id": 18,
       "name": "a-dispatched-single-issue-run-is-known-by-its-ledger-id",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Repository acme/api. The ledger records session_07Ef as the implement-issue run this conductor dispatched for issue #2011. Its title was changed by someone to 'debugging export'. It has no bo/ workers and names no integration branch. A second session, session_09Gh, titled 'fix flaky test', is the parent of one subagent session and has acme/api as a source; the ledger does not mention it. Question: which of these is a run, what do you do about their titles, and do you message them?",
-      "expected_output": "session_07Ef is a run: the ledger records it by id, which decides whatever its title or structure says. It is an implement-issue run; retitle it to 'Orchestrator: api · #2011' (the run form) and report the rename, then read its record and send it a status request where its channel reads available. session_09Gh is not in the ledger and does not pass the structural test (no integration/* branch, no bo/ workers): it is reported as a doubtful match, not retitled, and not messaged as a run.",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Repository acme/api. The ledger records session_07Ef as the implement-issue run this conductor dispatched for issue #2011 (bulk export). Its title was changed by someone to 'debugging export'. It has no bo/ workers and names no integration branch. A second session, session_09Gh, titled 'fix flaky test', is the parent of one subagent session and has acme/api as a source; the ledger does not mention it. Question: which of these is a run, what do you do about their titles, and do you message them?",
+      "expected_output": "session_07Ef is a run: the ledger records it by id, which decides whatever its title or structure says. It is an implement-issue run; retitle it to 'Worker: api · #2011 bulk export' - a single-issue run takes the Worker: form, never Orchestrator: - and report the rename, then read its record and send it a status request where its channel reads available. session_09Gh is not in the ledger and does not pass the structural test (no integration/* branch, no bo/ workers): it is reported as a doubtful match, not retitled, and not messaged as a run.",
       "assertions": [
         "the answer identifies session_07Ef as a run by its ledger record",
         "the answer does not treat session_09Gh as a run, reporting it as doubtful",
         "the answer does not retitle session_09Gh",
-        "the answer reports any rename it makes"
+        "the answer reports any rename it makes",
+        "the answer retitles session_07Ef to the 'Worker: api · #2011 ...' form, not an Orchestrator: title"
       ],
       "files": []
     },

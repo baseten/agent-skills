@@ -61,8 +61,8 @@ provider's web console as root — per owner-steps' server access rules>
 <the observable end state, and how to check it>
 ```
 
-- **`Not for an orchestrator`** means exactly that: no orchestrator dispatches a
-  `[Manual]` issue, and none adds one to its bounded scope. It is an external
+- **`Not for an orchestrator`** means exactly that: no run and no conductor
+  dispatches a `[Manual]` issue, and none adds one to its scope. It is an external
   prerequisite for whatever it unblocks.
 - **`Blocked by` and `Unblocks` are dependency statements**, read by every skill
   that reads dependencies from issue text, and promotable into native edges — so

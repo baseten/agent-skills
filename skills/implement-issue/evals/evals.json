@@ -414,6 +414,18 @@
         "the answer records the conductor id and pushes in its result"
       ],
       "files": []
+    },
+    {
+      "id": 33,
+      "name": "a-conductor-dispatched-single-issue-run-is-titled-worker",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You were invoked through ship-branch on the existing branch fix/export-timeout in acme/api, from a brief with no issue, and the invocation names conductor session session_01Cd with home repository acme/api. The session has set_session_title and is titled 'Untitled'. A sibling run's prompt you can see used the title 'Orchestrator: api · #2011'. Question: do you set a title, and to what?",
+      "expected_output": "Yes: a conductor named in the invocation means the run titles itself, in the single-issue form. With no issue the title is 'Worker: api · fix/export-timeout' (with an issue it would be 'Worker: api · #<issue> <short name>'). Never 'Orchestrator:', which is reserved for backlog-orchestrator sessions, and not a swarm worker's run-prefixed name. The title is only a finding aid; the conductor identifies the run by its ledger id.",
+      "assertions": [
+        "the answer sets the title 'Worker: api · fix/export-timeout' (or the Worker: <repo> · <branch> form)",
+        "the answer does not use an Orchestrator: title",
+        "the answer treats the title as a finding aid, not identity"
+      ],
+      "files": []
     }
   ]
 }

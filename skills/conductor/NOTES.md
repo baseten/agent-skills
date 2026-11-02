@@ -45,8 +45,8 @@ already requires for a per-PR or per-issue key.
 ## Rules
 
 **Why rulings are recorded before any orchestrator is told:** an orchestrator acts
-on a ruling only from GitHub (`backlog-orchestrator`, *Status requests from a
-conductor*). A message sent before the record exists is a pointer to nothing, and
+on a ruling only from GitHub (`references/conductor-exchange.md`, *Status
+requests*). A message sent before the record exists is a pointer to nothing, and
 an orchestrator that receives it either ignores it — correctly — or acts on a
 relayed ruling, which is the failure the trust boundary exists to stop.
 
@@ -75,6 +75,15 @@ cheap and makes the session list readable to a person. But the listing is
 account-wide and anyone can set a title, which is why `swarm`, *Runtime*, forbids
 deciding on one. Here the title only chooses where to look; the record's sources
 decide the repository, and the structural test catches what the title missed.
+
+**Why single-issue runs are titled `Worker:` (owner's ruling, 2026-11-02):** the
+audit first gave them the `Orchestrator:` form, so that one prefix found every
+run. The owner reserved `Orchestrator:` for `backlog-orchestrator` sessions, so a
+person scanning the session list can tell a batch from a single-issue run. The
+sweep reads both prefixes, and neither decides anything: a run this conductor
+dispatched is known by its ledger id, and a session titled `Worker:` with no
+ledger record is not a run on that title alone. `Worker:` stays distinct from a
+`swarm` worker's run-prefixed name, which the sweep never treats as a run.
 
 ## 1. Sweep
 
@@ -263,6 +272,36 @@ as fallback, not in GitHub issues. The kinds are named generically so this skill
 stays tracker-agnostic; which tracker and store they mean is the session's
 connected tools. Rulings never move into the ledger: they stay where the decision
 lives, so a run reads them where its own tests look.
+
+## The contradiction pass before the review round (PR #201)
+
+**What a scheduled firing may do is stated the same at every decision point:** it
+sweeps, reports and executes a conditional go the owner already recorded, once
+verified; it rules nothing, dispatches nothing else and never retires — even
+under a standing retirement ruling, which an attended sweep verifies — because
+archiving a session this conductor did not create is the step protected rule 9
+guards most.
+
+**Why "active" includes waiting on the owner's merge and a pending go:** the
+check-in was restored so that work gated on an owner's merge starts without the
+owner returning; cancelling it once every run was only waiting would have
+recreated the failure. A reply is not a delta: it is its own wake, and the budget
+counts durable state only.
+
+**Why the ledger carries links, not CI outcomes:** a ledger kept as a GitHub issue
+is a forge write, and protected rule 7 lets no forge write report verification
+bar a gate note and a hold item. The outcomes go in the session report.
+
+**Why nothing but a ruling goes at an open item's site:** a run's reply watch reads
+any comment under the owner's account there as a possible answer. A correction or
+a plan comment this skill posts under that account is not one, so it is kept away
+from those sites rather than left for the watch to misread.
+
+**Why a reuse message carries the gates too (review round, scenario
+`reuse-only-for-a-direct-continuation`):** the first rewrite moved the gate and id
+requirements under "seed a fresh run", and a reader dropped them from the reuse
+message. Every dispatch carries them; only the standing rulings, the owner's
+account and the template are a fresh run's.
 
 ## Decision scenarios
 

@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 25718,
+      "budget": 25720,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -23,7 +23,7 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/restart-resume.md": {
-      "budget": 1096,
+      "budget": 1112,
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 4666,
+      "budget": 4945,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -39,7 +39,7 @@
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 5447,
+      "budget": 5453,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
@@ -59,7 +59,7 @@
       "target": 8000
     },
     "skills/owner-steps/SKILL.md": {
-      "budget": 1209,
+      "budget": 1223,
       "target": 3000
     },
     "skills/plan-merge-order/SKILL.md": {
@@ -91,7 +91,7 @@
       "target": 3000
     },
     "skills/ship-branch/SKILL.md": {
-      "budget": 282,
+      "budget": 295,
       "target": 3000
     },
     "skills/summarize-wave/SKILL.md": {
@@ -103,7 +103,7 @@
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
-      "budget": 10093,
+      "budget": 10129,
       "target": 8000
     },
     "skills/swarm/runtime-remote.md": {
@@ -151,11 +151,11 @@
       "target": 1500
     },
     "rules/manual-step-issues.md": {
-      "budget": 639,
+      "budget": 641,
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 1095,
+      "budget": 1331,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
@@ -187,7 +187,7 @@
       "target": 1500
     },
     "rules/wake-budget.md": {
-      "budget": 1475,
+      "budget": 1493,
       "target": 1500
     },
     "rules/watch-and-read.md": {

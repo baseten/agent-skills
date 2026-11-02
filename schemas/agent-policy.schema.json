@@ -263,19 +263,21 @@
         "integration-branch"
       ],
       "default": "per-pr",
-      "description": "How a PR's CI is spent. per-pr: CI runs as pushes trigger it. deferred: CI is deferred until the PR is quiescent on its head, then run once, and a stale green is re-checked at the merge gate only where the base's changes overlap the PR's files (supervise-prs, Deferred CI). integration-branch: a backlog-orchestrator run's issue PRs target an integration branch the run creates for itself (integration-branch-prefix), carry [skip ci], are gated on a tiered local gate instead of CI and may merge into that branch through the merge gate, and one PR from it into the default branch runs CI on opening and once per budgeted repair (supervise-prs, Integration-branch CI); implement-issue applies per-pr there. Each mode has effect only where its repository preconditions hold. Only this file sets a mode other than per-pr. Read by: backlog-orchestrator, implement-issue.",
+      "description": "How a PR's CI is spent. per-pr: CI runs as pushes trigger it. deferred: CI is deferred until the PR is quiescent on its head, then run once, and a stale green is re-checked at the merge gate only where the base's changes overlap the PR's files (supervise-prs, Deferred CI). integration-branch: a backlog-orchestrator run's issue PRs target an integration branch the run creates for itself (integration-branch-prefix), carry [skip ci], are gated on a tiered local gate instead of CI and may merge into that branch through the merge gate, and one PR from it into the default branch runs CI on opening and once per budgeted repair (supervise-prs, Integration-branch CI); implement-issue applies per-pr there. Each mode has effect only where its repository preconditions hold. Only this file sets a mode other than per-pr. Read by: backlog-orchestrator, implement-issue, conductor.",
       "x-read-by": [
         "backlog-orchestrator",
-        "implement-issue"
+        "implement-issue",
+        "conductor"
       ]
     },
     "integration-branch-prefix": {
       "type": "string",
       "default": "integration/",
       "minLength": 1,
-      "description": "Prefix of the branch a backlog-orchestrator run under ci-mode integration-branch creates for itself: the prefix plus the run's manifest identifier, one branch per run, deleted once its integration PR merges. Ignored under any other ci-mode. Only this file sets it. Read by: backlog-orchestrator.",
+      "description": "Prefix of the branch a backlog-orchestrator run under ci-mode integration-branch creates for itself: the prefix plus the run's manifest identifier, one branch per run, deleted once its integration PR merges. Ignored under any other ci-mode. Only this file sets it. Read by: backlog-orchestrator, conductor.",
       "x-read-by": [
-        "backlog-orchestrator"
+        "backlog-orchestrator",
+        "conductor"
       ]
     },
     "minimize-ci-runs": {
@@ -314,10 +316,11 @@
     "auto-merge": {
       "type": "boolean",
       "default": false,
-      "description": "Let implementation PRs merge through the invariant 12 merge gate, which settle-and-merge defines. Only this file can turn it on. On, it also lets a run edit the body of a published PR it governs. Read by: backlog-orchestrator, implement-issue.",
+      "description": "Let implementation PRs merge through the invariant 12 merge gate, which settle-and-merge defines. Only this file can turn it on. On, it also lets a run edit the body of a published PR it governs. Read by: backlog-orchestrator, implement-issue, conductor.",
       "x-read-by": [
         "backlog-orchestrator",
-        "implement-issue"
+        "implement-issue",
+        "conductor"
       ]
     },
     "auto-merge-dependencies": {

@@ -130,6 +130,13 @@ with one refinement the owner chose: **a mismatch keeps the container and raises
 
 **Trigger deletion defeated:** during recovery, deleting a leaked session's scheduled trigger caused the session to arm a replacement one minute later. The session arms the wake, so only archiving the session stops it. This cost a recovery cycle to discover.
 
+**Why a session this run did not create may be archived on the owner's ruling (PR
+#201's contradiction pass):** the conductor retires runs it may not have created,
+on the owner's go, and pointed at *Releasing a worker* for the authority, while the
+paragraph it pointed at had no such carve-out. The exception is stated there now,
+and it takes every other condition of the paragraph, so protected rule 9's
+remote-state requirement still binds the archive.
+
 ## Blocked workers
 
 **Reasoning moved from the contract in #157:** archive-and-redispatch on the reachable path of step 3 is the only recovery observed to work, and a redispatch costs one worker where a session left blocked costs a slot for the rest of the run. Step 4's literal tool string matters because normalizing the name to the one you expected is how an allowlist entry reads as existing and does not work. The channel detection this section branches on, and the observations about `SendMessage` and `interrupt_session` on Claude Code Remote, now sit in `runtime-remote.md`, *Detecting the two capabilities*; the entries below that explain them are unchanged.

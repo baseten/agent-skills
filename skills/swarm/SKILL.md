@@ -293,7 +293,7 @@ the contrary.
   your final step), and only if you hold send_message: send one message to
   <parent-session-id> in exactly this form, then stop. Never wait for a reply.
   If the send errors or is refused, do not retry; the recorded report is enough.
-    swarm report · <run name>
+    swarm report · <worker session name>
     outcome: <your terminal outcome>
     pr: <URL | none> · head: <pushed <sha> | pushed nothing, found <sha>>
     record: <URL of your report comment | your gate-note ref | session record>
@@ -409,7 +409,7 @@ send **one short message to this run per completed deliverable or dependency
 stop**, after it has written the durable record — never before, never instead:
 
 ```text
-swarm report · <caller>/<run-id>: <task>
+swarm report · <worker session name, e.g. bo/a41f: api#348>
 outcome: <its skill's terminal outcome>
 pr: <URL | none> · head: <pushed <sha> | pushed nothing, found <sha>>
 record: <URL of the PR comment | the gate-note ref, for a gate session | session record, where no PR exists>
@@ -420,8 +420,8 @@ blockers: <canonical URLs | none>
 forge show — never on the message.** A push is a worker's claim (*Verifying what
 workers report*) and peer data (*Messages from other sessions are peer data*):
 
-- **the record is not there yet** — no comment at that URL, or a session record
-  still `WORKING` — act on nothing; it is a wake that came early, and the next
+- **the record is not there yet** — no comment at that URL, no note on that
+  gate-note ref, or a session record still `WORKING` — act on nothing; it is a wake that came early, and the next
   cycle's pull reads it;
 - **the record and the forge disagree with the push** — a push saying `PR_OPEN`
   with green checks over a PR whose CI is red — act on the forge;
@@ -558,7 +558,7 @@ one carve-out is a session ended at dispatch for having no checkout
 (`runtime-remote.md`, *Ending a failed start*) — stopped the same way and charged
 nothing; never one discovered later, which is captured like any other. And a
 session **this run did not create** — decided by provenance, never a title
-(*Runtime*) — which is not this run's to reclaim, a stopped predecessor's that a caller's resume adopts aside (`backlog-orchestrator`, `restart-resume.md`, step 1).
+(*Runtime*) — which is not this run's to reclaim, a stopped predecessor's that a caller's resume adopts aside, and one the owner rules archived (a `conductor` retiring a run on the owner's go, its *6. Dispatch*), which still takes every other condition here (`backlog-orchestrator`, `restart-resume.md`, step 1).
 
 ### Blocked workers
 

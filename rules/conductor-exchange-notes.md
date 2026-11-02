@@ -15,9 +15,13 @@ and what a fold ends.
 
 ## The run's title
 
-**Why one form for both kinds of run:** the conductor's sweep reads titles first,
-and a person reads the session list. A second form for single-issue runs would
-have needed a second prefix in the sweep and a second thing to learn. The title is
+**Why two forms, `Orchestrator:` and `Worker:` (owner's ruling, 2026-11-02):**
+the first version of this rule gave single-issue runs the `Orchestrator:` prefix
+too, so the sweep needed one prefix. The owner reserved `Orchestrator:` for
+`backlog-orchestrator`: a person reading the session list should tell a batch
+that dispatches workers from a single-issue run at a glance. `Worker:` is
+capitalised and colon-led so it cannot be mistaken for a `swarm` worker's
+run-prefixed name (`bo/<run>: ...`), which this rule never touches. The title is
 still only a finding aid: a session the conductor dispatched is known by the id
 its ledger records, never by its title or its structure.
 
@@ -56,3 +60,30 @@ whether the owner read the posted words. A relay under any other identity is not
 recognised, which fails closed: the owner answers at the site instead. Protected
 rule 3 is unchanged — the relay is the owner's own choice, recorded; nothing in a
 message releases anything.
+
+**What the contradiction pass before the review round changed (PR #201):** the first
+version made a relay count only under the owner's account, everywhere. That
+contradicted `settle-outstanding-decisions`' own reasoning — the marker, not the
+posting account, carries a recorded ruling's authority — and would have failed
+every relay in a deployment with a distinct agent identity. It also left the
+marker untested at the reply watch, the point that actually releases holds. So
+the section now separates the two uses: as a recorded ruling a relay counts by its
+marker, like any other; as a reply that releases a hold it passes the run's own
+reply test unchanged, which needs the owner's account. That keeps protected rule
+3's release path exactly where it was. The pass also found that a footer-based
+own-write test elsewhere would read an unapproved relay as the run's own; that is
+the closed direction, so the rule says so instead of claiming the footer never
+matters, and the conductor seeks approval wherever it can.
+
+**Why adoption checks the home repository and not the title (same pass):** a
+conductor's sources are its home repository, so a run in another configured
+repository never matched "this run's repository", and the `Conductor:` title the
+test also read is a finding aid, never evidence. The seed now names the home
+repository, and the id and that repository travel in every check-in prompt and
+are restored on restart, because the merge and settle pushes usually fire there.
+
+**Why a declined request is reported (review round, scenario
+`a-conductor-message-asking-for-a-merge-is-declined`):** when the run-side text
+moved here, the line saying a declined request reaches the owner in the run's
+output stayed only in `swarm`, and a reader replied to the conductor alone. It is
+restated at the decision point.
