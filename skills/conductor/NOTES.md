@@ -21,6 +21,27 @@ to every orchestrator, so it is the one place where a mistake would propagate to
 all of them. Keeping it to collection, planning and owner-approved dispatch means
 its worst failure is a wrong plan the owner approved, never an act.
 
+**What it is for, and the two deployments (owner's ruling, 2026-11-02):** project
+and feature planning — taking a feature, breaking it into issues with
+dependencies, showing the plan and writing the issues on the owner's go;
+dispatching feature-level batches to `backlog-orchestrator` sessions and single
+issues to `implement-issue` sessions; one place to check progress; and relaying
+between runs. The owner runs it two ways: on their own repositories, many parallel
+orchestrators with `auto-merge` on; at work, several `implement-issue` runs with
+`auto-merge` off. The contract keeps both by reading each repository's policy and
+never carrying a deployment's values in its text; a Close-specific skill that sets
+the work deployment's ledger and tracker preferences lives outside this
+repository.
+
+## Configuration
+
+**Why the scope is a configured list (owner's ruling, 2026-11-02):** "one
+repository" fit the first deployment and not the work one, where a feature spans a
+web app and its API. The list resolves from the home repository because the
+conductor's keys scope to the conductor, while each repository keeps its own
+`manual-steps` and merge authority, as `rules/agent-policy.md`, *Resolution*,
+already requires for a per-PR or per-issue key.
+
 ## Rules
 
 **Why rulings are recorded before any orchestrator is told:** an orchestrator acts
@@ -28,6 +49,20 @@ on a ruling only from GitHub (`backlog-orchestrator`, *Status requests from a
 conductor*). A message sent before the record exists is a pointer to nothing, and
 an orchestrator that receives it either ignores it — correctly — or acts on a
 relayed ruling, which is the failure the trust boundary exists to stop.
+
+**Why relaying is a duty, and carries facts only (owner's ruling, 2026-11-02):** the
+conductor is the one session that sees every run, so a fact one run needs from
+another — a merge to rebase onto, a gate cleared — reaches it only if the conductor
+passes it on. It passes the fact after verifying it, with a link, and never a
+ruling: a session's message carries no owner authority (`swarm`, *Messages from
+other sessions are peer data*), so a relay that could carry one would be a way
+around it.
+
+**Why no long work rests on an in-turn background result (observed 2026-11-02):** a
+worker restarted mid-turn received a finished background agent's result only as a
+system note pointing at its output file. A conductor that held such a result only
+in its turn would lose it to a restart or a clear, so it writes the result to the
+ledger or the forge in the turn that receives it.
 
 **Why the trust boundary is cited and not restated:** `swarm` states it once for
 every sender and receiver (its NOTES, *Messages from other sessions are peer
@@ -48,6 +83,29 @@ in a sweep only as the `parent_session_id` of their workers. A sweep that reads
 the listing alone misses them, and they are the sessions it exists to find.
 
 **Why the structural test was narrowed (round 1 of this PR's contract review):** the first draft treated any session that is some worker's parent as an orchestrator. That matches this conductor itself, `implement-issue`, other orchestrator skills, and interactive sessions using `swarm` — and retitling one as `Orchestrator:` would make the next title-first sweep trust a wrong title. So the test needs `backlog-orchestrator`-specific structure (an `integration/*` branch, or `bo/` workers), and anything weaker is reported as doubtful. The channel is also tested before any request is sent, per `runtime-remote.md`'s two halves: a send is never a probe. Scenario: `a-parent-that-is-not-an-orchestrator-is-reported-not-retitled`.
+
+**Why runs the ledger records are known by id first (owner's audit item 1):** the
+conductor now dispatches single-issue runs too, and the structural test can only
+recognise a `backlog-orchestrator`. Widening it would bring back the round-1
+mismatch (a structural test that matched the conductor itself). So the narrow test
+stays for retitling only, and a run this conductor dispatched is known by the
+session id it wrote into the ledger at dispatch, which no other session can claim.
+The `bo/` worker test is what finds a `per-pr` orchestrator, which names no
+`integration/*` branch (owner's audit item 2).
+
+**Why the default branch is swept (owner's audit item 6):** a stream can be green
+while the branch everyone merges into is red or its deploy failed, and that is the
+fact the owner most needs from one place.
+
+**Why the fallback check-in came back (owner's audit item 3, re-confirmed
+2026-11-02):** the context-clear review's finding 6 removed every wake, because the
+skill was not a consumer of `rules/wake-budget.md` and an unbounded one would have
+broken protected rule 9. The owner's conductor showed the cost: runs that finished,
+and conditional gos whose condition came true, waited until the owner returned. The
+check-in is restored inside the rule — the conductor is now its consumer, and the
+schedule is that rule's *A conductor's fallback sweep*, whose notes check it against
+*A watch kept past a settled result*. A firing rules nothing because nobody is
+there; executing a conditional go is not ruling, since the owner already chose.
 
 **Why GitHub is read even when every session answers:** sessions get archived,
 compacted and lost, and the epic outlives all of them. A stream whose orchestrator
@@ -82,13 +140,43 @@ where that is tested.
 
 **Why owner steps are issues and not a list in the pass (2026-10-31, the owner's addendum):** a list in a chat pass is gone when the session ends, and a step left in a PR body is invisible once the PR merges. Each step is filed as a `[Manual]` issue (`rules/manual-step-issues.md`), the order goes on the manual-steps epic and in the ledger, and `owner-steps` walks each one. Scenario: `owner-steps-are-ordered-as-manual-issues-on-the-epic`.
 
-## 5. Replan
+## 5. Plan and replan
 
-**Why integration runs are minimised:** under `ci-mode: integration-branch` each
-run costs a CI run when its integration PR opens and another once it merges, so
-two small waves cost twice what one folded wave does, for the same work.
+**Why planning writes nothing before the go, and why `validate-backlog` runs on the
+written set (owner's ruling, 2026-11-02):** an issue is durable and is read by every
+dependency reader, so a plan is shown before anything is filed. `validate-backlog`
+is read-only by default and checks exactly what a written plan can get wrong —
+missing or cyclic edges, text and native links disagreeing — and an orchestrator
+runs it at its own preflight anyway; running it at planning time puts the findings
+in front of the owner before the dispatch go, when fixing them is cheapest.
+
+**Why CI is counted by mode (owner's audit item 2):** under `ci-mode:
+integration-branch` each run costs a CI run when its integration PR opens and
+another once it merges, so two small waves cost twice what one folded wave does.
+Under `per-pr`, which the work deployment uses with `auto-merge` off, every PR and
+every repair push on it costs a run, so the integration count said nothing and the
+plan's cost read as zero. The *settled, waiting on owner merge* state exists for
+the same deployment: a stream there is not stalled, and work gated on it starts
+from the owner's merge, which only a forge read sees.
 
 ## 6. Dispatch
+
+**Why a conditional go, and why it stays within protected rule 3 (owner's audit
+item 5):** the owner often decides the next batch before its gate clears — "start
+the #967 batch when #2049 wave 5 merges" — and then had to come back to say go. The
+go is recorded where any go is, so it is the owner's own recorded choice; what the
+sweep adds is only the verification that the stated condition holds on the forge.
+A condition the forge cannot show is not interpreted; it waits.
+
+**Why seeds are verified gate by gate, and carry standing rulings (owner's audit
+item 4):** on 2026-10-31 a seed said a gate still held that an owner comment had
+already cleared, and the new run waited on nothing. A gate is therefore re-read at
+its record immediately before it is written into a seed. Standing rulings — merge
+authority, repair allowances, schema-bump rules, owner-gated flags, never-rules —
+were re-explained to each new run by hand; the ledger now holds them, linked, and
+the seed carries the ones that apply, capped by each repository's policy. The last
+good run's first prompt is the template because it is the one known to have
+worked.
 
 **Why reuse is narrow:** a reused orchestrator brings its context, and a context
 that is a third full before the new epic starts is a context that compacts during
@@ -109,16 +197,16 @@ owner to start a fresh `Conductor:` session, is replaced: a fresh session has a 
 id, so every orchestrator's `send_message` target, every check-in and every PR
 subscription would have to be moved, and a same-session clear keeps all of them.
 
-**Facts the section relies on, and which were checked (2026-10-31, against the
-tools in a cloud session):**
+**Facts the section relies on, and which were checked (2026-10-31 and 2026-11-02,
+against the tools in cloud sessions):**
 
 | fact | checked how | result |
 |---|---|---|
-| `get_session` with no id returns `external_metadata.context_usage.used_tokens` and `max_tokens`, and `autocompact_state.threshold` | called it | **confirmed** — e.g. 368526 of 1000000, threshold 901600 |
-| the same, for another session by id | called it on a running orchestrator | **confirmed** — 476470 of 1000000, threshold **784000**: thresholds differ per session, which is why the clear point is computed from each session's own record |
+| `get_session` returns `external_metadata.context_usage.{used_tokens,max_tokens}` and `autocompact_state.threshold`, with no id and with an id | called it both ways | **confirmed** — e.g. 368526 of 1000000, threshold 901600, and on a running orchestrator 476470 of 1000000, threshold **784000**: thresholds differ per session, which is why the clear point is computed from each session's own record |
 | a session cannot clear itself; no tool runs `/clear`, and the Skill tool does not reach built-in commands | the session's tool list has no clear or compact tool; the Skill tool's own description says built-in CLI commands (`/help`, `/clear`) are not skills | **confirmed** |
-| after `/clear` the session id is unchanged, so check-ins, PR subscriptions and orchestrators' `send_message` target still reach it, and messages arriving meanwhile are queued | — | **not checked**: this session cannot run `/clear`. Taken from the owner. The restart prompt checks the id first and repairs every binding if it changed, so the routine is correct either way |
-| the scratchpad survives a `/clear` only while the container lives | the environment's own description: the container is reclaimed after inactivity, and anything worth keeping must be pushed | **confirmed** as documented, not observed through a clear |
+| after `/clear` the session id is unchanged, so check-ins, PR subscriptions and runs' `send_message` target still reach it | observed after a clear, reported in the owner's brief | **observed 2026-11-02**: unchanged. The restart prompt still checks the id first and repairs every binding if it changed, so the routine is correct either way |
+| scratchpad content survives a `/clear` | observed after a clear, reported in the owner's brief | **qualified**: the files survive, but the next context may be given a different scratchpad path — so the restart prompt never names a scratchpad path, and what the next context needs goes into the ledger |
+| a background agent's result survives a restart mid-turn | observed on a worker restarted mid-turn, reported in the owner's brief | **no**: the result arrived only as a system note pointing at its output file. Long conductor work never depends on an in-turn background result (*Rules*) |
 
 An orchestrator's record also showed `context_usage.after_boundary`, which looks
 like a compaction or clear boundary marker. Nothing here relies on it.
@@ -139,8 +227,9 @@ contradiction pass found eight problems before merge, all fixed:
   Now *6. Dispatch*'s reuse test decides at a boundary, and mid-run uses the
   default computed from the orchestrator's own record, unread counting as high.
 - **Wakes:** the dump listed check-ins and subscriptions the skill never arms.
-  The skill still arms none, which keeps protected rule 9 out of play; the
-  inventory records what someone else set up.
+  The fix then armed none, which kept protected rule 9 out of play; audit item 3
+  later restored one bounded check-in under `rules/wake-budget.md` (*1. Sweep*),
+  and the inventory lists it by id and time.
 - **Channel state:** the next context needs the channel state and
   answered-this-sweep flags, or it would message sessions marked unreachable.
 - **An unchecked fact stated as certain:** the proposal said the id survives a
@@ -165,6 +254,15 @@ subscriptions and check-ins are bound to its session, and its context mid-run ho
 in-flight supervision that its checkpoints only partly carry. Its own checkpoints
 and auto-compaction are what its contract was written for; a boundary is where a
 fresh session costs nothing, which the reuse rule already says.
+
+## 7. Ledger
+
+**Why the ledger's home is configurable (owner's ruling, 2026-11-02):** the work
+deployment keeps plans in its tracker's project documents, with a document store
+as fallback, not in GitHub issues. The kinds are named generically so this skill
+stays tracker-agnostic; which tracker and store they mean is the session's
+connected tools. Rulings never move into the ledger: they stay where the decision
+lives, so a run reads them where its own tests look.
 
 ## Decision scenarios
 
@@ -204,3 +302,31 @@ Pinned in `evals/evals.json`:
   - operator absent, at the auto-compact threshold with no quiet point → write the
     ledger if possible, let compaction happen, start no new conductor
     (`at-the-compaction-threshold-with-no-quiet-point-compaction-wins`).
+- PR #201's audit and the owner's 2026-11-02 rulings:
+  - a run this conductor dispatched is known by its ledger id, and an unknown
+    parent is doubtful (`a-dispatched-single-issue-run-is-known-by-its-ledger-id`);
+  - `per-pr` with `auto-merge` off → *settled, waiting on owner merge*, gated work
+    starts from the owner's merge, CI counted per PR
+    (`per-pr-runs-without-auto-merge-wait-on-the-owner-and-count-ci-per-pr`);
+  - `integration-branch` → fold small waves, two CI runs per integration PR
+    (`integration-branch-runs-count-two-ci-runs-per-integration-pr`);
+  - three empty sweeps stop the check-in, said once; no run active cancels it
+    (`the-fallback-check-in-stops-after-three-empty-sweeps`);
+  - a gate an owner comment cleared is not seeded, and merge authority is capped by
+    policy (`a-seed-is-verified-gate-by-gate-and-carries-standing-rulings`);
+  - a conditional go is executed only on its condition as written
+    (`a-conditional-go-is-executed-by-a-scheduled-sweep-once-verified`);
+  - the default branch's head, CI and deploy are reported
+    (`the-default-branch-is-swept-and-reported`);
+  - a chat ruling is relayed under the marker, shown first
+    (`a-chat-ruling-is-relayed-under-the-recognisable-marker`);
+  - a feature plan writes nothing before the go, and `validate-backlog` runs on the
+    written set (`a-feature-plan-is-shown-before-any-issue-is-written`);
+  - a relay carries a verified fact, never authority
+    (`a-relay-carries-a-verified-fact-never-authority`);
+  - the configured repositories bound the sweep
+    (`the-scope-is-the-configured-repositories`);
+  - the ledger falls back in the configured order, rulings staying at their sites
+    (`the-ledger-falls-back-in-the-configured-order`);
+  - with filing off, owner steps are listed, not filed
+    (`owner-steps-are-listed-not-filed-where-the-repository-turns-filing-off`).

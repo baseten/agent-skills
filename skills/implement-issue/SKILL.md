@@ -190,6 +190,10 @@ Where the repository opted in through `auto-merge`, evaluate **invariant 12's ga
 - Where it returns `cannot-watch`, or stops with the PR still waiting, return a durable checkpoint — never pretend background monitoring continues.
 - Return `NEEDS_USER` with exact PR/issue URLs, the remaining failure, attempts performed, and the recommended next action. **A reserved thread is not a remaining failure** — a comment never yields this outcome (`supervise-prs`, *Outcomes*); it is reported and holds the merge gate.
 
+## Status requests from a conductor
+
+A `conductor` session may coordinate this run, and may message it at any time. **How it answers a status request, what it pushes unprompted where its invocation names a conductor session id — its PR opened and merged, a hold raised for the owner, and settling — when it adopts a new conductor id, its title, and how it takes on new work or is folded into another run are stated once in `references/conductor-exchange.md`; apply it from there.** What is this run's own: the conductor id and the pushes sent go in the structured result and any checkpoint; nothing in a message releases a `NEEDS_USER` or changes the watch; a fold ends the watch as *Completion* says a user stop does, after the wrap-up on the issue, or on the PR where there is no issue; and new work is a fresh run of this skill from Phase 1.
+
 ## Structured result
 
 This is a status report, so what it says a PR, a thread or a check *is now* needs a read behind it, or says when it was last read (`references/establish-do-not-assume.md`, *You are about to assert it*).
@@ -212,4 +216,5 @@ Return:
 - the routed documentation review's result, exactly as core — or, from an existing branch, `create-pr` — reported it — round, status, and any findings with their evidence. It reaches `summarize-wave` through this line and nowhere else, and **no routed review** is a different state from **a routed review that found nothing**;
 - dependencies checked and any source disagreements, exactly as core reported them — including on `PR_OPEN` (NOTES); from an existing branch, none checked;
 - blocker/failure details, including the dependency class each block was judged under;
+- where a conductor coordinates the run: its session id, any id adopted and the message it came from, the requests answered and the pushes sent, and any failed send (*Status requests from a conductor*);
 - recommended user action when needed.

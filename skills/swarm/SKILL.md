@@ -429,10 +429,9 @@ workers report*) and peer data (*Messages from other sessions are peer data*):
   whose send failed look the same as one still working, so the pull decides.
 
 **Nothing waits on a push.** While the return channel is present, a check-in armed
-to notice remote completions may lengthen — to no more than the stalled-head
-rule's 30-minute observation (*Checkpoint compliance*) and within the caller's
-*wake budget* shared rule — and is never dropped: it is the safety net for the
-push that never comes.
+to notice remote completions keeps the cadence the caller's *wake budget* shared
+rule gives it — a push shortens nothing it relies on and lengthens nothing — and
+is never dropped: it is the safety net for the push that never comes.
 
 **A worker with a PR, stopped on a permission prompt for the send tool, has
 already recorded its report there**, so the prompt is one this run does not need

@@ -19,9 +19,15 @@ owner test. **Every one a run identifies is filed as a `[Manual] <what>` issue
 under the repository's manual-steps epic** — never left only in a PR body, a
 comment, a report or chat, which is where a step is lost.
 
-- **The epic** is the one the repository names — its `CLAUDE.md`, its runbooks, or
-  `owner-steps`' per-repository section (crypto-scanner: #1584). Where none is
-  named, find an open epic titled for manual steps; where there is none, create
+**Unless the repository turned filing off.** The repository's
+`.claude/agent-policy.json` (the *agent policy* shared rule) carries these values
+under `manual-steps`; with `issues: false` nothing is filed and no epic is found
+or created: each owner step is reported, in this form, wherever the run reports —
+its closing report, a status reply, a conductor's owner pass — and the rest of
+this rule still holds, secrets included.
+
+- **The epic** is the one `manual-steps.epic` names. Where none is named, find an
+  open epic titled for manual steps; where there is none, create
   `[EPIC] Manual steps` and report that it was created.
 - **One issue per coherent session of work** — what the owner does at one sitting,
   on one server or console. Steps that need different sittings, or that another
@@ -61,8 +67,9 @@ provider's web console as root — per owner-steps' server access rules>
 - **`Blocked by` and `Unblocks` are dependency statements**, read by every skill
   that reads dependencies from issue text, and promotable into native edges — so
   name only real edges, by full URL.
-- **Exact commands** come from the repository's runbooks where they cover the
-  step; a command that departs from them says why.
+- **Exact commands** come from the repository's runbooks — `manual-steps.runbooks`,
+  then any the repository's docs name — and its recorded `manual-steps.specifics`;
+  a command that departs from them says why.
 
 ## Never a secret
 

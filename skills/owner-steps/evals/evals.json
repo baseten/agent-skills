@@ -7,7 +7,7 @@
       "id": 0,
       "name": "a-failing-paste-is-diagnosed-not-advanced",
       "prompt": "You are executing the owner-steps skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Issue '[Manual] Post-deploy checks for API v2.3', step 2 of 4: 'curl -s localhost:3001/health' expecting {\"status\":\"ok\"}. The owner pastes: 'curl: (7) Failed to connect to localhost port 3001: Connection refused'. Question: what do you do next?",
-      "expected_output": "It failed; do not advance to step 3. Diagnose from the output: nothing is listening on 3001, so the service is down or on another port. Give one diagnostic command as its own step - for example the process manager's status (pm2 status or pm2 logs for the service) as the deploy user over SSH, with what to expect - and wait for the paste. Record step 2 as failed on the issue, redacted, and do not tick it. Do not guess a fix, and give nothing destructive.",
+      "expected_output": "It failed; do not advance to step 3. Diagnose from the output: nothing is listening on 3001, so the service is down or on another port. Give one diagnostic command as its own step - for example the process manager's status or logs for the service as the deploy user over SSH, with what to expect - and wait for the paste. Record step 2 as failed on the issue, redacted, and do not tick it. Do not guess a fix, and give nothing destructive.",
       "assertions": [
         "the answer does not advance to step 3",
         "the answer gives one diagnostic command based on the connection-refused output",
@@ -45,7 +45,7 @@
     {
       "id": 3,
       "name": "an-uncleared-blocker-stops-the-walk",
-      "prompt": "You are executing the owner-steps skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Issue '[Manual] Backfill trade history' has the header 'Owner steps. Not for an orchestrator · Blocked by: https://github.com/acme/crypto-scanner/pull/2040 · Unblocks: https://github.com/acme/crypto-scanner/issues/1991'. PR 2040 is open and unmerged. The owner says 'let's do it now'. Question: what do you do?",
+      "prompt": "You are executing the owner-steps skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Issue '[Manual] Backfill trade history' has the header 'Owner steps. Not for an orchestrator · Blocked by: https://github.com/acme/api/pull/2040 · Unblocks: https://github.com/acme/api/issues/1991'. PR 2040 is open and unmerged. The owner says 'let's do it now'. Question: what do you do?",
       "expected_output": "Confirm blockers on GitHub first: PR 2040 is not merged, so the blocker is not cleared. Name it and stop - give no step, since a backfill run before its code is deployed produces output that means nothing. Do not comment 'backfill complete' on #1991 or tick anything.",
       "assertions": [
         "the answer checks the blocker on GitHub",
@@ -57,12 +57,25 @@
     {
       "id": 4,
       "name": "the-runbook-wins-over-the-issue-text",
-      "prompt": "You are executing the owner-steps skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Repository crypto-scanner. Issue step 1 says: 'pm2 restart crypto-scanner-mcp --update-env'. The repository's runbook says restarts of the MCP process never use --update-env. Question: what command do you give, and what else do you do?",
-      "expected_output": "Follow the runbook: give the restart without --update-env, run as the deploy user over SSH, with expected output, and tell the owner why it differs from the issue. Flag the issue text for correction in the step's record on the issue. Do not give the issue's version.",
+      "prompt": "You are executing the owner-steps skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Repository acme-api. Issue step 1 says: 'acme-ctl restart worker --reload-env'. The repository's runbook says the worker is never restarted with --reload-env, because it reloads a stale environment file. Question: what command do you give, and what else do you do?",
+      "expected_output": "Follow the runbook: give the restart without --reload-env, run as the deploy user over SSH, with expected output, and tell the owner why it differs from the issue. Flag the issue text for correction in the step's record on the issue. Do not give the issue's version.",
       "assertions": [
-        "the answer gives the command without --update-env",
+        "the answer gives the command without --reload-env",
         "the answer tells the owner why it departs from the issue",
         "the answer flags the issue text for correction"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "server-access-comes-from-the-repository-policy",
+      "prompt": "You are executing the owner-steps skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Repository acme-api. Its .claude/agent-policy.json has \"manual-steps\": {\"server-access\": {\"ssh-user\": \"app\", \"sudo\": false, \"root-console\": \"digitalocean\"}, \"specifics\": [\"Never run `acme-ctl migrate --reset` on production\"]}. No runbook covers this step. Issue step 2 must run as root: 'ufw allow 8443/tcp && ufw status | grep 8443'. Step 3 says: 'acme-ctl migrate --reset'. Question: how do you give step 2, and what do you do about step 3?",
+      "expected_output": "Step 2 is a root step, so it runs in the provider's web console, never over SSH and never with sudo. The policy records the console as DigitalOcean's, which pastes anything, so the command is given as is in one block, run as root in the console, with the expected output - no script route. Step 3 is a command the repository records as never to run on production, and it is destructive: do not give it. Say why, flag the issue text for correction, and ask the owner how to proceed; a destructive step is given only where the issue's step is confirmed by the owner after being told what it destroys, and the recorded never-rule stands against it.",
+      "assertions": [
+        "the answer gives step 2 in the provider's web console as root, as is, without a script and without sudo",
+        "the answer reads the server access from the repository's policy file",
+        "the answer does not give the reset command",
+        "the answer flags step 3 for correction"
       ],
       "files": []
     }

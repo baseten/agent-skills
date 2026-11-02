@@ -1,6 +1,6 @@
 ---
 name: owner-steps
-description: Walk the owner through one `[Manual]` owner-steps issue, one step at a time, while they run each command on the live server or console and paste the output back — confirm its blockers are cleared on GitHub, give each exact command with where and as whom to run it and what to expect, judge each pasted result against that expectation and diagnose a failure rather than advancing, record each result redacted on the issue and tick it, and close the issue only when its "Done when" holds. It follows the repository's runbooks and server-access rules (SSH as the deploy user without sudo; root only in the provider's web console, through a short script on Hetzner), never suggests an unrequested destructive command, and never asks for or repeats a secret. Use when the owner wants to work through a manual step, a `[Manual]` issue, a post-deploy check, a backfill or a key placement.
+description: Walk the owner through one `[Manual]` owner-steps issue, one step at a time, while they run each command on the live server or console and paste the output back — confirm its blockers are cleared on GitHub, give each exact command with where and as whom to run it and what to expect, judge each pasted result against that expectation and diagnose a failure rather than advancing, record each result redacted on the issue and tick it, and close the issue only when its "Done when" holds. It follows the repository's runbooks and its recorded server access (by default SSH as the deploy user without sudo; root only in the provider's web console, through a short script where the console cannot paste), never suggests an unrequested destructive command, and never asks for or repeats a secret. Use when the owner wants to work through a manual step, a `[Manual]` issue, a post-deploy check, a backfill or a key placement.
 ---
 
 # Owner steps
@@ -12,7 +12,10 @@ issue, and gives the next step. **It runs nothing on the server itself, and it
 never sees a secret.**
 
 The issue is a `[Manual]` issue in the form `references/manual-step-issues.md`
-states; that rule says what each part means. This file is the contract; the
+states; that rule says what each part means. **Where the repository files no
+such issues** (`manual-steps.issues` is `false`), walk the steps the owner gives,
+in the same form, exactly as below — but the record is this session's report:
+there is no issue to comment on, tick or close. This file is the contract; the
 reasoning lives in `NOTES.md`, keyed by section.
 
 **Attended only.** Every step waits on the owner's paste. Invoked with nobody to
@@ -40,36 +43,33 @@ answer, say so in one line and stop.
 
 ## Server access
 
-These are the defaults. **A repository's runbooks override them**, and so does an
-entry under *Per-repository overrides*, below.
+**The repository's values come first**: read `manual-steps` from its
+`.claude/agent-policy.json` once, at the start, as `references/agent-policy.md`
+says. Its `runbooks` win over everything, then its `server-access` and
+`specifics`, then these defaults:
 
-- **SSH reaches the live server as the deploy user only, with no sudo.** Never
-  suggest `sudo`.
-- **Root commands run in the hosting provider's web console** — DigitalOcean or
-  Hetzner — never over SSH.
-- **DigitalOcean's console pastes anything**, so a root command is given as is.
-- **Hetzner's console cannot paste shift characters** — none of
-  `| > & " _ : ~ ( ) { }` and the like. So a root step on Hetzner is three steps:
-  1. as the deploy user, over SSH, write the commands into a temporary script —
-     for example `/home/deploy/<name>.sh` — and make it readable; give the
-     script's contents and the command that writes it;
-  2. as root, in the console, the owner types only `bash /home/deploy/<name>.sh`;
+- **SSH reaches the live server as one deploy user** — `server-access.ssh-user`,
+  else the one the runbooks name — **with no sudo** unless `server-access.sudo`
+  is `true`. Without it, never suggest `sudo`.
+- **Root commands run in the hosting provider's web console**
+  (`server-access.root-console`), never over SSH.
+- **A console that pastes anything** — `digitalocean` — takes a root command as is.
+- **Any other console — `hetzner`, `other`, or none recorded — takes the script
+  route**, because Hetzner's cannot paste shift characters (none of
+  `| > & " _ : ~ ( ) { }` and the like) and an unknown one may not. A root step
+  is then three steps:
+  1. as the deploy user, over SSH, write the commands into a temporary script in
+     that user's home — for example `~/<name>.sh` — and make it readable; give
+     the script's contents and the command that writes it;
+  2. as root, in the console, the owner types only `bash /home/<user>/<name>.sh`;
   3. as the deploy user, delete the script once its output is judged.
 - **Keys** go only into the server's env files or the app's own dialogs.
 - **Long jobs** run under `nice` inside `tmux` or `screen`, so a dropped
   connection does not kill them; give the command to reattach.
 
-### Per-repository overrides
-
-Read the repository's runbooks first; these entries record what they say, for a
-session that has to start somewhere.
-
-| repository | recorded specifics |
-|---|---|
-| crypto-scanner | manual-steps epic #1584; app at `/opt/crypto-scanner-api/{current,shared}`; restart with `pm2 restart crypto-scanner-api`; never `--update-env` on `crypto-scanner-mcp` |
-
-A runbook that disagrees with this table wins, and the difference is reported so
-the table can be corrected.
+**`specifics` are recorded facts, not commands to run**: an app path, a restart
+command, a command never to run on this server. A runbook that disagrees with
+one wins, and the difference is reported so the owner can correct the file.
 
 # 1. Read
 

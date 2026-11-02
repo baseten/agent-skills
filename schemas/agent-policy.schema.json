@@ -118,6 +118,124 @@
         "conductor"
       ]
     },
+    "conductor-repositories": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+      },
+      "minItems": 1,
+      "uniqueItems": true,
+      "default": null,
+      "description": "The repositories, as owner/name, one conductor coordinates, read from the conductor's home repository: the one it was invoked on. Absent or null: that repository alone. Read by: conductor.",
+      "x-read-by": [
+        "conductor"
+      ]
+    },
+    "conductor-ledger": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string",
+        "enum": [
+          "github-issue",
+          "tracker-document",
+          "document-store-page"
+        ]
+      },
+      "minItems": 1,
+      "uniqueItems": true,
+      "default": null,
+      "description": "Where the conductor keeps its ledger, in fallback order: github-issue (a [PLAN] issue in the home repository), tracker-document (a document on the feature's tracker project), document-store-page (a page in the connected document store). The first the session can write is used. Absent or null: github-issue alone. Read by: conductor.",
+      "x-read-by": [
+        "conductor"
+      ]
+    },
+    "manual-steps": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "issues": {
+          "type": "boolean",
+          "default": true,
+          "description": "File every owner step as a [Manual] issue. false: owner steps are reported where the run reports, and never filed."
+        },
+        "epic": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "default": null,
+          "description": "The issue number of this repository's manual-steps epic. null: found by title, or created."
+        },
+        "runbooks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Repository paths of the runbooks owner steps follow; they win over everything here."
+        },
+        "server-access": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "ssh-user": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null,
+              "description": "The user SSH reaches the live server as. null: the deploy user the runbooks name."
+            },
+            "sudo": {
+              "type": "boolean",
+              "default": false,
+              "description": "Whether that user may run sudo."
+            },
+            "root-console": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "digitalocean",
+                "hetzner",
+                "other",
+                null
+              ],
+              "default": null,
+              "description": "The provider web console root steps run in. hetzner, other and null take the script route."
+            }
+          },
+          "default": {}
+        },
+        "specifics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Recorded server specifics for owner steps: paths, restart commands, commands never to run. Never a secret."
+        }
+      },
+      "default": null,
+      "description": "Per-repository values for owner steps: whether they are filed as [Manual] issues, under which epic, and how the live server is reached. Absent or null: issues filed, the epic found by title or created, and owner-steps' server-access defaults. Never a secret. Read by: backlog-orchestrator, conductor, owner-steps.",
+      "x-read-by": [
+        "backlog-orchestrator",
+        "conductor",
+        "owner-steps"
+      ]
+    },
     "auto-request-settle": {
       "type": "boolean",
       "default": true,

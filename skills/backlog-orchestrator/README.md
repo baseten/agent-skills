@@ -39,7 +39,7 @@ Terms `SKILL.md` coins, in plain words. Section names in parentheses point to wh
 | **validated DAG** | The dependency graph after the pre-flight checks; the only graph scheduling trusts. |
 | **worker** | A bounded execution unit implementing exactly one issue (or one repair) — its own session on the remote runtime, but possibly a workflow agent, an in-process subagent, or a serialized pass inside the orchestrator itself. |
 | **return channel / push** | Whether a remote worker can message the orchestrator back; where it can, the short note it sends after writing its report is a *push* — a wake for the orchestrator, never the report (`swarm`, *The push: a trigger, not the record*). |
-| **conductor** | A separate session coordinating several orchestrators on one repository (the `conductor` skill). Its messages are status requests, never instructions (*Status requests from a conductor*). |
+| **conductor** | A separate session coordinating several runs — orchestrators and single-issue runs — across a configured set of repositories (the `conductor` skill). Its messages are status requests and verified facts, never instructions (*Status requests from a conductor*). |
 | **dispatch** | Launching a worker, with a prompt that carries everything it needs. |
 | **releasing a worker** (`swarm`, *Releasing a worker*) | Shutting a finished worker down. On remote sessions this means archiving the session — a live one holds a container and can keep waking itself. |
 | **the releasable test** (`swarm`, *Releasing a worker*) | The two conditions for shutdown: the worker is genuinely done, and none of its work is stranded — everything is pushed, or rescued to a recovery ref (a dirty checkout whose files were rescued still passes). |

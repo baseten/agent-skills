@@ -39,6 +39,17 @@ pasting works, root types one unshifted line to run it — is the owner's own. I
 three steps, not one, because each runs in a different place as a different user,
 and the hard rule allows one block per step.
 
+**Why the per-repository values moved into the policy file (owner's ruling, 2026-11-02):**
+the first version carried a table of one repository's epic number, app paths,
+restart command and a never-run rule in this skill's text. The repository is
+public and the skill is meant for any repository, so those values now live where
+each repository already keeps owner-authored configuration — `manual-steps` in
+its `.claude/agent-policy.json`, indexed by the schema — and this file keeps only
+defaults. The script route is the default for any console not recorded as able to
+paste, because it works on every console and the direct route fails on some.
+`specifics` are facts, not commands, so that a value in a config file is never
+run on the strength of being there; the runbooks still win.
+
 ## Decision scenarios
 
 Pinned in `evals/evals.json`:
@@ -53,3 +64,6 @@ Pinned in `evals/evals.json`:
   (`an-uncleared-blocker-stops-the-walk`);
 - a step's command differs from the runbook → follow the docs and flag the issue
   (`the-runbook-wins-over-the-issue-text`).
+- the repository's policy file records the console and a never-run command → a
+  root step given as is on a console that pastes, and the recorded command refused
+  (`server-access-comes-from-the-repository-policy`).

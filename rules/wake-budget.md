@@ -22,7 +22,7 @@ Both, not either. The subscription is the fast path; the check-in is what makes 
 
 ## The budget and the backoff
 
-**Every recurring check-in that skill's runs arm — parent-side or worker-side — carries one unproductive-wake budget and a backoff**, these unless *A watch kept past a settled result* sets its own:
+**Every recurring check-in that skill's runs arm — parent-side or worker-side — carries one unproductive-wake budget and a backoff**, these unless *A watch kept past a settled result* or *A conductor's fallback sweep* sets its own:
 
 - **budget: 8 consecutive unproductive wakes**, then stop re-arming. **A wake is unproductive whether it read and found nothing or could not read at all** — one counter over both, because both spend money to learn nothing and a watch that alternates between them is as pointless as one that does either;
 - **backoff: start at 20 minutes, double on each unproductive wake, cap at 4 hours.** Eight at that shape (20m, 40m, 80m, 160m, then 4h × 4) spans roughly 21 hours — long enough to wait out a night and a working day for a human reviewer, short enough that a forgotten watch dies in single-digit dollars. **Where the wake was deferred on a refused or exhausted allowance, it goes at whichever is later: the backoff's next step, or the reset/`Retry-After` floor, where the deferral has one** (the *watch and read* shared rule also defines when it has none) — waking before the reset is refused again, and waking before the backoff would have is the frequency the backoff exists to cut. The budget is one; the schedule is still per cause. A wake that defers draws on this same budget and carries none of its own; on exhausting it that way, stop re-arming and report the watch as blocked on the allowance, naming the contention — never as settled or quiet;
@@ -34,6 +34,10 @@ Both, not either. The subscription is the fast path; the check-in is what makes 
 ## A watch kept past a settled result
 
 **A run that has settled and reported its result, and keeps its PR watched for late human review** (`implement-issue`, *Completion*), waits on a person rather than a pipeline, so its check-in takes this schedule in place of the budget and backoff above: **the first check-in about 50 minutes after the last observed delta, then about every 4 hours, ending after 3 consecutive unproductive wakes or 7 days after the result was reported, whichever comes first**. A delta restarts the schedule at its first step and resets the unproductive count, never the 7-day limit; the prompt carries the deadline beside the count. A run's monitoring cap bounds its active loop before the result, and does not reach this watch. Everything else in this rule holds unchanged: what counts as unproductive and as a delta, the count in the prompt, the reported stop, and its reading as a cost guard rather than a verdict.
+
+## A conductor's fallback sweep
+
+**A `conductor` coordinating runs that are still active** waits on runs that wake it themselves — a reply or a push arrives as a turn — so its one check-in is a fallback for the silence, and takes this schedule in place of the budget and backoff above: **about every 60 minutes, without backoff; re-armed silently after a sweep that observed a delta; stopped after 3 consecutive unproductive sweeps, reported once; and cancelled when no coordinated run is active.** A later sweep that observes a delta, or an attended invocation, re-arms it at its first step with the count at zero. Its firing sweeps and reports and rules nothing — nobody is there to answer. Everything else in this rule holds unchanged: what counts as unproductive and as a delta — the conductor names its durable sources, its ledger's runs and their PRs — the count in the prompt, the reported stop, and its reading as a cost guard rather than a verdict.
 
 ## Not a licence to keep a loop warm
 
