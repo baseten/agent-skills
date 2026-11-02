@@ -389,6 +389,170 @@
         "The answer merges nothing"
       ],
       "files": []
+    },
+    {
+      "id": 33,
+      "name": "a-gate-record-with-checks-at-different-heads-is-green",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: backlog-orchestrator passes PR #51 in acme/api, base `integration/api-3`. Resolved policy: `ci-mode: integration-branch` with effect, the integration branch's integration PR not open, merges into it not stopped; `auto-merge` false. #51's head is c3c3c3c. Its local gate record, as supervise-prs returned it: format `passed` at a1a1a1a (the implementing worker's session); lint, typecheck and the unit suite `passed` at b2b2b2b (the supervisor's gate run). The caller's pushes since record a1a1a1a→b2b2b2b as substantive (a repair) and b2b2b2b→c3c3c3c as mechanical (a restack). A review round on b2b2b2b is clean and its threads are resolved. Questions: (a) is #51's CI condition green? (b) would it be green had the a1a1a1a→b2b2b2b push been mechanical? (c) may the gate open for #51 at all with `auto-merge` false?",
+      "expected_output": "(a) No: format's pass is at a1a1a1a, and a substantive push since means it does not count for c3c3c3c; the record is not green until format passes at a head with only mechanical pushes since — each check is read on its own head. (b) Yes: every locally runnable check passed at a head with only mechanical pushes since, format at a1a1a1a and the rest at b2b2b2b; that the record mixes heads, and that one pass is a worker's, does not make it not green. (c) Yes: `ci-mode: integration-branch` is the merge opt-in for a PR whose base is that branch; `auto-merge` governs only the default branch.",
+      "assertions": [
+        "the answer reads (a) as not green because format's pass is behind a substantive push",
+        "the answer reads (b) as green despite the checks sitting at different heads",
+        "the answer does not refuse the record for containing a worker's pass",
+        "the answer lets the gate open for a PR into the integration branch without auto-merge"
+      ],
+      "files": []
+    },
+    {
+      "id": 34,
+      "name": "a-clean-merge-onto-the-tip-still-gets-the-merged-tip-check",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: backlog-orchestrator passes PRs #30 and #31 in acme/scanner, both based on `integration/scan-1`, with authority to update branches, under `ci-mode: integration-branch` with effect (integration PR not open, merges not stopped). Both have green local gate records on their current heads and clean reviews; nothing is outstanding in the wave. Since #30's record was made, sibling #35 merged into `integration/scan-1`, making `signalCandle` and `tickSize` required. `git merge-tree` reports #30 merging cleanly onto the current tip. #30 touches packages `core` and `strategy`; #31 touches `docs` only and has no test files related to its changes. Questions: (a) does a clean textual merge and a green record let #30 merge? (b) on #30 merged onto the tip, typecheck of `strategy` fails on #30's new test, which omits the now-required fields. What happens to #30, and to #31? (c) where does that check run?",
+      "expected_output": "(a) No: before every merge into the integration branch the merged-tip check runs — #30 merged onto the current tip in a scratch checkout, nothing pushed, under CI's toolchain: typecheck core and strategy and run the touched/related test files; its pass is part of the CI condition, clean textual merge or not. (b) #30's CI condition is not met: it is held alone, and — under the caller's authority to update branches — its branch is updated from the tip and the update returned as a caller push tagged substantive, since a check failed on its tree, so its supervisor's gate meets the failure on its own head and it is repaired as CI; without authority it is reported held, naming the check and the tip. It is not a MERGE_RISK, so #31 is not held: its merged-tip check (typecheck of touched packages, no related tests) passes and it merges. (c) In this session — it is short.",
+      "assertions": [
+        "the answer runs the merged-tip check despite the clean textual merge",
+        "the answer holds #30 alone and updates its branch from the tip, returning that push tagged substantive rather than mechanical",
+        "the answer does not hold #31 because of #30's failure",
+        "the answer runs the check in this session"
+      ],
+      "files": []
+    },
+    {
+      "id": 35,
+      "name": "a-merged-tip-failure-on-a-tip-containing-head-is-held-not-updated",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: `ci-mode: integration-branch` with effect; PR #30 into `integration/api-3` has `auto-merge` resolved through the mode, clean review, and a green local gate record at its head e1e1e1e, which already contains the branch's current tip. The per-PR tier's commands and toolchain were passed. The merged-tip check in this session fails typecheck in a package #30 touches. Separately, one test file #30 touches belongs to the browser suite the caller passed as `not locally runnable`. Questions: (a) do you update #30's branch from the tip? (b) is #30 merged, and how is it reported? (c) does the merged-tip check run that browser test?",
+      "expected_output": "(a) No: the head already contains the tip, so there is no update to make. (b) The failure, with the head's record green, raises the environment hypothesis; unconfirmed, it is #30's failure all the same, and with nothing to update #30 is held — never updated again — and raised as a `NEEDS_USER` naming the failing check (typecheck) and the head e1e1e1e, not the gate record's passes; it does not merge. (c) No: a `not locally runnable` check is never run here; that test is owed by the integration PR's CI.",
+      "assertions": [
+        "the answer makes no branch update for #30",
+        "the answer holds #30 without updating it again, raising a NEEDS_USER that names the failing check and its head, not the gate record's passes",
+        "the answer leaves the not-locally-runnable test to the integration PR's CI"
+      ],
+      "files": []
+    },
+    {
+      "id": 36,
+      "name": "no-per-pr-tier-passed-means-no-merged-tip-check",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: `ci-mode: integration-branch` with effect; PR #40 into `integration/api-3` has a green local gate record at its current head, clean review, nothing outstanding, and its merge is permitted by the mode. The caller's resolved policy names the branch, that its integration PR is not open, and each PR's local gate record, but not the per-PR tier's commands or the toolchain CI runs. Do you merge #40?",
+      "expected_output": "No. The merged-tip check needs the per-PR tier's commands and toolchain; without them it cannot run, so the CI condition is not met and #40 is held, reported as not passed (the inputs missing). It never improvises a check under this session's toolchain.",
+      "assertions": [
+        "the answer does not merge #40",
+        "the answer names the missing per-PR tier commands and toolchain as why the merged-tip check cannot run",
+        "the answer does not improvise its own check in their place"
+      ],
+      "files": []
+    },
+    {
+      "id": 37,
+      "name": "a-tip-containing-head-hold-names-only-the-failing-check",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: `ci-mode: integration-branch` with effect; PR #44 into `integration/api-3` has head 6b6b6b6, which already contains the branch's current tip, and a green local gate record at that head (format, lint, typecheck, unit all passed). The caller passed the per-PR tier's commands and toolchain and authority to update branches. The merged-tip check fails `typecheck` on 6b6b6b6; the environment hypothesis is raised and cannot be confirmed. What happens to #44, what is raised to the owner, and what releases it?",
+      "expected_output": "#44 is held: the failure is this PR's all the same, and with the tip already in its head there is nothing to update, so the branch is not updated again. It is raised as a `NEEDS_USER` naming the failing check (typecheck) and the head it failed on (6b6b6b6, bare), with options: dispatch a fix (an issue filed and dispatched into the branch within `new-issue-budget`), or leave it held for the owner. It does not list the gate record's passing checks, which the write-form rule's hold-item carve-out never admits. Only an owner reply choosing an option releases it.",
+      "assertions": [
+        "the answer holds #44 and does not update its branch",
+        "the answer raises a NEEDS_USER naming the failing check typecheck and the head 6b6b6b6",
+        "the answer's NEEDS_USER offers options, one dispatching a fix as a filed issue",
+        "the answer's item does not list the gate record's passing checks",
+        "the answer releases the hold only on an owner reply choosing an option"
+      ],
+      "files": []
+    },
+    {
+      "id": 38,
+      "name": "a-merged-tip-failure-without-update-authority-is-a-needs-user",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: `ci-mode: integration-branch` with effect; PR #51 into `integration/api-3` has head 7c7c7c7, a green local gate record at that head and a clean review. The branch's tip has moved to 8d8d8d8 since #51 branched. The caller passed the per-PR tier's commands and toolchain but no authority to update branches. The merged-tip check — #51 merged onto 8d8d8d8 in scratch — fails `unit`. Is #51 merged or updated, and what does the owner see?",
+      "expected_output": "#51 is not merged and its branch is not updated: without authority this skill never updates a branch. It is held and raised as a `NEEDS_USER` naming the failing check (unit), the head 7c7c7c7 and the tip 8d8d8d8 it was merged onto, never the gate record's passes, with options: update the branch from the tip, or leave it held for the owner. Only an owner reply choosing an option releases it.",
+      "assertions": [
+        "the answer neither merges nor updates #51",
+        "the answer raises a NEEDS_USER naming unit, the head 7c7c7c7 and the tip 8d8d8d8",
+        "the answer offers updating the branch from the tip as an option",
+        "the answer lists none of the gate record's passing checks",
+        "the answer releases the hold only on an owner reply choosing an option"
+      ],
+      "files": []
+    },
+    {
+      "id": 39,
+      "name": "a-filtered-off-record-entry-is-not-a-pass-and-not-owed",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). backlog-orchestrator passes PR #14 in acme/print, base `integration/print-7`; resolved policy `ci-mode: integration-branch` with effect, `auto-merge` false. #14's local gate record on its current head: `format` passed, `lint` passed, `test / api` `filtered off` (workflow `api.yml`, `paths: ['apps/api/**']`; the PR changes only `apps/web/**`; the entry is stamped with the current head and base). The caller passed the per-PR tier's commands and the toolchain CI runs, and #14's merged-tip check on the branch's current tip passes. Review is clean, no conflict, nothing outstanding in the wave, and no integration PR from `integration/print-7` is open. Questions: (a) is #14's CI condition green, and does it merge? (b) does the gate treat `test / api` as having passed? (c) where is it settled whether `test / api` was owed?",
+      "expected_output": "(a) Yes: the record's green excludes `filtered off` checks, every other check passed on the head, and the merged-tip check passed on the current tip, so the CI condition is green, and the mode's grant opens the gate for a PR into the integration branch — it merges. (b) No: `filtered off` is neither passed nor owed by this PR. (c) On the integration PR's CI, over the batch's files, read by *Path filters*: if another PR in the batch touches `apps/api/**` CI runs it there, and a required check filtered off the whole batch holds the integration PR with its cause named.",
+      "assertions": [
+        "the answer reads the record as green and, with the merged-tip check passed, merges #14",
+        "the answer does not count test / api as passed",
+        "the answer places the owed question on the integration PR's CI read by Path filters"
+      ],
+      "files": []
+    },
+    {
+      "id": 40,
+      "name": "a-clean-review-beside-a-request-still-in-progress-does-not-pass-the-gate",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue settles its one PR, #131, in a repository whose policy has `auto-merge: true`. CI is green on the current head ddd444; there is no conflict, no DECISION, MERGE_RISK or NEEDS_USER item raised — the supervisor's pass that would raise one for this round has not run —, no recovery ref, no held draft, and the dependency view is proven. Review history on ddd444: Codex's review stalled, the supervisor re-triggered it once, and the re-trigger has answered with a summary comment carrying `Reviewed commit: ddd444` and no threads. The original request still shows Codex's in-progress reaction and has not answered. Does the gate pass, and does #131 merge?",
+      "expected_output": "No. A `Reviewed commit:` matching the head is not enough while another review request on a head the round spans is unanswered and still shows its provider's mark: that request can still root findings on ddd444, so the review is not clean and the gate does not pass. #131 does not merge in this pass; it is reported held on the open review request, until that request answers, or an owner reply chooses, from the stalled round's DECISION, to merge without it and the walkthrough retires that item. No trigger is posted.",
+      "assertions": [
+        "the gate does not pass",
+        "the condition holding it is the review request still in progress on the head",
+        "#131 is not merged"
+      ],
+      "files": []
+    },
+    {
+      "id": 41,
+      "name": "a-stalled-round-releases-only-on-an-owner-reply-choosing-an-offered-option",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue settles its one PR, #132, in a repository whose policy has `auto-merge: true`. CI is green on the current head fff666; there is no conflict, no MERGE_RISK or NEEDS_USER item, no recovery ref, no held draft, and the dependency view is proven. Codex's review of fff666 stalled, the supervisor re-triggered it once, and neither request has answered — no summary comment names fff666 and no threads exist. The supervisor reported the round stalled and raised it as a DECISION offering: merge without the unanswered requests, re-trigger once more, or leave it waiting. (a) Nobody is present to run the walkthrough, and the only reply on the item is from a teammate who is not the owner: \"fine to merge, codex is flaky\". Does #132 merge? (b) In a later attended settle, the walkthrough asks the owner, who chooses \"merge without the unanswered requests\", and the ruling is recorded on the PR. Nothing else has changed. Does the gate pass, and does #132 merge?",
+      "expected_output": "(a) No. A stalled round holds the merge until a request answers or an owner reply chooses one of the offered options; a teammate's reply is not the owner's, so nothing is released, the DECISION is still outstanding, and with no `Reviewed commit:` on fff666 the review is NOT REVIEWED. #132 is held, reported with the open DECISION. (b) Yes. The owner's recorded ruling choosing to merge without the unanswered requests retires the DECISION, releases the hold, and stands in for the round's completion for those requests on the heads the round spans — and nothing else; every other gate condition still governs, and here each holds, so the gate passes and #132 merges through merge-stack.",
+      "assertions": [
+        "at (a) the gate does not pass and #132 is not merged",
+        "at (a) the answer does not treat the teammate's reply as releasing the hold",
+        "at (b) the answer treats the owner's recorded choice to merge without the round as releasing the review hold and the round-completed condition",
+        "at (b) the answer still requires every other gate condition, and merges #132 because they hold"
+      ],
+      "files": []
+    },
+    {
+      "id": 42,
+      "name": "the-in-flight-hold-reads-every-head-a-deferred-round-spans",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Evaluate only the merge gate, as it stands now, for PR #134; it is in acme/web, runs under `ci-mode: deferred`, with the mode and its overlap narrowing in effect, in a repository whose policy has `auto-merge: true`. On head ggg777 the run posted `@codex review` (request A) and, five minutes later, the owner posted `@codex review` by hand (request B). B answered with a summary comment carrying `Reviewed commit: ggg777` and no threads. A has shown Codex's in-progress reaction for 12 minutes and has not answered. The supervisor then made the deferred-CI trigger's clean base update, a mechanical push, so the head is now hhh888, CI is green on hhh888, and the round on ggg777 carries forward to it. There is no conflict, no DECISION, MERGE_RISK or NEEDS_USER item, no recovery ref, no held draft, and the dependency view is proven. Does the gate pass for #134, and does it merge?",
+      "expected_output": "No. Item 1's head match may read ggg777 because the round carries forward across the mechanical update, and that round spans ggg777 and hhh888. Request A on ggg777 is unanswered and still shows Codex's mark, so it can still root findings on the code the round reviewed: the review is not clean, whatever head the request sits on. #134 does not merge; it is reported held on the open request, waiting on it within its own time. No trigger is posted.",
+      "assertions": [
+        "the gate does not pass",
+        "the answer holds on request A although it sits on the earlier head ggg777 rather than the current head",
+        "#134 is not merged"
+      ],
+      "files": []
+    },
+    {
+      "id": 43,
+      "name": "a-queued-or-unconfirmed-re-trigger-holds-the-gate",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Evaluate only the merge gate, as it stands now, for PR #135, in a repository whose policy has `auto-merge: true`. CI is green on the current head iii999; there is no conflict, no DECISION, MERGE_RISK or NEEDS_USER item, no recovery ref, no held draft, and the dependency view is proven. Codex's first review request on iii999 showed its in-progress reaction for 25 minutes, so the supervisor re-triggered it. Two minutes after the re-trigger, the first request answered with a summary comment carrying `Reviewed commit: iii999` and no threads. (a) The re-trigger's Codex check run on iii999 is in `queued`, a state Codex's convention reports separately from `in_progress`. Does the gate pass? (b) Instead, the re-trigger shows no reaction, check or reply yet, and its confirmation window has not elapsed. Does the gate pass?",
+      "expected_output": "(a) No. The re-trigger is unanswered and shows the provider's mark — queued is a mark that it was taken up and can still answer — so the review is not clean and #135 does not merge; it waits on that request within its own time. (b) No. A trigger still inside its confirmation window holds as well: it may yet be taken up and answer on iii999. #135 is held, waiting on the re-trigger. In neither case is another trigger posted.",
+      "assertions": [
+        "at (a) the gate does not pass while the re-trigger is queued",
+        "at (b) the gate does not pass while the re-trigger is inside its confirmation window",
+        "#135 is not merged in either case"
+      ],
+      "files": []
+    },
+    {
+      "id": 44,
+      "name": "a-stalled-rounds-decision-holds-only-its-own-pr",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). backlog-orchestrator settles a wave of two open PRs, #140 and #141, both in acme/api, whose policy has `auto-merge: true`; the caller passed resolved policy, freshness checks and a proven dependency view for both, and each PR's base is the current head of the default branch. Nobody is present, so the walkthrough declines in one line. #141: CI green on its current head, no conflict, its Codex round clean on that head with a matching `Reviewed commit:` and no threads, no recovery ref, not a held draft, and no item raised on it. #140: CI green, no conflict, but its Codex round stalled, the supervisor re-triggered it once, neither request has answered, and the supervisor raised the round to the owner as a DECISION on #140 offering: merge without the unanswered requests, re-trigger once more, or leave it waiting. Nobody has replied to it. summarize-wave carried that DECISION as an action point, and it is the only item outstanding in the wave. (a) At step 6, which PRs merge, and what is each unmerged one reported held by? (b) Suppose instead the only outstanding item were a DECISION on #140 from the chartered-scope check, #140's review otherwise clean. Does #141 merge?",
+      "expected_output": "(a) #141 merges through merge-stack; #140 does not. A stalled review round's DECISION holds only its own PR, as a body-drift MERGE_RISK does, so it does not hold #141, whose every other gate condition passes. #140 stays held: its DECISION is outstanding and unruled, and with no `Reviewed commit:` matching its head and no owner reply choosing to merge without the round, its review is NOT REVIEWED; it is reported held by that outstanding DECISION (or the unreviewed round), naming the options offered, and only a request answering or an owner reply choosing an option moves it. (b) No. Any other outstanding DECISION holds every PR in the wave, not only the one it was raised on, so #141 is held by it too.",
+      "assertions": [
+        "at (a) #141 merges and #140 does not",
+        "at (a) the answer says the stalled round's DECISION holds only #140, not the wave",
+        "at (a) #140 is reported held by its outstanding DECISION or its unreviewed round, and nothing is treated as releasing it",
+        "at (b) #141 does not merge, because an ordinary outstanding DECISION holds the whole wave"
+      ],
+      "files": []
+    },
+    {
+      "id": 45,
+      "name": "an-unattended-owner-reply-choosing-merge-without-does-not-pass-the-gate",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). implement-issue settles its one PR, #135, on a scheduled wake, in a repository whose policy has `auto-merge: true`. CI is green on the current head hhh888; there is no conflict, no MERGE_RISK or NEEDS_USER item, no recovery ref, no held draft, no threads, and the dependency view is proven. Codex's round on hhh888 stalled after its one re-trigger, neither request has answered, and the supervisor posted a DECISION on #135 offering: merge without the unanswered requests, re-trigger once more, or leave it waiting. The owner has replied on the PR, from their own account, \"merge without\". Nobody is present, so the walkthrough declines in one line. Does #135 merge in this settle?",
+      "expected_output": "No. The owner's reply is a real choice of an offered option, but an unattended choice to merge without reaches the gate only once the walkthrough retires the DECISION, and this walkthrough declined. The item is still outstanding, so the round is neither completed nor released and the review is NOT REVIEWED. #135 is held, reported with the owner's choice and the open DECISION, for the owner to settle by running settle-outstanding-decisions, which can retire it from that reply without asking again.",
+      "assertions": [
+        "the gate does not pass and #135 is not merged",
+        "the answer says the owner's choice reaches the gate only once the walkthrough retires the DECISION",
+        "the answer names the outstanding DECISION as settleable by the owner running the walkthrough"
+      ],
+      "files": []
     }
   ]
 }

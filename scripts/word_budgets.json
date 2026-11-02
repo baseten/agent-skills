@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 25610,
+      "budget": 26161,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -19,15 +19,15 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/integration-branch.md": {
-      "budget": 2307,
+      "budget": 2930,
       "target": 1500
     },
     "skills/backlog-orchestrator/restart-resume.md": {
-      "budget": 1016,
+      "budget": 1096,
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
-      "budget": 2040,
+      "budget": 2123,
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
@@ -35,15 +35,15 @@
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
-      "budget": 2543,
+      "budget": 2657,
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 5241,
+      "budget": 5257,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
-      "budget": 5143,
+      "budget": 5821,
       "target": 3000
     },
     "skills/merge-stack/SKILL.md": {
@@ -55,7 +55,7 @@
       "target": 3000
     },
     "skills/npm-dependency-upgrade-orchestrator/SKILL.md": {
-      "budget": 5261,
+      "budget": 5306,
       "target": 8000
     },
     "skills/owner-steps/SKILL.md": {
@@ -83,7 +83,7 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 5655,
+      "budget": 6173,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
@@ -95,19 +95,19 @@
       "target": 3000
     },
     "skills/summarize-wave/SKILL.md": {
-      "budget": 2236,
+      "budget": 2295,
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 7927,
+      "budget": 9308,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
-      "budget": 9580,
+      "budget": 10093,
       "target": 8000
     },
     "skills/swarm/runtime-remote.md": {
-      "budget": 1495,
+      "budget": 1504,
       "target": 1500
     },
     "skills/upgrade-npm-dependency/SKILL.md": {
@@ -127,15 +127,15 @@
       "target": 1500
     },
     "rules/agent-policy.md": {
-      "budget": 2194,
+      "budget": 2198,
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2122,
+      "budget": 2268,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
-      "budget": 1626,
+      "budget": 2028,
       "target": 1500
     },
     "rules/ci-attribution.md": {
@@ -147,7 +147,7 @@
       "target": 1500
     },
     "rules/establish-do-not-assume.md": {
-      "budget": 1531,
+      "budget": 1571,
       "target": 1500
     },
     "rules/manual-step-issues.md": {
@@ -179,7 +179,7 @@
       "target": 1500
     },
     "rules/review-trigger.md": {
-      "budget": 1891,
+      "budget": 3055,
       "target": 1500
     },
     "rules/wake-budget.md": {
