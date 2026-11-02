@@ -78,8 +78,10 @@ never to act on.
   this skill writes nothing at the site of a run's open item except the recorded
   ruling for it, so that no write of its own can read there as the owner's reply.
 - **The chat carries only what needs the owner to act**: a decision, an approval,
-  an owner step, a failure only the owner can clear. Progress, finished checks and
-  items waiting on others go to the ledger. A sweep with nothing for the owner ends
+  an owner step, a failure only the owner can clear. Progress and items waiting on
+  others go to the ledger, where a run's row carries its state from the fixed set and
+  links to its checks — never a check's outcome, which stays in this session's report
+  (protected rule 7 on a forge ledger). A sweep with nothing for the owner ends
   in one line linking the ledger.
 - **Every update about a run opens with three links** — the session
   (`https://claude.ai/code/<session id>`), its tracker issue or epic, and its PR —
@@ -234,7 +236,8 @@ the stream.
 **Correct misreadings where they live.** A gate written as *after Run 2* means that
 run's manifest, not every open issue in its epic; a reply that reads it the wide
 way is holding work nothing holds. Where a run states a gate its epic's record
-contradicts, post the correction on that epic — quoting the record and linking
+contradicts, post the correction on that epic — never at the site of a run's open
+item (*Rules*) — quoting the record and linking
 it — then tell the run by message, pointing at the correction. Where the record
 itself is ambiguous, the reading is the owner's to rule: it goes to the owner
 pass, not into a correction.
@@ -344,7 +347,8 @@ each run's epic or issue, naming the session, as a ruling is recorded (*4. Owner
 pass*, step 4): it is the record a reused run verifies before taking the work.
 
 **A conditional go** — "start the batch on #967 when #2049's wave 5 merges" — is
-recorded the same way, its condition stated as facts the forge can show: a PR
+the owner's choice of an option put to them, recorded the same way under the owner's
+account, its condition stated as facts the forge can show: a PR
 merged, an issue closed, every PR of a named wave merged. The ledger carries it.
 **A later sweep, a scheduled one included, executes it once the condition is
 verified on the forge**, and reports that it did. The go is the owner's recorded
@@ -387,9 +391,13 @@ a session its run did not create only on the owner's ruling (*Releasing a
 worker*, the paragraph beginning *Two things are never archived*). The go may be a
 standing ruling recorded on the forge — "retire each run once its PRs are
 merged" — verified against each retirement on the forge, not asked afresh, and a
-scheduled firing may act on it too. Only once its wrap-up is posted on its
+scheduled firing may act on it too, for a session the ledger records as dispatched
+or adopted by this conductor. Only once its wrap-up is posted on its
 epic or issue; every PR of its run is merged, closed or recorded as moved to another
-run; nothing of its run is stranded — each of its branches' heads is on the remote,
+run; nothing of its run is stranded — each of its branches' heads, taken from its last
+state block or result, or from a report it builds from durable state where the
+channel is open, is reachable on the remote, `list_sessions` shows no live worker of
+it,
 and its last state block reports no live worker session and no outstanding recovery
 ref; and it is not `RUNNING`.
 

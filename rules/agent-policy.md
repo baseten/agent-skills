@@ -56,7 +56,7 @@ Report the resolved policy per PR in the checkpoint output, with its source — 
 - a branch carrying a commit with a repair-pass trailer, since a rebase can drop one and the counters are rebuilt from them;
 - a parent with open child PRs, and a branch a live or unreleased worker reported a head on;
 - a branch with any commit this run, or its workers, did not author — an adopted PR, an existing branch handed to `implement-issue` — whose history is not the run's to rewrite; a run knows its own commits only by the SHAs it recorded pushing, so where it cannot show every commit is one of them, after a restart included, it merges;
-- a rebase that would conflict, which is not made: the update is a merge, and its conflict is handled as a merge's is.
+- a rebase that would conflict, which is not made: nor is a merge — the PR is reported conflicted, and its resolution is a dispatched `repair-pr` pass or the owner's.
 
 **A rebase is a caller push**, made by the branch's single mutator under its lock, and is mechanical only on that rule's tree check (the *mechanical pushes* shared rule, which `supervise-prs` applies).
 

@@ -104,8 +104,8 @@ Read the output against the expectation:
 
 # 4. Record
 
-After each judged step, **comment the result on the issue, redacted**: the step, pass
-or fail, and the deciding lines of output with anything secret-looking replaced by
+After each judged step, **comment the result on the issue, redacted**: the step, done
+or not done, and the deciding lines of output with anything secret-looking replaced by
 `[redacted]`. **Then tick that step's checkbox in the issue body**, changing
 nothing else in it. Both are authored writes under
 `references/authored-write-form.md` and `references/posting-identity.md`.
@@ -116,7 +116,7 @@ When the steps are done:
 
 1. **check *Done when*** against the output — ask for a final check where it needs
    one;
-2. **comment the summary** on the issue: what passed, what was diagnosed and fixed,
+2. **comment the summary** on the issue: what was done, what was diagnosed and fixed,
    any runbook disagreement to correct;
 3. **close the issue** as completed where *Done when* holds; otherwise leave it
    open and say what is still open;

@@ -44,11 +44,11 @@ evals (`<skill>#<id>`).
 2. **Identity is observed authorship; own writes are known by id or footer, never content.**
    `rules/posting-identity.md`; `swarm`, *Blocked workers*; `supervise-prs`, *Integration-branch CI*, step 3.
    backlog-orchestrator#5 #58,
-   resolve-pr-comment#48 #49, supervise-prs#86 #89 #105, backlog-orchestrator#90 #91.
+   resolve-pr-comment#48 #49, supervise-prs#86 #89 #105, backlog-orchestrator#90 #91 #102 #103.
 3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
    `backlog-orchestrator`, *Arming the wait when nothing is in flight*; `rules/review-trigger.md`,
-   *A stalled round*; `rules/conductor-exchange.md`, *Relayed rulings*. backlog-orchestrator#58 #92 #96
-   #103, settle-and-merge#41 #45, supervise-prs#104 #105, conductor#25, implement-issue#35.
+   *A stalled round*; `rules/conductor-exchange.md`, *Relayed rulings*, *New work, or a fold*. backlog-orchestrator#58 #92 #96
+   #103, settle-and-merge#41 #45, supervise-prs#104 #105, conductor#25 #37, implement-issue#35 #38.
 4. **Never request, re-request or remove a human reviewer.** `rules/review-trigger.md`.
    supervise-prs#33 #74.
 5. **The platform's auto-fix posture is overridden**: only a dispatched `repair-pr`
@@ -63,7 +63,7 @@ evals (`<skill>#<id>`).
    backlog-orchestrator#71, implement-issue#35.
 7. **No forge write reports verification, bar a gate note under `refs/notes/agent-gate/*` and, in a `NEEDS_USER` or `DECISION` hold item, the failed or unrun check it holds on with its commits; SHAs are bare.** `rules/authored-write-form.md`.
    create-pr#11 #22, resolve-pr-comment#17, supervise-prs#85, swarm#27 #28 #29,
-   backlog-orchestrator#92 #93 #94 #97, settle-and-merge#35 #37 #38.
+   backlog-orchestrator#92 #93 #94 #97, settle-and-merge#35 #37 #38, conductor#24 #32.
 8. **Merges are opt-in, through the one gate, failing closed.** `settle-and-merge`, *The
    merge gate*; `rules/agent-policy.md`. backlog-orchestrator#0 #2. The gate reads review on the current
    head: a publish changes no head and is inert unless the repository's own configuration (policy file,
@@ -95,9 +95,10 @@ evals (`<skill>#<id>`).
    wherever a rule needs one (`rules/agent-policy.md`, *Branch updates*). settle-and-merge#46.
 9. **Stranded work reaches a remote ref before any archive; permission holds name the
    literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked
-   workers*; `rules/wake-budget.md`. backlog-orchestrator#4 #19, swarm#20 #25 #26,
+   workers*; `rules/wake-budget.md`; `rules/conductor-exchange.md`, *The watch after settling*; `conductor`,
+   *6. Dispatch*. backlog-orchestrator#4 #19, swarm#20 #25 #26,
    implement-issue#14 #19 #20 #21, supervise-prs#87, backlog-orchestrator#92, conductor#5 #8 #21 #31 #35,
-   implement-issue#36.
+   implement-issue#36 #39.
 
 **A PR changing a protected rule's text says so in its body**, and gets a blind
 rule-by-rule audit plus a pinning-eval round before merge. None is an issue-#49

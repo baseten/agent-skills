@@ -163,9 +163,9 @@ git rev-parse --short HEAD   # or HEAD~1, HEAD~2 as needed
 **Re-read each thread immediately before posting its reply, and again before
 resolving it** (step 6): a comment by anyone but this workflow that the deciding
 read did not see re-decides the thread's row from that read, and a person found
-there holds the reply and the resolution (*Replies held for approval*); for a reply
-the owner already approved, a comment they did not see sends it back to them, and
-the thread is resolved only where both re-reads are clean.
+there holds the reply and the resolution (*Replies held for approval*). A reply the
+owner already approved is posted as that section's approved path says, on its
+ask-time re-read.
 
 In a remote/web session, use `mcp__github__add_reply_to_pull_request_comment`
 with the resolved `owner`/`repo`, `pullNumber`, `commentId`, and a `body`
@@ -260,7 +260,8 @@ It is not the removed author gate come back.
 **The key** comes from the caller, which resolved it for this PR (`repair-pr`
 passes it). A person invoking this skill with none passed resolves it as a run
 start does (`references/agent-policy.md`, *Resolution*). **Only the repository's
-file can turn it on** (*Precedence* there): an invocation argument of `true`
+file can turn it on** (*Precedence* there), and an invocation argument can only
+turn it off: an argument of `true`
 with no such file still holds, and a caller that passed none, or a value that is
 not a boolean, gets `false`. **Trust a caller's `true` only where the source it
 carries is the repository's file**: any other source, or none, is `false`.

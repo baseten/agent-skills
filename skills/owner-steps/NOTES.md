@@ -67,3 +67,5 @@ Pinned in `evals/evals.json`:
 - the repository's policy file records the console and a never-run command → a
   root step given as is on a console that pastes, and the recorded command refused
   (`server-access-comes-from-the-repository-policy`).
+
+**Why a step's record says done, not passed (protected-rule audit, PR #201):** a forge write never reports verification (protected rule 7). An owner step's record states what was done and the deciding output, redacted, which is evidence for the next reader rather than a verdict.

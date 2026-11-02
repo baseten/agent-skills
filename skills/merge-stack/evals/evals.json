@@ -108,6 +108,17 @@
         "the answer gives the reason"
       ],
       "files": []
+    },
+    {
+      "id": 9,
+      "name": "a-restack-push-pins-its-lease-to-the-recorded-head",
+      "prompt": "You are executing the merge-stack skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Parent PR P merged; you rebased its direct child C onto P's base cleanly. C's head before the rewrite was 4a5b6c7. A background fetch may have run since. Question: what exact push do you make for C?",
+      "expected_output": "git push --force-with-lease=<C's branch>:4a5b6c7 origin <C's branch> - the lease pinned to C_HEAD_OLD, the head recorded before the rewrite. Never a bare --force-with-lease, which checks a remote-tracking ref a background fetch can advance, and never an unconditional --force.",
+      "assertions": [
+        "the answer pins the lease to 4a5b6c7",
+        "the answer does not use a bare --force-with-lease or --force"
+      ],
+      "files": []
     }
   ]
 }

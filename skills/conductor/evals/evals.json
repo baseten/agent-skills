@@ -312,7 +312,7 @@
       "id": 24,
       "name": "the-default-branch-is-swept-and-reported",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Repository acme/api. Every run replies that its stream is green. The sweep reads the default branch: its head is 4f2a91c, the CI run on it failed in the e2e job, and the deploy that head triggered is still pending. Question: what does the report say about the default branch, and do you take any action on it?",
-      "expected_output": "Put the default branch in chat - it is a failure only the owner can clear - with its head 4f2a91c, the failed e2e job and the pending deploy, opening with its links; the green streams go to the ledger, not chat. The runs' green claims are about their own PRs and do not make the default branch green. The conductor implements nothing, so it fixes nothing; where a run's next merge depends on the default branch, that dependency goes into the plan. The ledger links the CI and deploy runs without writing their outcomes.",
+      "expected_output": "Put the default branch in chat - it is a failure only the owner can clear - with its head 4f2a91c, the failed e2e job and the pending deploy, opening with its links; the other streams' states go to the ledger, never their check outcomes. The runs' green claims are about their own PRs and do not make the default branch green. The conductor implements nothing, so it fixes nothing; where a run's next merge depends on the default branch, that dependency goes into the plan. The ledger links the CI and deploy runs without writing their outcomes.",
       "assertions": [
         "the answer reports the head SHA, its failed CI and its pending deploy",
         "the answer does not report the default branch as green from the runs' replies",
@@ -412,11 +412,11 @@
       "id": 32,
       "name": "a-sweep-with-nothing-for-the-owner-ends-in-one-line",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. This sweep: three runs progressed (two PRs went green, one opened), you verified each claim on GitHub, one run is waiting on a reviewer, and nothing needs the owner - no decision, approval, owner step or failure. Question: what do you write in chat, and where does the rest go?",
-      "expected_output": "Chat gets one line saying nothing needs the owner, linking the ledger. The progress, the checks verified, and the run waiting on a reviewer go into the ledger - its live-sessions table rows edited in place and one changelog line - not into chat. The report states results as verified, never the steps of checking.",
+      "expected_output": "Chat gets one line saying nothing needs the owner, linking the ledger. The progress and the run waiting on a reviewer go into the ledger - its live-sessions table rows edited in place with each run's state from the fixed set and links to its checks, never their outcomes - and one changelog line. The report states results, never the steps of checking.",
       "assertions": [
         "the answer writes one line in chat linking the ledger",
         "the answer puts the progress and the waiting run in the ledger, not chat",
-        "the answer does not narrate how each claim was checked"
+        "the answer writes no check outcome into the ledger and does not narrate how claims were checked"
       ],
       "files": []
     },
@@ -468,6 +468,18 @@
         "the answer puts (a)'s full text in the ledger",
         "the answer keeps (b)'s text off the GitHub ledger",
         "the answer still names (b) in the ledger and offers its full text to the owner"
+      ],
+      "files": []
+    },
+    {
+      "id": 37,
+      "name": "an-unapproved-relay-is-never-posted-at-a-holds-site",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner says in this chat, then leaves before you can show them the comment: 'For #812 go with A.' #812 carries a run's open DECISION item offering A and B. Question: do you post the relayed ruling on #812?",
+      "expected_output": "No. Write the ruling to the ledger first with the owner's exact words. But a relay goes to the site of a run's open hold only as the owner approved the complete comment; without that approval nothing is recorded at #812, and the owner is told to answer there directly (or to approve the comment when back). The footer is never what would make an unapproved relay safe.",
+      "assertions": [
+        "the answer writes the ruling to the ledger",
+        "the answer does not post the relay at #812 without the owner's approval of the complete comment",
+        "the answer tells the owner to answer at the site or approve the comment"
       ],
       "files": []
     }
