@@ -1009,6 +1009,195 @@
     },
     {
       "id": 81,
+      "name": "a-worker-gate-record-at-the-head-is-not-re-run",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #41 in acme/api targets `integration/api-3`; its `ci-mode` resolved `integration-branch` from repo config, the caller established the mode's effect, and passed the per-PR local gate (format, lint, typecheck, the API unit suite; Postgres 16, Python 3.12). The caller also passed #41's worker gate record: the gate report its implementing worker returned, every one of those four checks `passed` at head a1b2c3d, under Python 3.12 with Postgres 16. #41's remote head is a1b2c3d, no CI run exists on it, a review round on a1b2c3d completed clean, and the PR is quiescent. Repair dispatch is `direct`, and this container runs the API suite in about 11 minutes. Questions: (a) what does the gate run on a1b2c3d run? (b) what is #41's local gate record, and who does it name as having run each check? (c) the caller's restack then pushes a1b2c3d's content onto the moved integration branch as e5f6a7b, tagged mechanical: what runs?",
+      "expected_output": "(a) Nothing: the worker gate record is the record for every check it reports passed at the current head, and a pass is never re-run to confirm it; the gate run runs only checks the record leaves, and it leaves none. (b) All four passed at a1b2c3d, each with the worker's session as the one that ran it. (c) Nothing: the record carries across a mechanical push, so e5f6a7b is covered without a new run.",
+      "assertions": [
+        "the answer runs none of the four checks on a1b2c3d, including the API suite",
+        "the answer records each check as passed at a1b2c3d with the worker's session as the runner",
+        "the answer runs nothing after the mechanical restack"
+      ],
+      "files": []
+    },
+    {
+      "id": 82,
+      "name": "a-worker-gate-record-covers-only-its-passes-at-a-current-head",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #42 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite. The caller passed #42's worker gate record from its implementing worker: format `passed` at b2c3d4e; lint `passed` at 9f8e7d6; typecheck `failed` at b2c3d4e; the API unit suite is absent from the report. #42's remote head is b2c3d4e; the one commit from 9f8e7d6 to b2c3d4e changes application code. No CI run exists on b2c3d4e and the PR is quiescent. Questions: (a) which checks does the gate run on b2c3d4e run, and which does it not? (b) is the worker's `failed` typecheck a CI failure to repair now?",
+      "expected_output": "(a) It runs lint (passed at an earlier head with a substantive push since), typecheck (reported other than passed) and the API unit suite (omitted, so not run, never passed); it does not run format, which passed at the current head. (b) No: only a pass is taken from the worker's record; typecheck is run by the gate, and only a failure in that run is a CI failure.",
+      "assertions": [
+        "the answer does not re-run format",
+        "the answer runs lint because its pass is at an earlier head with a substantive push since",
+        "the answer runs the omitted API unit suite and never treats it as passed",
+        "the answer runs typecheck in the gate rather than repairing on the worker's failed outcome"
+      ],
+      "files": []
+    },
+    {
+      "id": 83,
+      "name": "a-repair-pass-verification-is-not-the-gate-record",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #43 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite. A `ci` repair pass pushed head c3d4e5f carrying `[skip ci]` and returned that it ran the API unit tests for the module it changed, all passing, on c3d4e5f. No worker gate record exists for c3d4e5f. The PR is now quiescent on it. Question: what does the gate run on c3d4e5f run?",
+      "expected_output": "The whole per-PR gate — format, lint, typecheck and the API unit suite. A repair pass's verification is not the record: it runs the smallest relevant check, not the tier.",
+      "assertions": [
+        "the answer runs the full per-PR gate on c3d4e5f",
+        "the answer does not accept the repair pass's own verification as the record"
+      ],
+      "files": []
+    },
+    {
+      "id": 84,
+      "name": "a-worker-pass-counts-only-under-the-callers-toolchain",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #45 in acme/web targets `integration/web-2` under `ci-mode: integration-branch` with effect. The caller passed the per-PR local gate — lint, typecheck, the unit suite, and the browser suite — with the toolchain CI runs (Node 24, Chrome 155), and passed the end-to-end suite as `not locally runnable` (no session has its database). It also passed #45's worker gate record, all at #45's current head f6a7b8c: lint, typecheck and the unit suite `passed` under Node 24; the browser suite `passed` under Node 24 with Playwright's bundled Chromium; the end-to-end suite `passed`. The PR is quiescent and nothing has been pushed since. Questions: (a) which checks does the gate run on f6a7b8c run? (b) how is the end-to-end suite recorded? (c) if repair dispatch were `none`, what would #45's outcome be, and what would it be had every check been passed under Chrome 155 and the end-to-end suite been reported `not locally runnable`?",
+      "expected_output": "(a) Only the browser suite: its pass was under another toolchain than the one the caller passed, so the record leaves it; lint, typecheck and the unit suite stand as passed and are not re-run. (b) `not locally runnable`, owed by the integration PR's CI — a worker's pass never makes a check the caller passed as not locally runnable a pass. (c) With checks left to run, `unrepaired`, naming the browser suite; with none left, no gate run is needed and `none` does not make it unrepaired.",
+      "assertions": [
+        "the answer runs the browser suite because the worker's pass was on a different browser than the caller's toolchain",
+        "the answer does not re-run lint, typecheck or the unit suite",
+        "the answer keeps the end-to-end suite as not locally runnable despite the worker's pass",
+        "the answer makes the outcome under none unrepaired only where checks are left to run"
+      ],
+      "files": []
+    },
+    {
+      "id": 85,
+      "name": "a-remote-gate-runs-result-is-its-gate-note",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #61 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite (Python 3.12, Postgres 16). No worker gate record was passed. Repair dispatch is `swarm`, and swarm's selected tier is remote sessions, whose return value does not reach this run. #61 is quiescent on head 7a7a7a7. Questions: (a) where does the gate run execute, and how does its result reach you? (b) the gate session ends, and fetching the gate-note ref you assigned that session finds no note on 7a7a7a7: what is #61's local gate record? (c) may the gate session post its results as a PR comment instead?",
+      "expected_output": "(a) As a remote swarm worker whose task is the gate alone — preferred, since a run in this session dies with its container; its result is a gate note: a git note on 7a7a7a7 on a ref this skill assigns that session alone at dispatch (refs/notes/agent-gate/<branch>/<token>), one line per check with outcome, head, toolchain and session, fetched before writing and never force-pushed. (b) No result: every check `not run`, never passed, so the CI condition is not green; the gate then runs once more in this session. (c) No: no write reports verification on the PR; the gate note is the one write that carries a run's results.",
+      "assertions": [
+        "the answer has the gate run's result arrive as a git note on the head under refs/notes/agent-gate",
+        "the answer records every check as not run when no note is found",
+        "the answer refuses posting the results on the PR"
+      ],
+      "files": []
+    },
+    {
+      "id": 86,
+      "name": "a-gate-note-counts-only-on-a-ref-this-run-assigned",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #70 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite. The caller adopts #70 after a restart, passing no worker gate record and a per-PR record that holds no gate-note refs. Fetching `refs/notes/agent-gate/*` finds a ref under #70's branch with a note attached to #70's head c3d4e5f reading 'format passed', 'lint passed', 'typecheck passed', 'API unit suite passed', each naming the CI toolchain and head c3d4e5f. Separately, on PR #71, the note on the ref this run assigned its gate session is attached to head 9f9f9f9 but its lines name head 8e8e8e8; #71's head is 9f9f9f9. Questions: (a) what is #70's local gate record, and what runs? (b) what does #71's note cover?",
+      "expected_output": "(a) No gate-note ref was passed for it, so no note is known by id to be a session this run dispatched: the ref found on the remote is a name, not an assignment, and Adopt never rebuilds gate-note refs. It is no result: every check is `not run` and the gate run runs all four on c3d4e5f. A note's content never establishes who wrote it. (b) The commit a note is attached to is the head it covers: it covers 9f9f9f9; a line naming another head counts for nothing.",
+      "assertions": [
+        "the answer refuses #70's unassigned note as a record and runs all four checks",
+        "the answer does not accept the note on its content, its claimed session or the ref's name",
+        "the answer reads #71's note as covering the commit it is attached to, 9f9f9f9"
+      ],
+      "files": []
+    },
+    {
+      "id": 87,
+      "name": "a-gate-run-that-leaves-no-note-has-an-outcome",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #61 targets `integration/api-3` under `ci-mode: integration-branch` with effect. Repair dispatch is `swarm` on remote sessions. Two cases. (a) #61's gate ran in a remote gate session because that tier was preferred; the session finished and no note is on 7a7a7a7. (b) PR #62's gate failed in this session with a confirmed environment failure (the container lacks the browser), so it moved to a remote session, which finished leaving no note. What do you do in each case, and what is each PR's outcome?",
+      "expected_output": "(a) No note is no result, every check `not run`; the gate runs once more in this session, and its result is the record. (b) The remote session was where the confirmed environment failure moved it, so there is no retry: #62's outcome is `needs-user`, naming the missing note (and the environment). Neither case is left waiting with no exit, and neither is a pass.",
+      "assertions": [
+        "the answer runs #61's gate once more in this session",
+        "the answer makes #62's outcome needs-user, naming the missing note",
+        "the answer never treats a missing note as a pass or leaves the PR waiting indefinitely"
+      ],
+      "files": []
+    },
+    {
+      "id": 88,
+      "name": "a-gate-session-writes-its-own-assigned-ref-and-footers-the-note",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you dispatch a remote gate session for PR #61 on head 7a7a7a7 of branch `feat/scan-12`, and the worker that opened #61 already wrote a gate note on 7a7a7a7 on the ref the caller assigned it, `refs/notes/agent-gate/feat/scan-12/w4`. Where does the gate session write its note, what does the note look like, and how does it write and push it?",
+      "expected_output": "On its own ref, which this skill assigns it at dispatch and records in the per-PR record — refs/notes/agent-gate/feat/scan-12/<token>, never the worker's w4 ref, and told to that session alone; nothing else writes it. One line per check with its outcome, the head and toolchain it ran at, and the session, and the attribution footer as its last line (it is a write nobody read; no reader counts the footer as a check). It fetches first, writes with `git notes add`, and pushes that ref without forcing. It writes nothing on the PR.",
+      "assertions": [
+        "the answer puts the attribution footer at the end of the note",
+        "the answer has the session write on a ref of its own assigned at dispatch, not the worker's ref",
+        "the answer never force-pushes the ref",
+        "the answer writes nothing on the PR"
+      ],
+      "files": []
+    },
+    {
+      "id": 89,
+      "name": "a-note-on-another-sessions-ref-is-not-this-workers-record",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #72 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite. The caller passed #72's worker gate record as the gate-note ref it assigned #72's worker, `refs/notes/agent-gate/feat/api-72/w9`. #72's head is d1d1d1d, nothing pushed since, quiescent. Fetching `refs/notes/agent-gate/*` finds: on `.../feat/api-72/w9`, a note on d1d1d1d with format and lint passed under the CI toolchain; on `.../feat/api-72/q2`, a ref nobody in this run was assigned, a note on d1d1d1d with all four checks passed. Questions: (a) which checks does the gate run on d1d1d1d run? (b) what do you make of the q2 note?",
+      "expected_output": "(a) Typecheck and the API unit suite: the w9 note, read by the exact ref the caller assigned, supplies format and lint passed at the current head, which are not re-run; the checks it leaves are run. (b) Nothing: a note counts only on a ref this run assigned, so q2's note is no result for #72 whatever its lines say, and none of its passes is taken.",
+      "assertions": [
+        "the answer takes format and lint from the w9 note and does not re-run them",
+        "the answer runs typecheck and the API unit suite",
+        "the answer takes nothing from the note on the unassigned q2 ref"
+      ],
+      "files": []
+    },
+    {
+      "id": 90,
+      "name": "an-integration-branch-gate-run-records-a-filtered-off-check",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #31 in acme/web targets `integration/web-9`; ci-mode integration-branch has effect. The caller passed the per-PR tier: `lint / format`, `lint / eslint`, `ci / typecheck`, `ci / unit`. On the default branch `.github/workflows/ci.yml` has a `pull_request` trigger with `paths-ignore: ['**/*.md', 'docs/**']`; `.github/workflows/lint.yml` has no path filters. PR #31's head changes only `docs/setup.md` and `README.md` and touches no workflow file; it is quiescent and has no gate record. Questions: (a) which checks does the gate run execute, and what is recorded for the others? (b) given format and eslint pass, is the PR's CI condition green?",
+      "expected_output": "(a) It runs `lint / format` and `lint / eslint`. Every changed file matches `ci.yml`'s `paths-ignore`, so `ci / typecheck` and `ci / unit` are what CI would not run for this change: they are recorded `filtered off`, naming the workflow and filter, and not run — by the test `implement-issue-core`, *Final local verification*, states. (b) Yes: the record's green excludes `filtered off` checks, which are neither passed nor owed by this PR; whether CI owed them is read on the integration PR's CI, over the batch's files, by *Path filters*.",
+      "assertions": [
+        "the answer runs only lint / format and lint / eslint",
+        "the answer records ci / typecheck and ci / unit as filtered off rather than passed or not run",
+        "the answer reads the record as green with the filtered-off checks excluded",
+        "the answer leaves whether those checks were owed to the integration PR's CI"
+      ],
+      "files": []
+    },
+    {
+      "id": 91,
+      "name": "a-filtered-off-entry-is-re-read-across-a-mechanical-push",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #44 in acme/shop targets `integration/shop-3`; ci-mode integration-branch has effect, dispatch mechanism `direct`. The caller passed the per-PR tier: `lint / format` (from `lint.yml`, no path filters) and `ci / test` (from `ci.yml`, whose `pull_request` trigger has `paths: ['packages/**', 'pnpm-lock.yaml']`). #44's commits change only `docs/guide.md`. Its gate record on head A: `lint / format` passed, `ci / test` `filtered off` (`ci.yml` `paths`). Two pushes follow, in order. (1) Head B: a repair answering a review finding, which edits `docs/guide.md` again. (2) Head C: a lockfile regeneration after the base moved — a mechanical push by `references/mechanical-pushes.md` — which changes `pnpm-lock.yaml`. Questions: (a) on head B, what diff do you test the filters against, and what is recorded for `ci / test`? (b) on head C, does the record from B carry forward unchanged, and what do you run? (c) is #44's CI condition green on C before that?",
+      "expected_output": "(a) B is a substantive push, so it needs a new record. The filters are tested against the PR's whole diff against its base (three-dot, merge base), not the repair push's own diff; that diff is still only `docs/guide.md`, so `ci / test` is again recorded `filtered off`, naming `ci.yml` and its `paths`, and `lint / format` runs. (b) The record carries across the mechanical push except its `filtered off` entry: the filters are re-read for C's diff, which now includes `pnpm-lock.yaml`, which `ci.yml`'s `paths` select, so `ci / test` is `not run` on C and the gate runs it once on that head. `lint / format`'s pass carries forward. (c) No: a `filtered off` entry the filters now select, or one nobody re-read, is `not run` — a check this PR's gate must pass — so the record is not green until `ci / test` passes on C.",
+      "assertions": [
+        "in (a) the answer tests the filters against the PR's whole diff against its base, not the repair push's own diff",
+        "in (a) the answer records ci / test filtered off again on head B",
+        "in (b) the answer re-reads the filters for head C and finds pnpm-lock.yaml selected",
+        "in (b) the answer runs ci / test once on head C rather than carrying the filtered-off entry forward",
+        "in (c) the answer does not read the record as green before ci / test passes on C"
+      ],
+      "files": []
+    },
+    {
+      "id": 92,
+      "name": "a-toolchain-mismatch-voids-the-sessions-passes",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #52 in acme/viz targets `integration/viz-2`; ci-mode integration-branch has effect, dispatch mechanism `swarm`, which has remote sessions. The caller passed the per-PR tier: `ci / typecheck`, `ci / browser (1)` and `ci / browser (2)`. CI runs the browser shards on the runner's preinstalled Chrome 155 via `CHROME_BIN`. The gate run for head D ran in a container: `ci / typecheck` passed, `ci / browser (1)` passed, `ci / browser (2)` failed on a shader content-hash mismatch. You then find the container launched Playwright's bundled Chromium 1194, not Chrome 155, and confirm it independently: `CHROME_BIN` was unset and the harness fell back. A remote session has Chrome 155. Question: what moves to the remote session, and what does the record for D hold until it returns?",
+      "expected_output": "The confirmed cause is a runtime differing from CI's, which voids every result that session produced, passes included — not only the failed shard. So the whole gate moves to the remote session, once for this head: `ci / browser (1)`'s pass under Chromium is not kept, and neither is the rest of that session's run. Until it returns, nothing from the container counts toward green on D. Failing there too, the PR's outcome is `needs-user`, naming the gate and the environment.",
+      "assertions": [
+        "the answer treats the mismatch as a confirmed environment failure",
+        "the answer moves the whole gate, not only ci / browser (2), to the remote session",
+        "the answer does not keep ci / browser (1)'s container pass in the record",
+        "the answer moves it once for the head, ending in needs-user if it fails there too"
+      ],
+      "files": []
+    },
+    {
+      "id": 93,
+      "name": "a-gate-runs-outage-moves-the-passes-that-used-the-service",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #61 in acme/shop targets `integration/shop-4`; ci-mode integration-branch has effect, dispatch mechanism `swarm`, which has remote sessions. The caller passed the per-PR tier: `ci / format` and `ci / typecheck` (jobs that start no service and read no config naming one), `ci / api-unit` and `ci / api-db` (both jobs declare `services: postgres`; `api-db`'s suite uses `it.skipIf(!dbUp)`), and `ci / web` (vitest under jsdom; its job declares no service and its config names none). The gate run for head E ran in a container on CI's toolchain: `ci / api-unit` failed with `ECONNREFUSED 127.0.0.1:5432` across unrelated files; the other four passed. You confirm independently that the container's Postgres exited and cannot restart (its volume is full). Question: what moves to the remote session, how many times, and which passes stay in the record for E?",
+      "expected_output": "A confirmed outage moves a re-run once for this head, scoped by cause: the check it failed, `ci / api-unit`, and every check that passed but uses the service that went down — `ci / api-db`, whose job declares Postgres and whose suite skips without it, so its pass may have run nothing. `ci / format`, `ci / typecheck` and `ci / web` start and name no service, so their passes stay in the record against E with the container's session. It is not a toolchain mismatch, so the whole gate does not move. A check the returned result leaves out is `not run`, never passed. Failing there too, the PR's outcome is `needs-user`, naming the gate and the environment.",
+      "assertions": [
+        "the answer moves ci / api-unit and ci / api-db, not only the failed check",
+        "the answer keeps ci / format, ci / typecheck and ci / web's passes in the record",
+        "the answer does not move the whole gate",
+        "the answer moves it once for the head, ending in needs-user if it fails there too"
+      ],
+      "files": []
+    },
+    {
+      "id": 94,
+      "name": "a-filtered-off-entry-counts-only-for-the-head-its-filters-were-read-for",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #70 in acme/web targets `integration/web-5`; ci-mode integration-branch has effect, dispatch `direct`. The per-PR tier is `lint / format` (from `lint.yml`, no path filters) and `ci / test` (from `ci.yml`, whose `pull_request` trigger has `paths: ['src/**', 'package-lock.json']`). The gate record in this session's state block reads: `lint / format` passed on head A (session s1); `ci / test` filtered off (`ci.yml` `paths`), filters last read for head A. Since A there have been two pushes, B and C, each a mechanical push by `references/mechanical-pushes.md` (a clean base update, then a restack); nothing in the record shows a filter read for B or C. The head is C. Questions: (a) is #70's CI condition green on C as the record stands? (b) what do you do? (c) if the filters, read for C, still leave `ci / test` off, what does the record show and is it green? (d) if they now select it?",
+      "expected_output": "(a) No. `lint / format`'s pass carries forward, since every push since A is mechanical, but a `filtered off` entry counts only for the head and base its filters were last read for; stamped with A, it is `not run` on C, a check this PR's gate must pass. (b) Re-read the filters for C's diff — the PR's whole diff against its base. (c) The entry is restamped to C and its base, still `filtered off`, and the record is green: format passed, the filtered-off check excluded. (d) `ci / test` is `not run` on C and the gate runs it once there; green only once it passes.",
+      "assertions": [
+        "the answer does not read the record as green on C with the entry stamped for A",
+        "the answer carries lint / format's pass across the mechanical pushes",
+        "the answer re-reads the filters for C's whole diff against the base",
+        "the answer restamps the entry to C where the filters still leave it off, and runs ci / test once on C where they select it"
+      ],
+      "files": []
+    },
+    {
+      "name": "a-retarget-voids-a-filtered-off-stamp",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). acme/web, ci-mode integration-branch with effect, dispatch `direct`. PR #71 targets `integration/web-5` and passed its gate while that branch's integration PR was open, so it waited. Its gate record, carried in this session's state block, on head D: `lint / format` passed; `ci / test` filtered off (`ci.yml` `pull_request` `paths: ['src/**']`), filters last read for head D, base `integration/web-5` at merge base M1 — #71's diff against it touches only `docs/`. That integration PR merged, and the next run adopts #71 and retargets it to its own branch `integration/web-6`, with no push; #71's whole diff against the new base now also includes `src/` files, with merge base M2. Head is still D. Questions: (a) is #71's CI condition green as the record stands? (b) what do you do?",
+      "expected_output": "(a) No. A `filtered off` entry counts only for the head and base its filters were last read for; it is stamped with base `integration/web-5` at M1, and the PR's base is now `integration/web-6` at M2, so it is `not run` on the current head, a check this PR's gate must pass. A moved base does not stale the record's passes, only that entry. (b) Re-read the filters for the new whole diff against the new base: it now includes `src/` files, so `ci / test` is selected, is `not run`, and the gate runs it once on D. `lint / format`'s pass stands.",
+      "assertions": [
+        "the answer does not read the record as green after the retarget",
+        "the answer re-reads the filters for the diff against the new base",
+        "the answer runs ci / test once on the unchanged head",
+        "the answer keeps lint / format's pass"
+      ],
+      "files": [],
+      "id": 95
+    },
+    {
+      "id": 96,
       "name": "a-review-stalled-in-progress-is-re-triggered-once-per-round",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #120 in acme/web; this skill performs its Codex review convention. After a repair pass pushed head abc123 you posted `@codex review` and adopted the head. Codex's account put its reaction on the trigger comment 3 minutes later, the reaction's creation time recorded by the forge, and no review or reply has come since. (a) The check-in fires 25 minutes after that reaction appeared: what do you do, and what do you record? (b) The next pass, 40 minutes later, finds both requests still showing the reaction — the re-trigger's for 35 minutes — and no review on abc123; CI is green and nothing else is outstanding. What now, and what does the PR's outcome become?",
       "expected_output": "(a) The review has shown its provider's in-progress signal on the current head for more than 20 minutes, measured from the reaction's own timestamp, so it is stalled: re-trigger once — the convention's trigger text alone, from the account the map selects, read back and confirmed like any trigger. Record the stall re-trigger on the convention's line with head abc123 and the time, and report it. (b) Do not trigger again: the round's one further request is spent, and nothing — no later pass, wake, re-adoption or restart — requests that round again. Report the round stalled, naming both requests and since when, and raise it to the owner as a DECISION offering: merge without the unanswered request, re-trigger once more, or leave it waiting. The PR is `finished`, with the round surfaced: it holds the PR's merge but not its finishing, until a request answers or an owner reply chooses one of those options.",
@@ -1023,7 +1212,7 @@
       "files": []
     },
     {
-      "id": 82,
+      "id": 97,
       "name": "no-signal-a-queued-state-or-a-refusal-is-not-a-stalled-round",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Three PRs, each 30 minutes after you posted its review trigger on its current head, with nothing else requesting review and every trigger's read-back matching the trigger text exactly. On PR #121 the reviewer has left no reaction, check or reply of any kind. On PR #122 the reviewer's own check run on the head has sat in `queued` the whole time; its convention reports `queued` and `in_progress` separately. On PR #123 the reviewer replied that the account is out of review quota until tomorrow, and its reaction is still on the trigger comment. Which of them, if any, takes the stalled-round re-trigger, and what do you do with each instead?",
       "expected_output": "None of them is stalled. #121 shows no in-progress signal at all, so the question is whether the trigger took effect, answered by confirmation against the window; an elapsed window is not a refusal, and with a clean read-back there is no reissue — it is unreviewed-pending. #122 is queued, not running: a re-trigger would only join the queue, so it waits, unreviewed-pending. #123 has answered — a refusal — so the reaction left on the comment does not make it in progress: record the round refused with its reason and reset, never re-trigger it, and report the PR as owing a round.",
@@ -1036,7 +1225,7 @@
       "files": []
     },
     {
-      "id": 83,
+      "id": 98,
       "name": "a-second-trigger-on-the-head-spends-the-stall-allowance-across-a-restart",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The run restarted, and you are adopting PR #124 with no counters passed. Its timeline shows head def456 pushed by a repair pass, then `@codex review` posted by the run, then 30 minutes later `@codex review` posted again by the owner by hand. Codex's in-progress reaction has been on the owner's comment for 25 minutes and no review of def456 exists. Do you re-trigger? What does the rebuilt record say?",
       "expected_output": "No. The rebuild reads two triggers posted since def456 was pushed, so the round's one further request is spent — whoever posted the second, the owner included. The record's stall re-trigger is rebuilt as spent on def456; the owner's trigger has had its own time (its signal past 20 minutes), so the round is reported stalled after it, raised to the owner as a DECISION and surfaced, holding the merge, and nothing on the run's initiative triggers it again.",
@@ -1048,7 +1237,7 @@
       "files": []
     },
     {
-      "id": 84,
+      "id": 99,
       "name": "two-answers-on-one-round-are-one-round-and-a-new-round-renews-the-allowance",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). On PR #125 the review stalled on head 777aaa and you re-triggered it once. The second request answered first with a clean review of 777aaa. Ten minutes later the first request answered too, with a review of 777aaa rooting one thread asking for a missing null check. (a) How many review rounds completed, and is the review clean? (b) What happens to the thread? (c) The review repair pushes head 888bbb and you re-trigger review on it; 25 minutes after Codex's in-progress reaction appears on that trigger there is still no answer. May you re-trigger?",
       "expected_output": "(a) One round, counted once in review rounds completed: the two answers are one round on 777aaa. Either summary establishes the head was reviewed, but the late answer's thread is feedback, so the round is not clean. (b) It is unhandled feedback like any reviewer's: dispatch the review repair pass, within budget. (c) Yes, once: the repair push is substantive, so 888bbb needs a new round, and a head move that needs a new round resets the once-per-round allowance — that round carries its own one stall re-trigger; the earlier round's spent allowance does not carry over, and nothing else about the rounds is reset by the move.",
@@ -1060,7 +1249,7 @@
       "files": []
     },
     {
-      "id": 85,
+      "id": 100,
       "name": "the-stall-threshold-is-observed-by-the-next-pass-not-timed",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). wait owner = self. On PR #126 you triggered review; Codex's in-progress reaction appeared 5 minutes before the scheduled check-in fired, and that check-in found nothing else changed. The wake budget's backoff puts the next check-in 40 minutes out. Do you arm or move a wake so you can check the review again at the 20-minute mark?",
       "expected_output": "No. The 20 minutes is a threshold a read observes, not a timer: nothing is armed or shortened for it. The next pass that reads the PR — a subscription event or the check-in on the wake budget's schedule — finds the signal past 20 minutes and re-triggers once then.",
@@ -1071,7 +1260,7 @@
       "files": []
     },
     {
-      "id": 86,
+      "id": 101,
       "name": "a-clean-answer-beside-a-request-still-in-progress-holds-the-merge",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). On PR #127 the review stalled on head 999ccc and you re-triggered it once. The re-trigger has answered with a clean review of 999ccc; the original request has shown Codex's in-progress reaction for 50 minutes and has not answered. CI is green, no thread is unresolved, nothing is in flight. Is the round complete, and what is the PR's outcome? May its merge proceed?",
       "expected_output": "The round is complete, counted once: the clean answer establishes the review of 999ccc. But the other request on the round is unanswered and still shows its mark, and could still root findings on that commit, so the round holds the merge, surfaced. That request stalled long since, and the round's one further request has had its own time, so the round is stalled: raised to the owner as a DECISION offering merge without the unanswered request, re-trigger once more, or leave it waiting. With nothing else outstanding the PR is finished, reported with the open request; the merge waits until that request answers, or an owner reply chooses to merge without it and the walkthrough retires the item. No trigger is posted: the round's one further request is spent.",
@@ -1084,7 +1273,7 @@
       "files": []
     },
     {
-      "id": 87,
+      "id": 102,
       "name": "a-mechanical-push-does-not-renew-a-carried-rounds-stall-allowance",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #128 in acme/web runs under `ci-mode: deferred`; this skill performs its Codex review convention. You posted `@codex review` on head aaa111; Codex's in-progress reaction appeared on it, and 25 minutes later you re-triggered once for the stall. Since then you made the deferred-CI trigger's clean base update, a mechanical push, so the head is now bbb222 and the round on aaa111 carries forward to it; bbb222's own timeline has no trigger on it. Both requests on aaa111 still show Codex's reaction, the re-trigger's for 30 minutes now, and no review exists. On this pass, do you post a trigger? What do you record and report?",
       "expected_output": "No trigger. The mechanical update carried the round forward from aaa111, and a move the round carries forward across resets nothing: the round and its spent stall allowance travel together, and its triggers are counted on every head it spans, so aaa111's two triggers mean the one further request is spent. A mechanical push is never a reason to re-trigger. The re-trigger has had its own time (its signal past 20 minutes) with no answer, so the round is reported stalled, naming both requests and since when, and raised to the owner as a DECISION; nothing requests it again on the run's initiative, and it is surfaced — holding the merge, not the PR's finishing.",
@@ -1096,7 +1285,7 @@
       "files": []
     },
     {
-      "id": 88,
+      "id": 103,
       "name": "a-stall-re-trigger-gets-its-own-time-and-no-read-back-reissue",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #129 in acme/web; this skill performs its Codex review convention. The round on head ccc333 stalled and you re-triggered it. The re-trigger's read-back shows the transport appended an attribution footer, so you recorded the pair `appends footer` and reported the trigger as possibly not fired. (a) The next pass runs 3 minutes later: the original request still shows Codex's in-progress reaction and the re-trigger shows nothing yet. Is the round now reported stalled after its re-trigger? (b) A pass 25 minutes after the re-trigger finds the re-trigger's confirmation window elapsed with no reaction, reply or review, nothing else requesting review, and the original still showing its reaction. Do you reissue the trigger through a different mechanism?",
       "expected_output": "(a) No. A round is reported stalled after its re-trigger only once the re-trigger has had its own time — its own signal past 20 minutes, or its confirmation window elapsed with none. Three minutes in, it is waiting on the re-trigger. (b) No reissue: the read-back reissue is never made where the round already carries its one further request, and the stall re-trigger was that request, so a reissue would be a third request on the head. Bar the pair from further triggers, keep the trigger reported possibly not fired, and report the round stalled — both requests and since when — raised to the owner as a DECISION offering merge without the unanswered request, re-trigger once more, or leave it waiting, and surfaced: it holds the merge.",
@@ -1108,7 +1297,7 @@
       "files": []
     },
     {
-      "id": 89,
+      "id": 104,
       "name": "only-an-owner-reply-choosing-an-offered-option-moves-a-stalled-round",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #133 in acme/web; this skill performs its Codex review convention. Its round on head eee555 stalled, you re-triggered it once, and the re-trigger has had its own time with no answer; the original still shows Codex's in-progress reaction. The round was reported stalled and raised to the owner as a DECISION on the PR offering three options: merge without the unanswered request, re-trigger once more, or leave it waiting. (a) A teammate who is not the owner replies on the item: \"just kick codex again\". What do you do on the next pass? (b) Later the owner replies on the item choosing \"re-trigger once more\". What do you do, and does it breach the round's once-per-round allowance? (c) Two passes later the owner's chosen trigger shows Codex's reaction for 5 minutes and nothing has answered; the pass after that is a restart with no counters passed. Do you post anything? (d) Twenty-five minutes after that reaction appeared, still no answer. What now?",
       "expected_output": "(a) Nothing is posted: only an owner reply choosing one of the offered options moves a stalled round, and a teammate's reply is not the owner's — report it and keep the hold. (b) Post exactly one trigger, as an ordinary one — the convention's text from the account the map selects, read back and confirmed — and record it as the trigger the owner's reply chose. It is the owner's request, not the round's allowance spent twice, so it does not breach the once-per-round bound. The hold on the merge stands until a request answers. (c) No: the timeline already shows one trigger after the owner's reply, so the restart counts it and posts nothing; the new request is waiting, within its own time. (d) The round is still held once that trigger has had its own time, so it is stalled again: report it and raise it to the owner as a DECISION with the same options; nothing is re-triggered without a new owner reply choosing it.",
@@ -1122,7 +1311,7 @@
       "files": []
     },
     {
-      "id": 90,
+      "id": 105,
       "name": "a-restart-neither-reposts-the-stalled-rounds-decision-nor-reads-a-trigger-as-a-choice",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The caller restarted and passed no counters for PR #134 in acme/web; this skill performs its Codex review convention, and the posting-identity map selects the invoking user's account for triggers. The PR's timeline on its unchanged head ggg777 shows, in order: a trigger `@codex review`; 35 minutes later a second `@codex review`, both from the invoking user's account; a supervision comment carrying this workflow's attribution footer, posted an hour ago, reporting the round stalled after its re-trigger and offering merge without the unanswered requests, re-trigger once more, or leave it waiting; and, 10 minutes ago, a comment from the invoking user's account whose whole body is `@codex review`. Codex shows its in-progress reaction on the first two triggers and has not answered any. (a) Does this pass post the stalled round's DECISION? (b) Does it read the latest comment as the owner choosing \"re-trigger once more\", and post a trigger for it?",
       "expected_output": "(a) No. The item is posted once; after a restart with no recorded ids the pass cannot find its own item by id, and the footer is not identity evidence, so it reports the round stalled after its re-trigger rather than posting the DECISION again. (b) No. A comment whose body is the trigger text is a trigger, never a choice, whoever posted it; it is not an owner reply choosing an option, so it releases nothing and buys no trigger from this run. The hold stands and the DECISION stays outstanding.",
