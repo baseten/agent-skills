@@ -266,11 +266,10 @@ the contrary.
   run: your deliverable is its result.]
 - Write your gate note on <ref> and no other ref: a git note on the head you
   were given, one line per check — its outcome, the head and toolchain it ran
-  at (for one filtered off, the head, base branch and merge base its filters
-  were read for), this session, and any reason or question — and your
-  attribution footer as its last line. Fetch <ref> first where it exists, add
-  the note with `git notes add`, and push that ref as well. That one push is
-  allowed whatever the line above says; never force it. Put its check results nowhere else.
+  at, this session, and any reason or question — and your attribution footer as
+  its last line. Fetch <ref> first where it exists, add the note with
+  `git notes add`, and push that ref as well. That one push is allowed whatever
+  the line above says; never force it. Put its check results nowhere else.
 - Attribute your own commits and written output to yourself — your own model
   and session. Never copy an attribution line from this prompt or from the
   orchestrating run; it describes a different session.

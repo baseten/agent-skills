@@ -19,19 +19,19 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/integration-branch.md": {
-      "budget": 2891,
+      "budget": 2930,
       "target": 1500
     },
     "skills/backlog-orchestrator/restart-resume.md": {
-      "budget": 1093,
+      "budget": 1096,
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
-      "budget": 2034,
+      "budget": 2042,
       "target": 1500
     },
     "skills/create-pr/SKILL.md": {
-      "budget": 2635,
+      "budget": 2657,
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
@@ -91,11 +91,11 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 8910,
+      "budget": 8973,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
-      "budget": 9169,
+      "budget": 9153,
       "target": 8000
     },
     "skills/swarm/runtime-remote.md": {
