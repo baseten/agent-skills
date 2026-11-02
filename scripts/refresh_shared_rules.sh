@@ -73,7 +73,7 @@ REVIEW_TRIGGER="create-pr backlog-orchestrator
   npm-dependency-upgrade-orchestrator settle-and-merge supervise-prs"
 
 # Skills that gate on, or supervise a PR toward, green CI or a clean review.
-CI_AND_REVIEW_VERDICTS="
+CI_AND_REVIEW_VERDICTS="implement-issue-core
   npm-dependency-upgrade-orchestrator settle-and-merge merge-stack supervise-prs"
 
 # Skills that decide whether a red check - on CI or in a local run - is the
