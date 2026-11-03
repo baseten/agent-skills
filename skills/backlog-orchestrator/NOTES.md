@@ -361,7 +361,7 @@ The argument for `finding-repair-cycles` being its own counter moved to `rules/r
 
 ## Performing the renumber — `artifact-collisions.md`
 
-**The worked example behind the generator rule:** a Drizzle migration's identity lives in five places — the `.sql` filename, the journal's `idx`, `tag` and `when`, and the snapshot's `id`/`prevId` chain. A hand-rename that updates four and misses `when` makes the migration **silently skipped**: no error, no log, green CI, and the schema change never applies. Renumbering `0011` to `0014` in `crypto-scanner-api` was exactly this; the repair was regenerating through `pnpm db:generate` and splicing the hand-written backfill back in. A regenerated artifact that silently drops hand-written content is the same failure with the sign flipped, hence splice-and-re-verify.
+**The worked example behind the generator rule:** a Drizzle migration's identity lives in five places — the `.sql` filename, the journal's `idx`, `tag` and `when`, and the snapshot's `id`/`prevId` chain. A hand-rename that updates four and misses `when` makes the migration **silently skipped**: no error, no log, green CI, and the schema change never applies. Renumbering `0011` to `0014` in a private API repository was exactly this; the repair was regenerating through `pnpm db:generate` and splicing the hand-written backfill back in. A regenerated artifact that silently drops hand-written content is the same failure with the sign flipped, hence splice-and-re-verify.
 
 ## Outcomes
 
