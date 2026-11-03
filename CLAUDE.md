@@ -58,8 +58,9 @@ evals (`<skill>#<id>`).
    repairs; budgets bound every loop, the invoking user's own review rounds aside, which
    spend no `review-repair-cycles`; a spent budget ends in the skill's outcome, never
    another repair push.
-   `rules/platform-pr-posture.md`; `supervise-prs`, *Budgets*. supervise-prs#25 #26 #55 #57,
-   backlog-orchestrator#67, repair-pr#16 #17 #18, supervise-prs#61 #73 #96 #98 #102 #103 #104, backlog-orchestrator#96.
+   `rules/platform-pr-posture.md`; `supervise-prs`, *Budgets*; `rules/agent-policy.md`, *Branch updates*. supervise-prs#25 #26 #55 #57,
+   backlog-orchestrator#67, repair-pr#16 #17 #18, supervise-prs#61 #73 #96 #98 #102 #103 #104 #107 #108 #109 #110, backlog-orchestrator#96,
+   repair-pr#20 #21, settle-and-merge#46.
 6. **A created PR's body is edited only while draft, footered, or under a resolved merge
    opt-in** (`Depends on:` excepted); else drift is reported with a replacement.
    `rules/authored-write-form.md`. settle-and-merge#6 #9, merge-stack#5,
@@ -94,8 +95,9 @@ evals (`<skill>#<id>`).
    follow-up issue, never one a person is in (`resolve-pr-comment`, *Findings deferred to a follow-up*).
    resolve-pr-comment#52 #53 #54, implement-issue#22. A head with no run is read through
    path filters, failing closed (`rules/ci-and-review-verdicts.md`, *Path filters*).
-   supervise-prs#58 #59 #62 #63 #64, settle-and-merge#19. A branch update rebases with a pinned
-   lease, bar its two exceptions (`rules/agent-policy.md`, *Branch updates*). settle-and-merge#46.
+   supervise-prs#58 #59 #62 #63 #64, settle-and-merge#19. A branch update follows `branch-update`
+   (`rules/agent-policy.md`, *Branch updates*): a rebase pushes only with a pinned lease; a configured or
+   fail-closed `merge` merges. settle-and-merge#46.
 9. **Stranded work reaches a remote ref before any archive; permission holds name the
    literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked
    workers*; `rules/wake-budget.md`; `rules/conductor-exchange.md`, *The watch after settling*; `conductor`,

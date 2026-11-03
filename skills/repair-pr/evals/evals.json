@@ -279,6 +279,18 @@
         "the answer pushes once before posting replies"
       ],
       "files": []
+    },
+    {
+      "id": 22,
+      "name": "a-refresh-that-would-drop-the-passs-own-commit-is-handed-back",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Repair type review; branch-update rebase (source: the repository's file). The pass made one commit, trailered Repair-Pass p7, fixing a typo. The caller supplied a base refresh. The base already contains the identical typo fix, so rebasing would drop p7's commit as already upstream. Question: what do you push?",
+      "expected_output": "Do not make the refresh: a rebase that would drop a commit the pass made is not made, because p7's id would leave every durable record. Return the refresh unmade, still owed to the caller, and push the repair commit (with its trailers) without it, once, plainly; replies name that commit's SHA after the push.",
+      "assertions": [
+        "the answer does not rebase over the pass's own commit",
+        "the answer returns the refresh unmade to the caller",
+        "the answer pushes the repair commit with its trailer"
+      ],
+      "files": []
     }
   ]
 }
