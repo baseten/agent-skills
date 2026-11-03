@@ -119,6 +119,18 @@
         "the answer does not use a bare --force-with-lease or --force"
       ],
       "files": []
+    },
+    {
+      "id": 10,
+      "name": "another-persons-child-pr-is-merged-not-rebased",
+      "prompt": "You are executing the merge-stack skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Parent PR P (base main) squash-merged. Its direct children: C1, opened by this run's own create-pr (author is the invoking user 'owner-acct', named by the invocation), and C2, whose forge author is 'jdoe' (type User). Question: how do you restack each?",
+      "expected_output": "C1: rebase only its own commits with git rebase --onto main <P_HEAD_OLD> C1 after the ancestry check, push with --force-with-lease pinned to C1's old head, retarget to main. C2: another person opened it, so do not rebase - merge main into C2, push plainly with no force, and retarget to main, so jdoe's local branch is not rewritten.",
+      "assertions": [
+        "the answer rebases C1 with a lease pinned to its old head",
+        "the answer merges main into C2 instead of rebasing",
+        "the answer never force-pushes C2"
+      ],
+      "files": []
     }
   ]
 }

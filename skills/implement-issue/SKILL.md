@@ -123,7 +123,7 @@ The run settles when its one issue reaches a terminal state: the PR `finished` a
 - **findings**: the worker and review findings the run produced;
 - **held-reply records**: the approval-pending, rejected and mixed-thread records `supervise-prs`'s record holds; pass the held-reply outcomes `settle-and-merge` returns to `supervise-prs` as its *held-reply outcomes* input;
 - **posting-identity map**: the run's map;
-- **resolved policy**: `auto-merge`, `publish-triggers-review`, `auto-request-settle`, `ci-mode` and `branch-update`, resolved for its one PR (Policy and budgets);
+- **resolved policy**: `auto-merge`, `publish-triggers-review`, `auto-request-settle`, `ci-mode` and `branch-update` — `merge` where another person opened the PR — resolved for its one PR (Policy and budgets);
 - **ranking**: `caller translates` — nothing is ranked, since one PR has no ordering to rank. This skill runs the ruling translation below over the rulings handed back at its step 5 and passes back the translated action points;
 - **dependency view**: the value core's completeness report gives — proven, or unproven on the named boundary with the discharge Merge describes; from an existing branch, unproven, no dependency read made;
 - **freshness checks**: none apply — this skill runs no integration check and has no authority of its own to update a branch (a relayed ruling's branch update aside, `references/conductor-exchange.md`, *What a relay can authorise*, made as a caller push and adopted by `supervise-prs`), so the stale-green re-check and the tool-bump rule do not apply, and `settle-and-merge` returns no refresh owed: `supervise-prs`'s *refresh owed* input is always passed empty here;

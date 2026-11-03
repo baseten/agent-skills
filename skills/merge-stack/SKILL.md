@@ -125,6 +125,8 @@ After GitHub confirms the merge:
 
 ### Rebase a direct child
 
+**A child another person opened is not rebased.** Read each descendant's PR author from the forge, as the *agent policy* shared rule's *Branch updates* says — an author whose type cannot be established counts as a person — and for such a child merge `P_BASE_BRANCH` (or, for a grandchild, its parent's new head) into it, push plainly, and retarget as below; every other child is rebased as follows.
+
 For direct child C, preserve:
 
 ```text

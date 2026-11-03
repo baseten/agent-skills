@@ -16,7 +16,7 @@ Added in #154, from a field report on an `implement-issue` run in a Claude Code 
 
 **Why the invocation outranks the posture:** the posture defers to the user in its own text ("unless your user says otherwise"). So this is not a skill instruction arguing with a system prompt — the weaker side of that argument, as `swarm/NOTES.md` records for workers — but the user's own instruction, which is what the posture says wins. That is also why the rule states it as the user's instruction rather than as a preference of the skill: the authority is what makes it hold.
 
-**Why the prohibitions survive:** they are not drive-to-green policy but limits on what any session may do to a PR, and every one of them agrees with a rule the skills already hold — no skipped tests, no fake CI kicks, no history rewrites on someone else's branch (bar the owner's `branch-update` rebase, under a pinned lease — PR #201), no merge outside a gate. Overriding them would buy nothing and would read as licence.
+**Why the prohibitions survive:** they are not drive-to-green policy but limits on what any session may do to a PR, and every one of them agrees with a rule the skills already hold — no skipped tests, no fake CI kicks, no history rewrites on someone else's branch (bar the owner's `branch-update` rebase, under a pinned lease and never on a PR another person opened — PR #201), no merge outside a gate. Overriding them would buy nothing and would read as licence.
 
 **Why the handler never fixes directly:** a one-line fix made from inside the event handler is a push no budget counted, on a head no pass adopted, and a reply no reservation checked. It is the posture's loop again, one small step at a time.
 
