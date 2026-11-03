@@ -116,8 +116,8 @@ When the steps are done:
 
 1. **check *Done when*** against the output — ask for a final check where it needs
    one;
-2. **comment the summary** on the issue: what was done, what was diagnosed and fixed,
-   any runbook disagreement to correct;
+2. **comment the summary** on the issue: each step done or not done, and any runbook
+   or issue-text correction — never an output or how a check came out;
 3. **close the issue** as completed where *Done when* holds; otherwise leave it
    open and say what is still open;
 4. **comment on each issue it unblocks** that the step is done — for example

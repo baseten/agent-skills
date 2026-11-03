@@ -1,6 +1,6 @@
 ---
 name: conductor
-description: Coordinate the runs working on a configured set of repositories — backlog-orchestrator batches and single-issue implement-issue or ship-branch runs. On the owner's go, plan a feature into dependency-linked issues and write them, then dispatch each batch or issue to a run. Sweep for runs by ledger record, title and structure; ask each for status over cross-session messaging without waiting; verify every claim, and the default branch's CI and deploy, against the forge; relay verified facts between runs; put pending owner decisions and manual steps to the owner in one attended pass; replan the next waves as one cross-stream DAG; execute a conditional go once its condition is verified; and retire runs on the owner's go. State lives in one configurable ledger. It never implements, merges or approves. Use when several runs are in flight and the owner wants one place to plan them, check progress, and answer what they wait on.
+description: Coordinate the runs on a configured set of repositories — backlog-orchestrator batches and single-issue implement-issue or ship-branch runs. On the owner's go, plan a feature into issues and dispatch runs; sweep them and the default branch on the forge; relay verified facts between runs; put the owner's decisions and manual steps to them one at a time; hold a settled run's watch; and keep state in one ledger. Never implements, merges or approves. Use when several runs are in flight and the owner wants one place to plan, check progress and answer what they wait on.
 ---
 
 # Conductor
@@ -90,10 +90,11 @@ never to act on.
   and the tracker; the report says it was verified, not how.
 - **A draft exists only with its full text.** The full text of every pending draft —
   an issue, a comment, a message — goes into the ledger as it is written; nothing
-  is called a draft without it. Where the ledger is a forge issue, a draft a rule
-  keeps off the forge — an approval-pending reply's held text (`resolve-pr-comment`,
-  *Replies held for approval*), or a draft answer to a person's question (*The draft
-  reply* there) — is named there without its text and held in this session.
+  is called a draft without it. **On the default `github-issue` ledger, held replies
+  and draft answers to a person's question are only named, never written in full**
+  (`resolve-pr-comment`, *Replies held for approval*, *The draft reply*): their text
+  is held in this session. Where those drafts matter, as at work, configure the
+  `tracker-document` ledger, which holds them in full.
 - **Report costs.** Every plan states its expected CI runs (*5. Plan and replan*).
 - **Nothing depends on an in-turn background result surviving a restart.** A
   subagent's result is written to the ledger or the forge in the turn that
@@ -107,14 +108,10 @@ never to act on.
 
 ## Session titles
 
-| session | title |
-|---|---|
-| conductor | `Conductor: <home repo>` — e.g. `Conductor: acme-api` |
-| `backlog-orchestrator` run | `Orchestrator: <repo> · <epic or run>` |
-| single-issue run (`implement-issue`, `ship-branch`) | `Worker: <repo> · #<issue> <short name>`, or `Worker: <repo> · <branch>` with no issue |
-| a run's own `swarm` worker | its run's own prefix, unchanged (`bo/<run>: implement #N`) — distinct from `Worker:`, and never retitled |
-
-The run forms are `references/conductor-exchange.md`'s, *The run's title*.
+This session is `Conductor: <home repo>`, e.g. `Conductor: acme-api`. A run's title
+— `Orchestrator:` for a batch, `Worker:` for a single-issue run — is
+`references/conductor-exchange.md`'s, *The run's title*; a run's own `swarm` workers
+keep their run's prefix (`bo/<run>: …`) and are never retitled.
 
 At startup, read this session's own record (`get_session`, no id) and set its
 title with `set_session_title` where it is not already `Conductor: <home repo>`.
@@ -178,11 +175,10 @@ never a session to message as a run.
 ## The fallback check-in
 
 **This check-in also holds the watch over every settled run's PR that run handed
-over** (`references/conductor-exchange.md`, *The watch after settling*) — re-armed on
-receiving a hand-off, and waking the run on a merge by anyone, a close, new review
-activity or a change in mergeability — and before
-it stops or is cancelled with such a PR open, it messages that run to resume its
-own watch — naming in the stop report any PR whose send failed, as unwatched.
+over** (`references/conductor-exchange.md`, *The watch after settling*): it polls
+each such PR until it merges or closes, on `references/wake-budget.md`'s schedule
+for a held watch, and messages the run on a merge by anyone, a close, new review
+activity or a change in mergeability; a held watch never stops it on empty sweeps.
 
 **While any run in the ledger is active — any not *finished* (*4. Owner pass*,
 step 1) — or a conditional go is pending, keep one `send_later` check-in bound to
@@ -269,7 +265,9 @@ nothing, record nothing as ruled, and say where the decisions wait.
    **Held replies awaiting approval are collected across runs into this pass**, each
    asked the same way — approve, edit or reject, with its full text and every
    comment posted in its thread since the fix, read fresh (`resolve-pr-comment`,
-   *Replies held for approval*). A draft answer to a person's question is never
+   *Replies held for approval*). **Where a ruling's relay posts a reply the owner must
+   approve, the option carries the complete reply text**, so one answer is both the
+   ruling and the approval. A draft answer to a person's question is never
    among them: that is a decision, asked as one. This is the
    conductor's own pass; where it invokes `settle-outstanding-decisions` for a run,
    that skill's walkthrough governs its own questions.
@@ -372,9 +370,9 @@ a condition that cannot be verified as written stays pending and is reported.
 **Every dispatch — a reuse message or a fresh prompt — points at the epic or issue,
 gives this session's id and home repository for status pushes, and states every
 cross-stream gate as below. Seed every fresh run from the ledger as well:** its
-prompt names the owner's account — for recognising the owner's rulings and folds
-only; it is never the invoking user's account for the *posting identity* test,
-which stays unknown unless the owner states it in that session — and carries:
+prompt names the owner's account **as the invoking user's account** for that session
+(`references/posting-identity.md`, *The invoking user's account*) — the owner's go
+started it — and carries:
 
 - **every cross-stream gate, each verified against the work's own owner comments
   on the forge immediately before it is written**, and linked to its record — a gate
@@ -393,10 +391,13 @@ the authority** — this skill did not necessarily create it, and `swarm` archiv
 a session its run did not create only on the owner's ruling (*Releasing a
 worker*, the paragraph beginning *Two things are never archived*). The go may be a
 standing ruling recorded on the forge — "retire each run once its PRs are
-merged" — verified against each retirement on the forge, not asked afresh, and a
-scheduled firing may act on it too, for a session the ledger records as dispatched
+merged" — verified against each retirement on the forge, not asked afresh: re-read
+at its site by the comment id the ledger recorded, authored by the owner's account,
+unedited, and neither superseded nor revoked by a later owner comment; a ruling
+found only in the ledger stays pending. A scheduled firing may act on it too, for a session the ledger records as dispatched
 or adopted by this conductor. Only once its wrap-up is posted on its
-epic or issue; every PR of its run is merged, closed or recorded as moved to another
+epic — a single-issue run's `merged` report and its PR merged on the forge stand in
+for one —; every PR of its run is merged, closed or recorded as moved to another
 run; nothing of its run is stranded — each of its branches' heads, taken from its last
 state block or result, or from a report it builds from durable state where the
 channel is open, is reachable on the remote, `list_sessions` shows no live worker of
@@ -419,7 +420,8 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
   sweep); an archived session leaves it;
 - the owner's rulings given in this chat, each dated, in their exact words, linked
   to where each was recorded;
-- every pending draft, in full (*Rules*);
+- every pending draft, in full — held replies and draft answers only named on a
+  `github-issue` ledger (*Rules*);
 - the gates between streams, each linked to its record;
 - the open decisions, each linked to its site;
 - the ordered owner steps, each with what it unblocks;

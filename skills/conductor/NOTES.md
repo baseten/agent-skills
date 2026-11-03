@@ -404,3 +404,5 @@ Pinned in `evals/evals.json`:
     (`the-conductor-holds-a-settled-runs-watch-and-hands-it-back`);
   - a draft exists only with its full text
     (`a-draft-exists-only-with-its-full-text-in-the-ledger`).
+
+**From two independent reviews (PR #201):** a standing retirement ruling is re-read at its site exactly as a conditional go is, because a revoked ruling found only in the ledger would otherwise retire runs unattended; a single-issue run's `merged` report and its merged PR stand in for a wrap-up it never posts; on the default `github-issue` ledger held replies and draft answers are only named, so a deployment where drafts matter configures `tracker-document`; and a relayed approval puts the complete reply text in the question's option, so the owner answers once. Scenarios: `a-revoked-retirement-ruling-retires-nothing`, `a-merged-single-issue-run-retires-without-a-wrap-up`, `a-relayed-ruling-that-posts-a-reply-is-one-question`.

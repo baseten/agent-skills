@@ -433,6 +433,10 @@ to notice remote completions keeps the cadence the caller's *wake budget* shared
 rule gives it — a push shortens nothing it relies on and lengthens nothing — and
 is never dropped: it is the safety net for the push that never comes.
 
+**A session whose own checkpoint records it handed back or superseded acts on no
+push**: it replies in one line at most, naming its successor where it knows one, and
+leaves the work to the run that adopted it.
+
 **A worker with a PR, stopped on a permission prompt for the send tool, has
 already recorded its report there**, so the prompt is one this run does not need
 answered: where its reported head is reachable it takes the releasable test's

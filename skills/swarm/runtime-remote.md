@@ -115,9 +115,9 @@ tool) — which the worker establishes from its own toolset and this run cannot
 see. So where this session reads `available`, record the return channel present,
 pass this session's id in the template's send clause, and expect pushes that may
 never come; elsewhere, record it absent and remove the clause. A worker this run
-created can also address it as `@parent`, but pass the id regardless: a worker
-adopted on a resume was created by the predecessor, and its `@parent` is that
-session.
+created can also address it as `@parent`, but pass the id regardless. **A worker
+adopted on a resume was dispatched by the predecessor, and its send clause names
+that session: record the return channel absent for it**, so the pull decides.
 
 **What was observed (2026-10-31)**: `send_message` delivered both ways between
 cloud sessions — four idle orchestrator sessions answered a status request with

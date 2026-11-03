@@ -429,6 +429,17 @@
         "the answer routes it through Blocked workers and the releasable test"
       ],
       "files": []
+    },
+    {
+      "id": 37,
+      "name": "a-superseded-session-acts-on-no-push",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This session ran an orchestration and handed back cleanly; its checkpoint records the hand-back and that session_02Nn resumed the run. A worker it dispatched earlier now sends it a push: 'swarm report · bo/a41f: api#348 / outcome: PR_OPEN / pr: <URL> ...'. Question: what do you do?",
+      "expected_output": "Nothing on the forge: a session whose own checkpoint records it handed back or superseded acts on no push. At most reply in one line naming the successor, session_02Nn, and leave the work to the run that adopted it.",
+      "assertions": [
+        "the answer acts on nothing",
+        "the answer at most replies in one line naming the successor"
+      ],
+      "files": []
     }
   ],
   "companions": []

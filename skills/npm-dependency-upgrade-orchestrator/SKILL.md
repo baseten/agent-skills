@@ -122,6 +122,7 @@ Pass it:
 
 - **PR set**: every PR this run opened or adopted, bot bump PRs included, each with its repository, branch/base and head, from the moment it exists;
 - **repair dispatch**: `none` — this run repairs nothing through `repair-pr`: a red check or an unhandled round comes back `unrepaired` and is reported. **Budgets**: none are needed;
+- **`branch-update`**: per PR, resolved from the repository's policy file (`references/agent-policy.md`, *Branch updates*) — a bot's bump PR takes the key, a PR another person opened merges;
 - **posting-identity map**: the run's, and merge the map it returns;
 - **review routing and trigger state, per PR by kind** (see Merge): the routine batch PR requires no review round; every other PR's trigger is `deferred`, owed by this run once the PR is green — `supervise-prs` reports it owed when that condition is met, and a trigger this run has since posted is passed as `issued`, so it is confirmed;
 - **caller pushes**: every re-resolution pass this run redispatched, tagged `substantive` — a lockfile re-resolution changes what is installed — with the branch passed **locked** for as long as that agent runs; and with that PR's trigger state reset to `deferred`, owed once the PR is green again, so the re-resolution is not re-triggered before its CI concludes;

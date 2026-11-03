@@ -39,14 +39,15 @@ evals (`<skill>#<id>`).
    *The invoking user's account*; `resolve-pr-comment`, *Replies held for approval*; `rules/conductor-exchange.md`,
    *What a relay can authorise*.
    create-pr#6, resolve-pr-comment#0 #18 #21 #23 #26 #28 #41 #42 #43 #44 #45 #46 #47
-   #48 #49 #50 #51 #55 #56, implement-issue#37,
+   #48 #49 #50 #51 #55 #56, implement-issue#37 #40,
    review-docs#11, settle-outstanding-decisions#11 #12, backlog-orchestrator#72,
    supervise-prs#56 #88, swarm#30.
 2. **Identity is observed authorship; own writes are known by id or footer, never content.**
    `rules/posting-identity.md`; `swarm`, *Blocked workers*; `supervise-prs`, *Integration-branch CI*, step 3;
    `rules/conductor-exchange.md`, *Pushes*, *The watch after settling*.
    backlog-orchestrator#5 #58,
-   resolve-pr-comment#48 #49, supervise-prs#86 #89 #105, backlog-orchestrator#90 #91 #102 #103, settle-and-merge#47 #48.
+   resolve-pr-comment#48 #49, supervise-prs#86 #89 #105, backlog-orchestrator#90 #91 #102 #103 #105, settle-and-merge#47 #48, implement-issue#40 #41, swarm#37,
+   merge-stack#11.
 3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
    `backlog-orchestrator`, *Arming the wait when nothing is in flight*; `rules/review-trigger.md`,
    *A stalled round*; `rules/conductor-exchange.md`, *Relayed rulings*, *New work, or a fold*, *What a relay can authorise*;
@@ -60,7 +61,7 @@ evals (`<skill>#<id>`).
    another repair push.
    `rules/platform-pr-posture.md`; `supervise-prs`, *Budgets*; `rules/agent-policy.md`, *Branch updates*. supervise-prs#25 #26 #55 #57,
    backlog-orchestrator#67, repair-pr#16 #17 #18, supervise-prs#61 #73 #96 #98 #102 #103 #104 #107 #108 #109 #110, backlog-orchestrator#96,
-   repair-pr#20 #21, settle-and-merge#46 #47 #48.
+   repair-pr#20 #21, settle-and-merge#46 #47 #48, implement-issue#40.
 6. **A created PR's body is edited only while draft, footered, or under a resolved merge
    opt-in** (`Depends on:` excepted); else drift is reported with a replacement.
    `rules/authored-write-form.md`. settle-and-merge#6 #9, merge-stack#5,
@@ -102,8 +103,8 @@ evals (`<skill>#<id>`).
    literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked
    workers*; `rules/wake-budget.md`; `rules/conductor-exchange.md`, *The watch after settling*; `conductor`,
    *6. Dispatch*. backlog-orchestrator#4 #19, swarm#20 #25 #26,
-   implement-issue#14 #19 #20 #21, supervise-prs#87, backlog-orchestrator#92, conductor#5 #8 #21 #31 #35,
-   implement-issue#36 #39.
+   implement-issue#14 #19 #20 #21, supervise-prs#87, backlog-orchestrator#92, conductor#5 #8 #21 #31 #35 #38 #39,
+   implement-issue#36 #39, merge-stack#12.
 
 **A PR changing a protected rule's text says so in its body**, and gets a blind
 rule-by-rule audit plus a pinning-eval round before merge. None is an issue-#49

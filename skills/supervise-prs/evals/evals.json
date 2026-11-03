@@ -1384,6 +1384,18 @@
         "the answer does not hand the dropped pass's budget back"
       ],
       "files": []
+    },
+    {
+      "id": 111,
+      "name": "a-rebased-integration-pr-fails-closed-across-a-restart",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). ci-mode integration-branch; branch-update default rebase. Before a restart, PR #95 into integration/r1 had a local gate record passed at head H. After the restart, the PR's timeline shows a force-push from H to H2 (a rebase onto the moved integration branch); no caller push record survived, and H is not an ancestor of H2. Question: does the gate record still hold, and does the review round carry?",
+      "expected_output": "No. Across a restart a rebase seen only as a force-push cannot be shown mechanical, so it is substantive: H is not an ancestor of H2, the gate record does not attach to H2, the gate runs again on H2, and a fresh review round is owed. Fail closed.",
+      "assertions": [
+        "the answer does not carry the gate record to H2",
+        "the answer reruns the gate",
+        "the answer owes a fresh review round"
+      ],
+      "files": []
     }
   ]
 }

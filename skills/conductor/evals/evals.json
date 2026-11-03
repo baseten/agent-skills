@@ -448,14 +448,14 @@
     },
     {
       "id": 35,
-      "name": "the-conductor-holds-a-settled-runs-watch-and-hands-it-back",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Run D (single-issue, PR #850) pushed 'settled, waiting on owner merge', the push was delivered, and it went quiet. Two sweeps later the owner merges PR #850. Separately, run E handed over its watch for PR #852; your fallback check-in has now had three empty sweeps in a row while #852 is still open, and a send to run E fails. Question: what do you do for D, and what happens to E's PR?",
-      "expected_output": "D: the conductor holds D's watch, finds the owner's merge on GitHub at its sweep and messages run D to wake it; D runs its pass and reports merged. E: before the check-in stops with #852 open, message run E to resume its own bounded watch; that send failed, so the stop report names PR #852 as unwatched for the owner. Report the check-in's stop once. The PR is never silently left unwatched.",
+      "name": "the-conductor-holds-a-settled-runs-watch-until-merge",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Run D (single-issue, PR #850) pushed 'settled, waiting on owner merge', the push was delivered, and it went quiet, handing you its watch. Your fallback check-in then has three empty sweeps in a row; PR #850 is still open and the owner has not merged it. Two days later the owner merges it. Question: does your check-in stop after the three empty sweeps, and what happens at the merge?",
+      "expected_output": "No. While the conductor holds a settled run's watch it polls that PR on the post-settle cadence (about 50 minutes, then about every 4 hours) until it merges or closes - a held watch is not ended by empty sweeps, and the check-in stays armed. Its bound is 7 days after the hand-off, when an open PR is reported to the owner as unwatched. When the owner merges #850, the sweep finds the merge on GitHub and messages run D, which runs one pass and reports merged.",
       "assertions": [
-        "the answer messages run D on the owner's merge to wake it",
-        "the answer tries to hand E's watch back before stopping",
-        "the answer reports #852 as unwatched because the send failed",
-        "the answer reports the check-in's stop"
+        "the answer keeps polling after three empty sweeps because it holds a watch",
+        "the answer polls on the post-settle cadence",
+        "the answer messages run D on the merge",
+        "the answer names the 7-day bound"
       ],
       "files": []
     },
@@ -480,6 +480,42 @@
         "the answer writes the ruling to the ledger",
         "the answer does not post the relay at #812 without the owner's approval of the complete comment",
         "the answer tells the owner to answer at the site or approve the comment"
+      ],
+      "files": []
+    },
+    {
+      "id": 38,
+      "name": "a-revoked-retirement-ruling-retires-nothing",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A scheduled check-in fires; nobody is present. The ledger records a standing ruling 'retire each run once all its PRs are merged', with the comment id of the owner's comment on the home repository's [PLAN] issue. Run A's PRs are all merged and its remote is clean. Re-reading that comment by its id, you find a later owner comment beneath it: 'Revoking the auto-retire ruling above - ask me each time.' Question: do you retire run A?",
+      "expected_output": "No. A standing retirement ruling is re-read at its site by the recorded comment id before acting: authored by the owner's account, unedited, and neither superseded nor revoked by a later owner comment. This one was revoked, so it no longer authorises anything; nothing is retired on the unattended firing. Record the revocation in the ledger and put the retirement to the owner as a question at the next attended pass.",
+      "assertions": [
+        "the answer re-reads the ruling at its site before acting",
+        "the answer does not retire run A",
+        "the answer treats the later owner comment as revoking the ruling"
+      ],
+      "files": []
+    },
+    {
+      "id": 39,
+      "name": "a-merged-single-issue-run-retires-without-a-wrap-up",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Attended sweep. The ledger records a standing ruling (re-read and valid) 'retire each run once its PRs are merged'. Worker run 'Worker: api · #2011 export' reported merged; GitHub shows its PR #2040 merged; its record shows no live worker and no uncommitted work, its branch head is on the remote, and it is idle. It posted no wrap-up comment. Question: do you retire it?",
+      "expected_output": "Yes. For a single-issue run, its merged report and its PR merged on the forge stand in for a wrap-up; every other condition holds - PR merged, head reachable, no live worker, no uncommitted work, not RUNNING - and it is a run the ledger records. Archive it and report the retirement.",
+      "assertions": [
+        "the answer retires the run",
+        "the answer does not require a wrap-up for a single-issue run",
+        "the answer checks the remaining archive conditions"
+      ],
+      "files": []
+    },
+    {
+      "id": 40,
+      "name": "a-relayed-ruling-that-posts-a-reply-is-one-question",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Run B holds an approval-pending reply on PR #870, in a thread a human reviewer is in: 'Fixed in 3c4d5e6 - renamed `n` to `count`.' The owner is present. Question: how do you put it to the owner, and what is recorded?",
+      "expected_output": "One structured question carrying the complete reply text in its option, with the thread's link and every comment posted in the thread since the fix, read fresh - approve, edit or reject - so one answer is both the ruling and the approval. The ruling goes to the ledger first with the owner's words, then is recorded on the PR's conversation quoting the approved text, then relayed to run B with links.",
+      "assertions": [
+        "the answer puts the complete reply text in the question's option",
+        "the answer shows the comments since the fix",
+        "the answer needs only one answer from the owner"
       ],
       "files": []
     }

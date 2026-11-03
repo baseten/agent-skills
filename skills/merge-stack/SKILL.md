@@ -125,7 +125,7 @@ After GitHub confirms the merge:
 
 ### Rebase a direct child
 
-**A child another person opened is not rebased.** Read each descendant's PR author from the forge, as the *agent policy* shared rule's *Branch updates* says — an author whose type cannot be established counts as a person — and for such a child merge `P_BASE_BRANCH` (or, for a grandchild, its parent's new head) into it, push plainly, and retarget as below; every other child is rebased as follows.
+**A child another person opened is not rebased** (`references/agent-policy.md`, *Branch updates*, which decides authorship from the forge — an author whose type cannot be established, or an invoking user's account the invocation does not name, counts as another person). **Never force-push a child another session is still pushing to**: wait until it is done and released, then restack it. For a child another person opened, merge `P_BASE_BRANCH` (or, for a grandchild, its parent's new head) into it, push plainly, and retarget as below; every other child is rebased as follows.
 
 For direct child C, preserve:
 

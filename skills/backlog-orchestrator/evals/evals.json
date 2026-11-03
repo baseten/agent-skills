@@ -1353,6 +1353,18 @@
         "the answer restacks #91 after #90"
       ],
       "files": []
+    },
+    {
+      "id": 105,
+      "name": "a-resume-adopts-live-workers-with-the-return-channel-absent",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Resuming a run whose predecessor session_01Pp handed back cleanly (its checkpoint records the hand-back). Two remote workers it dispatched are still live; their send clauses name session_01Pp. This session's own record reads cross_session_inbound: available. Question: is the predecessor stopped, and how do you treat those workers' return channel?",
+      "expected_output": "The predecessor counts as stopped only because its checkpoint records the hand-back, which also makes it act on no push from those workers; a live worker whose send clause names it would otherwise be a wake bound to it. For the adopted workers, record the return channel absent - their send clauses name the predecessor - so the pull decides; nothing is inferred from a missing push.",
+      "assertions": [
+        "the answer counts the workers' send clauses in the stopped test",
+        "the answer relies on the recorded hand-back",
+        "the answer records the return channel absent for the adopted workers"
+      ],
+      "files": []
     }
   ]
 }

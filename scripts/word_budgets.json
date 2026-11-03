@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 25883,
+      "budget": 25876,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -23,7 +23,7 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/restart-resume.md": {
-      "budget": 1112,
+      "budget": 1146,
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 5686,
+      "budget": 5659,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -39,7 +39,7 @@
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 5721,
+      "budget": 5718,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
@@ -47,7 +47,7 @@
       "target": 3000
     },
     "skills/merge-stack/SKILL.md": {
-      "budget": 2486,
+      "budget": 2508,
       "target": 3000
     },
     "skills/normalize-github-dependencies/SKILL.md": {
@@ -55,11 +55,11 @@
       "target": 3000
     },
     "skills/npm-dependency-upgrade-orchestrator/SKILL.md": {
-      "budget": 5306,
+      "budget": 5333,
       "target": 8000
     },
     "skills/owner-steps/SKILL.md": {
-      "budget": 1249,
+      "budget": 1258,
       "target": 3000
     },
     "skills/plan-merge-order/SKILL.md": {
@@ -103,11 +103,11 @@
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
-      "budget": 10129,
+      "budget": 10168,
       "target": 8000
     },
     "skills/swarm/runtime-remote.md": {
-      "budget": 1504,
+      "budget": 1516,
       "target": 1500
     },
     "skills/upgrade-npm-dependency/SKILL.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 2556,
+      "budget": 2285,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
@@ -167,7 +167,7 @@
       "target": 1500
     },
     "rules/posting-identity.md": {
-      "budget": 1746,
+      "budget": 1768,
       "target": 1500
     },
     "rules/prose-review-round-budget.md": {
@@ -187,7 +187,7 @@
       "target": 1500
     },
     "rules/wake-budget.md": {
-      "budget": 1596,
+      "budget": 1613,
       "target": 1500
     },
     "rules/watch-and-read.md": {
