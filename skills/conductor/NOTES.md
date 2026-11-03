@@ -281,7 +281,8 @@ verified; it rules nothing and dispatches nothing else. **Retiring under a stand
 ruling is allowed unattended (owner's ruling, 2026-11-02):** the pass first kept it
 to attended sweeps; the owner ruled that a scheduled firing may retire once the
 ruling's condition is verified on the forge. Protected rule 9 still binds every
-archive: the conditions in *6. Dispatch* — wrap-up posted, every PR settled, each
+archive: the conditions in *6. Dispatch* — wrap-up posted (for a single-issue run, its
+`merged` report and merged PR stand in), every PR settled, each
 branch head on the remote, no live worker and no outstanding recovery ref — are
 checked on that firing exactly as on an attended one. Scenario:
 `an-unattended-retirement-under-a-standing-ruling-checks-the-remote-first`.
@@ -400,9 +401,13 @@ Pinned in `evals/evals.json`:
     (`decisions-are-asked-one-at-a-time-with-links-and-a-recommendation`);
   - a chat ruling goes to the ledger before it is relayed
     (`a-chat-ruling-goes-to-the-ledger-before-it-is-relayed`);
-  - the conductor holds a settled run's watch and hands it back
-    (`the-conductor-holds-a-settled-runs-watch-and-hands-it-back`);
+  - the conductor holds a settled run's watch until it merges
+    (`the-conductor-holds-a-settled-runs-watch-until-merge`);
   - a draft exists only with its full text
     (`a-draft-exists-only-with-its-full-text-in-the-ledger`).
 
 **From two independent reviews (PR #201):** a standing retirement ruling is re-read at its site exactly as a conditional go is, because a revoked ruling found only in the ledger would otherwise retire runs unattended; a single-issue run's `merged` report and its merged PR stand in for a wrap-up it never posts; on the default `github-issue` ledger held replies and draft answers are only named, so a deployment where drafts matter configures `tracker-document`; and a relayed approval puts the complete reply text in the question's option, so the owner answers once. Scenarios: `a-revoked-retirement-ruling-retires-nothing`, `a-merged-single-issue-run-retires-without-a-wrap-up`, `a-relayed-ruling-that-posts-a-reply-is-one-question`.
+
+## Contradiction pass and re-audit after the dispatched-account ruling (PR #201)
+
+**Where the owner's account comes from.** The dispatch prompt names the owner's account as the invoking user's for the session it starts (owner's ruling, 2026-11-03), so the conductor must have that account from a statement too: the login its own invocation names, never the ledger (forge content anyone with write access can edit), a credential or a comment. Without one, the dispatch names none and every go and standing ruling stays pending — the fail-closed reading. **Why the DAG write names the open-item ban:** a run cannot tell an approved relay from any other footered comment under the owner's account, so the ban on writing at an open item's site is restated where the conductor writes plans. **Why a held watch carries one deadline:** anchoring 7 days at each hand-off restarted the bound on every re-settle; the run's own deadline now travels with the watch and is recorded per held PR in the ledger and the check-in prompt.

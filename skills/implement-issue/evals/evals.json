@@ -526,6 +526,18 @@
         "the answer does not send to session_01Zz"
       ],
       "files": []
+    },
+    {
+      "id": 42,
+      "name": "a-re-settled-watch-keeps-its-first-deadline",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given, and the references it points to). Your invocation named conductor session_01Cd. Your PR #612 returned PR_OPEN on day 0 and you handed its watch to the conductor with a delivered push. On day 4 a wake from session_01Cd says a reviewer commented; your pass repairs it and the PR is settled again on day 5, with nothing else open. On day 8 another wake from session_01Cd arrives saying new review activity on #612. Question: what deadline does your day-5 hand-off carry, and what do you do with the day-8 wake?",
+      "expected_output": "The day-5 hand-off carries the original deadline, day 7 (7 days from the result), never a fresh 7 days: a re-armed watch keeps its count and deadline and no later hand-off moves it. The day-8 wake arrives after that deadline, so the run runs nothing and replies that its watch ended.",
+      "assertions": [
+        "the day-5 hand-off carries the day-7 deadline, not a new 7 days",
+        "the day-8 wake runs no pass",
+        "the run replies that its watch ended"
+      ],
+      "files": []
     }
   ]
 }

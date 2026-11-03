@@ -101,7 +101,8 @@ Subagents in parent-created worktrees and serialized execution have both.
 **The return channel** — whether a worker can message this run — is recorded
 beside them, the same way: established at startup by one cheap read, never by a
 speculative message, and absent for the rest of the run, in that direction, once a
-send in it errors or is refused. It is not a third capability anything above
+send in it errors or is refused — per worker, where a resume adopts one
+(`runtime-remote.md`). It is not a third capability anything above
 divides on: checkpoint compliance, release and *Blocked workers* never turn on it.
 It decides only whether a worker's report also arrives as a push (*How a worker's
 report actually reaches you*). On tier 2 its detection is `runtime-remote.md`'s;
@@ -433,7 +434,7 @@ to notice remote completions keeps the cadence the caller's *wake budget* shared
 rule gives it — a push shortens nothing it relies on and lengthens nothing — and
 is never dropped: it is the safety net for the push that never comes.
 
-**A session whose own checkpoint records it handed back or superseded acts on no
+**A session whose own checkpoint records it handed back acts on no
 push**: it replies in one line at most, naming its successor where it knows one, and
 leaves the work to the run that adopted it.
 

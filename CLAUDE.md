@@ -104,7 +104,7 @@ evals (`<skill>#<id>`).
    workers*; `rules/wake-budget.md`; `rules/conductor-exchange.md`, *The watch after settling*; `conductor`,
    *6. Dispatch*. backlog-orchestrator#4 #19, swarm#20 #25 #26,
    implement-issue#14 #19 #20 #21, supervise-prs#87, backlog-orchestrator#92, conductor#5 #8 #21 #31 #35 #38 #39,
-   implement-issue#36 #39, merge-stack#12.
+   implement-issue#36 #39 #42, merge-stack#12.
 
 **A PR changing a protected rule's text says so in its body**, and gets a blind
 rule-by-rule audit plus a pinning-eval round before merge. None is an issue-#49

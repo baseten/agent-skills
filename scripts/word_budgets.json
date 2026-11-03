@@ -27,11 +27,11 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
-      "budget": 2129,
+      "budget": 2164,
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 5659,
+      "budget": 5780,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -91,7 +91,7 @@
       "target": 3000
     },
     "skills/ship-branch/SKILL.md": {
-      "budget": 295,
+      "budget": 305,
       "target": 3000
     },
     "skills/summarize-wave/SKILL.md": {
@@ -103,7 +103,7 @@
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
-      "budget": 10168,
+      "budget": 10175,
       "target": 8000
     },
     "skills/swarm/runtime-remote.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 2285,
+      "budget": 2360,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
@@ -163,7 +163,7 @@
       "target": 1500
     },
     "rules/platform-pr-posture.md": {
-      "budget": 1478,
+      "budget": 1482,
       "target": 1500
     },
     "rules/posting-identity.md": {
@@ -187,7 +187,7 @@
       "target": 1500
     },
     "rules/wake-budget.md": {
-      "budget": 1613,
+      "budget": 1647,
       "target": 1500
     },
     "rules/watch-and-read.md": {
