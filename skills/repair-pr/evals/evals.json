@@ -220,7 +220,7 @@
     {
       "id": 17,
       "name": "a-supplied-refresh-rides-in-the-repair-push",
-      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: repair type = review, review budget 1 remaining. The caller supplied a base refresh with the dispatch: the PR is behind main, and merging main in is clean. The round has one repairable thread. Questions: (a) is the refresh a separate push, before or after the fix? (b) what if classification had found nothing to repair? (c) what if merging main had conflicted in a way that chooses between two behaviours?",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository's policy file sets branch-update: merge. Scenario: repair type = review, review budget 1 remaining. The caller supplied a base refresh with the dispatch: the PR is behind main, and merging main in is clean. The round has one repairable thread. Questions: (a) is the refresh a separate push, before or after the fix? (b) what if classification had found nothing to repair? (c) what if merging main had conflicted in a way that chooses between two behaviours?",
       "expected_output": "(a) No. The fix is committed, main is merged in just before the pass's one push, the local checks run again on the result, and one push carries both. One pass, one push, one cycle. (b) Then the pass pushes nothing, returns NO_CODE_CHANGE, consumes no cycle, and returns the refresh unmade. It stays owed to the caller. (c) The refresh is not made. The repair is pushed without it, and the refresh is returned unmade, with why: a resolution that picks between behaviours is substantive, not judgment this pass was dispatched for.",
       "assertions": [
         "the refresh and the fix go out in one push in the same pass",
@@ -265,6 +265,18 @@
         "the answer rebases onto the base rather than merging",
         "the answer pushes once with a lease pinned to the starting head",
         "the answer's replies name the rebased SHA, posted after the push"
+      ],
+      "files": []
+    },
+    {
+      "id": 21,
+      "name": "a-refresh-merges-where-the-repository-configures-merge",
+      "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Repair type review; one thread to fix; the caller supplied a base refresh and passed branch-update: merge (source: the repository's .claude/agent-policy.json). The refresh is clean. Question: how do you bring in the base, and how do you push?",
+      "expected_output": "Merge the base in, just before the pass's one push - the repository configured merge, so no rebase and no force-push. Push once, plainly. Replies naming the fix SHA are posted after that push.",
+      "assertions": [
+        "the answer merges the base",
+        "the answer does not force-push",
+        "the answer pushes once before posting replies"
       ],
       "files": []
     }

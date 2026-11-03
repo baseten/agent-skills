@@ -621,6 +621,7 @@ A worker never supervises its own PR and is never resumed to repair it — only 
 
 - **PR set**: every PR this run tracks, with its canonical issue URL;
 - **budgets**: `ci-repair-cycles`, `review-repair-cycles`, `finding-repair-cycles` and `repair-model-escalations` per PR, as this run's preflight resolved them (*Policy keys and defaults*), with their source — and `auto-resolve-comments`, `ci-mode` and `review-defer-severity` per PR, the same way: `ci-mode` with whether its effect was established and, under `integration-branch`, the branch, the per-PR gate tier (`integration-branch.md`) and each PR's worker gate record — the gate report its worker returned, or the gate-note ref step 5 assigned it, as accepted above; `review-defer-severity` with the issue's parent as its follow-up site, or the issue where it has none;
+- **`branch-update`**: per PR, as this run's preflight resolved it, with its source;
 - **counters**: 0 for a PR this run created; otherwise the counters in `supervise-prs`'s last returned record for that PR, which the state block carries every cycle;
 - **posting-identity map**: the run's whole map — and this run takes back the map it returns and merges it, as it does a worker's (`references/posting-identity.md`);
 - **review routing and trigger state**: as each worker's `create-pr` left it, and `deferred` where this run deferred review (*Implementation worker contract*); a convention performed by dispatched review sessions is passed as performed by the `caller`, with the review and comment ids recorded there (*Review and repair sessions*);
@@ -901,7 +902,7 @@ When an upstream stack branch changes, descendants may become `STACK_STALE`.
 
 Do not blindly restack every descendant after every upstream push. Instead:
 
-- **never restack a branch whose `supervise-prs` record shows a mutator** — a repair pass in flight; wait for it to return, then lock the branch before restacking;
+- **never restack a branch whose `supervise-prs` record shows a mutator** — a repair pass in flight; wait for it to return and be released, then lock the branch before restacking;
 - record stale ancestry;
 - restack by the PR's `branch-update` (`references/agent-policy.md`, *Branch updates*): rebase the parent, then restack its open children onto it;
 - restack before descendant diffs/CI/review become misleading;

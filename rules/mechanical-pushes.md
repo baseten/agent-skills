@@ -16,7 +16,7 @@ Re-trigger review after a **substantive** push; never after a **mechanical** one
 - a restack/rebase onto a new base whose conflict resolutions reproduce both sides' original intent rather than picking between them — a clean rebase onto a moved base is mechanical exactly as a clean merge from the base is;
 - a renumber/regeneration of a claimed artifact (migration number + index entry, lockfile, generated manifest or client) where content is unchanged apart from the identity or ordering that had to move;
 - formatter-only output;
-- the one empty commit `ci-mode: deferred`'s trigger pushes on a branch level with its base (`supervise-prs`, *Deferred CI*): it changes no file, and the CI run it starts is what validates it.
+- the one empty commit `ci-mode: deferred`'s trigger pushes, alone on a branch level with its base or on top of a clean rebase (`supervise-prs`, *Deferred CI*): it changes no file, and the CI run it starts is what validates it.
 
 Everything else is substantive — including a conflict resolution that chose between behaviors, and a regeneration whose output differs beyond identity/ordering. **Cannot tell → substantive.**
 

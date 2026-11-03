@@ -518,7 +518,7 @@
     {
       "id": 41,
       "name": "the-ci-trigger-is-a-base-update-or-on-a-level-branch-one-empty-commit",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: two PRs with `minimize-ci-runs` true and in effect, and the latest automated round on each current head is clean, with CI deferred. The workflow producing the required checks declares `workflow_dispatch`, with no job gated to `pull_request` events. PR #82's branch is three commits behind main, and merging main into it is conflict-free. PR #83's branch already contains main's head. A teammate suggests pushing an empty commit to each to start CI. Questions: (a) how do you start CI on each? (b) does #82's trigger count a cycle or re-trigger review? (c) the empty commit?",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository's policy file sets branch-update: merge. Scenario: two PRs with `minimize-ci-runs` true and in effect, and the latest automated round on each current head is clean, with CI deferred. The workflow producing the required checks declares `workflow_dispatch`, with no job gated to `pull_request` events. PR #82's branch is three commits behind main, and merging main into it is conflict-free. PR #83's branch already contains main's head. A teammate suggests pushing an empty commit to each to start CI. Questions: (a) how do you start CI on each? (b) does #82's trigger count a cycle or re-trigger review? (c) the empty commit?",
       "expected_output": "(a) #82: update the branch from its base; the merge commit carries no skip token, so CI runs. #83 already contains main's head, so there is no merge commit to make: push one empty commit carrying no skip token, which starts a pull_request run. Never workflow_dispatch: GitHub does not count a dispatched run's checks toward a required check. (b) No: a clean base update is a mechanical push — no cycle, the review round is kept, no re-trigger; the empty commit is mechanical the same way. (c) Only on #83, the level branch, and only one. #82 gets the update, not an empty commit. No PR is closed and reopened.",
       "assertions": [
         "#82 is triggered by updating the branch from its base",
@@ -558,7 +558,7 @@
     {
       "id": 44,
       "name": "the-pr-opens-on-a-tokened-head-and-no-ci-runs-until-the-trigger",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #86's repository resolved `minimize-ci-runs` true, and the key has effect there. The caller's preflight read a `workflow_dispatch` trigger and a squash-merge setting, and an earlier tokened push started no run. The worker's last push before creating the PR was head d4d4d4d, and the PR opened on it. You adopt the PR. Its review round 1 is pending, and no CI run exists on d4d4d4d. Questions: (a) what should d4d4d4d's commit message carry, and why? (b) how do you read CI at adoption? (c) when does CI first run on this PR?",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository's policy file sets branch-update: merge. Scenario: PR #86's repository resolved `minimize-ci-runs` true, and the key has effect there. The caller's preflight read a `workflow_dispatch` trigger and a squash-merge setting, and an earlier tokened push started no run. The worker's last push before creating the PR was head d4d4d4d, and the PR opened on it. You adopt the PR. Its review round 1 is pending, and no CI run exists on d4d4d4d. Questions: (a) what should d4d4d4d's commit message carry, and why? (b) how do you read CI at adoption? (c) when does CI first run on this PR?",
       "expected_output": "(a) [skip ci]: under the key, the worker's last push before the PR is created carries the token, so the PR-opened event skips CI too. (b) CI deferred, not missing or red: no attribution, no cycle, no dispatch, and the PR is waiting. (c) Only once the PR is quiescent on its current head: round 1 complete or past its window, no repairable finding open, no pass in flight. This skill then triggers CI once, by a base update, or one empty commit where the branch is level with main.",
       "assertions": [
         "the pre-PR head carries [skip ci] so the PR-opened event runs no CI",
@@ -657,7 +657,7 @@
     {
       "id": 52,
       "name": "without-workflow-dispatch-the-key-has-effect-and-a-branch-behind-its-base-is-triggered-by-the-update",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #101 has `minimize-ci-runs` true, from repo config. Its repository allows squash merges, its review trigger is a comment, and a tokened push was observed starting no run. The workflow producing the required checks declares only `pull_request` and `push` triggers, with no `workflow_dispatch`. The PR is quiescent on its head, which carries [skip ci] and has no run, and the branch is two commits behind main; merging main in is conflict-free. Questions: (a) does the key have effect in this repository? (b) how does CI run on #101? (c) does the missing dispatch trigger appear in the report?",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository's policy file sets branch-update: merge. Scenario: PR #101 has `minimize-ci-runs` true, from repo config. Its repository allows squash merges, its review trigger is a comment, and a tokened push was observed starting no run. The workflow producing the required checks declares only `pull_request` and `push` triggers, with no `workflow_dispatch`. The PR is quiescent on its head, which carries [skip ci] and has no run, and the branch is two commits behind main; merging main in is conflict-free. Questions: (a) does the key have effect in this repository? (b) how does CI run on #101? (c) does the missing dispatch trigger appear in the report?",
       "expected_output": "(a) Yes. workflow_dispatch plays no part in the trigger at all. (b) Update the branch from its base. The merge commit carries no skip token, so CI runs once on the merged tree. The update is mechanical, so no cycle is counted and the review round carries forward. (c) No. Nothing about dispatch is reported, and the repository is not one where the key has no effect.",
       "assertions": [
         "the key has effect despite no workflow_dispatch",
@@ -1370,6 +1370,18 @@
         "the answer tags (a) mechanical",
         "the answer tags (b) substantive",
         "the answer re-triggers review only for (b)"
+      ],
+      "files": []
+    },
+    {
+      "id": 110,
+      "name": "a-pass-id-a-rebase-dropped-stays-counted",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You rebuild PR #84's counters. The caller's push record says it rebased #84 onto a moved base and that the rebase dropped commit a3, carrying 'Repair-Pass: p3, Repair-Type: ci', because its patch was already upstream. The branch now carries 'Repair-Pass: p1' (review) only. Question: what are the counters?",
+      "expected_output": "review 1 (p1) and ci 1 (p3): passes are matched by id, and an id a rebase dropped stays counted from the caller's push record. Never count ci as 0, which would hand the budget back.",
+      "assertions": [
+        "the answer counts ci 1 from the push record",
+        "the answer counts review 1",
+        "the answer does not hand the dropped pass's budget back"
       ],
       "files": []
     }
