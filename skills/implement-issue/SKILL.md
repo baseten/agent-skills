@@ -27,7 +27,7 @@ This file is the contract. The reasoning behind each rule — incident history, 
 - Invoking this skill authorizes implementation and PR creation for the supplied issue, unless the user says otherwise.
 - It authorizes a merge **only** where the PR's own repository opted in via `auto-merge` in `.claude/agent-policy.json`. The key is shared with `backlog-orchestrator` deliberately — scoped to invariant 12's gate, not to the skill evaluating it — so a config predating this skill grants it too (NOTES).
 - An invocation argument or caller can narrow `auto-merge`, never widen it, as `references/agent-policy.md`, *Precedence*, rules for every key it lists. Without the opt-in this skill merges nothing; everything else stays the user's separate `merge-stack` authorization.
-- On an existing branch, invoking it authorizes pushing that branch as it stands and opening its PR — never rewriting its history.
+- On an existing branch, invoking it authorizes pushing that branch as it stands and opening its PR — never rewriting its history, bar the base updates *Branch updates* makes once the PR is open (`references/agent-policy.md`).
 - The issue's **full URL is canonical identity** everywhere. Short keys are display only, never durable state. With no issue, the brief stands in for it (*Phase 1, from an existing branch*).
 
 ## Policy and budgets

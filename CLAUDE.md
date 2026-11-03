@@ -94,8 +94,8 @@ evals (`<skill>#<id>`).
    follow-up issue, never one a person is in (`resolve-pr-comment`, *Findings deferred to a follow-up*).
    resolve-pr-comment#52 #53 #54, implement-issue#22. A head with no run is read through
    path filters, failing closed (`rules/ci-and-review-verdicts.md`, *Path filters*).
-   supervise-prs#58 #59 #62 #63 #64, settle-and-merge#19. A branch update keeps a merge commit
-   wherever a rule needs one (`rules/agent-policy.md`, *Branch updates*). settle-and-merge#46.
+   supervise-prs#58 #59 #62 #63 #64, settle-and-merge#19. A branch update rebases with a pinned
+   lease, bar its two exceptions (`rules/agent-policy.md`, *Branch updates*). settle-and-merge#46.
 9. **Stranded work reaches a remote ref before any archive; permission holds name the
    literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked
    workers*; `rules/wake-budget.md`; `rules/conductor-exchange.md`, *The watch after settling*; `conductor`,

@@ -1335,6 +1335,43 @@
         "the answer treats the push as a trigger for re-reading the record"
       ],
       "files": []
+    },
+    {
+      "id": 107,
+      "name": "a-deferred-trigger-by-rebase-puts-the-empty-commit-on-top",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #80 is under ci-mode deferred, branch-update unset, and is quiescent on head c1 (message ends '[skip ci]'). Its base has moved. Question: how do you trigger its one CI run?",
+      "expected_output": "Update the branch from its base by the default branch-update: rebase onto the base. The rebased head keeps its '[skip ci]' message, so put the one untokened empty commit on top and push both together with --force-with-lease pinned to c1. The clean rebase is mechanical, so no cycle is spent and the review round carries forward; the empty commit starts the run. Never a workflow_dispatch.",
+      "assertions": [
+        "the answer rebases onto the base",
+        "the answer adds the one untokened empty commit on top in the same push",
+        "the answer pins the lease to c1",
+        "the answer treats the clean rebase as mechanical"
+      ],
+      "files": []
+    },
+    {
+      "id": 108,
+      "name": "counters-survive-a-rebase-by-pass-id",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). After a restart you rebuild PR #81's counters. Its timeline shows a force-push: the caller rebased it onto a moved base. Before the rebase, commits a1 and a2 carried 'Repair-Pass: p1, Repair-Type: review' and 'Repair-Pass: p2, Repair-Type: ci'. The branch now has b1 and b2 with the same two trailers and different SHAs. Question: what are the counters?",
+      "expected_output": "Count distinct Repair-Pass ids per Repair-Type, matched by id, never by SHA: review 1 (p1), ci 1 (p2). The rebase rewrote the SHAs but kept every trailer, so the history is intact - not unknown, not spent.",
+      "assertions": [
+        "the answer counts review 1 and ci 1",
+        "the answer matches passes by id, not SHA",
+        "the answer does not treat the rebase as making counters unknown"
+      ],
+      "files": []
+    },
+    {
+      "id": 109,
+      "name": "a-conflicted-rebase-is-substantive-as-a-conflicted-merge-is",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The caller reports two pushes to supervised PRs: (a) a clean rebase of #82 onto its moved base; (b) a rebase of #83 that hit a conflict, which the caller resolved by choosing one side's behaviour. Question: how is each push tagged, and what follows?",
+      "expected_output": "(a) Mechanical, exactly as a clean merge from base would be: no cycle, no reset of the reviewed state, no re-trigger. (b) Substantive, as a conflicted merge choosing between behaviours is: it resets the reviewed state and owes a review round.",
+      "assertions": [
+        "the answer tags (a) mechanical",
+        "the answer tags (b) substantive",
+        "the answer re-triggers review only for (b)"
+      ],
+      "files": []
     }
   ]
 }

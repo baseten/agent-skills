@@ -45,20 +45,12 @@ Report the resolved policy per PR in the checkpoint output, with its source — 
 
 ## Branch updates
 
-**`branch-update` (per PR, `rebase` or `merge`, default `rebase`)** says how a run brings a stale PR branch up to its base, or restacks a child onto its parent outside `merge-stack`. **`rebase`** rebases onto the base and pushes with `--force-with-lease=<branch>:<the head recorded before the rebase>` — never a bare lease, never `--force` — and is the one force-push any rule allows a run on a PR branch outside `merge-stack`'s restacks, which pin their leases the same way. **`merge`** merges the base in. The key governs branch updates only: never the merge method, and never the integration branch.
+**`branch-update` (per PR, `rebase` or `merge`, default `rebase`)** says how a run brings a stale PR branch up to its base, or restacks a child onto its parent outside `merge-stack`. **`rebase`**, the default for every PR branch, rebases onto the base and pushes with `--force-with-lease=<branch>:<the head recorded before the rebase>` — never a bare lease, never `--force`; the lease is what protects any commit the run did not write. **`merge`** merges the base in, for a repository that configures it. A parent is rebased first and its open children restacked onto it after. The key governs branch updates only, never the merge method. **A clean rebase is a mechanical push, as a clean merge is; a conflicted one is substantive, as a conflicted merge is** (the *mechanical pushes* shared rule, which `supervise-prs` applies).
 
-**A merge commit is kept, whatever the key says, wherever a rule needs one** — each stated at its own decision point, and the key is not read there:
+**Two exceptions, and only two:**
 
-- the `ci-mode: deferred` trigger and overlap update, whose untokened merge commit is what starts CI on the merged tree (`supervise-prs`, *Deferred CI*; `settle-and-merge`, *Merge behavior*);
-- any update under `deferred` or `integration-branch` whose head commit does not carry the skip token, so a rebase would push an untokened head;
-- the integration branch, which is never rebased or force-pushed (`backlog-orchestrator`'s `integration-branch.md`), and an update of a PR into it, whose merge commit carries the skip token (`settle-and-merge`, the merged-tip check);
-- a base refresh inside a `repair-pr` pass, which stays append-only;
-- a branch carrying a commit with a repair-pass trailer, since a rebase can drop one and the counters are rebuilt from them;
-- a parent with open child PRs, and a branch a live or unreleased worker reported a head on;
-- a branch with any commit this run, or its workers, did not author — an adopted PR, an existing branch handed to `implement-issue` — whose history is not the run's to rewrite; a run knows its own commits only by the SHAs it recorded pushing, so where it cannot show every commit is one of them, after a restart included, it merges;
-- a rebase that would conflict, which is not made: nor is a merge — the PR is reported conflicted, and its resolution is a dispatched `repair-pr` pass or the owner's.
-
-**A rebase is a caller push**, made by the branch's single mutator under its lock, and is mechanical only on that rule's tree check (the *mechanical pushes* shared rule, which `supervise-prs` applies).
+- **never force-push a branch another session is actively pushing to** — a live worker's, a repair pass in flight: wait until it is done and released, then rebase; never merge instead;
+- **the run's own integration branch keeps merging the default branch in** (`backlog-orchestrator`'s `integration-branch.md`), because every open PR of its batch is based on it; the PRs into it rebase like any other.
 
 ## Merge permissions
 

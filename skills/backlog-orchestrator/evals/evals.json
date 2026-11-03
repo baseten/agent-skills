@@ -1341,6 +1341,18 @@
         "the answer reports the release with the comment's URL"
       ],
       "files": []
+    },
+    {
+      "id": 104,
+      "name": "the-integration-branch-merges-while-its-prs-rebase",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Run under ci-mode integration-branch; branch-update unset. The default branch moved. The integration branch integration/r1 has open PRs #90 (base integration/r1) and a stacked #91 (base #90's branch). Question: how is each brought up to date?",
+      "expected_output": "integration/r1 merges the default branch in, carrying no token - the run's own integration branch never rebases, because every open PR of the batch is based on it. #90 then rebases onto integration/r1 with a lease pinned to its recorded head, and #91 is restacked onto #90's new head after it (rebase the parent, then restack the child). Neither waits on a merge carve-out.",
+      "assertions": [
+        "the answer merges the default branch into the integration branch",
+        "the answer rebases #90 with a pinned lease",
+        "the answer restacks #91 after #90"
+      ],
+      "files": []
     }
   ]
 }

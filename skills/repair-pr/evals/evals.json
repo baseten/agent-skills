@@ -258,13 +258,13 @@
     },
     {
       "id": 20,
-      "name": "a-supplied-base-refresh-is-merged-whatever-branch-update-says",
+      "name": "a-supplied-base-refresh-follows-branch-update",
       "prompt": "You are executing the repair-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Repair type review; one thread to fix; the caller supplied a base refresh because the PR is behind its base. The repository's .claude/agent-policy.json sets branch-update to rebase. The refresh is clean. Question: how do you bring in the base, and how do you push?",
-      "expected_output": "Merge the base in, just before the pass's one push, after the thread's commit - a repair pass stays append-only, so the supplied refresh is a merge whatever branch-update says. Push once, plainly, never force; replies naming the fix SHA are posted only after that push so the SHA resolves.",
+      "expected_output": "Rebase the pass's head - its thread commit included - onto the base just before the pass's one push, as the repository's branch-update (rebase) says, and push once with --force-with-lease pinned to the head the pass started from, never a bare lease or --force. Replies naming the fix SHA are posted only after that push and name the rebased SHA, so it resolves.",
       "assertions": [
-        "the answer merges the base rather than rebasing",
-        "the answer does not force-push",
-        "the answer pushes once, after the merge, before posting replies"
+        "the answer rebases onto the base rather than merging",
+        "the answer pushes once with a lease pinned to the starting head",
+        "the answer's replies name the rebased SHA, posted after the push"
       ],
       "files": []
     }
