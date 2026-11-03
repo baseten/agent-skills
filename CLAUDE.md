@@ -46,7 +46,7 @@ evals (`<skill>#<id>`).
    `rules/posting-identity.md`; `swarm`, *Blocked workers*; `supervise-prs`, *Integration-branch CI*, step 3;
    `rules/conductor-exchange.md`, *Pushes*, *The watch after settling*.
    backlog-orchestrator#5 #58,
-   resolve-pr-comment#48 #49, supervise-prs#86 #89 #105, backlog-orchestrator#90 #91 #102 #103.
+   resolve-pr-comment#48 #49, supervise-prs#86 #89 #105, backlog-orchestrator#90 #91 #102 #103, settle-and-merge#47.
 3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
    `backlog-orchestrator`, *Arming the wait when nothing is in flight*; `rules/review-trigger.md`,
    *A stalled round*; `rules/conductor-exchange.md`, *Relayed rulings*, *New work, or a fold*, *What a relay can authorise*;
@@ -60,7 +60,7 @@ evals (`<skill>#<id>`).
    another repair push.
    `rules/platform-pr-posture.md`; `supervise-prs`, *Budgets*; `rules/agent-policy.md`, *Branch updates*. supervise-prs#25 #26 #55 #57,
    backlog-orchestrator#67, repair-pr#16 #17 #18, supervise-prs#61 #73 #96 #98 #102 #103 #104 #107 #108 #109 #110, backlog-orchestrator#96,
-   repair-pr#20 #21, settle-and-merge#46.
+   repair-pr#20 #21, settle-and-merge#46 #47.
 6. **A created PR's body is edited only while draft, footered, or under a resolved merge
    opt-in** (`Depends on:` excepted); else drift is reported with a replacement.
    `rules/authored-write-form.md`. settle-and-merge#6 #9, merge-stack#5,
@@ -97,7 +97,7 @@ evals (`<skill>#<id>`).
    path filters, failing closed (`rules/ci-and-review-verdicts.md`, *Path filters*).
    supervise-prs#58 #59 #62 #63 #64, settle-and-merge#19. A branch update follows `branch-update`
    (`rules/agent-policy.md`, *Branch updates*): a rebase pushes only with a pinned lease; a configured or
-   fail-closed `merge` merges. settle-and-merge#46.
+   fail-closed `merge`, or a PR another person opened, merges. settle-and-merge#46 #47.
 9. **Stranded work reaches a remote ref before any archive; permission holds name the
    literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked
    workers*; `rules/wake-budget.md`; `rules/conductor-exchange.md`, *The watch after settling*; `conductor`,

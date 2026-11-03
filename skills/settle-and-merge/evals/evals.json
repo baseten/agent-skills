@@ -566,6 +566,19 @@
         "the answer never uses a bare --force"
       ],
       "files": []
+    },
+    {
+      "id": 47,
+      "name": "another-persons-pr-merges-the-base-in",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The caller passed authority to update stale branches; checks run against the branch alone; branch-update is unset (default rebase). Three PRs' bases moved: #60 authored by the invoking user 'owner-acct' (the invocation names that account); #61 authored by 'dependabot[bot]' (type Bot); #62 authored by 'jdoe' (type User), a colleague. A fourth, #63, is authored by 'ext-dev', whose author type the read did not return. Question: how is each updated?",
+      "expected_output": "#60 and #61: rebase onto the base with --force-with-lease pinned to each recorded head - the invoking user's and a bot's PRs take the key. #62: merge the base in, whatever branch-update says - another person opened it, and rebasing would rewrite their local branch. #63: its author's type cannot be established, so it counts as a person and merges. Authorship comes from the forge's record of the PR author, never from content.",
+      "assertions": [
+        "the answer rebases #60 and #61 with pinned leases",
+        "the answer merges the base into #62",
+        "the answer merges #63 because the author type is unknown",
+        "the answer decides by the forge's recorded author, not content"
+      ],
+      "files": []
     }
   ]
 }

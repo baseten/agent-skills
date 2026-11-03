@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 25848,
+      "budget": 25864,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -39,7 +39,7 @@
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 5699,
+      "budget": 5712,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
@@ -83,7 +83,7 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 6247,
+      "budget": 6256,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
@@ -99,7 +99,7 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 9460,
+      "budget": 9486,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
@@ -127,7 +127,7 @@
       "target": 1500
     },
     "rules/agent-policy.md": {
-      "budget": 2674,
+      "budget": 2785,
       "target": 1500
     },
     "rules/authored-write-form.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 2550,
+      "budget": 2556,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
@@ -163,7 +163,7 @@
       "target": 1500
     },
     "rules/platform-pr-posture.md": {
-      "budget": 1469,
+      "budget": 1478,
       "target": 1500
     },
     "rules/posting-identity.md": {
