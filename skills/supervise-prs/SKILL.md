@@ -38,7 +38,7 @@ This file is the contract; the reasoning and incident history behind its rules l
 | **wait owner** | `self` or `caller` | `self` |
 | **monitoring cap** | a wall-clock bound on this skill's own loop | none: the wake budget alone bounds it |
 | **return on** | `every-pass`, `any-terminal` or `all-terminal` (*Outcomes*) | `every-pass` where the caller owns the wait; `all-terminal` where this skill does |
-| **state emission** | `every-pass` or `changes-only` | `every-pass` |
+| **state emission** | `every-pass` or `changes-only`, printed in chat only as `references/operator-output.md`, *Records*, allows | `every-pass` |
 | **transport record** | per-tool attribution of reads to allowances, and allowance state, already observed | none known |
 
 ## Composed skills
@@ -295,3 +295,5 @@ The per-PR record, plus:
 And for the run: **that the platform's posture was overridden, on the authority of the run's invocation as the user's instruction — this skill's, or its caller's — and, per PR, the toggle line — turned on by this run's subscription and unsubscribed, or still subscribed and why — with the instruction to switch it off by hand where unsubscribing was unavailable or its effect on the toggle is unknown** (`references/platform-pr-posture.md`, *Saying so*); **the posting-identity map with every entry passes observed**, under its `(transport, credential)` key, `unestablished` where no write was read back, and **the transport record as it now stands**.
 
 What it says a PR, a thread or a check *is now* needs a read behind it, or says when it was last read (`references/establish-do-not-assume.md`, *You are about to assert it*).
+
+**Invoked directly by the user, the records are printed before the report `references/operator-output.md` shapes**, and a quiet check-in prints only what that rule allows; a caller carries them in its own output.

@@ -312,7 +312,7 @@
       "id": 24,
       "name": "the-default-branch-is-swept-and-reported",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Repository acme/api. Every run replies that its stream is green. The sweep reads the default branch: its head is 4f2a91c, the CI run on it failed in the e2e job, and the deploy that head triggered is still pending. Question: what does the report say about the default branch, and do you take any action on it?",
-      "expected_output": "Put the default branch in chat - it is a failure only the owner can clear - with its head 4f2a91c, the failed e2e job and the pending deploy, opening with its links; the other streams' states go to the ledger, never their check outcomes. The runs' green claims are about their own PRs and do not make the default branch green. The conductor implements nothing, so it fixes nothing; where a run's next merge depends on the default branch, that dependency goes into the plan. The ledger links the CI and deploy runs without writing their outcomes.",
+      "expected_output": "Put the default branch under Needs you as a failure only the owner can clear - its head 4f2a91c, the failed e2e job and the pending deploy, with its links; the other streams appear only where they changed state or in the Unchanged count, never with their check outcomes in the ledger. The runs' green claims are about their own PRs and do not make the default branch green. The conductor implements nothing, so it fixes nothing; where a run's next merge depends on the default branch, that dependency goes into the plan. The ledger links the CI and deploy runs without writing their outcomes.",
       "assertions": [
         "the answer reports the head SHA, its failed CI and its pending deploy",
         "the answer does not report the default branch as green from the runs' replies",
@@ -410,13 +410,14 @@
     },
     {
       "id": 32,
-      "name": "a-sweep-with-nothing-for-the-owner-ends-in-one-line",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. This sweep: three runs progressed (two PRs went green, one opened), you verified each claim on GitHub, one run is waiting on a reviewer, and nothing needs the owner - no decision, approval, owner step or failure. Question: what do you write in chat, and where does the rest go?",
-      "expected_output": "Chat gets one line saying nothing needs the owner, linking the ledger. The progress and the run waiting on a reviewer go into the ledger - its live-sessions table rows edited in place with each run's state from the fixed set and links to its checks, never their outcomes - and one changelog line. The report states results, never the steps of checking.",
+      "name": "a-sweep-reports-state-changes-once-never-steps-or-waits-on-others",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present; the last report was at 14:00 UTC. This sweep: run A (implement-issue on acme/api #810) opened PR #841, now waiting on CI; run B's PR #845 went green and is now waiting on review by a named teammate; run C (backlog-orchestrator on epic #2005) merged #2040. You verified each claim on GitHub. Nothing needs the owner - no decision, approval, owner step or failure - and nothing was waiting on them at the last report. Question: what do you write in chat, in what shape, and where does the rest go?",
+      "expected_output": "No 'Needs you' section (empty sections are omitted). A 'Changed since 14:00 UTC' section stating each state change once - run A's PR opened, run B now waiting on review, run C's #2040 merged - grouped by run (a heading per run with its session link by title, repository and epic or issue) then issue, every reference a link; then an 'Unchanged' line of linked counts where anything is unchanged; then the ledger link last, with --- between top-level groups. No narration of the sweep's steps and no account of how claims were verified - at most 'verified'. The rest - check links, the live-sessions rows edited in place, one changelog line - goes to the ledger, which never carries a check's outcome.",
       "assertions": [
-        "the answer writes one line in chat linking the ledger",
-        "the answer puts the progress and the waiting run in the ledger, not chat",
-        "the answer writes no check outcome into the ledger and does not narrate how claims were checked"
+        "the answer reports the three state changes once each, under a 'Changed since' heading, and writes no 'Needs you' section",
+        "the answer does not narrate the sweep's steps or how claims were checked",
+        "the answer ends with the ledger link, putting progress detail in the ledger without any check outcome",
+        "run B waiting on a named teammate's review is not presented as something the owner must act on"
       ],
       "files": []
     },
@@ -424,12 +425,12 @@
       "id": 33,
       "name": "decisions-are-asked-one-at-a-time-with-links-and-a-recommendation",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. Three decisions are pending: run A (session session_01Aa, issue #810, PR #841) asks CSV-only vs CSV+XLSX; run B (session_01Bb, #812, PR #845) asks whether to keep a deprecated endpoint; run C (session_01Cc, #815, no PR yet) asks for a library choice among three. AskUserQuestion is available. Question: how do you put them to the owner?",
-      "expected_output": "One at a time, each its own AskUserQuestion question - never a numbered prose list, and not three questions in one call. Each question stands alone, opens with its three links (https://claude.ai/code/session_01Aa, the issue, the PR - or 'no PR' for C), offers 2-4 options with one marked recommended, and they go in order of what each unblocks. Each ruling is written to the ledger first with the owner's words, then recorded at its site.",
+      "expected_output": "One at a time, each its own AskUserQuestion call - never a numbered prose list, and not three questions in one call - in order of what each unblocks. Before each question the chat repeats that item's heading and link line (the session link by title, https://claude.ai/code/session_01Aa..., the issue and the PR - or no PR for C), since links may not render inside the question. The question text names the repository, the issue id and its title in plain words and stands alone; its header chip is the issue id (e.g. #810); it offers 2-4 options with one marked recommended, and the options are not also listed in prose. Each ruling is written to the ledger first with the owner's words, then recorded at its site.",
       "assertions": [
         "the answer asks the decisions one at a time through the structured question tool",
-        "each question names its session, issue and PR as links",
-        "each question offers 2-4 options with one recommended",
-        "the answer does not present a numbered prose list"
+        "before each question the chat repeats the item's heading with its session, issue and PR links",
+        "each question names the repository, issue id and title in plain words, with the issue id as its header",
+        "each question offers 2-4 options with one recommended, never also listed in prose"
       ],
       "files": []
     },
@@ -516,6 +517,119 @@
         "the answer puts the complete reply text in the question's option",
         "the answer shows the comments since the fix",
         "the answer needs only one answer from the owner"
+      ],
+      "files": []
+    },
+    {
+      "id": 41,
+      "name": "a-quiet-check-in-writes-nothing-and-updates-the-title",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Session title 'Conductor: acme-api'. The fallback check-in fires at 23:59 UTC with nobody present. The sweep finds no delta in any run, PR or pending go since 22:59, the last sweep that saw one; three items have been waiting on the owner since then, unchanged; this is the first empty sweep in a row, and the next check-in is due about 00:59. set_session_title is available. Question: what does this turn write to chat, and what else does it change?",
+      "expected_output": "Nothing to chat beyond one minimal line: whether a turn can end with no text is not established, so it ends with a single minimal line such as 'quiet' - no 'nothing new since 22:59', no next time in prose, no reprinted list. It updates the session title in place by appending only a suffix: 'Conductor: acme-api · quiet since 22:59 · 3 waiting on you · next 00:59' (UTC), leaving 'Conductor: acme-api' unchanged; the first turn that reports, or the check-in stopping, restores the normal title. It re-arms the check-in with the empty count (1) and comparands in its prompt, and records the check-in in the ledger.",
+      "assertions": [
+        "the answer writes no report, status list or 'nothing new' message to chat - at most one minimal line",
+        "the answer updates the session title by appending a quiet suffix with the since time, the waiting count and the next time",
+        "the answer keeps the 'Conductor: acme-api' part of the title unchanged and restores it on the next reporting turn",
+        "the answer carries the empty-sweep count in the re-armed check-in's prompt"
+      ],
+      "files": []
+    },
+    {
+      "id": 42,
+      "name": "an-unchanged-needs-you-list-is-one-line",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. At the 10:00 UTC report you printed 'Needs you' with three items: merge acme/api#841, decide on acme/api#812, approve a held reply on acme/web#77. At this 11:00 sweep the same three are still waiting and nothing new needs the owner; run C merged acme/api#2040 since 10:00. Question: what does this turn print?",
+      "expected_output": "It does not reprint the three items, and does not ask the #812 decision or the #77 approval again - they return only when an item is new or changed. In place of the 'Needs you' list it writes one line - '3 still waiting on you, unchanged' - linking the ledger. Then 'Changed since 10:00 UTC' with the merge of #2040 under run C's heading (session link by title, repository, epic), the reference linked; any unchanged counts as one linked line; the ledger link last.",
+      "assertions": [
+        "the answer does not reprint the three unchanged items",
+        "the answer does not put the #812 decision or the #77 approval to the owner again",
+        "the answer writes one line saying the three are still waiting, unchanged, linking the ledger",
+        "the answer reports run C's merge under 'Changed since 10:00'"
+      ],
+      "files": []
+    },
+    {
+      "id": 43,
+      "name": "every-block-has-a-linked-heading-and-every-ref-is-a-link",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. Two runs changed state: run A is session_01Aa titled 'Orchestrator: acme-api · #2005 exports' on acme/api epic #2005, whose issue #2011 merged as PR #2040; run B is session_01Bb titled 'Worker: acme-web · #77 search box' on acme/web issue #77, whose PR #91 opened. Question: write the 'Changed since' section.",
+      "expected_output": "Each run is a '###' block whose heading names it with links: the session as a link to https://claude.ai/code/session_01Aa with its title as the link text, the repository acme/api linked, and the epic #2005 linked (run B likewise: its session link by title, acme/web, issue #77). Inside, each issue is a bold line with its links - e.g. **#2011 · #2040** — merged - using short #N refs because the heading named the repository, every one a link. No raw session id appears as text, no bare #N or plain title stands in for a link, and a --- separates the two runs.",
+      "assertions": [
+        "each run's block opens with a heading linking its session by title, its repository and its epic or issue",
+        "no raw session id or bare unlinked reference appears",
+        "inside a block the refs are short #N forms, each linked, the repository named once in the heading",
+        "the issues appear as bold lines under their run's heading"
+      ],
+      "files": []
+    },
+    {
+      "id": 44,
+      "name": "a-meta-question-is-answered-in-its-own-block",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present and writes: 'why does the check-in run hourly and not every 20 minutes? also, what's the status?'. This sweep, run A merged acme/api#2040 and one decision on acme/api#812 newly needs the owner. Question: how do you structure this turn?",
+      "expected_output": "The meta question - why the check-in is hourly - is answered in its own clearly separated block, headed as the answer to their question and closed by ---, before the report and never mixed into a run's block. Then the report in its fixed order: 'Needs you' with the #812 decision under Decide (asked one at a time below, via the structured question tool, with its heading and link line repeated first), 'Changed since' with run A's merge, any unchanged counts, the ledger link.",
+      "assertions": [
+        "the answer puts the check-in explanation in its own block, separated from the run status",
+        "the explanation is not mixed into any run's block",
+        "the status follows in the fixed order: Needs you, Changed since, Unchanged, ledger link"
+      ],
+      "files": []
+    },
+    {
+      "id": 45,
+      "name": "needs-you-is-grouped-by-action-and-reviewer-waits-are-left-out",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. Items: acme/api#841 is settled and waiting on the owner's merge (auto-merge off); acme/web#91 waits on review by a named teammate; run D's session is stopped on a permission prompt for a tool only the owner can approve; acme/api#812 has a decision for the owner; a held reply on acme/web#77 needs the owner's approval. While sweeping you read the ledger, sent four status requests (trigger ids trig_01, trig_02) and found one empty sweep earlier. Question: write the 'Needs you' section and say what else you leave out of chat.",
+      "expected_output": "'Needs you' is grouped by the action the owner takes, each group a bold line, one line per item leading with its repository's link: Merge - acme/api #841; Confirm in a session - run D's session, linked by title; Decide - #812, asked one at a time below; Approve drafts - #77's held reply, linked to its full text kept in the session or ledger, not printed in the list. acme/web#91 is not here: it waits on a named teammate, so at most it counts in the Unchanged line. Left out of chat entirely: reading the ledger, the status requests, trigger ids and the empty-sweep count - process narration.",
+      "assertions": [
+        "the answer groups Needs you by the owner's action - merge, confirm in a session, decide, approve drafts",
+        "the PR waiting on a named teammate is not listed under Needs you",
+        "the answer leaves out narration: the ledger read, the requests sent, trigger ids, sweep counts",
+        "the held reply's text is not printed in the list line"
+      ],
+      "files": []
+    },
+    {
+      "id": 46,
+      "name": "a-quiet-suffix-is-not-a-reason-to-retitle",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The ledger records session_03Cc as the backlog-orchestrator run this conductor dispatched on acme/api epic #2005. Its title reads 'Orchestrator: acme-api · #2005 exports · quiet since 03:10 · 2 waiting on you · next 07:10'. Question: is its title in its kind's form, and do you retitle it?",
+      "expected_output": "Yes, it is in its kind's form and is not retitled: a quiet check-in only appends a suffix from ' · quiet', and the form is read before it - 'Orchestrator: acme-api · #2005 exports' is the Orchestrator: form. The run restores its own title on its next reporting turn. The title is a finding aid, never evidence: the ledger id is what makes it this run.",
+      "assertions": [
+        "the answer does not retitle the session",
+        "the answer reads the kind's form from the part before the quiet suffix",
+        "the answer identifies the run by its ledger record, not by its title"
+      ],
+      "files": []
+    },
+    {
+      "id": 47,
+      "name": "a-reply-with-no-delta-is-a-quiet-turn",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Title 'Conductor: acme-api · quiet since 22:59 · 2 waiting on you · next 00:59'. At 23:59 the fallback check-in fired, found no delta, sent a status request to each of three runs, and ended quiet. At 00:02 run A's reply arrives as a new turn: its state and PR are exactly what the ledger already records, and you verify that on the forge. Question: was the 23:59 check-in, which sent those requests, quiet? What does this reply turn write to chat, and does it change the title?",
+      "expected_output": "The reply brought no delta, and sending status requests is not acting, so this is a quiet turn: one minimal line ('quiet') and nothing else - no report, no Unchanged line, no ledger link, no '3 runs replied' narration. A quiet reply turn leaves the title alone: 'Conductor: acme-api · quiet since 22:59 · 2 waiting on you · next 00:59' stays as it is, so three replies do not churn it three times.",
+      "assertions": [
+        "the answer writes only one minimal line for the reply turn, with no report or Unchanged line",
+        "the answer leaves the session title unchanged",
+        "the answer treats the status requests sent by the check-in as not acting, so the earlier check-in was still quiet"
+      ],
+      "files": []
+    },
+    {
+      "id": 48,
+      "name": "a-polled-item-keeps-a-wake-quiet-with-its-preflight-in-the-prompt",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The fallback check-in fires unattended at 03:00. Two runs' PRs are watched by subscription; one run's PR, acme/web#91, is deliberately polled because its repository has no PR-activity subscription, and its poll ran this firing at 02:58. Nothing changed anywhere, nothing newly needs the owner, and the check-in does not stop. Question: is this wake quiet, what does it print, and where does the no-change preflight result go?",
+      "expected_output": "Quiet: it read everything it tracks - the polled item's poll ran this cycle, so it is quiet with when it was last observed, not a blind spot - found no delta and acted on nothing. It prints one minimal line ('quiet') and appends the title suffix. The no-change preflight still runs, and its result - the tracked set, each item's watch state (two subscribed, acme/web#91 polled) and the polled item's last-observed time 02:58 - goes into the re-armed check-in's prompt with the empty count, not into chat. Had the poll not run, the item would be a blind spot and the wake would not be quiet.",
+      "assertions": [
+        "the answer treats the wake as quiet because the polled item's poll ran this cycle",
+        "the answer prints only the minimal line and the title suffix",
+        "the answer carries the tracked set, the watch states and the polled item's last-observed time in the re-armed prompt",
+        "the answer says a poll that did not run would make the wake not quiet"
+      ],
+      "files": []
+    },
+    {
+      "id": 49,
+      "name": "a-question-the-flow-needs-is-asked-before-the-report",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. In this owner pass, run A (acme/api #810) needs a ruling on CSV vs CSV+XLSX before you can write the follow-up issues the plan depends on, which you will write this turn. Separately, run B (acme/api #812) has a decision that blocks nothing this turn. One run merged since the last report. Question: in what order does this turn put the questions, the follow-up writes and the report?",
+      "expected_output": "The #810 question is asked first, where the flow needs it, as one structured question preceded by its heading and link line; its ruling goes to the ledger and its site, then the follow-up issues are written. Then the report in its fixed order - Needs you (with #812 under Decide), Changed since with the merge, Unchanged, ledger link. The #812 question, which nothing in the turn needed, follows the report, again with its heading and link line. Questions are never all deferred to after the report when the flow needs an answer mid-turn.",
+      "assertions": [
+        "the answer asks the #810 question before writing the follow-ups and before the report",
+        "the answer asks the #812 question after the report, since nothing earlier in the turn needed it",
+        "each question is preceded by its heading and link line in chat"
       ],
       "files": []
     }

@@ -34,7 +34,7 @@ return channel's detection and the trust boundary — and
   the owner already recorded, once verified (*6. Dispatch*) — a conditional go, or
   a retirement under a standing ruling — and rules nothing.
 - **A repository outside the configured scope.** Its sessions are noted in the
-  report and left alone.
+  ledger and left alone.
 
 ## Configuration
 
@@ -82,17 +82,12 @@ skill would read as the owner's stays pending.
 - **Nothing at an open item's site but its ruling.** Under the owner's account,
   this skill writes nothing at the site of a run's open item except the recorded
   ruling for it, so that no write of its own can read there as the owner's reply.
-- **The chat carries only what needs the owner to act**: a decision, an approval,
-  an owner step, a failure only the owner can clear. Progress and items waiting on
-  others go to the ledger, where a run's row carries its state from the fixed set and
-  links to its checks — never a check's outcome, which stays in this session's report
-  (protected rule 7 on a forge ledger). A sweep with nothing for the owner ends
-  in one line linking the ledger.
-- **Every update about a run opens with three links** — the session
-  (`https://claude.ai/code/<session id>`), its tracker issue or epic, and its PR —
-  never a bare id, and never a title in a link's place.
-- **Report results, not the checking.** Every claim is still verified on the forge
-  and the tracker; the report says it was verified, not how.
+- **What reaches the chat, and its shape, are `references/operator-output.md`'s**
+  — results, not the checking; headings and links; one question at a time; quiet
+  turns (*Report*). The detail behind progress, and items still waiting on others, go to the ledger,
+  where a run's row carries its state from the fixed set and links to its checks —
+  never a check's outcome, which stays in this session's report (protected rule 7
+  on a forge ledger).
 - **A draft exists only with its full text.** The full text of every pending draft —
   an issue, a comment, a message — goes into the ledger as it is written; nothing
   is called a draft without it. **On the default `github-issue` ledger, held replies
@@ -119,7 +114,9 @@ This session is `Conductor: <home repo>`, e.g. `Conductor: acme-api`. A run's ti
 keep their run's prefix (`bo/<run>: …`) and are never retitled.
 
 At startup, read this session's own record (`get_session`, no id) and set its
-title with `set_session_title` where it is not already `Conductor: <home repo>`.
+title with `set_session_title` where it is not already `Conductor: <home repo>`;
+a quiet check-in only appends its suffix (`references/operator-output.md`, *Quiet
+turns*).
 **A title is a finding aid, never evidence**: anyone can set one, so a title
 decides where to look first, and the session's record decides what it is
 (`swarm`, *Runtime*).
@@ -146,7 +143,7 @@ decides where to look first, and the session's record decides what it is
    orchestrator skill, an interactive session using `swarm` — is not found by
    structure: report it as a doubtful match, and do not retitle it.
 5. **Retitle every run found by its ledger record or by structure whose title is
-   not its kind's form** — `Orchestrator:` for a `backlog-orchestrator` run,
+   not its kind's form**, read before any quiet suffix — `Orchestrator:` for a `backlog-orchestrator` run,
    `Worker:` for a single-issue run, which only the ledger can identify — the epic,
    issue or branch read from the ledger, its record or its branch, and **report each rename**, old title and new.
    Where no epic can be read, use the run's integration branch or its id.
@@ -192,11 +189,12 @@ this session**, on `references/wake-budget.md`'s *A conductor's fallback sweep*
 schedule: about hourly; re-armed silently after a sweep that observed a delta;
 stopped after 3 consecutive empty sweeps, said once — bar while it holds a watch,
 when it continues on the held watch's cadence instead; cancelled when neither holds.
+A sweep prints as `references/operator-output.md`, *Quiet turns*, says, where it meets that rule's definition.
 **A delta** is a change in durable state the ledger compares: a run's session
 status, a PR of its opened, pushed, merged or closed, its CI conclusions, its open
 items, or a pending go's condition. Its prompt
-carries the consecutive-empty count, the ledger's URL, the comparands, and each
-held watch's PR and deadline. **A
+carries the consecutive-empty count, the ledger's URL, the comparands, each
+held watch's PR and deadline, and the no-change preflight result. **A
 firing sweeps, reports, executes a verified conditional go and retires a run
 under a verified standing ruling; it rules nothing, and dispatches or retires
 nothing else.**
@@ -256,19 +254,18 @@ the record.
 # 4. Owner pass
 
 **In this session, and only where the owner is present to answer** — invoked by
-the owner, with `AskUserQuestion` available. Otherwise skip to the report: rule
-nothing, record nothing as ruled, and say where the decisions wait.
+the owner, with `AskUserQuestion` available. Otherwise skip to the report — or a
+quiet turn's one line — rule nothing, record nothing as ruled, and say where the
+decisions wait. **Questions whose answer this turn acts on are asked here, before
+the report; the rest follow it** (`references/operator-output.md`, *Questions*).
 
 1. **The live-sessions table is the ledger's** (*7. Ledger*), each run's state the
    one its last report gave (`references/conductor-exchange.md`, *Reports*); a run
    is *finished* once `merged`, `closed` or `failed` with nothing of it left open.
-   The chat carries only its rows that need the owner, a PR waiting on the owner's
-   merge among them.
-2. **Every pending decision, one at a time**, through the platform's structured
-   question tool where it has one (`AskUserQuestion` in Claude Code) — never a
-   numbered prose list. Each question stands alone: it names its session, issue and
-   PR as links, offers 2–4 options with one marked recommended, and is ordered by
-   what it unblocks, the decision that frees the most downstream work first.
+   The chat carries only its rows that need the owner (*Report*).
+2. **Every pending decision not already asked while unchanged, one at a time**, as
+   `references/operator-output.md`, *Questions*, says, the decision that frees the
+   most downstream work first.
    Anything a question asserts about the code or a PR is read before it is put.
    **Held replies awaiting approval are collected across runs into this pass**, each
    asked the same way — approve, edit or reject, with its full text and every
@@ -474,7 +471,8 @@ all three hold:**
    **Absent or null**, the clear point is the lower of 50% of `max_tokens` and 60%
    of the auto-compact threshold. A configured point at or past the threshold could
    never fire before compaction: use that default instead, and report it.
-2. **It is a quiet point:**
+2. **It is a quiet point** — this section's own test, not a quiet turn; a turn
+   that proposes is never quiet:
    - no tool work pending — the proposal is the last thing in the turn;
    - no question to the owner waiting for an answer;
    - **no owner ruling given only in chat** — write it to the ledger and record it
@@ -559,15 +557,14 @@ it does in *6. Dispatch*:
 
 # Report
 
-**In this session, only what needs the owner to act** (*Rules*), each item opening
-with its three links: decisions and approvals (asked as *4. Owner pass* says),
-owner steps, a failure only the owner can clear — a red default branch, a run
-whose push contradicted the forge — and any PR whose watch lapsed. Results are
-stated as verified, never as the steps of checking. **A sweep with nothing for the
-owner ends in one line linking the ledger.**
+**In this session, shaped as `references/operator-output.md` says.** *Needs you*
+is what needs the owner to act: decisions and approvals (asked as *4. Owner pass*
+says), owner steps, a failure only the owner can clear — a red default branch, a
+run whose push contradicted the forge — and any PR whose watch lapsed. *Changed
+since* is each run whose state from the fixed set changed, and every dispatch,
+executed conditional go and retirement, each linked to its record. A default branch's CI and deploy are a *Clear a failure* item when red or failed, a change when their result moved, and otherwise counted under *Unchanged*.
 
 **Everything else goes to the ledger** (*7. Ledger*): the live-sessions table, renames,
 corrections posted, facts relayed, rulings recorded, owner steps filed, plans and
-their expected CI runs, dispatches, conditional gos and retirements, sessions left
-alone, the fallback check-in's state, and this session's context use with any
-clear proposed.
+their expected CI runs, sessions left alone, the fallback check-in's state, and
+this session's context use with any clear proposed.

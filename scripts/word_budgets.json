@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 25876,
+      "budget": 26002,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -27,11 +27,11 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
-      "budget": 2164,
+      "budget": 2184,
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 5780,
+      "budget": 5760,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -39,7 +39,7 @@
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 5718,
+      "budget": 5760,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
@@ -83,11 +83,11 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 6256,
+      "budget": 6276,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
-      "budget": 5677,
+      "budget": 5683,
       "target": 3000
     },
     "skills/ship-branch/SKILL.md": {
@@ -95,11 +95,11 @@
       "target": 3000
     },
     "skills/summarize-wave/SKILL.md": {
-      "budget": 2295,
+      "budget": 2312,
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 9499,
+      "budget": 9539,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 2360,
+      "budget": 2376,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
@@ -163,7 +163,7 @@
       "target": 1500
     },
     "rules/platform-pr-posture.md": {
-      "budget": 1482,
+      "budget": 1483,
       "target": 1500
     },
     "rules/posting-identity.md": {
@@ -187,11 +187,15 @@
       "target": 1500
     },
     "rules/wake-budget.md": {
-      "budget": 1647,
+      "budget": 1657,
       "target": 1500
     },
     "rules/watch-and-read.md": {
       "budget": 1481,
+      "target": 1500
+    },
+    "rules/operator-output.md": {
+      "budget": 1612,
       "target": 1500
     }
   }

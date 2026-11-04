@@ -310,9 +310,9 @@ account and the template are a fresh run's.
 
 ## Field feedback (2026-11-02, PR #201)
 
-**Why the chat carries only what needs the owner:** a day of sweeps put progress, verified checks and items waiting on others into chat, and the owner had to read all of it to find the one thing that needed them. The ledger holds the rest, and a quiet sweep is one line. **Why results, not the checking:** every claim is still verified; describing how is noise.
+**Why the chat carries only what needs the owner:** a day of sweeps put progress, verified checks and items waiting on others into chat, and the owner had to read all of it to find the one thing that needed them. The ledger holds the rest. **Why results, not the checking:** every claim is still verified; describing how is noise. Both rules, the three-link header and one question at a time moved to `rules/operator-output.md` on 2026-11-03, which also put state changes back in chat once each and reduced a quiet sweep to its title and one minimal line (`rules/operator-output-notes.md`).
 
-**Why decisions are asked one at a time:** batches of up to four, and numbered prose lists, were answered partly or in the wrong order. One structured question at a time, each self-contained with its three links and a recommendation, is answerable on the spot. Held replies awaiting approval are collected across runs into the same pass. `settle-outstanding-decisions` keeps its own chunking where the conductor invokes it, because its fork rules depend on it.
+**Why decisions are asked one at a time:** batches of up to four, and numbered prose lists, were answered partly or in the wrong order. One structured question at a time, each self-contained and recommending an option, with its links on the line above it, is answerable on the spot. Held replies awaiting approval are collected across runs into the same pass. `settle-outstanding-decisions` now asks one per call too (its NOTES, *Ordering*).
 
 **Why a draft needs its full text in the ledger:** "draft" was used of text that did not yet exist, and the owner approved something they never saw. On a GitHub-issue ledger a held review-thread reply is the exception, because that skill's rule keeps a draft reply off the forge; the ledger names it and the session holds its text.
 
@@ -395,8 +395,8 @@ Pinned in `evals/evals.json`:
 - the owner's 2026-11-02 rulings and field feedback:
   - an unattended retirement under a standing ruling checks the remote first
     (`an-unattended-retirement-under-a-standing-ruling-checks-the-remote-first`);
-  - a sweep with nothing for the owner ends in one line
-    (`a-sweep-with-nothing-for-the-owner-ends-in-one-line`);
+  - a sweep reports each state change once, never its steps or waits on others
+    (`a-sweep-reports-state-changes-once-never-steps-or-waits-on-others`);
   - decisions one at a time, with links and a recommendation
     (`decisions-are-asked-one-at-a-time-with-links-and-a-recommendation`);
   - a chat ruling goes to the ledger before it is relayed
@@ -405,6 +405,25 @@ Pinned in `evals/evals.json`:
     (`the-conductor-holds-a-settled-runs-watch-until-merge`);
   - a draft exists only with its full text
     (`a-draft-exists-only-with-its-full-text-in-the-ledger`).
+- the operator-output rule (2026-11-03, `rules/operator-output-notes.md`):
+  - a quiet check-in writes only its minimal line and updates the title's suffix
+    (`a-quiet-check-in-writes-nothing-and-updates-the-title`);
+  - an unchanged *Needs you* list is one line
+    (`an-unchanged-needs-you-list-is-one-line`);
+  - every block has a linked heading and every ref is a link
+    (`every-block-has-a-linked-heading-and-every-ref-is-a-link`);
+  - a meta question is answered in its own block
+    (`a-meta-question-is-answered-in-its-own-block`);
+  - *Needs you* is grouped by action, and waits on others and narration stay out
+    (`needs-you-is-grouped-by-action-and-reviewer-waits-are-left-out`);
+  - a quiet suffix is no reason to retitle a run
+    (`a-quiet-suffix-is-not-a-reason-to-retitle`).
+  - a reply that brings no delta is a quiet turn and leaves the title alone
+    (`a-reply-with-no-delta-is-a-quiet-turn`);
+  - a polled item keeps a wake quiet, its preflight in the re-armed prompt
+    (`a-polled-item-keeps-a-wake-quiet-with-its-preflight-in-the-prompt`);
+  - a question the flow needs is asked before the report
+    (`a-question-the-flow-needs-is-asked-before-the-report`).
 
 **From two independent reviews (PR #201):** a standing retirement ruling is re-read at its site exactly as a conditional go is, because a revoked ruling found only in the ledger would otherwise retire runs unattended; a single-issue run's `merged` report and its merged PR stand in for a wrap-up it never posts; on the default `github-issue` ledger held replies and draft answers are only named, so a deployment where drafts matter configures `tracker-document`; and a relayed approval puts the complete reply text in the question's option, so the owner answers once. Scenarios: `a-revoked-retirement-ruling-retires-nothing`, `a-merged-single-issue-run-retires-without-a-wrap-up`, `a-relayed-ruling-that-posts-a-reply-is-one-question`.
 

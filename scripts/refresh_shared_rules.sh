@@ -30,7 +30,7 @@ RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
   posting-identity agent-policy review-feedback draft-state
   repair-rounds mechanical-pushes review-trigger ci-and-review-verdicts
   ci-attribution watch-and-read wake-budget platform-pr-posture
-  manual-step-issues conductor-exchange"
+  manual-step-issues conductor-exchange operator-output"
 
 # Each list names only the skills that APPLY the rule, and every one of them
 # must cite it in its own SKILL.md (check_shared_rules.py). A rule that cites
@@ -111,6 +111,11 @@ MANUAL_STEP_ISSUES="backlog-orchestrator conductor owner-steps"
 # Skills a conductor coordinates, and the conductor itself: status requests,
 # pushes, conductor-id adoption, new work and folds, and relayed rulings.
 CONDUCTOR_EXCHANGE="backlog-orchestrator implement-issue conductor"
+
+# Skills that print a report or a question to the owner in their own chat: the
+# orchestration skills and the settle steps they run.
+OPERATOR_OUTPUT="conductor backlog-orchestrator implement-issue settle-and-merge
+  settle-outstanding-decisions summarize-wave supervise-prs"
 
 # Skills that write or change a test as part of their work.
 A_PASSING_TEST_IS_NOT_A_VERIFIED_FIX="implement-issue-core repair-pr

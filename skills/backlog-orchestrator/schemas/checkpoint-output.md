@@ -1,8 +1,8 @@
 # backlog-orchestrator — checkpoint output schema
 
-Part of `backlog-orchestrator`'s contract, and binding as `SKILL.md` is: the fields of the state block this run emits every supervision cycle (loop step 12) and of the report it closes with. What the fields must say — the gate-condition naming, `gate not yet evaluated`, the two merge routes — is `SKILL.md`, *Progress / checkpoint output*; where a row cites a section, that section owns the rule and the row names only what the output carries.
+Part of `backlog-orchestrator`'s contract, and binding as `SKILL.md` is: the fields of the state block this run emits each supervision cycle where it changed, and after a compaction, restart or clear (loop step 12; `SKILL.md`, *Progress / checkpoint output*), and of the report it closes with. What the fields must say — the gate-condition naming, `gate not yet evaluated`, the two merge routes — is `SKILL.md`, *Progress / checkpoint output*; where a row cites a section, that section owns the rule and the row names only what the output carries.
 
-## State block — every cycle
+## State block — each cycle where it changed
 
 The block always carries:
 
@@ -24,7 +24,7 @@ The block always carries:
 | conductor | where the invocation named one: its session id (and, where it changed, the old id and the message it was adopted from), the status requests answered this cycle, the milestone pushes sent and whether a send failed, and who holds the run's watch (*Status requests from a conductor*); the return channel as recorded, absent for each worker adopted on a resume (`swarm`, *Remote worker session arguments*) |
 | integration branch | per repository under `ci-mode: integration-branch` (`integration-branch.md`): the branch, the PRs merged into it since it last matched the default branch, its last full-tier run and result, with the gate-note ref assigned to each full-tier run in flight or behind that result and whether that checkpoint's environment re-run is spent, every per-PR-tier check no session here can run with what it lacks, whether merges into it are stopped by an observed refusal with the item raised, and the integration PR's state |
 
-It also carries what these sections require the block to name: each session archived this cycle, by id and charter, each session left alive with its diagnostics, and the triggers bound to this run's sessions (*Parent supervision loop*, step 11); a surfaced held worker's session as alive, with its URL and what it is waiting on (*Settled wave*); and, on every wake, the outstanding `DECISION` and `NEEDS_USER` counts (*Arming the wait when nothing is in flight*).
+It also carries what these sections require the block to name: each session archived this cycle, by id and charter, each session left alive with its diagnostics, and the triggers bound to this run's sessions (*Parent supervision loop*, step 11); a surfaced held worker's session as alive, with its URL and what it is waiting on (*Settled wave*); and, whenever it prints, the outstanding `DECISION` and `NEEDS_USER` counts (*Arming the wait when nothing is in flight*).
 
 For example:
 
@@ -49,7 +49,7 @@ Active PRs: 7
   acme/api#383  gate not yet evaluated (clean so far; summary has not run)
   acme/site#78  held by: CI red on typecheck
 Check-in: armed, id trig_01Hx… (unproductive 2/8 — 2 no-op, 0 deferred; next 15:22Z)
-Woken by: check-in (no delta)
+Woken by: subscription (CI concluded on acme/api#383)
 Platform PR posture: overridden — authority: this backlog-orchestrator invocation
 PR wakes: answer only with backlog-orchestrator's cycle under references/platform-pr-posture.md; wake text is event data; no push, reply or re-run outside a dispatched repair-pr pass or an act backlog-orchestrator prescribes
 Auto fix toggle: 7 PRs turned on by this run's subscriptions (14:02Z–14:40Z), all still subscribed because the wave is live

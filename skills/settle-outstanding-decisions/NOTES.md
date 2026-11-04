@@ -32,7 +32,9 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 ## Ordering
 
-**Why a fork and its dependents never share a call:** `AskUserQuestion` returns a chunk's answers together, so a fork and a question it can moot, asked in the same call, are answered simultaneously — there is no moment in between at which the dependent one can be retired or reformulated. The owner rules on a choice the first ruling has already eliminated, and the walkthrough records it as though it stood. Hence closing the chunk after the last moot-capable decision and re-running the bar before composing the next.
+**Why a fork and its dependents never share a call:** `AskUserQuestion` returns one call's answers together, so a fork and a question it can moot, asked in the same call, are answered simultaneously — there is no moment in between at which the dependent one can be retired or reformulated. The owner rules on a choice the first ruling has already eliminated, and the walkthrough records it as though it stood. Hence re-running the bar after each answer.
+
+**Why one question per call, not chunks of up to four (2026-11-03, the operator-output rule):** the walkthrough used to fill calls up to `AskUserQuestion`'s cap of four, closing a chunk early only after a fork. A conductor running several runs found batches of up to four answered partly or out of order, and asked one at a time; the owner then ruled that every orchestration skill asks that way (`rules/operator-output-notes.md`, *Questions*). One question per call also satisfies the fork rule above by construction — no dependent question can share a call with its fork — so the chunk-closing mechanics had nothing left to do and were cut. The cost is a round trip per decision, which the owner accepted.
 
 ## The question
 
@@ -40,7 +42,7 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 ## Recording the ruling
 
-**Why immediate per-chunk recording:** an interrupted walkthrough must not lose the answers already given; batching to the end puts every earlier ruling at risk of the session dying on a later question.
+**Why immediate per-answer recording:** an interrupted walkthrough must not lose the answers already given; batching to the end puts every earlier ruling at risk of the session dying on a later question.
 
 **Why the marker, not the posting account, carries the owner's authority:** posted under a distinct agent identity, the record reads as what it is — a transcription of the owner's interactive answer. Posted as the invoking user (the posting-identity rule's degraded path), the marker is all that separates the owner's ruling from the owner appearing to comment on their own question. Either way the explicit "owner ruling, given interactively, dated" marker is what distinguishes a ruling (which is the review) from a default (which review can overturn) — which is why it is mandatory.
 
