@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 26082,
+      "budget": 26226,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -23,11 +23,11 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/restart-resume.md": {
-      "budget": 1165,
+      "budget": 1196,
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
-      "budget": 2254,
+      "budget": 2286,
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
@@ -39,7 +39,7 @@
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 5769,
+      "budget": 5785,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
@@ -83,7 +83,7 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 6359,
+      "budget": 6398,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
@@ -103,7 +103,7 @@
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
-      "budget": 10298,
+      "budget": 10306,
       "target": 8000
     },
     "skills/swarm/runtime-remote.md": {

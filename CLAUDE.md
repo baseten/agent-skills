@@ -46,7 +46,7 @@ evals (`<skill>#<id>`).
    `rules/posting-identity.md`; `swarm`, *Releasing a worker*, *Blocked workers*; `supervise-prs`, *Integration-branch CI*, step 3;
    `rules/conductor-exchange.md`, *Pushes*, *The watch after settling*.
    backlog-orchestrator#5 #58,
-   resolve-pr-comment#48 #49, supervise-prs#86 #89 #105 #112, backlog-orchestrator#53 #90 #91 #102 #103 #105 #109 #110, settle-and-merge#47 #48, implement-issue#40 #41, swarm#35 #37 #38,
+   resolve-pr-comment#48 #49, supervise-prs#86 #89 #105 #112, backlog-orchestrator#53 #90 #91 #102 #103 #105 #109 #110, settle-and-merge#47 #48 #49, implement-issue#40 #41, swarm#37 #38 #39,
    merge-stack#11, settle-outstanding-decisions#18.
 3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
    `backlog-orchestrator`, *Arming the wait when nothing is in flight*; `rules/review-trigger.md`,
@@ -62,9 +62,9 @@ evals (`<skill>#<id>`).
    `rules/platform-pr-posture.md`; `supervise-prs`, *Budgets*; `rules/agent-policy.md`, *Branch updates*. supervise-prs#25 #26 #55 #57,
    backlog-orchestrator#67, repair-pr#16 #17 #18, supervise-prs#61 #73 #96 #98 #102 #103 #104 #107 #108 #109 #110, backlog-orchestrator#96,
    repair-pr#20 #21, settle-and-merge#46 #47 #48, implement-issue#40.
-6. **A created PR's body is edited only while draft, footered, or under a resolved merge
+6. **A created PR's body is edited only while draft, footered on a PR this run created, or under a resolved merge
    opt-in** (`Depends on:` excepted); else drift is reported with a replacement.
-   `rules/authored-write-form.md`. settle-and-merge#6 #9, merge-stack#5,
+   `rules/authored-write-form.md`. settle-and-merge#6 #9 #49, merge-stack#5,
    backlog-orchestrator#71, implement-issue#35.
 7. **No forge write reports verification, bar a gate note under `refs/notes/agent-gate/*` and, in a `NEEDS_USER` or `DECISION` hold item, the failed or unrun check it holds on with its commits; SHAs are bare.** `rules/authored-write-form.md`; `conductor`, *Rules*, *7. Ledger*; `owner-steps`, *4. Record*.
    create-pr#11 #22, resolve-pr-comment#17, supervise-prs#85, swarm#27 #28 #29,

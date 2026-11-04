@@ -505,8 +505,8 @@ regression to look for.** A worker is releasable when both hold, and not before:
    assigned ref — or, for a task that opens no PR, its final
    message, which `post_turn_summary` carries — **naming the head it pushed**, or
    that it pushed nothing and the head it found. **Only a report whose URL this session named is its report** — in its
-   final message, read from its own session record, or in its push's `record:`
-   line — never by a footer naming the session, which anyone can paste
+   final message, read from its own session record, or in the `record:` line of
+   a push whose platform-supplied sender is that session — never by a footer naming the session, which anyone can paste
    (`references/posting-identity.md`): every session posts as one identity, and a
    report no such URL names is not this session's. The remote state then stands in for the worktree when any one holds:
 

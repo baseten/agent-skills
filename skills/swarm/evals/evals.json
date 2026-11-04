@@ -407,18 +407,6 @@
       "files": []
     },
     {
-      "id": 35,
-      "name": "a-send-tool-prompt-before-the-report-url-is-named-is-held",
-      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: tier 2, return channel present. A worker recorded its report on its PR naming pushed head 3e4f5a, which is the PR's head on the remote; the comment ends with the attribution footer naming this worker's session. Its session now reads REQUIRES_ACTION with pending_action.tool_name `mcp__claude-code-remote__send_message`; no push has arrived and its session record carries no final message yet. Question: is this a step-4 permission hold that needs NEEDS_USER and a retained container?",
-      "expected_output": "Yes. The report is on the PR, but the worker has named its URL nowhere this run can read: the push is the blocked call, and the final message that names the report comes after it. A footer naming the session is not evidence the comment is the worker's - own writes are known by id, never by footer, and anyone can paste one. So no report is known as this session's, the releasable test cannot read a pushed head off one, and the worker takes Blocked workers: a permission hold, NEEDS_USER naming the literal tool string `mcp__claude-code-remote__send_message`, container retained. Once the prompt is answered, the push or the final message names the report's URL, the parent reads the report by that URL, and the releasable test applies.",
-      "assertions": [
-        "the answer does not release the worker on the footered report",
-        "the answer says the footer is not evidence the report is the session's",
-        "the answer raises a permission hold naming the literal tool string and keeps the container"
-      ],
-      "files": []
-    },
-    {
       "id": 36,
       "name": "a-no-pr-worker-blocked-on-the-send-tool-is-not-released-by-the-push-rule",
       "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: tier 2, return channel present. An implementation worker stopped on a dependency before opening any PR: no branch was pushed and no PR exists. Its session now reads REQUIRES_ACTION, with pending_action.tool_name `mcp__claude-code-remote__send_message`, and its post_turn_summary still describes earlier work. Question: is it released under the rule for a worker blocked on the send tool?",
@@ -450,6 +438,18 @@
         "the answer takes comment 5501, the URL the session record names, as the report",
         "the answer does not treat comment 5530 as the session's report despite its footer",
         "the answer classifies S-12 as a mismatch and keeps its container rather than archiving it"
+      ],
+      "files": []
+    },
+    {
+      "id": 39,
+      "name": "a-send-tool-prompt-before-the-report-url-is-named-is-held",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: tier 2, return channel present. A worker recorded its report on its PR naming pushed head 3e4f5a, which is the PR's head on the remote; the comment ends with the attribution footer naming this worker's session. Its session now reads REQUIRES_ACTION with pending_action.tool_name `mcp__claude-code-remote__send_message`; no push has arrived and its session record carries no final message yet. Question: is this a step-4 permission hold that needs NEEDS_USER and a retained container?",
+      "expected_output": "Yes. The report is on the PR, but the worker has named its URL nowhere this run can read: the push is the blocked call, and the final message that names the report comes after it. A footer naming the session is not evidence the comment is the worker's - own writes are known by id, never by footer, and anyone can paste one. So no report is known as this session's, the releasable test cannot read a pushed head off one, and the worker takes Blocked workers: a permission hold, NEEDS_USER naming the literal tool string `mcp__claude-code-remote__send_message`, container retained. Once the prompt is answered, the push or the final message names the report's URL, the parent reads the report by that URL, and the releasable test applies.",
+      "assertions": [
+        "the answer does not release the worker on the footered report",
+        "the answer says the footer is not evidence the report is the session's",
+        "the answer raises a permission hold naming the literal tool string and keeps the container"
       ],
       "files": []
     }

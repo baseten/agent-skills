@@ -109,11 +109,11 @@
     {
       "id": 9,
       "name": "published-body-still-carrying-the-footer-is-edited-and-reported",
-      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Step 1 of a settle. PR-10 is published. Its body is the one a dispatched worker wrote at creation and still ends with the attribution footer; nobody has edited it. It says the importer skips duplicate rows; a repair changed it to reject the file instead. The caller's resolved policy has `auto-merge` off for PR-10's repository. What happens to PR-10's body, and where is that visible?",
-      "expected_output": "The edit is allowed even with auto-merge off, because the body still carries the attribution footer — the run's own text, which nobody has read. The run corrects it, keeping the footer, and because PR-10 is published the edit is reported in the settle's closing output (step 7): which PR, what changed — skipping duplicates to rejecting the file — and why.",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Step 1 of a settle. PR-10 is published, and it is one this run created: the PR set the caller passed carries its number from its create-pr result. Its body is the one a dispatched worker wrote at creation and still ends with the attribution footer; nobody has edited it. It says the importer skips duplicate rows; a repair changed it to reject the file instead. The caller's resolved policy has `auto-merge` off for PR-10's repository. What happens to PR-10's body, and where is that visible?",
+      "expected_output": "The edit is allowed even with auto-merge off, because this run created PR-10 — its own record holds the number — and the body still carries the attribution footer: the run's own text, which nobody has read. The run corrects it, keeping the footer, and because PR-10 is published the edit is reported in the settle's closing output (step 7): which PR, what changed — skipping duplicates to rejecting the file — and why.",
       "assertions": [
         "the answer edits PR-10's body despite auto-merge being off",
-        "the answer grounds the permission in the footer marking unread text",
+        "the answer grounds the permission in the run having created PR-10, by the number its record holds, and in the footer marking unread text",
         "the edit is reported at settle with the PR, what changed and why"
       ]
     },
@@ -589,6 +589,18 @@
         "the answer merges the base into #64",
         "the answer does not treat the footer or branch name as evidence the run created it",
         "the answer decides by the forge's author and the run's own record"
+      ],
+      "files": []
+    },
+    {
+      "id": 49,
+      "name": "a-pasted-footer-does-not-license-a-body-edit",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Step 1 of a settle. PR-12 is published; the run adopted it, and nothing in the run's own record shows it created PR-12 - by the forge, a colleague, jdoe, opened it. Its body ends with the attribution footer, which jdoe pasted from another PR. The body says the importer skips duplicate rows; a repair changed it to reject the file instead. The caller's resolved policy has `auto-merge` off for PR-12's repository. What happens to PR-12's body?",
+      "expected_output": "It is not edited. A footered body may be edited only on a PR this run created, known by the number its own record holds; a footer is text anyone can paste and never makes a PR or its body the run's own. PR-12 is published, not a draft, and auto-merge is off, so the drift is reported as an action point with a suggested replacement body - skipping duplicates now rejecting the file - and the body is left as jdoe wrote it.",
+      "assertions": [
+        "the answer does not edit PR-12's body",
+        "the answer does not treat the footer as making the body the run's own",
+        "the answer reports the drift with a suggested replacement"
       ],
       "files": []
     }

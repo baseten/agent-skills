@@ -71,9 +71,9 @@ the section now separates the two uses: as a recorded ruling a relay counts by i
 marker, like any other; as a reply that releases a hold it passes the run's own
 reply test unchanged, which needs the owner's account. That keeps protected rule
 3's release path exactly where it was. The pass also found that a footer-based
-own-write test elsewhere would read an unapproved relay as the run's own; that is
-the closed direction, so the rule says so instead of claiming the footer never
-matters, and the conductor seeks approval wherever it can.
+own-write test elsewhere would read an unapproved relay as the run's own; no such
+test remains since the owner ruled on 2026-11-04 that own writes are known by id
+only, and the conductor still seeks approval wherever it can.
 
 **Why adoption checks the home repository and not the title (same pass):** a
 conductor's sources are its home repository, so a run in another configured
