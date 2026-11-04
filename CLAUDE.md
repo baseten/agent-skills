@@ -273,6 +273,9 @@ bash scripts/refresh_shared_rules.sh                 # generate references/ firs
 python3 scripts/check_shared_rules.py                # and that every bundled rule matches its source
 python3 scripts/test_shared_rules.py                 # and that each of that check's guards can fail
 python3 scripts/check_permissions.py
+python3 scripts/check_no_machine_paths.py            # no local machine paths in skills
+python3 scripts/test_no_machine_paths.py             # and that check's guards can fail
+python3 scripts/test_run_evals.py                    # the eval runner's deterministic half
 python3 scripts/check_word_budgets.py                # no contract outgrows its word budget
 python3 scripts/test_check_word_budgets.py           # and each of that check's guards can fail
 bash skills/swarm/scripts/test-checkpoint-capture.sh
