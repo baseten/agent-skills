@@ -15,7 +15,8 @@ The block always carries:
 | workers in flight | by kind, and for each worker told to write a gate note, its assigned gate-note ref (`SKILL.md`, *Implementation worker contract*, Before dispatch, step 5) |
 | worker sessions | created / archived / alive |
 | active PRs | each with CI and review state, and its gate line (*Progress / checkpoint output*) |
-| per-PR supervision state | each PR's repair counters, trigger states and gate-note refs as `supervise-prs` last returned them — the counters the next pass and a restart are passed, and the refs no restart can recover without this block (`restart-resume.md`, step 6) |
+| per-PR supervision state | each PR's repair counters, trigger states, own write ids with whether they are complete, follow-ups filed and gate-note refs as `supervise-prs` last returned them — the counters the next pass and a restart are passed, and the ids, follow-ups and refs no restart can recover without this block (`restart-resume.md`, step 6) |
+| own write ids | the write id of every write this run posted outside a PR's supervision record — each hold retirement record (`swarm`, *Blocked workers*) and each item it raised at a site of its own — which the reply watch filters and settle passes on; own writes are known by id alone (`references/posting-identity.md`) |
 | review-session ids | per PR, each dispatched review session's review id and inline comment ids, as its report named them |
 | check-in | the check-in state with its id, next firing time and unproductive-wake count split by kind |
 | what woke this cycle | the event or the check-in |

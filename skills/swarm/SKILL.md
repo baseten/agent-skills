@@ -261,8 +261,8 @@ the contrary.
   on your own behalf.
 - [Once your deliverable is pushed or posted, record your report on the pull
   request, naming the head commit you pushed (or that you pushed nothing, and
-  the head you found), then stop — after the send clause below, where it is
-  present. | Your gate note is your whole report: write nothing on any pull
+  the head you found), and end on a final message naming that report's URL,
+  then stop — after the send clause below, where it is present. | Your gate note is your whole report: write nothing on any pull
   request, and stop once the note is pushed — after the send clause below,
   where it is present. | Your returned gate result is your whole report: write
   nothing on any pull request, and stop once it is returned.] Do not poll
@@ -439,11 +439,12 @@ push**: it replies in one line at most, naming its successor where it knows one,
 leaves the work to the run that adopted it.
 
 **A worker with a PR, stopped on a permission prompt for the send tool, has
-already recorded its report there**, so the prompt is one this run does not need
-answered: where its reported head is reachable it takes the releasable test's
-second case (*Releasing a worker*), not a hold. A worker with no PR has no record
-yet — its `post_turn_summary` is written only when its turn ends — so it takes
-*Blocked workers* in the ordinary way.
+already recorded its report there, but has named its URL nowhere this run can
+read** — the push is the blocked call, and its final message comes after it — so
+no report is known as its own (*Releasing a worker*, condition 2): it takes
+*Blocked workers* in the ordinary way, as a worker with no PR does, whose
+`post_turn_summary` is written only when its turn ends. A footer naming the
+session never stands in for the URL.
 
 ### Releasing a worker
 
@@ -503,13 +504,15 @@ regression to look for.** A worker is releasable when both hold, and not before:
    the report it recorded on its PR** — a gate session's, its gate note on its
    assigned ref — or, for a task that opens no PR, its final
    message, which `post_turn_summary` carries — **naming the head it pushed**, or
-   that it pushed nothing and the head it found. **Only a report carrying this
-   session's own attribution footer is its report**: every session posts as one
-   identity. The remote state then stands in for the worktree when any one holds:
+   that it pushed nothing and the head it found. **Only a report whose URL this session named is its report** — in its
+   final message, read from its own session record, or in its push's `record:`
+   line — never by a footer naming the session, which anyone can paste
+   (`references/posting-identity.md`): every session posts as one identity, and a
+   report no such URL names is not this session's. The remote state then stands in for the worktree when any one holds:
 
    | case | holds when | not when |
    |---|---|---|
-   | **deliverable on the remote** | the head its report names as pushed is reachable; for a review session, a review or comment on the PR whose attribution footer names that session; for a gate session, its note on the head it was given, on the ref assigned it — or none, which strands nothing, since it edits nothing and its caller acts on the absence | a head it only *found* counts solely where its outcome is `NO_CODE_CHANGE` (a failed push reported honestly as "pushed nothing" leaves the fix in the container); ancestry covers a no-code repair however far the PR has moved |
+   | **deliverable on the remote** | the head its report names as pushed is reachable; for a review session, the review or comment on the PR whose URL or id it named, as for a report; for a gate session, its note on the head it was given, on the ref assigned it — or none, which strands nothing, since it edits nothing and its caller acts on the absence | a head it only *found* counts solely where its outcome is `NO_CODE_CHANGE` (a failed push reported honestly as "pushed nothing" leaves the fix in the container); ancestry covers a no-code repair however far the PR has moved |
    | **charter finished** | its PR has merged or closed | — whatever the session holds beyond the remote is the accepted residual |
    | **never produced work** | no branch and no commit of its own, and the runtime shows no staged or uncommitted files in its session (an early `BLOCKED`, `BLOCKED_EXTERNAL` or `NEEDS_USER` is normally this) | a missing branch alone does not establish it, nor a file field the runtime does not expose |
 
@@ -524,7 +527,7 @@ holds for a PR that merged or closed.
 
 **A mismatch is the one case that keeps the container.** Where none of the three
 holds — a reported head that is not reachable, no report on a PR still open, a
-review session with no comment of its own, an early stop that left a branch or
+review session with no comment it named, an early stop that left a branch or
 files — work may be stranded. The lever is to ask the worker to commit everything,
 push, and report the resulting head; success is the named commit becoming
 reachable, with the remote head compared against what was recorded before the
@@ -720,11 +723,16 @@ it has no site of its own), dated: the session, how the hold ended ("permission
 granted, worker resumed", "released: reported commit reachable", "redispatched
 after the tool was allowlisted"), and the observation that established it — an
 observation, never a ruling. It is an authored write carrying the run's
-attribution footer (its session link), and it is known as a retirement **by that
-footer or by the write id the caller's posting-identity map records for it, never
-by its content**; those ids are among the run's own writes that a caller's reply
-watch filters out and its wake prompt carries. **A retired item is closed**: a
-gate reads it as not outstanding, and nobody is asked about it again.
+attribution footer (its session link), which marks it unread and identifies
+nothing: it is known as a retirement **only by the write id the parent recorded
+on posting it, never by its footer or content** (`references/posting-identity.md`).
+Those ids are among the run's own writes, which the caller's state block carries,
+its reply watch filters out, its wake prompt carries, and its settle passes to the
+gate and the walkthrough. **A record whose id the reader does not hold retires
+nothing** — lost to a restart, or never passed: the item stays outstanding until
+the parent observes the ending again and posts a record whose id it keeps.
+**A retired item is closed**: a gate reads it as not outstanding, and nobody is
+asked about it again.
 
 **One ending retires the hold but not the item: an archive on the owner's request,
 with no redispatch, over unfinished work** (no PR, or a PR the owner has not

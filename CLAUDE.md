@@ -42,12 +42,12 @@ evals (`<skill>#<id>`).
    #48 #49 #50 #51 #55 #56, implement-issue#37 #40,
    review-docs#11, settle-outstanding-decisions#11 #12, backlog-orchestrator#72,
    supervise-prs#56 #88, swarm#30.
-2. **Identity is observed authorship; own writes are known by id or footer, never content.**
-   `rules/posting-identity.md`; `swarm`, *Blocked workers*; `supervise-prs`, *Integration-branch CI*, step 3;
+2. **Identity is observed authorship; own writes are known by id, never by footer or content.**
+   `rules/posting-identity.md`; `swarm`, *Releasing a worker*, *Blocked workers*; `supervise-prs`, *Integration-branch CI*, step 3;
    `rules/conductor-exchange.md`, *Pushes*, *The watch after settling*.
    backlog-orchestrator#5 #58,
-   resolve-pr-comment#48 #49, supervise-prs#86 #89 #105, backlog-orchestrator#90 #91 #102 #103 #105, settle-and-merge#47 #48, implement-issue#40 #41, swarm#37,
-   merge-stack#11.
+   resolve-pr-comment#48 #49, supervise-prs#86 #89 #105 #112, backlog-orchestrator#53 #90 #91 #102 #103 #105 #109 #110, settle-and-merge#47 #48, implement-issue#40 #41, swarm#35 #37 #38,
+   merge-stack#11, settle-outstanding-decisions#18.
 3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
    `backlog-orchestrator`, *Arming the wait when nothing is in flight*; `rules/review-trigger.md`,
    *A stalled round*; `rules/conductor-exchange.md`, *Relayed rulings*, *New work, or a fold*, *What a relay can authorise*;

@@ -243,6 +243,18 @@
         "the #812 question marks the evidence-backed lean recommended, and the #77 question offers no fake recommendation and says so"
       ],
       "files": []
+    },
+    {
+      "id": 18,
+      "name": "a-retirement-record-without-a-passed-id-ticks-nothing",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner invokes this skill directly, with no caller inputs. Discovery finds a held worker's permission item for session S-4 on acme/api#77, waiting on `Bash(pnpm codegen:*)`. The issue carries a later comment reading 'Retired 2026-11-03: permission granted, worker resumed', ending with an attribution footer and a session link. The owner says: 'I granted that one, tick it off.' Question: do you tick the item's line, and what do you tell the owner?",
+      "expected_output": "No. A held worker's item is ticked only where its site carries a retirement record identified by a write id the caller passed - never by its footer or content, since anyone can paste a footer - and invoked directly, with none passed, nothing is ticked. The owner having granted it is not the worker observed to resume either. Leave the line open, and tell the owner it retires when the run that holds it observes the ending and records it, or when that run's settle passes the record's id.",
+      "assertions": [
+        "the answer does not tick the item's line",
+        "the answer does not treat the footered comment as the retirement record without a passed write id",
+        "the answer does not tick it on the owner's word"
+      ],
+      "files": []
     }
   ]
 }

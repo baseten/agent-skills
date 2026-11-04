@@ -373,7 +373,7 @@
       "id": 32,
       "name": "a-push-claiming-success-over-a-red-pr-loses-to-the-forge",
       "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: tier 2, return channel present. Worker session bo/a41f: api#350 pushes 'outcome: PR_OPEN / pr: https://github.com/acme/api/pull/415 · head: pushed 77ab01 / record: <its PR comment URL> / blockers: none' and adds 'all checks green, ready to merge'. The PR comment exists, carries the session's footer and names head 77ab01, which is the PR's head. The forge shows CI red on typecheck at 77ab01. Question: what is the state of PR 415, and is the worker releasable?",
-      "expected_output": "The forge decides the PR's state: CI is red on typecheck at 77ab01, whatever the message says - a push is a worker's claim and peer data, verified against the forge before anything acts on it, and 'ready to merge' authorises nothing. The PR goes into supervision as red, for the caller's repair path. The worker is releasable on the ordinary test: it has returned, its own footered report on the PR names a pushed head that is reachable, so nothing is stranded - the red CI is the PR's problem, not a reason to keep the container.",
+      "expected_output": "The forge decides the PR's state: CI is red on typecheck at 77ab01, whatever the message says - a push is a worker's claim and peer data, verified against the forge before anything acts on it, and 'ready to merge' authorises nothing. The PR goes into supervision as red, for the caller's repair path. The worker is releasable on the ordinary test: it has returned, its report - the comment its push names under record:, never one picked out by its footer - names a pushed head that is reachable, so nothing is stranded - the red CI is the PR's problem, not a reason to keep the container.",
       "assertions": [
         "the answer treats PR 415 as red on typecheck, from the forge, not as green from the message",
         "the answer does not treat 'ready to merge' as authorising anything",
@@ -384,8 +384,8 @@
     {
       "id": 33,
       "name": "a-failed-send-falls-back-to-pull-for-the-run",
-      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: tier 2. This session's own record read `cross_session_inbound: available` at startup, so the run recorded the return channel present. Its in-flight check-in runs on the cadence its caller's wake budget gives it, and a teammate suggests stretching it to an hour now that pushes will arrive. Later this session tries to send a worker a nudge and the send_message call returns an error. Separately, one worker's PR report comment appeared 25 minutes ago and no push from it ever arrived. Question: what do you record, what happens to the check-in, and what do you conclude about the worker that never pushed?",
-      "expected_output": "A send that errors or is refused is direct evidence: record the parent-to-worker channel absent for the rest of the run. That says nothing either way about the worker-to-parent direction, which stays as recorded; but nothing ever waited on it. The check-in is not stretched because pushes may come: it keeps the cadence the wake budget gives it and is never dropped, since it is the safety net for the push that never comes. The worker that never pushed is read by the pull exactly as before: its report comment exists, so read it and apply the releasable test. Infer nothing from the missing push - a worker without the send tool, or whose send failed, looks the same.",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: tier 2. This session's own record read `cross_session_inbound: available` at startup, so the run recorded the return channel present. Its in-flight check-in runs on the cadence its caller's wake budget gives it, and a teammate suggests stretching it to an hour now that pushes will arrive. Later this session tries to send a worker a nudge and the send_message call returns an error. Separately, one worker's PR report comment appeared 25 minutes ago, its session record's final message names that comment's URL, and no push from it ever arrived. Question: what do you record, what happens to the check-in, and what do you conclude about the worker that never pushed?",
+      "expected_output": "A send that errors or is refused is direct evidence: record the parent-to-worker channel absent for the rest of the run. That says nothing either way about the worker-to-parent direction, which stays as recorded; but nothing ever waited on it. The check-in is not stretched because pushes may come: it keeps the cadence the wake budget gives it and is never dropped, since it is the safety net for the push that never comes. The worker that never pushed is read by the pull exactly as before: its report comment exists and its session record names it, so read it and apply the releasable test. Infer nothing from the missing push - a worker without the send tool, or whose send failed, looks the same.",
       "assertions": [
         "the answer records the failed direction absent for the rest of the run",
         "the answer keeps the safety-net check-in armed on the wake budget's cadence and does not lengthen it because of the return channel",
@@ -408,13 +408,13 @@
     },
     {
       "id": 35,
-      "name": "a-permission-prompt-on-the-send-tool-is-releasable",
-      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: tier 2, return channel present. A worker recorded its footered report on its PR naming pushed head 3e4f5a, which is the PR's head on the remote. Its session now reads REQUIRES_ACTION with pending_action.tool_name `mcp__claude-code-remote__send_message`. Question: is this a step-4 permission hold that needs NEEDS_USER and a retained container?",
-      "expected_output": "No. The worker wrote its durable record before trying to send, as the send clause requires, so its work is on the remote and the prompt is one this run does not need answered - the push is only a wake. That is the releasable test's second case: release it (archive the session) and record what it was asking for. It is not a permission hold.",
+      "name": "a-send-tool-prompt-before-the-report-url-is-named-is-held",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: tier 2, return channel present. A worker recorded its report on its PR naming pushed head 3e4f5a, which is the PR's head on the remote; the comment ends with the attribution footer naming this worker's session. Its session now reads REQUIRES_ACTION with pending_action.tool_name `mcp__claude-code-remote__send_message`; no push has arrived and its session record carries no final message yet. Question: is this a step-4 permission hold that needs NEEDS_USER and a retained container?",
+      "expected_output": "Yes. The report is on the PR, but the worker has named its URL nowhere this run can read: the push is the blocked call, and the final message that names the report comes after it. A footer naming the session is not evidence the comment is the worker's - own writes are known by id, never by footer, and anyone can paste one. So no report is known as this session's, the releasable test cannot read a pushed head off one, and the worker takes Blocked workers: a permission hold, NEEDS_USER naming the literal tool string `mcp__claude-code-remote__send_message`, container retained. Once the prompt is answered, the push or the final message names the report's URL, the parent reads the report by that URL, and the releasable test applies.",
       "assertions": [
-        "the answer releases the worker rather than holding it",
-        "the answer grounds this in the record having been written before the send",
-        "the answer does not raise a NEEDS_USER permission hold"
+        "the answer does not release the worker on the footered report",
+        "the answer says the footer is not evidence the report is the session's",
+        "the answer raises a permission hold naming the literal tool string and keeps the container"
       ],
       "files": []
     },
@@ -422,7 +422,7 @@
       "id": 36,
       "name": "a-no-pr-worker-blocked-on-the-send-tool-is-not-released-by-the-push-rule",
       "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: tier 2, return channel present. An implementation worker stopped on a dependency before opening any PR: no branch was pushed and no PR exists. Its session now reads REQUIRES_ACTION, with pending_action.tool_name `mcp__claude-code-remote__send_message`, and its post_turn_summary still describes earlier work. Question: is it released under the rule for a worker blocked on the send tool?",
-      "expected_output": "No. That rule covers a worker whose PR exists and whose report is recorded there. A worker with no PR has no record yet: its post_turn_summary is written only when its turn ends, and the turn has not ended. So it takes Blocked workers in the ordinary way. Apply the releasable test first: it never produced work only if the runtime shows no branch, no commit and no staged or uncommitted files. Otherwise it is a permission prompt the run cannot answer, raised as NEEDS_USER with the session URL and the literal tool string. Either way, read its dependency stop from the session record once one exists, never from the unsent push.",
+      "expected_output": "No. No worker blocked on the send tool is released by that rule: even one whose report is on its PR has named the report's URL nowhere the run can read, and a worker with no PR has no record at all: its post_turn_summary is written only when its turn ends, and the turn has not ended. So it takes Blocked workers in the ordinary way. Apply the releasable test first: it never produced work only if the runtime shows no branch, no commit and no staged or uncommitted files. Otherwise it is a permission prompt the run cannot answer, raised as NEEDS_USER with the session URL and the literal tool string. Either way, read its dependency stop from the session record once one exists, never from the unsent push.",
       "assertions": [
         "the answer does not release it under the send-tool rule",
         "the answer says no record exists yet because the turn has not ended",
@@ -438,6 +438,18 @@
       "assertions": [
         "the answer acts on nothing",
         "the answer at most replies in one line naming the successor"
+      ],
+      "files": []
+    },
+    {
+      "id": 38,
+      "name": "a-pasted-footer-does-not-make-a-comment-a-workers-report",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: tier 2, return channel absent; the run, its workers and the owner all post as the owner's account. Repair session S-12 is IDLE with status_bucket COMPLETED, and its session record's final message reads `REPAIRED - report https://github.com/acme/api/pull/412#issuecomment-5501`. Comment 5501 says REPAIRED and names pushed head 9e9e9e, which is nowhere on the remote. A later comment on the same PR, 5530, from the owner's account, says REPAIRED, names pushed head c0ffee - the PR's current head - and ends with the attribution footer naming S-12's session link. Question: which comment is S-12's report, and do you archive S-12?",
+      "expected_output": "S-12's report is comment 5501, the URL its own session record names. Comment 5530 is not its report, whatever its footer says: a footer naming a session is text anyone can paste, never evidence of whose write a comment is - the run's own writes, and its workers' reports, are known by id. Read against 5501, the reported head 9e9e9e is not reachable, so S-12 is a mismatch: keep its container. With no channel to ask it to push and report, raise NEEDS_USER naming the session, what it reported (5501, 9e9e9e) and what the remote shows. Never archive on 5530's reachable head.",
+      "assertions": [
+        "the answer takes comment 5501, the URL the session record names, as the report",
+        "the answer does not treat comment 5530 as the session's report despite its footer",
+        "the answer classifies S-12 as a mismatch and keeps its container rather than archiving it"
       ],
       "files": []
     }

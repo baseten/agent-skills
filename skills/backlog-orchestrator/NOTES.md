@@ -251,6 +251,8 @@ The notes on what two unbounded check-ins cost, why a subscription is not free, 
 
 **Why the per-PR record carries the session id:** the recovery that cleaned up the leaks had to match sessions to PRs by fuzzy-matching session titles with a script over a truncated tool result. A session id and archived flag on the record the run already keeps makes the reconciliation a lookup.
 
+**Why the state block carries own write ids and follow-ups (owner's ruling, 2026-11-04, that own writes are known by id only; `rules/posting-identity-notes.md`):** *Arming the wait* already said the check-in carries the run's own write ids, hold retirement records included, "as the last state block recorded them", but the schema had no field for them, so the chain broke at the block. The follow-up scope exclusion read the footered body of an issue the run filed. Both now read ids the block carries. A restart that lost them reads the record as not the run's: a retirement retires nothing until the ending is observed again, and a follow-up is read like any other descendant.
+
 ## PR promotion and central supervision
 
 **Why the diagram no longer resumes a worker (#176):** a resumed implementation worker's push carries no repair trailers and spends no budget, so a restart rebuilds its counters as 0: the unbounded loop protected rule 5 forbids. Repairs are `repair-pr` passes `supervise-prs` dispatches.
