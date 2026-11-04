@@ -16,7 +16,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # rule source  ->  skills that apply it
-AUTHORED_WRITE_FORM="backlog-orchestrator settle-and-merge create-pr normalize-github-dependencies
+AUTHORED_WRITE_FORM="backlog-orchestrator conductor owner-steps settle-and-merge create-pr normalize-github-dependencies
   npm-dependency-upgrade-orchestrator implement-issue-core
   merge-stack repair-pr resolve-pr-comment review-docs review-skill settle-outstanding-decisions
   summarize-wave upgrade-npm-dependency validate-backlog supervise-prs"
@@ -29,7 +29,8 @@ RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
   establish-do-not-assume a-passing-test-is-not-a-verified-fix
   posting-identity agent-policy review-feedback draft-state
   repair-rounds mechanical-pushes review-trigger ci-and-review-verdicts
-  ci-attribution watch-and-read wake-budget platform-pr-posture"
+  ci-attribution watch-and-read wake-budget platform-pr-posture
+  manual-step-issues conductor-exchange"
 
 # Each list names only the skills that APPLY the rule, and every one of them
 # must cite it in its own SKILL.md (check_shared_rules.py). A rule that cites
@@ -47,13 +48,13 @@ RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
 #
 # Skills that make an authored forge/tracker write and select its author, or
 # that pass or merge the run's posting-identity map.
-POSTING_IDENTITY="backlog-orchestrator settle-and-merge swarm create-pr implement-issue
+POSTING_IDENTITY="backlog-orchestrator conductor owner-steps settle-and-merge swarm create-pr implement-issue
   implement-issue-core merge-stack repair-pr resolve-pr-comment review-docs
   settle-outstanding-decisions supervise-prs normalize-github-dependencies
   review-skill summarize-wave upgrade-npm-dependency validate-backlog"
 
 # Skills that read .claude/agent-policy.json, or gate on what it grants.
-AGENT_POLICY="backlog-orchestrator settle-and-merge implement-issue resolve-pr-comment
+AGENT_POLICY="backlog-orchestrator conductor owner-steps merge-stack settle-and-merge implement-issue resolve-pr-comment
   npm-dependency-upgrade-orchestrator supervise-prs"
 
 # Skills that promote a draft, decline to, or gate on the drafts it defines as held.
@@ -87,7 +88,7 @@ CI_ATTRIBUTION="backlog-orchestrator
 WATCH_AND_READ="swarm backlog-orchestrator supervise-prs"
 
 # Skills that arm a recurring check-in and bound it.
-WAKE_BUDGET="backlog-orchestrator supervise-prs npm-dependency-upgrade-orchestrator implement-issue"
+WAKE_BUDGET="backlog-orchestrator supervise-prs npm-dependency-upgrade-orchestrator implement-issue conductor"
 
 # Skills whose session arms a PR-activity subscription, receives its wakes, or
 # reports to the user that the platform's posture was overridden.
@@ -100,9 +101,16 @@ REVIEW_FEEDBACK="backlog-orchestrator repair-pr resolve-pr-comment
 
 # Skills that act on something asserted by an agent, assumed about a provider,
 # or that author a write making claims about existing code or current state.
-ESTABLISH_DO_NOT_ASSUME="backlog-orchestrator swarm settle-and-merge repair-pr
+ESTABLISH_DO_NOT_ASSUME="backlog-orchestrator conductor owner-steps swarm settle-and-merge repair-pr
   validate-backlog review-skill implement-issue-core create-pr resolve-pr-comment
   summarize-wave settle-outstanding-decisions implement-issue supervise-prs"
+
+# Skills that file an owner step as a [Manual] issue, or walk one.
+MANUAL_STEP_ISSUES="backlog-orchestrator conductor owner-steps"
+
+# Skills a conductor coordinates, and the conductor itself: status requests,
+# pushes, conductor-id adoption, new work and folds, and relayed rulings.
+CONDUCTOR_EXCHANGE="backlog-orchestrator implement-issue conductor"
 
 # Skills that write or change a test as part of their work.
 A_PASSING_TEST_IS_NOT_A_VERIFIED_FIX="implement-issue-core repair-pr

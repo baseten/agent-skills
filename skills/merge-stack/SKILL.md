@@ -125,10 +125,13 @@ After GitHub confirms the merge:
 
 ### Rebase a direct child
 
+**A child another person opened is not rebased** (`references/agent-policy.md`, *Branch updates*, which decides authorship from the forge — an author whose type cannot be established, or an invoking user's account the invocation does not name, counts as another person). **Never force-push a child another session is still pushing to**: wait until it is done and released, then restack it. For a child another person opened, merge `P_BASE_BRANCH` (or, for a grandchild, its parent's new head) into it, push plainly, and retarget as below; every other child is rebased as follows.
+
 For direct child C, preserve:
 
 ```text
 C_HEAD_OLD = C's head SHA before rewrite
+D_HEAD_OLD = each grandchild D's head SHA before its rewrite
 ```
 
 Then rebase only C's own commits, dropping P's now-merged commits:
@@ -163,10 +166,12 @@ If rebase conflicts:
 After a clean rebase:
 
 ```bash
-git push --force-with-lease origin <C_HEAD_BRANCH>
+git push --force-with-lease=<C_HEAD_BRANCH>:<C_HEAD_OLD> origin <C_HEAD_BRANCH>
 ```
 
-Never use an unconditional `--force`.
+Never use an unconditional `--force`, and never a bare `--force-with-lease`: a
+background fetch can advance the remote-tracking ref a bare lease checks, and
+then it protects nothing.
 
 Then update C's PR base from `P_HEAD_BRANCH` to `P_BASE_BRANCH` using GitHub MCP/API.
 
@@ -193,7 +198,7 @@ As with the direct-child rebase, confirm `C_HEAD_OLD` is actually an ancestor of
 
 ```bash
 git rebase --onto <C_HEAD_NEW> <C_HEAD_OLD> <D_HEAD_BRANCH>
-git push --force-with-lease origin <D_HEAD_BRANCH>
+git push --force-with-lease=<D_HEAD_BRANCH>:<D_HEAD_OLD> origin <D_HEAD_BRANCH>
 ```
 
 Its `Depends on:` URL remains C's PR URL because the logical parent PR has not changed.

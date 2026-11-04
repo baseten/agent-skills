@@ -14,7 +14,8 @@ Pass `implement-issue`, as values:
 - **existing branch**: the branch named, otherwise the current one;
 - **base**: the one the user named, if any;
 - **source**: the issue URL, or the brief verbatim — a Slack permalink, or the user's prose — with whether the user said there is no issue;
-- any narrowing the user stated — `auto-merge` off, a draft preference.
+- any narrowing the user stated — `auto-merge` off, a draft preference;
+- a conductor's session id and home repository, and the account its dispatch names as the invoking user's, where the invocation names them.
 
 `implement-issue` unavailable → stop, naming it. Never run its phases from memory.
 

@@ -518,7 +518,7 @@
     {
       "id": 41,
       "name": "the-ci-trigger-is-a-base-update-or-on-a-level-branch-one-empty-commit",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: two PRs with `minimize-ci-runs` true and in effect, and the latest automated round on each current head is clean, with CI deferred. The workflow producing the required checks declares `workflow_dispatch`, with no job gated to `pull_request` events. PR #82's branch is three commits behind main, and merging main into it is conflict-free. PR #83's branch already contains main's head. A teammate suggests pushing an empty commit to each to start CI. Questions: (a) how do you start CI on each? (b) does #82's trigger count a cycle or re-trigger review? (c) the empty commit?",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository's policy file sets branch-update: merge. Scenario: two PRs with `minimize-ci-runs` true and in effect, and the latest automated round on each current head is clean, with CI deferred. The workflow producing the required checks declares `workflow_dispatch`, with no job gated to `pull_request` events. PR #82's branch is three commits behind main, and merging main into it is conflict-free. PR #83's branch already contains main's head. A teammate suggests pushing an empty commit to each to start CI. Questions: (a) how do you start CI on each? (b) does #82's trigger count a cycle or re-trigger review? (c) the empty commit?",
       "expected_output": "(a) #82: update the branch from its base; the merge commit carries no skip token, so CI runs. #83 already contains main's head, so there is no merge commit to make: push one empty commit carrying no skip token, which starts a pull_request run. Never workflow_dispatch: GitHub does not count a dispatched run's checks toward a required check. (b) No: a clean base update is a mechanical push — no cycle, the review round is kept, no re-trigger; the empty commit is mechanical the same way. (c) Only on #83, the level branch, and only one. #82 gets the update, not an empty commit. No PR is closed and reopened.",
       "assertions": [
         "#82 is triggered by updating the branch from its base",
@@ -558,7 +558,7 @@
     {
       "id": 44,
       "name": "the-pr-opens-on-a-tokened-head-and-no-ci-runs-until-the-trigger",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #86's repository resolved `minimize-ci-runs` true, and the key has effect there. The caller's preflight read a `workflow_dispatch` trigger and a squash-merge setting, and an earlier tokened push started no run. The worker's last push before creating the PR was head d4d4d4d, and the PR opened on it. You adopt the PR. Its review round 1 is pending, and no CI run exists on d4d4d4d. Questions: (a) what should d4d4d4d's commit message carry, and why? (b) how do you read CI at adoption? (c) when does CI first run on this PR?",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository's policy file sets branch-update: merge. Scenario: PR #86's repository resolved `minimize-ci-runs` true, and the key has effect there. The caller's preflight read a `workflow_dispatch` trigger and a squash-merge setting, and an earlier tokened push started no run. The worker's last push before creating the PR was head d4d4d4d, and the PR opened on it. You adopt the PR. Its review round 1 is pending, and no CI run exists on d4d4d4d. Questions: (a) what should d4d4d4d's commit message carry, and why? (b) how do you read CI at adoption? (c) when does CI first run on this PR?",
       "expected_output": "(a) [skip ci]: under the key, the worker's last push before the PR is created carries the token, so the PR-opened event skips CI too. (b) CI deferred, not missing or red: no attribution, no cycle, no dispatch, and the PR is waiting. (c) Only once the PR is quiescent on its current head: round 1 complete or past its window, no repairable finding open, no pass in flight. This skill then triggers CI once, by a base update, or one empty commit where the branch is level with main.",
       "assertions": [
         "the pre-PR head carries [skip ci] so the PR-opened event runs no CI",
@@ -657,7 +657,7 @@
     {
       "id": 52,
       "name": "without-workflow-dispatch-the-key-has-effect-and-a-branch-behind-its-base-is-triggered-by-the-update",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #101 has `minimize-ci-runs` true, from repo config. Its repository allows squash merges, its review trigger is a comment, and a tokened push was observed starting no run. The workflow producing the required checks declares only `pull_request` and `push` triggers, with no `workflow_dispatch`. The PR is quiescent on its head, which carries [skip ci] and has no run, and the branch is two commits behind main; merging main in is conflict-free. Questions: (a) does the key have effect in this repository? (b) how does CI run on #101? (c) does the missing dispatch trigger appear in the report?",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository's policy file sets branch-update: merge. Scenario: PR #101 has `minimize-ci-runs` true, from repo config. Its repository allows squash merges, its review trigger is a comment, and a tokened push was observed starting no run. The workflow producing the required checks declares only `pull_request` and `push` triggers, with no `workflow_dispatch`. The PR is quiescent on its head, which carries [skip ci] and has no run, and the branch is two commits behind main; merging main in is conflict-free. Questions: (a) does the key have effect in this repository? (b) how does CI run on #101? (c) does the missing dispatch trigger appear in the report?",
       "expected_output": "(a) Yes. workflow_dispatch plays no part in the trigger at all. (b) Update the branch from its base. The merge commit carries no skip token, so CI runs once on the merged tree. The update is mechanical, so no cycle is counted and the review round carries forward. (c) No. Nothing about dispatch is reported, and the repository is not one where the key has no effect.",
       "assertions": [
         "the key has effect despite no workflow_dispatch",
@@ -1320,6 +1320,80 @@
         "at (b) the answer does not treat the trigger-text comment as an owner choice",
         "at (b) the answer posts no trigger",
         "the answer keeps the merge held"
+      ],
+      "files": []
+    },
+    {
+      "id": 106,
+      "name": "a-swarm-repair-prompt-carries-the-send-clause-only-from-its-input",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the caller passed `repair dispatch: swarm`, saying a worker's return value does not reach the run on its tier. (a) The input also says the caller's return channel is present, with caller session id session_01Orch. (b) The input says nothing about a return channel. You are composing a repair pass's dispatch prompt. Question: does the prompt carry swarm's send clause in each case, and what does the caller do on the push?",
+      "expected_output": "(a) Yes: the prompt carries swarm's send clause with session_01Orch, beside the requirement to record the judgment on the PR before returning. The push wakes the caller, who re-reads that PR record before acting on it - the push is never the record. (b) No send clause: the input does not establish a return channel, and this skill reads nothing from the caller's contract to infer one. The record on the PR is still required in both cases.",
+      "assertions": [
+        "in (a) the prompt carries the send clause with the caller's id",
+        "in (b) the prompt carries no send clause because the input does not say the channel is present",
+        "the answer keeps the on-PR record required in both cases",
+        "the answer treats the push as a trigger for re-reading the record"
+      ],
+      "files": []
+    },
+    {
+      "id": 107,
+      "name": "a-deferred-trigger-by-rebase-puts-the-empty-commit-on-top",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #80 is under ci-mode deferred, branch-update unset, and is quiescent on head c1 (message ends '[skip ci]'). Its base has moved. Question: how do you trigger its one CI run?",
+      "expected_output": "Update the branch from its base by the default branch-update: rebase onto the base. The rebased head keeps its '[skip ci]' message, so put the one untokened empty commit on top and push both together with --force-with-lease pinned to c1. The clean rebase is mechanical, so no cycle is spent and the review round carries forward; the empty commit starts the run. Never a workflow_dispatch.",
+      "assertions": [
+        "the answer rebases onto the base",
+        "the answer adds the one untokened empty commit on top in the same push",
+        "the answer pins the lease to c1",
+        "the answer treats the clean rebase as mechanical"
+      ],
+      "files": []
+    },
+    {
+      "id": 108,
+      "name": "counters-survive-a-rebase-by-pass-id",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). After a restart you rebuild PR #81's counters. Its timeline shows a force-push: the caller rebased it onto a moved base. Before the rebase, commits a1 and a2 carried 'Repair-Pass: p1, Repair-Type: review' and 'Repair-Pass: p2, Repair-Type: ci'. The branch now has b1 and b2 with the same two trailers and different SHAs. Question: what are the counters?",
+      "expected_output": "Count distinct Repair-Pass ids per Repair-Type, matched by id, never by SHA: review 1 (p1), ci 1 (p2). The rebase rewrote the SHAs but kept every trailer, so the history is intact - not unknown, not spent.",
+      "assertions": [
+        "the answer counts review 1 and ci 1",
+        "the answer matches passes by id, not SHA",
+        "the answer does not treat the rebase as making counters unknown"
+      ],
+      "files": []
+    },
+    {
+      "id": 109,
+      "name": "a-conflicted-rebase-is-substantive-as-a-conflicted-merge-is",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The caller reports two pushes to supervised PRs: (a) a clean rebase of #82 onto its moved base; (b) a rebase of #83 that hit a conflict, which the caller resolved by choosing one side's behaviour. Question: how is each push tagged, and what follows?",
+      "expected_output": "(a) Mechanical, exactly as a clean merge from base would be: no cycle, no reset of the reviewed state, no re-trigger. (b) Substantive, as a conflicted merge choosing between behaviours is: it resets the reviewed state and owes a review round.",
+      "assertions": [
+        "the answer tags (a) mechanical",
+        "the answer tags (b) substantive",
+        "the answer re-triggers review only for (b)"
+      ],
+      "files": []
+    },
+    {
+      "id": 110,
+      "name": "a-pass-id-a-rebase-dropped-stays-counted",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You rebuild PR #84's counters. The caller's push record says it rebased #84 onto a moved base and that the rebase dropped commit a3, carrying 'Repair-Pass: p3, Repair-Type: ci', because its patch was already upstream. The branch now carries 'Repair-Pass: p1' (review) only. Question: what are the counters?",
+      "expected_output": "review 1 (p1) and ci 1 (p3): passes are matched by id, and an id a rebase dropped stays counted from the caller's push record. Never count ci as 0, which would hand the budget back.",
+      "assertions": [
+        "the answer counts ci 1 from the push record",
+        "the answer counts review 1",
+        "the answer does not hand the dropped pass's budget back"
+      ],
+      "files": []
+    },
+    {
+      "id": 111,
+      "name": "a-rebased-integration-pr-fails-closed-across-a-restart",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). ci-mode integration-branch; branch-update default rebase. Before a restart, PR #95 into integration/r1 had a local gate record passed at head H. After the restart, the PR's timeline shows a force-push from H to H2 (a rebase onto the moved integration branch); no caller push record survived, and H is not an ancestor of H2. Question: does the gate record still hold, and does the review round carry?",
+      "expected_output": "No. Across a restart a rebase seen only as a force-push cannot be shown mechanical, so it is substantive: H is not an ancestor of H2, the gate record does not attach to H2, the gate runs again on H2, and a fresh review round is owed. Fail closed.",
+      "assertions": [
+        "the answer does not carry the gate record to H2",
+        "the answer reruns the gate",
+        "the answer owes a fresh review round"
       ],
       "files": []
     }

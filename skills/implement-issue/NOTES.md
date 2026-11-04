@@ -68,6 +68,8 @@ The note on why the platform's own auto-merge is called out moved to `supervise-
 
 **Why the notice is `supervise-prs`'s and the record is this skill's (#154):** the user of a standalone run is present at subscription and sees the toggle turn on, and the notice answers the question that toggle raises — so it is given at the moment of subscribing, by the skill that subscribes, once; a second copy from this skill would be the same sentence twice. The structured result carries the same facts because a checkpoint read later — by the user or a resumed run — has no other record of on whose authority the platform's default was set aside.
 
+**Why the hold is stated where `auto-resolve-comments` is passed (PR #201):** this skill forwarded the key "with its source" and nothing else, so the rule that a person's thread is held unless the repository's own file turns that off was reachable only through `supervise-prs` and `repair-pr`. A run under a conductor resolved a person's thread; whatever path did it, the decision point now says the rule and where it lives, and that the invoking user's account is only ever the one the invocation names.
+
 ## Review feedback
 
 The notes on why this skill never roots a review thread and why a reserved thread holds the gate but not settlement moved to `supervise-prs/NOTES.md` with the rules (#144).

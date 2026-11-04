@@ -36,33 +36,39 @@ evals (`<skill>#<id>`).
    the invoking user is in for approval unless the repository's own config turns
    that off.**
    `rules/authored-write-form.md`, `rules/review-feedback.md`, `rules/posting-identity.md`,
-   *The invoking user's account*; `resolve-pr-comment`, *Replies held for approval*.
+   *The invoking user's account*; `resolve-pr-comment`, *Replies held for approval*; `rules/conductor-exchange.md`,
+   *What a relay can authorise*.
    create-pr#6, resolve-pr-comment#0 #18 #21 #23 #26 #28 #41 #42 #43 #44 #45 #46 #47
-   #48 #49 #50 #51,
+   #48 #49 #50 #51 #55 #56, implement-issue#37 #40,
    review-docs#11, settle-outstanding-decisions#11 #12, backlog-orchestrator#72,
    supervise-prs#56 #88, swarm#30.
 2. **Identity is observed authorship; own writes are known by id or footer, never content.**
-   `rules/posting-identity.md`; `swarm`, *Blocked workers*; `supervise-prs`, *Integration-branch CI*, step 3.
+   `rules/posting-identity.md`; `swarm`, *Blocked workers*; `supervise-prs`, *Integration-branch CI*, step 3;
+   `rules/conductor-exchange.md`, *Pushes*, *The watch after settling*.
    backlog-orchestrator#5 #58,
-   resolve-pr-comment#48 #49, supervise-prs#86 #89 #105, backlog-orchestrator#90 #91.
+   resolve-pr-comment#48 #49, supervise-prs#86 #89 #105, backlog-orchestrator#90 #91 #102 #103 #105, settle-and-merge#47 #48, implement-issue#40 #41, swarm#37,
+   merge-stack#11.
 3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
    `backlog-orchestrator`, *Arming the wait when nothing is in flight*; `rules/review-trigger.md`,
-   *A stalled round*. backlog-orchestrator#58 #92 #96, settle-and-merge#41 #45, supervise-prs#104 #105.
+   *A stalled round*; `rules/conductor-exchange.md`, *Relayed rulings*, *New work, or a fold*, *What a relay can authorise*;
+   `conductor`, *6. Dispatch*. backlog-orchestrator#58 #92 #96
+   #103, settle-and-merge#41 #45, supervise-prs#104 #105, conductor#23 #25 #37, implement-issue#35 #38.
 4. **Never request, re-request or remove a human reviewer.** `rules/review-trigger.md`.
    supervise-prs#33 #74.
 5. **The platform's auto-fix posture is overridden**: only a dispatched `repair-pr`
    repairs; budgets bound every loop, the invoking user's own review rounds aside, which
    spend no `review-repair-cycles`; a spent budget ends in the skill's outcome, never
    another repair push.
-   `rules/platform-pr-posture.md`; `supervise-prs`, *Budgets*. supervise-prs#25 #26 #55 #57,
-   backlog-orchestrator#67, repair-pr#16 #17 #18, supervise-prs#61 #73 #96 #98 #102 #103 #104, backlog-orchestrator#96.
+   `rules/platform-pr-posture.md`; `supervise-prs`, *Budgets*; `rules/agent-policy.md`, *Branch updates*. supervise-prs#25 #26 #55 #57,
+   backlog-orchestrator#67, repair-pr#16 #17 #18, supervise-prs#61 #73 #96 #98 #102 #103 #104 #107 #108 #109 #110, backlog-orchestrator#96,
+   repair-pr#20 #21, settle-and-merge#46 #47 #48, implement-issue#40.
 6. **A created PR's body is edited only while draft, footered, or under a resolved merge
    opt-in** (`Depends on:` excepted); else drift is reported with a replacement.
    `rules/authored-write-form.md`. settle-and-merge#6 #9, merge-stack#5,
-   backlog-orchestrator#71.
-7. **No forge write reports verification, bar a gate note under `refs/notes/agent-gate/*` and, in a `NEEDS_USER` or `DECISION` hold item, the failed or unrun check it holds on with its commits; SHAs are bare.** `rules/authored-write-form.md`.
+   backlog-orchestrator#71, implement-issue#35.
+7. **No forge write reports verification, bar a gate note under `refs/notes/agent-gate/*` and, in a `NEEDS_USER` or `DECISION` hold item, the failed or unrun check it holds on with its commits; SHAs are bare.** `rules/authored-write-form.md`; `conductor`, *Rules*, *7. Ledger*; `owner-steps`, *4. Record*.
    create-pr#11 #22, resolve-pr-comment#17, supervise-prs#85, swarm#27 #28 #29,
-   backlog-orchestrator#92 #93 #94 #97, settle-and-merge#35 #37 #38.
+   backlog-orchestrator#92 #93 #94 #97, settle-and-merge#35 #37 #38, conductor#24 #32, owner-steps#6.
 8. **Merges are opt-in, through the one gate, failing closed.** `settle-and-merge`, *The
    merge gate*; `rules/agent-policy.md`. backlog-orchestrator#0 #2. The gate reads review on the current
    head: a publish changes no head and is inert unless the repository's own configuration (policy file,
@@ -90,11 +96,15 @@ evals (`<skill>#<id>`).
    follow-up issue, never one a person is in (`resolve-pr-comment`, *Findings deferred to a follow-up*).
    resolve-pr-comment#52 #53 #54, implement-issue#22. A head with no run is read through
    path filters, failing closed (`rules/ci-and-review-verdicts.md`, *Path filters*).
-   supervise-prs#58 #59 #62 #63 #64, settle-and-merge#19.
+   supervise-prs#58 #59 #62 #63 #64, settle-and-merge#19. A branch update follows `branch-update`
+   (`rules/agent-policy.md`, *Branch updates*): a rebase pushes only with a pinned lease; a configured or
+   fail-closed `merge`, or a PR another person opened, merges. settle-and-merge#46 #47 #48.
 9. **Stranded work reaches a remote ref before any archive; permission holds name the
    literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked
-   workers*; `rules/wake-budget.md`. backlog-orchestrator#4 #19, swarm#20 #25 #26,
-   implement-issue#14 #19 #20 #21, supervise-prs#87, backlog-orchestrator#92.
+   workers*; `rules/wake-budget.md`; `rules/conductor-exchange.md`, *The watch after settling*; `conductor`,
+   *6. Dispatch*. backlog-orchestrator#4 #19, swarm#20 #25 #26,
+   implement-issue#14 #19 #20 #21, supervise-prs#87, backlog-orchestrator#92, conductor#5 #8 #21 #31 #35 #38 #39,
+   implement-issue#36 #39 #42, merge-stack#12.
 
 **A PR changing a protected rule's text says so in its body**, and gets a blind
 rule-by-rule audit plus a pinning-eval round before merge. None is an issue-#49

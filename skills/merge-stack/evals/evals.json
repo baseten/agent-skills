@@ -108,6 +108,53 @@
         "the answer gives the reason"
       ],
       "files": []
+    },
+    {
+      "id": 9,
+      "name": "a-restack-push-pins-its-lease-to-the-recorded-head",
+      "prompt": "You are executing the merge-stack skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Parent PR P merged; you rebased its direct child C onto P's base cleanly. C's head before the rewrite was 4a5b6c7. A background fetch may have run since. Question: what exact push do you make for C?",
+      "expected_output": "git push --force-with-lease=<C's branch>:4a5b6c7 origin <C's branch> - the lease pinned to C_HEAD_OLD, the head recorded before the rewrite. Never a bare --force-with-lease, which checks a remote-tracking ref a background fetch can advance, and never an unconditional --force.",
+      "assertions": [
+        "the answer pins the lease to 4a5b6c7",
+        "the answer does not use a bare --force-with-lease or --force"
+      ],
+      "files": []
+    },
+    {
+      "id": 10,
+      "name": "another-persons-child-pr-is-merged-not-rebased",
+      "prompt": "You are executing the merge-stack skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Parent PR P (base main) squash-merged. Its direct children: C1, opened by this run's own create-pr (author is the invoking user 'owner-acct', named by the invocation), and C2, whose forge author is 'jdoe' (type User). Question: how do you restack each?",
+      "expected_output": "C1: rebase only its own commits with git rebase --onto main <P_HEAD_OLD> C1 after the ancestry check, push with --force-with-lease pinned to C1's old head, retarget to main. C2: another person opened it, so do not rebase - merge main into C2, push plainly with no force, and retarget to main, so jdoe's local branch is not rewritten.",
+      "assertions": [
+        "the answer rebases C1 with a lease pinned to its old head",
+        "the answer merges main into C2 instead of rebasing",
+        "the answer never force-pushes C2"
+      ],
+      "files": []
+    },
+    {
+      "id": 11,
+      "name": "an-unnamed-invoking-account-makes-the-child-merge",
+      "prompt": "You are executing the merge-stack skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Parent PR P (base main) squash-merged. Its direct child C was opened by 'owner-acct' (type User), but this invocation names no invoking user's account. Question: rebase or merge C?",
+      "expected_output": "Merge main into C and push plainly: with no invoking account named, owner-acct cannot be shown to be the invoking user, so the author counts as another person (references/agent-policy.md, Branch updates). Never force-push it.",
+      "assertions": [
+        "the answer merges main into C",
+        "the answer treats the author as another person because no account is named",
+        "the answer does not force-push C"
+      ],
+      "files": []
+    },
+    {
+      "id": 12,
+      "name": "a-child-another-session-is-pushing-to-waits",
+      "prompt": "You are executing the merge-stack skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Parent PR P squash-merged. Its direct child C, run-created, has a repair pass in flight right now that is pushing to C's branch. Question: do you restack C now?",
+      "expected_output": "No. Never force-push a child another session is still pushing to: wait until the repair pass is done and released, then restack C (rebase with a lease pinned to its recorded head). Do not merge instead of waiting.",
+      "assertions": [
+        "the answer waits for the pass to be done and released",
+        "the answer then rebases C",
+        "the answer does not merge instead of waiting"
+      ],
+      "files": []
     }
   ]
 }

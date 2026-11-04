@@ -166,7 +166,7 @@
     {
       "id": 14,
       "name": "minimize-ci-runs-overlap-runs-ci-once-more-before-the-gate",
-      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #90, `auto-merge` on. The caller's freshness input says the stale-green re-check applies, with authority to update a branch, and its repository's checks run against the PR merged with its base. CI went green on head h1 when the base was b1; main is now at b2. Between b1 and b2, main changed docs/a.md and src/y.ts. The PR changes src/y.ts and test/y.test.ts. It bumps no tool, and every other gate condition holds. The caller passed `minimize-ci-runs` on for #90, with effect in its repository. Question: does the existing green discharge the CI condition, and what do you do?",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository's policy file sets branch-update: merge. Scenario: PR #90, `auto-merge` on. The caller's freshness input says the stale-green re-check applies, with authority to update a branch, and its repository's checks run against the PR merged with its base. CI went green on head h1 when the base was b1; main is now at b2. Between b1 and b2, main changed docs/a.md and src/y.ts. The PR changes src/y.ts and test/y.test.ts. It bumps no tool, and every other gate condition holds. The caller passed `minimize-ci-runs` on for #90, with effect in its repository. Question: does the existing green discharge the CI condition, and what do you do?",
       "expected_output": "No. src/y.ts changed on the base since b1 and the PR changes it, so the green is stale. CI runs once more before the gate opens, always by updating the branch from its base, under the caller's authority. The update's merge commit carries no token, so its run tests the merged tree. It is never a dispatch, which would check out the branch alone, even though the repository's checks run against the merge ref. Nothing merges on h1's green.",
       "assertions": [
         "the answer finds overlap on src/y.ts",
@@ -551,6 +551,44 @@
         "the gate does not pass and #135 is not merged",
         "the answer says the owner's choice reaches the gate only once the walkthrough retires the DECISION",
         "the answer names the outstanding DECISION as settleable by the owner running the walkthrough"
+      ],
+      "files": []
+    },
+    {
+      "id": 46,
+      "name": "a-stale-branch-is-rebased-with-a-pinned-lease",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The caller passed authority to update stale branches. Checks run against the branch alone. Repository policy: ci-mode per-pr, branch-update unset. PR #70's base moved; every commit on it was authored by this run's worker, none carries a repair-pass trailer, it has no child PRs and no live worker. PR #71's base also moved; it carries a commit from a repair pass with its trailer. A repair pass on #71 is in flight right now. Question: how is each branch updated, and how is each push classified?",
+      "expected_output": "PR #70: rebase onto the base by the default branch-update and push with --force-with-lease pinned to the head recorded before the rebase (never a bare lease or --force). A clean rebase is a mechanical push, exactly as a clean merge from base would be; a conflicted one would be substantive. PR #71: also a rebase - its repair-pass trailer survives a rebase, and counters match pass ids, not SHAs - but not now: another session (the repair pass) is pushing to it, so wait until it returns and is released, then rebase; never merge instead. Both are returned as branch updates for the caller's push record.",
+      "assertions": [
+        "the answer rebases #70 with a lease pinned to the recorded head",
+        "the answer classifies a clean rebase as mechanical, as a clean merge is",
+        "the answer rebases #71 too, after the in-flight repair pass is done, and does not merge instead",
+        "the answer never uses a bare --force"
+      ],
+      "files": []
+    },
+    {
+      "id": 47,
+      "name": "another-persons-pr-merges-the-base-in",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The caller passed authority to update stale branches; checks run against the branch alone; branch-update is unset (default rebase). Three PRs' bases moved: #60 authored by the invoking user 'owner-acct' (the invocation names that account); #61 authored by 'dependabot[bot]' (type Bot); #62 authored by 'jdoe' (type User), a colleague. A fourth, #63, is authored by 'ext-dev', whose author type the read did not return. Question: how is each updated?",
+      "expected_output": "#60 and #61: rebase onto the base with --force-with-lease pinned to each recorded head - the invoking user's and a bot's PRs take the key. #62: merge the base in, whatever branch-update says - another person opened it, and rebasing would rewrite their local branch. #63: its author's type cannot be established, so it counts as a person and merges. Authorship comes from the forge's record of the PR author, never from content.",
+      "assertions": [
+        "the answer rebases #60 and #61 with pinned leases",
+        "the answer merges the base into #62",
+        "the answer merges #63 because the author type is unknown",
+        "the answer decides by the forge's recorded author, not content"
+      ],
+      "files": []
+    },
+    {
+      "id": 48,
+      "name": "a-footer-does-not-make-a-pr-the-runs-own",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The caller passed authority to update stale branches and resolved branch-update rebase. PR #64's base moved. Its body ends with the attribution footer '_Generated by Claude Code_' and its branch is named bo/a41f-64, but the forge reports its author as 'jdoe' (type User), and the caller's record of PRs its run created does not include #64. Question: rebase or merge?",
+      "expected_output": "Merge the base in. A PR counts as run-created only where the run's own record holds its number (its create-pr result or a resumed state block); a footer, a bo/ branch name or a title never makes it the run's. By the forge, jdoe - another person - opened it, so it merges whatever the key says.",
+      "assertions": [
+        "the answer merges the base into #64",
+        "the answer does not treat the footer or branch name as evidence the run created it",
+        "the answer decides by the forge's author and the run's own record"
       ],
       "files": []
     }

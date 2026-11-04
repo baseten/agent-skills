@@ -105,6 +105,137 @@
       ],
       "minimum": 0
     },
+    "conductor-clear-at": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 99,
+      "default": null,
+      "description": "Percent of the conductor session's max_tokens at which it proposes a context clear to the operator. Absent or null: the lower of 50% of max_tokens and 60% of the session's auto-compact threshold. Read by: conductor.",
+      "x-read-by": [
+        "conductor"
+      ]
+    },
+    "conductor-repositories": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+      },
+      "minItems": 1,
+      "uniqueItems": true,
+      "default": null,
+      "description": "The repositories, as owner/name, one conductor coordinates, read from the conductor's home repository: the one it was invoked on. Absent or null: that repository alone. Read by: conductor.",
+      "x-read-by": [
+        "conductor"
+      ]
+    },
+    "conductor-ledger": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string",
+        "enum": [
+          "github-issue",
+          "tracker-document",
+          "document-store-page"
+        ]
+      },
+      "minItems": 1,
+      "uniqueItems": true,
+      "default": null,
+      "description": "Where the conductor keeps its ledger, in fallback order: github-issue (a [PLAN] issue in the home repository), tracker-document (a document on the feature's tracker project), document-store-page (a page in the connected document store). The first the session can write is used. Absent or null: github-issue alone. Read by: conductor.",
+      "x-read-by": [
+        "conductor"
+      ]
+    },
+    "manual-steps": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "issues": {
+          "type": "boolean",
+          "default": false,
+          "description": "File every owner step as a [Manual] issue. Off by default: owner steps are reported where the run reports, and never filed."
+        },
+        "epic": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "default": null,
+          "description": "The issue number of this repository's manual-steps epic. null: found by title, or created."
+        },
+        "runbooks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Repository paths of the runbooks owner steps follow; they win over everything here."
+        },
+        "server-access": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "ssh-user": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null,
+              "description": "The user SSH reaches the live server as. null: the deploy user the runbooks name."
+            },
+            "sudo": {
+              "type": "boolean",
+              "default": false,
+              "description": "Whether that user may run sudo."
+            },
+            "root-console": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "digitalocean",
+                "hetzner",
+                "other",
+                null
+              ],
+              "default": null,
+              "description": "The provider web console root steps run in. hetzner, other and null take the script route."
+            }
+          },
+          "default": {}
+        },
+        "specifics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Recorded server specifics for owner steps: paths, restart commands, commands never to run. Never a secret."
+        }
+      },
+      "default": null,
+      "description": "Per-repository values for owner steps: whether they are filed as [Manual] issues (opt-in), under which epic, and how the live server is reached. Absent or null: nothing filed, and owner-steps' server-access defaults. Never a secret. Read by: backlog-orchestrator, conductor, owner-steps.",
+      "x-read-by": [
+        "backlog-orchestrator",
+        "conductor",
+        "owner-steps"
+      ]
+    },
     "auto-request-settle": {
       "type": "boolean",
       "default": true,
@@ -132,19 +263,37 @@
         "integration-branch"
       ],
       "default": "per-pr",
-      "description": "How a PR's CI is spent. per-pr: CI runs as pushes trigger it. deferred: CI is deferred until the PR is quiescent on its head, then run once, and a stale green is re-checked at the merge gate only where the base's changes overlap the PR's files (supervise-prs, Deferred CI). integration-branch: a backlog-orchestrator run's issue PRs target an integration branch the run creates for itself (integration-branch-prefix), carry [skip ci], are gated on a tiered local gate instead of CI and may merge into that branch through the merge gate, and one PR from it into the default branch runs CI on opening and once per budgeted repair (supervise-prs, Integration-branch CI); implement-issue applies per-pr there. Each mode has effect only where its repository preconditions hold. Only this file sets a mode other than per-pr. Read by: backlog-orchestrator, implement-issue.",
+      "description": "How a PR's CI is spent. per-pr: CI runs as pushes trigger it. deferred: CI is deferred until the PR is quiescent on its head, then run once, and a stale green is re-checked at the merge gate only where the base's changes overlap the PR's files (supervise-prs, Deferred CI). integration-branch: a backlog-orchestrator run's issue PRs target an integration branch the run creates for itself (integration-branch-prefix), carry [skip ci], are gated on a tiered local gate instead of CI and may merge into that branch through the merge gate, and one PR from it into the default branch runs CI on opening and once per budgeted repair (supervise-prs, Integration-branch CI); implement-issue applies per-pr there. Each mode has effect only where its repository preconditions hold. Only this file sets a mode other than per-pr. Read by: backlog-orchestrator, implement-issue, conductor.",
       "x-read-by": [
         "backlog-orchestrator",
-        "implement-issue"
+        "implement-issue",
+        "conductor"
       ]
     },
     "integration-branch-prefix": {
       "type": "string",
       "default": "integration/",
       "minLength": 1,
-      "description": "Prefix of the branch a backlog-orchestrator run under ci-mode integration-branch creates for itself: the prefix plus the run's manifest identifier, one branch per run, deleted once its integration PR merges. Ignored under any other ci-mode. Only this file sets it. Read by: backlog-orchestrator.",
+      "description": "Prefix of the branch a backlog-orchestrator run under ci-mode integration-branch creates for itself: the prefix plus the run's manifest identifier, one branch per run, deleted once its integration PR merges. Ignored under any other ci-mode. Only this file sets it. Read by: backlog-orchestrator, conductor.",
       "x-read-by": [
-        "backlog-orchestrator"
+        "backlog-orchestrator",
+        "conductor"
+      ]
+    },
+    "branch-update": {
+      "type": "string",
+      "enum": [
+        "rebase",
+        "merge"
+      ],
+      "default": "rebase",
+      "description": "How a run brings a stale PR branch up to its base: rebase with a force-with-lease pinned to the recorded head (the default for every PR branch), or merge the base in. Two exceptions: never force-push a branch another session is pushing to, and the run's own integration branch merges the default branch in (rules/agent-policy.md, Branch updates). An invocation may set merge only; an invalid value or an unreadable file resolves to merge. Read by: backlog-orchestrator, implement-issue, npm-dependency-upgrade-orchestrator, settle-and-merge, supervise-prs.",
+      "x-read-by": [
+        "backlog-orchestrator",
+        "implement-issue",
+        "npm-dependency-upgrade-orchestrator",
+        "settle-and-merge",
+        "supervise-prs"
       ]
     },
     "minimize-ci-runs": {
@@ -183,10 +332,11 @@
     "auto-merge": {
       "type": "boolean",
       "default": false,
-      "description": "Let implementation PRs merge through the invariant 12 merge gate, which settle-and-merge defines. Only this file can turn it on. On, it also lets a run edit the body of a published PR it governs. Read by: backlog-orchestrator, implement-issue.",
+      "description": "Let implementation PRs merge through the invariant 12 merge gate, which settle-and-merge defines. Only this file can turn it on. On, it also lets a run edit the body of a published PR it governs. Read by: backlog-orchestrator, implement-issue, conductor.",
       "x-read-by": [
         "backlog-orchestrator",
-        "implement-issue"
+        "implement-issue",
+        "conductor"
       ]
     },
     "auto-merge-dependencies": {

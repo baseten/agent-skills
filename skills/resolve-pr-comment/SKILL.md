@@ -39,7 +39,9 @@ called out, ask which comment(s) to target before proceeding.
 
 ### 1. Gather context
 
-In a remote/web session (no `gh` CLI access), use the GitHub MCP tools:
+In a remote/web session (no `gh` CLI access), use the GitHub MCP tools — and
+read each author's type as *Replies held for approval* requires, which a bare
+login from them does not supply:
 
 - `mcp__github__pull_request_read` (method `get`) for PR metadata
 - `mcp__github__pull_request_read` (method `get_review_comments`) for review
@@ -140,7 +142,7 @@ git add <files>
 git commit -m "<concise description of what was fixed>"
 ```
 
-then push once, `git push -u origin <branch>`, after every thread's commit is made and step 3's checks have run; **no reply naming a SHA is posted before that push** (step 5), so the SHA resolves. Under a repair pass it is the pass's one push: a base refresh the pass supplied is merged in just before it, and step 3's checks run again on the result — where the refresh alone turns them red it is undone and handed back unmade. **Where the checks are still red at the end, the push still happens under a repair pass and no reply or resolution follows** (steps 5-6): the pass returns `FAILED` (`repair-pr`, *Recovery / checkpointing*). **Under a repair pass that supplied repair trailers** (`repair-pr`, *Recovery / checkpointing*), **every commit this skill makes carries them unchanged**, and the `[skip ci]` token where the pass supplied it — each per-thread commit, and a single commit where the user asked for one — beside any the repository requires.
+then push once, `git push -u origin <branch>`, after every thread's commit is made and step 3's checks have run; **no reply naming a SHA is posted before that push** (step 5), so the SHA resolves. Under a repair pass it is the pass's one push: a base refresh the pass supplied is made just before it by the PR's `branch-update` the pass passes — a rebase of the pass's head pushed with `--force-with-lease=<branch>:<the head the pass started from>`, the replies naming the rebased SHAs (a rebase that would drop a commit the pass made is not made: the refresh goes back unmade), or a merge where the value passed is `merge`, the integration PR's head always a merge — and step 3's checks run again on the result — where the refresh alone turns them red it is undone and handed back unmade. **Where the checks are still red at the end, the push still happens under a repair pass and no reply or resolution follows** (steps 5-6): the pass returns `FAILED` (`repair-pr`, *Recovery / checkpointing*). **Under a repair pass that supplied repair trailers** (`repair-pr`, *Recovery / checkpointing*), **every commit this skill makes carries them unchanged**, and the `[skip ci]` token where the pass supplied it — each per-thread commit, and a single commit where the user asked for one — beside any the repository requires.
 
 Commit messages should describe the
 fix, not reference the review comment ("Fix off-by-one in pagination", not
@@ -157,6 +159,13 @@ git rev-parse --short HEAD   # or HEAD~1, HEAD~2 as needed
 ```
 
 ### 5. Reply to each comment
+
+**Re-read each thread immediately before posting its reply, and again before
+resolving it** (step 6): a comment by anyone but this workflow that the deciding
+read did not see re-decides the thread's row from that read, and a person found
+there holds the reply and the resolution (*Replies held for approval*). A reply the
+owner already approved is posted as that section's approved path says, on its
+ask-time re-read.
 
 In a remote/web session, use `mcp__github__add_reply_to_pull_request_comment`
 with the resolved `owner`/`repo`, `pullNumber`, `commentId`, and a `body`
@@ -220,7 +229,10 @@ step 1. **A person is in the thread** where any comment in it, this workflow's
 own writes (by the write ids the caller passes) and a root the caller marked as its own review session's
 (`references/review-feedback.md`, *The thread-root test*) aside, has an author
 that is not a `Bot` and is not the invoking user
-(`references/posting-identity.md`, *The invoking user's account*). **A thread
+(`references/posting-identity.md`, *The invoking user's account*). **Where the read
+carries no author type** — a transport that returns a bare login — **no author
+counts as a `Bot`**: read the type from the GraphQL query of step 1 where the
+session can, and otherwise hold. A login's shape is never its type. **A thread
 whose only person is the invoking user takes the no-hold path**, whatever the
 key: they expect their own review fixed and resolved before a human reviewer
 sees the PR, and the footer still goes on what nobody read:
@@ -248,7 +260,8 @@ It is not the removed author gate come back.
 **The key** comes from the caller, which resolved it for this PR (`repair-pr`
 passes it). A person invoking this skill with none passed resolves it as a run
 start does (`references/agent-policy.md`, *Resolution*). **Only the repository's
-file can turn it on** (*Precedence* there): an invocation argument of `true`
+file can turn it on** (*Precedence* there), and an invocation argument can only
+turn it off: an argument of `true`
 with no such file still holds, and a caller that passed none, or a value that is
 not a boolean, gets `false`. **Trust a caller's `true` only where the source it
 carries is the repository's file**: any other source, or none, is `false`.
