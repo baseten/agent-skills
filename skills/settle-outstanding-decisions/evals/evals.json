@@ -16,13 +16,14 @@
     },
     {
       "id": 1,
-      "name": "fork-closes-the-chunk-and-moots",
-      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: five decisions qualify. D1 is a fork: 'keep PR A or PR B (delete the other)'. D2 ('which pagination style for PR B's list view') and D3 ('PR B's cache TTL') only matter if PR B survives. D4 and D5 are independent convention ratifications. AskUserQuestion allows 4 questions per call. Question: how do you chunk the walkthrough, and after the owner rules 'keep PR A, delete PR B', what happens to D2 and D3 and how does the output report them?",
-      "expected_output": "D1 is asked in a chunk that CLOSES after it (a fork and anything it can moot never share a call), even though the 4-question cap leaves room — the cap is a ceiling, not a target. After the ruling, re-run the qualifying bar: D2 and D3 are mooted (they fail 'the answer changes what happens next') and drop out, reported under Declined to ask as 'mooted by <the keep-PR-A ruling>' — a reason kept distinct from default/already-ruled/derivable, naming the ruling. D4/D5 form the next chunk.",
+      "name": "a-fork-is-asked-alone-and-moots",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: five decisions qualify. D1 is a fork: 'keep PR A or PR B (delete the other)'. D2 ('which pagination style for PR B's list view') and D3 ('PR B's cache TTL') only matter if PR B survives. D4 and D5 are independent convention ratifications. AskUserQuestion allows up to 4 questions per call. Question: how do you put these to the owner, and after the owner rules 'keep PR A, delete PR B', what happens to D2 and D3 and how does the output report them?",
+      "expected_output": "One question per call, never batched, even though the tool allows four: D1 first, alone (it can moot others). After the ruling, re-run the qualifying bar: D2 and D3 are mooted (they fail 'the answer changes what happens next') and drop out, reported under Declined to ask as 'mooted by <the keep-PR-A ruling>' - a reason kept distinct from default/already-ruled/derivable, naming the ruling. D4 and D5 are then asked one per call.",
       "assertions": [
-        "D1 does not share a call with D2 or D3 — the chunk closes after the fork despite room under the 4-question cap",
+        "D1 is asked alone - one question per call, never batched with D2 or D3 or anything else, despite the tool's cap of four",
         "After the ruling, D2 and D3 are retired via re-running the qualifying bar (mooted), not asked as written",
-        "The output reports D2/D3 under Declined to ask with the distinct 'mooted by <ruling>' reason naming the ruling, not collapsed into the other decline reasons"
+        "The output reports D2/D3 under Declined to ask with the distinct 'mooted by <ruling>' reason naming the ruling, not collapsed into the other decline reasons",
+        "D4 and D5 are asked one per call, not together"
       ],
       "files": []
     },
@@ -42,7 +43,7 @@
       "id": 3,
       "name": "free-text-answer-is-a-ruling",
       "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you asked 'exit 0 or exit 1 when the required secret is missing?' with those two options. The owner picks 'Other' and types: 'neither — retry three times with backoff, then page on-call; also we should add a health endpoint'. This introduces a third option with consequences they haven't seen, plus new scope. Question: how do you treat the free-text answer, what do you do next, and what does the recorded ruling contain?",
-      "expected_output": "The free-text answer is a ruling, not a formatting error: record it verbatim, never rounded to exit-0 or exit-1. Because it answers a different question than asked (third option, new scope), re-ask ONCE, reformulated to incorporate it so the recorded ruling is unambiguous — and never loop past that once. The recorded ruling (written immediately after the chunk, at the decision's site) contains the question as asked with its options, the owner's words verbatim, the explicit dated owner-ruling marker, and what it confirms or overturns.",
+      "expected_output": "The free-text answer is a ruling, not a formatting error: record it verbatim, never rounded to exit-0 or exit-1. Because it answers a different question than asked (third option, new scope), re-ask ONCE, reformulated to incorporate it so the recorded ruling is unambiguous — and never loop past that once. The recorded ruling (written immediately after the answer, at the decision's site) contains the question as asked with its options, the owner's words verbatim, the explicit dated owner-ruling marker, and what it confirms or overturns.",
       "assertions": [
         "The free-text answer is treated as a ruling and recorded verbatim — never rounded to the nearest offered option",
         "The answer re-asks exactly once, reformulated to incorporate the third option/new scope, with no further loops",
@@ -227,6 +228,19 @@
         "merge plus follow-up is not recommended",
         "the reason cites P1 or the irreversible financial action",
         "the owner still decides"
+      ],
+      "files": []
+    },
+    {
+      "id": 17,
+      "name": "the-question-repeats-its-links-names-its-issue-and-lists-options-once",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. One decision qualifies: on acme/api issue #812 'Retire the v1 export endpoint', PR #845 kept the deprecated /v1/export route alive behind a flag; the owner must choose keep, remove now, or remove after one release. The run's evidence favours removing after one release. A second decision, on acme/web #77 'Search box', is a style choice where the run has no evidence either way. Question: what exactly appears in chat and in each AskUserQuestion call?",
+      "expected_output": "One question per call. Before each, the chat repeats the item's heading and link line - for the first, acme/api, #812 and PR #845 as links - since links may not render inside the question; nothing else between, and the options are never listed in prose. The question text stands alone, naming the repository, the issue id and its title in plain words (acme/api #812 'Retire the v1 export endpoint'), with a worked example and what each option changes; header '#812'; 2-4 mutually exclusive options, the evidence-backed lean 'remove after one release' first and marked recommended. For #77 the question has no fake recommendation: it says the run has no lean. Each ruling is recorded at its site immediately after its answer.",
+      "assertions": [
+        "each decision is asked in its own call, one question per call",
+        "before each question the chat repeats the item's heading with its links, and does not list the options in prose",
+        "the question names repository, issue id and title in plain words, with the issue id as its header",
+        "the #812 question marks the evidence-backed lean recommended, and the #77 question offers no fake recommendation and says so"
       ],
       "files": []
     }

@@ -538,6 +538,31 @@
         "the run replies that its watch ended"
       ],
       "files": []
+    },
+    {
+      "id": 43,
+      "name": "a-quiet-post-settle-check-in-ends-with-its-final-status-line",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A conductor coordinates this run on acme/api issue #2011; the run kept its own watch (it could not hand off). PR #2040 settled at 12:00 UTC and waits on the owner's merge. The post-settle check-in fires at 16:00 and finds no delta; the next is due 20:00. The title is 'Worker: acme-api · #2011 bulk export'. Question: what does this turn print?",
+      "expected_output": "Nothing but its one line 'final status: settled, waiting on owner merge · <PR #2040 link>', which the conductor exchange requires as the last output of a turn that leaves the session idle - that is the quiet check-in's minimal line. No structured result, pass record or 'still waiting' message. The title gets only a suffix: 'Worker: acme-api · #2011 bulk export · quiet since 12:00 · 1 waiting on you · next 20:00', restored on the next reporting turn.",
+      "assertions": [
+        "the answer prints only the final status line",
+        "the answer does not print the structured result or a 'nothing new' message",
+        "the answer appends a quiet suffix to the title without changing the 'Worker: acme-api · #2011 bulk export' part"
+      ],
+      "files": []
+    },
+    {
+      "id": 44,
+      "name": "a-settled-run-ends-its-report-with-needs-you-by-action",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Standalone run on acme/api issue #2011, owner present, auto-merge off. The run has just settled: PR #2040 is finished and waits on the owner's merge, and one approval-pending reply on a reviewer's thread is held for the owner. The settle sequence produced its summary, and the walkthrough declined (auto-request-settle off). Question: what does the turn print, in what order?",
+      "expected_output": "The structured result first - the run's record, with its fields including supervise-prs's report and the settle outputs - under its own heading and closed by ---. Then the report ending the turn: 'Needs you' grouped by action - Merge: #2040; Approve drafts: the held reply, linked to its full text in the record, not printed in the line - with acme/api linked once and short #N refs linked; a 'Changed since' entry for the settle; then a link to issue #2011. The watch state is stated (still armed, what wakes it, how to stop it).",
+      "assertions": [
+        "the answer prints the structured result before the report, separated by ---",
+        "Needs you lists #2040 under Merge and the held reply under Approve drafts",
+        "the held reply's full text is not in the Needs you line but linked to where it is kept",
+        "the turn ends with a link to issue #2011"
+      ],
+      "files": []
     }
   ]
 }

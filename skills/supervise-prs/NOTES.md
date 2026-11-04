@@ -18,7 +18,7 @@ Extracted in #144 from the three skills that each supervised PRs in their own wo
 
 **Why absent budgets are zero (#144, owner's ruling B16):** this skill never reads the policy file, so a person invoking it bare either gets no pushes or gets pushes their repository's policy may have forbidden — the built-in 2 would override a committed 0 on the strength of an invocation that never mentioned the key. A repair is authority to push to someone's branch, and an unmentioned authority was not granted: the same reading as an unmentioned `auto-merge`. Classify-only still classifies and drafts, so nothing is lost but the pushes, and the report says why.
 
-**Why emission cadence is an input (#144, B3):** `backlog-orchestrator` prints every record every cycle, because a count that re-enters the transcript survives a compaction; the npm orchestrator emits only changes, because re-emitting unchanged state trains its reader to ignore it. Both are right for their reader, and neither is this skill's to decide.
+**Why emission cadence is an input (#144, B3):** `backlog-orchestrator` prints its record each cycle it changed and after a compaction, restart or clear, because a count that re-enters the transcript survives a compaction; the npm orchestrator emits only changes, because re-emitting unchanged state trains its reader to ignore it. Both are right for their reader, and neither is this skill's to decide.
 
 ## The per-PR record
 

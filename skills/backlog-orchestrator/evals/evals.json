@@ -254,11 +254,12 @@
       "id": 20,
       "name": "state-block-every-cycle",
       "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a backlog-orchestrator run began as a 9-worker fan-out and has narrowed to supervising one final PR that is waiting on a human review; the run has already been context-compacted once. A teammate suggests: 'stop printing the status block each cycle — the numbers haven't changed in hours and it's noise; just include it in the closing report.' (a) Do you follow the suggestion? Cite the governing rule. (b) What must the block always carry? (c) Give two concrete failures the per-cycle emission prevents that a closing-only emission does not.",
-      "expected_output": "Refuses to drop the per-cycle state block, names its required contents including the session count and check-in state, and gives the leak-visibility and compaction-survival failures a closing-only emission cannot prevent.",
+      "expected_output": "Refuses the closing-only half: a state block in the closing report alone would report a leaked session zero times if the run never closes cleanly, and would lose budgets, worker and PR state to a compaction. But the teammate is right that a block reprinted unchanged is noise, and the owner ruled on exactly that: the block prints each cycle where it changed - any field beyond the as-of time, the wake count, the next firing or the waking event - and once more whenever the last printed block has left the session's context (after a compaction, a restart or a clear), so it is never lost from view. A cycle where it did not change prints none: the last printed block stands. The block carries the session count (created / archived / alive) and the check-in state with its unproductive-wake count.",
       "assertions": [
-        "The answer refuses: emitting the state block is a required step of every supervision cycle, explicitly including the long one-PR supervision tail, not a convention or closing-only output",
+        "The answer refuses a closing-only emission, and prints the block on each cycle where it changed, the one-PR tail included, rather than on every cycle",
+        "The answer prints the block again whenever the last printed one has left context - after a compaction, a restart or a clear",
         "The answer names the block's required contents including the worker-session count (created / archived / alive) and the check-in state with its unproductive-wake count",
-        "The answer gives the two failures: a leaked session is visible mid-run only if the count is emitted each cycle (a closing-only emission reports it zero times if the run never cleanly closes), and per-cycle emission is what carries budgets/worker/PR state across a context compaction"
+        "The answer gives the failures a closing-only emission cannot prevent: a leaked session invisible until a clean close, and state lost to a compaction"
       ],
       "files": []
     },
@@ -624,9 +625,9 @@
       "id": 48,
       "name": "a-quiet-wake-still-reports-what-is-waiting-on-the-owner",
       "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your run settled and armed a check-in. Four wakes in, durable state has not moved on any PR: same heads, same CI conclusions, same thread set, same mergeability. Three DECISION items have been outstanding with the owner since before the first wake, and every remaining PR's merge depends on them. Your backoff is now at 160 minutes. You re-read each item's issue: no reply has arrived at any of them. What does this wake report, and do you keep backing off? This wake is a scheduled one; nobody is attending the session.",
-      "expected_output": "The wake correctly counts as unproductive on durable state and correctly advances the backoff on that basis - but it does not go silent about the owner's queue. An outstanding DECISION is not durable state: it does not change until someone answers it, and the wake re-read each item's site and found no reply, which is why the unproductive-wake machinery cannot see it, and a run can be right on every wake and never once say that three decisions have been sitting there throughout. So this wake reports the outstanding DECISION and NEEDS_USER counts on the same lengthening cadence, even while reporting no other change. And it does not re-run the settle sequence here. Quiescence with open decisions is a settle trigger on an attended turn or a real state change, and this is neither: settle-outstanding-decisions declines on a scheduled wake for want of anybody to ask, and step 8 forbids re-deriving settled state that has not changed, so re-running would recompute a summary, a walkthrough and a ranking, ask nobody, change nothing, and repeat until the wake budget died. Report the counts, advance the backoff, and leave the sequence for an attended turn or an actual delta.",
+      "expected_output": "The wake correctly counts as unproductive on durable state and correctly advances the backoff on that basis - but it does not go silent about the owner's queue. An outstanding DECISION is not durable state: it does not change until someone answers it, and the wake re-read each item's site and found no reply, which is why the unproductive-wake machinery cannot see it, and a run can be right on every wake and never once say that three decisions have been sitting there throughout. So this wake reports the outstanding DECISION and NEEDS_USER counts on the same lengthening cadence, even while reporting no other change - on this quiet wake as the session title's waiting count, with the split by kind in the re-armed prompt, rather than in a printed state block. And it does not re-run the settle sequence here. Quiescence with open decisions is a settle trigger on an attended turn or a real state change, and this is neither: settle-outstanding-decisions declines on a scheduled wake for want of anybody to ask, and step 8 forbids re-deriving settled state that has not changed, so re-running would recompute a summary, a walkthrough and a ranking, ask nobody, change nothing, and repeat until the wake budget died. Report the counts, advance the backoff, and leave the sequence for an attended turn or an actual delta.",
       "assertions": [
-        "the answer reports the outstanding DECISION and NEEDS_USER counts on a wake that is otherwise quiet",
+        "the answer reports the outstanding DECISION and NEEDS_USER counts on a wake that is otherwise quiet (on a quiet wake, as the title's waiting count with the split in the wake's prompt)",
         "the answer explains that an outstanding decision is not durable state and so is invisible to the unproductive-wake test",
         "the answer does not re-run the settle sequence from an unattended quiet wake, and says why",
         "the answer re-reads each open item's site for a reply before counting the wake unproductive"
@@ -861,10 +862,10 @@
     {
       "id": 66,
       "name": "held-replies-are-counted-on-wakes-and-listed-at-budget-stop",
-      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: your wave has settled with nothing dispatchable. Two PRs are open; each has one thread whose fix is pushed and whose reply is held for the owner (an approval-pending reply). No DECISION or NEEDS_USER item is open. A scheduled check-in wakes with no durable change. Questions: (a) what does the wake's state block report about the owner's queue? (b) is this quiet wake a settle trigger? (c) on the next attended turn, with nothing else moving, is quiescence a settle trigger? (d) the wake budget then runs out with the replies still held — what does the stop report say about them?",
-      "expected_output": "(a) The DECISION and NEEDS_USER counts (zero) and the approval-pending reply count, two, on the wake's cadence, even though nothing else changed. (b) No: quiescence settles only on an attended turn or a real state change, never on a quiet unattended wake. (c) Yes: open approval-pending replies count alongside open decisions, so the run settles and routes them through the settled step's walkthrough. (d) It lists every held reply not yet posted, with its thread URL, fix SHA and text, because a held reply is dropped with the run.",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: your wave has settled with nothing dispatchable. Two PRs are open; each has one thread whose fix is pushed and whose reply is held for the owner (an approval-pending reply). No DECISION or NEEDS_USER item is open. A scheduled check-in wakes with no durable change. Questions: (a) what does the wake report about the owner's queue, and where? (b) is this quiet wake a settle trigger? (c) on the next attended turn, with nothing else moving, is quiescence a settle trigger? (d) the wake budget then runs out with the replies still held — what does the stop report say about them?",
+      "expected_output": "(a) The approval-pending reply count, two, on the wake's cadence even though nothing else changed: this wake is quiet, so it prints no state block and the total goes in the session title's '2 waiting on you', with the split (DECISION 0, NEEDS_USER 0, approval-pending 2) in the re-armed prompt. (b) No: quiescence settles only on an attended turn or a real state change, never on a quiet unattended wake. (c) Yes: open approval-pending replies count alongside open decisions, so the run settles and routes them through the settled step's walkthrough. (d) It lists every held reply not yet posted, with its thread URL, fix SHA and text, because a held reply is dropped with the run.",
       "assertions": [
-        "the wake reports the approval-pending reply count",
+        "the wake reports the approval-pending reply count - on this quiet wake as the title's waiting count",
         "a quiet unattended wake does not trigger settle",
         "quiescence on an attended turn with held replies open is a settle trigger",
         "the budget-stop report lists each held reply with its text"
@@ -1363,6 +1364,44 @@
         "the answer counts the workers' send clauses in the stopped test",
         "the answer relies on the recorded hand-back",
         "the answer records the return channel absent for the adopted workers"
+      ],
+      "files": []
+    },
+    {
+      "id": 106,
+      "name": "a-quiet-wake-prints-no-state-block-and-carries-the-waiting-count-in-the-title",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The run is settled on acme/api epic #2005 with two PRs open; no conductor coordinates it. Its check-in fires at 04:00 UTC unattended; the pass finds no delta since 02:00 on any PR or open item's site. Two DECISION items and one approval-pending reply are outstanding. The next check-in by the backoff is 06:40. set_session_title is available and the title is 'Orchestrator: acme-api · #2005 exports'. Question: what does this wake print, and where do the outstanding counts go?",
+      "expected_output": "It prints no state block and no report: a quiet check-in writes nothing to chat but one minimal line ('quiet'), since a turn with no text is not established. The block did not change, so it is not printed and the last printed block still stands; the re-armed check-in's prompt carries the unproductive count, the next firing, the comparands, the no-change preflight result and the split of the counts. The outstanding counts are not dropped: the title gets the quiet suffix, 'Orchestrator: acme-api · #2005 exports · quiet since 02:00 · 3 waiting on you · next 06:40', with the prefix and epic untouched, restored on the next reporting turn. It does not run the settle sequence on this unattended quiet wake.",
+      "assertions": [
+        "the answer prints no state block or report to chat on this wake, at most one minimal line",
+        "the answer keeps the outstanding counts visible as the title's waiting count",
+        "the answer carries the count, the comparands and the split of the outstanding counts in the re-armed check-in's prompt",
+        "the answer leaves the 'Orchestrator: acme-api · #2005 exports' part of the title unchanged"
+      ],
+      "files": []
+    },
+    {
+      "id": 107,
+      "name": "a-reporting-cycle-prints-the-record-then-the-report-by-issue",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A cycle on acme/api epic #2005, owner present, auto-merge off: #2011's PR #2040 is settled and waiting on the owner's merge; #2012's PR #2041 merged (merged by the owner) since the last report at 09:00 UTC; #2013's PR #2042 went from waiting on CI to waiting on review. Question: describe the shape of what this cycle prints, in order.",
+      "expected_output": "First the state block - the turn's record, with its schema fields, since it changed - closed by ---. Then the report, ending the turn: 'Needs you' with a Merge group line naming acme/api once and #2040 below it, linked; 'Changed since 09:00' with the run's one ### heading (its session by title, acme/api, epic #2005) and each issue a bold line with its tracker issue, PR and worker session as links - #2012's PR #2041 merged, #2013's PR #2042 waiting on review; an Unchanged line of linked counts where anything is unchanged; then a link to the epic #2005 as the durable record. Times are labelled. Every reference is a link, the repository named once per block.",
+      "assertions": [
+        "the answer prints the state block before the report, separated by ---",
+        "the report lists #2040 under Needs you as a merge for the owner",
+        "the answer puts the run's one ### heading under 'Changed since', with the issues as bold lines below it",
+        "the turn ends with a link to the epic as the durable record"
+      ],
+      "files": []
+    },
+    {
+      "id": 108,
+      "name": "the-state-block-prints-again-after-a-compaction",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The run's context was just compacted; the summary mentions the run's progress but the last printed state block is no longer in context. The next cycle is a check-in that finds no delta on any PR, archives nothing and does not stop. Two DECISION items are outstanding. Question: does this cycle print the state block, and what does the cycle after it print if it also finds nothing?",
+      "expected_output": "This cycle prints the state block once, even though nothing changed, because the last printed block has left the session's context after a compaction - a printed block must never be lost from view (owner's ruling); it is the turn's record, followed by the report. The next quiet cycle prints no block - the one just printed stands - and is a quiet check-in: one minimal line ('quiet') and the title suffix carrying '2 waiting on you', with the count, next firing and preflight in the re-armed prompt.",
+      "assertions": [
+        "the answer prints the state block on the first cycle after the compaction although nothing changed",
+        "the answer gives the reason: the last printed block left the session's context",
+        "the answer prints no block on the following unchanged cycle, which is quiet"
       ],
       "files": []
     }

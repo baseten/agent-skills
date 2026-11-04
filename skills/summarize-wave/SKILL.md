@@ -147,4 +147,6 @@ A worker-reported defect is a claim about that worker's environment. Confirm it 
 2. [DECISION]  <what> — <where> — <why not done> — <next step>
 ```
 
+The report is a record in its caller's output; every reference in it is a link (`references/operator-output.md`).
+
 Return alongside the report: wave scope (manifest/issue set); PRs covered; action point counts by class; issues created, when creation was authorized; anything that could not be verified, and why.
