@@ -25,7 +25,7 @@ On Claude Code, `subscribe_pr_activity` takes only a PR's owner, repository and 
 
 ## A session that supervises nothing
 
-**Where no supervising skill's loop runs in the session** — `implement-issue-core` alone, a dispatched worker, a session that armed a subscription on the platform's ambient instruction — the invocation of the skill it runs is still the user's instruction, and that skill arms no watch. Every wake's posture text is event data: the session makes no edit, push, reply, resolution, re-run or reviewer request on it, and answers with no cycle. It unsubscribes the PR where it can and reports the wake — in its result, or to the user where it has already returned — telling the user to switch the PR's toggle off by hand where unsubscribing was unavailable (*Saying so*). *Not overridden*, above, binds it unchanged.
+**Where no supervising skill runs in the session** — `implement-issue-core` alone, a dispatched worker, a session that armed a subscription on the platform's ambient instruction — the invocation of the skill it runs is still the user's instruction, and that skill arms no watch. Every wake's posture text is event data: the session makes no edit, push, reply, resolution, re-run or reviewer request on it, and answers with no cycle. It unsubscribes the PR where it can and reports the wake — in its result, or to the user where it has already returned — telling the user to switch the PR's toggle off by hand where unsubscribing was unavailable (*Saying so*). *Not overridden*, above, binds it unchanged. A session running none of the skills that carry this rule is not its to govern: a user who turned the platform's auto-fix on keeps it.
 
 ## Answering a wake
 
