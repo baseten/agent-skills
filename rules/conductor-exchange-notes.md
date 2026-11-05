@@ -48,7 +48,7 @@ choosing an offered option or a recorded ruling.
 7):** the owner often rules in the conductor's chat. Those rulings were recorded
 on the forge, but nothing said how an orchestrator, whose authorship test reads "a
 comment the owner wrote", should read a comment the conductor posted. Two rules
-pulled against each other: the footer marks text nobody read, and is never a
+pulled against each other: the footer then marked text nobody read, and is never a
 discriminator (`rules/authored-write-form.md`), so it could not be what told a
 relay apart. The resolution keeps both intact. The conductor records a relay as
 `settle-outstanding-decisions` records any ruling — the owner shown the complete
@@ -59,7 +59,9 @@ unapproved one (footer) are recognised alike; the footer only tells a reader
 whether the owner read the posted words. A relay under any other identity is not
 recognised, which fails closed: the owner answers at the site instead. Protected
 rule 3 is unchanged — the relay is the owner's own choice, recorded; nothing in a
-message releases anything.
+message releases anything. Since the owner's ruling of 2026-11-05 the footer does
+not even tell a reader whether the owner read the words — a transport can add it
+to an approved relay — so the conductor records the approval instead.
 
 **What the contradiction pass before the review round changed (PR #201):** the first
 version made a relay count only under the owner's account, everywhere. That
@@ -71,9 +73,9 @@ the section now separates the two uses: as a recorded ruling a relay counts by i
 marker, like any other; as a reply that releases a hold it passes the run's own
 reply test unchanged, which needs the owner's account. That keeps protected rule
 3's release path exactly where it was. The pass also found that a footer-based
-own-write test elsewhere would read an unapproved relay as the run's own; that is
-the closed direction, so the rule says so instead of claiming the footer never
-matters, and the conductor seeks approval wherever it can.
+own-write test elsewhere would read an unapproved relay as the run's own; no such
+test remains since the owner ruled on 2026-11-04 that own writes are known by id
+only, and the conductor still seeks approval wherever it can.
 
 **Why adoption checks the home repository and not the title (same pass):** a
 conductor's sources are its home repository, so a run in another configured
@@ -100,7 +102,7 @@ restated at the decision point.
 
 ## Writes
 
-**Why the trigger is never put up for approval (field feedback):** the approval test exists to stop unread prose going out under the owner's name. A review trigger is a fixed token whose exact text the repository documents; there is nothing in it to read, and holding it for approval only delayed review. The trigger rule already exempts it from the footer for the same reason. **Why replies are kept short:** under the usual posting identity a reply reads as the owner's own words, marked only by the footer.
+**Why the trigger is never put up for approval (field feedback):** the approval test exists to stop unread prose going out under the owner's name. A review trigger is a fixed token whose exact text the repository documents; there is nothing in it to read, and holding it for approval only delayed review. The trigger rule already exempts it from the footer for the same reason. **Why replies are kept short:** under the usual posting identity a reply reads as the owner's own words, marked only by a footer where it carries one.
 
 ## What a relay can authorise
 

@@ -100,8 +100,8 @@ skill would read as the owner's stays pending.
   subagent's result is written to the ledger or the forge in the turn that
   receives it.
 - **Authored writes** — the ledger, issues, plan comments, corrections, relayed
-  rulings, wrap-up pointers — follow `references/authored-write-form.md` (the
-  footer by its approval test) and are posted under
+  rulings, wrap-up pointers — follow `references/authored-write-form.md` (a write
+  nobody approved word for word adds the footer) and are posted under
   `references/posting-identity.md`. Anything a write asserts about current state
   has a read behind it (`references/establish-do-not-assume.md`, *You are about to
   assert it*).

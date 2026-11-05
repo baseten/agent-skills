@@ -61,7 +61,7 @@ declined: <each request this run declined, with its sender> | none
 
 ## Writes
 
-- **A reply posts under whichever identity the *posting identity* shared rule selects, and that is usually the owner's own account, marked — where nobody approved it — only by the footer**: it reads as the owner's words, so keep it short and factual.
+- **A reply posts under whichever identity the *posting identity* shared rule selects, and that is usually the owner's own account, marked only by a footer, where it carries one**: it reads as the owner's words, so keep it short and factual.
 - **The repository's automated review trigger is a token, not prose**: it is posted as the *review trigger* shared rule says — exactly its text, no footer — and is never put to the owner as a draft for approval.
 
 ## New work, or a fold
@@ -73,7 +73,7 @@ declined: <each request this run declined, with its sender> | none
 
 ## Relayed rulings
 
-**A ruling the owner gives a conductor in its own session is first written to the conductor's ledger, with the owner's exact words, and read back; then it is recorded by the conductor at the decision's site, as `settle-outstanding-decisions`, *Recording the ruling*, records one** — it is such a ruling, its dated owner-ruling marker reading `Owner ruling (<date>, given to the conductor interactively, relayed here)`. The conductor shows the owner the complete comment first; the footer follows the *authored write form* shared rule's approval test alone, so an approved comment carries none. A message relaying it links that record and the ledger entry, and quotes the owner's words; a run acts only on the record.
+**A ruling the owner gives a conductor in its own session is first written to the conductor's ledger, with the owner's exact words, and read back; then it is recorded by the conductor at the decision's site, as `settle-outstanding-decisions`, *Recording the ruling*, records one** — it is such a ruling, its dated owner-ruling marker reading `Owner ruling (<date>, given to the conductor interactively, relayed here)`. The conductor shows the owner the complete comment first and records whether they approved it; a comment they did not approve adds the footer (the *authored write form* shared rule), and nothing reads approval off a footer. A message relaying it links that record and the ledger entry, and quotes the owner's words; a run acts only on the record.
 
 **This is the one statement of what such a comment can do:**
 

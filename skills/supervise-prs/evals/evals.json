@@ -709,13 +709,13 @@
     {
       "id": 56,
       "name": "a-footer-appending-transport-confirms-by-run-and-strips-before-a-body-edit",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your posting-identity map records the GitHub MCP server's pair as appending its own footer to every write. (a) You post the review trigger through it on PR #130; the read-back shows the trigger text plus the server's footer. Ninety seconds later a check run starts on the head; a minute after that, the automated reviewer reacts to the trigger comment. Is the trigger confirmed, and by which of those? (b) Later, the PR still a draft, the settle's body reconcile edits the PR body through the same pair; the body currently ends with that server's exact footer text, recorded on the map entry. What do you write? (c) The owner approves a one-line held reply, which you post through the same pair. What do you report about its footer?",
-      "expected_output": "(a) Confirmed by the reaction, not the check run. Through a footer-appending transport a trigger is confirmed only by a reaction or reply to the trigger comment, or by a review on the head where nothing else requested one; a check run alone can belong to another round. The read-back alone bars nothing. (b) Strip that transport's exact known footer text from the end of the body before writing, and no other trailing text, so the transport's own appended footer does not double it. (c) The approved reply goes out without the run's own footer, but the transport appends one anyway, so report that the posted reply carries the transport's footer, never that it posted none.",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your posting-identity map records the GitHub MCP server's pair as appending its own footer to every write. (a) You post the review trigger through it on PR #130; the read-back shows the trigger text plus the server's footer. Ninety seconds later a check run starts on the head; a minute after that, the automated reviewer reacts to the trigger comment. Is the trigger confirmed, and by which of those? (b) Later, the PR still a draft, the settle's body reconcile edits the PR body through the same pair; the body currently ends with that server's exact footer text, recorded on the map entry. What do you write? (c) The owner approves a one-line held reply, which you post through the same pair. What do you record for it, and what does its footer change?",
+      "expected_output": "(a) Confirmed by the reaction, not the check run. Through a footer-appending transport a trigger is confirmed only by a reaction or reply to the trigger comment, or by a review on the head where nothing else requested one; a check run alone can belong to another round. The read-back alone bars nothing. (b) Strip that transport's exact known footer text from the end of the body before writing, and no other trailing text, so the transport's own appended footer does not double it. (c) The approved reply is posted and the transport appends its footer; it may carry it. Record it as approved with its write id: the footer changes nothing, and never makes it read as unapproved or re-held.",
       "assertions": [
         "the check run alone does not confirm the trigger",
         "the reaction to the trigger comment confirms it",
         "the body edit strips only the transport's exact footer before writing",
-        "the approved reply is reported as carrying the transport's footer"
+        "the approved reply is recorded as approved with its write id, and the transport's footer is not treated as marking it unapproved"
       ],
       "files": []
     },
@@ -1394,6 +1394,18 @@
         "the answer does not carry the gate record to H2",
         "the answer reruns the gate",
         "the answer owes a fresh review round"
+      ],
+      "files": []
+    },
+    {
+      "id": 112,
+      "name": "a-rebuild-reads-no-follow-ups-off-footered-replies",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Adopting PR acme/api#88 after a restart, with no counters and no follow-ups passed; review-defer-severity is P3 from the repository's file, with follow-up site #600. A thread rooted by chatgpt-codex-connector[bot] carries a reply from the owner's account reading `Deferred to https://github.com/acme/api/issues/640 - P3.` and ending with the attribution footer. On the new head the bot re-raises the same P3 finding at the same location in a new thread. Questions: (a) what does Adopt record as follow-ups filed? (b) what is passed for the re-raised finding, and what follows?",
+      "expected_output": "(a) None. A `Deferred to` reply is this workflow's own only by a write id its record holds, and a rebuild holds none; the footer is not evidence - own writes are known by id, never by footer or content, and anyone can paste one. Only follow-ups the caller passed are known, and none were. (b) The review pass is dispatched with no follow-ups filed, so resolve-pr-comment does not link #640: it files a new follow-up under #600, replies `Deferred to <new issue URL> - P3.`, footered, and resolves the thread; the new issue is recorded as filed.",
+      "assertions": [
+        "the answer recovers no follow-ups from the footered reply",
+        "the answer says the footer is not evidence the reply is the workflow's own",
+        "the answer files the re-raised finding again rather than linking the issue read off the reply"
       ],
       "files": []
     }

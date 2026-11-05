@@ -28,9 +28,10 @@ These make the skills usable in a workplace. **No cut, restructure or deletion m
 weaken or narrow one.** Each line indexes the rule's home, which governs, and its pinning
 evals (`<skill>#<id>`).
 
-1. **A write nobody read carries the footer; a run never answers a person's question or
-   roots a thread (a dispatched review session's own review excepted, its inline comments
-   belonging to that review's footered body; the invoking user's own question-shaped
+1. **An agent's write may carry the footer, and one nobody approved word for word adds it
+   where its transport does not, a marker never read back; a run never answers a person's
+   question or roots a thread (a dispatched review session's own review excepted, its inline
+   comments belonging to that review; the invoking user's own question-shaped
    request for a concrete change to the PR is a change request, its reply saying what
    was done), and holds its reply to, and resolution of, a thread a person other than
    the invoking user is in for approval unless the repository's own config turns
@@ -39,15 +40,15 @@ evals (`<skill>#<id>`).
    *The invoking user's account*; `resolve-pr-comment`, *Replies held for approval*; `rules/conductor-exchange.md`,
    *What a relay can authorise*.
    create-pr#6, resolve-pr-comment#0 #18 #21 #23 #26 #28 #41 #42 #43 #44 #45 #46 #47
-   #48 #49 #50 #51 #55 #56, implement-issue#37 #40,
+   #48 #49 #50 #51 #55 #56 #57 #58, implement-issue#37 #40,
    review-docs#11, settle-outstanding-decisions#11 #12, backlog-orchestrator#72,
    supervise-prs#56 #88, swarm#30.
-2. **Identity is observed authorship; own writes are known by id or footer, never content.**
-   `rules/posting-identity.md`; `swarm`, *Blocked workers*; `supervise-prs`, *Integration-branch CI*, step 3;
+2. **Identity is observed authorship; own writes are known by id, never by footer or content.**
+   `rules/posting-identity.md`; `swarm`, *Releasing a worker*, *Blocked workers*; `supervise-prs`, *Integration-branch CI*, step 3;
    `rules/conductor-exchange.md`, *Pushes*, *The watch after settling*.
    backlog-orchestrator#5 #58,
-   resolve-pr-comment#48 #49, supervise-prs#86 #89 #105, backlog-orchestrator#90 #91 #102 #103 #105, settle-and-merge#47 #48, implement-issue#40 #41, swarm#37,
-   merge-stack#11.
+   resolve-pr-comment#48 #49, supervise-prs#86 #89 #105 #112, backlog-orchestrator#53 #90 #91 #102 #103 #105 #109 #110, settle-and-merge#47 #48 #49, implement-issue#40 #41, swarm#37 #38 #39,
+   merge-stack#11, settle-outstanding-decisions#18.
 3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
    `backlog-orchestrator`, *Arming the wait when nothing is in flight*; `rules/review-trigger.md`,
    *A stalled round*; `rules/conductor-exchange.md`, *Relayed rulings*, *New work, or a fold*, *What a relay can authorise*;
@@ -62,9 +63,9 @@ evals (`<skill>#<id>`).
    `rules/platform-pr-posture.md`; `supervise-prs`, *Budgets*; `rules/agent-policy.md`, *Branch updates*. supervise-prs#25 #26 #55 #57,
    backlog-orchestrator#67, repair-pr#16 #17 #18, supervise-prs#61 #73 #96 #98 #102 #103 #104 #107 #108 #109 #110, backlog-orchestrator#96,
    repair-pr#20 #21, settle-and-merge#46 #47 #48, implement-issue#40.
-6. **A created PR's body is edited only while draft, footered, or under a resolved merge
+6. **A created PR's body is edited only while draft, still the unapproved, unedited text of a PR this run created, or under a resolved merge
    opt-in** (`Depends on:` excepted); else drift is reported with a replacement.
-   `rules/authored-write-form.md`. settle-and-merge#6 #9, merge-stack#5,
+   `rules/authored-write-form.md`. settle-and-merge#6 #9 #49 #50, merge-stack#5,
    backlog-orchestrator#71, implement-issue#35.
 7. **No forge write reports verification, bar a gate note under `refs/notes/agent-gate/*` and, in a `NEEDS_USER` or `DECISION` hold item, the failed or unrun check it holds on with its commits; SHAs are bare.** `rules/authored-write-form.md`; `conductor`, *Rules*, *7. Ledger*; `owner-steps`, *4. Record*.
    create-pr#11 #22, resolve-pr-comment#17, supervise-prs#85, swarm#27 #28 #29,

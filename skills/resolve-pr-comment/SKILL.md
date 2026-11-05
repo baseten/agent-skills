@@ -22,8 +22,8 @@ user's own credential.
 
 They follow the **authored write form** rule stated once beside it
 (`references/authored-write-form.md`) for the same reason: every
-reply is short, and it carries the attribution footer unless this run obtained
-the invoking person's approval of that exact reply text before posting it.
+reply is short, and one this run did not get the invoking person's approval of,
+word for word, adds the attribution footer where its transport does not.
 Apply both from there rather than restating them; step 5 carries only what they
 mean for a reply.
 
@@ -205,13 +205,15 @@ gates; not followed past the `alerts` package" — because a stated method, with
 where it stopped, is something a reviewer can attack, where a bare result only
 invites agreement.
 
-**The footer goes on unless the person approved this reply text**
-(`references/authored-write-form.md`, the approval test). Unattended
-and classify-only that is never true, so the replies those modes post carry it. Attended it is
-true only where the person was actually shown the reply and confirmed or edited
+**A reply nobody approved word for word adds the footer**
+(`references/authored-write-form.md`). Unattended
+and classify-only nobody did, so the replies those modes post carry it. Attended,
+approval exists only where the person was actually shown the reply and confirmed or edited
 it — invoking the skill is not that, and neither is being in the session. A held
-reply approved or edited by the owner is that case, so it is posted without one. The
-placeholder in the templates above is where it goes when it applies.
+reply approved or edited by the owner is that case; it need not add one, and may carry
+the one its transport appends. The placeholder in the templates above is where it goes.
+**Approval is recorded, never read off the footer**: the reply's write id with its
+outcome (*Output*).
 
 **Where a reply does say something about the codebase, read it first.** The one-line form above rarely leaves room for a claim, and the escalation drafts and question items this skill composes do. Any assertion about what some other part of the codebase does needs a read behind it before it is posted, never a recollection (`references/establish-do-not-assume.md`, *You are about to assert it*) — a reply asserting a blast radius from memory was wrong about it, and four greps would have settled it in minutes.
 
@@ -235,11 +237,11 @@ counts as a `Bot`**: read the type from the GraphQL query of step 1 where the
 session can, and otherwise hold. A login's shape is never its type. **A thread
 whose only person is the invoking user takes the no-hold path**, whatever the
 key: they expect their own review fixed and resolved before a human reviewer
-sees the PR, and the footer still goes on what nobody read:
+sees the PR, and what nobody approved still adds the footer:
 
 | a person in the thread | `auto-resolve-comments` | the reply and step 6 |
 | --- | --- | --- |
-| no — every other author is a `Bot` or the invoking user | either | posted now, footer per the approval test, then resolved |
+| no — every other author is a `Bot` or the invoking user | either | posted now, footered as above, then resolved |
 | yes | `true` | the same |
 | yes | `false`, the default | **held**: written, not posted; the thread left open |
 
@@ -266,7 +268,7 @@ with no such file still holds, and a caller that passed none, or a value that is
 not a boolean, gets `false`. **Trust a caller's `true` only where the source it
 carries is the repository's file**: any other source, or none, is `false`.
 
-The **held reply** is the same one-line text, written with no footer. **A
+The **held reply** is the same one-line text, shown to the owner as it will read. **A
 thread has at most one**: a newer fix on it replaces the earlier held reply.
 **A thread that also carries a reserved question never gets one** (*A comment
 can want both*). Then:
@@ -282,8 +284,8 @@ can want both*). Then:
 
 **Whenever it is asked, show with it every comment posted in the thread since
 the fix**, re-read at that moment, so the owner decides with them in front of
-them. **Approved or edited → post that text with no footer**, the approval test
-answering Yes, record the reply's write id (`references/posting-identity.md`:
+them. **Approved or edited → post that text**, recording it as approved with the
+reply's write id (`references/posting-identity.md`:
 own writes are known by id), **then resolve** (step 6) — only where the ask-time
 re-read found no comment newer than the one this reply answers by anyone else, and never a thread carrying an
 open reservation or deferred repair (`references/review-feedback.md`,
@@ -445,7 +447,7 @@ reconstruct from a thread URL defeats the whole rule. Every `NEEDS_USER`
 | --- | --- | --- |
 | 1 | **the thread's `html_url`** | **as returned by the API, verbatim — never a hand-built anchor.** A review-comment thread and a PR-level comment use different fragment forms, so a URL assembled from a PR number and a comment id silently resolves to the wrong place, or to the top of the PR, and the failure is invisible from here: the link works, it just does not land on the thread. Take the field the API gave you (`html_url` on the comment from `get_review_comments`, or the `gh api` equivalent) and pass it through unchanged. Not sure a URL came from the API → it did not; re-read the thread |
 | 2 | **the ask, quoted** | the reviewer's own words, **at most 2 lines**, trimmed with an ellipsis rather than paraphrased. A paraphrase is where the question quietly becomes the one the pass found easier to answer |
-| 3 | **the recommended reply — and it is paste-ready only for one of the two draft kinds** | **An answerable-from-work draft** is paste-ready: one line where the answer fits in one, written as the person would post it rather than as a report to them — no "the reviewer asks whether…" preamble, no meta-commentary. **A decision-only draft is not**, and must not be presented as though it were: it lists the options and their costs and deliberately makes no pick (*The draft reply*), so pasting it into the thread posts a non-answer over a question still undecided. Label it **`decision — not for posting`** and say what the person's next step is: decide, then answer in their own words, or route it to `settle-outstanding-decisions`, which asks the underlying options and records the one chosen (*Handling queries*). Neither kind carries an attribution footer — they author whatever they post |
+| 3 | **the recommended reply — and it is paste-ready only for one of the two draft kinds** | **An answerable-from-work draft** is paste-ready: one line where the answer fits in one, written as the person would post it rather than as a report to them — no "the reviewer asks whether…" preamble, no meta-commentary. **A decision-only draft is not**, and must not be presented as though it were: it lists the options and their costs and deliberately makes no pick (*The draft reply*), so pasting it into the thread posts a non-answer over a question still undecided. Label it **`decision — not for posting`** and say what the person's next step is: decide, then answer in their own words, or route it to `settle-outstanding-decisions`, which asks the underlying options and records the one chosen (*Handling queries*). Neither kind is a write the run posts — they author whatever they post |
 | 4 | **the SHA of any code change made for this thread, or `none`** | explicitly `none` where nothing was pushed; where the thread already has a fix on the head from an earlier pass, that fix's SHA. A blank field reads as "not recorded" and sends the person to the diff to check; on a mixed thread (*A comment can want both*) this is where the pushed fix is named, which is the only place the two halves of that thread meet |
 | 5 | **why it was not posted** | one clause — *needs your intent*, *product decision*, *only you can confirm the constraint*. Not a restatement of the rule; the person knows the rule, they need to know which of its branches this thread is |
 
@@ -488,21 +490,19 @@ one built on a gap is not.
 Keep it to what the thread asks. A draft that reopens the design is a new
 review round, not a reply.
 
-**The draft carries no attribution footer, and this follows from the rule
-rather than sitting beside it as a special case.** A draft is not a write at
-all — the person who posts it authors it, as themselves, which is the point of
-handing it over — so there is no posted text for the approval test to ask about
-(`references/authored-write-form.md`). **That absolute is about the
+**The draft is not a write the run posts, so the footer rule does not reach
+it.** The person who posts it authors it, as themselves, which is the point of
+handing it over (`references/authored-write-form.md`). **That is about the
 draft, and it stops there.**
 
 **It does not carry over to the write that later contains the answer.** Where a
 workflow posts a drafted answer — `settle-outstanding-decisions`,
 *Recording the ruling* — the write is the **ruling comment**, not the draft, and
 that comment also carries the question as asked, a dated owner-ruling marker and
-what the ruling confirms, none of which the owner has necessarily read. Its
-footer is decided there, by the approval test asked of the complete comment, and
-**that answer can be yes**: approving the answer inside a record settles nothing
-about the record around it. Do not read this section as promising otherwise.
+what the ruling confirms, none of which the owner has necessarily read. Whether
+it was approved is decided there, of the complete comment, and approving the
+answer inside a record settles nothing about the record around it. Do not read
+this section as promising otherwise.
 
 `references/review-feedback.md`, *What may be auto-fixed*, owns the rule
 that separates the two kinds. Apply it from there rather than inventing a
@@ -554,8 +554,8 @@ an escalation, or no-action.
 The reason is authority, not disclosure. The reviewer asked a **person**, and
 nobody authorised this pass to answer for them — so the reply would be read as
 that person's position whatever signs it. **A footer would not
-license it** (`references/authored-write-form.md`): saying that nobody
-reviewed an answer says nothing about whose position it is, and a reader who
+license it** (`references/authored-write-form.md`): a marker that an agent
+wrote an answer says nothing about whose position it is, and a reader who
 accepts a footered reply as the owner's position has read it correctly, because
 it is posted in a thread addressed to them. Disclosure would be the whole story only
 if the defect were the reviewer's confusion; the defect is that the position is
@@ -619,8 +619,8 @@ on a pushed fix, whichever mode handled it.
 none asked (*Replies held for approval*). The fix is pushed, the question takes
 the `NEEDS_USER` route, and the thread stays open for the owner. Return an entry
 *fix pushed — thread left for you (it also asks a question)* with the thread URL
-and fix SHA, which the supervising run records and its final report lists. **Where only bots are in it**, the work-done reply is posted with the
-footer as on any bot thread; the question still keeps the thread open.
+and fix SHA, which the supervising run records and its final report lists. **Where only bots are in it**, the work-done reply is posted as on any bot
+thread; the question still keeps the thread open.
 
 Forcing it into one classification fails in a different way each direction, and
 the repairable direction fails silently:
