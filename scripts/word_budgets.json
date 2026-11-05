@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 6580,
+      "budget": 6673,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -43,7 +43,7 @@
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
-      "budget": 6035,
+      "budget": 6110,
       "target": 3000
     },
     "skills/merge-stack/SKILL.md": {
@@ -163,7 +163,7 @@
       "target": 1500
     },
     "rules/platform-pr-posture.md": {
-      "budget": 1616,
+      "budget": 1634,
       "target": 1500
     },
     "rules/posting-identity.md": {

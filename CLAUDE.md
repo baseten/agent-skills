@@ -66,7 +66,7 @@ evals (`<skill>#<id>`).
 6. **A created PR's body is edited only while draft, still the unapproved, unedited text of a PR this run created, or under a resolved merge
    opt-in** (`Depends on:` excepted); else drift is reported with a replacement.
    `rules/authored-write-form.md`. settle-and-merge#6 #9 #49 #50, merge-stack#5,
-   backlog-orchestrator#71, implement-issue#35.
+   backlog-orchestrator#71, implement-issue#35, conductor#57.
 7. **No forge write reports verification, bar a gate note under `refs/notes/agent-gate/*` and, in a `NEEDS_USER` or `DECISION` hold item, the failed or unrun check it holds on with its commits; SHAs are bare.** `rules/authored-write-form.md`; `conductor`, *Rules*, *7. Ledger*; `owner-steps`, *4. Record*.
    create-pr#11 #22, resolve-pr-comment#17, supervise-prs#85, swarm#27 #28 #29,
    backlog-orchestrator#92 #93 #94 #97, settle-and-merge#35 #37 #38, conductor#24 #32, owner-steps#6.
