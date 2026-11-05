@@ -9,7 +9,7 @@ each skill: the audience is a person editing the rule, who has this checkout.
 checks, keys, backfills, console actions — were surfacing in PR bodies, wrap-up
 comments and chat, where nothing tracked whether they had been done and the next
 session could not find them. The owner asked for every one to be filed as a
-`[Manual]` issue under the repository's manual-steps epic. Two skills produce these issues (`conductor`, `backlog-orchestrator`) and
+`[Manual]` issue under the repository's manual-steps epic. Three skills produce these issues (`conductor`, `backlog-orchestrator`, and `plan-feature` since 2026-11-04) and
 one consumes them (`owner-steps`), so the form is stated once here rather than
 three times; a producer that drifted from the consumer's expectations would file
 issues `owner-steps` cannot walk.

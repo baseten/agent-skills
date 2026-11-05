@@ -120,7 +120,9 @@ When the steps are done:
    or issue-text correction — never an output or how a check came out;
 3. **close the issue** as completed where *Done when* holds; otherwise leave it
    open and say what is still open;
-4. **comment on each issue it unblocks** that the step is done — for example
+4. **comment on each issue it unblocks** — drafted for the owner where the issue is
+   outside this invocation's scope (`references/authored-write-form.md`, *Issues the
+   run did not create*) — that the step is done — for example
    "backfill complete" — linking this issue, stating no new dependency, and
    answering no open question or hold item there; that is the owner's to answer.
 

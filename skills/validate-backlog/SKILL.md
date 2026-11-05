@@ -29,7 +29,7 @@ Checks, in order:
 6. scan issue bodies/comments for textual dependency phrases and linked issue URLs (`blocked by`, `depends on`, `after`, `requires`, `prerequisite`, `must land first`, and equivalents);
 7. compare structured dependencies against text-described dependencies;
 8. detect cycles, missing issue targets, contradictory ordering, closed/cancelled prerequisite inconsistencies, orphaned children, duplicates, and links outside the authorized scope;
-9. distinguish an external prerequisite from an authorized implementation issue;
+9. distinguish an external prerequisite — a `[Manual]` issue, or a stub whose first line begins `Stub:` — from an authorized implementation issue;
 10. report whether the graph is safe to execute without guessing;
 11. **re-check every citation an issue makes into another repository** — this is the one code read a shallow pass performs, and the disposition rules under *Shallow mode* decide what each outcome means.
 

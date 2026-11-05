@@ -130,6 +130,8 @@ and numbered prose lists, were answered partly or out of order.
 satisfies its fork rule by construction, so its chunk mechanics were cut (its
 NOTES, *Ordering*).
 
+**Why the planners' blocking questions are batched (owner's ruling, 2026-11-04):** a planner's blocking question is one the document cannot be drafted without, so each arrives at the same point, before drafting, and none's answer changes whether another is asked — the condition the one-per-call rule exists for does not hold. Prior art measured it: a planning tool's intake rejections were mostly questions answered through the approval gate, and asking every open question in one structured call, each with a *defer* option, before drafting removed that round trip in every trial. Open-ended design discussion keeps one per call, because each answer reshapes the next question. The exception names its two skills so that it reaches no other consumer — the `conductor` and the settle steps still ask one per call.
+
 **Why a question is asked where the flow needs it (review of #204):** the first
 draft put every question after the report, which breaks flows that need an answer
 mid-turn: `settle-and-merge` runs the walkthrough before the merge gate, and the
@@ -247,6 +249,6 @@ linked, works on every surface.
 `conductor`, `backlog-orchestrator`, `implement-issue`, `supervise-prs` when
 invoked directly — and the settle steps whose output lands in their chat:
 `settle-and-merge`, `settle-outstanding-decisions` and `summarize-wave`.
-`ship-branch` holds no rule of its own and inherits it through `implement-issue`.
+`ship-branch` holds no rule of its own and inherits it through `implement-issue`. `write-spec` and `plan-feature` apply its links and *Questions* (2026-11-04); they write no report, since a planning turn ends with a draft, a question or a hand-off line.
 `npm-dependency-upgrade-orchestrator` prints to the owner too, but was outside the
 owner's list; adopting it is a follow-up, tracked on #202.

@@ -1,0 +1,289 @@
+{
+  "skill_name": "plan-feature",
+  "description": "Decision scenarios for planning one parent into PR-sized child issues.",
+  "companions": [],
+  "evals": [
+    {
+      "id": 0,
+      "name": "blocking-questions-together-design-one-at-a-time",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Parent: a GitHub epic for saved views on acme/web and acme/api. Before drafting you find two things the plan cannot proceed without (whether views are per-user or shared, which decides the API's shape; whether the deals list or every list gets them, which decides how many children exist) and one open design choice (store view state in the URL or in the API). Question: how do you ask these?",
+      "expected_output": "The two blocking questions are asked together, once, before drafting, in one structured call (at most four per call), each with a defer option. A deferred one is listed in the plan document and any child it shapes is drafted as a spike or left out, saying which. The URL-versus-API choice is design discussion, asked separately, one question at a time with the recommendation first.",
+      "assertions": [
+        "the answer asks both blocking questions in one call before drafting",
+        "each blocking question has a defer option",
+        "the design choice is asked on its own, not in the blocking batch"
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "a-rejection-amends-the-plan-in-place",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your draft plan of six children is in the plan document on the epic. The owner replies: '3 and 4 are too small, merge them; 5 should ship dark behind a flag.' Question: what do you do and what do you show?",
+      "expected_output": "Amend the plan document in place — never regenerate it: merge 3 and 4 into one child, put 5 behind a flag with a rollout child if there is none, and re-check only the changed children with the fresh self-check subagent. Show only the changed section, under a short 'changes:' list whose last bullet names what was left untouched. Write no children until the owner's go.",
+      "assertions": [
+        "the answer edits the existing plan document rather than regenerating it",
+        "the answer shows only what changed with a changes list ending in what was untouched",
+        "the answer re-runs the self-check on the changed children",
+        "the answer writes no child issues before the go"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "a-spec-gap-hands-up-to-write-spec",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Planning the 'Team inbox' epic from its linked spec, you find the spec never says what happens to unassigned messages, and child 6 cannot be shaped without it. Question: what do you do?",
+      "expected_output": "Stop and return 'back to write-spec: the spec does not say what happens to unassigned messages, which child 6 depends on'. Do not decide it, do not add an assumption, and do not file child 6 as blocked on a decision: planning never patches around a spec gap.",
+      "assertions": [
+        "the answer returns a back to write-spec hand-up with the reason",
+        "the answer does not decide the behaviour itself or add an assumption",
+        "the answer does not write child 6 as a blocked or needs-decision issue"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "a-frontend-backend-pair-shares-the-contract",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository's policy has no feature-plan.child-kinds. A Linear product issue needs a new endpoint in acme/api and a picker in acme/web that calls it. The picker cannot work until the endpoint ships. Question: how are the two children related and what does each carry?",
+      "expected_output": "Both children are full (the default kind). The frontend child is blocked by the backend child — a real Linear blocked-by relation and a Blocked by line naming the URL — and the backend child is written first. The API contract, copied from the evidence source rather than composed, goes in both children's collapsed agent sections, so each implementing agent has it without reading the other.",
+      "assertions": [
+        "the frontend child is blocked by the backend child",
+        "the answer uses a real tracker relation for the dependency",
+        "the API contract appears in both children's agent sections"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "a-product-issue-with-no-engineering-work-gets-nothing",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Parent: a Linear project with eight product issues. One is 'Update the pricing page copy', owned by marketing, with no code change. Question: what does the plan do with it?",
+      "expected_output": "Say so in the plan — it has no engineering work — and write no child for it. It is not turned into a task, a manual step or a tracked dependency.",
+      "assertions": [
+        "the answer writes no child issue for the copy change",
+        "the answer states in the plan that it has no engineering work"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "the-agent-section-is-collapsed-per-tracker",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are about to write a full child on GitHub and another on Linear. Question: how is each child's body laid out, and how is the agent section collapsed on each tracker?",
+      "expected_output": "Each has a plain-language top section — problem, what changes for the user, acceptance, its one inline design frame, settled points, links — then the implementation section for agents: repo, files and symbols, decisions with reasons, approach, dependencies, the API contract where relevant, a check, out-of-scope items each naming its owning issue, and the SHA and date read. On GitHub that section is a <details> block with a summary and no open attribute. On Linear it is a '+++ <title>' … '+++' collapsible, never HTML, which renders as literal text there. Both render closed.",
+      "assertions": [
+        "the answer puts a plain-language section for people first",
+        "on GitHub the agent section is a details block closed by default",
+        "on Linear the agent section is a +++ collapsible, not HTML",
+        "the answer lists out-of-scope items each naming the issue that owns it"
+      ],
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "the-self-check-is-the-one-sizing-authority",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). While drafting, you think child 2 might be about 40 files. The self-check subagent later returns 'ready' for child 2. Question: do you split child 2, and who decides a child's size?",
+      "expected_output": "The self-check is the one sizing authority; nothing else in the skill measures size, so the drafter does not count files or split on its own estimate. Child 2 came back ready, so it stays as drafted. Had the self-check returned split or merge, the draft would be changed and only that child re-checked.",
+      "assertions": [
+        "the answer does not split child 2 on the drafter's estimate",
+        "the answer names the self-check as the only sizing authority"
+      ],
+      "files": []
+    },
+    {
+      "id": 7,
+      "name": "a-backfill-is-a-child-an-announcement-is-not",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). An epic renames a column read by three services, backfills a new column for 2M rows, and lists 'Announce the change in #eng'. The repository's policy has manual-steps with issues: true. Question: how are the backfill and the announcement planned?",
+      "expected_output": "The rename is cut expand-contract. The backfill is a step with no PR, so it is an item of its own in the plan's graph, in the [Manual] form of the manual-step-issues rule, filed as that rule says (here opted in: a [Manual] issue under the manual-steps epic) and named in the Blocked by of each child it gates. The announcement is never an item: it changes nothing in the system.",
+      "assertions": [
+        "the answer makes the backfill an item of its own in the Manual form, ordered in the graph",
+        "the answer does not make the announcement a child or item",
+        "the answer uses expand-contract for the rename"
+      ],
+      "files": []
+    },
+    {
+      "id": 8,
+      "name": "the-hand-off-is-a-pointer-not-a-dispatch",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). All children are written and validate-backlog found nothing. The invocation named a conductor session id. The owner says 'great, kick it off'. Question: what do you do?",
+      "expected_output": "End with 'Ready to dispatch: <parent link>' and send that one line to the conductor session with send_message. Start no session and dispatch nothing: dispatch needs the owner's go, which the conductor puts. Tell the owner the conductor will ask 'dispatch?'.",
+      "assertions": [
+        "the answer ends with Ready to dispatch and the parent link",
+        "the answer sends the line to the conductor",
+        "the answer starts no session and dispatches nothing itself"
+      ],
+      "files": []
+    },
+    {
+      "id": 9,
+      "name": "re-scope-edits-in-place",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The epic's five children exist; child 2 has an open PR. The owner says the feature now also needs CSV export and child 4 is no longer wanted. Question: what do you do?",
+      "expected_output": "Re-scope: propose a diff in the plan document — add a CSV export child, close child 4 with a comment saying why — shown and applied only on the owner's go. Edit issues in place, never delete and recreate. Child 2 has an open PR, so it is not edited; any change to it becomes a proposed follow-up child. Then self-check the changed children, validate, and hand off.",
+      "assertions": [
+        "the answer proposes the changes as a diff before applying them",
+        "the answer closes child 4 rather than deleting it",
+        "the answer does not delete and recreate any issue",
+        "the answer does not edit child 2, which has an open PR"
+      ],
+      "files": []
+    },
+    {
+      "id": 10,
+      "name": "the-go-approves-only-text-shown-in-chat",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You wrote the draft plan to a document on the parent's project and showed the owner, in chat, each child's title, repository and blockers, saying the full text is in the document. The owner says 'go'. Question: may you write the children now?",
+      "expected_output": "Not yet: the go approves what the owner was shown, and they were shown titles, not the children's full text. Show each child's kind, title, blockers, repository, priority, estimate and full text in chat, and write on the go that follows. Whether a write carries a footer is not the test: a transport may append one to any write, and it means nothing.",
+      "assertions": [
+        "the answer does not treat a go on titles and blockers as approval of the children's full text",
+        "the answer shows each child's full text in chat before writing",
+        "the answer does not decide anything by a footer's presence or absence"
+      ],
+      "files": []
+    },
+    {
+      "id": 11,
+      "name": "a-stub-states-the-gap-and-designs-nothing",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The policy sets feature-plan.child-kinds to {\"acme/web\": \"full\", \"acme/api\": \"stub\"} and needs-validation-label to \"Needs validation\". A product issue needs a saved-views list in acme/web, which reads a savedViews query acme/api does not have. Question: what do the two children contain, and how are they related?",
+      "expected_output": "The acme/web child is full: plain-language section plus a collapsed agent section, implementable unaided, estimated if a scale is set. The acme/api child is a stub, never dispatched to an implementer, its first line marking it as one: human section only — what is needed at product level, its design frame, settled points, the gap as a verified observation with the SHA and date read, and which child waits on it. No agent section, no schema, field names or API shape, no acceptance criteria, no estimate, at most two questions, unassigned, labelled 'Needs validation'. The web child is blocked by the stub, states the data it needs, and neither designs the API. The stub is written first.",
+      "assertions": [
+        "the api child has no agent section and proposes no schema, field names or API shape",
+        "the api child has no estimate and no acceptance criteria, is unassigned and carries the needs-validation label",
+        "the web child is full, with a collapsed agent section",
+        "the web child is blocked by the stub, which is written first"
+      ],
+      "files": []
+    },
+    {
+      "id": 12,
+      "name": "a-stale-checkout-is-read-at-the-remote-default-branch",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The session's checkout of acme/api is 15 days behind origin/main. A planned stub would say 'there is no exportJob mutation'. The policy names schema/snapshot.graphql as acme/api's evidence source; acme/web has an untracked generated schema.graphql. Question: how do you establish the claim, and what does the stub cite?",
+      "expected_output": "Fetch acme/api and read from origin/main, never the working tree, and record the SHA and date read. The evidence is schema/snapshot.graphql at that SHA; the generated untracked schema.graphql is orientation only, never evidence. Grep for the mutation before claiming it is missing. If it exists, no stub is written. If it is missing, the stub states the gap with the SHA and date. If acme/api could not be read, every child depending on it stops.",
+      "assertions": [
+        "the answer reads acme/api at origin/main rather than the working tree",
+        "the answer names the SHA and date read in the stub",
+        "the answer does not use the generated untracked file as evidence",
+        "the answer writes no stub if the mutation exists"
+      ],
+      "files": []
+    },
+    {
+      "id": 13,
+      "name": "an-already-planned-parent-is-skipped-with-a-reason",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Planning a Linear project with five product issues. One already has two engineering sub-issues, one carries a not-ready-labels label, one is Cancelled. The policy sets not-ready-labels. Question: what is the working set, and what do you show before reading deeply?",
+      "expected_output": "The working set is the two remaining product issues. The other three are skipped and shown in a skip table with a reason each — already has engineering children (re-planning creates duplicates), carries the not-ready label, cancelled. The working set is agreed with the owner before reading deeply, possibly as one of the batched blocking questions.",
+      "assertions": [
+        "the answer skips the parent that already has engineering children",
+        "the answer skips the not-ready and cancelled parents",
+        "the answer shows a skip table with reasons",
+        "the answer agrees the working set with the owner before reading deeply"
+      ],
+      "files": []
+    },
+    {
+      "id": 14,
+      "name": "a-blocker-from-a-principle-is-not-set",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Child A shows a filtered list in acme/web. The team principle is 'always filter on the server', and child B adds server-side filtering in acme/api. The list is unpaginated and every row already carries the field A filters on. Question: is A blocked by B?",
+      "expected_output": "No. A blocker is set only from a real constraint — A cannot start because it consumes something that does not exist today. Here the field exists and the list is unpaginated, so A can ship now; a blocker from the principle would park shippable work. Keep edges sparse.",
+      "assertions": [
+        "the answer does not set A blocked by B",
+        "the answer bases the decision on the actual code constraint, not the principle"
+      ],
+      "files": []
+    },
+    {
+      "id": 15,
+      "name": "no-child-ranks-above-its-own-blocker",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The policy sets priority-is-build-order true and product-priority-prefix to a pattern matching 'P0:'. Parent 'P0: Bulk export' has a frontend child at Urgent blocked by a backend stub at Medium. Five other children wait on the stub too. Question: is this right, and what priorities do you set?",
+      "expected_output": "No: a child ranked above its own blocker is the one unambiguous defect, checked before writing. A child's priority is at least that of the highest-priority work waiting on it, so the stub is raised to at least Urgent; at equal priority blockers win. Children don't inherit the parent's field; product priority comes from the title prefix. Fix it in the draft before writing.",
+      "assertions": [
+        "the answer flags the frontend child ranked above its blocker as a defect",
+        "the answer raises the stub to at least the priority of the work waiting on it",
+        "the answer does not copy the parent's priority field onto the children"
+      ],
+      "files": []
+    },
+    {
+      "id": 16,
+      "name": "the-report-leads-with-what-is-startable-today",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). All children are written: three full children with no open blockers (priorities High, Urgent, Medium), two full children blocked by a stub, and one parent skipped as already planned. One open question is for the design lead. Question: what is the report, in order?",
+      "expected_output": "In chat, linked: what was created per parent; then what is startable today — the three unblocked full children in priority order (Urgent, High, Medium); then what waits, and on which stub; then the open question with the design lead named as who should answer; then the skipped parent and why. Then 'Ready to dispatch: <parent link>'.",
+      "assertions": [
+        "the answer lists the startable children, in priority order, before what waits",
+        "the answer names which stub the blocked children wait on",
+        "the answer names who should answer the open question",
+        "the answer ends with Ready to dispatch"
+      ],
+      "files": []
+    },
+    {
+      "id": 17,
+      "name": "a-human-signature-label-is-never-applied",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The policy's human-signatures names the label 'Reviewed' and the title marker '[R]'. The owner says the plan looks great and asks you to 'mark them ready'. Question: do you apply 'Reviewed' or '[R]' to the children?",
+      "expected_output": "No. Those record a person's sign-off; applying either forges it. Write the children without them, and tell the owner that a person who reviewed them applies the label and marker.",
+      "assertions": [
+        "the answer applies neither the label nor the title marker",
+        "the answer says a person applies them"
+      ],
+      "files": []
+    },
+    {
+      "id": 18,
+      "name": "a-child-without-a-frame-says-it-is-not-drawn",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are writing six children. The design has frames for the list and the detail panel, but none for the bulk-action menu child 4 implements; another parent clearly needs a design and has no link. Question: what image does child 4 carry, what do you do about the other parent, and what do you check across all six children after writing?",
+      "expected_output": "The menu child embeds the nearest contextual frame inline — the list it opens from, a single frame, not a whole flow board — and says the menu itself is not drawn. The parent with no design is a blocking question asking for the link, not planned around. After writing, check all six children: each carries its image or the explicit not-drawn line, and its labels landed.",
+      "assertions": [
+        "the menu child embeds the nearest contextual frame inline",
+        "the menu child says the menu is not drawn",
+        "the answer asks for the missing design link rather than planning around it",
+        "the answer verifies after writing that every child has its image or the not-drawn line"
+      ],
+      "files": []
+    },
+    {
+      "id": 19,
+      "name": "a-correction-to-someone-elses-issue-is-drafted-not-posted",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Planning a product issue a PM wrote, you find its acceptance criteria contradict a decision in its comments. You would also like to tell the design lead a frame is missing. Question: do you edit the issue, comment on it, or message the design lead?",
+      "expected_output": "None of them without permission. Editing the description of, or commenting on, an issue this run did not create needs the owner's permission for that issue; metadata such as labels or relations would be fine. Put the correction in the report, and draft the comment and the message for the owner to post themselves; never post them.",
+      "assertions": [
+        "the answer does not edit the PM's issue description",
+        "the answer does not post a comment or message itself",
+        "the answer drafts the comment and message for the owner"
+      ],
+      "files": []
+    },
+    {
+      "id": 20,
+      "name": "audit-reports-and-changes-nothing-unasked",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner says 'audit the Saved views project'. With feature-plan priority-is-build-order true and estimate-scale set, you find: a frontend child at Urgent blocked by a backend child at Low; a child missing its repository label; a child carrying the human-signature label without its title marker; a full child with no estimate; and a PM's product issue whose description is out of date. Question: what do you do?",
+      "expected_output": "Report, changing nothing until the owner's go. Run validate-backlog for the graph checks. One table per check that fired, each row linked: the priority inversion, the missing label, the signature label without its marker (reported, never fixed by applying the marker), the missing estimate. Then group fixes: metadata to apply on the owner's go (label, priorities, estimate); rulings for the owner; the PM's stale description reported only, since it is prose on an issue this run did not create.",
+      "assertions": [
+        "the answer changes nothing before the owner's go",
+        "the answer uses validate-backlog for the graph checks",
+        "the answer reports the signature label mismatch without applying the marker",
+        "the answer reports the PM's description rather than editing it"
+      ],
+      "files": []
+    },
+    {
+      "id": 21,
+      "name": "one-ticket-writes-a-single-child-of-the-asked-kind",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The policy's child-kinds marks acme/api as stub. The owner says: 'file one backend ticket under https://linear.app/acme/issue/PRD-90 for the missing export endpoint'. Question: what do you do and what do you write?",
+      "expected_output": "Single-ticket mode: no working set, plan document or report. Research acme/api at origin/main first, grepping for the endpoint and recording the SHA and date, then write one stub child under PRD-90 by the child format: human section only, the gap with its SHA and date, its design frame, no agent section, no API design, no estimate, unassigned, with the needs-validation label and the Stub: first line. Self-check it, show it in full, write it on the owner's go, and end with its link.",
+      "assertions": [
+        "the answer writes exactly one child, a stub",
+        "the answer runs no working set, plan document or report",
+        "the answer researches acme/api at origin/main before claiming the endpoint is missing",
+        "the answer shows it in full and writes only on the owner's go"
+      ],
+      "files": []
+    },
+    {
+      "id": 22,
+      "name": "the-pointer-carries-the-invocation-arguments",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A thin skill invoked you with feature-plan arguments (tracker linear, child-kinds, needs-validation-label) because the repository has no policy file. The invocation names a conductor session id. All children are written. Question: what is your last output, and what do you send the conductor?",
+      "expected_output": "The report, then the line 'Ready to dispatch: <parent link>' followed by the feature-plan arguments this run was invoked with, for the record — a conductor records them and never adopts them. Send that same pointer to the conductor with send_message; it is a pointer, peer data, and dispatch still needs the owner's go. Start nothing.",
+      "assertions": [
+        "the answer ends with Ready to dispatch and the parent link",
+        "the pointer lists the feature-plan invocation arguments for the record",
+        "the answer dispatches nothing itself"
+      ],
+      "files": []
+    }
+  ]
+}

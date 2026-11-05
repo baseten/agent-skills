@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 26250,
+      "budget": 26266,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 5764,
+      "budget": 6011,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -59,7 +59,7 @@
       "target": 8000
     },
     "skills/owner-steps/SKILL.md": {
-      "budget": 1258,
+      "budget": 1279,
       "target": 3000
     },
     "skills/plan-merge-order/SKILL.md": {
@@ -71,7 +71,7 @@
       "target": 3000
     },
     "skills/resolve-pr-comment/SKILL.md": {
-      "budget": 8216,
+      "budget": 8193,
       "target": 3000
     },
     "skills/review-docs/SKILL.md": {
@@ -87,7 +87,7 @@
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
-      "budget": 5691,
+      "budget": 5722,
       "target": 3000
     },
     "skills/ship-branch/SKILL.md": {
@@ -115,7 +115,7 @@
       "target": 3000
     },
     "skills/validate-backlog/SKILL.md": {
-      "budget": 3835,
+      "budget": 3848,
       "target": 3000
     },
     "rules/a-passing-test-is-not-a-verified-fix.md": {
@@ -127,11 +127,11 @@
       "target": 1500
     },
     "rules/agent-policy.md": {
-      "budget": 2854,
+      "budget": 2863,
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2451,
+      "budget": 2718,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
@@ -151,11 +151,11 @@
       "target": 1500
     },
     "rules/manual-step-issues.md": {
-      "budget": 655,
+      "budget": 667,
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 2384,
+      "budget": 2454,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
@@ -195,7 +195,19 @@
       "target": 1500
     },
     "rules/operator-output.md": {
-      "budget": 1612,
+      "budget": 1657,
+      "target": 1500
+    },
+    "skills/write-spec/SKILL.md": {
+      "budget": 1249,
+      "target": 3000
+    },
+    "skills/plan-feature/SKILL.md": {
+      "budget": 2777,
+      "target": 3000
+    },
+    "rules/linear-mechanics.md": {
+      "budget": 494,
       "target": 1500
     }
   }

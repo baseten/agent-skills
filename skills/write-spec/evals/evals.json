@@ -1,0 +1,81 @@
+{
+  "skill_name": "write-spec",
+  "description": "Decision scenarios for turning a brief into one spec document.",
+  "companions": [],
+  "evals": [
+    {
+      "id": 0,
+      "name": "the-default-storage-is-a-repo-file-with-a-draft-pr",
+      "prompt": "You are executing the write-spec skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Repository acme/crm-web has a .claude/agent-policy.json with no spec key. The owner pastes a Slack thread asking for weekly CSV exports of saved searches and says 'write a spec for this'. You have drafted it; the owner has not yet replied. Question: where and when is the spec written, and what do you return?",
+      "expected_output": "Nothing is written yet: the full draft is shown in chat and written only on the owner's go. On the go, the default storage applies: a markdown file at docs/specs/<slug>.md, committed on a new branch (spec/<slug>) off the fetched default branch, pushed, with a draft PR opened through create-pr at once. Read it back, then return the spec's link and 'Next: plan-feature <link>', plus the draft PR's link. No issues are written.",
+      "assertions": [
+        "the answer writes nothing before the owner's go",
+        "the answer writes a markdown file under docs/specs/ on a new branch",
+        "the answer opens a draft PR",
+        "the answer returns the spec link with plan-feature as the next step"
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "blocking-questions-are-asked-together-with-defer",
+      "prompt": "You are executing the write-spec skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A product issue asks for bulk-assigning tickets. Before drafting you have three open points: whether agents may assign tickets outside their own team (the spec cannot say who can use it without this), whether the per-batch cap is 100 or 500 (it changes the success criteria), and, later, which of two approaches to partial failure to take. Question: how and when do you ask these?",
+      "expected_output": "The first two are blocking — the spec cannot be drafted without them — so they are asked together in one structured question call, before drafting, each with a defer option; a deferred one goes under Open questions. The partial-failure approach is design discussion: asked separately, one question at a time, with the recommended option first. Nothing the inputs or the code already answer is asked.",
+      "assertions": [
+        "the answer asks the two blocking questions together in one call before drafting",
+        "each blocking question carries a defer option",
+        "the answer asks the design choice on its own, not batched with the blocking questions",
+        "the answer puts a deferred question under Open questions"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "a-rejection-amends-in-place-and-reshows-the-change",
+      "prompt": "You are executing the write-spec skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You showed the owner a full spec draft with seven sections. They reply: 'Approach is wrong — use the existing export worker, not a new queue. Everything else is fine.' Question: what do you do and what do you show?",
+      "expected_output": "Amend the existing draft in place, never regenerate it: rewrite Approach to use the export worker, move the new-queue option into Considered with why not, and record the decision as a constraint marked (decided in review). Show only the changed sections under a short 'changes:' list whose last bullet names what was left untouched. Write nothing until the owner's go on the amended text.",
+      "assertions": [
+        "the answer edits the existing draft rather than regenerating it",
+        "the answer shows only the changed sections, not the whole document",
+        "the answer includes a changes list whose last item names what was left untouched",
+        "the answer records the decision as a constraint marked decided in review"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "a-decision-already-made-is-a-constraint-not-a-question",
+      "prompt": "You are executing the write-spec skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner gives a pitch page for usage-based pricing and says: 'We've decided no proration in v1, and invoices keep their current numbering.' The pitch also never says which usage unit is billed. Question: what do you ask, and how do the two decisions appear in the spec?",
+      "expected_output": "The two decisions are not asked about or reopened and get no alternatives: each becomes a constraint marked where it was decided, e.g. (owner, <date>), and proration also appears under Non-goals. The billed unit is a blocking question — the spec cannot state success criteria without it — asked before drafting with a defer option.",
+      "assertions": [
+        "the answer does not ask about proration or invoice numbering",
+        "the answer records each decision as a constraint marked with where it was decided",
+        "the answer asks the billing-unit question before drafting"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "the-spec-run-writes-no-issues",
+      "prompt": "You are executing the write-spec skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). After the owner approves the spec and it is written, they say: 'Great, also create the tickets while you're at it.' Question: what do you do?",
+      "expected_output": "This skill never writes issues. Return the spec's link and point to the next step, plan-feature on that link, which the owner starts; write no issues and start no session.",
+      "assertions": [
+        "the answer creates no issues",
+        "the answer points to plan-feature as the step that writes issues"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "unwritable-storage-is-asked-not-substituted",
+      "prompt": "You are executing the write-spec skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository's policy file sets spec.storage to document-store with a location naming a Specs database, but this session has no document-store connector. The owner has approved the draft. Question: what do you do?",
+      "expected_output": "Say that the configured storage cannot be written in this session and let the owner choose — for example connecting the document store, or another storage kind. Never fall back silently to a repo file or anything else, and do not report the spec as written.",
+      "assertions": [
+        "the answer says the configured storage cannot be written here",
+        "the answer asks the owner rather than choosing another storage itself",
+        "the answer does not write the spec anywhere else silently"
+      ],
+      "files": []
+    }
+  ]
+}
