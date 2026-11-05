@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 6101,
+      "budget": 6113,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -151,11 +151,11 @@
       "target": 1500
     },
     "rules/manual-step-issues.md": {
-      "budget": 667,
+      "budget": 693,
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 2419,
+      "budget": 2442,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {

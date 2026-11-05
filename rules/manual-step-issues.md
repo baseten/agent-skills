@@ -33,7 +33,9 @@ pass — and the rest of this rule still holds, secrets included.
   on one server or console. Steps that need different sittings, or that another
   step must unblock, are separate issues.
 - **Search before filing**: an open `[Manual]` issue for the same step is updated,
-  not duplicated.
+  not duplicated — where this run filed it or the owner named it; otherwise the
+  update is drafted for the owner (`references/authored-write-form.md`, *Issues the
+  run did not create*).
 
 ## The form
 

@@ -464,6 +464,7 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
 - the invocation arguments this skill was given;
 - owner-comment ids — each go, ruling or draft the owner posted — kept apart from
   this skill's own-write ids;
+- own-write ids — each write this skill posted, with its site;
 - the default branches' heads as last read, each linked to its CI and deploy runs —
   their outcomes go in the session's report, never in a forge write;
 - the plan's expected CI runs;
