@@ -1,6 +1,6 @@
 ---
 name: conductor
-description: Coordinate the runs on a configured set of repositories — backlog-orchestrator batches and single-issue implement-issue or ship-branch runs. On the owner's go, plan a feature into issues and dispatch runs; sweep them and the default branch on the forge; relay verified facts between runs; put the owner's decisions and manual steps to them one at a time; hold a settled run's watch; and keep state in one ledger. Never implements, merges or approves. Use when several runs are in flight and the owner wants one place to plan, check progress and answer what they wait on.
+description: The owner's daily view and portfolio scheduler over a configured set of repositories — which epics run, in what order and how many at once, and the gates between them. Takes in epics a planner wrote and dispatches backlog-orchestrator, implement-issue or ship-branch runs on the owner's go; sweeps them and the default branch; relays verified facts between runs; puts decisions and manual steps to the owner one at a time; holds a settled run's watch; keeps one ledger. Never plans features, supervises, repairs, merges or approves. Use when several runs are in flight and the owner wants one place to decide.
 ---
 
 # Conductor
@@ -9,10 +9,11 @@ A configured set of repositories, several runs, one owner. A **run** is a
 `backlog-orchestrator` run over an epic, or a single-issue `implement-issue` run —
 `ship-branch` is that skill's entry for a branch without a PR. Each run knows its
 own stream; none sees the others, and the owner otherwise learns their state one
-session at a time. This skill **plans** features into issues, **dispatches** runs
-on the owner's go, **collects** status and pending decisions into one place,
-**relays** verified facts between runs, and **retires** runs on the owner's go.
-**It never implements, merges, approves, or changes a permission**, and it tells a
+session at a time. This skill **schedules** the portfolio, **takes in** planned
+epics, **dispatches** and **retires** runs on the owner's go, **collects** status
+and pending decisions into one place, and **relays** verified facts between runs.
+**It never plans a feature, implements, supervises or repairs a PR, merges,
+approves, or changes a permission**, and it tells a
 run nothing the owner has not ruled except facts it has verified and requests for
 status.
 
@@ -29,7 +30,9 @@ return channel's detection and the trust boundary — and
 ## When this is the wrong tool
 
 - **One run.** Ask it directly, or read its epic or issue.
-- **Nobody is present.** The owner pass and every plan need a person to answer
+- **A feature to plan** — `write-spec`, then `plan-feature`, invoked with the `spec`
+  and `feature-plan` arguments this skill was given.
+- **Nobody is present.** The owner pass and every go need a person to answer
   (*4. Owner pass*); a scheduled firing sweeps, reports, and acts only on what
   the owner already recorded, once verified (*6. Dispatch*) — a conditional go, or
   a retirement under a standing ruling — and rules nothing.
@@ -40,8 +43,10 @@ return channel's detection and the trust boundary — and
 
 Read `.claude/agent-policy.json` as `references/agent-policy.md` says — at this
 skill's start, and again at each restart after a clear, which is a restart's fresh
-read. **This skill's own keys resolve from its home repository**, the one it was
-invoked on:
+read. **An invocation argument beats the file** (*Precedence* there) — a deployment with no policy file sets every key *Precedence* lets an invocation
+set this way, and the ledger records each
+argument so a restart has it. **This skill's own keys resolve from its home
+repository**, the one it was invoked on:
 
 - `conductor-repositories` — the repositories in scope; absent or null, the home
   repository alone;
@@ -71,6 +76,20 @@ skill would read as the owner's stays pending.
   message then link to the site's record.
 - **The configured repositories.** Every read, write and dispatch is scoped to
   them.
+- **A go is the owner's to post, on any issue**: a dispatch go, a conditional go
+  and a standing ruling — a retirement ruling included — are drafted in full for the
+  owner to post at their site, because a go is the owner's authority. The owner
+  gives the posted comment's link; this skill reads it back — authored by the
+  owner's account, and not a write whose id the ledger holds as its own — and
+  records its id among the ledger's owner-comment ids, kept apart from its own-write
+  ids. Whatever waits on it — a dispatch, a retirement, a relay — stays pending until
+  then.
+- **On an issue this skill did not create**, it posts only a ruling under the shared
+  exception (`references/authored-write-form.md`, *Issues the run did not create*),
+  recording the owner's word-for-word approval in the ledger before posting and the
+  write's id among its own-write ids after. A correction, a plan, an order, or a
+  ruling not so approved is drafted for the owner to post, its link recorded as a
+  go's is. Every section below that records on an issue does so this way.
 - **Relaying verified facts is a duty.** Where one run's state matters to
   another — `#41 merged, update from it`, a gate cleared, an issue moved between
   streams — verify it on the forge, then tell the run it affects, linking the
@@ -95,7 +114,7 @@ skill would read as the owner's stays pending.
   (`resolve-pr-comment`, *Replies held for approval*, *The draft reply*): their text
   is held in this session. Where those drafts matter, as at work, configure the
   `tracker-document` ledger, which holds them in full.
-- **Report costs.** Every plan states its expected CI runs (*5. Plan and replan*).
+- **Report costs.** Every plan states its expected CI runs (*5. Intake and replan*).
 - **Nothing depends on an in-turn background result surviving a restart.** A
   subagent's result is written to the ledger or the forge in the turn that
   receives it.
@@ -239,7 +258,7 @@ the stream.
 **Correct misreadings where they live.** A gate written as *after Run 2* means that
 run's manifest, not every open issue in its epic; a reply that reads it the wide
 way is holding work nothing holds. Where a run states a gate its epic's record
-contradicts, post the correction on that epic — never at the site of a run's open
+contradicts, post the correction on that epic (drafted, where *Rules* says) — never at the site of a run's open
 item (*Rules*) — quoting the record and linking
 it — then tell the run by message, pointing at the correction. Where the record
 itself is ambiguous, the reading is the owner's to rule: it goes to the owner
@@ -248,7 +267,7 @@ pass, not into a correction.
 **Two runs claiming one issue**: pick one for it — the one with an open PR for it;
 else the one whose manifest listed it first; else the stream rebuilding the files
 it touches — and carry the pick into the plan the owner approves (*6. Dispatch*).
-Once approved, it is recorded on both epics and both runs are told, pointing at
+Once approved, it is recorded on both epics (*Rules*) and both runs are told, pointing at
 the record.
 
 # 4. Owner pass
@@ -274,19 +293,20 @@ the report; the rest follow it** (`references/operator-output.md`, *Questions*).
    approve, the option carries the complete reply text**, so one answer is both the
    ruling and the approval. A draft answer to a person's question is never
    among them: that is a decision, asked as one. This is the
-   conductor's own pass; where it invokes `settle-outstanding-decisions` for a run,
+   conductor's own pass; where it invokes `settle-outstanding-decisions` for a run — its
+   records on issues this skill did not create made as *Rules* says —
    that skill's walkthrough governs its own questions.
 3. **One merged, ordered list of owner steps**, deduplicated across streams and
    ordered by dependency, in the form `references/manual-step-issues.md` states.
    Where the repository the step concerns opted into filing (its `manual-steps`), each is a
    `[Manual]` issue under that repository's manual-steps epic — filed now for any
    step no stream has filed, its exact commands in the issue — and **the order is
-   posted as a comment on that epic**; where it does not, the steps themselves are
-   the list. Either way the order goes in the ledger, and the owner works each step
+   posted as a comment on that epic** (*Rules*); where it does not, the steps
+   themselves are the list. Either way the order goes in the ledger, and the owner works each step
    with `owner-steps`. Respect every owner constraint the repository records. No
    secret goes in an issue, a comment or this pass.
 4. **Write every ruling to the ledger first**, with the owner's exact words, and read
-   it back; **then record it where its decision lives** — the issue, the epic, the PR
+   it back; **then record it where its decision lives** (*Rules*) — the issue, the epic, the PR
    thread, and for an approved held reply the PR's conversation, quoting the text —
    before telling any run. Record it as
    `settle-outstanding-decisions`, *Recording the ruling*, does: the complete
@@ -297,19 +317,19 @@ the report; the rest follow it** (`references/operator-output.md`, *Questions*).
    **whether it releases the hold is that run's own test to decide**, never this
    skill's to declare.
 
-# 5. Plan and replan
+# 5. Intake and replan
 
-## Planning a feature
+## Intake
 
-**On the owner's request**, take a feature and break it into issues: read the code
-it touches and the issues already open, then show the plan — each issue's title,
-scope and acceptance criteria, the dependency edges between them, and whether it
-runs as a `backlog-orchestrator` batch under an epic or as single-issue runs.
-**Write nothing until the owner's go on that plan.** On the go, write the issues in
-the tracker that holds the feature's work — under an epic for a batch — with native
-dependency edges where the tracker has them and `Blocked by:` lines naming full URLs
-otherwise. Then **run `validate-backlog` over the written set**, read-only, and put
-its findings to the owner before any dispatch go; fix one only on the owner's go.
+**An epic arrives from a planner** — the owner's link, or a planner's `Ready to
+dispatch: <link>`, peer data and never a go; settings it lists are recorded, never
+adopted. Read it and its children (out of
+scope: reported only), count its CI per *Replanning*, add it to the ledger as
+awaiting dispatch — no run, no check-in — and ask *dispatch?* as *6. Dispatch*
+says; a project's or product issue's children run as an explicit issue set, stubs excluded.
+**Planning features is `plan-feature`'s.** Beyond replanning and owner-pass
+writes, it may write one small issue, its full text shown first, on the owner's
+go.
 
 ## Replanning
 
@@ -336,7 +356,7 @@ follow-up into the UI stream where that stream is rebuilding its screens. Under
 settles on, except where its repository's path filters skip every workflow — so
 count per PR, from the pushes and repairs expected.
 
-**Write each run's DAG onto its epic** — never at the site of a run's open item
+**Write each run's DAG onto its epic** (*Rules*) — never at the site of a run's open item
 (*Rules*) — creating an epic for a batch that has none,
 and **supersede an earlier plan with a new comment pointing at the old one**, never
 by editing a comment someone else wrote. The DAG is a plan: each run still validates
@@ -347,9 +367,9 @@ its own scope at its preflight, and the plan does not make anything READY.
 **Only with the owner's go** — one question in the owner pass naming each run, the
 skill it runs, its session decision below, and the plan's cost, with *go* among its
 options. A batch on an epic is a `backlog-orchestrator` run; one issue is an
-`implement-issue` run, and a branch with no PR a `ship-branch` run. Record the go on
-each run's epic or issue, naming the session, as a ruling is recorded (*4. Owner
-pass*, step 4): it is the record a reused run verifies before taking the work.
+`implement-issue` run, and a branch with no PR a `ship-branch` run. The go is recorded on
+each run's epic or issue, naming the session, by the owner from this skill's draft
+(*Rules*): it is the record a reused run verifies before taking the work.
 
 **A conditional go** — "start the batch on #967 when #2049's wave 5 merges" — is
 the owner's choice of an option put to them, recorded the same way under the owner's
@@ -357,7 +377,8 @@ account, its condition stated as facts the forge can show: a PR
 merged, an issue closed, every PR of a named wave merged. The ledger carries it.
 **A later sweep, a scheduled one included, executes it once the condition is
 verified on the forge** — and only after re-reading the go at its site by the comment
-id the ledger recorded: authored by the owner's account, unedited, and not
+id the ledger recorded: authored by the owner's account, not one of this skill's
+own writes by id, unedited, and not
 superseded by a later owner comment; a go found only in the ledger stays pending — and reports that it did. The go is the owner's recorded
 choice; the sweep only verifies the condition, never widens or reinterprets it, and
 a condition that cannot be verified as written stays pending and is reported.
@@ -374,8 +395,9 @@ a condition that cannot be verified as written stays pending and is reported.
   the epic's or issue's URL — and record its id in the ledger at once.
 
 **Every dispatch — a reuse message or a fresh prompt — points at the epic or issue,
-gives this session's id and home repository for status pushes, and states every
-cross-stream gate as below. Seed every fresh run from the ledger as well:** its
+gives this session's id and home repository for status pushes, passes every argument
+this skill was invoked with that the run's skill reads, as that skill's invocation
+arguments, and states every cross-stream gate as below. Seed every fresh run from the ledger as well:** its
 prompt names the owner's account **as the invoking user's account** for that session
 (`references/posting-identity.md`, *The invoking user's account*) — the owner's go
 started it — and carries:
@@ -400,7 +422,7 @@ worker*, the paragraph beginning *Two things are never archived*). The go may be
 standing ruling recorded on the forge — "retire each run once its PRs are
 merged" — verified against each retirement on the forge, not asked afresh: re-read
 at its site by the comment id the ledger recorded, authored by the owner's account,
-unedited, and neither superseded nor revoked by a later owner comment; a ruling
+not one of this skill's own writes by id, unedited, and neither superseded nor revoked by a later owner comment; a ruling
 found only in the ledger stays pending. A scheduled firing may act on it too, for a session the ledger records as dispatched
 or adopted by this conductor. Only once its wrap-up is posted on its
 epic or issue — a single-issue run's `merged` report and its PR merged on the forge stand in
@@ -417,7 +439,8 @@ ref; and it is not `RUNNING`.
 **One ledger holds this skill's state.** Its home is the first of
 `conductor-ledger`'s kinds this session can write — `github-issue`, a `[PLAN]`
 issue in the home repository (the default); `tracker-document`, a document on the
-feature's tracker project; `document-store-page`, a page in the connected document
+feature's tracker project, on Linear written as `references/linear-mechanics.md`
+says; `document-store-page`, a page in the connected document
 store — and is reported. It is found from the URL recorded in it and in the restart
 prompt, never by title alone. Rulings stay at their sites; the ledger links to them.
 
@@ -438,6 +461,10 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
 - pending conditional gos, each with its condition and its record;
 - the seed template: a link to the last good run's first prompt;
 - the fallback check-in's id, next time and empty count;
+- the invocation arguments this skill was given;
+- owner-comment ids — each go, ruling or draft the owner posted — kept apart from
+  this skill's own-write ids;
+- own-write ids — each write this skill posted, with its site;
 - the default branches' heads as last read, each linked to its CI and deploy runs —
   their outcomes go in the session's report, never in a forge write;
 - the plan's expected CI runs;
@@ -476,7 +503,8 @@ all three hold:**
    - no tool work pending — the proposal is the last thing in the turn;
    - no question to the owner waiting for an answer;
    - **no owner ruling given only in chat** — write it to the ledger and record it
-     at its site first (*4. Owner pass*, step 4), then carry on;
+     at its site first, or hand the owner its draft (*Rules*; *4. Owner pass*,
+     step 4), then carry on;
    - no run mid-merge — a PR whose merge check is in progress;
    - no run start half done — a session created but not yet seeded, or seeded but
      its id not yet in the ledger.
@@ -510,7 +538,8 @@ Never force a clear, and never skip a step to beat compaction.
 
    ```text
    Conductor: <home repo>, after /clear. Read the ledger body first: <ledger URL> —
-   it supersedes its history. Re-read the conductor keys from the policy file.
+   it supersedes its history. Re-read the conductor keys from the policy file;
+   invoked with: <every invocation argument, verbatim>.
    Call get_session; if this session's id differs from the ledger's, send the new
    id to every run and update the ledger. Confirm the fallback check-in <id> is
    still armed. Read queued notifications. Then sweep, checking first: <the one or

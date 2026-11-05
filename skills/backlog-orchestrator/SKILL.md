@@ -256,7 +256,7 @@ A PR must retain the full Linear issue URL and repository/workspace linking conv
 
 # Invocation and bounded scope
 
-Support these entry modes, in preference order. **Whatever the mode, a `[Manual]` owner-steps issue is never in scope and never dispatched** (`references/manual-step-issues.md`): it is an external prerequisite for whatever it unblocks.
+Support these entry modes, in preference order. **Whatever the mode, a `[Manual]` owner-steps issue is never in scope and never dispatched** (`references/manual-step-issues.md`), **nor is a stub** — an issue whose first line begins `Stub:` (`plan-feature`, *The child issue*): each is an external prerequisite for whatever it unblocks.
 
 ## 1. Parent / epic / build-order issue — preferred
 

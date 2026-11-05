@@ -16,7 +16,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # rule source  ->  skills that apply it
-AUTHORED_WRITE_FORM="backlog-orchestrator conductor owner-steps settle-and-merge create-pr normalize-github-dependencies
+AUTHORED_WRITE_FORM="write-spec plan-feature backlog-orchestrator conductor owner-steps settle-and-merge create-pr normalize-github-dependencies
   npm-dependency-upgrade-orchestrator implement-issue-core
   merge-stack repair-pr resolve-pr-comment review-docs review-skill settle-outstanding-decisions
   summarize-wave upgrade-npm-dependency validate-backlog supervise-prs"
@@ -30,7 +30,7 @@ RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
   posting-identity agent-policy review-feedback draft-state
   repair-rounds mechanical-pushes review-trigger ci-and-review-verdicts
   ci-attribution watch-and-read wake-budget platform-pr-posture
-  manual-step-issues conductor-exchange operator-output"
+  manual-step-issues conductor-exchange operator-output linear-mechanics"
 
 # Each list names only the skills that APPLY the rule, and every one of them
 # must cite it in its own SKILL.md (check_shared_rules.py). A rule that cites
@@ -48,13 +48,13 @@ RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
 #
 # Skills that make an authored forge/tracker write and select its author, or
 # that pass or merge the run's posting-identity map.
-POSTING_IDENTITY="backlog-orchestrator conductor owner-steps settle-and-merge swarm create-pr implement-issue
+POSTING_IDENTITY="write-spec plan-feature backlog-orchestrator conductor owner-steps settle-and-merge swarm create-pr implement-issue
   implement-issue-core merge-stack repair-pr resolve-pr-comment review-docs
   settle-outstanding-decisions supervise-prs normalize-github-dependencies
   review-skill summarize-wave upgrade-npm-dependency validate-backlog"
 
 # Skills that read .claude/agent-policy.json, or gate on what it grants.
-AGENT_POLICY="backlog-orchestrator conductor owner-steps merge-stack settle-and-merge implement-issue resolve-pr-comment
+AGENT_POLICY="write-spec plan-feature backlog-orchestrator conductor owner-steps merge-stack settle-and-merge implement-issue resolve-pr-comment
   npm-dependency-upgrade-orchestrator supervise-prs"
 
 # Skills that promote a draft, decline to, or gate on the drafts it defines as held.
@@ -101,21 +101,25 @@ REVIEW_FEEDBACK="backlog-orchestrator repair-pr resolve-pr-comment
 
 # Skills that act on something asserted by an agent, assumed about a provider,
 # or that author a write making claims about existing code or current state.
-ESTABLISH_DO_NOT_ASSUME="backlog-orchestrator conductor owner-steps swarm settle-and-merge repair-pr
+ESTABLISH_DO_NOT_ASSUME="write-spec plan-feature backlog-orchestrator conductor owner-steps swarm settle-and-merge repair-pr
   validate-backlog review-skill implement-issue-core create-pr resolve-pr-comment
   summarize-wave settle-outstanding-decisions implement-issue supervise-prs"
 
 # Skills that file an owner step as a [Manual] issue, or walk one.
-MANUAL_STEP_ISSUES="backlog-orchestrator conductor owner-steps"
+MANUAL_STEP_ISSUES="plan-feature backlog-orchestrator conductor owner-steps"
 
 # Skills a conductor coordinates, and the conductor itself: status requests,
 # pushes, conductor-id adoption, new work and folds, and relayed rulings.
 CONDUCTOR_EXCHANGE="backlog-orchestrator implement-issue conductor"
 
 # Skills that print a report or a question to the owner in their own chat: the
-# orchestration skills and the settle steps they run.
-OPERATOR_OUTPUT="conductor backlog-orchestrator implement-issue settle-and-merge
+# orchestration skills, the settle steps they run, and the two planners.
+OPERATOR_OUTPUT="write-spec plan-feature conductor backlog-orchestrator implement-issue settle-and-merge
   settle-outstanding-decisions summarize-wave supervise-prs"
+
+# Skills that write a plan's issues, or a ledger kept as a document, to Linear.
+# Others that comment on Linear issues do not carry it yet (follow-up).
+LINEAR_MECHANICS="plan-feature conductor"
 
 # Skills that write or change a test as part of their work.
 A_PASSING_TEST_IS_NOT_A_VERIFIED_FIX="implement-issue-core repair-pr

@@ -1,6 +1,6 @@
 # Operator output
 
-This is the rule other skills mean when they cite *operator output*: what an orchestration run writes to the owner in its own chat.
+This is the rule other skills mean when they cite *operator output*: what an orchestration run, or a planner, writes to the owner in its own chat.
 
 **It is not a skill and nobody invokes it.** It is a shared rule, held once at
 `rules/operator-output.md` and copied into each skill that applies it by
@@ -82,7 +82,7 @@ A run's turn, after its record:
 
 ## Questions
 
-**One question per call**, through the platform's structured question tool (`AskUserQuestion` in Claude Code), never a numbered prose list, ordered by what each unblocks unless the consumer orders its own. **A question a flow needs answered is asked where the flow needs it**; the rest follow the report. **A question already asked is not asked again** while its item is unchanged, unless the owner asks for it; a walkthrough a contract runs (`settle-outstanding-decisions`) asks what its own bar qualifies. Where nobody is present, nothing is asked: each item stays under *Needs you* with its site.
+**One question per call**, through the platform's structured question tool (`AskUserQuestion` in Claude Code), never a numbered prose list, ordered by what each unblocks unless the consumer orders its own. **A planner's blocking questions are the one exception**: `write-spec` and `plan-feature` ask the questions their document cannot proceed without together, once, before drafting — at most four per call, each with a *defer* option; their open-ended design discussion stays one per call. **A question a flow needs answered is asked where the flow needs it**; the rest follow the report. **A question already asked is not asked again** while its item is unchanged, unless the owner asks for it; a walkthrough a contract runs (`settle-outstanding-decisions`) asks what its own bar qualifies. Where nobody is present, nothing is asked: each item stays under *Needs you* with its site.
 
 - **Before each question, the chat repeats that item's heading and link line**, because links may not render inside the question.
 - **The question text stands alone, naming the repository, the issue id and its title in plain words**; its `header` chip is the issue id (`#812`), or the PR's; a question about no single issue — a plan, a dispatch go — names its repository and subject under a short label.

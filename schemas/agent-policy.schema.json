@@ -130,7 +130,7 @@
       "minItems": 1,
       "uniqueItems": true,
       "default": null,
-      "description": "The repositories, as owner/name, one conductor coordinates, read from the conductor's home repository: the one it was invoked on. Absent or null: that repository alone. Read by: conductor.",
+      "description": "The repositories, as owner/name, one conductor coordinates, from an invocation argument, else the conductor's home repository's file: the one it was invoked on. Absent or null: that repository alone. Read by: conductor.",
       "x-read-by": [
         "conductor"
       ]
@@ -229,11 +229,267 @@
         }
       },
       "default": null,
-      "description": "Per-repository values for owner steps: whether they are filed as [Manual] issues (opt-in), under which epic, and how the live server is reached. Absent or null: nothing filed, and owner-steps' server-access defaults. Never a secret. Read by: backlog-orchestrator, conductor, owner-steps.",
+      "description": "Per-repository values for owner steps: whether they are filed as [Manual] issues (opt-in), under which epic, and how the live server is reached. Absent or null: nothing filed, and owner-steps' server-access defaults. Never a secret. Read by: backlog-orchestrator, conductor, owner-steps, plan-feature.",
       "x-read-by": [
         "backlog-orchestrator",
         "conductor",
-        "owner-steps"
+        "owner-steps",
+        "plan-feature"
+      ]
+    },
+    "spec": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "storage": {
+          "type": "string",
+          "enum": [
+            "repo-file",
+            "tracker-document",
+            "document-store"
+          ],
+          "default": "repo-file",
+          "description": "Where a spec is written: repo-file, a markdown file on a new branch with a draft PR; tracker-document, a document in the tracker; document-store, a page in the connected document store."
+        },
+        "location": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "repo-file: the directory, null meaning docs/specs/. tracker-document: the project. document-store: the database or parent page. null outside repo-file: the brief's own project, else asked."
+        },
+        "template": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "A repository path or URL whose headings replace the default spec template. null: the skill's own template."
+        },
+        "naming": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "The document's name, with <slug> and <date> placeholders. null: <slug>.md for a file, the spec's title otherwise."
+        }
+      },
+      "default": null,
+      "description": "Where write-spec writes a spec, from which template and under what name. Absent or null: a markdown file under docs/specs/ on a branch with a draft PR. An invocation argument beats each field. Read by: write-spec.",
+      "x-read-by": [
+        "write-spec"
+      ]
+    },
+    "feature-plan": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "tracker": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "github",
+            "linear",
+            null
+          ],
+          "default": null,
+          "description": "Where children are written. null: the parent's tracker; for a brief, the invoked repository's GitHub issues."
+        },
+        "parent-kind": {
+          "type": "string",
+          "enum": [
+            "issue",
+            "project"
+          ],
+          "default": "issue",
+          "description": "issue: children are sub-issues of one parent issue. project: children are issues in a tracker project. A brief's parent is created as this kind."
+        },
+        "child-labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "propertyNames": {
+            "pattern": "^(\\*|[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)$"
+          },
+          "default": {},
+          "description": "Labels for each child, keyed by the repository it changes as owner/name, or * for every child."
+        },
+        "sections": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string",
+            "enum": [
+              "problem",
+              "user-change",
+              "acceptance",
+              "design",
+              "settled",
+              "links",
+              "repo",
+              "files",
+              "decisions",
+              "approach",
+              "dependencies",
+              "api-contract",
+              "check",
+              "out-of-scope"
+            ]
+          },
+          "uniqueItems": true,
+          "default": null,
+          "description": "The full child's slots to use, in order. null: every slot. It may drop slots, never add one, and never drops repo, acceptance, dependencies or design.",
+          "allOf": [
+            {
+              "contains": {
+                "const": "repo"
+              }
+            },
+            {
+              "contains": {
+                "const": "acceptance"
+              }
+            },
+            {
+              "contains": {
+                "const": "dependencies"
+              }
+            },
+            {
+              "contains": {
+                "const": "design"
+              }
+            }
+          ]
+        },
+        "plan-doc": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "parent-body",
+            "parent-comment",
+            "plan-issue",
+            "tracker-document",
+            "document-store-page",
+            null
+          ],
+          "default": null,
+          "description": "Where the draft plan lives. plan-issue: a new issue this run creates to hold the plan. null: a document on the parent's project, else the parent's body where the run creates the parent, else a plan-issue. Prose on a parent the run did not create needs the owner's permission (rules/authored-write-form.md)."
+        },
+        "child-kinds": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "enum": [
+              "full",
+              "stub"
+            ]
+          },
+          "propertyNames": {
+            "pattern": "^(\\*|[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)$"
+          },
+          "default": {},
+          "description": "Each child's kind, keyed by the repository it changes as owner/name, or * for every child. full: a human section plus a collapsed agent section, implementable unaided. stub: a human-only question for the team that owns that side. Unkeyed: full."
+        },
+        "needs-validation-label": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "The label every stub child carries, meaning its owning team must shape it. null: none."
+        },
+        "not-ready-labels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "default": [],
+          "description": "Parent labels meaning the parent is not ready to plan; such a parent is skipped, or asked about when named alone."
+        },
+        "human-signatures": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "labels": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [],
+              "description": "Labels that record a person's sign-off."
+            },
+            "title-markers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [],
+              "description": "Title markers that record a person's sign-off."
+            }
+          },
+          "default": {},
+          "description": "Labels and title markers the run never applies, because each records a person's sign-off."
+        },
+        "priority-is-build-order": {
+          "type": "boolean",
+          "default": false,
+          "description": "The tracker's priority field means build order: a child ranks at least as high as the work waiting on it, else its parent's product priority, blockers winning ties."
+        },
+        "product-priority-prefix": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "A regular expression matching a parent title's product-priority prefix, its first capture group a number, lower meaning more urgent. null: the parent's priority field."
+        },
+        "estimate-scale": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "type": "number"
+          },
+          "default": null,
+          "description": "Estimate names to points, applied to full children only. null: no child is estimated."
+        },
+        "evidence-sources": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
+            "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+          },
+          "default": {},
+          "description": "Per repository as owner/name, the versioned path that is the evidence for what exists, such as a schema snapshot, read at the remote default branch."
+        }
+      },
+      "default": null,
+      "description": "How plan-feature writes a parent's children and keeps its draft plan. Absent or null: every field's default. An invocation argument beats each field. Read by: plan-feature.",
+      "x-read-by": [
+        "plan-feature"
       ]
     },
     "auto-request-settle": {

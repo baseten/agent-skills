@@ -20,8 +20,8 @@ a `[Manual] <what>` issue under the repository's manual-steps epic** — never l
 only in a PR body, a comment, a report or chat, which is where a step is lost.
 
 **Filing is opt-in.** The repository's `.claude/agent-policy.json` (the *agent
-policy* shared rule) carries these values under `manual-steps`, and only
-`issues: true` there turns filing on. Absent that — the default — nothing is filed
+policy* shared rule) carries these values under `manual-steps`, and only `issues: true` resolved for the repository — from its file or an invocation
+argument — turns filing on. Absent that — the default — nothing is filed
 and no epic is found or created: each owner step is reported, in this form,
 wherever the run reports — its closing report, a status reply, a conductor's owner
 pass — and the rest of this rule still holds, secrets included.
@@ -33,7 +33,9 @@ pass — and the rest of this rule still holds, secrets included.
   on one server or console. Steps that need different sittings, or that another
   step must unblock, are separate issues.
 - **Search before filing**: an open `[Manual]` issue for the same step is updated,
-  not duplicated.
+  not duplicated — where this run filed it or the owner named it; otherwise the
+  update is drafted for the owner (`references/authored-write-form.md`, *Issues the
+  run did not create*).
 
 ## The form
 

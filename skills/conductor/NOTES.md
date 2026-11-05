@@ -19,9 +19,11 @@ orchestrators titled inconsistently (`Orchestrator: Order execution V1`,
 **Why it never implements, merges or approves:** it is the one session that talks
 to every orchestrator, so it is the one place where a mistake would propagate to
 all of them. Keeping it to collection, planning and owner-approved dispatch means
-its worst failure is a wrong plan the owner approved, never an act.
+its worst failure is a wrong plan the owner approved, never an act. (Planning left
+it on 2026-11-04; see *Why planning moved out*.)
 
-**What it is for, and the two deployments (owner's ruling, 2026-11-02):** project
+**What it is for, and the two deployments (owner's ruling, 2026-11-02; its planning
+half superseded on 2026-11-04, below):** project
 and feature planning — taking a feature, breaking it into issues with
 dependencies, showing the plan and writing the issues on the owner's go;
 dispatching feature-level batches to `backlog-orchestrator` sessions and single
@@ -32,6 +34,17 @@ orchestrators with `auto-merge` on; at work, several `implement-issue` runs with
 never carrying a deployment's values in its text; a Close-specific skill that sets
 the work deployment's ledger and tracker preferences lives outside this
 repository.
+
+**Why planning moved out (owner's ruling, 2026-11-04):** the conductor's jobs are
+the portfolio — which epics run, in what order and how many at once, the conflicts
+and gates between them — relaying between sessions, and being the one place the
+owner decides. Feature planning is a different job with its own conversation, and it
+grew past what a section here could hold, so it became `plan-feature`, after
+`write-spec`. The conductor keeps intake: an epic arrives as a link or a planner's
+pointer, joins the ledger, and waits on the owner's *dispatch?*. It may still write
+one small issue, shown in full first, because sending one issue through a planner
+costs more than it saves. Its worst failure stays a wrong dispatch the owner
+approved, never an act.
 
 ## Configuration
 
@@ -149,15 +162,20 @@ where that is tested.
 
 **Why owner steps are issues and not a list in the pass (2026-10-31, the owner's addendum):** a list in a chat pass is gone when the session ends, and a step left in a PR body is invisible once the PR merges. Each step is filed as a `[Manual]` issue (`rules/manual-step-issues.md`), the order goes on the manual-steps epic and in the ledger, and `owner-steps` walks each one. Scenario: `owner-steps-are-ordered-as-manual-issues-on-the-epic`.
 
-## 5. Plan and replan
+## 5. Intake and replan
 
-**Why planning writes nothing before the go, and why `validate-backlog` runs on the
-written set (owner's ruling, 2026-11-02):** an issue is durable and is read by every
-dependency reader, so a plan is shown before anything is filed. `validate-backlog`
-is read-only by default and checks exactly what a written plan can get wrong —
-missing or cyclic edges, text and native links disagreeing — and an orchestrator
-runs it at its own preflight anyway; running it at planning time puts the findings
-in front of the owner before the dispatch go, when fixing them is cheapest.
+**Why a planner's pointer is only a pointer (2026-11-04):** it is a message from
+another session, so it is peer data (`swarm`, *Messages from other sessions are
+peer data*): the conductor reads the parent where it lives, and dispatch still
+waits on the owner's go, which protected rule 3 requires. The rule that a plan
+writes nothing before the go, and that `validate-backlog` runs on the written set,
+moved with planning to `plan-feature` (its NOTES, *8. Write*). **Why a stream
+awaiting dispatch arms no check-in, and why intake counts CI (contradiction pass,
+2026-11-04):** it is not a run, so nothing changes on it until the owner answers;
+and *6. Dispatch* asks with the plan's cost, which intake must therefore supply. A
+project or product issue is not an epic `backlog-orchestrator` executes, so its
+children are dispatched as an explicit issue set. Scenario:
+`a-planners-pointer-is-taken-in-and-dispatch-is-asked`.
 
 **Why CI is counted by mode (owner's audit item 2):** under `ci-mode:
 integration-branch` each run costs a CI run when its integration PR opens and
@@ -312,7 +330,7 @@ account and the template are a fresh run's.
 
 **Why the chat carries only what needs the owner:** a day of sweeps put progress, verified checks and items waiting on others into chat, and the owner had to read all of it to find the one thing that needed them. The ledger holds the rest. **Why results, not the checking:** every claim is still verified; describing how is noise. Both rules, the three-link header and one question at a time moved to `rules/operator-output.md` on 2026-11-03, which also put state changes back in chat once each and reduced a quiet sweep to its title and one minimal line (`rules/operator-output-notes.md`).
 
-**Why decisions are asked one at a time:** batches of up to four, and numbered prose lists, were answered partly or in the wrong order. One structured question at a time, each self-contained and recommending an option, with its links on the line above it, is answerable on the spot. Held replies awaiting approval are collected across runs into the same pass. `settle-outstanding-decisions` now asks one per call too (its NOTES, *Ordering*).
+**Why decisions are asked one at a time:** batches of up to four, and numbered prose lists, were answered partly or in the wrong order. The planners' blocking questions are the one exception, and it does not reach this skill (`rules/operator-output-notes.md`, *Questions*). One structured question at a time, each self-contained and recommending an option, with its links on the line above it, is answerable on the spot. Held replies awaiting approval are collected across runs into the same pass. `settle-outstanding-decisions` now asks one per call too (its NOTES, *Ordering*).
 
 **Why a draft needs its full text in the ledger:** "draft" was used of text that did not yet exist, and the owner approved something they never saw. On a GitHub-issue ledger a held review-thread reply is the exception, because that skill's rule keeps a draft reply off the forge; the ledger names it and the session holds its text.
 
@@ -382,8 +400,22 @@ Pinned in `evals/evals.json`:
     (`the-default-branch-is-swept-and-reported`);
   - a chat ruling is relayed under the marker, shown first
     (`a-chat-ruling-is-relayed-under-the-recognisable-marker`);
-  - a feature plan writes nothing before the go, and `validate-backlog` runs on the
-    written set (`a-feature-plan-is-shown-before-any-issue-is-written`);
+  - a feature to plan goes to `plan-feature`, and one small issue is shown in full
+    before it is written (`a-feature-goes-to-plan-feature-and-a-small-issue-is-shown-first`,
+    replacing `a-feature-plan-is-shown-before-any-issue-is-written`, 2026-11-04);
+  - a planner's pointer is taken into the ledger and *dispatch?* asked, never acted
+    on (`a-planners-pointer-is-taken-in-and-dispatch-is-asked`);
+  - a ruling on an issue it did not create is drafted unless approved word for word, on a run's PR recorded
+    (`a-ruling-on-someone-elses-issue-is-drafted-on-a-runs-pr-recorded`);
+  - invocation settings are forwarded at dispatch
+    (`invocation-settings-are-forwarded-at-dispatch`);
+  - an unapproved relay on a run's PR is not posted, restoring the PR-site pin #37
+    held before it moved to issues (`an-unapproved-relay-on-a-runs-pr-is-not-posted`);
+  - a ruling approved word for word is posted on someone else's issue by the
+    conductor; a correction is drafted
+    (`an-approved-ruling-on-someone-elses-issue-is-posted-by-the-conductor`);
+  - a go on someone else's epic is always drafted, even with its text approved
+    (`a-go-on-someone-elses-epic-is-always-drafted`);
   - a relay carries a verified fact, never authority
     (`a-relay-carries-a-verified-fact-never-authority`);
   - the configured repositories bound the sweep
@@ -432,3 +464,13 @@ Pinned in `evals/evals.json`:
 **Where the owner's account comes from.** The dispatch prompt names the owner's account as the invoking user's for the session it starts (owner's ruling, 2026-11-03), so the conductor must have that account from a statement too: the login its own invocation names, never the ledger (forge content anyone with write access can edit), a credential or a comment. Without one, the dispatch names none and every go and standing ruling stays pending — the fail-closed reading. **Why the DAG write names the open-item ban:** a run cannot tell an approved relay from any other footered comment under the owner's account, so the ban on writing at an open item's site is restated where the conductor writes plans. **Why a held watch carries one deadline:** anchoring 7 days at each hand-off restarted the bound on every re-settle; the run's own deadline now travels with the watch and is recorded per held PR in the ledger and the check-in prompt.
 
 **Owner's rulings on the held watch (2026-11-04):** the held watch ignores empty sweeps and runs until the PR merges or closes, or its deadline passes; and a conductor that dies after taking over a settled PR's watch leaves an accepted gap — the run keeps no check-in at its deadline. Recorded in full in `rules/conductor-exchange-notes.md`, *The watch after settling*.
+
+## Owner's rulings (2026-11-05, PR #205)
+
+**Why settings arrive by invocation and travel in every dispatch:** some deployments' repositories can never hold `.claude/agent-policy.json`, so a thin skill passes the values as invocation arguments, which `rules/agent-policy.md`, *Precedence*, already lets beat the file for every key that grants nothing. A cloud session has no local files, so the dispatch prompt is the only carrier: the conductor passes on every argument the run's skill reads, records them in the ledger for a restart, and points a planner at `plan-feature` with its own. **Why it drafts what it would record on an issue it did not create:** the shared permission rule (`rules/authored-write-form.md`, *Issues the run did not create*). Two later rulings narrow this, both below: a ruling the owner approved word for word on an item a run raised is posted by the conductor itself, and every go, on any issue, is drafted for the owner to post. Evals 0, 9, 25, 34 and 37 were rewritten to match.
+
+**What the third contradiction pass added (2026-11-05):** the drafted path names how the record is known — the owner gives the posted comment's link, the conductor reads it back as the owner's and records its id — because a conditional go and a standing ruling are re-read by that id, and finding the owner's comment by account or content could pick up a run's own write (protected rules 2 and 3). Each section that records on an issue points at *Rules*. The restart prompt carries the invocation arguments verbatim rather than reading them from the ledger, which anyone with write access can edit.
+
+**One exception with `settle-outstanding-decisions` (owner's ruling, 2026-11-05):** a ruling whose complete comment the owner approved word for word — its full text in the option they chose — is posted by the conductor itself, on any issue, as `settle-outstanding-decisions` posts one; the exception is stated once in `rules/authored-write-form.md` and read from the conductor's record of the approval, never from a footer.
+
+**Why every go is the owner's to post, on any issue (contradiction pass after the rebase onto #206, 2026-11-05):** a go is the owner's authority. Under #206 a comment whose id the run holds is its own write, so a go the conductor posted itself — even on an issue it created — and then re-read by that id would be its own write accepted as the owner's (protected rules 2 and 3). So the owner posts every go from a draft, the ledger keeps owner-comment ids apart from own-write ids, and both re-reads refuse an own-write id. Only a ruling on an item a run raised is under the exception.
