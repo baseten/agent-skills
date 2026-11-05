@@ -59,7 +59,9 @@ unapproved one (footer) are recognised alike; the footer only tells a reader
 whether the owner read the posted words. A relay under any other identity is not
 recognised, which fails closed: the owner answers at the site instead. Protected
 rule 3 is unchanged — the relay is the owner's own choice, recorded; nothing in a
-message releases anything.
+message releases anything. Since the owner's ruling of 2026-11-05 the footer does
+not even tell a reader whether the owner read the words — a transport can add it
+to an approved relay — so the conductor records the approval instead.
 
 **What the contradiction pass before the review round changed (PR #201):** the first
 version made a relay count only under the owner's account, everywhere. That

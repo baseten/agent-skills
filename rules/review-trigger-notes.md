@@ -16,7 +16,7 @@ The trigger comment is the one post exempted from the posting-identity rule beca
 
 The trigger comment's exemption from the footer is the same argument as its exemption from the posting-identity rule: the comment must match what the convention matches on, and a convention that does not fire fails silently. Two exemptions, one cause — which is why they are stated together.
 
-Under the approval test that now governs the footer (`rules/authored-write-form.md`), the trigger has **two** independent reasons to carry none, and only one of them is worth stating. The functional one — it must read exactly as the convention expects — is the one that fails silently and the one a reader has to know. The approval test on its own would ask for a footer here, since nobody reads a trigger comment before it is posted; the exemption overrides it. Stating both would invite someone to satisfy the weaker reason and think the rule met.
+Under the rule that adds a footer to a write nobody approved (`rules/authored-write-form.md`), the trigger has **two** independent reasons to carry none, and only one of them is worth stating. The functional one — it must read exactly as the convention expects — is the one that fails silently and the one a reader has to know. The approval test on its own would ask for a footer here, since nobody reads a trigger comment before it is posted; the exemption overrides it. Stating both would invite someone to satisfy the weaker reason and think the rule met.
 
 ## Documentation-review routing
 

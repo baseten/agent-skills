@@ -24,9 +24,11 @@ The brevity rule lives in `references/authored-write-form.md`; what is local her
 
 **Why an issue-less PR carries a `Source:` line (Oct 2026):** with no issue, the brief is the only scope a later settle has, and a run's own state does not survive a session boundary. The body is where `Chartered scope:` survives for the same reason, so the brief lives beside it. A permalink or a one-sentence gist, never the prose verbatim: it is a pointer to the scope, not a copy of it, and the body budget still applies.
 
-## Why the body's footer is mode-dependent, and why this skill is where it splits
+## Why body approval is mode-dependent, and why this skill is where it splits
 
 Every other deferral site makes writes of one kind: a repair pass's replies are never read before posting, a walkthrough's rulings always are. This skill is the only one that authors the same artifact both ways — a PR body opened by a dispatched worker, which nobody has read, and a PR body this skill showed to the user and created after their confirmation or edit, which its author owns. So the approval test is not a formality to forward here; it is a real branch, and the confirmation step under *Creating and verifying the PR* is exactly the evidence that decides it. Where the run cannot say the user read the body, the answer is No.
+
+**Why approval is returned rather than marked by the footer (owner's observation and ruling, 2026-11-05):** the body's footer used to be the record of this split — present on a worker's body, absent on an approved one — and the body-edit table read it back. The cloud MCP transport appends the footer to every write by itself, so an approved body could not be posted without one and the footer could not mean *unapproved*. The split is now returned as `body approved`, which the caller forwards to settle; the footer is only a marker (`rules/authored-write-form-notes.md`).
 
 ## Why the output reports identities per write kind, even under one (transport, credential) pair
 

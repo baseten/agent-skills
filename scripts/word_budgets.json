@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 26226,
+      "budget": 26240,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -31,19 +31,19 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 5760,
+      "budget": 5764,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
-      "budget": 2657,
+      "budget": 2704,
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 5785,
+      "budget": 5797,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
-      "budget": 5821,
+      "budget": 5827,
       "target": 3000
     },
     "skills/merge-stack/SKILL.md": {
@@ -83,7 +83,7 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 6398,
+      "budget": 6416,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
@@ -131,7 +131,7 @@
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2311,
+      "budget": 2379,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 2376,
+      "budget": 2384,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
@@ -167,7 +167,7 @@
       "target": 1500
     },
     "rules/posting-identity.md": {
-      "budget": 1916,
+      "budget": 1922,
       "target": 1500
     },
     "rules/prose-review-round-budget.md": {
@@ -179,7 +179,7 @@
       "target": 1500
     },
     "rules/review-feedback.md": {
-      "budget": 2911,
+      "budget": 2931,
       "target": 1500
     },
     "rules/review-trigger.md": {

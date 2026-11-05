@@ -1013,7 +1013,7 @@ Settled is not the same as finished. The run has produced everything it can **fo
 On reaching settled:
 
 1–7. run `settle-and-merge`'s sequence over this run's PR set (`settle-and-merge`, *The settle sequence*), passing it every input its *Inputs* names, as this run supplies them:
-   - **PR set and scope**: the manifest/scope, and this run's PR set — which may be empty, where every issue blocked before creating a PR — each PR marked `created` where this run's record holds its number from a worker's `create-pr` result, never an adopted one;
+   - **PR set and scope**: the manifest/scope, and this run's PR set — which may be empty, where every issue blocked before creating a PR — each PR marked `created` where this run's record holds its number from a worker's `create-pr` result, never an adopted one, and `body unapproved` where that result says so, as a dispatched worker's always does;
    - **findings**: the worker and review findings the run produced;
    - **held-reply records**: the approval-pending, rejected and mixed-thread records `supervise-prs`'s record holds; pass the held-reply outcomes `settle-and-merge` returns to `supervise-prs` as its *held-reply outcomes* input;
    - **posting-identity map**: the run's map (`references/posting-identity.md`);

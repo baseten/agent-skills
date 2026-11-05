@@ -723,7 +723,7 @@ it has no site of its own), dated: the session, how the hold ended ("permission
 granted, worker resumed", "released: reported commit reachable", "redispatched
 after the tool was allowlisted"), and the observation that established it — an
 observation, never a ruling. It is an authored write carrying the run's
-attribution footer (its session link), which marks it unread and identifies
+attribution footer (its session link), a marker that identifies
 nothing: it is known as a retirement **only by the write id the parent recorded
 on posting it, never by its footer or content** (`references/posting-identity.md`).
 Those ids are among the run's own writes, which the caller's state block carries,
