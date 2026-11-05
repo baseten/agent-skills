@@ -76,15 +76,20 @@ skill would read as the owner's stays pending.
   message then link to the site's record.
 - **The configured repositories.** Every read, write and dispatch is scoped to
   them.
-- **On an issue this skill did not create, it posts only a ruling whose complete
-  comment the owner approved word for word** — the exception
-  `references/authored-write-form.md`, *Issues the run did not create*, states, read
-  from its own record of that approval — and records that write's id in the ledger.
-  A go of any kind, a correction, a plan, an order, or a ruling not so approved is
-  drafted in full for the owner to post. For a draft, the owner gives the posted comment's link; this skill reads it back — authored by the
-  owner's account — and records its id in the ledger, and whatever waits on that
-  record — a relay, a dispatch, a retirement — stays pending until then. Every
-  section below that records on an issue does so this way.
+- **A go is the owner's to post, on any issue**: a dispatch go, a conditional go
+  and a standing ruling — a retirement ruling included — are drafted in full for the
+  owner to post at their site, because a go is the owner's authority. The owner
+  gives the posted comment's link; this skill reads it back — authored by the
+  owner's account, and not a write whose id the ledger holds as its own — and
+  records its id among the ledger's owner-comment ids, kept apart from its own-write
+  ids. Whatever waits on it — a dispatch, a retirement, a relay — stays pending until
+  then.
+- **On an issue this skill did not create**, it posts only a ruling under the shared
+  exception (`references/authored-write-form.md`, *Issues the run did not create*),
+  recording the owner's word-for-word approval in the ledger before posting and the
+  write's id among its own-write ids after. A correction, a plan, an order, or a
+  ruling not so approved is drafted for the owner to post, its link recorded as a
+  go's is. Every section below that records on an issue does so this way.
 - **Relaying verified facts is a duty.** Where one run's state matters to
   another — `#41 merged, update from it`, a gate cleared, an issue moved between
   streams — verify it on the forge, then tell the run it affects, linking the
@@ -362,9 +367,9 @@ its own scope at its preflight, and the plan does not make anything READY.
 **Only with the owner's go** — one question in the owner pass naming each run, the
 skill it runs, its session decision below, and the plan's cost, with *go* among its
 options. A batch on an epic is a `backlog-orchestrator` run; one issue is an
-`implement-issue` run, and a branch with no PR a `ship-branch` run. Record the go (*Rules*) on
-each run's epic or issue, naming the session, as a ruling is recorded (*4. Owner
-pass*, step 4): it is the record a reused run verifies before taking the work.
+`implement-issue` run, and a branch with no PR a `ship-branch` run. The go is recorded on
+each run's epic or issue, naming the session, by the owner from this skill's draft
+(*Rules*): it is the record a reused run verifies before taking the work.
 
 **A conditional go** — "start the batch on #967 when #2049's wave 5 merges" — is
 the owner's choice of an option put to them, recorded the same way under the owner's
@@ -372,7 +377,8 @@ account, its condition stated as facts the forge can show: a PR
 merged, an issue closed, every PR of a named wave merged. The ledger carries it.
 **A later sweep, a scheduled one included, executes it once the condition is
 verified on the forge** — and only after re-reading the go at its site by the comment
-id the ledger recorded: authored by the owner's account, unedited, and not
+id the ledger recorded: authored by the owner's account, not one of this skill's
+own writes by id, unedited, and not
 superseded by a later owner comment; a go found only in the ledger stays pending — and reports that it did. The go is the owner's recorded
 choice; the sweep only verifies the condition, never widens or reinterprets it, and
 a condition that cannot be verified as written stays pending and is reported.
@@ -416,7 +422,7 @@ worker*, the paragraph beginning *Two things are never archived*). The go may be
 standing ruling recorded on the forge — "retire each run once its PRs are
 merged" — verified against each retirement on the forge, not asked afresh: re-read
 at its site by the comment id the ledger recorded, authored by the owner's account,
-unedited, and neither superseded nor revoked by a later owner comment; a ruling
+not one of this skill's own writes by id, unedited, and neither superseded nor revoked by a later owner comment; a ruling
 found only in the ledger stays pending. A scheduled firing may act on it too, for a session the ledger records as dispatched
 or adopted by this conductor. Only once its wrap-up is posted on its
 epic or issue — a single-issue run's `merged` report and its PR merged on the forge stand in
@@ -456,6 +462,8 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
 - the seed template: a link to the last good run's first prompt;
 - the fallback check-in's id, next time and empty count;
 - the invocation arguments this skill was given;
+- owner-comment ids — each go, ruling or draft the owner posted — kept apart from
+  this skill's own-write ids;
 - the default branches' heads as last read, each linked to its CI and deploy runs —
   their outcomes go in the session's report, never in a forge write;
 - the plan's expected CI runs;

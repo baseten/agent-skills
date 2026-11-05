@@ -255,6 +255,18 @@
         "the answer does not tick it on the owner's word"
       ],
       "files": []
+    },
+    {
+      "id": 19,
+      "name": "a-ruling-on-an-issue-outside-the-run-is-posted-only-if-approved-word-for-word",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Invoked standalone by the owner over one PR's outstanding items. Two rulings belong on acme/web#300, a product issue a PM filed, outside the run's scope: one answers a DECISION item a run raised, and the owner approved its complete comment as shown; the other answers a question the PM asked in a comment, and the owner chose an option without seeing the comment built around it. Question: what do you post on #300, and what do you record?",
+      "expected_output": "The first: a ruling on an item a run raised whose complete comment the owner approved word for word falls under the shared exception, so record the approval before posting, post it on #300, and record its write id after. The second answers a question a person asked and its complete comment was not approved, so it is not posted: draft it for the owner to post. The output names the posted ruling with its write id and approval, and lists the draft.",
+      "assertions": [
+        "the answer posts the approved ruling on the run's DECISION item",
+        "the answer records the approval before posting and the write id after",
+        "the answer drafts the second ruling for the owner rather than posting it"
+      ],
+      "files": []
     }
   ]
 }

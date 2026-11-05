@@ -699,7 +699,7 @@
       "id": 55,
       "name": "a-go-on-someone-elses-epic-is-always-drafted",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Epic #967 was filed by a product manager. In the owner pass you asked 'Dispatch a backlog-orchestrator run on #967?' with an option whose text was the complete go comment to record on #967, word for word; the owner chose it. Question: do you post the go on #967 yourself, and when do you dispatch?",
-      "expected_output": "No. A go — conditional or standing included — is never under the approved-ruling exception, whatever the owner approved: its record must be the owner's own comment, which a run's re-read accepts and the conductor's own write would not. Draft the go in full for the owner to post on #967; once they give its link, read it back as authored by the owner's account and record its id in the ledger. Dispatch only then.",
+      "expected_output": "No. A go — conditional or standing included — is never under the approved-ruling exception, whatever the owner approved: a go is the owner's authority, so the owner posts it, on any issue. Draft the go in full for the owner to post on #967; once they give its link, read it back as authored by the owner's account and not one of the conductor's own writes by id, and record its id among the ledger's owner-comment ids. Dispatch only then.",
       "assertions": [
         "the answer does not post the go on #967 itself",
         "the answer drafts the go for the owner to post",

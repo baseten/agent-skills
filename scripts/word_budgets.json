@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 6011,
+      "budget": 6101,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -87,7 +87,7 @@
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
-      "budget": 5727,
+      "budget": 5763,
       "target": 3000
     },
     "skills/ship-branch/SKILL.md": {
@@ -131,7 +131,7 @@
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2737,
+      "budget": 2751,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 2454,
+      "budget": 2419,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
