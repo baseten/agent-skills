@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 26266,
+      "budget": 26298,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 6113,
+      "budget": 6580,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -39,11 +39,11 @@
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 5807,
+      "budget": 5829,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
-      "budget": 5832,
+      "budget": 6035,
       "target": 3000
     },
     "skills/merge-stack/SKILL.md": {
@@ -163,7 +163,7 @@
       "target": 1500
     },
     "rules/platform-pr-posture.md": {
-      "budget": 1483,
+      "budget": 1616,
       "target": 1500
     },
     "rules/posting-identity.md": {

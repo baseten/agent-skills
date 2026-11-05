@@ -42,7 +42,7 @@ evals (`<skill>#<id>`).
    create-pr#6, resolve-pr-comment#0 #18 #21 #23 #26 #28 #41 #42 #43 #44 #45 #46 #47
    #48 #49 #50 #51 #55 #56 #57 #58, implement-issue#37 #40,
    review-docs#11, settle-outstanding-decisions#11 #12 #19, conductor#54, backlog-orchestrator#72,
-   supervise-prs#56 #88, swarm#30.
+   supervise-prs#56 #88, swarm#30, conductor#57.
 2. **Identity is observed authorship; own writes are known by id, never by footer or content.**
    `rules/posting-identity.md`; `swarm`, *Releasing a worker*, *Blocked workers*; `supervise-prs`, *Integration-branch CI*, step 3;
    `rules/conductor-exchange.md`, *Pushes*, *The watch after settling*.
@@ -55,14 +55,14 @@ evals (`<skill>#<id>`).
    `conductor`, *6. Dispatch*. backlog-orchestrator#58 #92 #96
    #103, settle-and-merge#41 #45, supervise-prs#104 #105, conductor#23 #25 #37 #50 #53 #54 #55, implement-issue#35 #38.
 4. **Never request, re-request or remove a human reviewer.** `rules/review-trigger.md`.
-   supervise-prs#33 #74.
+   supervise-prs#33 #74, conductor#57.
 5. **The platform's auto-fix posture is overridden**: only a dispatched `repair-pr`
    repairs; budgets bound every loop, the invoking user's own review rounds aside, which
    spend no `review-repair-cycles`; a spent budget ends in the skill's outcome, never
    another repair push.
    `rules/platform-pr-posture.md`; `supervise-prs`, *Budgets*; `rules/agent-policy.md`, *Branch updates*. supervise-prs#25 #26 #55 #57,
    backlog-orchestrator#67, repair-pr#16 #17 #18, supervise-prs#61 #73 #96 #98 #102 #103 #104 #107 #108 #109 #110, backlog-orchestrator#96,
-   repair-pr#20 #21, settle-and-merge#46 #47 #48, implement-issue#40.
+   repair-pr#20 #21, settle-and-merge#46 #47 #48, implement-issue#40, implement-issue-core#26.
 6. **A created PR's body is edited only while draft, still the unapproved, unedited text of a PR this run created, or under a resolved merge
    opt-in** (`Depends on:` excepted); else drift is reported with a replacement.
    `rules/authored-write-form.md`. settle-and-merge#6 #9 #49 #50, merge-stack#5,
