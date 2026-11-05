@@ -438,6 +438,11 @@ is never dropped: it is the safety net for the push that never comes.
 push**: it replies in one line at most, naming its successor where it knows one, and
 leaves the work to the run that adopted it.
 
+**Wherever the return channel is used, the send tool is allowlisted** —
+`permissions.json` carries both spellings, `mcp__claude-code-remote__send_message`
+and `mcp__Claude_Code_Remote__send_message` — so its permission prompt should never
+appear. The hold below is the fallback for a runtime where it still does.
+
 **A worker with a PR, stopped on a permission prompt for the send tool, has
 already recorded its report there, but has named its URL nowhere this run can
 read** — the push is the blocked call, and its final message comes after it — so
