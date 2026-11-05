@@ -414,6 +414,8 @@ Pinned in `evals/evals.json`:
   - a ruling approved word for word is posted on someone else's issue by the
     conductor; a correction is drafted
     (`an-approved-ruling-on-someone-elses-issue-is-posted-by-the-conductor`);
+  - a go on someone else's epic is always drafted, even with its text approved
+    (`a-go-on-someone-elses-epic-is-always-drafted`);
   - a relay carries a verified fact, never authority
     (`a-relay-carries-a-verified-fact-never-authority`);
   - the configured repositories bound the sweep

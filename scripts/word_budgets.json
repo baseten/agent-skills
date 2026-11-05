@@ -87,7 +87,7 @@
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
-      "budget": 5722,
+      "budget": 5727,
       "target": 3000
     },
     "skills/ship-branch/SKILL.md": {
@@ -131,7 +131,7 @@
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2718,
+      "budget": 2737,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {

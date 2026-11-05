@@ -289,7 +289,7 @@ the report; the rest follow it** (`references/operator-output.md`, *Questions*).
    ruling and the approval. A draft answer to a person's question is never
    among them: that is a decision, asked as one. This is the
    conductor's own pass; where it invokes `settle-outstanding-decisions` for a run — its
-   records on issues this skill did not create drafted as *Rules* says —
+   records on issues this skill did not create made as *Rules* says —
    that skill's walkthrough governs its own questions.
 3. **One merged, ordered list of owner steps**, deduplicated across streams and
    ordered by dependency, in the form `references/manual-step-issues.md` states.

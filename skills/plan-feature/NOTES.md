@@ -95,7 +95,7 @@ is protected rule 1's direction — a run never answers a person — applied to 
 channel. It does not touch PRs, which protected rules 1 and 6 already govern.
 
 **Why nothing here reads a footer (owner's ruling, 2026-11-05):** the cloud
-transport appends a footer to every write, so it can carry no meaning; `#206` owns
+transport appends a footer to every write, so it can carry no meaning; #206 holds
 the footer rules. **Why every child's full text is still shown in chat
 (contradiction pass, 2026-11-04):** the owner's go approves what it was shown;
 showing only titles made "approved" a claim about text the owner may not have read.
