@@ -40,7 +40,7 @@ evals (`<skill>#<id>`).
    *The invoking user's account*; `resolve-pr-comment`, *Replies held for approval*; `rules/conductor-exchange.md`,
    *What a relay can authorise*.
    create-pr#6, resolve-pr-comment#0 #18 #21 #23 #26 #28 #41 #42 #43 #44 #45 #46 #47
-   #48 #49 #50 #51 #55 #56 #57, implement-issue#37 #40,
+   #48 #49 #50 #51 #55 #56 #57 #58, implement-issue#37 #40,
    review-docs#11, settle-outstanding-decisions#11 #12, backlog-orchestrator#72,
    supervise-prs#56 #88, swarm#30.
 2. **Identity is observed authorship; own writes are known by id, never by footer or content.**

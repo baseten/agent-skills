@@ -174,7 +174,7 @@ The report below is the walkthrough's record, printed before the report `referen
 ```text
 ## Decisions settled
 
-1. <decision> — <ruling> — recorded at <URL> — next owner: <skill or person>
+1. <decision> — <ruling> — recorded at <URL> (write id <id>; complete record approved: yes / no) — next owner: <skill or person>
 
 ## Declined to ask
 

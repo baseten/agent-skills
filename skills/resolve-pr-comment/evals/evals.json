@@ -717,6 +717,18 @@
         "the thread is resolved, since no newer comment by someone else exists"
       ],
       "files": []
+    },
+    {
+      "id": 58,
+      "name": "a-transport-that-footers-another-kind-does-not-excuse-the-footer",
+      "prompt": "You are executing the resolve-pr-comment skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Unattended repair pass. The posting-identity map records the MCP transport's pair as `appends footer`, observed only on a timeline comment (the review trigger's read-back); no review reply has been read back through it. You are posting a review reply nobody approved: `Fixed in 4f2a1c — handle the empty list.` Do you add the attribution footer?",
+      "expected_output": "Yes. A write nobody approved word for word adds the footer unless the pair is recorded as appending one for this write kind, observed by reading back a write of that kind. Only a timeline comment was observed, so for a review reply the observation is a predictor, not an answer: add the run's own footer. A doubled footer, if the transport adds one too, is the accepted cost; an unmarked unapproved reply is not.",
+      "assertions": [
+        "the answer adds the footer to the reply",
+        "the answer says the appends-footer observation answers only for the write kind it was read back on",
+        "the answer accepts a possible doubled footer rather than risk an unmarked reply"
+      ],
+      "files": []
     }
   ]
 }

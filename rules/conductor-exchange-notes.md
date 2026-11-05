@@ -48,7 +48,7 @@ choosing an offered option or a recorded ruling.
 7):** the owner often rules in the conductor's chat. Those rulings were recorded
 on the forge, but nothing said how an orchestrator, whose authorship test reads "a
 comment the owner wrote", should read a comment the conductor posted. Two rules
-pulled against each other: the footer marks text nobody read, and is never a
+pulled against each other: the footer then marked text nobody read, and is never a
 discriminator (`rules/authored-write-form.md`), so it could not be what told a
 relay apart. The resolution keeps both intact. The conductor records a relay as
 `settle-outstanding-decisions` records any ruling — the owner shown the complete
@@ -102,7 +102,7 @@ restated at the decision point.
 
 ## Writes
 
-**Why the trigger is never put up for approval (field feedback):** the approval test exists to stop unread prose going out under the owner's name. A review trigger is a fixed token whose exact text the repository documents; there is nothing in it to read, and holding it for approval only delayed review. The trigger rule already exempts it from the footer for the same reason. **Why replies are kept short:** under the usual posting identity a reply reads as the owner's own words, marked only by the footer.
+**Why the trigger is never put up for approval (field feedback):** the approval test exists to stop unread prose going out under the owner's name. A review trigger is a fixed token whose exact text the repository documents; there is nothing in it to read, and holding it for approval only delayed review. The trigger rule already exempts it from the footer for the same reason. **Why replies are kept short:** under the usual posting identity a reply reads as the owner's own words, marked only by a footer where it carries one.
 
 ## What a relay can authorise
 

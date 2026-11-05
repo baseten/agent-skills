@@ -29,7 +29,7 @@ was reasoning about a section that no longer lives there.
 
 **The thread-root test's two jobs:** it closes the identity collision — the one job a distinct identity subsumes, where one exists — and it separates feedback-to-act-on from conversation on the PR timeline, a comment-kind distinction no author identity can make: the invoking user's timeline comment is still conversation, and their thread root is still an instruction, whoever the run posts as. Because availability degrades per write, the collision-closing job returns whenever the condition fails; deleting either rule as redundant re-opens exactly the ambiguity it closes.
 
-**Why `appends footer` is a map property (#183):** a transport adding its own footer is a property of the write path, like authorship, and three rules need it: trigger confirmation, body edits and approved writes. Recorded once on the pair, it travels with the map.
+**Why `appends footer` is a map property (#183):** a transport adding its own footer is a property of the write path, like authorship, and three rules need it: trigger confirmation, body edits, and a write through it needing no second footer; since 2026-11-05 it is recorded per write kind, because a pair that footers one kind need not footer another. Recorded once on the pair, it travels with the map.
 
 **The GraphQL/REST transport note (#183):** reported from a field run, in a session where GraphQL was blocked: `gh pr comment` failed and `gh api -X POST repos/{owner}/{repo}/issues/{number}/comments` posted. It was not re-run for this change, since a check would post a real comment; it is recorded as observed in that report.
 
