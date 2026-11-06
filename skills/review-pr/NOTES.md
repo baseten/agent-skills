@@ -56,11 +56,12 @@ is a decision the owner makes in their own words — the same reason a run never
 answers a person's question (protected rule 1). Naming the thread in the summary
 leaves the owner both the information and the choice.
 
-**Why the pending review carries no footer.** The footer marks a write nobody
-approved. A pending review is visible to no one but its author until they
-submit it, and submitting is their approval of what it says, so it is recorded
-in `rules/authored-write-form.md`'s table beside the `NEEDS_USER` draft reply:
-material for a person, who authors it when they post it.
+**Why the pending review carries the footer.** The footer marks a write nobody
+approved, and when this skill writes the review nobody has read it; one click
+publishes it. The first draft treated it as the owner's material, like a
+`NEEDS_USER` draft reply, and the blind protected-rule audit found that narrowed
+protected rule 1. So the summary carries the footer, and the owner removes it
+when they edit and adopt the text (`rules/authored-write-form-notes.md`).
 
 ## 3. Write the pending review
 

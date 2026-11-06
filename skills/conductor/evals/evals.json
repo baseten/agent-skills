@@ -922,13 +922,14 @@
     {
       "id": 72,
       "name": "a-reviewer-is-archived-once-the-owner-submits",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two reviewers you dispatched are idle at `drafted`. On acme/web#92 the sweep reads a review by @owner, state COMMENTED, submitted an hour after the reviewer was dispatched. On acme/web#93 @owner has submitted nothing, and the PR merged an hour ago. No standing ruling or go about archiving exists. What do you do with each session, and what do you check first?",
-      "expected_output": "#92's reviewer is archived without asking: the owner's review was submitted after its dispatch, which is when a reviewer is archived (the owner's ruling), the session is this conductor's own, it is not RUNNING, and it writes no branch so nothing can be stranded; it leaves the ledger's table. #93's reviewer stays: no owner review was submitted, so it is archived only on the owner's go; it is not messaged, watched or asked to submit.",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two reviewers you dispatched are idle at `drafted`. On acme/web#92 the sweep reads a review by @owner, state COMMENTED, submitted an hour after the reviewer was dispatched. On acme/web#93 @owner has submitted nothing, and the PR merged an hour ago. No standing ruling or go about archiving exists. A third reviewer, for acme/web#97, never reported and its record shows it waiting on a permission prompt; @owner submitted a review of #97 an hour ago. What do you do with each session, and what do you check first?",
+      "expected_output": "#92's reviewer is archived without asking: the owner's review was submitted after its dispatch, which is when a reviewer is archived (the owner's ruling), the session is this conductor's own, it is not RUNNING, and it writes no branch so nothing can be stranded; it leaves the ledger's table. #93's reviewer stays: no owner review was submitted, so it is archived only on the owner's go; it is not messaged, watched or asked to submit. #97's reviewer is not archived: it never reached a verified drafted, so only the owner's go archives it, and it stays a Confirm in a session item naming the tool string it waits on.",
       "assertions": [
         "the answer archives #92's reviewer without a go once the owner's review is submitted",
         "the answer checks the session is not RUNNING before archiving",
         "the answer leaves #93's reviewer until the owner's go",
-        "the answer sends neither reviewer a message or a request to submit"
+        "the answer sends neither reviewer a message or a request to submit",
+        "the answer does not archive #97's reviewer, which never reached a verified drafted"
       ],
       "files": []
     },

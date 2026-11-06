@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 8246,
+      "budget": 8251,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -131,7 +131,7 @@
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2839,
+      "budget": 2807,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
@@ -211,7 +211,7 @@
       "target": 1500
     },
     "skills/review-pr/SKILL.md": {
-      "budget": 1280,
+      "budget": 1297,
       "target": 3000
     }
   }

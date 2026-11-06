@@ -307,7 +307,12 @@ read from its session record, because nothing else would surface it. Reviewers,
 candidates and the standing ruling joined the ledger, the clear's dump, the owner
 pass and *Report*, the sections that read state. And the archive reads the
 tracker too, since a review submitted where it was drafted is not yet verified to
-appear on the forge as the owner's.
+appear on the forge as the owner's. **The blind protected-rule audit then limited
+the automatic archive to a reviewer verified `drafted`:** a reviewer that failed
+may have published under the owner's account, which a sweep would misread as the
+owner's submission (protected rule 2), and one blocked on a prompt would vanish
+with its *Confirm in a session* item unreported (protected rule 9). Any other
+reviewer is archived on the owner's go.
 
 ## 8. Context clear
 

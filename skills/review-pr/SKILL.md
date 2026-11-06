@@ -77,13 +77,14 @@ The reasoning lives in `NOTES.md`, keyed by section; it never overrides.
 - **One summary**, as the pending review's body: the overall read, the blocking
   points, and what is good, in a few sentences.
 - **New comments only.** Never a reply into an existing thread, and never an
-  answer to a question someone asked there: where a thread matters, the summary
-  names it, and the owner answers it.
+  answer to a question someone asked there, nor a lean on one: where a thread
+  matters, the summary names it and the facts bearing on it, and the owner
+  answers it.
 - **Form** is `references/authored-write-form.md`'s, *Keep it short*: every
   issue or PR named is a link, SHAs are bare, no line is hard-wrapped, and
-  nothing reports which checks ran or how they came out. The
-  pending review carries no footer: it is material for the owner, who authors
-  it when they submit it (that rule's table).
+  nothing reports which checks ran or how they came out. The summary ends with
+  that rule's footer, since nobody has read the review when it is written; the
+  owner may edit it out before submitting (that rule's table).
 - **The recommendation** — approve, comment or request changes — goes in the
   report, never in the draft.
 

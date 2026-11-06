@@ -606,10 +606,10 @@ cannot read it. A `failed` reviewer is a *Changed since* line with its reason, o
 
 **A reviewer is done at `drafted` or `failed`**: nothing watches its PR for it,
 arms a check-in for it, or messages it — never asking it to submit, which is the
-owner's alone. **It is archived** once a sweep reads the owner's review of its PR
-submitted after its dispatch — on the forge, or on the tracker its drafts were on
-(owner's ruling, 2026-11-06; NOTES) — otherwise on the owner's go, never while
-`RUNNING`. This skill created it,
+owner's alone. **A reviewer verified `drafted` is archived** once a sweep reads
+the owner's review of its PR submitted after its dispatch — on the forge, or on
+the tracker its drafts were on (owner's ruling, 2026-11-06; NOTES); any other
+reviewer only on the owner's go; none while `RUNNING`. This skill created it,
 and it writes no branch, so nothing of it can be stranded. Archived, it leaves the
 ledger's table.
 
