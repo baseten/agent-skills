@@ -18,7 +18,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # rule source  ->  skills that apply it
 AUTHORED_WRITE_FORM="write-spec plan-feature backlog-orchestrator conductor owner-steps settle-and-merge create-pr normalize-github-dependencies
   npm-dependency-upgrade-orchestrator implement-issue-core
-  merge-stack repair-pr resolve-pr-comment review-docs review-skill settle-outstanding-decisions
+  merge-stack repair-pr resolve-pr-comment review-docs review-pr review-skill settle-outstanding-decisions
   summarize-wave upgrade-npm-dependency validate-backlog supervise-prs"
 
 # One variable per rule, named for the rule file in upper snake case.
@@ -49,7 +49,7 @@ RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
 # Skills that make an authored forge/tracker write and select its author, or
 # that pass or merge the run's posting-identity map.
 POSTING_IDENTITY="write-spec plan-feature backlog-orchestrator conductor owner-steps settle-and-merge swarm create-pr implement-issue
-  implement-issue-core merge-stack repair-pr resolve-pr-comment review-docs
+  implement-issue-core merge-stack repair-pr resolve-pr-comment review-docs review-pr
   settle-outstanding-decisions supervise-prs normalize-github-dependencies
   review-skill summarize-wave upgrade-npm-dependency validate-backlog"
 
@@ -102,7 +102,7 @@ REVIEW_FEEDBACK="backlog-orchestrator repair-pr resolve-pr-comment
 # Skills that act on something asserted by an agent, assumed about a provider,
 # or that author a write making claims about existing code or current state.
 ESTABLISH_DO_NOT_ASSUME="write-spec plan-feature backlog-orchestrator conductor owner-steps swarm settle-and-merge repair-pr
-  validate-backlog review-skill implement-issue-core create-pr resolve-pr-comment
+  validate-backlog review-pr review-skill implement-issue-core create-pr resolve-pr-comment
   summarize-wave settle-outstanding-decisions implement-issue supervise-prs"
 
 # Skills that file an owner step as a [Manual] issue, or walk one.
