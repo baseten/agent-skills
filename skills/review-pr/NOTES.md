@@ -19,6 +19,12 @@ review that says the wrong thing costs a correction in front of the author. So
 the skill never chooses the event either: approve, comment or request changes
 is a judgement about a person's work, and it is the owner's.
 
+**Why a skill extending this one is the entry point.** A wrapper exists because
+its deployment drafts somewhere this skill does not know; asked directly, this
+skill would draft on GitHub what belongs on the wrapper's surface. The wrapper
+follows this skill, so the instruction stops at the wrapper that sent the reader
+here.
+
 ## Never
 
 **Why the review bot is never triggered and no reviewer is ever requested.** A

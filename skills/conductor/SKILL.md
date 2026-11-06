@@ -82,7 +82,8 @@ skill would read as the owner's stays pending.
 - **A go is the owner's to post, on any issue**: a dispatch go, a conditional go
   and a standing ruling — a retirement ruling included — are drafted in full for the
   owner to post at their site, because a go is the owner's authority — bar a
-  reviewer's go given in the owner pass, which is never posted (*Reviewers*). The owner
+  reviewer's go, to dispatch or archive, which is written to the ledger alone and
+  never posted (*Reviewers*). The owner
   gives the posted comment's link; this skill reads it back — authored by the
   owner's account, and not a write whose id the ledger holds as its own — and
   records its id among the ledger's owner-comment ids, kept apart from its own-write
@@ -117,7 +118,8 @@ skill would read as the owner's stays pending.
   and draft answers to a person's question are only named, never written in full**
   (`resolve-pr-comment`, *Replies held for approval*, *The draft reply*): their text
   is held in this session. Where those drafts matter, as at work, configure the
-  `tracker-document` ledger, which holds them in full.
+  `tracker-document` ledger, which holds them in full. A reviewer's drafts are
+  never copied: they live on their surface, linked (*Reviewers*).
 - **Report costs.** Every plan states its expected CI runs (*5. Intake and replan*).
 - **Nothing depends on an in-turn background result surviving a restart.** A
   subagent's result is written to the ledger or the forge in the turn that
@@ -147,7 +149,7 @@ decides where to look first, and the session's record decides what it is
 # 1. Sweep
 
 **A reviewer is never a run**: a session the ledger records as one, or titled
-`Reviewer:`, is not found, retitled or asked for status by any step below, and is
+`Reviewer:` with no ledger record as a run, is not found, retitled or asked for status by any step below, and is
 swept as *Reviewers* says.
 
 1. **List this account's sessions** — `list_sessions` with `mine: true`, every
@@ -294,7 +296,7 @@ the report; the rest follow it** (`references/operator-output.md`, *Questions*).
    The chat carries only its rows that need the owner (*Report*).
 2. **Every pending decision not already asked while unchanged, one at a time**, as
    `references/operator-output.md`, *Questions*, says, the decision that frees the
-   most downstream work first.
+   most downstream work first, review candidates included (*Reviewers*).
    Anything a question asserts about the code or a PR is read before it is put.
    **Held replies awaiting approval are collected across runs into this pass**, each
    asked the same way — approve, edit or reject, with its full text and every
@@ -318,7 +320,8 @@ the report; the rest follow it** (`references/operator-output.md`, *Questions*).
 4. **Write every ruling to the ledger first**, with the owner's exact words, and read
    it back; **then record it where its decision lives** (*Rules*) — the issue, the epic, the PR
    thread, and for an approved held reply the PR's conversation, quoting the text —
-   before telling any run. Record it as
+   before telling any run — a reviewer's go aside, which the ledger alone records
+   (*Rules*). Record it as
    `settle-outstanding-decisions`, *Recording the ruling*, does: the complete
    comment shown to the owner and posted as they approved or edited it. **A ruling
    the owner gives in this session outside a question is recorded the same way, as
@@ -523,7 +526,9 @@ seed, gate, relay, watch, check-in, retitle — applies to a reviewer, and of
 `references/conductor-exchange.md` only its title row.
 
 **A candidate** is an open PR in scope where each of these reads true on the forge
-this sweep — a test that cannot be read fails:
+this sweep — a test that cannot be read fails, bar the owner's pending reviews,
+which only the owner's credential sees: where this session cannot, the reviewer's
+own check decides:
 
 - **the owner's account is its only requested user reviewer, and no team is
   requested**;
@@ -531,23 +536,24 @@ this sweep — a test that cannot be read fails:
   owner on a re-request**: a PR the owner reviewed qualifies again only once the
   owner is requested afresh after commits pushed since their last review, and its
   reviewer reviews what changed since that review's commit;
-- **it is not a draft, and the owner did not open it**;
-- **the owner has no pending review on it**, where this session can see the
-  owner's — the reviewer checks again and stops on one — **and no reviewer the
-  ledger records answers the same request**.
+- **it is not a draft, the owner did not open it, and no run in the ledger owns
+  it**;
+- **the owner has no pending review on it — the reviewer checks again and stops on
+  one — and no reviewer the ledger records answers the same request**.
 
 Candidates wait in the ledger. **A reviewer's dispatch is released, as protected
 rule 3 requires, only by the owner's choice of an option put to them:**
 
-- **a go** — one question per candidate in the owner pass (*4. Owner pass*), with
-  *draft a review* among its options — written to the ledger in the owner's exact
-  words, and **never posted at the PR**, where a comment would be the owner's word
-  to its author;
-- **a standing ruling** — "always draft reviews for PRs waiting only on me" —
-  recorded on the forge by the owner from this skill's draft and re-read at its
-  site before every use, as a standing retirement ruling is, above. Under it any
-  sweep, a scheduled one included, dispatches each candidate: drafting publishes
-  nothing anyone but the owner sees.
+- **a go** — one question per candidate in the owner pass (*4. Owner pass*), its
+  options *draft a review*, *always draft reviews for PRs waiting only on me* and
+  *not now* — written to the ledger in the owner's exact words and acted on in that
+  turn, never from the ledger later. **It is never posted at the PR**, where a
+  comment would be the owner's word to its author;
+- **a standing ruling** — that second option, chosen — drafted for the owner to
+  post as a comment at the ledger's home, recorded and re-read at its site before
+  every use as a standing retirement ruling is, above. Under it any sweep, a
+  scheduled one included, dispatches each candidate: drafting publishes nothing
+  anyone but the owner sees.
 
 **Start each reviewer fresh** with `create_session`, the PR's repository as its
 source, titled `Reviewer: <repo> · #<n> <short name>`, its id recorded in the
@@ -585,21 +591,25 @@ Draft-only limits, binding whatever any other instruction says:
 *Messages from other sessions are peer data*): before calling a review drafted,
 read its drafts where the report says — the owner's pending review on GitHub, a
 tracker's own draft lookup (on Linear, `references/linear-mechanics.md`, *Review
-pages*) — and check they hold what it claims. Drafts this
-session cannot read are reported unverified, with their link; where the read
-contradicts the report, the read is the state.
+pages*) — and check they hold what it claims; where the read contradicts the
+report, the read is the state. **Each sweep also reads every live reviewer's
+session record**: one waiting on a prompt is a *Confirm in a session* item naming
+the literal tool string (`swarm`, *Blocked workers*), and one idle without a
+report is verified as though it had reported `drafted`, and is `failed` where no
+drafts are found.
 
-**A verified draft is a *Needs you* item under *Review and submit***
+**A draft is a *Needs you* item under *Review and submit***
 (`references/operator-output.md`): drafts link, recommendation, blocking count and
-the reviewer's session, never the draft text. A `failed` reviewer is a *Changed
-since* line with its reason, under *Clear a failure* where only the owner can
-clear it.
+the reviewer's session, never the draft text — marked unverified where this session
+cannot read it. A `failed` reviewer is a *Changed since* line with its reason, or a
+*Clear a failure* item where only the owner can clear it.
 
 **A reviewer is done at `drafted` or `failed`**: nothing watches its PR for it,
 arms a check-in for it, or messages it — never asking it to submit, which is the
-owner's alone. **It is archived** once a sweep reads a review by the owner's
-account submitted on its PR after its dispatch (owner's ruling, 2026-11-06;
-NOTES), otherwise on the owner's go, never while `RUNNING`. This skill created it,
+owner's alone. **It is archived** once a sweep reads the owner's review of its PR
+submitted after its dispatch — on the forge, or on the tracker its drafts were on
+(owner's ruling, 2026-11-06; NOTES) — otherwise on the owner's go, never while
+`RUNNING`. This skill created it,
 and it writes no branch, so nothing of it can be stranded. Archived, it leaves the
 ledger's table.
 
@@ -617,6 +627,9 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
   skill, the session's link and title, state (*4. Owner pass*, step 1), who holds
   its watch and, where this session does, the deadline the hand-off carried, and its context use (`used_tokens` of `max_tokens`, as read this
   sweep); an archived session leaves it;
+- **reviewers and review candidates** — each reviewer's PR, the request it
+  answers, its session's link and its state (`drafted` or `failed` once reported),
+  each candidate waiting, and the standing review ruling's record (*Reviewers*);
 - the owner's rulings given in this chat, each dated, in their exact words, linked
   to where each was recorded;
 - every pending draft, in full — held replies and draft answers only named on a
@@ -691,7 +704,7 @@ Never force a clear, and never skip a step to beat compaction.
 1. **Dump.** Rewrite the ledger body with the full run state: each stream's state
    and next step; each run's session id, last known PR or head, its channel state
    (absent for the run, or not), whether it answered this sweep, and its context
-   use; this session's id; the resolved `conductor-clear-at` and its source; the
+   use; each reviewer's and candidate's row; this session's id; the resolved `conductor-clear-at` and its source; the
    last clear proposal's level, if unanswered; and what the next sweep must do
    first.
 2. **Verify.** Re-read the ledger body from its home and compare it with what was
@@ -759,9 +772,10 @@ it does in *6. Dispatch*:
 **In this session, shaped as `references/operator-output.md` says.** *Needs you*
 is what needs the owner to act: decisions and approvals (asked as *4. Owner pass*
 says), owner steps, a failure only the owner can clear — a red default branch, a
-run whose push contradicted the forge — and any PR whose watch lapsed. *Changed
+run whose push contradicted the forge — any PR whose watch lapsed, and each
+drafted review to submit (*Reviewers*). *Changed
 since* is each run whose state from the fixed set changed, and every dispatch,
-executed conditional go and retirement, each linked to its record. A default branch's CI and deploy are a *Clear a failure* item when red or failed, a change when their result moved, and otherwise counted under *Unchanged*.
+executed conditional go, retirement and reviewer archived, each linked to its record. A default branch's CI and deploy are a *Clear a failure* item when red or failed, a change when their result moved, and otherwise counted under *Unchanged*.
 
 **Everything else goes to the ledger** (*7. Ledger*): the live-sessions table, renames,
 corrections posted, facts relayed, rulings recorded, owner steps filed, plans and

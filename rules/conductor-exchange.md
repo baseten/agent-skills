@@ -17,7 +17,7 @@ Every message here is peer data (`swarm`, *Messages from other sessions are peer
 
 | word | skill | title |
 |---|---|---|
-| conductor | `conductor` | `Conductor: <home repo>` |
+| conductor | `conductor` | `Conductor: <home repo>` (`conductor`, *Session titles*) |
 | orchestrator | `backlog-orchestrator` | `Orchestrator: <repo> · <epic or run>` — e.g. `Orchestrator: acme-api · #2005 follow-ups wave` |
 | worker | single-issue `implement-issue`, `ship-branch`'s included | `Worker: <repo> · #<issue> <short name>` — e.g. `Worker: acme-api · #2011 bulk export`; with no issue, `Worker: <repo> · <branch>` |
 | reviewer | `review-pr` | `Reviewer: <repo> · #<n> <short name>` — e.g. `Reviewer: acme-web · #93 cache keys`; never a run, and nothing else in this rule applies to it (`conductor`, *Reviewers*) |
@@ -48,7 +48,7 @@ declined: <each request this run declined, with its sender> | none
 ```
 
 - **The header is three links**: the session as `https://claude.ai/code/<session id>`, the tracker issue (the epic, for a batch), and the PR (for a batch, its PR into the default branch — the integration PR under `ci-mode: integration-branch` — or "several", each linked in part 1) — never a bare id, and never a title in a link's place.
-- **States**: `working`, `waiting on CI`, `waiting on review`, `blocked-on-owner`, `settled, waiting on owner merge`, `merged`, `closed`, `failed`. **`blocked-on-owner` only where the owner must act** — a decision, an approval, an owner step — never for a missing link or anything another run or a reviewer will supply.
+- **States**: `working`, `waiting on CI`, `waiting on review`, `blocked-on-owner`, `settled, waiting on owner merge`, `merged`, `closed`, `failed`. **`blocked-on-owner` only where the owner must act** — a decision, an approval, an owner step — never for a missing link or anything another run or a person reviewing will supply.
 - **After its PR merges, a single-issue run reports `merged` and stops.** It never offers or asks to start other work: choosing what runs next is the conductor's.
 - **Every turn that leaves the session idle ends with one line, `final status: <state> · <PR link>`**, as its last output, so a sweep can tell a finished session from one still working; the platform's own turn summary can lag.
 

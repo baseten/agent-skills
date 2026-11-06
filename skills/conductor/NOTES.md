@@ -294,6 +294,21 @@ so a reviewer cannot be grouped under the conductor or the run it relates to; it
 title's prefix and repository are the only grouping a person scanning the list gets,
 which is why the prefix is fixed.
 
+**What the contradiction pass changed (PR #210, before review):** an attended
+reviewer go is written to the ledger only, so it is acted on in the turn the owner
+gives it and never later from the ledger, which anyone with write access can edit;
+the exception is stated at *Rules* and owner pass step 4, the two places that
+otherwise send every ruling to its site. The standing ruling became an option of
+the candidate question, so it is the owner's choice of an offered option as
+protected rule 3 requires, posted at the ledger's home. A PR a ledger run owns is
+excluded, since a distinct agent identity opens it and the owner's own-PR test
+would miss it. A reviewer that never reports, or waits on a permission prompt, is
+read from its session record, because nothing else would surface it. Reviewers,
+candidates and the standing ruling joined the ledger, the clear's dump, the owner
+pass and *Report*, the sections that read state. And the archive reads the
+tracker too, since a review submitted where it was drafted is not yet verified to
+appear on the forge as the owner's.
+
 ## 8. Context clear
 
 **Why (2026-10-31, the owner's instruction):** a conductor runs for days and its
@@ -645,6 +660,8 @@ Pinned in `evals/evals.json`:
     (`a-standing-review-ruling-dispatches-on-a-scheduled-sweep`);
   - every created session has its source attached
     (`every-session-the-conductor-creates-attaches-its-source`).
+  - a reviewer waiting on a prompt, or silent, is read from its record and the forge
+    (`a-silent-or-blocked-reviewer-is-read-from-its-record-and-the-forge`).
 
 **From two independent reviews (PR #201):** a standing retirement ruling is re-read at its site exactly as a conditional go is, because a revoked ruling found only in the ledger would otherwise retire runs unattended; a single-issue run's `merged` report and its merged PR stand in for a wrap-up it never posts; on the default `github-issue` ledger held replies and draft answers are only named, so a deployment where drafts matter configures `tracker-document`; and a relayed approval puts the complete reply text in the question's option, so the owner answers once. Scenarios: `a-revoked-retirement-ruling-retires-nothing`, `a-merged-single-issue-run-retires-without-a-wrap-up`, `a-relayed-ruling-that-posts-a-reply-is-one-question`.
 

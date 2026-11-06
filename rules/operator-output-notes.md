@@ -48,8 +48,8 @@ what *Approve drafts* holds: it is the owner's own review of a colleague's PR, r
 and submitted on the forge or the tracker where it was drafted. Folding it into
 *Approve drafts* would ask the owner to approve something nobody posts, and folding it
 into *Review or assign a reviewer* would lose what makes it quick — the recommendation
-and the blocking count say how long the read will take. The text stays where it was
-drafted, as every draft's does here.
+and the blocking count say how long the read will take. The text stays on the surface it was
+drafted on, where the owner submits it; the conductor links it and never copies it.
 
 **Why *Changed since* is in the chat at all:** PR #201's conductor rule kept every
 change out of chat, and a sweep with nothing for the owner was one line. The

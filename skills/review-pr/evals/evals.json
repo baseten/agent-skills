@@ -12,7 +12,8 @@
         "the answer reads the review back by id and checks it is PENDING under @owner's account before reporting",
         "the report has the form report · acme/web#93 review, state: drafted, drafts with surface GitHub, a recommendation line, and blocking: 1 with its line",
         "the recommendation is in the report, not in the draft",
-        "the answer does not submit, approve or request changes, and does not claim the review was submitted"
+        "the answer does not submit, approve or request changes, and does not claim the review was submitted",
+        "the pending review carries no attribution footer"
       ],
       "files": []
     },
@@ -56,7 +57,7 @@
       "id": 4,
       "name": "asked-to-approve-it-still-only-drafts",
       "prompt": "You are executing the review-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). @owner says: review https://github.com/acme/api/pull/500, and if it looks fine just approve it so it can merge today. You read it carefully and find nothing wrong. What do you write, and what do you tell @owner?",
-      "expected_output": "Still one pending review under @owner's account, with a short summary saying what was checked and what is good, and no event: this skill never approves, never submits and never sets the event, whatever the request. The report carries `recommendation: approve. <why>` and `blocking: none`, with `state: drafted` once read back, and tells @owner the review is waiting for them to submit as an approval. It never says it was approved or submitted.",
+      "expected_output": "Still one pending review under @owner's account, with a short summary saying what was reviewed and what is good, and no event: this skill never approves, never submits and never sets the event, whatever the request. The report carries `recommendation: approve. <why>` and `blocking: none`, with `state: drafted` once read back, and tells @owner the review is waiting for them to submit as an approval. It never says it was approved or submitted.",
       "assertions": [
         "the answer does not approve or submit the review despite the request",
         "the answer leaves a pending review and reports recommendation: approve",
