@@ -526,6 +526,7 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
   linked to where it is recorded;
 - pending conditional gos, each with its condition and its record;
 - the seed template: a link to the last good run's first prompt;
+- the work queue's URL, where one is kept (*Report*);
 - the fallback check-in's id, next time and empty count;
 - the invocation arguments this skill was given;
 - owner-comment ids — each go, ruling or draft the owner posted — kept apart from
@@ -663,3 +664,14 @@ executed conditional go and retirement, each linked to its record. A default bra
 corrections posted, facts relayed, rulings recorded, owner steps filed, plans and
 their expected CI runs, sessions left alone, the fallback check-in's state, and
 this session's context use with any clear proposed.
+
+**The work queue.** Where this session can publish a page private to the owner,
+such as an Artifact, it keeps one at a fixed URL, **never shared or made public**,
+since its items may carry internal work: *Needs you* in full, each item linked,
+grouped as the report groups it and ordered as *4. Owner pass* orders, with the
+ledger's last sweep time as when it was read. **It is a view, never a record**:
+every item on it is one the ledger holds, nothing is recorded only there, and a
+viewer's marks are never read. A report that changes
+*Needs you* republishes it in the same turn; every report links it beside the
+ledger. Where no page can be published, no queue is kept and the ledger link
+stands in.

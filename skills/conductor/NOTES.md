@@ -295,6 +295,50 @@ stays tracker-agnostic; which tracker and store they mean is the session's
 connected tools. Rulings never move into the ledger: they stay where the decision
 lives, so a run reads them where its own tests look.
 
+## The work queue
+
+*Report*, its last paragraph; *7. Ledger*, the queue's URL (owner's brief, 2026-11-06).
+
+**Why a page at all:** on a busy day *Needs you* outgrows a chat report. The owner
+worked through it from a published page, so the report could stay short, as
+operator output wants: what changed, plus a link. **Why republishing is tied to the
+report that changes the list:** a hand-made first version went stale overnight. A
+page that is refreshed only when someone remembers is worse than none, because it
+reads as current.
+
+**Why it is a view, never a record:** *7. Ledger* says the body is the state. A
+page holding an item the ledger lacks, or a tick the conductor acted on, would be a
+second store of open items, and the two would drift as the hand-made page did. So
+every item on it is one the ledger holds, and a viewer's ticks, kept only in their
+browser, are a convenience the conductor never reads. The ledger records the page's
+URL so a restart after a clear republishes to the same place. The page may show
+what the report shows — a red default branch under *Clear a failure*, say — which
+the forge ledger does not carry (protected rule 7): it is a private page in the
+owner's session, not a forge write, and the item itself, the head linked to its
+runs, is the ledger's.
+
+**Why private, and never shared:** its items can carry the owner's internal work —
+issue titles, decisions, held replies' sites — on whatever repositories the
+conductor is scoped to. This repository is public and its skills run at work and
+at home alike, so the contract states the privacy itself rather than leaving it to
+the platform's default.
+
+**Why the order is not new:** it reuses the owner pass's — what frees the most
+downstream work first, owner steps by dependency — inside the report's own groups,
+so the page and the chat never rank the same items two ways.
+
+**Why the tracker inbox is excluded:** the owner's tracker inbox (Linear's, or any
+other) spans every project and team, and the conductor is scoped to its configured
+repositories (*Configuration*), so reading it would pull work from outside that
+scope into the queue. The queue renders only what the sweep already collects.
+
+**Why optional:** not every session can publish a page. Where none can, nothing
+changes: the ledger link carries the list, as before.
+
+Scenarios: `a-changed-needs-you-republishes-the-work-queue-in-the-same-turn`,
+`with-no-page-to-publish-the-ledger-carries-the-list`,
+`the-work-queue-takes-nothing-from-the-tracker-inbox`.
+
 ## The contradiction pass before the review round (PR #201)
 
 **What a scheduled firing may do is stated the same at every decision point:** it

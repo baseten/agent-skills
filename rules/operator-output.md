@@ -33,10 +33,10 @@ A reporting turn ends with these, in this order, each omitted when empty:
    - **Owner steps**
    - **Clear a failure** only the owner can clear
 
-   **Reprint it only when its items changed since the last report printed it**; otherwise one line, `3 still waiting on you, unchanged`, linking the ledger — its questions not asked again (*Questions*). Where the last printed list has left context, reprint.
+   **Reprint it only when its items changed since the last report printed it**; otherwise one line, `3 still waiting on you, unchanged`, linking the ledger and any work queue beside it — its questions not asked again (*Questions*). Where the last printed list has left context, reprint.
 2. **`## Changed since <time>`** — since the last report, or the run's start — each state change once, by run, then issue. **A table only here**, where rows share columns: runs started, each with its session and its go's record.
 3. **`Unchanged: …`** — one line of linked counts.
-4. **A link to the ledger**, or for a run without one, to its epic or issue.
+4. **A link to the ledger**, or for a run without one, to its epic or issue — and beside it the consumer's work queue, a page rendering *Needs you*, where it keeps one.
 
 **Times** are the owner's local time where the session knows their timezone, otherwise UTC, labelled either way; a title's times excepted. **A `---` line separates top-level groups** — a record, a meta answer, each report section, and each run's block.
 

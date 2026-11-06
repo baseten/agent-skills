@@ -68,6 +68,13 @@ labelled so it is never mistaken for local time.
 the same structured question every report is the reprinted list in another form.
 A question returns only when its item is new or changed.
 
+**Why a work queue sits beside the ledger link (2026-11-06):** a consumer may keep
+a page rendering *Needs you* in full, so the one-line unchanged form and the closing
+link stay short while the full list is one click away. The rule names the slot only;
+what the page holds, when it is republished, and that it is private to the owner are
+the consumer's (`conductor`, *Report*, *The work queue*), and where no page is kept
+the ledger link alone stands, as before.
+
 ## Records
 
 **Why a contract's record is printed before the report, not removed:**
