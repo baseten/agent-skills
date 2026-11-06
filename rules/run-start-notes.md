@@ -170,3 +170,16 @@ line. It was left unchanged to keep this change's conductor edits to the startup
 step and the ledger field, while other work edits that skill; a run that loaded
 no conductor-exchange answers without the line, and the ledger records `not
 reported` for it, which is true.
+
+## Evals (2026-11-06, PR #209)
+
+Five scenarios pin the rule: `implement-issue` #45 and #46 (the line from the
+skill's own stamp; `unknown` where its directory has none, never the
+install-wide stamp), and `conductor` #68–#70 (the ledger row records what reports
+carried, `not reported` otherwise; a direct invocation hands off to the one
+layer; the layer as invoker gets no hand-off, and a namespaced copy is not a
+second layer). A blind two-arm round against `origin/main`, one reader per
+packet and an arm-blind grader, passed every assertion on the new arm (19 of 19)
+and 7 of 19 on the old; every disagreement was a gain, none a loss. The rule is
+pinned there rather than in each consumer's evals because every consumer reads
+the same bundled rule through a one-line pointer.
