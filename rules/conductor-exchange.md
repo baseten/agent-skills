@@ -46,7 +46,7 @@ declined: <each request this run declined, with its sender> | none
 ```
 
 - **The header is three links**: the session as `https://claude.ai/code/<session id>`, the tracker issue (the epic, for a batch), and the PR (for a batch, its PR into the default branch — the integration PR under `ci-mode: integration-branch` — or "several", each linked in part 1) — never a bare id, and never a title in a link's place.
-- **The version line is the one the run printed at its start** (the *run start* shared rule) — both lines, the layer's first, where a layer started the run — read again only where a restart lost it. A message sent before the run's skill was invoked, such as a dispatch's missing-skills report, has none.
+- **The version line is the one the run printed at its start** (the *run start* shared rule) — both lines, the layer's first, where a layer started the run — read again from the stamp only where compaction or a restart lost it. A message sent before the run's skill was invoked, such as a dispatch's missing-skills report, has none.
 - **States**: `working`, `waiting on CI`, `waiting on review`, `blocked-on-owner`, `settled, waiting on owner merge`, `merged`, `closed`, `failed`. **`blocked-on-owner` only where the owner must act** — a decision, an approval, an owner step — never for a missing link or anything another run or a reviewer will supply.
 - **After its PR merges, a single-issue run reports `merged` and stops.** It never offers or asks to start other work: choosing what runs next is the conductor's.
 - **Every turn that leaves the session idle ends with one line, `final status: <state> · <PR link>`**, as its last output, so a sweep can tell a finished session from one still working; the platform's own turn summary can lag.

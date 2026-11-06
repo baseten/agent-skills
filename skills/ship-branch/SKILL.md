@@ -5,9 +5,9 @@ description: Take work already committed to a branch that has no PR through the 
 
 # Ship a branch
 
-Invoke `implement-issue` with the branch as its **existing branch**, and the issue URL or brief the user gave. That skill holds every rule this run follows, its *Phase 1, from an existing branch* first. This file adds none, and reading any of them here instead of there is how a copy starts to drift.
-
 **First, `references/run-start.md`**: hand off to an installed skill that extends this one where that rule says to, then print the version line before invoking `implement-issue`, which prints its own.
+
+Then invoke `implement-issue` with the branch as its **existing branch**, and the issue URL or brief the user gave. That skill holds every rule this run follows, its *Phase 1, from an existing branch* first. This file adds none bar that shared rule, and reading any of them here instead of there is how a copy starts to drift.
 
 ## Inputs
 

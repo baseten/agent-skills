@@ -7,11 +7,11 @@ description: Take a set of dependency upgrades, triage each against its changelo
 
 ## Task
 
+**First, `references/run-start.md`**: hand off to an installed skill that extends this one where that rule says to, then open this run's first output with the version line.
+
 Upgrade this set: $ARGUMENTS
 
 This file is the contract; the reasoning behind its rules lives in `NOTES.md` beside it, keyed by section. NOTES explains; it never overrides.
-
-**First, `references/run-start.md`**: hand off to an installed skill that extends this one where that rule says to, then open this run's first output with the version line.
 
 Derive the set where none is supplied — the package manager's outdated report, a scheduled dependency report, or the open automated-bump queue.
 

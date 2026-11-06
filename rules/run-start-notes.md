@@ -41,6 +41,17 @@ account sync of one skill show up as `<name>` and `<namespace>:<name>` (observed
 below), and treating them as two would stop every run on a machine that has
 both.
 
+**Why the layer must invoke the generic skill in its own session.** The loop
+guard is the session's own context. A layer that ran the generic skill through a
+subagent or a dispatched session would leave nothing there to read, and the
+generic skill would hand the run straight back to it.
+
+**Why a resume is not a start.** A restart after a clear resumes from a ledger or
+a checkpoint and invokes no skill, and the guard's context is gone with the clear;
+applying the hand-off then would hand a conductor's own run to its layer on every
+restart. A restart prompt that does invoke the skill — a layer's restart prompt
+naming the layer — is a start, and both parts apply as usual.
+
 **Why it fails open.** Where no layer is visible the generic skill runs as
 itself, because that is what every user of this public repository without a layer
 needs. The cost — a run without its layer's settings — is visible in the version
@@ -101,6 +112,22 @@ claude.ai accepts only `name`, `description`, `license`, `compatibility`,
 packager can write a version. The packager writes it into the packaged copy, never
 into the tracked file, for the same reason the stamp is not committed.
 
+**Why a consumer applies the rule however it was invoked.** A first draft said a
+skill composed inside a run applies neither part; the contradiction pass before
+the first push found that `ship-branch` invokes `implement-issue`, and
+`implement-issue-core`, invoked directly, hands off to it, so `implement-issue`
+would print nothing in exactly the runs that needed its line. The line costs one
+line per consumer passed through, and a layer over the inner skill is still
+handed the run, so the rule applies at every consumer's start.
+
+**Why a forge write takes the SHA rule.** The conductor's default ledger is a
+GitHub issue, and the authored write form rule (protected rule 7) says a SHA in
+any forge write is bare, and another repository's is `owner/repo@sha`. The line
+names another repository's commit, so on a forge it follows that rule; the chat
+copy keeps the plain form. The line is not a verification report — it names the
+revision loaded, not a check or its outcome — so rule 7's ban on reporting
+verification does not reach it, and no protected rule's text changed.
+
 **Which skills start a run.** Checked one by one on 2026-11-06 against the
 consumer list in `scripts/refresh_shared_rules.sh`:
 
@@ -122,7 +149,19 @@ adopt a run after its first report, miss it to a failed send, or rebuild its
 ledger after a clear; a line in every report costs one line and makes each
 report self-describing. The run carries the line it printed at its start rather
 than re-reading the stamp, because a reinstall mid-run would otherwise report a
-version the run never loaded; only a restart that lost the line reads it again.
+version the run never loaded; only compaction or a restart that lost the line
+reads it again. That re-read is a residual: no state-block field carries the line
+(`backlog-orchestrator`'s `schemas/checkpoint-output.md`), so a reinstall mid-run
+followed by a compaction reports the new stamp. A field was not added because
+that schema is under other open work, and a container is seldom reinstalled
+mid-run; it is the field to add if one ever is.
+
+**The config directory.** The rule reads `$CLAUDE_CONFIG_DIR` where it is set,
+because that is where Claude Code reads skills from. `bootstrap.sh` always writes
+under `$HOME/.claude`; in a container that sets the variable elsewhere, its
+skills would not load at all, so the two never disagree about a skill that ran.
+The skill's own directory, which the session loaded it from, is read first in any
+case.
 
 **The conductor's status request does not list the line.** Its text in
 `conductor`, *2. Ask*, summarises the form as the header, the state and the four

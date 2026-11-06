@@ -23,7 +23,7 @@ this one where that rule says to, then open this session's first output with the
 version line.
 
 **Attended only.** Every step waits on the owner's paste. Invoked with nobody to
-answer, say so in one line and stop.
+answer, say so in one line after the version line, and stop.
 
 ## Hard rules
 

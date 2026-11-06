@@ -59,7 +59,7 @@
       "target": 8000
     },
     "skills/owner-steps/SKILL.md": {
-      "budget": 1306,
+      "budget": 1310,
       "target": 3000
     },
     "skills/plan-merge-order/SKILL.md": {
@@ -91,7 +91,7 @@
       "target": 3000
     },
     "skills/ship-branch/SKILL.md": {
-      "budget": 334,
+      "budget": 339,
       "target": 3000
     },
     "skills/summarize-wave/SKILL.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 2503,
+      "budget": 2508,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
@@ -187,7 +187,7 @@
       "target": 1500
     },
     "rules/run-start.md": {
-      "budget": 692,
+      "budget": 860,
       "target": 1500
     },
     "rules/wake-budget.md": {
