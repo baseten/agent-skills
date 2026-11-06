@@ -9,6 +9,8 @@ Orchestrate exactly one tracked issue end-to-end: implement it to a durable PR, 
 
 This file is the contract. The reasoning behind each rule — incident history, arguments, and answers to "why not the obvious other reading?" — lives in `NOTES.md` beside it, keyed by these section names. Read a section's note before changing its rules or when applying them to a case the contract does not obviously cover. NOTES.md explains; it never overrides.
 
+**First, `references/run-start.md`**: hand off to an installed skill that extends this one where that rule says to, then open this run's first output with the version line.
+
 ## Composed skills — all required
 
 | skill | role |

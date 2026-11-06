@@ -230,8 +230,8 @@ fi
 # --- Global instructions ---
 #
 # A few rules govern what a session says, not only what a skill writes - a chat
-# reply naming an issue, say - and no skill is loaded for that, so they go in
-# ~/.claude/CLAUDE.md, which every session reads. That file is yours, so this
+# reply naming an issue, say - or which skill it picks, and no skill is loaded
+# for either, so they go in ~/.claude/CLAUDE.md, which every session reads. That file is yours, so this
 # manages one marked block in it and touches nothing outside the markers: a
 # re-run replaces the block rather than appending a second. A file holding a
 # begin marker without its end, or more than one block, is left untouched and

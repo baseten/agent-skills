@@ -11,6 +11,8 @@ Upgrade this set: $ARGUMENTS
 
 This file is the contract; the reasoning behind its rules lives in `NOTES.md` beside it, keyed by section. NOTES explains; it never overrides.
 
+**First, `references/run-start.md`**: hand off to an installed skill that extends this one where that rule says to, then open this run's first output with the version line.
+
 Derive the set where none is supplied — the package manager's outdated report, a scheduled dependency report, or the open automated-bump queue.
 
 **An automated bump PR for a candidate is never work already in flight — it is the work.** Mark it **adopted** and carry it by URL through triage into dispatch: the upgrade continues on it — branch from its head, or supersede it and close it with a reference — and its diff is an input rather than a competing attempt. **Where the candidate came from does not enter into this.** Deriving the set from the open bump queue makes the point unmissable, since there every candidate arrives already open as a PR and the viability item would empty the batch it just produced — but a candidate derived from the outdated report whose triage then finds a bot PR is the same case, and dropping that one is the same defect committed quietly. What removes a candidate is somebody else's attempt at the same upgrade — a colleague's branch, another run's PR — which is a duplicate (see Triage each candidate).

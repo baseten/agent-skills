@@ -30,7 +30,8 @@ RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
   posting-identity agent-policy review-feedback draft-state
   repair-rounds mechanical-pushes review-trigger ci-and-review-verdicts
   ci-attribution watch-and-read wake-budget platform-pr-posture
-  manual-step-issues conductor-exchange operator-output linear-mechanics"
+  manual-step-issues conductor-exchange operator-output linear-mechanics
+  run-start"
 
 # Each list names only the skills that APPLY the rule, and every one of them
 # must cite it in its own SKILL.md (check_shared_rules.py). A rule that cites
@@ -116,6 +117,12 @@ CONDUCTOR_EXCHANGE="backlog-orchestrator implement-issue conductor"
 # orchestration skills, the settle steps they run, and the two planners.
 OPERATOR_OUTPUT="write-spec plan-feature conductor backlog-orchestrator implement-issue settle-and-merge
   settle-outstanding-decisions summarize-wave supervise-prs"
+
+# Skills that start a run: invoked by a person or a dispatch prompt as their
+# session's outermost skill. Each hands off to a layer that extends it, then
+# names its version.
+RUN_START="conductor backlog-orchestrator implement-issue ship-branch plan-feature
+  write-spec npm-dependency-upgrade-orchestrator owner-steps"
 
 # Skills that write a plan's issues, or a ledger kept as a document, to Linear.
 # Others that comment on Linear issues do not carry it yet (follow-up).

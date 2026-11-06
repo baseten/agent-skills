@@ -18,6 +18,10 @@ in the same form, exactly as below — but the record is this session's report:
 there is no issue to comment on, tick or close. This file is the contract; the
 reasoning lives in `NOTES.md`, keyed by section.
 
+**First, `references/run-start.md`**: hand off to an installed skill that extends
+this one where that rule says to, then open this session's first output with the
+version line.
+
 **Attended only.** Every step waits on the owner's paste. Invoked with nobody to
 answer, say so in one line and stop.
 

@@ -94,6 +94,8 @@ restated at the decision point.
 
 **Why the form is fixed (field feedback, 2026-11-02):** a day of running a conductor showed reports that ran on past the form, covered other issues, offered to start the next one, and called a missing link "blocked". Each cost the owner a read to find what, if anything, needed them. The three-link header lets a reader open the session, issue and PR without searching; the fixed state set makes a sweep's table mechanical; `blocked-on-owner` means the owner must act and nothing else; and choosing the next work is the conductor's, so a run never offers it. The final-status line exists because the platform's turn summary was seen reading "drafting…" on an idle session.
 
+**Why every report carries the version line (owner's decision, 2026-11-06):** an owner audit could not tell which skill revision a dispatched session had run. The conductor records each run's line in its ledger row, so the answer is in one place without opening sessions; the line rides in every report rather than only the first because a conductor can adopt a run, lose a send or rebuild its ledger after the first one. The rule and its reasoning are `rules/run-start.md` and its notes.
+
 ## The watch after settling
 
 **Owner's rulings (2026-11-04), recorded for the protected-rule 9 re-audit:** (1) a conductor that dies after taking over a settled PR's watch leaves that gap accepted — the run keeps no check-in at its deadline; (2) the held watch ignores empty sweeps — it watches until the PR merges or closes, or its deadline passes. Both close the open decisions the re-audit of PR #201 found unrecorded.
