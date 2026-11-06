@@ -44,7 +44,7 @@ This file is the contract. The reasoning behind each rule — incident history, 
 
 # Phase 1 — durable implementation
 
-Invoke `implement-issue-core` with the canonical issue URL and every supplied constraint — and `ci-mode: deferred` where it resolved so and the repository reads `supervise-prs`, *Deferred CI*, names show it has effect, and the merge grant where `auto-merge` resolved `true`. Never hand-roll implementation here.
+Invoke `implement-issue-core` with the canonical issue URL, every supplied constraint and the implementation-attempt budget resolved above — the input core knows its caller by (*Invoked as a primitive, or not at all*, there) — and `ci-mode: deferred` where it resolved so and the repository reads `supervise-prs`, *Deferred CI*, names show it has effect, and the merge grant where `auto-merge` resolved `true`. Never hand-roll implementation here.
 
 On `PR_OPEN`, the code is already durable remotely. Record: PR URL; branch/base; remote head SHA; tracker linkage verification; draft state as created; implementation attempts used; and **every posting-identity entry core returned, under its `(transport, credential)` key** — never collapsed to one pair (NOTES: Posting identity).
 

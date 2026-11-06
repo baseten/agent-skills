@@ -20,6 +20,14 @@ Added in #154, from a field report on an `implement-issue` run in a Claude Code 
 
 **Why the handler never fixes directly:** a one-line fix made from inside the event handler is a push no budget counted, on a head no pass adopted, and a reply no reservation checked. It is the posture's loop again, one small step at a time.
 
+## A session that supervises nothing
+
+**Why the rule binds a session whoever armed the subscription (owner's audit, 2026-11-05):** a cloud session dispatched as `/implement-issue <issue URL>`, where `implement-issue` was not installed, loaded only `implement-issue-core`, opened its PR, and subscribed to it. The scope sentence then read "every session that arms a PR-activity subscription for a supervising skill, and every session that receives that subscription's wakes", so a subscription armed for no supervising skill fell outside it, and `implement-issue-core` did not carry the rule anyway. The session followed the posture: it replied in a colleague's threads, implemented product questions as small asks, re-requested the reviewer and edited the PR body. The posture arrives with the wake, not with whoever subscribed, so the rule binds the session that receives it.
+
+**Why such a session answers with no cycle:** it has no budgets, no actionability test and no reserved threads to apply — those belong to the supervising skill it does not have. Its only correct act on a wake is none, plus ending the subscription and saying so; its caller, or the owner, decides what the PR needs. The prohibitions in *Not overridden* bind it as they bind every session.
+
+**Why the swarm sentence changed from a reassurance to a rule:** "it does not reach a worker a swarm dispatches" was written on the countermand holding. `runtime-remote.md` records residue — a worker that arms a wake anyway — and a worker in that state was outside the rule by its own wording. The countermand still keeps workers from arming; the rule now covers the one that does.
+
 ## Answering a wake
 
 **Why `subscription.created` is answered by the reconciling read:** the arming already owes one read of the PR, and the first wake is the natural moment for it. Answering it any other way — acting on what the posture says to look at — replaces the skill's actionability test with the posture's triage on the very first event.

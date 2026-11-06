@@ -92,7 +92,7 @@ WAKE_BUDGET="backlog-orchestrator supervise-prs npm-dependency-upgrade-orchestra
 
 # Skills whose session arms a PR-activity subscription, receives its wakes, or
 # reports to the user that the platform's posture was overridden.
-PLATFORM_PR_POSTURE="backlog-orchestrator supervise-prs
+PLATFORM_PR_POSTURE="backlog-orchestrator supervise-prs implement-issue-core
   npm-dependency-upgrade-orchestrator implement-issue"
 
 # Skills that classify, repair, report or gate on review threads.
