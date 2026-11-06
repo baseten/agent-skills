@@ -28,3 +28,14 @@ so, giving a `P-` example.
 
 **Why links rather than bare identifiers:** Linear rewrote a bare identifier into a
 chip, and the next patch, anchored on the original text, matched nothing.
+
+**Review pages, read (2026-11-06):** `list_diffs`, `get_diff` and `get_diff_threads`
+were run against a live linked repository. `get_diff`, given the PR's forge URL,
+returned `url` (the forge PR), `appUrl` (the review page) and `linkedIssues`; for a
+PR in a repository not linked to Linear it errored with "Diff not found".
+`get_diff_threads` returned `threads` and `drafts`, its description scoping `drafts`
+to the authenticated user. `plan-feature` bundles this rule and carries the section
+without reading it; that cost was accepted over a second copy in the conductor. The
+`conductor`'s work queue reads them (its NOTES, *The work queue*), because a review
+draft left in Linear is invisible from the forge, and an item linking only the
+forge PR told the owner nothing was waiting there.

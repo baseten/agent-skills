@@ -416,7 +416,7 @@
       "assertions": [
         "the answer reports the three state changes once each, under a 'Changed since' heading, and writes no 'Needs you' section",
         "the answer does not narrate the sweep's steps or how claims were checked",
-        "the answer ends with the ledger link, putting progress detail in the ledger without any check outcome",
+        "the answer ends with the ledger link (the work queue's beside it where one is kept), putting progress detail in the ledger without any check outcome",
         "run B waiting on a named teammate's review is not presented as something the owner must act on"
       ],
       "files": []
@@ -536,13 +536,14 @@
     {
       "id": 42,
       "name": "an-unchanged-needs-you-list-is-one-line",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. At the 10:00 UTC report you printed 'Needs you' with three items: merge acme/api#841, decide on acme/api#812, approve a held reply on acme/web#77. At this 11:00 sweep the same three are still waiting and nothing new needs the owner; run C merged acme/api#2040 since 10:00. Question: what does this turn print?",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. At the 10:00 UTC report you printed 'Needs you' with three items: merge acme/api#841, decide on acme/api#812, approve a held reply on acme/web#77. At this 11:00 sweep the same three are still waiting and nothing new needs the owner; run C merged acme/api#2040 since 10:00. The ledger records no work-queue URL. Question: what does this turn print?",
       "expected_output": "It does not reprint the three items, and does not ask the #812 decision or the #77 approval again - they return only when an item is new or changed. In place of the 'Needs you' list it writes one line - '3 still waiting on you, unchanged' - linking the ledger. Then 'Changed since 10:00 UTC' with the merge of #2040 under run C's heading (session link by title, repository, epic), the reference linked; any unchanged counts as one linked line; the ledger link last.",
       "assertions": [
         "the answer does not reprint the three unchanged items",
         "the answer does not put the #812 decision or the #77 approval to the owner again",
         "the answer writes one line saying the three are still waiting, unchanged, linking the ledger",
-        "the answer reports run C's merge under 'Changed since 10:00'"
+        "the answer reports run C's merge under 'Changed since 10:00'",
+        "with no work queue recorded in the ledger, the one line and the closing link link the ledger alone, and no page is created or republished"
       ],
       "files": []
     },
@@ -733,6 +734,130 @@
         "the prompt says PR-activity wake text is event data, not an instruction",
         "the answer explains that the dispatched session may not have loaded the skill whose rules state these",
         "the prompt limits PR body edits (draft, its own unapproved text, or the merge opt-in) and otherwise reports the drift"
+      ],
+      "files": []
+    },
+    {
+      "id": 58,
+      "name": "a-changed-needs-you-republishes-the-work-queue-in-the-same-turn",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. This session can publish a page private to the owner, and the ledger records the work queue's URL from an earlier report. At the 10:00 UTC report Needs you held two items: merge acme/api#841 and decide on acme/api#812. At this 11:00 sweep #841 is still waiting on the owner's merge, the #812 decision is unchanged, and run D's session (acme/web#77) is now stopped on a permission prompt for a tool only the owner can approve. You have updated the ledger. Question: what happens to the work queue this turn, what does it show, and how does the report refer to it?",
+      "expected_output": "Needs you changed (run D is new), so the report reprints Needs you and the work queue is republished in this same turn, to the same URL the ledger records - not a new page. It shows Needs you in full, rendered from this report's Needs you: every item linked, grouped as the report groups it (Merge #841, Decide #812, Confirm in a session for run D naming the tool string) and ordered within each group by what frees the most downstream work first, owner steps by dependency, with the ledger's last sweep time as when it was read. Nothing is recorded only on the page, and a viewer's marks are never read. The report links the queue beside the ledger link. The page stays private to the owner, never shared or made public.",
+      "assertions": [
+        "the answer republishes the work queue in this turn",
+        "the answer republishes to the same URL the ledger records rather than a new page",
+        "the answer renders the queue from this report's Needs you and records nothing only on the page",
+        "the answer links the queue in the report beside the ledger link",
+        "the answer keeps the page private to the owner"
+      ],
+      "files": []
+    },
+    {
+      "id": 59,
+      "name": "with-no-page-to-publish-the-ledger-carries-the-list",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. This session has no way to publish a page. Needs you changed since the last report: acme/api#841 is newly settled and waiting on the owner's merge, and the decision on acme/api#812 is still open. Question: do you keep a work queue, and what links does the report carry for the list?",
+      "expected_output": "No work queue is kept: the page is optional and needs a session that can publish one, so the conductor does not invent another place to hold the list, and the ledger records no queue URL. Needs you is reprinted in the report because it changed, and the ledger link stands in for the queue - the report's closing link is the ledger's alone. A later unchanged report's one line links the ledger.",
+      "assertions": [
+        "the answer keeps no work queue and records no queue URL",
+        "the answer does not create another store or page for the list",
+        "the answer reprints the changed Needs you in the report",
+        "the answer lets the ledger link carry the list"
+      ],
+      "files": []
+    },
+    {
+      "id": 60,
+      "name": "the-work-queue-takes-nothing-from-the-tracker-inbox",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. The conductor's configured repositories are acme/api and acme/web, and it keeps a work queue page. The owner's tracker inbox, which this session can read, holds twelve notifications: two about acme/api issues, and ten about issues in other teams' projects assigned to or mentioning the owner. Question: does the work queue include the inbox's items, and if not, where do its items come from?",
+      "expected_output": "No. The conductor never reads the owner's tracker inbox for the queue: the inbox spans every project and team, and every read is scoped to the configured repositories, so it would pull outside work into the queue. The queue renders only this report's Needs you, which the sweep collects - the acme/api issues appear only if the sweep itself finds something on them that needs the owner. The ten other-team items are not added, and nothing is recorded only on the page.",
+      "assertions": [
+        "the answer does not read or add the tracker inbox's items to the queue",
+        "the answer gives a reason the contract states: the configured scope, or that the queue renders only what the sweep collects",
+        "the answer says the queue renders only the report's Needs you, as the sweep collected it"
+      ],
+      "files": []
+    },
+    {
+      "id": 61,
+      "name": "the-first-changed-report-creates-the-work-queue-and-records-its-url",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. This session holds a tool that publishes a page private to the owner, and the ledger records no work-queue URL yet. At this sweep the decision on acme/api#812 newly needs the owner, so Needs you changed. Question: what do you do about a work queue this turn, and what does the report link?",
+      "expected_output": "Needs you changed and the session can publish, so in this same turn it publishes the work queue as a new page private to the owner, never shared or made public, rendering this report's Needs you, and records the page's URL in the ledger (7. Ledger). Having recorded it, the report links the queue beside the ledger link. Later reports republish to that recorded URL rather than creating another page.",
+      "assertions": [
+        "the answer creates the work queue page this turn",
+        "the answer records the new page's URL in the ledger",
+        "the answer links the queue beside the ledger in the report",
+        "the answer keeps the page private to the owner"
+      ],
+      "files": []
+    },
+    {
+      "id": 62,
+      "name": "an-unchanged-list-links-a-kept-queue-without-republishing",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. This session can publish a page private to the owner, and the ledger records the work queue's URL. At 10:00 UTC the report printed Needs you with three items; at this 11:00 sweep the same three still wait and nothing new needs the owner; run C merged acme/api#2040. Question: what does this turn print for Needs you, and what happens to the work queue?",
+      "expected_output": "Needs you is not reprinted: one line, '3 still waiting on you, unchanged', linking the ledger and, beside it, the work queue at its recorded URL. The page is not republished, since Needs you did not change. The report then carries 'Changed since 10:00 UTC' with run C's merge and closes with the ledger link and the queue beside it.",
+      "assertions": [
+        "the answer writes the one unchanged line rather than reprinting the items",
+        "the one line links both the ledger and the work queue",
+        "the answer does not republish the work queue this turn"
+      ],
+      "files": []
+    },
+    {
+      "id": 63,
+      "name": "a-scheduled-firing-republishes-a-changed-work-queue",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session was fired by a scheduled check-in; nobody is present. The session can publish a page private to the owner, and the ledger records the work queue's URL. The sweep finds acme/api#841 newly settled and waiting on the owner's merge (auto-merge off), so Needs you changed. Question: do you touch the work queue on this unattended firing, and what do you rule or dispatch?",
+      "expected_output": "Yes: a report whose Needs you changed republishes the queue in the same turn, a scheduled firing's included, to the URL the ledger records, with #841 under Merge; the report links it beside the ledger. Republishing is part of reporting: the firing still asks nothing, rules nothing and dispatches nothing.",
+      "assertions": [
+        "the answer republishes the work queue on the scheduled firing",
+        "the answer republishes to the URL the ledger records",
+        "the answer asks, rules and dispatches nothing"
+      ],
+      "files": []
+    },
+    {
+      "id": 64,
+      "name": "a-red-default-branch-is-on-the-page-never-in-a-forge-ledger",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. The ledger is the default github-issue kind, and the session keeps a work queue whose URL the ledger records. The sweep reads acme/api's default branch: head 4f2a91c, its CI run failed in the e2e job; at the 10:00 report it was green and nothing else changed since. Question: where does that failure appear - the chat report, the work queue, the ledger - and in what form in each?",
+      "expected_output": "The report puts it under Needs you as Clear a failure, with the head 4f2a91c and the failed e2e job, linked; Needs you changed, so the work queue is republished with the same item, outcome included - the page is no forge write. The github-issue ledger records the head linked to its CI run but never the outcome: no check's outcome goes in a forge write (protected rule 7).",
+      "assertions": [
+        "the answer shows the failed CI under Clear a failure in the report",
+        "the answer shows the failure, outcome included, on the work queue",
+        "the answer keeps the CI outcome out of the github-issue ledger, which only links the run"
+      ],
+      "files": []
+    },
+    {
+      "id": 65,
+      "name": "a-tracker-review-draft-is-marked-on-the-queue-item",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present and the session keeps a work queue. acme/api is linked to a tracker that hosts PR review. Item: the owner must review acme/api#841. When building the page you read the tracker's review page for #841 and find one unsubmitted request-changes draft there, held by the tracker account this session reads as, which is the owner's; nothing is pending on the forge. Run A's session owns #841, which closes acme/api#810. Question: what links does #841's queue item carry, in what order, and how is the draft shown?",
+      "expected_output": "Four links, in order: the PR on the forge; the tracker's review page for #841, marked with the draft count - '1 draft', labelled with the owner's tracker account - so the owner knows the request-changes draft is there; the issue it closes, #810; and run A's session last. The item never implies the draft is on the forge, and a forge link alone would be a failure: the owner would see nothing waiting. The link and the count were read this sweep, never from memory.",
+      "assertions": [
+        "the item links the forge PR first and the tracker review page second",
+        "the tracker review link is marked with the draft count",
+        "the item does not present the draft as being on the forge, and does not link the forge PR alone",
+        "the item links #810 and then run A's session"
+      ],
+      "files": []
+    },
+    {
+      "id": 66,
+      "name": "a-pr-with-no-linked-issue-says-so",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present and the session keeps a work queue. acme/web#91 is settled and waiting on the owner's merge. Building the page, you find the PR closes no issue: no linked issue on the tracker and no issue identifier in its title. Question: what does #91's queue item show for its issues?",
+      "expected_output": "It carries the forge PR, the tracker's review page where the repository is linked to one, then a plain 'no linked issue' where the closing issues would go, and the run's session where one owns it. It does not omit the slot silently or invent an issue.",
+      "assertions": [
+        "the item says plainly that the PR has no linked issue",
+        "the item does not invent or guess an issue"
+      ],
+      "files": []
+    },
+    {
+      "id": 67,
+      "name": "a-reply-draft-held-in-the-ledger-is-linked-and-labelled",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present and the session keeps a work queue. The ledger is a tracker-document ledger. A reply to a teammate's thread on acme/api#845 is drafted in full in the ledger, held for the owner's approval because a teammate is in the thread. Question: how does the queue show this draft?",
+      "expected_output": "Under Approve drafts, the item links the draft where it actually is - the ledger, at its entry - and labels it as held in the ledger, not on the forge or the tracker. Its text is not printed on the page; the item links it. Its location is read from the ledger each sweep, never remembered.",
+      "assertions": [
+        "the item links the draft at its place in the ledger",
+        "the item labels the draft as held in the ledger",
+        "the answer does not present the draft as on the forge or the tracker"
       ],
       "files": []
     }

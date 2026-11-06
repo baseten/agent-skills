@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 6717,
+      "budget": 7099,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -195,7 +195,7 @@
       "target": 1500
     },
     "rules/operator-output.md": {
-      "budget": 1657,
+      "budget": 1680,
       "target": 1500
     },
     "skills/write-spec/SKILL.md": {
@@ -207,7 +207,7 @@
       "target": 3000
     },
     "rules/linear-mechanics.md": {
-      "budget": 494,
+      "budget": 601,
       "target": 1500
     }
   }
