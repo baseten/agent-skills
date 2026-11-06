@@ -105,8 +105,8 @@ skill would read as the owner's stays pending.
   — results, not the checking; headings and links; one question at a time; quiet
   turns (*Report*). The detail behind progress, and items still waiting on others, go to the ledger,
   where a run's row carries its state from the fixed set and links to its checks —
-  never a check's outcome, which stays in this session's report (protected rule 7
-  on a forge ledger).
+  never a check's outcome, which stays in this session's report and work queue,
+  neither a forge write (protected rule 7 on a forge ledger).
 - **A draft exists only with its full text.** The full text of every pending draft —
   an issue, a comment, a message — goes into the ledger as it is written; nothing
   is called a draft without it. **On the default `github-issue` ledger, held replies
@@ -668,10 +668,11 @@ this session's context use with any clear proposed.
 **The work queue.** Where this session can publish a page private to the owner,
 such as an Artifact, it keeps one at a fixed URL, **never shared or made public**,
 since its items may carry internal work: *Needs you* in full, each item linked,
-grouped as the report groups it and ordered as *4. Owner pass* orders, with the
-ledger's last sweep time as when it was read. **It is a view, never a record**:
-every item on it is one the ledger holds, nothing is recorded only there, and a
-viewer's marks are never read. A report that changes
-*Needs you* republishes it in the same turn; every report links it beside the
-ledger. Where no page can be published, no queue is kept and the ledger link
+grouped as the report groups it, within a group what frees the most downstream work
+first and owner steps by dependency (*4. Owner pass*), with the ledger's last sweep
+time as when it was read. **It is a view, never a record**: it renders this
+report's *Needs you*, which only the sweep collects, nothing is recorded only there,
+and a viewer's marks are never read. A report that changes *Needs you*, a scheduled
+firing's included, republishes it in the same turn; every report links it beside
+the ledger. Where no page can be published, no queue is kept and the ledger link
 stands in.

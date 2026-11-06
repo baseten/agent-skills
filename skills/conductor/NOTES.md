@@ -297,7 +297,8 @@ lives, so a run reads them where its own tests look.
 
 ## The work queue
 
-*Report*, its last paragraph; *7. Ledger*, the queue's URL (owner's brief, 2026-11-06).
+*Report*, its last paragraph; *7. Ledger*, the queue's URL; *Rules*, where a check's
+outcome may sit (owner's brief, 2026-11-06).
 
 **Why a page at all:** on a busy day *Needs you* outgrows a chat report. The owner
 worked through it from a published page, so the report could stay short, as
@@ -307,15 +308,21 @@ page that is refreshed only when someone remembers is worse than none, because i
 reads as current.
 
 **Why it is a view, never a record:** *7. Ledger* says the body is the state. A
-page holding an item the ledger lacks, or a tick the conductor acted on, would be a
-second store of open items, and the two would drift as the hand-made page did. So
-every item on it is one the ledger holds, and a viewer's ticks, kept only in their
-browser, are a convenience the conductor never reads. The ledger records the page's
-URL so a restart after a clear republishes to the same place. The page may show
-what the report shows — a red default branch under *Clear a failure*, say — which
-the forge ledger does not carry (protected rule 7): it is a private page in the
-owner's session, not a forge write, and the item itself, the head linked to its
-runs, is the ledger's.
+page holding something recorded nowhere else, or a tick the conductor acted on,
+would be a second store of open items, and the two would drift as the hand-made
+page did. So it renders the report's own *Needs you*, nothing is recorded only on
+it, and a viewer's ticks, kept only in their browser, are a convenience the
+conductor never reads. The ledger records the page's URL so a restart after a clear
+republishes to the same place.
+
+**Why it renders the report, not the ledger (contradiction pass, 2026-11-06):** the
+brief said the page renders the ledger and records nothing the ledger lacks. Read
+strictly, that drops items: the ledger holds no tool string for a *Confirm in a
+session* item, and a forge ledger never carries a check's outcome, so a red default
+branch under *Clear a failure* is in the report but not the ledger (protected rule
+7). Rendering the report keeps the owner's point — no second store — without
+dropping either. *Rules* says a check's outcome may sit on the page because it is
+not a forge write.
 
 **Why private, and never shared:** its items can carry the owner's internal work —
 issue titles, decisions, held replies' sites — on whatever repositories the
@@ -325,12 +332,17 @@ the platform's default.
 
 **Why the order is not new:** it reuses the owner pass's — what frees the most
 downstream work first, owner steps by dependency — inside the report's own groups,
-so the page and the chat never rank the same items two ways.
+rather than inventing a second ranking. **Why a scheduled firing republishes too:**
+its report can change *Needs you*, and a page left at the last attended report is
+the stale page this exists to prevent; a firing that cannot publish leaves the page
+showing its earlier read time.
 
 **Why the tracker inbox is excluded:** the owner's tracker inbox (Linear's, or any
 other) spans every project and team, and the conductor is scoped to its configured
 repositories (*Configuration*), so reading it would pull work from outside that
-scope into the queue. The queue renders only what the sweep already collects.
+scope into the queue. The queue renders only what the sweep already collects. The
+contract states that half at the decision point: the page renders the report's
+*Needs you*, which only the sweep collects.
 
 **Why optional:** not every session can publish a page. Where none can, nothing
 changes: the ledger link carries the list, as before.

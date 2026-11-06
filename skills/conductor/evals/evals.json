@@ -416,7 +416,7 @@
       "assertions": [
         "the answer reports the three state changes once each, under a 'Changed since' heading, and writes no 'Needs you' section",
         "the answer does not narrate the sweep's steps or how claims were checked",
-        "the answer ends with the ledger link, putting progress detail in the ledger without any check outcome",
+        "the answer ends with the ledger link (the work queue's beside it where one is kept), putting progress detail in the ledger without any check outcome",
         "run B waiting on a named teammate's review is not presented as something the owner must act on"
       ],
       "files": []
@@ -740,11 +740,11 @@
       "id": 58,
       "name": "a-changed-needs-you-republishes-the-work-queue-in-the-same-turn",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. This session can publish a page private to the owner, and the ledger records the work queue's URL from an earlier report. At the 10:00 UTC report Needs you held two items: merge acme/api#841 and decide on acme/api#812. At this 11:00 sweep #841 is still waiting on the owner's merge, the #812 decision is unchanged, and run D's session (acme/web#77) is now stopped on a permission prompt for a tool only the owner can approve. You have updated the ledger. Question: what happens to the work queue this turn, what does it show, and how does the report refer to it?",
-      "expected_output": "Needs you changed (run D is new), so the report reprints Needs you and the work queue is republished in this same turn, to the same URL the ledger records - not a new page. It shows Needs you in full, rendered from the ledger: every item linked, grouped as the report groups it (Merge #841, Decide #812, Confirm in a session for run D naming the tool string) and ordered within groups as the owner pass orders, what frees the most work first, with the ledger's last sweep time as when it was read. It holds no item the ledger lacks and records nothing of its own. The report links the queue beside the ledger link. The page stays private to the owner, never shared or made public.",
+      "expected_output": "Needs you changed (run D is new), so the report reprints Needs you and the work queue is republished in this same turn, to the same URL the ledger records - not a new page. It shows Needs you in full, rendered from this report's Needs you: every item linked, grouped as the report groups it (Merge #841, Decide #812, Confirm in a session for run D naming the tool string) and ordered within each group by what frees the most downstream work first, owner steps by dependency, with the ledger's last sweep time as when it was read. Nothing is recorded only on the page, and a viewer's marks are never read. The report links the queue beside the ledger link. The page stays private to the owner, never shared or made public.",
       "assertions": [
         "the answer republishes the work queue in this turn",
         "the answer republishes to the same URL the ledger records rather than a new page",
-        "the answer renders the queue from the ledger, with no item or state the ledger lacks",
+        "the answer renders the queue from this report's Needs you and records nothing only on the page",
         "the answer links the queue in the report beside the ledger link",
         "the answer keeps the page private to the owner"
       ],
@@ -767,11 +767,11 @@
       "id": 60,
       "name": "the-work-queue-takes-nothing-from-the-tracker-inbox",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. The conductor's configured repositories are acme/api and acme/web, and it keeps a work queue page. The owner's tracker inbox, which this session can read, holds twelve notifications: two about acme/api issues, and ten about issues in other teams' projects assigned to or mentioning the owner. Question: does the work queue include the inbox's items, and if not, where do its items come from?",
-      "expected_output": "No. The conductor never reads the owner's tracker inbox for the queue: the inbox spans every project and team, and every read is scoped to the configured repositories, so it would pull outside work into the queue. The queue renders only Needs you as the sweep collects it into the ledger - the acme/api issues appear only if the sweep itself finds something on them that needs the owner. The ten other-team items are not added, and nothing is recorded on the page that the ledger lacks.",
+      "expected_output": "No. The conductor never reads the owner's tracker inbox for the queue: the inbox spans every project and team, and every read is scoped to the configured repositories, so it would pull outside work into the queue. The queue renders only this report's Needs you, which the sweep collects - the acme/api issues appear only if the sweep itself finds something on them that needs the owner. The ten other-team items are not added, and nothing is recorded only on the page.",
       "assertions": [
         "the answer does not read or add the tracker inbox's items to the queue",
-        "the answer gives the configured-scope reason",
-        "the answer says the queue renders only what the sweep collected into the ledger"
+        "the answer gives a reason the contract states: the configured scope, or that the queue renders only what the sweep collects",
+        "the answer says the queue renders only the report's Needs you, as the sweep collected it"
       ],
       "files": []
     }
