@@ -1,7 +1,7 @@
 # Linear mechanics
 
-This is the rule other skills mean when they cite *Linear mechanics*: how a write to
-Linear through its API or MCP actually behaves, where that differs from what the
+This is the rule other skills mean when they cite *Linear mechanics*: how a write to,
+or a read from, Linear through its API or MCP actually behaves, where that differs from what the
 tool's parameters suggest.
 
 **It is not a skill and nobody invokes it.** It is a shared rule, held once at
@@ -64,3 +64,14 @@ signed URL in a description expires.
 - **A windowed query paginates**: where a result contradicts what you believe, check
   whether the item paginated out before asserting it.
 - **There is no tool to delete a document**: say it must be deleted in the UI.
+
+## Review pages
+
+**Where a repository is linked to Linear, a PR has a review page there**, its diff
+view. `get_diff`, given the PR's forge URL, returns it as `appUrl`, and the issues
+the PR closes as `linkedIssues`; where that is empty, an issue identifier in the
+PR's title is the fallback. **A PR `get_diff` cannot find has no review page
+there**: the call errors with "Diff not found". **`get_diff_threads` returns the
+calling account's unsubmitted review drafts as `drafts`**, not every reviewer's: a
+draft there is in Linear, not on the forge, until it is submitted. One `get_diff`
+and one `get_diff_threads` per PR.

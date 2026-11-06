@@ -340,16 +340,53 @@ showing its earlier read time.
 **Why the tracker inbox is excluded:** the owner's tracker inbox (Linear's, or any
 other) spans every project and team, and the conductor is scoped to its configured
 repositories (*Configuration*), so reading it would pull work from outside that
-scope into the queue. The queue renders only what the sweep already collects. The
+scope into the queue. Its items are only what the sweep already collects; the build reads links and draft counts for those items alone, never the inbox. The
 contract states that half at the decision point: the page renders the report's
 *Needs you*, which only the sweep collects.
 
 **Why optional:** not every session can publish a page. Where none can, nothing
 changes: the ledger link carries the list, as before.
 
+**Why the link and the publish hang on the recorded URL (review round 1, PR #208):**
+"every report links it" read as unconditional, and readers linked, even published,
+a queue in scenarios that never said one could exist. The ledger's record of the URL
+is the one thing a report can check, so a link appears only where it is recorded,
+and a page is created only by a report whose *Needs you* changed, from a session
+holding a tool that publishes one. An unchanged list therefore never creates a
+page; it links one only where it already exists.
+
+**Why a PR item carries up to four links in that order (owner's ruling, 2026-11-06):** a
+review the owner had drafted in the tracker's review view, not yet submitted, was
+invisible from a queue item linking only the forge PR, so the item read as nothing
+waiting on them. The forge PR comes first because it is the PR; the tracker's review
+page second, marked with the draft count, because that is where the drafts are; the
+closing issues third, or "no linked issue", because an item with no issue is a
+question in itself; the run's session last, where one owns the PR, keeping the
+operator-output issue line's session link rather than dropping it. The chat keeps its
+own shorter line: the order is the page's. Drafts held elsewhere, such as replies
+held for the owner's approval because a person is in the thread (`resolve-pr-comment`,
+*Replies held for approval*), are linked to their text or named where held, as
+*Approve drafts* is in the chat. A draft's location is a claim about current state,
+so it is read each sweep (*establish, do not assume*), never carried from memory,
+and a change in a PR item's links or draft count republishes the page even where
+the list is otherwise unchanged: otherwise a submitted draft would stay counted on
+a page every report links (contradiction pass, review round 1 of PR #208). That is
+also why the *Rules* line on subagent results exempts these links, which are
+re-read rather than persisted. **The count is labelled with the tracker account
+that holds the drafts**, because the tracker returns the calling account's drafts
+only, and *Configuration* never takes the owner's account from a credential. The tracker's tool specifics live in the *Linear mechanics* rule, where
+the next tracker's would go beside them.
+
 Scenarios: `a-changed-needs-you-republishes-the-work-queue-in-the-same-turn`,
 `with-no-page-to-publish-the-ledger-carries-the-list`,
-`the-work-queue-takes-nothing-from-the-tracker-inbox`.
+`the-work-queue-takes-nothing-from-the-tracker-inbox`,
+`the-first-changed-report-creates-the-work-queue-and-records-its-url`,
+`an-unchanged-list-links-a-kept-queue-without-republishing`,
+`a-scheduled-firing-republishes-a-changed-work-queue`,
+`a-red-default-branch-is-on-the-page-never-in-a-forge-ledger`,
+`a-tracker-review-draft-is-marked-on-the-queue-item`,
+`a-pr-with-no-linked-issue-says-so`,
+`a-reply-draft-held-in-the-ledger-is-linked-and-labelled`.
 
 ## The contradiction pass before the review round (PR #201)
 

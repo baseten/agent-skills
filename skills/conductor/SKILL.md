@@ -117,7 +117,7 @@ skill would read as the owner's stays pending.
 - **Report costs.** Every plan states its expected CI runs (*5. Intake and replan*).
 - **Nothing depends on an in-turn background result surviving a restart.** A
   subagent's result is written to the ledger or the forge in the turn that
-  receives it.
+  receives it — bar the work queue's links, read afresh at every build (*Report*).
 - **Authored writes** — the ledger, issues, plan comments, corrections, relayed
   rulings, wrap-up pointers — follow `references/authored-write-form.md` (a write
   nobody approved word for word adds the footer) and are posted under
@@ -665,14 +665,30 @@ corrections posted, facts relayed, rulings recorded, owner steps filed, plans an
 their expected CI runs, sessions left alone, the fallback check-in's state, and
 this session's context use with any clear proposed.
 
-**The work queue.** Where this session can publish a page private to the owner,
-such as an Artifact, it keeps one at a fixed URL, **never shared or made public**,
-since its items may carry internal work: *Needs you* in full, each item linked,
-grouped as the report groups it, within a group what frees the most downstream work
-first and owner steps by dependency (*4. Owner pass*), with the ledger's last sweep
-time as when it was read. **It is a view, never a record**: it renders this
-report's *Needs you*, which only the sweep collects, nothing is recorded only there,
-and a viewer's marks are never read. A report that changes *Needs you*, a scheduled
-firing's included, republishes it in the same turn; every report links it beside
-the ledger. Where no page can be published, no queue is kept and the ledger link
+**The work queue.** Where this session holds a tool that publishes a page private to
+the owner, such as an Artifact, it keeps one, **never shared or made public**, since
+its items may carry internal work: *Needs you* in full, each item linked, grouped as
+the report groups it, within a group what frees the most downstream work first and
+owner steps by dependency (*4. Owner pass*), with the ledger's last sweep time as
+when it was read. **It is a view, never a record**: it renders this report's *Needs
+you*, which only the sweep collects, with the links below read each sweep; nothing
+is recorded only there, and a viewer's marks are never read. **A report whose *Needs
+you* changed, or a PR item's links or draft count** — emptied, or on a scheduled
+firing, included — **publishes it in the same turn**: to the URL the ledger records,
+or, where none is recorded, as a new page whose URL the ledger then records
+(*7. Ledger*). **Only where the ledger records that URL does a report link it**,
+beside the ledger, the unchanged one-line form included; otherwise the ledger link
 stands in.
+
+**On the page, an item about a PR carries its links in this order**: the PR on the
+forge; the tracker's review page for it, where the repository is linked to a
+tracker that hosts PR review (`references/linear-mechanics.md`, *Review pages*),
+**marked with the count of unsubmitted drafts there**, labelled with the tracker
+account that holds them, so the item never implies a draft is on the forge when it
+is on the tracker; every issue the PR closes, or a plain "no linked issue"; and
+last, the run's session, where one owns the PR. A draft held anywhere else — a
+held reply in the ledger or this session — is linked to its full text or names
+where it is held, labelled so, never carrying the text. The chat's lines keep
+`references/operator-output.md`'s form. **Every link and draft count is read each
+sweep** (`references/establish-do-not-assume.md`, *You are about to assert it*) —
+a subagent may gather them, returning only compact JSON.
