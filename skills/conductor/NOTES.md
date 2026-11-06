@@ -295,6 +295,13 @@ stays tracker-agnostic; which tracker and store they mean is the session's
 connected tools. Rulings never move into the ledger: they stay where the decision
 lives, so a run reads them where its own tests look.
 
+**Why each run's row carries its version line (owner's decision, 2026-11-06):**
+an owner audit could not tell which skill revision a dispatched session had run.
+The row records what the run's reports said — `not reported` where none carried a
+line, which is itself the finding — and nothing the conductor inferred. The
+conductor's own line opens its first report, under the same rule
+(`rules/run-start.md`).
+
 ## The work queue
 
 *Report*, its last paragraph; *7. Ledger*, the queue's URL; *Rules*, where a check's

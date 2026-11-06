@@ -860,6 +860,44 @@
         "the answer does not present the draft as on the forge or the tracker"
       ],
       "files": []
+    },
+    {
+      "id": 68,
+      "name": "ledger-row-records-each-runs-reported-version",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a sweep on acme/api. Two runs answered status requests. Run A (implement-issue on https://github.com/acme/api/issues/88) replied:\nhttps://claude.ai/code/session_A · https://github.com/acme/api/issues/88 · https://github.com/acme/api/pull/120\nrunning implement-issue @ 4f2a9c1e0b7d3a5f6e8c9b0a1d2e3f4a5b6c7d8e (2026-11-04)\nstate: waiting on CI · as of 2026-11-06T10:02Z\n1. State — PR open, CI running.\n2. Owner decisions — none.\n3. Owner steps — none.\n4. Follow-ups — none.\ndeclined: none\nRun B (backlog-orchestrator on epic https://github.com/acme/api/issues/70) replied in the same form but with no `running` line, and none of its earlier reports had one. This conductor's own skill directory has a .source with commit=9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d. Question: what does each run's row in the ledger's live-sessions table record about the version it runs, and why?",
+      "expected_output": "Run A's row records its reported line, `running implement-issue @ 4f2a9c1e0b7d3a5f6e8c9b0a1d2e3f4a5b6c7d8e (2026-11-04)`. Run B's records `not reported`. On a forge ledger the commit is written bare, never in a code span (as owner/repo@sha where the line names another repository's commit). The conductor records what the runs' reports carried and nothing it inferred: it does not fill B's version from its own .source, from A's line, or from any install stamp, since B may run a different install; the missing line is itself the finding.",
+      "assertions": [
+        "run A's row records `running implement-issue @ 4f2a9c1e… (2026-11-04)` as its version",
+        "run B's row records `not reported` (or equivalent wording that no version was reported)",
+        "the answer does not fill run B's version from the conductor's own .source (9c0d1e2f…), from run A, or from an install stamp"
+      ],
+      "files": []
+    },
+    {
+      "id": 69,
+      "name": "generic-conductor-hands-off-to-an-installed-layer",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the owner types `/conductor acme/web --conductor-ledger tracker-document` in a fresh session. CLAUDE_CONFIG_DIR is not set. Searching ~/.claude/skills for SKILL.md files declaring metadata.extends finds one: ~/.claude/skills/synced/b1/acme-conductor/SKILL.md, whose frontmatter is\n---\nname: acme-conductor\ndescription: Extends `conductor` with acme's repositories and ledger.\nmetadata:\n  extends: conductor\n---\nThe session's skill listing shows `team:acme-conductor`. Nothing invoked conductor except the owner's command. Question: what do you do first, and what, if anything, do you read, write or print before that?",
+      "expected_output": "Before anything else — before reading the policy file, setting the session title, printing the version line or touching the ledger — it hands off: it writes nothing and invokes acme-conductor with the owner's arguments verbatim (`acme/web --conductor-ledger tracker-document`), then follows it. acme-conductor (listed as team:acme-conductor, the same skill under a namespace prefix) is a layer over conductor and is not what invoked this run, so the run is its. The layer then invokes conductor back with its settings added.",
+      "assertions": [
+        "the answer stops and invokes acme-conductor rather than running the conductor's own steps",
+        "the answer passes the owner's arguments to acme-conductor verbatim",
+        "the answer reads or writes nothing of the conductor's own (no policy read, ledger, title or version line) before the hand-off",
+        "the answer treats `team:acme-conductor` and the acme-conductor SKILL.md as one skill, not two layers"
+      ],
+      "files": []
+    },
+    {
+      "id": 70,
+      "name": "no-hand-off-when-the-layer-is-the-invoker",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the owner invoked acme-conductor, whose SKILL.md declares metadata.extends: conductor; its text printed `running acme-conductor @ 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b (2026-11-05)` and then invoked you with the arguments {\"conductor-repositories\": [\"acme/web\", \"acme/api\"], \"conductor-ledger\": [\"tracker-document\"]}. CLAUDE_CONFIG_DIR is not set. Searching ~/.claude/skills finds acme-conductor's SKILL.md declaring the extension, and the listing also shows `team:acme-conductor`. This skill's own directory, ~/.claude/skills/conductor/, has a .source with commit=4f2a9c1e0b7d3a5f6e8c9b0a1d2e3f4a5b6c7d8e and committed=2026-11-04T16:20:11Z. Question: do you hand off? What is the first line of your first report?",
+      "expected_output": "No hand-off: the one skill extending conductor (acme-conductor, also listed as team:acme-conductor, which is the same skill under a namespace prefix and not a second layer) is what invoked this run, so it is the layer and this is its process. The conductor carries on with the arguments it was given, and its first report opens with `running conductor @ 4f2a9c1e0b7d3a5f6e8c9b0a1d2e3f4a5b6c7d8e (2026-11-04)`, read from its own .source — after the layer's own line, so the run names both versions.",
+      "assertions": [
+        "the answer does not hand off or invoke acme-conductor again",
+        "the answer gives the reason that the extending skill is what invoked this run",
+        "the answer does not treat team:acme-conductor as a second layer requiring the owner to choose",
+        "the first report opens with `running conductor @ 4f2a9c1e… (2026-11-04)`, read from conductor's own .source"
+      ],
+      "files": []
     }
   ]
 }

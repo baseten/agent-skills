@@ -15,6 +15,10 @@ code. The pipeline is `write-spec` → this skill → `conductor`.
 This file is the contract. The reasoning lives in `NOTES.md`, keyed by section;
 NOTES explains, never overrides.
 
+**First, `references/run-start.md`**: hand off to an installed skill that extends
+this one where that rule says to, then open this run's first output with the
+version line.
+
 **Wrong tool**: no spec for work bigger than a brief — `write-spec` first;
 dispatching — the `conductor`. One ticket is this skill's *One ticket* mode.
 

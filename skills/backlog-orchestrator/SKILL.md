@@ -9,6 +9,8 @@ Execute a prepared implementation wave autonomously.
 
 This file is the contract; the reasoning and incident history behind its rules live in `NOTES.md` beside it, keyed by section. NOTES explains; it never overrides. Five files beside it are part of the contract on their situation, each read only when it arises, and the pointer at each decision point says when: `deep-validation.md` (an escalation trigger fired), `restart-resume.md` (resuming an earlier run of this orchestration), `artifact-collisions.md` (a cross-branch collision, found or expected at dispatch), `dynamic-workflow.md` (a Dynamic Workflow fan-out) and `integration-branch.md` (a repository whose `ci-mode` is `integration-branch`). The fields of the state block and the closing report are in `schemas/checkpoint-output.md` beside this file, and bind as this file does. The checkpoint-capture sequence lives in `swarm`, as a tested implementation in that skill's `scripts/checkpoint-capture.sh` with its test suite beside it.
 
+**First, `references/run-start.md`**: hand off to an installed skill that extends this one where that rule says to, then print the version line before this run's first state block.
+
 This skill is the **policy and backlog layer**. Claude's runtime may provide the worker scheduling/persistence layer for the bounded implementation fan-out.
 
 ## Invocation
