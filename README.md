@@ -30,6 +30,7 @@ The `SKILL.md` files are dense and not easily human readable. That is deliberate
 - `rules/manual-step-issues.md` — every owner step a run identifies (a post-deploy check, a key, a backfill, a console action) is filed, where the repository opts in, as a `[Manual]` issue under the repository's manual-steps epic, one per sitting, in a fixed form — a dependency header, server access, numbered steps with exact commands, what to paste back, *Done when* — and never carries a secret. Filed by `conductor`, `backlog-orchestrator` and `plan-feature`, walked by `owner-steps`; a repository's `manual-steps` policy opts into filing (off by default) and names its epic and server access.
 - `rules/conductor-exchange.md` — the run's side of a conductor's coordination, for `backlog-orchestrator` and `implement-issue` alike: its title — `Orchestrator:` for a batch, `Worker:` for a single-issue run — how it answers a status request and what it pushes unprompted, when it adopts a new conductor id, how it takes on new work or is folded into another run, and the one test by which a run recognises an owner ruling the conductor relayed.
 - `rules/operator-output.md` — what an orchestration run writes to the owner in its own chat: only what needs them, what changed state and answers to their questions; a reporting turn that ends in a fixed order (*Needs you* by action, *Changed since*, *Unchanged*, the ledger link and any work queue beside it); a linked heading on every block and every reference a link; decisions asked one per structured question, bar a planner's blocking questions; a meta answer in its own block; a recurring record printed only when it changed; and a quiet turn that writes one minimal line, a quiet check-in updating the session title's suffix instead.
+- `rules/run-start.md` — the two things a skill that starts a run does first: hand the run to an installed skill that extends it (see [Layered skills](#layered-skills)), unless that skill is what invoked it, then open its first output with `running <skill> @ <commit> (<date>)`, read from the install stamp and never kept by hand. Applied by the conductor, the orchestrators, the planners, `implement-issue`, `ship-branch` and `owner-steps`.
 - `rules/linear-mechanics.md` — how a write to, or a read from, Linear actually behaves: `+++` collapsibles and no HTML, `addLabels` appending where `labels` replaces, single-select label groups swapping, a re-read before any retry because saves are eventually consistent, patching rather than rewriting a description, Markdown links rather than bare identifiers, inline image upload, the relation filters' treatment of completed blockers, and where a PR's review page, closing issues and unsubmitted drafts are read. Applied by `plan-feature` and `conductor`.
 
 The posting-identity, agent-policy and review-feedback rules were extracted from `backlog-orchestrator` in #134, for the same reason: standalone skills such as `create-pr`, `merge-stack` and `resolve-pr-comment` applied them by pointing into an orchestrator they never run under. `rules/draft-state.md` followed in #138, so that `settle-and-merge`'s gate and `implement-issue` stopped pointing up into it for the held-draft definition. `rules/repair-rounds.md` (from `backlog-orchestrator`) and `rules/mechanical-pushes.md` (from `create-pr`) followed in #140, so that `implement-issue` and `review-docs` stopped pointing up into a skill they never run under, or that invokes them. `rules/review-trigger.md` (from `create-pr`) followed in #142, because the orchestrators and `implement-issue` issue triggers under it too, `npm-dependency-upgrade-orchestrator` on PRs that never pass through `create-pr`. The verdict, attribution, watch and wake rules followed in #144, with the snapshot rule added to `rules/establish-do-not-assume.md` and trigger confirmation to `rules/review-trigger.md`: `swarm`, `settle-and-merge`, `repair-pr` and `review-docs` pointed into `backlog-orchestrator`, or held a second copy, for rules that PR supervision applies wherever it runs.
@@ -118,8 +119,9 @@ because nothing in a script can tell its own stale copy from one you wrote
 yourself under the same name.
 
 The one thing it replaces is its own marked block in `~/.claude/CLAUDE.md`,
-which carries `global-instructions.md`: rules for what a session says rather
-than what a skill writes, such as linking every issue a chat reply names. The
+which carries `global-instructions.md`: rules a session needs before any skill
+is loaded, such as linking every issue a chat reply names, and preferring a
+skill that extends another over the one it extends. The
 markers make that block provably its own, so a re-run swaps it in place and
 leaves the rest of the file alone.
 
@@ -709,6 +711,13 @@ from somewhere else entirely, which this script cannot tell apart, so check it
 before deleting it. Whatever the install cannot read - no
 `.git`, no recognisable origin - is recorded as `unknown` rather than guessed.
 
+A session reads the stamp itself: every skill that starts a run opens its first
+output with `running <skill> @ <commit> (<date>)`, from its own `.source` (or, for
+an uploaded skill, its frontmatter's `metadata.version`), and `unknown` where
+neither reads (`rules/run-start.md`). A coordinated run carries that line in each
+report to its conductor, which records it in its ledger, so an audit can tell
+which revision every session ran.
+
 This is verified at the **Trusted** [network access
 level](https://code.claude.com/docs/en/cloud-environments#access-levels), which
 is the default. A more restrictive level may not permit the clone.
@@ -724,6 +733,26 @@ That constraint is the whole reason for the split described in [Personal skills
 stay out](#personal-skills-stay-out): a public repository is the only kind a
 setup script can install, and anything that cannot be public has to reach cloud
 sessions through a claude.ai account upload instead.
+
+### Layered skills
+
+A private skill that only adds settings to a generic one here — repositories, a
+ledger's home, a review trigger — **extends** it rather than copying it. It
+declares `metadata: {extends: <generic skill>}` in its frontmatter, says so in
+its description, and invokes the generic skill with its settings as invocation
+arguments. Each skill reaches a cloud session by **one install route**: a
+generic skill only from this repository's bootstrap, and a layer only from a
+claude.ai upload — never a generic skill uploaded too, which would give the
+session two copies of it.
+
+Two things keep a session on the layer the owner meant. Bootstrap's managed
+block in `~/.claude/CLAUDE.md` says to prefer a skill that extends another; and a
+generic skill that starts a run, invoked directly while a layer over it is
+installed, hands the run to that layer unless the layer is what invoked it
+(`rules/run-start.md`). Whether an uploaded skill can invoke a bootstrap-installed
+one in a cloud session, and whether the generic skill can see the layer's
+frontmatter there, is not yet observed; `rules/run-start-notes.md` records what
+is, and what the first cloud run must confirm.
 
 ### Reading issue dependencies and Projects v2
 

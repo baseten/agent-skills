@@ -13,6 +13,10 @@ implements anything: the next step is `plan-feature`, which the owner starts.
 This file is the contract. The reasoning lives in `NOTES.md`, keyed by section;
 NOTES explains, never overrides.
 
+**First, `references/run-start.md`**: hand off to an installed skill that extends
+this one where that rule says to, then open this run's first output with the
+version line.
+
 ## When this is the wrong tool
 
 - **A spec exists and the work needs issues** — `plan-feature`. Where planning finds

@@ -563,6 +563,32 @@
         "the turn ends with a link to issue #2011"
       ],
       "files": []
+    },
+    {
+      "id": 45,
+      "name": "version-line-read-from-the-skills-own-stamp",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a person invokes you in a cloud container on https://github.com/acme/api/issues/88. CLAUDE_CONFIG_DIR is not set. This skill was loaded from ~/.claude/skills/implement-issue/, which holds a file .source reading:\nrepo=https://github.com/example/skills\ncommit=4f2a9c1e0b7d3a5f6e8c9b0a1d2e3f4a5b6c7d8e\ncommitted=2026-11-04T16:20:11Z\ninstalled=2026-11-06T08:00:02Z\n~/.claude/.agent-skills-install reads the same except commit=9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d and committed=2026-11-06T07:58:40Z. No SKILL.md under ~/.claude/skills declares metadata.extends, and no listed skill's description says it extends implement-issue. Question: before anything else, what does this run do, and what is the first line of its first output, exactly? Say where each part of that line comes from.",
+      "expected_output": "It first checks for an installed skill that extends implement-issue, finds none, and carries on. Its first output opens with exactly `running implement-issue @ 4f2a9c1e0b7d3a5f6e8c9b0a1d2e3f4a5b6c7d8e (2026-11-04)`: the name is its own frontmatter name, and the commit and date are read from .source in its own directory (the date part of `committed`). The install-wide .agent-skills-install is not used, because the skill's own stamp reads; and the version is read, never stated from memory.",
+      "assertions": [
+        "the answer checks for an installed skill extending implement-issue before anything else and, finding none, carries on",
+        "the first line is `running implement-issue @ 4f2a9c1e0b7d3a5f6e8c9b0a1d2e3f4a5b6c7d8e (2026-11-04)`, or that line with the commit unabbreviated and the date 2026-11-04",
+        "the answer takes the commit and date from the skill's own .source, not from .agent-skills-install (it does not report 9c0d1e2f… or 2026-11-06)",
+        "the answer does not state a version from memory or from the skill's own text"
+      ],
+      "files": []
+    },
+    {
+      "id": 46,
+      "name": "version-line-unknown-when-the-skill-has-no-stamp",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a person invokes you on https://github.com/acme/api/issues/91. CLAUDE_CONFIG_DIR is not set. This skill was loaded from ~/.claude/skills/implement-issue/, which holds SKILL.md, NOTES.md and references/ but no .source file. Its SKILL.md frontmatter has only name and description. ~/.claude/.agent-skills-install exists and reads repo=https://github.com/example/skills, commit=9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d, committed=2026-11-06T07:58:40Z, installed=2026-11-06T08:00:02Z. No installed skill declares that it extends implement-issue. Question: what is the first line of this run's first output, exactly, and why?",
+      "expected_output": "`running implement-issue @ unknown (unknown)`. The skill's own directory was found and has no .source, and its frontmatter has no metadata.version, so nothing reads. The install-wide .agent-skills-install is not used: it is consulted only where the skill's own directory cannot be found, and a directory without a .source was left by an earlier install or came from elsewhere, so that stamp does not describe it. Nothing is guessed or stated from memory.",
+      "assertions": [
+        "the first line is `running implement-issue @ unknown (unknown)`",
+        "the answer does not report commit 9c0d1e2f… or any date from .agent-skills-install as this skill's version",
+        "the answer explains that the install-wide stamp is not used because the skill's own directory was found without a .source (it may be from another install)",
+        "the answer does not guess or state a version from memory"
+      ],
+      "files": []
     }
   ]
 }

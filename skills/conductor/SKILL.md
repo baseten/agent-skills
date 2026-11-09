@@ -27,6 +27,10 @@ NOTES explains, never overrides. `swarm` owns the cross-session mechanics — th
 return channel's detection and the trust boundary — and
 `references/conductor-exchange.md` owns the run's side of every exchange here.
 
+**First, `references/run-start.md`**: hand off to an installed skill that extends
+this one where that rule says to, then open this session's first report with the
+version line.
+
 ## When this is the wrong tool
 
 - **One run.** Ask it directly, or read its epic or issue.
@@ -512,8 +516,10 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
 
 - the **live-sessions table** — per stream: repository, epic or issue, the run's
   skill, the session's link and title, state (*4. Owner pass*, step 1), who holds
-  its watch and, where this session does, the deadline the hand-off carried, and its context use (`used_tokens` of `max_tokens`, as read this
-  sweep); an archived session leaves it;
+  its watch and, where this session does, the deadline the hand-off carried, its context use (`used_tokens` of `max_tokens`, as read this
+  sweep), and the version line or lines its reports carry
+  (`references/conductor-exchange.md`, *Reports*), else `not reported`; an
+  archived session leaves it;
 - the owner's rulings given in this chat, each dated, in their exact words, linked
   to where each was recorded;
 - every pending draft, in full — held replies and draft answers only named on a

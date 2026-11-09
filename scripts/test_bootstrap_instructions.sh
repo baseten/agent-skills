@@ -18,7 +18,15 @@ report() { # $1 name, $2 ok(0/1)
 # $1 home. Output goes to $1.log for a failing case to show.
 install() { mkdir -p "$1/.claude"; HOME="$1" bash "$ROOT/bootstrap.sh" >"$1.log" 2>&1; }
 blocks() { grep -c '^<!-- agent-skills:begin' "$1/.claude/CLAUDE.md"; }
-has_rule() { grep -qF -e "$(head -1 "$ROOT/global-instructions.md")" "$1/.claude/CLAUDE.md"; }
+# Every line of global-instructions.md, not only its first: a block cut short
+# after the first rule would otherwise pass.
+has_rule() {
+  local line
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    grep -qxF -e "$line" "$1/.claude/CLAUDE.md" || return 1
+  done < "$ROOT/global-instructions.md"
+}
 
 H="$TMP/fresh"; ok=1
 if install "$H" && has_rule "$H" && [ "$(blocks "$H")" = 1 ]; then ok=0; fi
