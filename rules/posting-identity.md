@@ -42,6 +42,10 @@ The trigger comment is the one write whose authorship is functional rather than 
 
 **A distinct posting identity does not retire the thread-root test or the no-new-threads rule** (`references/review-feedback.md`). The test also separates feedback-to-act-on from conversation — a comment-kind distinction no author identity can make — and because availability degrades, its collision-closing job returns whenever the condition fails (`rules/posting-identity-notes.md`). Both rules hold under either identity.
 
+## A pending review
+
+**A `review-pr` pending review is the one other write whose author is functional**: the forge shows a pending review only to the account it is under, so under any author but the invoking user the owner can never find or submit it. It goes through the transport precedence selects, like any write, and is kept only where its read-back shows the invoking user as its author; under any other author the run deletes it by its id and reports that it failed. **It is never rerouted to another tier to find a better author** — this licenses no write but the pending review, and no other write is withheld for want of one.
+
 ## Transport notes
 
 - **GraphQL can be blocked in a session while REST works.** `gh pr comment` goes through GraphQL and then fails; `gh api -X POST repos/{owner}/{repo}/issues/{number}/comments -f body=...` posts the same timeline comment over REST (`rules/posting-identity-notes.md`).

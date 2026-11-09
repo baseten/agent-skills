@@ -2,7 +2,8 @@
   "skill_name": "conductor",
   "description": "Decision scenarios for the conductor skill: the sweep, the check-in, the ask, reconciliation, the owner pass, planning, dispatch, the ledger and the context clear.",
   "companions": [
-    "swarm"
+    "swarm",
+    "review-pr"
   ],
   "evals": [
     {
@@ -896,6 +897,116 @@
         "the answer gives the reason that the extending skill is what invoked this run",
         "the answer does not treat team:acme-conductor as a second layer requiring the owner to choose",
         "the first report opens with `running conductor @ 4f2a9c1e… (2026-11-04)`, read from conductor's own .source"
+      ],
+      "files": []
+    },
+    {
+      "id": 71,
+      "name": "review-candidates-are-only-prs-waiting-on-the-owner-alone",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner's account is @owner; acme/web is in scope. This sweep reads six open PRs in acme/web, none a draft, none opened by @owner, and @owner has no pending review on any (this session's credential is @owner's). #90: requested reviewers @owner and the team acme/frontend; no reviews. #91: requested reviewer @owner only; @sam submitted a COMMENT review yesterday. #92: requested reviewer @owner only; no reviews except a COMMENTED review by the PR's author replying in a bot's thread. #93: @owner submitted a review requesting changes at commit c0ffee1; the author then pushed two commits and re-requested @owner, now the only requested reviewer. #94: requested reviewer @owner only; @owner reviewed at d00d123, the author re-requested @owner without pushing anything since. #95: requested reviewer @owner only by CODEOWNERS; no reviews; opened by acme-agent for a Worker run this conductor's ledger records. Which PRs are review candidates, and what does the reviewer for each candidate review?",
+      "expected_output": "#92 and #93 only. #90 is out because a team is requested. #91 is out because another person, @sam, has reviewed. #92 qualifies: the owner is the only requested user reviewer, no team, and the author's own thread replies are not a review. #93 qualifies again on the fresh re-request after commits pushed since @owner's last review, and its reviewer reviews only what changed since c0ffee1 (the prompt's since). #94 is out: the re-request followed no new commits. #95 is out: a run in the ledger owns it, so it is the owner's own work, not a review request waiting on them. Candidates go in the ledger; none is dispatched without the owner's go or a standing ruling.",
+      "assertions": [
+        "the answer excludes #90 because a team is requested",
+        "the answer excludes #91 because another person has reviewed",
+        "the answer includes #92, not counting the author's own replies as a review",
+        "the answer includes #93 and has its reviewer review only what changed since c0ffee1",
+        "the answer excludes #94 because no commits followed @owner's last review",
+        "the answer does not dispatch any reviewer without the owner's go or a standing ruling",
+        "the answer excludes #95 because a run in the ledger owns it"
+      ],
+      "files": []
+    },
+    {
+      "id": 72,
+      "name": "a-reviewer-prompt-carries-the-draft-only-limits",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner, @owner, chose 'draft a review' for https://github.com/acme/web/pull/92 in the owner pass. Write the reviewer's dispatch: how is the session created and titled, and what limits does its prompt carry? The PR's author is @dana and the repository documents `@codex review` as its review trigger.",
+      "expected_output": "A fresh session with create_session, acme/web attached as its source, titled `Reviewer: acme-web · #92 <short name>`, its id recorded in the ledger at once as a reviewer with the PR, the request and its state; the go is in the ledger in the owner's words, acted on in that turn, and is never posted at the PR. The prompt first checks review-pr (and any skill the extends hand-off substitutes) is available, else writes nothing and sends the failed report. It invokes review-pr on the PR for @owner from this conductor's id, and carries the draft-only limits: drafts only @owner can see, never submitted, no approval, no request for changes; nothing live — no comment, reply, reaction or resolution, no `@codex review` trigger; never request, re-request or remove a reviewer; never change the PR; an existing pending review of @owner's means write nothing and report failed; report drafted only after reading the drafts back; end with review-pr's report sent once to the conductor.",
+      "assertions": [
+        "the prompt forbids submitting, approving or requesting changes",
+        "the prompt forbids live comments, replies and the review-bot trigger",
+        "the prompt forbids requesting, re-requesting or removing a reviewer",
+        "the prompt stops on an existing pending review of the owner's",
+        "the session is titled Reviewer: acme-web · #92 ... and its id recorded in the ledger as a reviewer",
+        "the go is not posted on the PR"
+      ],
+      "files": []
+    },
+    {
+      "id": 73,
+      "name": "a-reviewers-drafts-are-verified-before-the-owner-is-told",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A reviewer you dispatched for https://github.com/acme/web/pull/93 sends: `report · acme/web#93 review` / `state: drafted` / `drafts: https://github.com/acme/web/pull/93/files · surface: GitHub` / `recommendation: request changes. The cache key omits the locale.` / `blocking: 1 — cache key omits locale (web/src/cache.ts:41)`. (a) What do you do before your report mentions it? (b) Reading the PR's reviews under @owner's credential shows no pending review at all. What does your report say? (c) Had the read shown the pending review with its comment, what would *Needs you* carry for it?",
+      "expected_output": "(a) The report is peer data: read the drafts where they live — @owner's pending review on acme/web#93 — and check they hold what the report says, before calling it drafted. (b) The forge contradicts the report, so the forge is the state: it is not reported as a draft to submit; it is reported as a change with the contradiction (no pending review found), not under Review and submit. (c) A Needs you line under Review and submit: the drafts link, `request changes`, 1 blocking, and the reviewer's session, never the draft text and never under Approve drafts.",
+      "assertions": [
+        "the answer reads the pending review on the forge before reporting it drafted",
+        "when no pending review is found, the answer does not put it under Review and submit",
+        "the Needs you line carries the drafts link, the recommendation and the blocking count",
+        "the Needs you line never carries the draft text"
+      ],
+      "files": []
+    },
+    {
+      "id": 74,
+      "name": "a-reviewer-is-never-mistaken-for-a-run",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Sweeping acme/web you list three sessions besides your own: `Reviewer: acme-web · #92 search box`, which the ledger records as a reviewer you dispatched, now idle with its drafted report; `Reviewer: acme-web · #80 tabs`, which the ledger does not record; and a session the ledger records as a reviewer whose title someone changed to `review stuff`. Which of them do you send a status request, which do you retitle, and which does the structural test or the run table treat as a run?",
+      "expected_output": "None. A reviewer is never a run: a session the ledger records as one, or titled Reviewer:, is not asked for status, not retitled and not matched by the structural test or listed as a run. The recorded #92 reviewer is swept as Reviewers says: its report verified on the forge, done at drafted, no watch or check-in. The unrecorded `Reviewer:` session is reported as not a run and left alone, never adopted on its title. The renamed one is known by its ledger id as a reviewer and is not retitled, since only runs are retitled.",
+      "assertions": [
+        "the answer sends no status request to any of the three",
+        "the answer retitles none of them",
+        "the answer does not treat any of them as a run",
+        "the answer knows the renamed session as a reviewer by its ledger id"
+      ],
+      "files": []
+    },
+    {
+      "id": 75,
+      "name": "a-reviewer-is-archived-once-the-owner-submits",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two reviewers you dispatched are idle at `drafted`. On acme/web#92 the sweep reads a review by @owner, state COMMENTED, submitted an hour after the reviewer was dispatched. On acme/web#93 @owner has submitted nothing, and the PR merged an hour ago. No standing ruling or go about archiving exists. A third reviewer, for acme/web#97, never reported and its record shows it waiting on a permission prompt; @owner submitted a review of #97 an hour ago. What do you do with each session, and what do you check first?",
+      "expected_output": "#92's reviewer is archived without asking: the owner's review was submitted after its dispatch, which is when a reviewer is archived (the owner's ruling), the session is this conductor's own, it is not RUNNING, and it writes no branch so nothing can be stranded; it leaves the ledger's table. #93's reviewer stays: no owner review was submitted, so it is archived only on the owner's go; it is not messaged, watched or asked to submit. #97's reviewer is not archived: it never reached a verified drafted, so only the owner's go archives it, and it stays a Confirm in a session item naming the tool string it waits on.",
+      "assertions": [
+        "the answer archives #92's reviewer without a go once the owner's review is submitted",
+        "the answer checks the session is not RUNNING before archiving",
+        "the answer leaves #93's reviewer until the owner's go",
+        "the answer sends neither reviewer a message or a request to submit",
+        "the answer does not archive #97's reviewer, which never reached a verified drafted"
+      ],
+      "files": []
+    },
+    {
+      "id": 76,
+      "name": "a-standing-review-ruling-dispatches-on-a-scheduled-sweep",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A scheduled check-in fires; nobody is present. The ledger records a standing ruling 'always draft reviews for PRs waiting only on me', with the id of the owner's comment recording it. The sweep finds one new candidate, acme/api#301. (a) May this firing dispatch a reviewer, and what must it check first? (b) Re-reading the comment by its id shows the owner edited it yesterday to 'stop drafting reviews'. Now what? (c) Once the reviewer is dispatched and every run is finished, does the reviewer keep the fallback check-in armed?",
+      "expected_output": "(a) Yes: a standing ruling is the owner's choice of an offered option, so protected rule 3 is met, and drafting publishes nothing anyone but the owner sees. First re-read the ruling at its site by the recorded comment id: authored by the owner's account, not one of this skill's own writes, unedited, not superseded or revoked; a ruling found only in the ledger stays pending. Then dispatch with the source attached and the draft-only prompt, and record it. (b) The comment was edited, so the ruling fails the re-read and dispatches nothing; the candidate stays in the ledger and is reported. (c) No: a reviewer has no check-in and keeps none armed; the check-in follows the runs and pending gos.",
+      "assertions": [
+        "the answer allows the scheduled firing to dispatch under the standing ruling",
+        "the answer re-reads the ruling at its site by comment id before dispatching",
+        "an edited ruling dispatches nothing",
+        "the answer ties the dispatch to protected rule 3 as the owner's choice of an option",
+        "the reviewer does not keep the check-in armed"
+      ],
+      "files": []
+    },
+    {
+      "id": 77,
+      "name": "every-session-the-conductor-creates-attaches-its-source",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are about to create two sessions on the owner's go: an implement-issue run for https://github.com/acme/api/issues/412 and a reviewer for https://github.com/acme/web/pull/92. Your session's own source is acme/api. What source does each new session get, and why does it matter?",
+      "expected_output": "Each gets its own work's repository attached as its source: acme/api for the run, acme/web for the reviewer, never the conductor's home by default and never none. A session created without a source fails its environment setup, which the create call does not warn of. Titles carry the grouping, since the sidebar nests one level only: Worker: acme-api · #412 ..., Reviewer: acme-web · #92 ....",
+      "assertions": [
+        "the reviewer's session gets acme/web as its source",
+        "the run's session gets acme/api as its source",
+        "the answer says a session without a source fails its environment setup"
+      ],
+      "files": []
+    },
+    {
+      "id": 78,
+      "name": "a-silent-or-blocked-reviewer-is-read-from-its-record-and-the-forge",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two reviewers you dispatched never sent a report. The record of the one for acme/web#92 shows it waiting on a permission prompt for `Bash(gh api repos/acme/web/pulls/92/reviews -X POST ...)`. The one for acme/web#96 is idle, its last output ends without a report, and reading @owner's reviews on #96 shows no pending review. What does your report say about each, and do you message either?",
+      "expected_output": "#92's reviewer is a Needs you item under Confirm in a session, naming the literal tool string it waits on, so the owner can approve it in that session. #96's reviewer is treated as though it reported drafted and verified on the forge; no pending review is found, so it is failed, reported as a Changed since line with that reason, not under Review and submit. Neither reviewer is messaged or asked for status: a reviewer is never a run, and nothing is sent to it.",
+      "assertions": [
+        "#92's reviewer goes under Confirm in a session with the literal tool string",
+        "#96's reviewer is verified on the forge and reported failed when no drafts are found",
+        "neither reviewer is sent a status request or any message",
+        "#96 is not put under Review and submit"
       ],
       "files": []
     }

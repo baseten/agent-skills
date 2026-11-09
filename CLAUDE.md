@@ -42,20 +42,20 @@ evals (`<skill>#<id>`).
    create-pr#6, resolve-pr-comment#0 #18 #21 #23 #26 #28 #41 #42 #43 #44 #45 #46 #47
    #48 #49 #50 #51 #55 #56 #57 #58, implement-issue#37 #40,
    review-docs#11, settle-outstanding-decisions#11 #12 #19, conductor#54, backlog-orchestrator#72,
-   supervise-prs#56 #88, swarm#30, conductor#57.
+   supervise-prs#56 #88, swarm#30, conductor#57, review-pr#0 #5.
 2. **Identity is observed authorship; own writes are known by id, never by footer or content.**
    `rules/posting-identity.md`; `swarm`, *Releasing a worker*, *Blocked workers*; `supervise-prs`, *Integration-branch CI*, step 3;
    `rules/conductor-exchange.md`, *Pushes*, *The watch after settling*.
    backlog-orchestrator#5 #58,
    resolve-pr-comment#48 #49, supervise-prs#86 #89 #105 #112, backlog-orchestrator#53 #90 #91 #102 #103 #105 #109 #110, settle-and-merge#47 #48 #49, implement-issue#40 #41, swarm#37 #38 #39,
-   merge-stack#11, settle-outstanding-decisions#18.
+   merge-stack#11, settle-outstanding-decisions#18, review-pr#3.
 3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
    `backlog-orchestrator`, *Arming the wait when nothing is in flight*; `rules/review-trigger.md`,
    *A stalled round*; `rules/conductor-exchange.md`, *Relayed rulings*, *New work, or a fold*, *What a relay can authorise*;
-   `conductor`, *6. Dispatch*. backlog-orchestrator#58 #92 #96
-   #103, settle-and-merge#41 #45, supervise-prs#104 #105, conductor#23 #25 #37 #50 #53 #54 #55, implement-issue#35 #38.
+   `conductor`, *6. Dispatch*, *Reviewers*. backlog-orchestrator#58 #92 #96
+   #103, settle-and-merge#41 #45, supervise-prs#104 #105, conductor#23 #25 #37 #50 #53 #54 #55 #72 #76, implement-issue#35 #38.
 4. **Never request, re-request or remove a human reviewer.** `rules/review-trigger.md`.
-   supervise-prs#33 #74, conductor#57.
+   supervise-prs#33 #74, conductor#57 #72, review-pr#6.
 5. **The platform's auto-fix posture is overridden**: only a dispatched `repair-pr`
    repairs; budgets bound every loop, the invoking user's own review rounds aside, which
    spend no `review-repair-cycles`; a spent budget ends in the skill's outcome, never
@@ -103,8 +103,8 @@ evals (`<skill>#<id>`).
 9. **Stranded work reaches a remote ref before any archive; permission holds name the
    literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked
    workers*; `rules/wake-budget.md`; `rules/conductor-exchange.md`, *The watch after settling*; `conductor`,
-   *6. Dispatch*. backlog-orchestrator#4 #19, swarm#20 #25 #26,
-   implement-issue#14 #19 #20 #21, supervise-prs#87, backlog-orchestrator#92, conductor#5 #8 #21 #31 #35 #38 #39,
+   *6. Dispatch*, *Reviewers*. backlog-orchestrator#4 #19, swarm#20 #25 #26,
+   implement-issue#14 #19 #20 #21, supervise-prs#87, backlog-orchestrator#92, conductor#5 #8 #21 #31 #35 #38 #39 #75 #76 #78,
    implement-issue#36 #39 #42, merge-stack#12.
 
 **A PR changing a protected rule's text says so in its body**, and gets a blind
