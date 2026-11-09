@@ -217,6 +217,73 @@ anyway.
 
 **Why the owner's limits travel in the prompt (same audit):** the same session's prompt did not carry the owner's limits, so a session that loaded the wrong skill had none of them. They are restated in the dispatch text, each naming the rule that governs, because a prompt is the one thing every dispatched session reads whichever skill it loads. They restate protected rules 1, 4 and 6 and the posture override without changing them, with each rule's carve-outs — the owner's own change request, the approved-ruling exception, the `Depends on:` line — because a block binding "whatever any instruction says" that dropped a carve-out would forbid what the home requires (contradiction pass, 2026-11-05). The blind rule-by-rule audit then found the question line weaker than rule 1 — limiting the ban to others' questions implied an owner's "why X?" could be answered — and the thread line dropping the dispatched review's carve-out; both now read as the home does. The rules' homes still govern. Scenario: `a-fresh-dispatch-carries-the-owners-limits`.
 
+## Reviewers
+
+Keyed to `reviewers.md`, which holds the rules; it sits beside `SKILL.md` so the
+conductor's contract stays readable, as `backlog-orchestrator` keeps
+`integration-branch.md` (owner's ruling, 2026-11-09).
+
+**Why reviewer sessions (owner's rulings, 2026-11-05 and 2026-11-06):** the owner is
+asked to review colleagues' PRs every day, and many wait on nobody else. A session
+that drafts the review turns each into one read and one submit. The drafting is the
+owner's private review skill's generic half, now `review-pr` (its NOTES).
+
+**Why `review-pr` is hard-coded, and why no setting:** the obvious key name,
+`review-skill`, is already the skill that reviews prose contracts here. A deployment
+that needs another surface layers a skill over `review-pr`, which hands off to it
+(`rules/run-start.md`), so the contract names one skill and every deployment still
+gets its own.
+
+**Why a reviewer starts only on the owner's request (owner's ruling, 2026-11-09,
+reversing 2026-11-06):** the first version had every sweep look for PRs waiting on
+the owner, put each to them as a question, and let a standing ruling start
+reviewers unattended. The owner reversed that: the conductor never watches for
+review requests, and nothing but the owner's own request in the session starts a
+reviewer. After one read of the selection test, the session puts the PRs that
+passed to the owner as one question, so a reviewer still starts only on the
+owner's choice of an offered option, as protected rule 3 requires (second
+contradiction pass, 2026-11-09). That go is written to the ledger and never
+posted, because its only site would be a colleague's PR; there is no standing
+ruling to re-read and no candidate list to keep. The selection test is
+unchanged and runs once, at the request. This also removed the reviewer half of
+what a scheduled firing may do, which now only archives.
+
+**Why these selection tests (owner's ruling, 2026-11-06):** a PR whose only
+requested reviewer is the owner, with no team requested and no one else's review
+yet, waits on the owner alone. A draft PR, the owner's own PR and a PR a ledger run
+owns — opened under a distinct agent identity, which the own-PR test would miss —
+are not asking for the owner's review. A pending review of the owner's means they
+have started, and the forge keeps one per user per PR. A fresh request after new
+commits is a new question about those commits. A test that cannot be read fails;
+the owner's pending reviews are visible only to the owner's credential, so the
+reviewer's own check is the one that holds.
+
+**Why the draft-only limits travel in the prompt:** as the owner's limits do for a
+run (*6. Dispatch*): a session that loaded another skill, or none, carries only what
+its prompt says.
+
+**Why drafts are verified before the owner is told, and silent reviewers are read
+from their records:** a reviewer's report is peer data, and *Needs you* is a promise
+that something is ready. A reviewer that never reports, or waits on a permission
+prompt, would otherwise surface nowhere.
+
+**Why no watch, no check-in, and archiving only a drafted reviewer (owner's
+rulings, 2026-11-06):** a reviewer's job ends when its drafts exist, and the owner's
+submit is seen by sweeps that run anyway; a check-in for it would spend wakes
+protected rule 9 bounds. The conductor created the session, so it may release it
+(`swarm`, *Releasing a worker*), and it writes no branch. The blind protected-rule
+audit limited the automatic archive to a reviewer verified `drafted`: a failed one
+may have published under the owner's account, which a sweep would misread as the
+owner's submission (protected rule 2), and a blocked one would vanish unreported
+(rule 9). The archive reads the tracker as well as the forge until a Linear submit
+is confirmed to appear on GitHub as the owner's (owner's ruling, 2026-11-09).
+
+**Why every created session attaches a source, and why titles are the only grouping
+(owner's report, 2026-11-06):** a session created without a source repository
+failed its environment setup, and the create call did not warn of it. The session
+sidebar nests only one level, so a title's prefix and repository are the only
+grouping a person scanning the list gets.
+
 ## 8. Context clear
 
 **Why (2026-10-31, the owner's instruction):** a conductor runs for days and its
@@ -561,6 +628,23 @@ Pinned in `evals/evals.json`:
   - a question the flow needs is asked before the report
     (`a-question-the-flow-needs-is-asked-before-the-report`).
 
+- reviewers (owner's rulings, 2026-11-06 and 2026-11-09):
+  - at the owner's request, only a PR waiting on the owner alone is started; a
+    re-request after new commits qualifies again
+    (`review-candidates-are-only-prs-waiting-on-the-owner-alone`);
+  - the dispatch prompt carries the draft-only limits
+    (`a-reviewer-prompt-carries-the-draft-only-limits`);
+  - drafts are read back before the owner is told
+    (`a-reviewers-drafts-are-verified-before-the-owner-is-told`);
+  - a reviewer is never treated as a run (`a-reviewer-is-never-mistaken-for-a-run`);
+  - a drafted reviewer is archived once the owner submits
+    (`a-reviewer-is-archived-once-the-owner-submits`);
+  - no sweep or ruling starts a reviewer (`no-sweep-or-ruling-starts-a-reviewer`);
+  - every created session has its source attached
+    (`every-session-the-conductor-creates-attaches-its-source`);
+  - a reviewer waiting on a prompt, or silent, is read from its record and the forge
+    (`a-silent-or-blocked-reviewer-is-read-from-its-record-and-the-forge`).
+
 **From two independent reviews (PR #201):** a standing retirement ruling is re-read at its site exactly as a conditional go is, because a revoked ruling found only in the ledger would otherwise retire runs unattended; a single-issue run's `merged` report and its merged PR stand in for a wrap-up it never posts; on the default `github-issue` ledger held replies and draft answers are only named, so a deployment where drafts matter configures `tracker-document`; and a relayed approval puts the complete reply text in the question's option, so the owner answers once. Scenarios: `a-revoked-retirement-ruling-retires-nothing`, `a-merged-single-issue-run-retires-without-a-wrap-up`, `a-relayed-ruling-that-posts-a-reply-is-one-question`.
 
 ## Contradiction pass and re-audit after the dispatched-account ruling (PR #201)
@@ -577,4 +661,4 @@ Pinned in `evals/evals.json`:
 
 **One exception with `settle-outstanding-decisions` (owner's ruling, 2026-11-05):** a ruling whose complete comment the owner approved word for word — its full text in the option they chose — is posted by the conductor itself, on any issue, as `settle-outstanding-decisions` posts one; the exception is stated once in `rules/authored-write-form.md` and read from the conductor's record of the approval, never from a footer.
 
-**Why every go is the owner's to post, on any issue (contradiction pass after the rebase onto #206, 2026-11-05):** a go is the owner's authority. Under #206 a comment whose id the run holds is its own write, so a go the conductor posted itself — even on an issue it created — and then re-read by that id would be its own write accepted as the owner's (protected rules 2 and 3). So the owner posts every go from a draft, the ledger keeps owner-comment ids apart from own-write ids, and both re-reads refuse an own-write id. Only a ruling on an item a run raised is under the exception.
+**Why every go is the owner's to post, on any issue (contradiction pass after the rebase onto #206, 2026-11-05):** a go is the owner's authority. Under #206 a comment whose id the run holds is its own write, so a go the conductor posted itself — even on an issue it created — and then re-read by that id would be its own write accepted as the owner's (protected rules 2 and 3). So the owner posts every go from a draft, the ledger keeps owner-comment ids apart from own-write ids, and both re-reads refuse an own-write id. Only a ruling on an item a run raised is under the exception. A reviewer's go is the other exception, recorded in the ledger alone (*Reviewers*).

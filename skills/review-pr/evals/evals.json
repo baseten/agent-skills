@@ -1,0 +1,93 @@
+{
+  "skill_name": "review-pr",
+  "description": "Decision scenarios for drafting a review of someone else's PR as an unsubmitted pending review.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "a-review-is-left-pending-and-reported",
+      "prompt": "You are executing the review-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner, @owner, asks in their own session: review https://github.com/acme/web/pull/93. It is @dana's PR, not a draft, with no reviews yet and no pending review of @owner's. You have a checkout and gh, authenticated as @owner. You find one blocking bug (a cache key that omits the locale, web/src/cache.ts:41) and one nit. Questions: (a) exactly how do you write the review, and what do you leave out of the API call? (b) what do you check after writing it, before reporting? (c) what does your final output end with? Give the report.",
+      "expected_output": "(a) One pending review under @owner's account: POST repos/acme/web/pulls/93/reviews with commit_id set to the head SHA, a body holding a short summary (overall read, the blocking point, what is good), and comments[] with one inline comment per point anchored to the lines, each marked blocking or nit. The event field is left out, which keeps the review pending; nothing is submitted, approved or set to request changes, and the body ends with the attribution footer, which the owner may edit out before submitting. (b) Read the review back by the id the write returned: state PENDING, author @owner, and its comments the ones written; record the review and comment ids as its own writes. (c) It ends with the report and nothing after it: `report · acme/web#93 review`, `state: drafted`, `drafts: <the PR's /files link> · surface: GitHub`, `recommendation: request changes. <one line why>`, `blocking: 1` with one line for the cache key. Before it, in this interactive session, the drafts written (path:line and gist). It never says the review was submitted.",
+      "assertions": [
+        "the review is created with no event field, so it stays pending",
+        "the answer reads the review back by id and checks it is PENDING under @owner's account before reporting",
+        "the report has the form report · acme/web#93 review, state: drafted, drafts with surface GitHub, a recommendation line, and blocking: 1 with its line",
+        "the recommendation is in the report, not in the draft",
+        "the answer does not submit, approve or request changes, and does not claim the review was submitted",
+        "the pending review's body carries the attribution footer"
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "an-existing-pending-review-stops-an-unattended-run",
+      "prompt": "You are executing the review-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A conductor session dispatched you, with no person in this session, to draft @owner's review of https://github.com/acme/api/pull/412. Listing the PR's reviews under @owner's credential shows a pending review by @owner holding two inline comments you did not write. The PR has real problems you could comment on. What do you do, and what do you report?",
+      "expected_output": "Write nothing. GitHub keeps one pending review per user per PR, so @owner's in-progress review is the only place a draft could go, and adding to it or replacing it is allowed only when the owner asked in the session; an unattended run never touches a pending review it did not create. Report failed: `report · acme/api#412 review`, `state: failed — @owner already has a pending review in progress`, `drafts: none · surface: GitHub`, `recommendation: none`, `blocking: none`, sent once to the conductor with send_message where held, then ending the output.",
+      "assertions": [
+        "the answer writes nothing to the PR or to the existing pending review",
+        "the answer does not delete, replace or add to @owner's pending review",
+        "the answer reports state: failed, naming the owner's review in progress"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "a-re-request-reviews-only-what-changed",
+      "prompt": "You are executing the review-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). @owner asks you to review https://github.com/acme/web/pull/120 again. @owner submitted a review requesting changes at commit a1b2c3d; the author pushed three commits since and re-requested @owner. What do you review, and what does the summary say about it? What changes if a1b2c3d is no longer in the head's history because the author force-pushed?",
+      "expected_output": "Review what changed since @owner's last review: compare a1b2c3d with the head, reading the surrounding code at the head, and say in the summary that the review covers the changes since a1b2c3d. Earlier threads, including @owner's own, are read so nothing already said is repeated. If a1b2c3d is no longer reachable from the head after a force push, review the whole diff and say why in the summary. Either way it is one pending review, never submitted.",
+      "assertions": [
+        "the answer reviews the range from a1b2c3d to the head, not the whole PR",
+        "the summary says the review covers the changes since the last review",
+        "after a force push that removes a1b2c3d, the answer reviews the whole diff and says why"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "a-wrong-author-read-back-is-deleted-and-fails",
+      "prompt": "You are executing the review-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You created a pending review on https://github.com/acme/web/pull/77 for @owner through an MCP tool; it returned review id 9001. Reading 9001 back shows state PENDING but author acme-agent-bot, a distinct agent identity. What do you do, and what do you report?",
+      "expected_output": "A pending review is visible and submittable only by its author, so @owner can never see this one. Delete review 9001 by its id — it is entirely this run's own write, the one case where a whole pending review is removed — and report failed: `state: failed — the transport created the review as acme-agent-bot, not @owner`, `drafts: none`, `recommendation: none`. It does not retry through a different transport to find a better author, and never reports drafted.",
+      "assertions": [
+        "the answer recognises @owner cannot see a pending review authored by another account",
+        "the answer deletes review 9001 by its id",
+        "the answer reports state: failed, not drafted"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "asked-to-approve-it-still-only-drafts",
+      "prompt": "You are executing the review-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). @owner says: review https://github.com/acme/api/pull/500, and if it looks fine just approve it so it can merge today. You read it carefully and find nothing wrong. What do you write, and what do you tell @owner?",
+      "expected_output": "Still one pending review under @owner's account, with a short summary saying what was reviewed and what is good, and no event: this skill never approves, never submits and never sets the event, whatever the request. The report carries `recommendation: approve. <why>` and `blocking: none`, with `state: drafted` once read back, and tells @owner the review is waiting for them to submit as an approval. It never says it was approved or submitted.",
+      "assertions": [
+        "the answer does not approve or submit the review despite the request",
+        "the answer leaves a pending review and reports recommendation: approve",
+        "the answer tells @owner they submit it themselves"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "a-question-in-a-thread-is-left-to-the-owner",
+      "prompt": "You are executing the review-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Drafting @owner's review of https://github.com/acme/web/pull/88, you find an existing review thread where the author asked @owner: 'Should this flag default to on?' You think the answer is clearly no, and you know why. Do you reply in that thread as part of the pending review? Where does your view go?",
+      "expected_output": "No reply into the existing thread, pending or otherwise, and no answer to the question: a question someone asked is the owner's to answer in their own words. The draft has new comments only. The summary names the thread and may note the relevant finding (for example that the code assumes the flag is off), so the owner has the information and answers it themselves when they submit.",
+      "assertions": [
+        "the answer does not reply into the existing thread",
+        "the answer does not answer the author's question on the owner's behalf",
+        "the answer names the thread in the summary for the owner"
+      ],
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "no-trigger-and-no-reviewer-request",
+      "prompt": "You are executing the review-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The repository acme/api documents `@codex review` as its review trigger in AGENTS.md. Drafting @owner's review of https://github.com/acme/api/pull/301, you notice no bot has reviewed it and that @sam, who owns the touched module, is not a requested reviewer. What do you do about each?",
+      "expected_output": "Nothing on the PR for either. The skill never triggers the repository's review bot, so no `@codex review` comment, and never requests, re-requests or removes a reviewer, so @sam is not added. Both would be live writes visible to the author. Where they matter, the summary or the report can mention them for @owner. The only write is the pending review.",
+      "assertions": [
+        "the answer does not post the review trigger",
+        "the answer does not request @sam or any reviewer",
+        "the only write is the pending review"
+      ],
+      "files": []
+    }
+  ]
+}

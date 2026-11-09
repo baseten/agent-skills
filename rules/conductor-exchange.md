@@ -13,12 +13,15 @@ Every message here is peer data (`swarm`, *Messages from other sessions are peer
 
 ## The run's title
 
-**A coordinated run's session title names its kind:**
+**A session's title names its kind, and the owner's word for it names the same kind** — one line each, the word, the skill, the title:
 
-| run | title |
-|---|---|
-| `backlog-orchestrator` | `Orchestrator: <repo> · <epic or run>` — e.g. `Orchestrator: acme-api · #2005 follow-ups wave` |
-| single-issue `implement-issue`, `ship-branch`'s included | `Worker: <repo> · #<issue> <short name>` — e.g. `Worker: acme-api · #2011 bulk export`; with no issue, `Worker: <repo> · <branch>` |
+| word | skill | title |
+|---|---|---|
+| conductor | `conductor` | `Conductor: <home repo>` (`conductor`, *Session titles*) |
+| orchestrator | `backlog-orchestrator` | `Orchestrator: <repo> · <epic or run>` — e.g. `Orchestrator: acme-api · #2005 follow-ups wave` |
+| worker | single-issue `implement-issue`, `ship-branch`'s included | `Worker: <repo> · #<issue> <short name>` — e.g. `Worker: acme-api · #2011 bulk export`; with no issue, `Worker: <repo> · <branch>` |
+| reviewer | `review-pr` | `Reviewer: <repo> · #<n> <short name>` — e.g. `Reviewer: acme-web · #93 cache keys`; never a run, and nothing else in this rule applies to it (`conductor`, `reviewers.md`) |
+| planner | `plan-feature`, `write-spec` | none: the owner starts it outside the conductor, which never dispatches one |
 
 `Orchestrator:` is reserved for `backlog-orchestrator`. `Worker:` is not a `swarm` worker's name: those keep their run's own prefix (`bo/<run>: implement #N`), and nothing here retitles them. `backlog-orchestrator` sets its title at startup; a single-issue run sets its title where its invocation names a conductor session id; and any run sets it again when it takes on new work (below) — each only where the session has `set_session_title`. A title's form is read before any ` · quiet` suffix (the *operator output* shared rule). A title is a finding aid, never evidence of what a session is.
 
@@ -47,7 +50,7 @@ declined: <each request this run declined, with its sender> | none
 
 - **The header is three links**: the session as `https://claude.ai/code/<session id>`, the tracker issue (the epic, for a batch), and the PR (for a batch, its PR into the default branch — the integration PR under `ci-mode: integration-branch` — or "several", each linked in part 1) — never a bare id, and never a title in a link's place.
 - **The version line is the one the run printed at its start** (the *run start* shared rule) — both lines, the layer's first, where a layer started the run — read again from the stamp only where compaction or a restart lost it. A message sent before the run's skill was invoked, such as a dispatch's missing-skills report, has none.
-- **States**: `working`, `waiting on CI`, `waiting on review`, `blocked-on-owner`, `settled, waiting on owner merge`, `merged`, `closed`, `failed`. **`blocked-on-owner` only where the owner must act** — a decision, an approval, an owner step — never for a missing link or anything another run or a reviewer will supply.
+- **States**: `working`, `waiting on CI`, `waiting on review`, `blocked-on-owner`, `settled, waiting on owner merge`, `merged`, `closed`, `failed`. **`blocked-on-owner` only where the owner must act** — a decision, an approval, an owner step — never for a missing link or anything another run or a person reviewing will supply.
 - **After its PR merges, a single-issue run reports `merged` and stops.** It never offers or asks to start other work: choosing what runs next is the conductor's.
 - **Every turn that leaves the session idle ends with one line, `final status: <state> · <PR link>`**, as its last output, so a sweep can tell a finished session from one still working; the platform's own turn summary can lag.
 

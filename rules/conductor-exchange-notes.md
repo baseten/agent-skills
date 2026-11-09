@@ -25,6 +25,20 @@ run-prefixed name (`bo/<run>: ...`), which this rule never touches. The title is
 still only a finding aid: a session the conductor dispatched is known by the id
 its ledger records, never by its title or its structure.
 
+**Why the table is also the owner's vocabulary (owner's ruling, 2026-11-06):** the owner
+names sessions by kind in conversation — "ask the orchestrator", "start a worker",
+"a reviewer drafted it" — and agents outside these skills guessed at what each word
+meant. One line per word, beside the title it produces, puts the word, the skill and
+the prefix in the one place a reader already looks, and the owner's private
+configuration points here rather than restating it. The conductor and planner rows
+carry no rule of this exchange: the conductor's title is its own (`conductor`,
+*Session titles*), and a planner is a session the owner starts and talks to directly.
+A reviewer is listed because the owner's word needs a home, not because it is a run:
+it answers no status request, pushes no milestone and holds no watch, so every other
+section here leaves it out. **Planner covers `write-spec` as well as `plan-feature` (owner's ruling,
+2026-11-09)**: both are planning sessions the owner runs directly, and the *operator
+output* rule already treats both as planners.
+
 ## Pushes
 
 **Why milestones and not a period:** a conductor sweeps on its own schedule and
