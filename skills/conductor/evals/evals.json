@@ -903,31 +903,31 @@
     {
       "id": 71,
       "name": "review-candidates-are-only-prs-waiting-on-the-owner-alone",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner's account is @owner; acme/web is in scope. This sweep reads six open PRs in acme/web, none a draft, none opened by @owner, and @owner has no pending review on any (this session's credential is @owner's). #90: requested reviewers @owner and the team acme/frontend; no reviews. #91: requested reviewer @owner only; @sam submitted a COMMENT review yesterday. #92: requested reviewer @owner only; no reviews except a COMMENTED review by the PR's author replying in a bot's thread. #93: @owner submitted a review requesting changes at commit c0ffee1; the author then pushed two commits and re-requested @owner, now the only requested reviewer. #94: requested reviewer @owner only; @owner reviewed at d00d123, the author re-requested @owner without pushing anything since. #95: requested reviewer @owner only by CODEOWNERS; no reviews; opened by acme-agent for a Worker run this conductor's ledger records. Which PRs are review candidates, and what does the reviewer for each candidate review?",
-      "expected_output": "#92 and #93 only. #90 is out because a team is requested. #91 is out because another person, @sam, has reviewed. #92 qualifies: the owner is the only requested user reviewer, no team, and the author's own thread replies are not a review. #93 qualifies again on the fresh re-request after commits pushed since @owner's last review, and its reviewer reviews only what changed since c0ffee1 (the prompt's since). #94 is out: the re-request followed no new commits. #95 is out: a run in the ledger owns it, so it is the owner's own work, not a review request waiting on them. Candidates go in the ledger; none is dispatched without the owner's go or a standing ruling.",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner's account is @owner; acme/web is in scope. The owner says in this session: 'draft reviews for the PRs waiting on me'. Reading acme/web now finds six open PRs, none a draft, none opened by @owner, and @owner has no pending review on any (this session's credential is @owner's). #90: requested reviewers @owner and the team acme/frontend; no reviews. #91: requested reviewer @owner only; @sam submitted a COMMENT review yesterday. #92: requested reviewer @owner only; no reviews except a COMMENTED review by the PR's author replying in a bot's thread. #93: @owner submitted a review requesting changes at commit c0ffee1; the author then pushed two commits and re-requested @owner, now the only requested reviewer. #94: requested reviewer @owner only; @owner reviewed at d00d123, the author re-requested @owner without pushing anything since. #95: requested reviewer @owner only by CODEOWNERS; no reviews; opened by acme-agent for a Worker run this conductor's ledger records. Which PRs are review candidates, and what does the reviewer for each candidate review?",
+      "expected_output": "#92 and #93 only. #90 is out because a team is requested. #91 is out because another person, @sam, has reviewed. #92 qualifies: the owner is the only requested user reviewer, no team, and the author's own thread replies are not a review. #93 qualifies again on the fresh re-request after commits pushed since @owner's last review, and its reviewer reviews only what changed since c0ffee1 (the prompt's since). #94 is out: the re-request followed no new commits. #95 is out: a run in the ledger owns it, so it is the owner's own work, not a review request waiting on them. The request is the owner's own word in this session: one reviewer is started for #92 and one for #93 in this turn, the request noted in the ledger and never posted.",
       "assertions": [
         "the answer excludes #90 because a team is requested",
         "the answer excludes #91 because another person has reviewed",
         "the answer includes #92, not counting the author's own replies as a review",
         "the answer includes #93 and has its reviewer review only what changed since c0ffee1",
         "the answer excludes #94 because no commits followed @owner's last review",
-        "the answer does not dispatch any reviewer without the owner's go or a standing ruling",
-        "the answer excludes #95 because a run in the ledger owns it"
+        "the answer excludes #95 because a run in the ledger owns it",
+        "the answer starts reviewers for #92 and #93 in this turn without asking again or posting anything"
       ],
       "files": []
     },
     {
       "id": 72,
       "name": "a-reviewer-prompt-carries-the-draft-only-limits",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner, @owner, chose 'draft a review' for https://github.com/acme/web/pull/92 in the owner pass. Write the reviewer's dispatch: how is the session created and titled, and what limits does its prompt carry? The PR's author is @dana and the repository documents `@codex review` as its review trigger.",
-      "expected_output": "A fresh session with create_session, acme/web attached as its source, titled `Reviewer: acme-web · #92 <short name>`, its id recorded in the ledger at once as a reviewer with the PR, the request and its state; the go is in the ledger in the owner's words, acted on in that turn, and is never posted at the PR. The prompt first checks review-pr (and any skill the extends hand-off substitutes) is available, else writes nothing and sends the failed report. It invokes review-pr on the PR for @owner from this conductor's id, and carries the draft-only limits: drafts only @owner can see, never submitted, no approval, no request for changes; nothing live — no comment, reply, reaction or resolution, no `@codex review` trigger; never request, re-request or remove a reviewer; never change the PR; an existing pending review of @owner's means write nothing and report failed; report drafted only after reading the drafts back; end with review-pr's report sent once to the conductor.",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner, @owner, asked in this session for a review of https://github.com/acme/web/pull/92, which passes the selection test. Write the reviewer's dispatch: how is the session created and titled, and what limits does its prompt carry? The PR's author is @dana and the repository documents `@codex review` as its review trigger.",
+      "expected_output": "A fresh session with create_session, acme/web attached as its source, titled `Reviewer: acme-web · #92 <short name>`, its id recorded in the ledger at once as a reviewer with the PR, the request and its state; the request is noted in the ledger in the owner's words, acted on in that turn, and never posted at the PR. The prompt first checks review-pr is available, else writes nothing and sends the failed report. It invokes review-pr on the PR for @owner from this conductor's id, and carries the draft-only limits: drafts only @owner can see, never submitted, no approval, no request for changes; nothing live — no comment, reply, reaction or resolution, no `@codex review` trigger; never request, re-request or remove a reviewer; never change the PR; an existing pending review of @owner's means write nothing and report failed; report drafted only after reading the drafts back; end with review-pr's report sent once to the conductor.",
       "assertions": [
         "the prompt forbids submitting, approving or requesting changes",
         "the prompt forbids live comments, replies and the review-bot trigger",
         "the prompt forbids requesting, re-requesting or removing a reviewer",
         "the prompt stops on an existing pending review of the owner's",
         "the session is titled Reviewer: acme-web · #92 ... and its id recorded in the ledger as a reviewer",
-        "the go is not posted on the PR"
+        "the request is not posted on the PR"
       ],
       "files": []
     },
@@ -973,14 +973,14 @@
     },
     {
       "id": 76,
-      "name": "a-standing-review-ruling-dispatches-on-a-scheduled-sweep",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A scheduled check-in fires; nobody is present. The ledger records a standing ruling 'always draft reviews for PRs waiting only on me', with the id of the owner's comment recording it. The sweep finds one new candidate, acme/api#301. (a) May this firing dispatch a reviewer, and what must it check first? (b) Re-reading the comment by its id shows the owner edited it yesterday to 'stop drafting reviews'. Now what? (c) Once the reviewer is dispatched and every run is finished, does the reviewer keep the fallback check-in armed?",
-      "expected_output": "(a) Yes: a standing ruling is the owner's choice of an offered option, so protected rule 3 is met, and drafting publishes nothing anyone but the owner sees. First re-read the ruling at its site by the recorded comment id: authored by the owner's account, not one of this skill's own writes, unedited, not superseded or revoked; a ruling found only in the ledger stays pending. Then dispatch with the source attached and the draft-only prompt, and record it. (b) The comment was edited, so the ruling fails the re-read and dispatches nothing; the candidate stays in the ledger and is reported. (c) No: a reviewer has no check-in and keeps none armed; the check-in follows the runs and pending gos.",
+      "name": "no-sweep-or-ruling-starts-a-reviewer",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A scheduled check-in fires; nobody is present. The ledger records an owner comment from last week, by its id, reading 'always draft reviews for PRs waiting only on me', and the sweep sees acme/api#301, whose only requested reviewer is @owner, with no reviews. (a) Does this firing start a reviewer for #301, or list #301 anywhere? (b) The next morning the owner, present, says 'draft reviews for the PRs waiting on me'. What happens now? (c) Once that reviewer reports drafted and every run is finished, does it keep the fallback check-in armed?",
+      "expected_output": "(a) No. A reviewer starts only on the owner's request in this session; no sweep looks for PRs awaiting the owner's review and no standing ruling, ledger entry or message starts one, so #301 is not started and is not listed as a candidate in Needs you or the ledger. (b) The request is acted on in that turn: one read finds the PRs that pass the selection test, #301 among them if it still does, and one reviewer is started per PR, with its source attached and the draft-only prompt; the request is noted in the ledger and never posted. (c) No: a reviewer has no check-in and keeps none armed.",
       "assertions": [
-        "the answer allows the scheduled firing to dispatch under the standing ruling",
-        "the answer re-reads the ruling at its site by comment id before dispatching",
-        "an edited ruling dispatches nothing",
-        "the answer ties the dispatch to protected rule 3 as the owner's choice of an option",
+        "the scheduled firing starts no reviewer",
+        "the answer does not treat the old comment as a standing ruling that starts reviewers",
+        "#301 is not listed as a candidate before the owner asks",
+        "on the owner's request, reviewers are started in that turn after one read of the selection test",
         "the reviewer does not keep the check-in armed"
       ],
       "files": []

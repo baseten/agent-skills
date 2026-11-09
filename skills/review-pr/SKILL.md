@@ -1,6 +1,6 @@
 ---
 name: review-pr
-description: Review someone else's pull request and leave the review as one unsubmitted GitHub pending review for the owner to read, edit and submit. It never submits, approves, requests changes, posts a live comment or reply, or triggers the repository's review bot. Use when asked to review or draft a review of a PR you did not open, and as the reviewer session a conductor dispatches. Not for answering review on your own PR (resolve-pr-comment). Where a skill extending this one is installed, start from that skill.
+description: Review someone else's pull request and leave the review as one unsubmitted GitHub pending review for the owner to read, edit and submit. It never submits, approves, requests changes, posts a live comment or reply, or triggers the repository's review bot. Use when asked to review or draft a review of a PR you did not open, and as the reviewer session a conductor dispatches. Not for answering review on your own PR (resolve-pr-comment).
 ---
 
 # Review a PR
@@ -18,6 +18,10 @@ nothing and report `failed`.
 
 The reasoning lives in `NOTES.md`, keyed by section; it never overrides.
 
+**First, `references/run-start.md`**: hand off to an installed skill that extends
+this one where that rule says to, then print the version line. Where that rule
+ends the run as failed, end with this skill's report, `state: failed`.
+
 ## When this is the wrong tool
 
 - **A PR you opened** — review on it is answered with `resolve-pr-comment`.
@@ -26,8 +30,6 @@ The reasoning lives in `NOTES.md`, keyed by section; it never overrides.
   publishes; this skill never does.
 - **A documentation or contract review that should terminate by contract** —
   `review-docs` or `review-skill`.
-- **A skill extending this one is installed** (`metadata: extends: review-pr`) —
-  it is the entry point: start there, unless it is what sent you here.
 
 ## Never
 

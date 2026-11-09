@@ -219,100 +219,67 @@ anyway.
 
 ## Reviewers
 
+Keyed to `reviewers.md`, which holds the rules; it sits beside `SKILL.md` so the
+conductor's contract stays readable, as `backlog-orchestrator` keeps
+`integration-branch.md` (owner's ruling, 2026-11-09).
+
 **Why reviewer sessions (owner's rulings, 2026-11-05 and 2026-11-06):** the owner is
-asked to review colleagues' PRs every day, and many of them wait on nobody else. A
-session that drafts the review — reading the code, writing the comments, giving a
-recommendation — turns each into one read and one submit, and the conductor is where
-the owner already looks for what is waiting on them. The drafting is the owner's
-private `review-pr`'s generic half, now in this repository (its NOTES).
+asked to review colleagues' PRs every day, and many wait on nobody else. A session
+that drafts the review turns each into one read and one submit. The drafting is the
+owner's private review skill's generic half, now `review-pr` (its NOTES).
 
-**Why `review-pr` is hard-coded, and why no setting:** a setting would name the
-reviewing skill, and the obvious name, `review-skill`, is already the skill that
-reviews prose contracts here; a key with that name would read as configuring the
-wrong thing. A deployment that needs another surface wraps `review-pr` and declares
-`metadata: extends: review-pr`, and the extends hand-off — added separately — swaps
-the wrapper in, so the contract names one skill and every deployment still gets its
-own.
+**Why `review-pr` is hard-coded, and why no setting:** the obvious key name,
+`review-skill`, is already the skill that reviews prose contracts here. A deployment
+that needs another surface layers a skill over `review-pr`, which hands off to it
+(`rules/run-start.md`), so the contract names one skill and every deployment still
+gets its own.
 
-**Why a reviewer is not a run:** a run owns a PR, supervises it, settles and waits
-on a merge; a reviewer owns nothing and ends when its drafts exist. Every run rule
-assumes the first shape — status requests, the watch hand-off, reuse, seeds,
-retitling by structure — and a sweep that treated a reviewer as a run would ask it
-for status forever and could retitle it `Worker:`. So the sweep sets reviewers aside
-before any run test, and the titles table lists the reviewer only for its word and
-prefix (`rules/conductor-exchange-notes.md`, *The run's title*).
+**Why a reviewer starts only on the owner's request (owner's ruling, 2026-11-09,
+reversing 2026-11-06):** the first version had every sweep look for PRs waiting on
+the owner, put each to them as a question, and let a standing ruling start
+reviewers unattended. The owner reversed that: the conductor never watches for
+review requests, and nothing but the owner's own request in the session starts a
+reviewer. Starting one is the owner's word, given where they are present, so it is
+acted on in that turn and only noted in the ledger; there is no go to post, no
+standing ruling to re-read and no candidate list to keep. The selection test is
+unchanged and runs once, at the request. This also removed the reviewer half of
+what a scheduled firing may do, which now only archives.
 
-**Why these candidate tests (owner's ruling, 2026-11-06):** a PR whose only requested
-reviewer is the owner, with no team requested and no one else's review yet, is
-waiting on the owner alone — a team request means someone else may take it, and
-another person's review means the owner's is no longer the first word. A draft PR
-and the owner's own PR are not asking for review. A pending review of the owner's
-means they have started; a second draft would collide with it, since the forge keeps
-one per user per PR. A fresh request after new commits is a new question about those
-commits, so it qualifies again and the reviewer reviews only them. A test that cannot
-be read fails, because a wrong dispatch puts a draft where the owner did not want
-one, and a missed one costs only a later sweep. The owner's pending reviews are
-visible only to the owner's own credential, so the conductor's read is a filter and
-the reviewer's own check is the one that holds.
+**Why these selection tests (owner's ruling, 2026-11-06):** a PR whose only
+requested reviewer is the owner, with no team requested and no one else's review
+yet, waits on the owner alone. A draft PR, the owner's own PR and a PR a ledger run
+owns — opened under a distinct agent identity, which the own-PR test would miss —
+are not asking for the owner's review. A pending review of the owner's means they
+have started, and the forge keeps one per user per PR. A fresh request after new
+commits is a new question about those commits. A test that cannot be read fails;
+the owner's pending reviews are visible only to the owner's credential, so the
+reviewer's own check is the one that holds.
 
-**Why dispatch stays within protected rule 3, and why a standing ruling may run
-unattended:** a reviewer's dispatch starts a session on the owner's behalf, so it is
-released only by the owner choosing an offered option — a go in the owner pass or a
-standing ruling recorded on the forge and re-read by id. Drafting publishes nothing
-anyone but the owner can see and changes nothing on the PR, so acting on the standing
-ruling from a scheduled sweep risks a draft the owner deletes, never a write a
-colleague reads. The attended go is not posted, unlike every other go: its only
-site would be the PR, where a comment is the owner's word to its author, and nothing
-downstream re-reads it — the dispatch prompt is the reviewer's whole instruction.
+**Why the draft-only limits travel in the prompt:** as the owner's limits do for a
+run (*6. Dispatch*): a session that loaded another skill, or none, carries only what
+its prompt says.
 
-**Why the draft-only limits travel in the prompt:** the same reason the owner's
-limits do for a run (*6. Dispatch*): a session that loaded another skill, or none,
-carries only what its prompt says, and a reviewer that submitted or triggered the
-review bot would put words in front of a colleague under the owner's name.
+**Why drafts are verified before the owner is told, and silent reviewers are read
+from their records:** a reviewer's report is peer data, and *Needs you* is a promise
+that something is ready. A reviewer that never reports, or waits on a permission
+prompt, would otherwise surface nowhere.
 
-**Why the conductor verifies drafts before telling the owner (owner's ruling,
-2026-11-06):** a reviewer's report is a message from another session, so it is peer
-data, and *Needs you* is a promise that something is ready. The drafts are read back
-where they live; a tracker's drafts through that tracker's own lookup.
-
-**Why no watch, no check-in and automatic archiving (owner's rulings, 2026-11-06):**
-a reviewer's job ends when its drafts exist; what happens next is the owner's
-submit, which the sweep sees on the forge. Keeping a check-in for a session that has
-nothing left to do would spend wakes protected rule 9 bounds. The owner ruled the
-archive automatic once their review is submitted: the conductor created the session,
-so it is its own to release (`swarm`, *Releasing a worker*, on provenance), and a
-reviewer writes no branch, so the stranded-work test has nothing to find. A standing
-review ruling does not keep the fallback check-in armed either: candidates are found
-by the sweeps that run anyway, and arming one only for them would be an unbounded
-watch.
-
-**Why every dispatch attaches a source, and why titles are the only grouping (owner's
-report, 2026-11-06):** a session created without a source repository failed its
-environment setup and never started, and nothing in the create call warned of it.
-The platform's session sidebar nests only one level (the owner's report, same day),
-so a reviewer cannot be grouped under the conductor or the run it relates to; its
-title's prefix and repository are the only grouping a person scanning the list gets,
-which is why the prefix is fixed.
-
-**What the contradiction pass changed (PR #210, before review):** an attended
-reviewer go is written to the ledger only, so it is acted on in the turn the owner
-gives it and never later from the ledger, which anyone with write access can edit;
-the exception is stated at *Rules* and owner pass step 4, the two places that
-otherwise send every ruling to its site. The standing ruling became an option of
-the candidate question, so it is the owner's choice of an offered option as
-protected rule 3 requires, posted at the ledger's home. A PR a ledger run owns is
-excluded, since a distinct agent identity opens it and the owner's own-PR test
-would miss it. A reviewer that never reports, or waits on a permission prompt, is
-read from its session record, because nothing else would surface it. Reviewers,
-candidates and the standing ruling joined the ledger, the clear's dump, the owner
-pass and *Report*, the sections that read state. And the archive reads the
-tracker too, since a review submitted where it was drafted is not yet verified to
-appear on the forge as the owner's. **The blind protected-rule audit then limited
-the automatic archive to a reviewer verified `drafted`:** a reviewer that failed
+**Why no watch, no check-in, and archiving only a drafted reviewer (owner's
+rulings, 2026-11-06):** a reviewer's job ends when its drafts exist, and the owner's
+submit is seen by sweeps that run anyway; a check-in for it would spend wakes
+protected rule 9 bounds. The conductor created the session, so it may release it
+(`swarm`, *Releasing a worker*), and it writes no branch. The blind protected-rule
+audit limited the automatic archive to a reviewer verified `drafted`: a failed one
 may have published under the owner's account, which a sweep would misread as the
-owner's submission (protected rule 2), and one blocked on a prompt would vanish
-with its *Confirm in a session* item unreported (protected rule 9). Any other
-reviewer is archived on the owner's go.
+owner's submission (protected rule 2), and a blocked one would vanish unreported
+(rule 9). The archive reads the tracker as well as the forge until a Linear submit
+is confirmed to appear on GitHub as the owner's (owner's ruling, 2026-11-09).
+
+**Why every created session attaches a source, and why titles are the only grouping
+(owner's report, 2026-11-06):** a session created without a source repository
+failed its environment setup, and the create call did not warn of it. The session
+sidebar nests only one level, so a title's prefix and repository are the only
+grouping a person scanning the list gets.
 
 ## 8. Context clear
 
@@ -658,20 +625,20 @@ Pinned in `evals/evals.json`:
   - a question the flow needs is asked before the report
     (`a-question-the-flow-needs-is-asked-before-the-report`).
 
-- reviewers (owner's rulings, 2026-11-06):
-  - only a PR waiting on the owner alone is a candidate; a re-request after new
-    commits qualifies again (`review-candidates-are-only-prs-waiting-on-the-owner-alone`);
+- reviewers (owner's rulings, 2026-11-06 and 2026-11-09):
+  - at the owner's request, only a PR waiting on the owner alone is started; a
+    re-request after new commits qualifies again
+    (`review-candidates-are-only-prs-waiting-on-the-owner-alone`);
   - the dispatch prompt carries the draft-only limits
     (`a-reviewer-prompt-carries-the-draft-only-limits`);
   - drafts are read back before the owner is told
     (`a-reviewers-drafts-are-verified-before-the-owner-is-told`);
   - a reviewer is never treated as a run (`a-reviewer-is-never-mistaken-for-a-run`);
-  - a reviewer is archived once the owner submits
+  - a drafted reviewer is archived once the owner submits
     (`a-reviewer-is-archived-once-the-owner-submits`);
-  - a standing ruling dispatches on a scheduled sweep, re-read by id
-    (`a-standing-review-ruling-dispatches-on-a-scheduled-sweep`);
+  - no sweep or ruling starts a reviewer (`no-sweep-or-ruling-starts-a-reviewer`);
   - every created session has its source attached
-    (`every-session-the-conductor-creates-attaches-its-source`).
+    (`every-session-the-conductor-creates-attaches-its-source`);
   - a reviewer waiting on a prompt, or silent, is read from its record and the forge
     (`a-silent-or-blocked-reviewer-is-read-from-its-record-and-the-forge`).
 

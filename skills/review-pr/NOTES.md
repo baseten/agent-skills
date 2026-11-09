@@ -19,11 +19,11 @@ review that says the wrong thing costs a correction in front of the author. So
 the skill never chooses the event either: approve, comment or request changes
 is a judgement about a person's work, and it is the owner's.
 
-**Why a skill extending this one is the entry point.** A wrapper exists because
-its deployment drafts somewhere this skill does not know; asked directly, this
-skill would draft on GitHub what belongs on the wrapper's surface. The wrapper
-follows this skill, so the instruction stops at the wrapper that sent the reader
-here.
+**Why it applies the run-start rule.** A conductor dispatches it as a session's
+first skill, and a deployment layers a skill over it for its own draft surface.
+`rules/run-start.md` is how a generic skill hands off to its layer, so asked
+directly it never drafts on GitHub what belongs on the layer's surface, and the
+version line names what drafted the review.
 
 ## Never
 
@@ -95,7 +95,7 @@ to wait on. The draft text stays on the surface it was written to; the owner
 reads it there.
 
 **Why `drafted` waits on the read-back.** The conductor verifies the draft
-again before telling the owner (`conductor`, *Reviewers*), but a reviewer that
+again before telling the owner (`conductor`, `reviewers.md`), but a reviewer that
 reports a draft it never saw is the claim that check exists to catch, so the
 report is not made until the review was read back.
 

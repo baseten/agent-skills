@@ -52,7 +52,7 @@ evals (`<skill>#<id>`).
 3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
    `backlog-orchestrator`, *Arming the wait when nothing is in flight*; `rules/review-trigger.md`,
    *A stalled round*; `rules/conductor-exchange.md`, *Relayed rulings*, *New work, or a fold*, *What a relay can authorise*;
-   `conductor`, *6. Dispatch*, *Reviewers*. backlog-orchestrator#58 #92 #96
+   `conductor`, *6. Dispatch*, `reviewers.md`. backlog-orchestrator#58 #92 #96
    #103, settle-and-merge#41 #45, supervise-prs#104 #105, conductor#23 #25 #37 #50 #53 #54 #55 #72 #76, implement-issue#35 #38.
 4. **Never request, re-request or remove a human reviewer.** `rules/review-trigger.md`.
    supervise-prs#33 #74, conductor#57 #72, review-pr#6.
@@ -103,7 +103,7 @@ evals (`<skill>#<id>`).
 9. **Stranded work reaches a remote ref before any archive; permission holds name the
    literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked
    workers*; `rules/wake-budget.md`; `rules/conductor-exchange.md`, *The watch after settling*; `conductor`,
-   *6. Dispatch*, *Reviewers*. backlog-orchestrator#4 #19, swarm#20 #25 #26,
+   *6. Dispatch*, `reviewers.md`. backlog-orchestrator#4 #19, swarm#20 #25 #26,
    implement-issue#14 #19 #20 #21, supervise-prs#87, backlog-orchestrator#92, conductor#5 #8 #21 #31 #35 #38 #39 #75 #76 #78,
    implement-issue#36 #39 #42, merge-stack#12.
 

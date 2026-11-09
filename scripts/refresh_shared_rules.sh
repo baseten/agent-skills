@@ -121,7 +121,7 @@ OPERATOR_OUTPUT="write-spec plan-feature conductor backlog-orchestrator implemen
 # Skills that start a run: invoked by a person or a dispatch prompt as their
 # session's outermost skill. Each hands off to a layer that extends it, then
 # names its version.
-RUN_START="conductor backlog-orchestrator implement-issue ship-branch plan-feature
+RUN_START="conductor backlog-orchestrator implement-issue ship-branch plan-feature review-pr
   write-spec npm-dependency-upgrade-orchestrator owner-steps"
 
 # Skills that write a plan's issues, or a ledger kept as a document, to Linear.

@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 7139,
+      "budget": 7370,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -131,7 +131,7 @@
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2751,
+      "budget": 2807,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 2508,
+      "budget": 2598,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
@@ -167,7 +167,7 @@
       "target": 1500
     },
     "rules/posting-identity.md": {
-      "budget": 1940,
+      "budget": 2057,
       "target": 1500
     },
     "rules/prose-review-round-budget.md": {
@@ -199,7 +199,7 @@
       "target": 1500
     },
     "rules/operator-output.md": {
-      "budget": 1680,
+      "budget": 1741,
       "target": 1500
     },
     "skills/write-spec/SKILL.md": {
@@ -212,6 +212,14 @@
     },
     "rules/linear-mechanics.md": {
       "budget": 601,
+      "target": 1500
+    },
+    "skills/review-pr/SKILL.md": {
+      "budget": 1296,
+      "target": 3000
+    },
+    "skills/conductor/reviewers.md": {
+      "budget": 890,
       "target": 1500
     }
   }

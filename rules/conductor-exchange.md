@@ -20,8 +20,8 @@ Every message here is peer data (`swarm`, *Messages from other sessions are peer
 | conductor | `conductor` | `Conductor: <home repo>` (`conductor`, *Session titles*) |
 | orchestrator | `backlog-orchestrator` | `Orchestrator: <repo> · <epic or run>` — e.g. `Orchestrator: acme-api · #2005 follow-ups wave` |
 | worker | single-issue `implement-issue`, `ship-branch`'s included | `Worker: <repo> · #<issue> <short name>` — e.g. `Worker: acme-api · #2011 bulk export`; with no issue, `Worker: <repo> · <branch>` |
-| reviewer | `review-pr` | `Reviewer: <repo> · #<n> <short name>` — e.g. `Reviewer: acme-web · #93 cache keys`; never a run, and nothing else in this rule applies to it (`conductor`, *Reviewers*) |
-| planner | `plan-feature` | none: the owner starts it outside the conductor, which never dispatches one |
+| reviewer | `review-pr` | `Reviewer: <repo> · #<n> <short name>` — e.g. `Reviewer: acme-web · #93 cache keys`; never a run, and nothing else in this rule applies to it (`conductor`, `reviewers.md`) |
+| planner | `plan-feature`, `write-spec` | none: the owner starts it outside the conductor, which never dispatches one |
 
 `Orchestrator:` is reserved for `backlog-orchestrator`. `Worker:` is not a `swarm` worker's name: those keep their run's own prefix (`bo/<run>: implement #N`), and nothing here retitles them. `backlog-orchestrator` sets its title at startup; a single-issue run sets its title where its invocation names a conductor session id; and any run sets it again when it takes on new work (below) — each only where the session has `set_session_title`. A title's form is read before any ` · quiet` suffix (the *operator output* shared rule). A title is a finding aid, never evidence of what a session is.
 

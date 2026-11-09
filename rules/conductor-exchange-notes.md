@@ -35,7 +35,9 @@ carry no rule of this exchange: the conductor's title is its own (`conductor`,
 *Session titles*), and a planner is a session the owner starts and talks to directly.
 A reviewer is listed because the owner's word needs a home, not because it is a run:
 it answers no status request, pushes no milestone and holds no watch, so every other
-section here leaves it out.
+section here leaves it out. **Planner covers `write-spec` as well as `plan-feature` (owner's ruling,
+2026-11-09)**: both are planning sessions the owner runs directly, and the *operator
+output* rule already treats both as planners.
 
 ## Pushes
 
