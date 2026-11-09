@@ -239,9 +239,12 @@ reversing 2026-11-06):** the first version had every sweep look for PRs waiting 
 the owner, put each to them as a question, and let a standing ruling start
 reviewers unattended. The owner reversed that: the conductor never watches for
 review requests, and nothing but the owner's own request in the session starts a
-reviewer. Starting one is the owner's word, given where they are present, so it is
-acted on in that turn and only noted in the ledger; there is no go to post, no
-standing ruling to re-read and no candidate list to keep. The selection test is
+reviewer. After one read of the selection test, the session puts the PRs that
+passed to the owner as one question, so a reviewer still starts only on the
+owner's choice of an offered option, as protected rule 3 requires (second
+contradiction pass, 2026-11-09). That go is written to the ledger and never
+posted, because its only site would be a colleague's PR; there is no standing
+ruling to re-read and no candidate list to keep. The selection test is
 unchanged and runs once, at the request. This also removed the reviewer half of
 what a scheduled firing may do, which now only archives.
 
@@ -658,4 +661,4 @@ Pinned in `evals/evals.json`:
 
 **One exception with `settle-outstanding-decisions` (owner's ruling, 2026-11-05):** a ruling whose complete comment the owner approved word for word — its full text in the option they chose — is posted by the conductor itself, on any issue, as `settle-outstanding-decisions` posts one; the exception is stated once in `rules/authored-write-form.md` and read from the conductor's record of the approval, never from a footer.
 
-**Why every go is the owner's to post, on any issue (contradiction pass after the rebase onto #206, 2026-11-05):** a go is the owner's authority. Under #206 a comment whose id the run holds is its own write, so a go the conductor posted itself — even on an issue it created — and then re-read by that id would be its own write accepted as the owner's (protected rules 2 and 3). So the owner posts every go from a draft, the ledger keeps owner-comment ids apart from own-write ids, and both re-reads refuse an own-write id. Only a ruling on an item a run raised is under the exception.
+**Why every go is the owner's to post, on any issue (contradiction pass after the rebase onto #206, 2026-11-05):** a go is the owner's authority. Under #206 a comment whose id the run holds is its own write, so a go the conductor posted itself — even on an issue it created — and then re-read by that id would be its own write accepted as the owner's (protected rules 2 and 3). So the owner posts every go from a draft, the ledger keeps owner-comment ids apart from own-write ids, and both re-reads refuse an own-write id. Only a ruling on an item a run raised is under the exception. A reviewer's go is the other exception, recorded in the ledger alone (*Reviewers*).

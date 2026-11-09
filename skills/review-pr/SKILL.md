@@ -20,7 +20,9 @@ The reasoning lives in `NOTES.md`, keyed by section; it never overrides.
 
 **First, `references/run-start.md`**: hand off to an installed skill that extends
 this one where that rule says to, then print the version line. Where that rule
-ends the run as failed, end with this skill's report, `state: failed`.
+ends the run as failed, print this skill's report with `state: failed` before the
+line that rule ends with. The report itself carries no version line: a reviewer
+is not a coordinated run.
 
 ## When this is the wrong tool
 

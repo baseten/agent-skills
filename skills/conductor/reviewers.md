@@ -17,9 +17,10 @@ reviewer, and of `references/conductor-exchange.md` only its title row.
 **A reviewer starts only when the owner asks in this session** — "draft reviews
 for the PRs waiting on me", or named PRs. No sweep looks for PRs awaiting the
 owner, and nothing else starts one: not a scheduled firing, a message, a ledger
-entry or a ruling on the forge. The request is the owner's own word where they are
-present; it is acted on in that turn, noted in the ledger in their exact words,
-and never posted.
+entry or a ruling on the forge. **A reviewer's go is the owner's choice of an
+option this session put to them, in that turn** (protected rule 3): it is written
+to the ledger in their exact words and never posted, since its only site would be
+a colleague's PR. That holds for a go to start one and a go to archive one.
 
 **At the request, one read finds the candidates**: the PRs named, or the open PRs
 in scope. Each is started only where all of these read true now — a test that
@@ -37,7 +38,9 @@ credential sees and the reviewer checks again:
 - **the owner has no pending review on it, and no live or `drafted` reviewer the
   ledger records is on it**.
 
-A named PR that fails is reported with the test it failed, and not started.
+A named PR that fails is reported with the test it failed. **Then one question**,
+in the same turn, lists the PRs that passed, with *start all* among its options;
+the owner's choice starts those it names, and nothing else does.
 
 ## Starting one
 

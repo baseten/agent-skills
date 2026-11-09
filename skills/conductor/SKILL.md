@@ -86,8 +86,8 @@ skill would read as the owner's stays pending.
   them.
 - **A go is the owner's to post, on any issue**: a dispatch go, a conditional go
   and a standing ruling — a retirement ruling included — are drafted in full for the
-  owner to post at their site, because a go is the owner's authority — bar the
-  owner's request for reviews, acted on in its turn and never posted
+  owner to post at their site, because a go is the owner's authority — bar a
+  reviewer's go, which the ledger alone records and is never posted
   (`reviewers.md`). The owner
   gives the posted comment's link; this skill reads it back — authored by the
   owner's account, and not a write whose id the ledger holds as its own — and
@@ -325,7 +325,7 @@ the report; the rest follow it** (`references/operator-output.md`, *Questions*).
 4. **Write every ruling to the ledger first**, with the owner's exact words, and read
    it back; **then record it where its decision lives** (*Rules*) — the issue, the epic, the PR
    thread, and for an approved held reply the PR's conversation, quoting the text —
-   before telling any run — a request for reviews aside (*Rules*). Record it as
+   before telling any run — a reviewer's go aside (`reviewers.md`). Record it as
    `settle-outstanding-decisions`, *Recording the ruling*, does: the complete
    comment shown to the owner and posted as they approved or edited it. **A ruling
    the owner gives in this session outside a question is recorded the same way, as
@@ -381,7 +381,7 @@ its own scope at its preflight, and the plan does not make anything READY.
 
 # 6. Dispatch
 
-**Only with the owner's go** — one question in the owner pass naming each run, the
+**A run is dispatched only with the owner's go** — one question in the owner pass naming each run, the
 skill it runs, its session decision below, and the plan's cost, with *go* among its
 options. A batch on an epic is a `backlog-orchestrator` run; one issue is an
 `implement-issue` run, and a branch with no PR a `ship-branch` run; a reviewer is
