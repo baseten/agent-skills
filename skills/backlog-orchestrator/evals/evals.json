@@ -1429,6 +1429,32 @@
         "the answer raises #640 as a NEEDS_USER item rather than dispatching it"
       ],
       "files": []
+    },
+    {
+      "id": 111,
+      "name": "integration-preflight-pushes-while-owner-present",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: first preflight for acme/print with `ci-mode: integration-branch`; preflight items 1 to 5 hold and the run's branch `integration/acme-print-12` does not exist yet. The owner is at the keyboard. Questions: (a) what does the preflight do about the branch before any dispatch, and why now? (b) the fast-forward push stops on a permission prompt — what do you report? (c) the owner declines to allow it — what happens to dispatch into acme/print?",
+      "expected_output": "(a) It establishes that the session may push to the run's branch by making a creation and an update push, the two kinds the run makes before deleting it: create the branch at the first parent of the default branch's head, then fast-forward it to that head, adding no commit of its own. It does so at preflight because the owner is likeliest present then, mid-run nobody is, and the run may not work around a platform-owned permission prompt. (b) The prompt at once, naming the literal tool string and the command it stopped, so the owner can allow it for the run rather than once. (c) The item is missing, so dispatch into that repository is held with a NEEDS_USER naming that push, with options to dispatch once it is allowed (the pushes repeated and passing first) or to run under per-pr for this run; only an owner reply choosing one releases it.",
+      "assertions": [
+        "the preflight creates the branch and fast-forwards it, a creation and an update push, with no commit of its own",
+        "the reason given is that the owner is present at preflight and absent mid-run, and the run may not work around a permission prompt",
+        "the permission prompt is reported with its literal tool string and the command",
+        "a refused push holds dispatch into the repository with options to dispatch once allowed or to use per-pr"
+      ],
+      "files": []
+    },
+    {
+      "id": 112,
+      "name": "an-integration-branch-with-open-prs-into-it-is-not-deleted-at-return",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: acme/api runs under `ci-mode: integration-branch`; the preflight created `integration/acme-api-412` level with the default branch. Three ticket PRs are open into it, none merged, all waiting on human review, and no worker is in flight. The wake budget is spent and the run returns its restartable checkpoint. The branch's batch is empty and its head is contained in the default branch. Do you delete the branch? What changes if, instead, the owner moves acme/api to `per-pr` and you retarget those three PRs to the default branch first?",
+      "expected_output": "No. A branch with open PRs into it holds their target: deleting a PR's base closes the PR, and a resume would recreate the branch without reopening them. It is deleted only when its batch is empty, its head is in the default branch, no open PR targets it and no live worker session, held ones included, was dispatched onto it; otherwise it is left for the next invocation to adopt. After a move to per-pr that first retargets the three PRs, nothing targets it, so with an empty batch and a contained head it is deleted then.",
+      "assertions": [
+        "the branch is not deleted at return while open PRs target it",
+        "the reason given is that deleting a PR's base closes it (or the PRs would be lost)",
+        "the branch is left for the next invocation to adopt",
+        "after the per-pr move retargets the PRs, the empty branch is deleted"
+      ],
+      "files": []
     }
   ]
 }

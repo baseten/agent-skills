@@ -1083,4 +1083,4 @@ If only external CI/review remains and the runtime cannot safely stay active, re
 
 **The two merge routes are not the same authorisation.** `merge-stack` invoked on its own needs the user's authorisation; invariant 12's gate needs the repository's opt-in — `auto-merge`, or `ci-mode: integration-branch` for a PR into that branch — and nothing else from the owner — and where that opt-in is already in the file, there is no authorisation outstanding to ask about. Asking anyway is the failure *Autonomy and interactive prompts* names at the dispatch end of the run, arriving at the merge end instead.
 
-Before returning, reconcile tracker + GitHub remote state, end the watch and disarm every wake (*Stop conditions*), and emit the closing report, per the same schema.
+Before returning, reconcile tracker + GitHub remote state, end the watch and disarm every wake (*Stop conditions*), delete an integration branch that holds nothing (`integration-branch.md`, *The branch*), and emit the closing report, per the same schema.
