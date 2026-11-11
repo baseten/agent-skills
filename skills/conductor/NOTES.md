@@ -162,6 +162,8 @@ where that is tested.
 
 **Why owner steps are issues and not a list in the pass (2026-10-31, the owner's addendum):** a list in a chat pass is gone when the session ends, and a step left in a PR body is invisible once the PR merges. Each step is filed as a `[Manual]` issue (`rules/manual-step-issues.md`), the order goes on the manual-steps epic and in the ledger, and `owner-steps` walks each one. Scenario: `owner-steps-are-ordered-as-manual-issues-on-the-epic`.
 
+**Why the conductor asks about a held force-push but cannot approve it (owner's ruling, 2026-11-11):** the owner is in the conductor session, not the run's, so asking there surfaces the decision where they already are, and the ledger records it. But the run's permission mode accepts approval only in its own session, so the conductor's answer is a decision, not the approval: the chat says plainly that the click still has to happen in the run's session, and links it.
+
 ## 5. Intake and replan
 
 **Why a planner's pointer is only a pointer (2026-11-04):** it is a message from

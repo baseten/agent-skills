@@ -664,7 +664,7 @@ Read the blocked state explicitly each cycle, and resolve it in this order:
    allowlisted the tool or asked for a redispatch; otherwise the work unit stays
    `NEEDS_USER` with no worker and the slot is free. A run that ends with the hold
    standing reports that session as alive and left to the owner, with its URL and
-   the tool string — not failed, and not clean.
+   the tool string — not failed, and not clean.   **A refused force-push is this branch, whichever form it waits in** — pending on the force-push command itself, or on the one question the *agent policy* shared rule's *Branch updates* has the worker ask (the only question its countermand allows). It is never step 3's question hold: no capture, archive or redispatch, since the push needs the click in that session. **Surface it under the owner's *Confirm in a session*, linking the session and naming the exact command waiting, and never answer it** — a parent's or conductor's answer is relayed, and the worker's permission mode accepts only its own session's.
 
    **Not this branch: a filesystem search for the worker's own source files** — a
    bare `find`, a repository-root probe, a request for a path the dispatch prompt
