@@ -415,7 +415,7 @@
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present; the last report was at 14:00 UTC. This sweep: run A (implement-issue on acme/api #810) opened PR #841, now waiting on CI; run B's PR #845 went green and is now waiting on review by a named teammate; run C (backlog-orchestrator on epic #2005) merged #2040. You verified each claim on GitHub. Nothing needs the owner - no decision, approval, owner step or failure - and nothing was waiting on them at the last report. Question: what do you write in chat, in what shape, and where does the rest go?",
       "expected_output": "No 'Needs you' section (empty sections are omitted). A 'Changed since 14:00 UTC' section stating each state change once - run A's PR opened, run B now waiting on review, run C's #2040 merged - grouped by run (a heading per run with its session link by title, repository and epic or issue) then issue, every reference a link; then an 'Unchanged' line of linked counts where anything is unchanged; then the ledger link last, with --- between top-level groups. No narration of the sweep's steps and no account of how claims were verified - at most 'verified'. The rest - check links, the live-sessions rows edited in place, one changelog line - goes to the ledger, which never carries a check's outcome.",
       "assertions": [
-        "the answer reports the three state changes once each, under a 'Changed since' heading, and writes no 'Needs you' section",
+        "the answer reports the three state changes once each, under a 'Changed since' label, and writes no 'Needs you' section",
         "the answer does not narrate the sweep's steps or how claims were checked",
         "the answer ends with the ledger link (the work queue's beside it where one is kept), putting progress detail in the ledger without any check outcome",
         "run B waiting on a named teammate's review is not presented as something the owner must act on"
@@ -552,12 +552,12 @@
       "id": 43,
       "name": "every-block-has-a-linked-heading-and-every-ref-is-a-link",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. Two runs changed state: run A is session_01Aa titled 'Orchestrator: acme-api · #2005 exports' on acme/api epic #2005, whose issue #2011 merged as PR #2040; run B is session_01Bb titled 'Worker: acme-web · #77 search box' on acme/web issue #77, whose PR #91 opened. Question: write the 'Changed since' section.",
-      "expected_output": "Each run is a '###' block whose heading names it with links: the session as a link to https://claude.ai/code/session_01Aa with its title as the link text, the repository acme/api linked, and the epic #2005 linked (run B likewise: its session link by title, acme/web, issue #77). Inside, each issue is a bold line with its links - e.g. **#2011 · #2040** — merged - using short #N refs because the heading named the repository, every one a link. No raw session id appears as text, no bare #N or plain title stands in for a link, and a --- separates the two runs.",
+      "expected_output": "'Changed since' is a short bold line, not a heading. Each run is a work stream: a '##' heading preceded by ---, naming it with links: the session as a link to https://claude.ai/code/session_01Aa with its title as the link text, the repository acme/api linked, and the epic #2005 linked (run B likewise: its session link by title, acme/web, issue #77). Under each heading, one status sentence, then each issue a bullet with its links - e.g. - #2040 · #2011 — merged, the worker session first where the issue has its own - using short #N refs because the heading named the repository, every one a link. No raw session id appears as text, and no bare #N or plain title stands in for a link.",
       "assertions": [
         "each run's block opens with a heading linking its session by title, its repository and its epic or issue",
         "no raw session id or bare unlinked reference appears",
         "inside a block the refs are short #N forms, each linked, the repository named once in the heading",
-        "the issues appear as bold lines under their run's heading"
+        "the issues appear as bullets under their run's ## heading, after one status sentence"
       ],
       "files": []
     },
@@ -830,12 +830,12 @@
       "id": 65,
       "name": "a-tracker-review-draft-is-marked-on-the-queue-item",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present and the session keeps a work queue. acme/api is linked to a tracker that hosts PR review. Item: the owner must review acme/api#841. When building the page you read the tracker's review page for #841 and find one unsubmitted request-changes draft there, held by the tracker account this session reads as, which is the owner's; nothing is pending on the forge. Run A's session owns #841, which closes acme/api#810. Question: what links does #841's queue item carry, in what order, and how is the draft shown?",
-      "expected_output": "Four links, in order: the PR on the forge; the tracker's review page for #841, marked with the draft count - '1 draft', labelled with the owner's tracker account - so the owner knows the request-changes draft is there; the issue it closes, #810; and run A's session last. The item never implies the draft is on the forge, and a forge link alone would be a failure: the owner would see nothing waiting. The link and the count were read this sweep, never from memory.",
+      "expected_output": "Four links, in order: run A's session; the PR on the forge; the tracker's review page for #841, marked with the draft count - '1 draft', labelled with the owner's tracker account - so the owner knows the request-changes draft is there; then the issue it closes, #810. The item never implies the draft is on the forge, and a forge link alone would be a failure: the owner would see nothing waiting. The link and the count were read this sweep, never from memory.",
       "assertions": [
-        "the item links the forge PR first and the tracker review page second",
+        "the item links run A's session first, then the forge PR, then the tracker review page",
         "the tracker review link is marked with the draft count",
         "the item does not present the draft as being on the forge, and does not link the forge PR alone",
-        "the item links #810 and then run A's session"
+        "the item links #810 last"
       ],
       "files": []
     },
@@ -1007,6 +1007,19 @@
         "#96's reviewer is verified on the forge and reported failed when no drafts are found",
         "neither reviewer is sent a status request or any message",
         "#96 is not put under Review and submit"
+      ],
+      "files": []
+    },
+    {
+      "id": 79,
+      "name": "streams-are-h2-blocks-capped-at-a-sentence-and-four-bullets",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present; the last report was at 14:00 UTC. Run A, session_01Aa titled 'Orchestrator: acme-api · #2005 exports' on acme/api epic #2005, had seven issues change state since then: #2011 (PR #2040), #2012 (PR #2041) and #2013 (PR #2042) merged; #2014's PR #2043 opened; #2015's PR #2044 went red on CI and its repair was dispatched; #2016 and #2017 started. Run B, session_01Bb titled 'Worker: acme-web · #77 search box' on acme/web issue #77, opened PR #91. Nothing needs the owner. Question: write the report as it appears in the chat, with placeholder link targets.",
+      "expected_output": "The section label 'Changed since 14:00 (UTC)' is a short bold line, not a markdown heading. Each run is a work stream whose block opens with a '##' heading - its session linked by title, its repository and its epic or issue - and a --- line precedes each stream heading. Run A's block is one status sentence (e.g. three merged, one red with a repair dispatched, three in flight) and at most four bullets, the most consequential first; the remaining changes are not listed, one closing line giving the count left out and linking run A's session, whose own report lists them (e.g. '+3 more in the session'). Run B's block is a status sentence and one bullet for #91 · #77. No 'Needs you' section is printed since nothing needs the owner; the turn ends with any Unchanged line and the ledger link.",
+      "assertions": [
+        "each run's block opens with a ## heading, preceded by a --- line",
+        "'Changed since' is a bold line, not a # / ## / ### heading",
+        "run A's block has one status sentence and no more than four bullets, not seven",
+        "the changes run A's block leaves out are not listed; a closing line gives their count and links where they are kept"
       ],
       "files": []
     }
