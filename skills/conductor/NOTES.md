@@ -623,6 +623,8 @@ Pinned in `evals/evals.json`:
     (`a-quiet-suffix-is-not-a-reason-to-retitle`).
   - a reply that brings no delta is a quiet turn and leaves the title alone
     (`a-reply-with-no-delta-is-a-quiet-turn`);
+  - each work stream is a `##` block of one sentence and at most four bullets
+    (2026-11-11, `streams-are-h2-blocks-capped-at-a-sentence-and-four-bullets`);
   - a polled item keeps a wake quiet, its preflight in the re-armed prompt
     (`a-polled-item-keeps-a-wake-quiet-with-its-preflight-in-the-prompt`);
   - a question the flow needs is asked before the report

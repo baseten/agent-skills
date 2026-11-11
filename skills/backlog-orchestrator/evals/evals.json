@@ -1384,11 +1384,11 @@
       "id": 107,
       "name": "a-reporting-cycle-prints-the-record-then-the-report-by-issue",
       "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A cycle on acme/api epic #2005, owner present, auto-merge off: #2011's PR #2040 is settled and waiting on the owner's merge; #2012's PR #2041 merged (merged by the owner) since the last report at 09:00 UTC; #2013's PR #2042 went from waiting on CI to waiting on review. Question: describe the shape of what this cycle prints, in order.",
-      "expected_output": "First the state block - the turn's record, with its schema fields, since it changed - closed by ---. Then the report, ending the turn: 'Needs you' with a Merge group line naming acme/api once and #2040 below it, linked; 'Changed since 09:00' with the run's one ### heading (its session by title, acme/api, epic #2005) and each issue a bold line with its tracker issue, PR and worker session as links - #2012's PR #2041 merged, #2013's PR #2042 waiting on review; an Unchanged line of linked counts where anything is unchanged; then a link to the epic #2005 as the durable record. Times are labelled. Every reference is a link, the repository named once per block.",
+      "expected_output": "First the state block - the turn's record, with its schema fields, since it changed - closed by ---. Then the report, ending the turn: 'Needs you' with a Merge group line naming acme/api once and #2040 below it, linked; 'Changed since 09:00' as a bold line, then, after a ---, the run's one ## stream heading (its session by title, acme/api, epic #2005), one status sentence, and each issue a bullet with its tracker issue, PR and worker session as links - #2012's PR #2041 merged, #2013's PR #2042 waiting on review; an Unchanged line of linked counts where anything is unchanged; then a link to the epic #2005 as the durable record. Times are labelled. Every reference is a link, the repository named once per block.",
       "assertions": [
         "the answer prints the state block before the report, separated by ---",
         "the report lists #2040 under Needs you as a merge for the owner",
-        "the answer puts the run's one ### heading under 'Changed since', with the issues as bold lines below it",
+        "the answer puts the run's one ## heading, preceded by ---, under the bold 'Changed since' line, with the issues as bullets below it",
         "the turn ends with a link to the epic as the durable record"
       ],
       "files": []

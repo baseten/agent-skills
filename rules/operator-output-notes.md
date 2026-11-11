@@ -124,6 +124,27 @@ under each section, and the levels mean the same everywhere. The two worked
 examples exist because a model applying the rule every turn copies an example more
 reliably than it assembles one from clauses.
 
+**Why a stream is `##` and a section label a bold line (owner's ruling, 2026-11-11):**
+a screenshot of a conductor's chat showed `###` run headings rendering barely larger
+than body text, so one stream ran into the next even with `---` between them. A work
+stream is what the owner scans for, so it takes the largest heading the chat renders
+well, and the section labels, which the fixed order already locates, step down to a
+bold line so they do not compete with it. Issues became bullets because a bold line
+per issue was the third bold level in one block.
+
+**Why a stream is capped at one sentence and four bullets (same ruling):** a stream
+with many changes pushed the next stream, and *Needs you* above it, off the screen.
+The owner asked for "about four"; the rule says four so that a reader can tell when
+it is over. What is cut is not lost: the ledger holds every change, and the closing
+line says how many were left out, so the owner knows to look.
+
+**Why a blank line around `---` (found writing that ruling, 2026-11-11):** in
+CommonMark a `---` directly under a line of text is a setext underline, turning the
+line above into an `<h2>`. Rendering `PR opened.\n---` with commonmark.js 0.31.2
+gave `<h2>PR opened.</h2>`; after a list item it gave a rule. The previous examples
+put `---` straight under an issue's line, so a reader copying them made headings of
+arbitrary lines.
+
 **Why every block names its subject:** in both transcripts a reader could not tell
 where one run's news stopped and another's began; context switches between runs
 and between issues were unmarked. A heading with the session, repository and epic
