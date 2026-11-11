@@ -148,6 +148,8 @@ where one run's news stopped and another's began; context switches between runs
 and between issues were unmarked. A heading with the session, repository and epic
 makes every block self-locating.
 
+**Why an item's links run worker, PR, review page, issue (owner's ruling, 2026-11-11):** the issue line used to lead with the issue and the PR, the worker session last, and the conductor's work-queue page used a different order again. The owner acts on a run in its session, then reads its PR, then its diff in the tracker, then the issue for context, so that is the order, and it is one order in the chat and on the page so each link is always in the same place. A link an item lacks is dropped rather than replaced, so a missing review page never shifts the issue into its slot unannounced.
+
 **Why every reference is a link, and the repository once:** references were
 written three ways in one message — a full `org/repo#N`, a bare `#N`, and plain
 unlinked text — and sessions appeared as raw ids, even in tables, or as plain

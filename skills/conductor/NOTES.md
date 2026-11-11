@@ -432,12 +432,7 @@ page; it links one only where it already exists.
 **Why a PR item carries up to four links in that order (owner's ruling, 2026-11-06):** a
 review the owner had drafted in the tracker's review view, not yet submitted, was
 invisible from a queue item linking only the forge PR, so the item read as nothing
-waiting on them. The forge PR comes first because it is the PR; the tracker's review
-page second, marked with the draft count, because that is where the drafts are; the
-closing issues third, or "no linked issue", because an item with no issue is a
-question in itself; the run's session last, where one owns the PR, keeping the
-operator-output issue line's session link rather than dropping it. The chat keeps its
-own shorter line: the order is the page's. Drafts held elsewhere, such as replies
+waiting on them. The tracker's review page sits beside the PR, marked with the draft count, because that is where the drafts are; the closing issues follow, or "no linked issue", because an item with no issue is a question in itself. **The order changed on the owner's ruling of 2026-11-11** to worker session, PR, review page, issue, in the chat and on the page alike: the session is where the owner acts on a run, so it leads, and one order everywhere means the owner's eye finds each link in the same place. Drafts held elsewhere, such as replies
 held for the owner's approval because a person is in the thread (`resolve-pr-comment`,
 *Replies held for approval*), are linked to their text or named where held, as
 *Approve drafts* is in the chat. A draft's location is a claim about current state,

@@ -49,7 +49,9 @@ A reporting turn ends with these, in this order, each omitted when empty:
 
 ## Headings and links
 
-**Every block opens with a line naming its subject.** A report section's label — *Needs you*, *Changed since <time>* — is a short bold line, never a heading; **a work stream is a `##` heading, linked** — a session the report follows: a run, by its session's title, its repository and its epic, or its issue for a single-issue run; a reviewer, by its session's title, its repository and its PR; an issue is a bullet under its stream — its tracker issue and its PR, with its worker session where it has its own. A run's own report uses the same levels, with its one stream heading under *Changed since*; *Needs you* groups by action, not by stream.
+**Every block opens with a line naming its subject.** A report section's label — *Needs you*, *Changed since <time>* — is a short bold line, never a heading; **a work stream is a `##` heading, linked** — a session the report follows: a run, by its session's title, its repository and its epic, or its issue for a single-issue run; a reviewer, by its session's title, its repository and its PR; an issue is a bullet under its stream. A run's own report uses the same levels, with its one stream heading under *Changed since*; *Needs you* groups by action, not by stream.
+
+**An item's links run in one order, in a stream's bullets and *Needs you*'s lines alike**: its worker session, where it has its own; its PR; the tracker's review page for that PR, where its repository's tracker hosts PR review — Linear's diff view, say; then its tracker issue. A link the item does not have is left out, never stood in for.
 
 **A stream's block is one status sentence and at most four bullets.** A change to the stream itself — dispatched, retired, failed, archived — is its status sentence, linked to its record; each bullet is an issue's change, most consequential first. What does not fit is left out, one closing line — plain text, not a fifth bullet — giving the count and linking where the full list is kept — for a `conductor`, the run's session, whose own report lists it; for a run, its record (`+3 more in the session`).
 
@@ -61,10 +63,10 @@ A `conductor`'s turn:
 **Needs you**
 
 **Merge** · [acme/api](…)
-- [#841](…) — settled · [Worker: acme-api · #810 export](…)
+- [Worker: acme-api · #810 export](…) · [#841](…) · [diff](…) · [#810](…) — settled
 
 **Review and submit** · [acme/web](…)
-- [#93](…) — request changes, 1 blocking · [drafts](…) · [Reviewer: acme-web · #93 cache keys](…)
+- [Reviewer: acme-web · #93 cache keys](…) · [#93](…) · [drafts](…) — request changes, 1 blocking
 
 ---
 
@@ -74,14 +76,14 @@ A `conductor`'s turn:
 
 ## [Orchestrator: acme-api · #2005 exports](…) · [acme/api](…) · [#2005](…)
 Two issues merged; four still in flight.
-- [#2011](…) · [#2040](…) — merged
-- [#2012](…) · [#2041](…) — merged
+- [Worker: acme-api · #2011 csv](…) · [#2040](…) · [diff](…) · [#2011](…) — merged
+- [Worker: acme-api · #2012 pdf](…) · [#2041](…) · [diff](…) · [#2012](…) — merged
 
 ---
 
 ## [Worker: acme-web · #77 search box](…) · [acme/web](…) · [#77](…)
 PR opened, waiting on CI.
-- [#77](…) · [#91](…) — PR opened
+- [#91](…) · [diff](…) · [#77](…) — PR opened
 
 ---
 
@@ -98,7 +100,7 @@ A run's turn, after its record:
 
 ## [Orchestrator: acme-api · #2005 exports](…) · [acme/api](…) · [#2005](…)
 One issue merged; three still in flight.
-- [#2012](…) · [#2041](…) — merged
+- [Worker: acme-api · #2012 pdf](…) · [#2041](…) · [diff](…) · [#2012](…) — merged
 
 ---
 
