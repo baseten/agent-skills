@@ -690,10 +690,9 @@ it.
 **The hold bounds the work, not the watch.** The parent keeps supervising a held
 worker, since its resuming is state the run acts on: on the caller's bounded
 check-in where it has one (`backlog-orchestrator`'s unproductive-wake budget,
-*Arming the wait when nothing is in flight*); invoked directly, on the
-elapsed-time observations Checkpoint compliance defines for a stalled head,
-measured from when the hold was raised, the bound spent at its two-hour threshold
-once nothing else is in flight. When the bound is spent, return a restartable
+*Arming the wait when nothing is in flight*);
+invoked directly, on its own check-in under `references/wake-budget.md`, whose
+hourly status read covers a held worker as it does any live one. When the bound is spent, return a restartable
 checkpoint naming each held session as alive, with its URL, the literal tool
 string where it is a permission hold, and that it is never archived on the run's
 authority — so the owner, or the next invocation, picks it up from there. No worker may sit blocked across a run without appearing in its output.
