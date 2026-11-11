@@ -1429,6 +1429,19 @@
         "the answer raises #640 as a NEEDS_USER item rather than dispatching it"
       ],
       "files": []
+    },
+    {
+      "id": 113,
+      "name": "a-restart-counts-adopted-predecessor-workers-against-the-cap",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: `concurrent-open-prs` is 3. You resume a run whose predecessor orchestrator session has stopped and handed back cleanly, its checkpoint recording every wake disarmed. The runtime is Claude Code Remote (tier 2) and lists sessions with `parent_session_id`: two implementation worker sessions whose parent is the predecessor are still WORKING, on issues api#12 and api#14, neither with a PR yet. One PR of the run, for api#9, is open. Issues api#15 and api#16 are READY and within `new-issue-budget`. Questions: (a) how many open-PR slots are held, and do you dispatch api#15 or api#16 now? (b) do you redispatch api#12 or api#14? (c) does your checkpoint report the restart as possibly over the cap? (d) how would (a) and (c) differ if the predecessor had run its workers as subagents and this runtime had no session list?",
+      "expected_output": "(a) Three: the open PR for api#9 plus the two adopted implementation workers, which restart-resume step 1 makes this run's by provenance and which each hold a slot as an in-flight implementation worker would from its dispatch. The run is at the cap, so neither api#15 nor api#16 is dispatched until a slot frees. (b) No: their issues are not redispatched while the sessions are alive. (c) No: the predecessor's workers were seen and counted, so the over-cap bound does not apply. (d) With no session list a restart cannot see a previous parent's live workers: it counts one slot (api#9), may dispatch up to the headroom, and reports the restart as possibly over the cap by up to `concurrent-workers` until those workers' PRs appear.",
+      "assertions": [
+        "the answer counts three slots held, the two adopted predecessor workers included, and dispatches neither READY issue",
+        "the answer does not redispatch api#12 or api#14 while their sessions are alive",
+        "the answer does not report the restart as possibly over the cap where the predecessor's workers were listed and counted",
+        "without a session list the answer counts only the open PR and reports the restart as possibly over the cap by up to concurrent-workers"
+      ],
+      "files": []
     }
   ]
 }
