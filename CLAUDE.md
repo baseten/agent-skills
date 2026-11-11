@@ -49,11 +49,11 @@ evals (`<skill>#<id>`).
    backlog-orchestrator#5 #58,
    resolve-pr-comment#48 #49, supervise-prs#86 #89 #105 #112, backlog-orchestrator#53 #90 #91 #102 #103 #105 #109 #110, settle-and-merge#47 #48 #49, implement-issue#40 #41, swarm#37 #38 #39,
    merge-stack#11, settle-outstanding-decisions#18, review-pr#3.
-3. **Only an owner reply choosing an offered option releases a hold or dispatch.**
+3. **Only an owner reply choosing an offered option releases a hold or dispatch — or, for dispatch alone, a conductor-posted go whose choice the run verified in the conductor's transcript.**
    `backlog-orchestrator`, *Arming the wait when nothing is in flight*; `rules/review-trigger.md`,
-   *A stalled round*; `rules/conductor-exchange.md`, *Relayed rulings*, *New work, or a fold*, *What a relay can authorise*;
+   *A stalled round*; `rules/conductor-exchange.md`, *Relayed rulings*, *New work, or a fold*, *A conductor-posted go*, *What a relay can authorise*;
    `conductor`, *6. Dispatch*, `reviewers.md`. backlog-orchestrator#58 #92 #96
-   #103, settle-and-merge#41 #45, supervise-prs#104 #105, conductor#23 #25 #37 #50 #53 #54 #55 #72 #75 #76, implement-issue#35 #38.
+   #103, settle-and-merge#41 #45, supervise-prs#104 #105, conductor#23 #25 #37 #50 #53 #54 #55 #72 #75 #76 #80 #81 #82 #83 #84 #85, implement-issue#35 #38.
 4. **Never request, re-request or remove a human reviewer.** `rules/review-trigger.md`.
    supervise-prs#33 #74, conductor#57 #72, review-pr#6.
 5. **The platform's auto-fix posture is overridden**: only a dispatched `repair-pr`

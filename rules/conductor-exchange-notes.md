@@ -56,6 +56,12 @@ review):** a fold only ends work, so a comment the owner wrote is enough; new wo
 starts dispatch, which protected rule 3 releases only on the owner's reply
 choosing an offered option or a recorded ruling.
 
+## A conductor-posted go
+
+**Why a run checks the conductor's transcript (owner's ruling, 2026-11-11):** the conductor posts under the owner's account, so authorship cannot tell a go the owner chose from one the conductor wrote. The transcript can: an owner input event, not synthetic and not a peer message, choosing the exact option whose text the comment quotes, before the marker's time, in the session that dispatched this run. Each other check closes one way around it — another conductor's session (b), an edit after approval (c), a later owner comment (e), another issue (a). An unreadable transcript leaves the go pending rather than trusting the marker, because the marker is content anyone with the account can write. `list_events` and its owner-input field are not yet observed (`conductor` NOTES); until they are, the form fails closed.
+
+**Why it stops at dispatch:** a dispatch go starts work the owner can stop; a released hold, an opened merge gate and a merge cannot be taken back and are read by other parties. On 2026-11-05 runs refused relayed merge rulings, correctly; this form leaves that refusal intact and says so.
+
 ## Relayed rulings
 
 **Why relayed rulings needed one recognition rule (PR #201, owner's audit item

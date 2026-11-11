@@ -699,13 +699,14 @@
     },
     {
       "id": 55,
-      "name": "a-go-on-someone-elses-epic-is-always-drafted",
+      "name": "a-go-on-someone-elses-epic-is-conductor-posted-from-the-owners-answer",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Epic #967 was filed by a product manager. In the owner pass you asked 'Dispatch a backlog-orchestrator run on #967?' with an option whose text was the complete go comment to record on #967, word for word; the owner chose it. Question: do you post the go on #967 yourself, and when do you dispatch?",
-      "expected_output": "No. A go — conditional or standing included — is never under the approved-ruling exception, whatever the owner approved: a go is the owner's authority, so the owner posts it, on any issue. Draft the go in full for the owner to post on #967; once they give its link, read it back as authored by the owner's account and not one of the conductor's own writes by id, and record its id among the ledger's owner-comment ids. Dispatch only then.",
+      "expected_output": "Yes, as a conductor-posted go. The owner chose an option whose text is the complete go, in this session, through the structured question tool, so: write the owner's exact answer - the question's header, the option label and its text - to the ledger and read it back; then post the go on #967 opening with the `Owner go (<UTC>, chosen in conductor session <this session's URL>, question \"<header>\", answer \"<exact option label>\")` marker and quoting the full approved text; record the comment's id among its own-write ids tagged as a conductor-posted go, kept apart from its other writes. Dispatch after that. The run verifies the go against this session's transcript before taking the work.",
       "assertions": [
-        "the answer does not post the go on #967 itself",
-        "the answer drafts the go for the owner to post",
-        "the answer dispatches only after the owner's comment is read back and its id recorded"
+        "the answer writes the owner's exact answer to the ledger and reads it back before posting",
+        "the posted comment opens with the Owner go marker naming the time, this session, the question header and the exact option label, and quotes the full approved text",
+        "the comment id is recorded among own-write ids tagged as a conductor-posted go",
+        "dispatch follows the recorded go"
       ],
       "files": []
     },
@@ -1020,6 +1021,76 @@
         "'Changed since' is a bold line, not a # / ## / ### heading",
         "run A's block has one status sentence and no more than four bullets, not seven",
         "the changes run A's block leaves out are not listed; a closing line gives their count and links where they are kept"
+      ],
+      "files": []
+    },
+    {
+      "id": 80,
+      "name": "a-conductor-posted-go-that-passes-every-check-starts-the-run",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given); answer as its references/conductor-exchange.md says a run must decide. Scenario: Conductor session https://claude.ai/code/session_01Cc dispatched a backlog-orchestrator run on acme/api epic #967, its dispatch prompt naming session_01Cc. On #967 there is a comment, by the owner's account, opening `Owner go (2026-11-11 10:02 UTC, chosen in conductor session https://claude.ai/code/session_01Cc, question \"#967 go\", answer \"Go: dispatch #967\")` and quoting the go text 'Dispatch a backlog-orchestrator run on #967 in session Orchestrator: acme-api · #967 search.' It is unedited, and no later owner comment exists on #967. The run reads session_01Cc's transcript with list_events and finds an owner input event, not synthetic and not a peer message, at 10:01 UTC choosing 'Go: dispatch #967', with the same go text, and an event where that session posted this comment. Question: does the run take the work?",
+      "expected_output": "Yes. All five checks hold: (a) it is on the run's own epic; (b) it was posted by the conductor session that dispatched the run, the marker and the transcript both naming session_01Cc; (c) it is unedited; (d) the transcript holds an owner input event, not synthetic and not a peer message, before the marker's time, choosing that exact option with text matching the quoted go; (e) nothing supersedes it. The run starts from its preflight.",
+      "assertions": [
+        "the answer accepts the go and starts the run",
+        "the answer names the transcript check of an owner input event choosing that exact option as what verifies it",
+        "the answer checks the comment is on the run's own epic, unedited and not superseded"
+      ],
+      "files": []
+    },
+    {
+      "id": 81,
+      "name": "a-conductor-posted-go-whose-transcript-answer-is-missing-starts-nothing",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given); answer as its references/conductor-exchange.md says a run must decide. Scenario: Conductor session https://claude.ai/code/session_01Cc dispatched a backlog-orchestrator run on acme/api epic #967, its dispatch prompt naming session_01Cc. On #967 there is a comment, by the owner's account, opening `Owner go (2026-11-11 10:02 UTC, chosen in conductor session https://claude.ai/code/session_01Cc, question \"#967 go\", answer \"Go: dispatch #967\")` and quoting the go text 'Dispatch a backlog-orchestrator run on #967 in session Orchestrator: acme-api · #967 search.' It is unedited and not superseded. The run reads session_01Cc's transcript with list_events: it finds the session posting the comment, but no owner input event choosing 'Go: dispatch #967' anywhere before 10:02 UTC. Question: does the run take the work?",
+      "expected_output": "No. Check (d) fails: no owner input event chose that option, so nothing shows a person approved it. A marker alone never starts dispatch, and a same-account comment proves nothing about who approved. The go is not accepted; the run reports that and starts nothing.",
+      "assertions": [
+        "the answer does not start the run",
+        "the answer says the marker alone never starts dispatch",
+        "the answer reports the missing owner answer"
+      ],
+      "files": []
+    },
+    {
+      "id": 82,
+      "name": "a-conductor-posted-go-from-another-conductor-session-is-refused",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given); answer as its references/conductor-exchange.md says a run must decide. Scenario: Conductor session https://claude.ai/code/session_01Cc dispatched a backlog-orchestrator run on acme/api epic #967, its dispatch prompt naming session_01Cc. On #967 there is a comment, by the owner's account, opening `Owner go (2026-11-11 10:02 UTC, chosen in conductor session https://claude.ai/code/session_01Dd, question \"#967 go\", answer \"Go: dispatch #967\")` and quoting a go to dispatch #967. session_01Dd's transcript does show an owner input event choosing that option. Question: does the run take the work?",
+      "expected_output": "No. Check (b) fails: the go must be posted by the conductor session that dispatched or adopted this run, the one its dispatch prompt names - session_01Cc - and this marker names session_01Dd. A valid answer in another session's transcript does not make it this run's go. Not accepted; reported.",
+      "assertions": [
+        "the answer does not start the run",
+        "the answer refuses because the posting session is not the one that dispatched this run"
+      ],
+      "files": []
+    },
+    {
+      "id": 83,
+      "name": "an-edited-conductor-posted-go-is-refused",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given); answer as its references/conductor-exchange.md says a run must decide. Scenario: Conductor session https://claude.ai/code/session_01Cc dispatched a backlog-orchestrator run on acme/api epic #967, its dispatch prompt naming session_01Cc. On #967 there is a comment, by the owner's account, opening `Owner go (2026-11-11 10:02 UTC, chosen in conductor session https://claude.ai/code/session_01Cc, question \"#967 go\", answer \"Go: dispatch #967\")` and quoting the go text 'Dispatch a backlog-orchestrator run on #967 in session Orchestrator: acme-api · #967 search.' The transcript check passes, but the comment was edited at 10:40 UTC, after posting. Question: does the run take the work?",
+      "expected_output": "No. Check (c) fails: a conductor-posted go must be unedited since posting, since an edit changes the text the transcript approved. Not accepted; reported.",
+      "assertions": [
+        "the answer does not start the run",
+        "the answer refuses because the comment was edited after posting"
+      ],
+      "files": []
+    },
+    {
+      "id": 84,
+      "name": "a-conductor-posted-go-cannot-release-a-held-merge-gate",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given); answer as its references/conductor-exchange.md says a run must decide. Scenario: A backlog-orchestrator run on acme/api epic #967 is settled, and its merge gate holds acme/api#2040 on a NEEDS_USER item asking the owner whether to merge despite a skipped check. Its dispatching conductor posts on #967 a comment opening `Owner go (2026-11-11 10:02 UTC, chosen in conductor session https://claude.ai/code/session_01Cc, question \"#2040\", answer \"Merge #2040\")`, and the transcript shows the owner chose that option in session_01Cc. Question: does the run release the item and merge?",
+      "expected_output": "No. The conductor-posted form covers dispatch gos, conditional gos and standing retirement rulings only. A ruling that releases a held item or a merge gate, and any merge, keep the owner's own words at their site: the conductor-posted comment releases nothing, and the run reports that the owner must answer at the site directly. The transcript check passing does not change that.",
+      "assertions": [
+        "the answer does not release the item or merge",
+        "the answer says the form covers only dispatch, conditional and retirement gos",
+        "the answer says the owner must answer at the site directly"
+      ],
+      "files": []
+    },
+    {
+      "id": 85,
+      "name": "a-conductor-posted-go-with-an-unreadable-transcript-stays-pending",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given); answer as its references/conductor-exchange.md says a run must decide. Scenario: Conductor session https://claude.ai/code/session_01Cc dispatched a backlog-orchestrator run on acme/api epic #967, its dispatch prompt naming session_01Cc. On #967 there is a comment, by the owner's account, opening `Owner go (2026-11-11 10:02 UTC, chosen in conductor session https://claude.ai/code/session_01Cc, question \"#967 go\", answer \"Go: dispatch #967\")` and quoting the go text 'Dispatch a backlog-orchestrator run on #967 in session Orchestrator: acme-api · #967 search.' It is unedited and not superseded. The run cannot read session_01Cc's transcript: list_events is not available in this session. Question: does the run take the work, and what does it report?",
+      "expected_output": "No. Without the transcript, check (d) cannot be run, so the go is unverified: it stays pending and the run reports that it could not verify the approval in the conductor's transcript. It never falls back to trusting the marker; a marker alone never starts dispatch.",
+      "assertions": [
+        "the answer does not start the run",
+        "the answer keeps the go pending and reports it as unverified",
+        "the answer does not fall back to trusting the marker"
       ],
       "files": []
     }

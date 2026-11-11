@@ -84,16 +84,11 @@ skill would read as the owner's stays pending.
   message then link to the site's record.
 - **The configured repositories.** Every read, write and dispatch is scoped to
   them.
-- **A go is the owner's to post, on any issue**: a dispatch go, a conditional go
-  and a standing ruling — a retirement ruling included — are drafted in full for the
-  owner to post at their site, because a go is the owner's authority — bar a
-  reviewer's go, which the ledger alone records and is never posted
-  (`reviewers.md`). The owner
-  gives the posted comment's link; this skill reads it back — authored by the
-  owner's account, and not a write whose id the ledger holds as its own — and
-  records its id among the ledger's owner-comment ids, kept apart from its own-write
-  ids. Whatever waits on it — a dispatch, a retirement, a relay — stays pending until
-  then.
+- **A go is the owner's authority, recorded at its site in one of two forms**: a dispatch go, a conditional go and a standing retirement ruling — bar a reviewer's go, which the ledger alone records and is never posted (`reviewers.md`).
+  - **Owner-posted**: drafted in full for the owner to post. The owner gives the posted comment's link; this skill reads it back — authored by the owner's account, and not a write whose id the ledger holds as its own — and records its id among the ledger's owner-comment ids, kept apart from its own-write ids.
+  - **Conductor-posted**: this skill asks the owner with the structured question tool, the chosen option carrying the complete text of the go; writes the owner's exact answer — the question's header, the option's label and its text — to the ledger and reads it back; then posts the go on the epic or issue, a comment opening `Owner go (<UTC>, chosen in conductor session <session URL>, question "<header>", answer "<exact option label>")` and quoting that full text — under `references/authored-write-form.md`, *Issues the run did not create*, where the issue is not this skill's — and records its id among its own-write ids, tagged `conductor-posted go` and kept apart from its other writes. A run verifies it against this session's transcript (`references/conductor-exchange.md`, *A conductor-posted go*).
+
+  **Only those three kinds take the conductor-posted form.** A ruling that releases a run's held item or merge gate, anything in a thread another person is in, a held review reply, and a merge keep the owner's own words at their site. Whatever waits on a go — a dispatch, a retirement, a relay — stays pending until it is recorded in either form.
 - **On an issue this skill did not create**, it posts only a ruling under the shared
   exception (`references/authored-write-form.md`, *Issues the run did not create*),
   recording the owner's word-for-word approval in the ledger before posting and the
@@ -200,8 +195,7 @@ swept as `reviewers.md` says.
 8. **The default branch**, per repository in scope: CI on its current head, and
    the deploy that head triggered where the repository deploys from it — each
    reported with the head SHA and its result, failing or unread said as such.
-9. **Pending conditional gos**: verify each one's condition on the forge, and
-   execute every go whose condition now holds (*6. Dispatch*).
+9. **Pending conditional gos**: verify each one's condition on the forge, and execute every go whose condition now holds, once re-read as *6. Dispatch* says — a conductor-posted one only after its transcript check passes again.
 10. **Live reviewers**, verified and archived as `reviewers.md` says.
 
 Not runs, and reported as such: a run's own `swarm` worker sessions (read as part
@@ -386,18 +380,13 @@ skill it runs, its session decision below, and the plan's cost, with *go* among 
 options. A batch on an epic is a `backlog-orchestrator` run; one issue is an
 `implement-issue` run, and a branch with no PR a `ship-branch` run; a reviewer is
 started as `reviewers.md` says. The go is recorded on
-each run's epic or issue, naming the session, by the owner from this skill's draft
-(*Rules*): it is the record a reused run verifies before taking the work.
+each run's epic or issue, naming the session, in either form *Rules* gives: it is the record a reused run verifies before taking the work.
 
 **A conditional go** — "start the batch on #967 when #2049's wave 5 merges" — is
-the owner's choice of an option put to them, recorded the same way under the owner's
-account, its condition stated as facts the forge can show: a PR
+the owner's choice of an option put to them, recorded the same way, in either form, its condition stated as facts the forge can show: a PR
 merged, an issue closed, every PR of a named wave merged. The ledger carries it.
 **A later sweep, a scheduled one included, executes it once the condition is
-verified on the forge** — and only after re-reading the go at its site by the comment
-id the ledger recorded: authored by the owner's account, not one of this skill's
-own writes by id, unedited, and not
-superseded by a later owner comment; a go found only in the ledger stays pending — and reports that it did. The go is the owner's recorded
+verified on the forge** — and only after re-reading the go at its site by the comment id the ledger recorded: unedited, not superseded by a later owner comment, and either authored by the owner's account and not one of this skill's own writes by id, or one of its own-write ids tagged `conductor-posted go` whose check (d) under `references/conductor-exchange.md`, *A conductor-posted go*, passes again on this session's transcript; a go found only in the ledger stays pending — and reports that it did. The go is the owner's recorded
 choice; the sweep only verifies the condition, never widens or reinterprets it, and
 a condition that cannot be verified as written stays pending and is reported.
 
@@ -506,9 +495,7 @@ the authority** — this skill did not necessarily create it, and `swarm` archiv
 a session its run did not create only on the owner's ruling (*Releasing a
 worker*, the paragraph beginning *Two things are never archived*). The go may be a
 standing ruling recorded on the forge — "retire each run once its PRs are
-merged" — verified against each retirement on the forge, not asked afresh: re-read
-at its site by the comment id the ledger recorded, authored by the owner's account,
-not one of this skill's own writes by id, unedited, and neither superseded nor revoked by a later owner comment; a ruling
+merged" — verified against each retirement on the forge, not asked afresh: re-read at its site by the comment id the ledger recorded, unedited, neither superseded nor revoked by a later owner comment, and in either form *Rules* gives — a conductor-posted ruling only once check (d) passes again on this session's transcript; a ruling
 found only in the ledger stays pending. A scheduled firing may act on it too, for a session the ledger records as dispatched
 or adopted by this conductor. Only once its wrap-up is posted on its
 epic or issue — a single-issue run's `merged` report and its PR merged on the forge stand in
