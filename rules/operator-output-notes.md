@@ -54,7 +54,7 @@ drafted on, where the owner submits it; the conductor links it and never copies 
 **Why *Changed since* is in the chat at all:** PR #201's conductor rule kept every
 change out of chat, and a sweep with nothing for the owner was one line. The
 owner's design keeps state changes — a merge, a run started, a run failed — in the
-chat, once each, because that is what the owner reads to decide what to do next;
+chat, once each, because that is what the owner reads to decide what to do next — within a stream's cap, below;
 what stays out is the steps, the checking and the unchanged. An attended sweep with no
 change and nothing for the owner reduces to its *Unchanged* line and the ledger
 link, and a scheduled one to its title and minimal line (*Quiet turns*). The conductor's scenario
@@ -119,8 +119,7 @@ terse.
 
 **Why one heading scheme for a conductor and a run (review of #204):** the first
 draft gave a run's own issues the `###` a conductor gives a run, so the same
-heading level meant two things. A run's report now carries its one run heading
-under each section, and the levels mean the same everywhere. The two worked
+heading level meant two things. A run's report now carries its one stream heading under *Changed since*, and the levels mean the same everywhere. The two worked
 examples exist because a model applying the rule every turn copies an example more
 reliably than it assembles one from clauses.
 
@@ -135,8 +134,7 @@ per issue was the third bold level in one block.
 **Why a stream is capped at one sentence and four bullets (same ruling):** a stream
 with many changes pushed the next stream, and *Needs you* above it, off the screen.
 The owner asked for "about four"; the rule says four so that a reader can tell when
-it is over. What is cut is not lost: the ledger holds every change, and the closing
-line says how many were left out, so the owner knows to look.
+it is over. What is cut is not lost, and the closing line says how many and where: a conductor's ledger keeps one row per stream rather than every issue's change, so a conductor links the run's session, whose own report lists them; a run links its record, which holds every PR's state (contradiction pass, 2026-11-11). A change to the stream itself — a dispatch, a retirement, a failure — is its status sentence rather than a bullet, so a consumer that must report every one of them, as the `conductor` must, never has one capped out. A reviewer session is a stream of its own, so a failed reviewer's line has a heading to sit under.
 
 **Why a blank line around `---` (found writing that ruling, 2026-11-11):** in
 CommonMark a `---` directly under a line of text is a setext underline, turning the
@@ -156,8 +154,7 @@ unlinked text — and sessions appeared as raw ids, even in tables, or as plain
 titles that wrapped. A link with the title as its text is clickable and readable;
 naming the repository once per block — in a run's heading, or on a *Needs you*
 group's line where its items share one — lets every ref below it be short without
-being ambiguous. The three-link header PR #201 required is this rule's heading for
-a run and for an issue.
+being ambiguous. The three-link header PR #201 required is this rule's heading for a stream and its line for an issue.
 
 ## Questions
 

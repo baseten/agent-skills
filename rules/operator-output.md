@@ -35,7 +35,7 @@ A reporting turn ends with these, in this order, each omitted when empty:
    - **Clear a failure** only the owner can clear
 
    **Reprint it only when its items changed since the last report printed it**; otherwise one line, `3 still waiting on you, unchanged`, linking the ledger and any work queue beside it — its questions not asked again (*Questions*). Where the last printed list has left context, reprint.
-2. **Changed since <time>** — since the last report, or the run's start — each state change once, by work stream, then issue. **A table only here**, where rows share columns: runs started, each with its session and its go's record.
+2. **Changed since <time>** — since the last report, or the run's start — each state change once, by work stream, then issue, within a stream's cap (*Headings and links*). **A table only here**, where rows share columns: runs started, each with its session and its go's record, placed under the label and before the streams; a run in it gets no block of its own until a later report.
 3. **`Unchanged: …`** — one line of linked counts.
 4. **A link to the ledger**, or for a run without one, to its epic or issue — and beside it the consumer's work queue, a page rendering *Needs you*, where it keeps one.
 
@@ -49,9 +49,9 @@ A reporting turn ends with these, in this order, each omitted when empty:
 
 ## Headings and links
 
-**Every block opens with a linked heading naming its subject.** A report section's label — *Needs you*, *Changed since <time>* — is a short bold line, never a heading; **a work stream is a `##` heading** — a run: its session by title, its repository and its epic, or its issue for a single-issue run; an issue is a bullet under its stream — its tracker issue and its PR, with its worker session where it has its own. A run's own report uses the same levels, with its one stream heading under *Changed since*; *Needs you* groups by action, not by stream.
+**Every block opens with a line naming its subject.** A report section's label — *Needs you*, *Changed since <time>* — is a short bold line, never a heading; **a work stream is a `##` heading, linked** — a session the report follows: a run, by its session's title, its repository and its epic, or its issue for a single-issue run; a reviewer, by its session's title, its repository and its PR; an issue is a bullet under its stream — its tracker issue and its PR, with its worker session where it has its own. A run's own report uses the same levels, with its one stream heading under *Changed since*; *Needs you* groups by action, not by stream.
 
-**A stream's block is one status sentence and at most four bullets**, each a state change, most consequential first; what does not fit goes to the ledger, linked on one closing line with the count left out (`+3 more in the ledger`).
+**A stream's block is one status sentence and at most four bullets.** A change to the stream itself — dispatched, retired, failed, archived — is its status sentence, linked to its record; each bullet is an issue's change, most consequential first. What does not fit is left out, one closing line giving the count and linking where the full list is kept — for a `conductor`, the run's session, whose own report lists it; for a run, its record (`+3 more in the session`).
 
 **Every reference is a link** — an issue, a PR, a session (`https://claude.ai/code/<session id>`, its title as the link text), a repository, a commit — never a bare id, a raw session id, or a title standing in for a link; text shown for approval exactly as it will be posted is shown as it will be posted. **Name each repository once per block** — in the run's heading, or on a *Needs you* group's line where its items share one — then write short `#N` refs, always linked. In a table cell a session's link text may drop its title's prefix, so it does not wrap.
 
