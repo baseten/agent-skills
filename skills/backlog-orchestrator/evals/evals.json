@@ -1429,6 +1429,45 @@
         "the answer raises #640 as a NEEDS_USER item rather than dispatching it"
       ],
       "files": []
+    },
+    {
+      "id": 111,
+      "name": "integration-preflight-pushes-while-owner-present",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: first preflight for acme/print with `ci-mode: integration-branch`; preflight items 1 to 5 hold and the run's branch `integration/acme-print-12` does not exist yet. The owner is at the keyboard. Questions: (a) what does the preflight do about the branch before any dispatch, and why now? (b) the fast-forward push stops on a permission prompt — what do you report? (c) the owner declines to allow it — what happens to dispatch into acme/print?",
+      "expected_output": "(a) It establishes that the session may push to the run's branch by making a creation and an update push, the two kinds the run makes before deleting it: create the branch at the first parent of the default branch's head, then fast-forward it to that head, adding no commit of its own. It does so at preflight because the owner is likeliest present then, mid-run nobody is, and the run may not work around a platform-owned permission prompt. (b) The prompt at once, naming the literal tool string and the command it stopped, so the owner can allow it for the run rather than once. (c) The item is missing, so dispatch into that repository is held with a NEEDS_USER naming that push, with options to dispatch once it is allowed (the pushes repeated and passing first) or to run under per-pr for this run; only an owner reply choosing one releases it.",
+      "assertions": [
+        "the preflight creates the branch and fast-forwards it, a creation and an update push, with no commit of its own",
+        "the reason given is that the owner is present at preflight and absent mid-run, and the run may not work around a permission prompt",
+        "the permission prompt is reported with its literal tool string and the command",
+        "a refused push holds dispatch into the repository with options to dispatch once allowed or to use per-pr"
+      ],
+      "files": []
+    },
+    {
+      "id": 112,
+      "name": "an-integration-branch-holding-nothing-is-deleted-at-return-and-one-with-prs-or-a-held-worker-is-kept",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: manifest 412 runs acme/web, acme/api and acme/cli under `ci-mode: integration-branch`, each with its run branch `integration/acme-412` level with its default branch: nothing has merged into any of them, so every batch is empty and every head is contained in its default branch, and no integration PR exists. acme/web: its two issues are both NEEDS_USER awaiting the owner, no PR is open into its branch and no worker was dispatched there. acme/api: three ticket PRs are open into its branch, none merged, all waiting on human review; no worker is in flight. acme/cli: one worker session dispatched onto its branch is still alive, held on a permission prompt, and has opened no PR. The wake budget is spent, so the run reconciles and returns a restartable checkpoint now; it will be resumed later under the same manifest. (a) Before returning, what do you do with each repository's integration branch, and why? (b) Separately: had the owner instead moved acme/api to `per-pr`, what happens to its branch once you have retargeted the three PRs to the default branch?",
+      "expected_output": "(a) acme/web's branch holds nothing — empty batch, head contained in the default branch, no open PR into it, no live worker session dispatched onto it — so it is deleted as part of returning, even though the run returns a restartable checkpoint: the resume's preflight creates it again, level with the default branch, when it re-establishes the mode. acme/api's is kept: open PRs target it, and deleting an open PR's base outside a merge closes the PR, which a resume recreating the branch by name would not reopen; it is left for the next invocation to adopt. acme/cli's is kept: a worker session still alive, held ones included, was dispatched onto it and still needs its base. (b) Once the three PRs are retargeted nothing targets the branch, and with an empty batch and a contained head it holds nothing, so it is deleted then.",
+      "assertions": [
+        "acme/web's branch is deleted before the run returns, despite the run returning a restartable checkpoint to be resumed (not kept for the resume to adopt)",
+        "acme/api's branch is kept because open PRs target it, deleting their base would close them, and it is left for the next invocation to adopt",
+        "acme/cli's branch is kept because a live (held) worker session was dispatched onto it",
+        "after the per-pr move retargets the three PRs, acme/api's empty branch is deleted"
+      ],
+      "files": []
+    },
+    {
+      "id": 117,
+      "name": "a-restart-after-the-integration-pr-merged-deletes-the-old-branch-at-preflight-and-keeps-the-fresh-one",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are resuming manifest 412 after its session died. acme/api runs under `ci-mode: integration-branch`, and the run's branch is `integration/acme-api-412`. Before dying, the earlier run's integration PR #300 (head `integration/acme-api-412`, base `main`) merged, carrying four issues. Two more in-scope issues in acme/api, #305 and #306, were NEEDS_USER then; the owner has since answered, and both are now READY. The owner is at the keyboard. Case (a): the earlier run died before deleting the branch, so `integration/acme-api-412` still exists, its head contained in `main`, with gate-note refs under `refs/notes/agent-gate/integration/acme-api-412/`. Case (b): the earlier run had already deleted the branch and its gate-note refs, so it does not exist. For each case: at which step of the resume does anything happen to the branch, what exactly, and what does #305's worker base its PR on? In particular, at `restart-resume.md` step 6, is the branch deleted?",
+      "expected_output": "(a) At the preflight (restart-resume step 2, integration-branch.md item 6): the leftover branch, whose integration PR merged and whose head main contains, is deleted with its gate-note refs as Restart states, then created afresh by the two pushes — at the first parent of main's head, then fast-forwarded to main's head — establishing the push permission while the owner is present. (b) The preflight simply creates it by the same two pushes. In both cases step 6 adopts the fresh branch as it stands and does not delete it, though a merged integration PR from that branch name exists: that PR's branch was handled at the preflight. #305 and #306 dispatch with the fresh integration branch as their PRs' base.",
+      "assertions": [
+        "in case (a) the leftover branch is deleted, with its gate-note refs, at the preflight (before step 6), not at step 6",
+        "in both cases the preflight creates the branch afresh by a creation and a fast-forward push, before any dispatch",
+        "at step 6 the freshly created branch is adopted, not deleted, despite the merged integration PR #300 from that branch name",
+        "#305's PR is based on the fresh integration branch"
+      ],
+      "files": []
     }
   ]
 }
