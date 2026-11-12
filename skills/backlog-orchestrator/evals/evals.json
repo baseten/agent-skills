@@ -1429,6 +1429,43 @@
         "the answer raises #640 as a NEEDS_USER item rather than dispatching it"
       ],
       "files": []
+    },
+    {
+      "id": 114,
+      "name": "a-refused-force-push-with-a-person-present-is-asked-once-and-pushed-once",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario, from the worker's side: An implementation worker you dispatched in a remote session is updating acme/api#2041 (branch `issue-2012`, `branch-update: rebase`): it rebased onto main, and its `git push --force-with-lease=issue-2012:abc1234` was refused by the session's permission mode. The new head is def5678. The owner can open the worker's session. Question: what does the worker do, and what happens when the owner picks 'Force-push'?",
+      "expected_output": "The worker asks once with AskUserQuestion, header #2041, naming the branch issue-2012, the leased head abc1234 and the new head def5678, with only the options Force-push (Recommended) and Hold - the question never offers a merge. This question is the one exception to the worker question countermand. On 'Force-push' it retries the exact same command once - same lease, no other flags, never --force or a bare --force-with-lease - and reports the pushed head.",
+      "assertions": [
+        "the worker asks once with the structured question tool, naming the branch, the leased head and the new head, with only Force-push and Hold as options, no merge",
+        "the worker retries the exact same command once on Force-push, with no changed flags",
+        "the answer treats this question as the one exception to the countermand",
+        "the outcome reported is the pushed head"
+      ],
+      "files": []
+    },
+    {
+      "id": 115,
+      "name": "a-refused-force-push-with-nobody-to-answer-holds-and-reports",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the same refused push happens in a background subagent worker (Agent tool) that has no structured question tool and no person who can answer it. An implementation worker you dispatched is updating acme/api#2041 (branch `issue-2012`, `branch-update: rebase`): it rebased onto main, and its `git push --force-with-lease=issue-2012:abc1234` was refused by the session's permission mode. The new head is def5678. Question: what does it do?",
+      "expected_output": "Nobody can answer in that session, so the update holds and is reported: the branch stays at abc1234, not replaced by a merge, and the report says the force-push is held with the branch, the lease and the new head. It does not retry with other flags or merge instead.",
+      "assertions": [
+        "the update holds and is reported",
+        "the branch is not merged instead and the push is not retried with other flags"
+      ],
+      "files": []
+    },
+    {
+      "id": 116,
+      "name": "a-hold-answer-leaves-the-branch-untouched",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: An implementation worker you dispatched in a remote session is updating acme/api#2041 (branch `issue-2012`, `branch-update: rebase`): it rebased onto main, and its `git push --force-with-lease=issue-2012:abc1234` was refused by the session's permission mode. The new head is def5678. The worker asked as the Branch updates rule says, and the owner chose 'Hold'. Question: what does the worker do with the branch?",
+      "expected_output": "Nothing: the branch is left at abc1234, no push, no merge, no retry, and the outcome is reported as held.",
+      "assertions": [
+        "the branch is left untouched at its leased head",
+        "nothing is pushed, merged or retried",
+        "the outcome is reported as held",
+        "the worker does not ask the question a second time: the one question was asked and answered"
+      ],
+      "files": []
     }
   ]
 }

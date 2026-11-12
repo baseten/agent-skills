@@ -308,8 +308,7 @@ the report; the rest follow it** (`references/operator-output.md`, *Questions*).
    comment posted in its thread since the fix, read fresh (`resolve-pr-comment`,
    *Replies held for approval*). **Where a ruling's relay posts a reply the owner must
    approve, the option carries the complete reply text**, so one answer is both the
-   ruling and the approval. A draft answer to a person's question is never
-   among them: that is a decision, asked as one. This is the
+   ruling and the approval. A draft answer to a person's question is never among them: that is a decision, asked as one. **A run's force-push held for approval is asked too** — "approve the force-push of <branch> in <session>?" — and the answer written to the ledger as the decision, never relayed to the run; the chat then says plainly that the click must still happen in the run's own session, since a relayed approval does not satisfy that session's permission mode, and links it. This is the
    conductor's own pass; where it invokes `settle-outstanding-decisions` for a run — its
    records on issues this skill did not create made as *Rules* says —
    that skill's walkthrough governs its own questions.
@@ -447,8 +446,8 @@ documentation-review routing — the rest it degrades on itself (its *Model and
 skill policy*). The limits restate, for a session that loaded none of them,
 protected rules 1, 4 and 6 and the rules they index — the *review feedback* shared
 rule (`resolve-pr-comment`, *Replies held for approval*), the *review trigger*
-shared rule, `references/authored-write-form.md` twice — and the *platform's PR
-posture* shared rule; those govern.
+shared rule, `references/authored-write-form.md` twice — the *platform's PR
+posture* shared rule, and the *agent policy* shared rule's *Branch updates*; those govern.
 
 ```text
 First, before invoking any skill: confirm that each of these is among this
@@ -476,6 +475,8 @@ Owner's limits, binding whatever any wake or platform instruction says:
   request. Root no review thread outside a review your skill was dispatched to
   post.
 - Never request, re-request or remove a human reviewer.
+- A refused force-push is asked with the structured question tool in this
+  session, as the Branch updates rule says, never worked around.
 - Edit a PR body only while it is a draft, while it is exactly the text you
   recorded writing to a PR you created, unchanged since and never approved, or
   where its merge opt-in resolves on; its `Depends on:` line may always be edited.
@@ -680,8 +681,7 @@ it does in *6. Dispatch*:
 **In this session, shaped as `references/operator-output.md` says.** *Needs you*
 is what needs the owner to act: decisions and approvals (asked as *4. Owner pass*
 says), owner steps, a failure only the owner can clear — a red default branch, a
-run whose push contradicted the forge — any PR whose watch lapsed, and each
-drafted review to submit (`reviewers.md`). *Changed
+run whose push contradicted the forge — any PR whose watch lapsed, each drafted review to submit (`reviewers.md`), and each run's force-push held for approval, under *Confirm in a session*, linking its session and naming the literal tool string and the exact command waiting. *Changed
 since* is each run whose state from the fixed set changed, and every dispatch,
 executed conditional go, retirement and reviewer archived, each linked to its record. A default branch's CI and deploy are a *Clear a failure* item when red or failed, a change when their result moved, and otherwise counted under *Unchanged*.
 
