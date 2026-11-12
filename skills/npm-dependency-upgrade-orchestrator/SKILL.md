@@ -1,6 +1,6 @@
 ---
 name: npm-dependency-upgrade-orchestrator
-description: Take a set of dependency upgrades, triage each against its changelog and the codebase's usage, establish coupling and viability, select a model per upgrade by failure mode, then dispatch isolated subagents — one per upgrade or coupled group running `upgrade-npm-dependency`, plus one batched task for the routine bumps triage cleared, which need no migration workflow. Supervises CI and separates infrastructure failure from real failure, and merges where the repository opted in with `auto-merge-dependencies`. Use for a batch; use `upgrade-npm-dependency` directly for one.
+description: Take a set of dependency upgrades, triage each against its changelog and the codebase's usage, establish coupling and viability, select a model per upgrade by failure mode, then dispatch isolated workers through `swarm` — one per upgrade or coupled group running `upgrade-npm-dependency`, plus one batched task for the routine bumps triage cleared, which need no migration workflow. Supervises CI and separates infrastructure failure from real failure, and merges where the repository opted in with `auto-merge-dependencies`. Use for a batch; use `upgrade-npm-dependency` directly for one.
 ---
 
 # npm Dependency Upgrade Orchestrator
@@ -68,7 +68,7 @@ capture of work left uncommitted in it. Invoke it for
 the fan-out rather than assembling one here. What stays here is the task set and
 what each worker is told to do.
 
-One subagent per upgrade or coupled group, each in **its own worktree**, each invoking `upgrade-npm-dependency` — which covers a major, and any lesser bump whose triage did **not** clear it of breaking changes. Send everything in that scope through it, whatever the version number says.
+One worker per upgrade or coupled group — a subagent only where `swarm`, *1. Runtime*, chose that tier — each in **its own worktree**, each invoking `upgrade-npm-dependency` — which covers a major, and any lesser bump whose triage did **not** clear it of breaking changes. Send everything in that scope through it, whatever the version number says.
 
 **Routine bumps do not each get one.** A minor or patch triage cleared (see Enumerate) has nothing for the phase order to do: there is no migration to research and no behaviour to characterize, and dispatching one agent apiece spends a worktree and a test suite per candidate to prove that. Group them into a single task with one PR, and say in the report which candidates were cleared and on what evidence — a cleared candidate is a triage conclusion like any other, and the next run reads it as one.
 

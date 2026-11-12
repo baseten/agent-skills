@@ -14,6 +14,8 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 **Why the runtime is never chosen by asking:** a run that asks which mechanism to use before starting has spent the user's attention on the one decision it is best placed to make itself.
 
+**Why subagent workers are chosen, never detected (owner's ruling, 2026-11-02; #214):** a background subagent lives inside its parent session, and a cloud parent that shuts down takes every subagent worker with it, mid-edit — the leak class the recovery-ref chain exists for. Detection used to fall through to tier 3 silently whenever tier 2 was absent, which on a local session was every run. The ruling scopes the change narrowly: only background subagent *workers* need the answer; serialized work and a gate or repair pass a caller runs in this session stay automatic, and research subagents a planner or spec writer runs and waits on are out of scope (they return within the turn). An invocation argument pre-answers, a standing "no subagents unless asked" guidance does not — it is what the question honours — and an unattended run stops with the question rather than choosing for the owner. A tier lost mid-run degrades to tier 4 without that answer so no mid-run question is needed. Scenario: `subagent-workers-are-chosen-never-detected`.
+
 ## Remote worker session arguments
 
 **Since #157 these rules live in `runtime-remote.md`** (*Session arguments and the checkout check*, *Ending a failed start*, *Detecting the two capabilities*); this section of `SKILL.md` keeps the two capabilities' definitions every other section branches on, and the pointer. The entries below are unchanged.

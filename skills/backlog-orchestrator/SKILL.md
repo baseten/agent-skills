@@ -73,8 +73,8 @@ Dispatch is the last point at which the user is expected to be present. Once the
 
 Never ask the user to:
 
-- choose an execution runtime — detection and the degrade chain decide it;
-- authorize subagents, worktrees, or worker dispatch — invoking this skill *is* that request (see Worker dispatch authority);
+- choose an execution runtime — detection and the degrade chain decide it, bar the one subagents question `swarm`, *1. Runtime*, asks at preflight where no remote tier exists;
+- authorize worktrees or worker dispatch — invoking this skill *is* that request (see Worker dispatch authority);
 - reconcile a session branch mandate with per-issue branches — the default resolution below decides it;
 - confirm applying a documented budget cap — apply it and report what was deferred;
 - pick a concurrency level — derive it from the cap and the machine.
@@ -90,7 +90,7 @@ Everything else belongs in the checkpoint output.
 
 ## Worker dispatch authority
 
-A session may carry standing guidance not to use subagents or the Agent tool unless the user asked for them. Invoking this skill satisfies that guidance: fanning a validated issue set out to isolated one-issue workers is this skill's documented mechanism, so the invocation is the request. Dispatch subagent workers, create worktrees, and start worker sessions without a separate confirmation.
+A session may carry standing guidance not to use subagents or the Agent tool unless the user asked for them. Invoking this skill satisfies that guidance: fanning a validated issue set out to isolated one-issue workers is this skill's documented mechanism, so the invocation is the request. Create worktrees and start worker sessions without a separate confirmation; subagent workers take the one runtime question instead (`swarm`, *1. Runtime*), since they die with this session.
 
 That authority covers worker dispatch only. It is not permission to merge, to widen scope beyond the bounded set, or to work around a platform-owned permission prompt.
 
@@ -116,13 +116,13 @@ Not requesting a Dynamic Workflow is no reason to abandon the orchestration.
 
 ## Runtime selection
 
-Choose the runtime at startup by detection, never by asking (`swarm`, *1. Runtime: take what is there, and say which*), from what is actually callable in this session — never offering a runtime whose tools are absent here.
+Choose the runtime at startup by detection, asking only `swarm`'s one subagents question (*1. Runtime: take what is there, and say which*), from what is actually callable in this session — never offering a runtime whose tools are absent here.
 
 Determine availability in preference order:
 
 1. **Dynamic Workflow** — only if this invocation opted in (see Invocation). Not autodetectable; without the opt-in wording or `ultracode` effort it is unavailable, and that is not a question for the user.
 2. **Remote worker sessions** — available when the session exposes a Claude Code Remote `create_session` tool. A cloud session exposes it whichever surface launched it: `origin` records the launch surface (`desktop_app`, web, mobile), `environment_kind` records where the session actually runs, and neither gates worker creation. Confirm with one cheap read (`list_environments` or `get_session`) rather than a speculative create.
-3. **Subagents** — available when the session exposes the Agent tool. The normal runtime for a local session, and the normal fallback everywhere else.
+3. **Subagents** — available when the session exposes the Agent tool, and taken only where the invocation named them or the preflight question chose them (`swarm`, *1. Runtime*). A local session usually reaches this question; without that answer the chain goes to tier 4.
 4. **Serialized execution in this session** — always available; correct when safe isolation cannot be provided.
 
 **That order trades invariant 5's enforcement for capacity and resilience, and the report is no longer part of the trade.** Where the return channel is present (`swarm`, *Remote worker session arguments*), a tier-2 worker's completion wakes this run by a push, and the record it acts on is the same PR comment either way; where it is absent the pull still finds it. What remains different, and decides between tiers 2 and 3:
@@ -131,7 +131,7 @@ Determine availability in preference order:
 - **isolation** — tier 2 gives each worker its own container and toolset, and a worker that outlives this session's compaction; tier 3 workers share this machine, its disk and its compaction;
 - **cost** — a container per worker (see `swarm`, *Concurrency*), held until the session is archived, against subagents that cost only their turns.
 
-Report which tier was selected and, on tier 2, which lever invariant 5 rests on. Where an owner would rather have the guarantee than the capacity, tier 3 is the correct selection, and nothing here forbids it.
+Report which tier was selected and, on tier 2, which lever invariant 5 rests on. Where an owner would rather have the guarantee than the capacity, `runtime: subagents` selects tier 3, and nothing here forbids it.
 
 **This run's session-name prefix is `bo`** — `bo/<run-id>: <issue>`, for example
 `bo/a41f: api#348`. The convention and the reason the name is never what a sweep

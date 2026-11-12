@@ -477,6 +477,19 @@
         "The answer says a wake with no delta leaves the pending check-in's firing time and count unchanged, so quiet wakes cannot postpone it"
       ],
       "files": []
+    },
+    {
+      "id": 43,
+      "name": "subagent-workers-are-chosen-never-detected",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the user invoked you in a local CLI session over four independent tasks, with no runtime named. No Dynamic Workflow was opted into, and the session has no create_session, but it does expose the Agent tool. The session carries standing guidance 'do not use subagents unless asked'. Questions: (a) what do you do before the first dispatch? (b) the same run, a week later, is started by a conductor in a session nobody is watching, under the same conditions — what then? (c) a third run was invoked with `runtime: subagents` and its remote tier failed twice mid-run in a different setup — where does it degrade to?",
+      "expected_output": "(a) Ask the user once, before dispatching: subagents, serialized, or stop. Tier 3 is never taken on detection alone, because a background subagent dies with its parent session; invoking swarm authorizes dispatch on every other tier but not subagent workers, and the standing guidance neither answers nor forbids the question. (b) Nobody can answer, so the run stops with that question as NEEDS_USER rather than choosing subagents or serialized for the owner. (c) The invocation already named subagents, so the degrade goes to tier 3, reported; without that answer it would go to serialized (tier 4), never to subagents.",
+      "assertions": [
+        "The answer asks one question offering subagents, serialized, or stop before the first dispatch, rather than dispatching subagents on detection",
+        "The answer does not treat the swarm invocation or the standing guidance as answering the subagents question",
+        "The answer has the unattended run stop with the question as NEEDS_USER rather than choosing a tier",
+        "The answer degrades the third run to subagents because the invocation named them, and states that without that answer the degrade goes to serialized"
+      ],
+      "files": []
     }
   ],
   "companions": []

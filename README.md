@@ -74,7 +74,7 @@ Reasoning for a rule lives beside it as `rules/<name>-notes.md`, and is delibera
 ## Dependency upgrade skills
 
 - `upgrade-npm-dependency` — upgrades one package, or one coupled group of them, across any version whose breaking-change risk has not been ruled out: viability gate, research verified against the published artifact, usage audit, then characterization tests written and proven green on the current version and re-run unmodified after the bump.
-- `npm-dependency-upgrade-orchestrator` — triages a batch of upgrades, establishes coupling and viability, selects a model per upgrade by failure mode, and dispatches bounded-concurrency subagents: one per upgrade or coupled group running `upgrade-npm-dependency`, plus a single batched task for the routine bumps triage cleared, which need no migration workflow. Supervises CI while separating infrastructure failure from real failure. It merges only where the repository opted in with `auto-merge-dependencies`, and then only through its dependency gate.
+- `npm-dependency-upgrade-orchestrator` — triages a batch of upgrades, establishes coupling and viability, selects a model per upgrade by failure mode, and dispatches bounded-concurrency workers through `swarm`: one per upgrade or coupled group running `upgrade-npm-dependency`, plus a single batched task for the routine bumps triage cleared, which need no migration workflow. Supervises CI while separating infrastructure failure from real failure. It merges only where the repository opted in with `auto-merge-dependencies`, and then only through its dependency gate.
 - `swarm` — fans a set of independent tasks out to parallel isolated workers and supervises them: picks the runtime that is actually available, one worktree per worker off a stated base, a model per task by how its failure would show, one watcher, the parent, and a default cap on how many run at once that a caller overrides. It also owns what every remote worker session needs whoever dispatched it: the arguments it is created with, the countermand to its inherited habit of watching its own PR, how its report reaches the parent, when it is released, checkpoint compliance — including the parent-side capture of a worker's uncommitted work, with its tested script — and what to do with one that blocks or is lost. `backlog-orchestrator` and `npm-dependency-upgrade-orchestrator` use it for their dispatch phase, and cite it for all of that.
 
 ## Repository layout
@@ -619,16 +619,16 @@ Preferred runtime order for the implementation fan-out:
 
 1. Claude Code Dynamic Workflows, when the user opted in for this invocation;
 2. remote Claude Code worker sessions, when the session exposes `create_session` (agent-team primitives may substitute here where that experimental feature is enabled);
-3. ordinary isolated subagents with an explicit parent supervision loop;
+3. ordinary isolated subagents with an explicit parent supervision loop — only where the invocation named them (`runtime: subagents`) or the preflight's one question chose them, since a background subagent dies with its parent session;
 4. serialized execution when safe parallel isolation is unavailable.
 
-The orchestrator picks a tier itself from the tools actually callable in the session, probes a failing tier at most twice before degrading, and never asks the user to choose one. None of these replace the orchestrator's validated issue DAG, scope boundary, model policy, worktree isolation, repair budgets, stack topology, or tracker/GitHub recovery semantics.
+The orchestrator picks a tier itself from the tools actually callable in the session, probes a failing tier at most twice before degrading, and asks the user only that one subagents question, at preflight. None of these replace the orchestrator's validated issue DAG, scope boundary, model policy, worktree isolation, repair budgets, stack topology, or tracker/GitHub recovery semantics.
 
 ## Autonomy after dispatch
 
-`backlog-orchestrator` is meant to run unattended once the validation preflight clears. Anything it has a documented default for — runtime tier, concurrency, the budget cap when scope exceeds it, and a session branch mandate that conflicts with per-issue branches — is resolved by applying the default and reporting it in the checkpoint output. Only a platform-owned approval prompt, `NEEDS_USER` after exhausted budgets, a `FAIL` validation with no safe path, or an undocumented conflict that would lose unrecoverable work may interrupt the run.
+`backlog-orchestrator` is meant to run unattended once the validation preflight clears. Anything it has a documented default for — runtime tier (bar that one question), concurrency, the budget cap when scope exceeds it, and a session branch mandate that conflicts with per-issue branches — is resolved by applying the default and reporting it in the checkpoint output. Only a platform-owned approval prompt, `NEEDS_USER` after exhausted budgets, a `FAIL` validation with no safe path, or an undocumented conflict that would lose unrecoverable work may interrupt the run.
 
-Invoking the skill is itself the authorization to dispatch workers, so a session whose standing guidance is "no subagents unless asked" needs no extra confirmation for the fan-out.
+Invoking the skill is itself the authorization to dispatch workers, so a session whose standing guidance is "no subagents unless asked" needs no extra confirmation for the fan-out — except that subagent workers still take the preflight's one runtime question.
 
 ## Per-repository policy
 

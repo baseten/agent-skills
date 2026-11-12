@@ -37,7 +37,7 @@ Capability differs per session and cannot be assumed. Detect, then degrade:
 | --- | --- | --- |
 | 1 | Dynamic Workflow | the user opted into one for this invocation |
 | 2 | Remote worker sessions (`create_session`) | the session can create them |
-| 3 | Subagents (the Agent tool) | in-process subagents available |
+| 3 | Subagents (the Agent tool) | in-process subagents available, and chosen (below) |
 | 4 | Serialized in this session | always |
 
 > **On tier 2, read `runtime-remote.md` (beside this file) before dispatching
@@ -46,8 +46,13 @@ Capability differs per session and cannot be assumed. Detect, then degrade:
 > the countermand goes on that tier. Every tier-2 rule in this file assumes it
 > has been read.
 
-**Do not choose the runtime by asking.** Detection decides it; invoking this skill
-is the request to dispatch (*Authority*). **Report the tier that ran**, because
+**Detection decides the runtime, but never tier 3 alone**: a background subagent
+dies with this session. Where tiers 1 and 2 are unavailable, ask once before the
+first dispatch — subagents, serialized, or stop — unless the invocation named one
+(`runtime: subagents` or `serialized`); an unattended run stops with the question
+as `NEEDS_USER`. Without that answer a tier lost mid-run degrades to tier 4.
+Nothing else is asked; invoking this skill is the request to dispatch
+(*Authority*). **Report the tier that ran**, because
 every guarantee below is tier-dependent — tier 4 is not a swarm but the same work
 in sequence, a legitimate outcome and a misleading one to leave unstated.
 
@@ -118,7 +123,7 @@ validation error names its own fix in one retry. A tier-2 worker created without
 its checkout is such a failure — a validation error whose fix is to pass the
 source explicitly, not a reason to leave the tier — and its session is ended
 before the retry (`runtime-remote.md`). Do not spend a run diagnosing a runtime:
-degrade to subagents and report the outage.
+move down the chain — tier 3 only as *1. Runtime* allows — and report the outage.
 
 ## 2. Isolation: one worker, one task, one worktree
 
@@ -801,7 +806,8 @@ free.
 ## Authority, and what it does not cover
 
 A session may carry standing guidance not to use subagents unless the user asked.
-**Invoking this skill is that request.** Dispatch workers, create worktrees and
+**Invoking this skill is that request**, for every tier but subagents, which
+take the one question under *1. Runtime*. Dispatch workers, create worktrees and
 start sessions without a separate confirmation.
 
 That authority is scoped to dispatch. It is **not** permission to merge, to push
