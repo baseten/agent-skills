@@ -45,7 +45,7 @@ evals (`<skill>#<id>`).
    supervise-prs#56 #88, swarm#30, conductor#57, review-pr#0 #5.
 2. **Identity is observed authorship; own writes are known by id, never by footer or content.**
    `rules/posting-identity.md`; `swarm`, *Releasing a worker*, *Blocked workers*; `supervise-prs`, *Integration-branch CI*, step 3;
-   `rules/conductor-exchange.md`, *Pushes*, *The watch after settling*.
+   `rules/conductor-exchange.md`, *Pushes*.
    backlog-orchestrator#5 #58,
    resolve-pr-comment#48 #49, supervise-prs#86 #89 #105 #112, backlog-orchestrator#53 #90 #91 #102 #103 #105 #109 #110, settle-and-merge#47 #48 #49, implement-issue#40 #41, swarm#37 #38 #39,
    merge-stack#11, settle-outstanding-decisions#18, review-pr#3.

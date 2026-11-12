@@ -1,6 +1,6 @@
 ---
 name: conductor
-description: The owner's daily view and portfolio scheduler over a configured set of repositories — which epics run, in what order and how many at once, and the gates between them. Takes in epics a planner wrote and dispatches backlog-orchestrator, implement-issue or ship-branch runs on the owner's go, and, when the owner asks, review-pr reviewers that draft their reviews of others' PRs; sweeps them and the default branch; relays verified facts between runs; puts decisions and manual steps to the owner one at a time; holds a settled run's watch; keeps one ledger. Never plans features, supervises, repairs, merges or approves. Use when several runs are in flight and the owner wants one place to decide.
+description: The owner's daily view and portfolio scheduler over a configured set of repositories — which epics run, in what order and how many at once, and the gates between them. Takes in epics a planner wrote and dispatches backlog-orchestrator, implement-issue or ship-branch runs on the owner's go, and, when the owner asks, review-pr reviewers that draft their reviews of others' PRs; sweeps them and the default branch; relays verified facts between runs; puts decisions and manual steps to the owner one at a time; keeps one ledger. Never plans features, supervises, repairs, merges or approves. Use when several runs are in flight and the owner wants one place to decide.
 ---
 
 # Conductor
@@ -189,12 +189,8 @@ swept as `reviewers.md` says.
 7. **Read the forge directly as well**, per repository in scope: the epics and
    issues the ledger lists; each run's open PRs, and its integration branch where
    it has one; **each run's PRs merged since the last sweep, and by whom** —
-   the owner's merges are how a stream waiting on the owner moves; new review
-   activity on any PR whose watch this conductor holds; and the issues opened since
-   the last sweep. **Where it holds a settled run's watch** (*The fallback check-in*),
-   a merge by anyone, a close, new review activity or a mergeability change on that
-   run's PR is messaged to the run to
-   wake it. **The forge is the source of truth where sessions
+   the owner's merges are how a stream waiting on the owner moves; and the issues
+   opened since the last sweep. **The forge is the source of truth where sessions
    are missing** — an epic or issue whose run was archived or never found is still
    a stream.
 8. **The default branch**, per repository in scope: CI on its current head, and
@@ -211,25 +207,19 @@ never a session to message as a run.
 
 ## The fallback check-in
 
-**This check-in also holds the watch over every settled run's PR that run handed
-over** (`references/conductor-exchange.md`, *The watch after settling*): it polls
-each such PR until it merges or closes, on `references/wake-budget.md`'s schedule
-for a held watch, and messages the run on a merge by anyone, a close, new review
-activity or a change in mergeability; a held watch never stops it on empty sweeps, and
-ends at the deadline the hand-off carried, reported as unwatched.
-
 **While any run in the ledger is active — any not *finished* (*4. Owner pass*,
 step 1) — or a conditional go is pending, keep one `send_later` check-in bound to
 this session**, on `references/wake-budget.md`'s *A conductor's fallback sweep*
 schedule: about hourly; re-armed silently after a sweep that observed a delta;
-stopped after 3 consecutive empty sweeps, said once — bar while it holds a watch,
-when it continues on the held watch's cadence instead; cancelled when neither holds.
+stopped after 3 consecutive empty sweeps, said once; cancelled when neither holds.
+It holds no PR watch: a settled run keeps its own
+(`references/conductor-exchange.md`, *The watch after settling*).
 A sweep prints as `references/operator-output.md`, *Quiet turns*, says, where it meets that rule's definition.
 **A delta** is a change in durable state the ledger compares: a run's session
 status, a PR of its opened, pushed, merged or closed, its CI conclusions, its open
 items, a pending go's condition, or a reviewer's state. Its prompt
-carries the consecutive-empty count, the ledger's URL, the comparands, each
-held watch's PR and deadline, and the no-change preflight result. **A
+carries the consecutive-empty count, the ledger's URL, the comparands and the
+no-change preflight result. **A
 firing sweeps, reports, executes a verified conditional go, retires a run
 under a verified standing ruling, and archives a drafted reviewer whose review the
 owner submitted (`reviewers.md`); it rules nothing, starts no reviewer, and
@@ -531,8 +521,7 @@ store — and is reported. It is found from the URL recorded in it and in the re
 prompt, never by title alone. Rulings stay at their sites; the ledger links to them.
 
 - the **live-sessions table** — per stream: repository, epic or issue, the run's
-  skill, the session's link and title, state (*4. Owner pass*, step 1), who holds
-  its watch and, where this session does, the deadline the hand-off carried, its context use (`used_tokens` of `max_tokens`, as read this
+  skill, the session's link and title, state (*4. Owner pass*, step 1), its context use (`used_tokens` of `max_tokens`, as read this
   sweep), and the version line or lines its reports carry
   (`references/conductor-exchange.md`, *Reports*), else `not reported`; an
   archived session leaves it;
