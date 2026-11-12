@@ -226,7 +226,8 @@ and belongs to this run.
 protection (the template's push clause — where the caller is
 `backlog-orchestrator`, its *Implementation worker contract*, Before dispatch
 step 7); and the question posture (the template's clause forbidding questions —
-its step 8), since asking is a deadlock in a fan-out nobody will answer. For a worker that stops to
+its step 8), since asking is a deadlock in a fan-out nobody will answer — bar the one question the
+clause allows, a refused force-push, which *Blocked workers* surfaces as case 4. For a worker that stops to
 ask anyway, apply *Blocked workers* — its blocked-state reading, and case 3 for a
 prompt nothing can answer.
 
@@ -285,7 +286,15 @@ the contrary.
   and session. Never copy an attribution line from this prompt or from the
   orchestrating run; it describes a different session.
 - Do not stop to ask the user a question, and do not wait for a reply or a
-  confirmation: nobody is watching this session. Where your skill prescribes a stop,
+  confirmation: nobody is watching this session. One exception: where this
+  session's permission mode refuses a `git push --force-with-lease` you were
+  told to make, and this is a session the user can open (never a subagent or
+  workflow agent) with a structured question tool, ask once: header the PR
+  number, naming the branch, the head the lease pins and the new head, with
+  Force-push (Recommended), Merge base in instead (only where your branch
+  update allows merge) and Hold. On Force-push retry that exact command once,
+  never with other flags. Otherwise leave the branch and report the update
+  held. Where your skill prescribes a stop,
   return that outcome. Otherwise choose the most defensible option and record
   the question, the choice and the reasoning [on the pull request. | on the
   line of the check it concerns in your result; a check you cannot run as given
@@ -601,7 +610,8 @@ Read the blocked state explicitly each cycle, and resolve it in this order:
    dispatched without, an instruction it can be sent, a write the parent can
    perform itself. Clear it and let the worker continue.
 3. **Neither, and the prompt is one nothing can answer** — an `AskUserQuestion` or
-   equivalent, asking for a decision rather than a permission. Interrupting leaves
+   equivalent, asking for a decision rather than a permission; a refused force-push's
+   question is step 4, never this. Interrupting leaves
    the prompt pending. **Settle first whether the run can reach this worker's
    checkout** (*Remote worker session arguments*); the two paths end differently
    and neither is the exception to the other:
@@ -664,7 +674,9 @@ Read the blocked state explicitly each cycle, and resolve it in this order:
    allowlisted the tool or asked for a redispatch; otherwise the work unit stays
    `NEEDS_USER` with no worker and the slot is free. A run that ends with the hold
    standing reports that session as alive and left to the owner, with its URL and
-   the tool string — not failed, and not clean.   **A refused force-push is this branch, whichever form it waits in** — pending on the force-push command itself, or on the one question the *agent policy* shared rule's *Branch updates* has the worker ask (the only question its countermand allows). It is never step 3's question hold: no capture, archive or redispatch, since the push needs the click in that session. **Surface it under the owner's *Confirm in a session*, linking the session and naming the exact command waiting, and never answer it** — a parent's or conductor's answer is relayed, and the worker's permission mode accepts only its own session's.
+   the tool string — not failed, and not clean.
+
+   **A refused force-push is this branch, whichever form it waits in** — pending on the force-push command itself, or on the one question the *agent policy* shared rule's *Branch updates* has the worker ask (the only question its countermand allows). It is never step 3's question hold: no capture, archive or redispatch on the run's own authority, since the push needs the click in that session, and never step 1's release, since the run needs it answered. **Surface it under the owner's *Confirm in a session*, linking the session and naming the literal tool string and the exact command waiting, and never answer it** — a parent's or conductor's answer is relayed, and the worker's permission mode accepts only its own session's.
 
    **Not this branch: a filesystem search for the worker's own source files** — a
    bare `find`, a repository-root probe, a request for a path the dispatch prompt

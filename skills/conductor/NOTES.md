@@ -164,6 +164,8 @@ where that is tested.
 
 **Why the conductor asks about a held force-push but cannot approve it (owner's ruling, 2026-11-11):** the owner is in the conductor session, not the run's, so asking there surfaces the decision where they already are, and the ledger records it. But the run's permission mode accepts approval only in its own session, so the conductor's answer is a decision, not the approval: the chat says plainly that the click still has to happen in the run's session, and links it.
 
+**Why the recorded answer is never relayed, and the limits' scope names *Branch updates* (PR #216, blind audit):** an answer written to the ledger as a decision reads, to a later pass, like a ruling to carry to the run, and a relayed approval is exactly what the run's permission mode refuses; so the owner-pass sentence says it is never relayed. The dispatched-session limits had gained a force-push line while their scope sentence still claimed to restate only protected rules 1, 4 and 6, so the sentence now names the *agent policy* rule's *Branch updates* as the governing text. The *Needs you* line names the runtime's literal tool string as well as the command, per protected rule 9.
+
 ## 5. Intake and replan
 
 **Why a planner's pointer is only a pointer (2026-11-04):** it is a message from

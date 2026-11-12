@@ -465,6 +465,32 @@
         "the worker is not captured, archived or redispatched"
       ],
       "files": []
+    },
+    {
+      "id": 41,
+      "name": "a-repair-workers-question-clause-carries-the-force-push-exception",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are dispatching a repair-pr pass for acme/api#2041 (branch `issue-2012`) to a remote worker session; the caller passed a base refresh with `branch-update: rebase`. Question: quote the clause of the countermands you put in that session's system prompt about asking the user questions, as you would send it, and say what it tells the worker to do if its `git push --force-with-lease` is refused by the session's permission mode.",
+      "expected_output": "The clause forbids stopping to ask a question or waiting for a reply, with one exception carried in the clause itself: where the session's permission mode refuses a `git push --force-with-lease` the worker was told to make, in a session the user can open with a structured question tool, it asks once - header the PR number, naming the branch, the leased head and the new head, with Force-push (Recommended), Merge base in instead only where branch update allows merge, and Hold. On Force-push it retries the exact command once, never with other flags; otherwise it leaves the branch and reports the update held. The clause goes into append_system_prompt and is restated in the dispatch prompt.",
+      "assertions": [
+        "the question clause sent to the worker itself carries the refused force-push exception, not only a pointer to another skill",
+        "the exception asks once with the structured question tool naming the branch, the leased head and the new head",
+        "on Force-push the same command is retried once with no other flags; otherwise the update holds and is reported",
+        "every other question is still forbidden"
+      ],
+      "files": []
+    },
+    {
+      "id": 42,
+      "name": "a-worker-pending-on-the-force-push-question-is-step-4-not-a-question-hold",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a remote worker session's checkout is reachable. Its blocked state shows a pending AskUserQuestion: 'acme/api#2041 - force-push of issue-2012 refused by the permission mode; lease abc1234, new head def5678. Force-push (Recommended) / Hold'. Nothing the parent can send clears it, and the worker is not releasable. Question: which Blocked workers case is this, and what do you do with the session and its slot?",
+      "expected_output": "Step 4, the permission case, not step 3's question hold, even though it is an AskUserQuestion: a refused force-push is the one question the worker's countermand allows. No capture, archive or redispatch on the run's own authority - a redispatched worker would stop on the same push and the archive would discard the one session whose click the mode accepts. Surface it under the owner's Confirm in a session, linking the session and naming the exact command waiting; the slot is held, and the parent never answers the prompt.",
+      "assertions": [
+        "the answer classifies it as the permission case (step 4), not step 3's question hold",
+        "the session is not captured, archived or redispatched on the run's authority",
+        "it is surfaced under Confirm in a session with the session link and the exact command",
+        "the parent does not answer the prompt and the slot is held"
+      ],
+      "files": []
     }
   ],
   "companions": []

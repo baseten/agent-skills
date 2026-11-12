@@ -615,6 +615,19 @@
         "the drift is reported with a suggested replacement"
       ],
       "files": []
+    },
+    {
+      "id": 51,
+      "name": "a-refused-force-push-in-the-owners-session-is-asked-once",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are running in the owner's own Claude Code session, the owner present, with AskUserQuestion available. The caller passed authority to update stale branches; checks run against the branch alone. PR #70 (branch `feat-70`, a PR this run created, `branch-update: rebase` from the repository's file) has a moved base. You rebased it from head 1111aaa to 2222bbb, and `git push --force-with-lease=feat-70:1111aaa origin feat-70` was refused by the session's permission mode. Question: what do you do now, and what do you do if the owner chooses Force-push?",
+      "expected_output": "Ask once, before reporting, with AskUserQuestion: header #70, naming the branch feat-70, the leased head 1111aaa and the new head 2222bbb, with options Force-push (Recommended) and Hold; Merge base in instead is not offered, since branch-update is rebase. Never replace the refused push with a merge. On Force-push - the option chosen, not free text - retry the exact same command once, never with other flags, never --force or a bare --force-with-lease, and report the pushed head (returned as a branch update, a clean rebase a mechanical push). On Hold, the branch stays at 1111aaa and the update is reported held.",
+      "assertions": [
+        "the answer asks once with the structured question tool before reporting, naming the branch, the leased head and the new head",
+        "Merge base in instead is not offered and the push is never replaced by a merge",
+        "on Force-push the exact same command is retried once with no other flags",
+        "on Hold the branch is left as it is and the update is reported held"
+      ],
+      "files": []
     }
   ]
 }

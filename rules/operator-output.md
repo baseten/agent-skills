@@ -29,7 +29,7 @@ A reporting turn ends with these, in this order, each omitted when empty:
    - **Review or assign a reviewer**
    - **Review and submit** — a review drafted for the owner (`conductor`, `reviewers.md`): its drafts link, the recommendation and the blocking count; the line never carries the draft text, and the draft is never under *Approve drafts*
    - **Decide** — asked as *Questions* says
-   - **Confirm in a session** — a prompt a run's or a reviewer's session waits on, naming the literal tool string (`swarm`, *Blocked workers*); a force-push held for approval links the session and names the exact command waiting
+   - **Confirm in a session** — a prompt a run's or a reviewer's session waits on, naming the literal tool string (`swarm`, *Blocked workers*); a force-push held for approval also names the exact command waiting
    - **Approve drafts** — each linked to its full text, or naming where it is held; the line never carries the text
    - **Owner steps**
    - **Clear a failure** only the owner can clear

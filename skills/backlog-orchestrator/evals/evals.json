@@ -1462,7 +1462,8 @@
       "assertions": [
         "the branch is left untouched at its leased head",
         "nothing is pushed, merged or retried",
-        "the outcome is reported as held"
+        "the outcome is reported as held",
+        "the worker does not ask the question a second time: the one question was asked and answered"
       ],
       "files": []
     }
