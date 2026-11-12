@@ -103,7 +103,7 @@
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
-      "budget": 10584,
+      "budget": 10576,
       "target": 8000
     },
     "skills/swarm/runtime-remote.md": {
@@ -127,7 +127,7 @@
       "target": 1500
     },
     "rules/agent-policy.md": {
-      "budget": 3031,
+      "budget": 3023,
       "target": 1500
     },
     "rules/authored-write-form.md": {
@@ -199,7 +199,7 @@
       "target": 1500
     },
     "rules/operator-output.md": {
-      "budget": 2048,
+      "budget": 2045,
       "target": 1500
     },
     "skills/write-spec/SKILL.md": {

@@ -1434,9 +1434,9 @@
       "id": 114,
       "name": "a-refused-force-push-with-a-person-present-is-asked-once-and-pushed-once",
       "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario, from the worker's side: An implementation worker you dispatched in a remote session is updating acme/api#2041 (branch `issue-2012`, `branch-update: rebase`): it rebased onto main, and its `git push --force-with-lease=issue-2012:abc1234` was refused by the session's permission mode. The new head is def5678. The owner can open the worker's session. Question: what does the worker do, and what happens when the owner picks 'Force-push'?",
-      "expected_output": "The worker asks once with AskUserQuestion, header #2041, naming the branch issue-2012, the leased head abc1234 and the new head def5678, with options Force-push (Recommended), and Hold - Merge base in instead is not offered, since branch-update here is rebase. This question is the one exception to the worker question countermand. On 'Force-push' it retries the exact same command once - same lease, no other flags, never --force or a bare --force-with-lease - and reports the pushed head.",
+      "expected_output": "The worker asks once with AskUserQuestion, header #2041, naming the branch issue-2012, the leased head abc1234 and the new head def5678, with only the options Force-push (Recommended) and Hold - the question never offers a merge. This question is the one exception to the worker question countermand. On 'Force-push' it retries the exact same command once - same lease, no other flags, never --force or a bare --force-with-lease - and reports the pushed head.",
       "assertions": [
-        "the worker asks once with the structured question tool, naming the branch, the leased head and the new head",
+        "the worker asks once with the structured question tool, naming the branch, the leased head and the new head, with only Force-push and Hold as options, no merge",
         "the worker retries the exact same command once on Force-push, with no changed flags",
         "the answer treats this question as the one exception to the countermand",
         "the outcome reported is the pushed head"

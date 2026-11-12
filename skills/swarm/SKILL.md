@@ -291,8 +291,7 @@ the contrary.
   told to make, and this is a session the user can open (never a subagent or
   workflow agent) with a structured question tool, ask once: header the PR
   number, naming the branch, the head the lease pins and the new head, with
-  Force-push (Recommended), Merge base in instead (only where your branch
-  update allows merge) and Hold. On Force-push retry that exact command once,
+  Force-push (Recommended) and Hold, never a merge. On Force-push retry that exact command once,
   never with other flags. Otherwise leave the branch and report the update
   held. Where your skill prescribes a stop,
   return that outcome. Otherwise choose the most defensible option and record
