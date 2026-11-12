@@ -86,15 +86,15 @@ skill would read as the owner's stays pending.
   them.
 - **A go is the owner's authority, recorded at its site in one of two forms**: a dispatch go, a conditional go and a standing retirement ruling — bar a reviewer's go, which the ledger alone records and is never posted (`reviewers.md`).
   - **Owner-posted**: drafted in full for the owner to post. The owner gives the posted comment's link; this skill reads it back — authored by the owner's account, and not a write whose id the ledger holds as its own — and records its id among the ledger's owner-comment ids, kept apart from its own-write ids.
-  - **Conductor-posted**: this skill asks the owner with the structured question tool, the chosen option carrying the complete text of the go; writes the owner's exact answer — the question's header, the option's label and its text — to the ledger and reads it back; then posts the go on the epic or issue, a comment opening `Owner go (<UTC>, chosen in conductor session <session URL>, question "<header>", answer "<exact option label>")` and quoting that full text — under `references/authored-write-form.md`, *Issues the run did not create*, where the issue is not this skill's — and records its id among its own-write ids, tagged `conductor-posted go` and kept apart from its other writes. A run verifies it against this session's transcript (`references/conductor-exchange.md`, *A conductor-posted go*).
+  - **Conductor-posted**: this skill asks the owner with the structured question tool, the chosen option carrying the complete text of the go; writes the owner's exact answer — the question's header, the option's label and its text — to the ledger and reads it back; then posts the go on the epic or issue — never at a run's open item's site (*Nothing at an open item's site*, below), where it is owner-posted — a comment opening `Owner go (<UTC>, chosen in conductor session <session URL>, question "<header>", answer "<exact option label>")` and quoting that full text, with the footer, since the owner approved its text, not the comment — under `references/authored-write-form.md`, *Issues the run did not create*, where the issue is not this skill's — and records its id among its own-write ids, tagged `conductor-posted go` and kept apart from its other writes. A run verifies it against this session's transcript (`references/conductor-exchange.md`, *A conductor-posted go*).
 
   **Only those three kinds take the conductor-posted form.** A ruling that releases a run's held item or merge gate, anything in a thread another person is in, a held review reply, and a merge keep the owner's own words at their site. Whatever waits on a go — a dispatch, a retirement, a relay — stays pending until it is recorded in either form.
 - **On an issue this skill did not create**, it posts only a ruling under the shared
   exception (`references/authored-write-form.md`, *Issues the run did not create*),
   recording the owner's word-for-word approval in the ledger before posting and the
   write's id among its own-write ids after. A correction, a plan, an order, or a
-  ruling not so approved is drafted for the owner to post, its link recorded as a
-  go's is. Every section below that records on an issue does so this way.
+  ruling not so approved is drafted for the owner to post, its link recorded as an
+  owner-posted go's is. Every section below that records on an issue does so this way, bar a conductor-posted go (above).
 - **Relaying verified facts is a duty.** Where one run's state matters to
   another — `#41 merged, update from it`, a gate cleared, an issue moved between
   streams — verify it on the forge, then tell the run it affects, linking the
@@ -542,7 +542,8 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
 - the invocation arguments this skill was given;
 - owner-comment ids — each go, ruling or draft the owner posted — kept apart from
   this skill's own-write ids;
-- own-write ids — each write this skill posted, with its site;
+- own-write ids — each write this skill posted, with its site, a conductor-posted go
+  tagged as one beside the owner's answer it quotes;
 - the default branches' heads as last read, each linked to its CI and deploy runs —
   their outcomes go in the session's report, never in a forge write;
 - the plan's expected CI runs;

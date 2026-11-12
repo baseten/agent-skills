@@ -53,7 +53,7 @@ evals (`<skill>#<id>`).
    `backlog-orchestrator`, *Arming the wait when nothing is in flight*; `rules/review-trigger.md`,
    *A stalled round*; `rules/conductor-exchange.md`, *Relayed rulings*, *New work, or a fold*, *A conductor-posted go*, *What a relay can authorise*;
    `conductor`, *6. Dispatch*, `reviewers.md`. backlog-orchestrator#58 #92 #96
-   #103, settle-and-merge#41 #45, supervise-prs#104 #105, conductor#23 #25 #37 #50 #53 #54 #55 #72 #75 #76 #80 #81 #82 #83 #84 #85, implement-issue#35 #38.
+   #103 #111 #112, settle-and-merge#41 #45, supervise-prs#104 #105, conductor#23 #25 #37 #50 #53 #54 #55 #72 #75 #76 #80 #81 #82 #83 #84 #85 #86, implement-issue#35 #38, settle-outstanding-decisions#20.
 4. **Never request, re-request or remove a human reviewer.** `rules/review-trigger.md`.
    supervise-prs#33 #74, conductor#57 #72, review-pr#6.
 5. **The platform's auto-fix posture is overridden**: only a dispatched `repair-pr`
