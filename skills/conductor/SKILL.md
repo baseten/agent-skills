@@ -669,7 +669,7 @@ it does in *6. Dispatch*:
 **In this session, shaped as `references/operator-output.md` says.** *Needs you*
 is what needs the owner to act: decisions and approvals (asked as *4. Owner pass*
 says), owner steps, a failure only the owner can clear — a red default branch, a
-run whose push contradicted the forge — any PR whose watch lapsed, and each
+run whose push contradicted the forge — any PR whose run pushed that its watch stopped with the PR still open, and each
 drafted review to submit (`reviewers.md`). *Changed
 since* is each run whose state from the fixed set changed, and every dispatch,
 executed conditional go, retirement and reviewer archived, each linked to its record. A default branch's CI and deploy are a *Clear a failure* item when red or failed, a change when their result moved, and otherwise counted under *Unchanged*.

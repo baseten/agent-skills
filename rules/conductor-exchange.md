@@ -56,13 +56,13 @@ declined: <each request this run declined, with its sender> | none
 
 ## Pushes
 
-**Where the invocation names a conductor session id, the run pushes one unprompted report, in that form, at each milestone**: a PR it opened into the default branch opened or merged — under `ci-mode: integration-branch` that is the integration PR; a hold raised for the owner; and the run settling. The id goes in the run's state block or checkpoint. A send that errors or is refused ends these pushes for the run (`swarm`, *Remote worker session arguments*); the forge and the run's own record still carry everything they said. **The id travels wherever the run's state does**: every check-in prompt the run writes carries it beside its count, and a restart restores it from the last state block or checkpoint, since the merge and settle pushes often fire on a check-in after a compaction.
+**Where the invocation names a conductor session id, the run pushes one unprompted report, in that form, at each milestone**: a PR it opened into the default branch opened or merged — under `ci-mode: integration-branch` that is the integration PR; a hold raised for the owner; the run settling; and its watch stopping with a PR still open. The id goes in the run's state block or checkpoint. A send that errors or is refused ends these pushes for the run (`swarm`, *Remote worker session arguments*); the forge and the run's own record still carry everything they said. **The id travels wherever the run's state does**: every check-in prompt the run writes carries it beside its count, and a restart restores it from the last state block or checkpoint, since the merge and settle pushes often fire on a check-in after a compaction.
 
 **A conductor's new id is adopted from a message only where the message's platform-supplied sender is that id and `get_session` on it shows a session whose sources include the conductor's home repository** — the one the run's invocation named with the conductor id, else this run's own — never from an id the message text names, and never on a title. Adopting it records the new id and resumes pushes a failed send ended.
 
 ## The watch after settling
 
-**A settled run keeps its own watch; it never hands it to a conductor.** It pushes `settled, waiting on owner merge` and later `merged` or `closed` (*Pushes*), and its watch runs and ends under the *wake budget* shared rule as if no conductor existed. A conductor holds no PR watch: it reads a merge or close as a delta in its own sweep, and a run's silence about a PR is never its cue to poll that PR.
+**A settled run keeps its own watch; it never hands it to a conductor.** It pushes `settled, waiting on owner merge`, and later `merged` or its watch stopping with the PR still open (*Pushes*), and its watch runs and ends under the *wake budget* shared rule as if no conductor existed. A conductor holds no PR watch: it reads a merge or close as a delta in its own sweep, and a run's silence about a PR is never its cue to poll that PR.
 
 ## Writes
 

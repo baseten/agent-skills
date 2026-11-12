@@ -762,7 +762,8 @@ its item outstanding in the checkpoint above.
 ### Lost workers
 
 A worker whose remote branch never advanced is the expensive case; prefer catching
-it through Checkpoint compliance, before it is lost. If a worker disappears:
+it before it is lost — through Checkpoint compliance where its checkout is
+reachable, else through its own report and the hourly status read. If a worker disappears:
 
 1. inspect its remote branch/PR first;
 2. inspect any recovery refs the parent pushed for its branch (Checkpoint
@@ -883,7 +884,9 @@ prompt, its container gone — is what the hourly status read catches
 (`references/wake-budget.md`, *Live workers: the hourly status read*), whose
 report-only line is the whole response to a worker that reads working with nothing
 moved. **A worker is stalled** when that read finds it blocked, idle with no result,
-or gone, or it reports itself stuck — never on elapsed time alone.
+or gone, or its own session reports it stuck — never on elapsed time alone — and
+takes the path its state reads under *Releasing a worker*, *Blocked workers* or
+*Lost workers*.
 
 #### Capturing without racing the worker
 
