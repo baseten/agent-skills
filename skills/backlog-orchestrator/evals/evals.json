@@ -1429,6 +1429,21 @@
         "the answer raises #640 as a NEEDS_USER item rather than dispatching it"
       ],
       "files": []
+    },
+    {
+      "id": 113,
+      "name": "a-restart-counts-adopted-predecessor-workers-against-the-cap",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: `concurrent-open-prs` is 3 and `concurrent-workers` is 4. acme/api resolved `ci-mode: integration-branch` with effect; the run's branch is `integration/api-3`. You resume a run whose predecessor orchestrator session S1 has stopped and handed back cleanly, its checkpoint recording every wake disarmed. The runtime is Claude Code Remote and lists sessions with `parent_session_id`: two implementation worker sessions whose parent is S1, W12 on api#12 and W14 on api#14, are WORKING and neither has opened a PR. S1's last state block lists them among workers in flight with their assigned gate-note refs, `refs/notes/agent-gate/feat/api-12/k3` and `refs/notes/agent-gate/feat/api-14/m7`. One PR of the run, #9, is open. Issues api#15 and api#16 are READY and within `new-issue-budget`. (a) Write the `open-PR slots` and `workers in flight` rows of the first state block you print after resuming, and say whether you dispatch api#15 or api#16. (b) Later W12 opens PR #50 into `integration/api-3`; its return value does not reach you, and a gate note with every per-PR check passed sits on #50's head at `refs/notes/agent-gate/feat/api-12/k3`. What do you pass supervise-prs as #50's worker gate record, and what does the local gate run? (c) This session then dies before #50 merges, and a third invocation resumes from the last state block you printed. What gate-note ref, if any, does it pass supervise-prs for #50 at adoption? (d) How would (a) differ if S1 had run its workers as subagents and the runtime had no session list?",
+      "expected_output": "(a) Open-PR slots: 3/3 — #9 plus W12 and W14, which restart-resume step 1 makes this run's by provenance and which each hold a slot as an in-flight implementation worker; no possibly-over-the-cap note, since the predecessor's workers were listed and counted. Workers in flight: W12 and W14 as implementation workers, each with the gate-note ref S1's block assigned it (k3, m7), carried into this run's block. Neither api#15 nor api#16 is dispatched: the cap is reached, and the held READY row names `concurrent-open-prs`. (b) The note at k3, the ref assigned W12 and carried through the restart, is #50's worker gate record; its passes stand, so the local gate runs only what they leave — nothing here. (c) k3, read from this run's last state block at restart-resume step 6 as the ref of the worker that opened #50; without it the gate would run every check. (d) No session list: none of S1's workers can be seen, so the row counts one slot (#9) and may dispatch both READY issues into the headroom, and reports the restart as possibly over the cap by up to `concurrent-workers` (4) until those workers' PRs appear.",
+      "assertions": [
+        "the open-PR slots row counts three, the two adopted predecessor workers included, and the answer dispatches neither READY issue",
+        "the open-PR slots row carries no possibly-over-the-cap note where the predecessor's workers were listed and counted",
+        "the workers in flight row lists W12 and W14 each with the gate-note ref S1's state block assigned it",
+        "for #50 the answer passes the note at refs/notes/agent-gate/feat/api-12/k3 as its worker gate record and the local gate runs only what its passes leave, not every check",
+        "the third invocation passes refs/notes/agent-gate/feat/api-12/k3 for #50 from this run's last state block",
+        "without a session list the answer counts only #9 and reports the restart as possibly over the cap by up to concurrent-workers"
+      ],
+      "files": []
     }
   ]
 }
