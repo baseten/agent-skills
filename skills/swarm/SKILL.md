@@ -50,7 +50,8 @@ Capability differs per session and cannot be assumed. Detect, then degrade:
 dies with this session. Where tiers 1 and 2 are unavailable, ask once before the
 first dispatch — subagents, serialized, or stop — unless the invocation named one
 (`runtime: subagents` or `serialized`); an unattended run stops with the question
-as `NEEDS_USER`. Without that answer a tier lost mid-run degrades to tier 4.
+as `NEEDS_USER`. The answer goes in the run's state, and a resume reads it as the
+invocation's. Without that answer a tier lost mid-run degrades to tier 4.
 Nothing else is asked; invoking this skill is the request to dispatch
 (*Authority*). **Report the tier that ran**, because
 every guarantee below is tier-dependent — tier 4 is not a swarm but the same work

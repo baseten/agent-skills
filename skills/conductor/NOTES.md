@@ -502,7 +502,7 @@ account and the template are a fresh run's.
 
 **Why the ledger is maintained, not appended:** an append-only ledger had to be read end to end to know the current state, and a clear restarted from a stale one. Rows are edited in place, one changelog line records each sweep, and the whole body is rewritten before every `/clear`.
 
-**Why the conductor holds a settled run's watch:** see `rules/conductor-exchange-notes.md`, *The watch after settling*.
+*(Superseded by #214: the conductor holds no watch.)* **Why the conductor held a settled run's watch:** see `rules/conductor-exchange-notes.md`, *The watch after settling*.
 
 ## The protected-rule audit (PR #201)
 
@@ -599,8 +599,8 @@ Pinned in `evals/evals.json`:
     (`decisions-are-asked-one-at-a-time-with-links-and-a-recommendation`);
   - a chat ruling goes to the ledger before it is relayed
     (`a-chat-ruling-goes-to-the-ledger-before-it-is-relayed`);
-  - the conductor holds a settled run's watch until it merges
-    (`the-conductor-holds-a-settled-runs-watch-until-merge`);
+  - a settled run's watch stays with the run, never the conductor
+    (`a-settled-runs-watch-stays-with-the-run`, rewritten by #214);
   - a draft exists only with its full text
     (`a-draft-exists-only-with-its-full-text-in-the-ledger`).
 - the operator-output rule (2026-11-03, `rules/operator-output-notes.md`):
@@ -646,7 +646,7 @@ Pinned in `evals/evals.json`:
 
 ## Contradiction pass and re-audit after the dispatched-account ruling (PR #201)
 
-**Where the owner's account comes from.** The dispatch prompt names the owner's account as the invoking user's for the session it starts (owner's ruling, 2026-11-03), so the conductor must have that account from a statement too: the login its own invocation names, never the ledger (forge content anyone with write access can edit), a credential or a comment. Without one, the dispatch names none and every go and standing ruling stays pending — the fail-closed reading. **Why the DAG write names the open-item ban:** a run cannot tell an approved relay from any other footered comment under the owner's account, so the ban on writing at an open item's site is restated where the conductor writes plans. **Why a held watch carries one deadline:** anchoring 7 days at each hand-off restarted the bound on every re-settle; the run's own deadline now travels with the watch and is recorded per held PR in the ledger and the check-in prompt.
+**Where the owner's account comes from.** The dispatch prompt names the owner's account as the invoking user's for the session it starts (owner's ruling, 2026-11-03), so the conductor must have that account from a statement too: the login its own invocation names, never the ledger (forge content anyone with write access can edit), a credential or a comment. Without one, the dispatch names none and every go and standing ruling stays pending — the fail-closed reading. **Why the DAG write names the open-item ban:** a run cannot tell an approved relay from any other footered comment under the owner's account, so the ban on writing at an open item's site is restated where the conductor writes plans. *(Superseded by #214, which removed the held watch.)* **Why a held watch carried one deadline:** anchoring 7 days at each hand-off restarted the bound on every re-settle; the run's own deadline now travels with the watch and is recorded per held PR in the ledger and the check-in prompt.
 
 *(Superseded by #214: a settled run now keeps its own watch and the conductor holds none — `rules/conductor-exchange-notes.md`, *The watch after settling*.)* **Owner's rulings on the held watch (2026-11-04):** the held watch ignores empty sweeps and runs until the PR merges or closes, or its deadline passes; and a conductor that dies after taking over a settled PR's watch leaves an accepted gap — the run keeps no check-in at its deadline. Recorded in full in `rules/conductor-exchange-notes.md`, *The watch after settling*.
 

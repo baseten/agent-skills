@@ -81,7 +81,7 @@ Reconcile tracker + GitHub remote state first, then report each of these:
 
 | field | carries |
 |---|---|
-| runtime | the runtime used, plus any runtime probed and rejected, with the reason |
+| runtime | the runtime used, plus any runtime probed and rejected, with the reason, and the answer to `swarm`'s subagents question where it was named or asked (*1. Runtime*), which a resume reads as its invocation's |
 | defaults applied | every documented default applied without asking — branch-mandate override, issues deferred at the budget cap, concurrency reduced for machine capacity, corrected ticket baselines |
 | validation | result and warnings, the **mode** each part of the scope was validated at, and any deep escalation — its trigger, the nodes escalated, and the result, including a clean one |
 | scope | the manifest/scope |

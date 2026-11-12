@@ -741,7 +741,7 @@ Remote Git checkpoints remain mandatory regardless of runtime, because no platfo
 
 ## Arming the wait when nothing is in flight
 
-Step 16's native task/event wait is sufficient while workers are running: their completions are the events. A **settled** run has none — no worker will finish, no CI will fire, and the merge it is waiting on may be a day away.
+Step 16's native task/event wait is sufficient while workers are running: their completions are the events — bar a live worker session that cannot report, for which the run keeps its bounded check-in armed while any is live (`references/wake-budget.md`, *Live workers: the hourly status read*). A **settled** run has none — no worker will finish, no CI will fire, and the merge it is waiting on may be a day away.
 
 **Before a settled-and-undispatchable run stops doing work, it arms the wake `references/wake-budget.md` requires**, whether or not a conductor coordinates it (`references/conductor-exchange.md`, *The watch after settling*) — a PR-activity subscription over this run's own PR set, which `supervise-prs` armed per PR at adoption, so this step confirms the set is complete and arms anything missing, and a bounded scheduled check-in as the backstop — under that rule's budget and backoff, which bind **every recurring check-in this skill's runs arm, parent-side or worker-side**. What this run adds:
 

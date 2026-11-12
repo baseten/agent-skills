@@ -219,5 +219,5 @@ Return:
 - the routed documentation review's result, exactly as core — or, from an existing branch, `create-pr` — reported it — round, status, and any findings with their evidence. It reaches `summarize-wave` through this line and nowhere else, and **no routed review** is a different state from **a routed review that found nothing**;
 - dependencies checked and any source disagreements, exactly as core reported them — including on `PR_OPEN` (NOTES); from an existing branch, none checked;
 - blocker/failure details, including the dependency class each block was judged under;
-- where a conductor coordinates the run: its session id and home repository, any id adopted and the message it came from, the requests answered and the pushes sent, any failed send, and who holds the PR's watch (*Status requests from a conductor*);
+- where a conductor coordinates the run: its session id and home repository, any id adopted and the message it came from, the requests answered and the pushes sent, and any failed send (*Status requests from a conductor*);
 - recommended user action when needed.
