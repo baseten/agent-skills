@@ -694,13 +694,7 @@ or, where none is recorded, as a new page whose URL the ledger then records
 beside the ledger, the unchanged one-line form included; otherwise the ledger link
 stands in.
 
-**On the page, an item about a PR carries its links in this order**: the PR on the
-forge; the tracker's review page for it, where the repository is linked to a
-tracker that hosts PR review (`references/linear-mechanics.md`, *Review pages*),
-**marked with the count of unsubmitted drafts there**, labelled with the tracker
-account that holds them, so the item never implies a draft is on the forge when it
-is on the tracker; every issue the PR closes, or a plain "no linked issue"; and
-last, the run's session, where one owns the PR. A draft held anywhere else — a
+**On the page, an item about a PR carries its links in the order `references/operator-output.md` gives an item**: the run's session, where one owns the PR; the PR on the forge; the tracker's review page for it, where the repository is linked to a tracker that hosts PR review (`references/linear-mechanics.md`, *Review pages*), **marked with the count of unsubmitted drafts there**, labelled with the tracker account that holds them, so the item never implies a draft is on the forge when it is on the tracker; then every issue the PR closes, or a plain "no linked issue". A draft held anywhere else — a
 held reply in the ledger or this session — is linked to its full text or names
 where it is held, labelled so, never carrying the text. The chat's lines keep
 `references/operator-output.md`'s form. **Every link and draft count is read each
