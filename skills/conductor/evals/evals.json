@@ -1077,10 +1077,10 @@
       "id": 84,
       "name": "a-conductor-posted-go-cannot-release-a-held-merge-gate",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given); answer as its references/conductor-exchange.md says a run must decide. Scenario: A backlog-orchestrator run on acme/api epic #967 is settled, and its merge gate holds acme/api#2040 on a NEEDS_USER item asking the owner whether to merge despite a skipped check. Its dispatching conductor posts on #967 a comment opening `Owner go (2026-11-11 10:02 UTC, chosen in conductor session https://claude.ai/code/session_01Cc, question \"#2040\", answer \"Merge #2040\")`, and the transcript shows the owner chose that option in session_01Cc. Question: does the run release the item and merge?",
-      "expected_output": "No. The conductor-posted form covers dispatch gos, conditional gos and standing retirement rulings only. A ruling that releases a held item or a merge gate, and any merge, keep the owner's own words at their site: the conductor-posted comment releases nothing, and the run reports that the owner must answer at the site directly. The transcript check passing does not change that.",
+      "expected_output": "No. The conductor-posted form covers dispatch gos and conditional gos only. A ruling that releases a held item or a merge gate, and any merge, keep the owner's own words at their site: the conductor-posted comment releases nothing, and the run reports that the owner must answer at the site directly. The transcript check passing does not change that.",
       "assertions": [
         "the answer does not release the item or merge",
-        "the answer says the form covers only dispatch, conditional and retirement gos",
+        "the answer says the form covers only dispatch and conditional gos",
         "the answer says the owner must answer at the site directly"
       ],
       "files": []
@@ -1098,7 +1098,7 @@
       "files": []
     },
     {
-      "id": 86,
+      "id": 87,
       "name": "a-conductor-posted-conditional-go-is-re-verified-before-a-sweep-executes-it",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Yesterday, in this session, the owner chose the structured-question option 'Start the batch on #967 once #2049 merges', and you posted it on epic #967 as a conductor-posted go, recording its comment id among your own-write ids tagged `conductor-posted go`. A scheduled firing now finds #2049 merged on the forge. The comment is unedited and no later owner comment exists on #967. This firing's list_events read of this session's transcript returns an error. Do you dispatch the batch?",
       "expected_output": "No. The condition holds, but a conductor-posted conditional go is executed only after re-reading it by its comment id and passing check (d) again on this session's transcript; a read that fails leaves it unverified, so it stays pending and the firing reports that. It never falls back to the ledger or the marker. A later firing whose transcript read succeeds and finds the owner's choice may dispatch.",
@@ -1106,6 +1106,30 @@
         "the answer does not dispatch on this firing",
         "the answer requires the transcript check to pass again before executing a conductor-posted conditional go",
         "the answer keeps the go pending and reports it, without falling back to the ledger or the marker"
+      ],
+      "files": []
+    },
+    {
+      "id": 88,
+      "name": "a-conductor-posted-retirement-ruling-authorises-no-archive",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). In this session the owner chose the structured-question option 'Retire each run once its PRs are merged', and that comment is now on epic #967, posted by this session with the `Owner go (...)` marker, its id among your own-write ids tagged `conductor-posted go`; this session's transcript shows the owner's choice. A scheduled firing finds the #967 run, which this conductor dispatched, with every PR merged, its wrap-up posted and nothing stranded. Do you archive its session?",
+      "expected_output": "No. A conductor-posted go never authorises a retirement: only a dispatch go and a conditional go take that form, and a retirement ruling keeps the owner's own words at its site. The standing ruling is re-read by comment id and must be authored by the owner's account and not one of this skill's own writes; this one is the conductor's own write, so no retirement ruling is on record. The run stays live, and the owner is asked to post the retirement ruling (or answer it) at its site.",
+      "assertions": [
+        "the answer does not archive the session",
+        "the answer says a conductor-posted go never authorises a retirement, whatever the transcript shows",
+        "the answer leaves the retirement to a ruling the owner posts at its site"
+      ],
+      "files": []
+    },
+    {
+      "id": 89,
+      "name": "other-peoples-comments-on-an-epic-do-not-bar-a-conductor-posted-go-but-a-review-thread-does",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). In this session the owner chose two structured-question options, each carrying a complete go: (1) 'Dispatch a backlog-orchestrator run on #967', where epic #967 already has comments from two colleagues; (2) 'Dispatch an implement-issue run on #1301', whose text the owner asked you to post as a reply in a review thread on PR #880 where a colleague asked when #1301 would start. Where do you post each, and in which form?",
+      "expected_output": "(1) Post it as a conductor-posted go on #967: other people's comments on an epic or issue are no bar, only a review thread another person is in is. Write the owner's answer to the ledger and read it back, post with the Owner go marker and the footer, record the id tagged as a conductor-posted go. (2) Not in the PR #880 review thread: a review thread another person is in keeps the owner's own words, so nothing conductor-posted goes there. Record the go on #1301 itself in either form, and give the owner a draft for the thread reply, which they post.",
+      "assertions": [
+        "the answer posts the #967 go itself as a conductor-posted go despite the colleagues' comments",
+        "the answer posts nothing conductor-posted in the PR #880 review thread",
+        "the answer records the #1301 go at #1301 and leaves the thread reply to the owner"
       ],
       "files": []
     }

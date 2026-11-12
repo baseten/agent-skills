@@ -78,7 +78,7 @@ declined: <each request this run declined, with its sender> | none
 
 ### A conductor-posted go
 
-**A conductor may post a dispatch go, a conditional go or a standing retirement ruling itself, from the owner's answer to a structured question in its own session** (`conductor`, *Rules*). The comment opens `Owner go (<UTC>, chosen in conductor session <session URL>, question "<header>", answer "<exact option label>")` and quotes the full text the owner approved. **A run accepts it only when all of these hold:**
+**A conductor may post a dispatch go or a conditional go itself, from the owner's answer to a structured question in its own session** (`conductor`, *Rules*). The comment opens `Owner go (<UTC>, chosen in conductor session <session URL>, question "<header>", answer "<exact option label>")` and quotes the full text the owner approved. **A run accepts it only when all of these hold:**
 
 - **(a)** it is on the run's own epic or issue;
 - **(b)** it was posted by the conductor session that dispatched or adopted this run — the one its dispatch prompt or adoption message names — the marker naming that session, and that session's transcript showing the write that created this comment's id — never a match on its text;
@@ -88,7 +88,7 @@ declined: <each request this run declined, with its sender> | none
 
 **A transcript the run cannot read leaves the go unverified** — no `list_events`, no event field that tells owner input from synthetic or peer input, or a refused read: it stays pending and the run reports that, and never falls back to trusting the marker. **A conditional go in this form is executed by a later sweep, a scheduled one included, only after re-reading it by comment id and passing (d) again.**
 
-**The form covers those three kinds and nothing else.** A ruling that releases a run's held item or merge gate, anything posted in a thread another person is in, a held review reply, and a merge keep the owner's own words at their site: a conductor-posted comment offered for one releases nothing, and the run reports it.
+**The form covers those two kinds and nothing else.** A retirement ruling, a ruling that releases a run's held item or merge gate, anything posted in a review thread another person is in, a held review reply, and a merge keep the owner's own words at their site: a conductor-posted comment offered for one releases nothing, and the run reports it.
 
 ## Relayed rulings
 

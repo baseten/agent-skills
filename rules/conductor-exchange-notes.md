@@ -64,6 +64,8 @@ choosing an offered option or a recorded ruling.
 
 **Why (b) matches by id, (c) fails closed and (d) reads the forge's time (blind audit of protected rule 3 on #215, 2026-11-12):** the comment's text is content anyone with the owner's account can write, so a transcript event matched on text would pass a copy (protected rule 2); the write that created the comment's id cannot be copied. An edit history the run cannot read is not evidence of no edit. And the marker's time is text the conductor wrote, so a wrong one would admit an answer given after the post; the forge's creation time is not the conductor's to set.
 
+**Why retirement left the form, and the thread bar narrowed to review threads (owner's rulings, 2026-11-12):** a retirement archives a run, which `swarm` takes only on the owner's ruling, and #214 replaces standing retirement rulings with a sweep and a confirm question; the form now covers a dispatch go and a conditional go only. The thread bar now reads "a review thread another person is in": an epic or issue with other people's comments is where a go ordinarily lives.
+
 **Why it stops at dispatch:** a dispatch go starts work the owner can stop; a released hold, an opened merge gate and a merge cannot be taken back and are read by other parties. On 2026-11-05 runs refused relayed merge rulings, correctly; this form leaves that refusal intact and says so.
 
 ## Relayed rulings
