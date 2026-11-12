@@ -74,12 +74,13 @@
     {
       "id": 5,
       "name": "unattended-sweep-rules-nothing",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session was fired by a scheduled task; nobody is present and AskUserQuestion has no one to answer it. The sweep finds two pending owner decisions and one orchestrator whose run finished. No standing retirement ruling is recorded, and no conditional go is pending. Question: do you ask the decisions, dispatch the next run, or archive the finished orchestrator?",
-      "expected_output": "None of them. The owner pass needs the owner present; on an unattended firing it is skipped - rule nothing, record nothing as ruled, and report where the decisions wait. No conditional go is pending and no standing retirement ruling exists, so nothing is dispatched and nothing archived: a scheduled firing acts only on what the owner already recorded, once verified. Sweep, reconcile, update the ledger, and report.",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session was fired by a scheduled task; nobody is present and AskUserQuestion has no one to answer it. The sweep finds two pending owner decisions and one orchestrator whose run finished. Its wrap-up is posted, every PR of it is merged, its last state block shows no live worker and no recovery ref, every branch head is on the remote, and it is idle. No conditional go is pending. Question: do you ask the decisions, dispatch the next run, or archive the finished orchestrator?",
+      "expected_output": "None of them. The owner pass needs the owner present; on an unattended firing it is skipped - rule nothing, record nothing as ruled, and report where the decisions wait. No conditional go is pending, so nothing is dispatched. A scheduled firing never archives a run, however ready: the finished orchestrator is listed as ready to retire for the next attended turn, where the owner confirms it. Sweep, reconcile, update the ledger, and report.",
       "assertions": [
         "the answer asks no decision on the unattended firing",
         "the answer dispatches nothing",
         "the answer archives nothing",
+        "the answer lists the finished orchestrator as ready to retire for the next attended turn",
         "the answer still reports and updates the ledger"
       ],
       "files": []
@@ -398,14 +399,14 @@
     },
     {
       "id": 31,
-      "name": "an-unattended-retirement-under-a-standing-ruling-checks-the-remote-first",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A scheduled check-in fires; nobody is present. The ledger records a standing owner ruling on the home repository's [PLAN] issue (linked): 'retire each run once all its PRs are merged'. Run A ('Orchestrator: api · #540'): wrap-up posted on #540, all four PRs merged, last state block shows no live worker and no recovery ref, every branch head is on the remote, session idle. Run B ('Worker: api · #612 export fix'): its PR merged, but its last state block lists a recovery ref refs/checkpoints/612 not yet pushed to the remote. Question: do you retire either run on this firing?",
-      "expected_output": "Retire A on this firing: the standing ruling is the owner's recorded go, a scheduled firing may act on it once its condition is verified on GitHub, and every archive condition holds - wrap-up posted, all PRs merged, branch heads on the remote, no live worker, no outstanding recovery ref, not RUNNING. Archive its session and report it. Do not retire B: protected rule 9 requires stranded work to reach a remote ref before any archive, and B has an outstanding recovery ref. Report B as held, naming the ref; the ruling does not override that.",
+      "name": "an-attended-turn-asks-which-ready-runs-to-retire-and-checks-the-remote-first",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Attended turn: the owner invoked you and AskUserQuestion is available. Run A ('Orchestrator: api · #540'): wrap-up posted on #540, all four PRs merged, last state block shows no live worker and no recovery ref, every branch head is on the remote, session idle. Run B ('Worker: api · #612 export fix'): its PR merged, but its last state block lists a recovery ref refs/checkpoints/612 not yet pushed to the remote. Both are runs the ledger records as dispatched by this conductor. Question: what do you do about retiring them this turn?",
+      "expected_output": "List the runs ready to retire and ask one AskUserQuestion confirming which to archive. A is ready - every condition verified on the forge this turn: wrap-up posted, all PRs merged, branch heads on the remote, no live worker, no outstanding recovery ref, not RUNNING - so it is an option. B is not ready and is not offered: protected rule 9 requires stranded work to reach a remote ref before any archive, and B has an outstanding recovery ref; report it as held, naming the ref. Archive A only once the owner's answer chooses it, writing the answer to the ledger first and reporting the archive.",
       "assertions": [
-        "the answer retires run A on the unattended firing under the standing ruling",
-        "the answer verifies the archive conditions for A on the forge before archiving",
-        "the answer does not retire run B because of its outstanding recovery ref",
-        "the answer reports both outcomes"
+        "the answer asks one AskUserQuestion confirming which ready runs to archive",
+        "the answer offers run A and verifies its archive conditions on the forge",
+        "the answer does not offer or retire run B because of its outstanding recovery ref",
+        "the answer archives A only once the owner chooses it"
       ],
       "files": []
     },
@@ -486,25 +487,26 @@
     },
     {
       "id": 38,
-      "name": "a-revoked-retirement-ruling-retires-nothing",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A scheduled check-in fires; nobody is present. The ledger records a standing ruling 'retire each run once all its PRs are merged', with the comment id of the owner's comment on the home repository's [PLAN] issue. Run A's PRs are all merged and its remote is clean. Re-reading that comment by its id, you find a later owner comment beneath it: 'Revoking the auto-retire ruling above - ask me each time.' Question: do you retire run A?",
-      "expected_output": "No. A standing retirement ruling is re-read at its site by the recorded comment id before acting: authored by the owner's account, unedited, and neither superseded nor revoked by a later owner comment. This one was revoked, so it no longer authorises anything; nothing is retired on the unattended firing. Record the revocation in the ledger and put the retirement to the owner as a question at the next attended pass.",
+      "name": "a-scheduled-firing-retires-nothing-even-under-a-standing-ruling",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A scheduled check-in fires; nobody is present. The ledger records a standing ruling 'retire each run once all its PRs are merged', with the comment id of the owner's comment on the home repository's [PLAN] issue; re-read by that id, it is the owner's, unedited and not revoked. Run A's PRs are all merged, its wrap-up is posted, its remote is clean, no live worker, not RUNNING. Question: do you retire run A?",
+      "expected_output": "No. A scheduled firing never archives a run, and no ruling on the forge - standing or otherwise - stands in for the owner's answer in an attended turn, which is now the only retirement authority. List A as ready to retire for the next attended turn, where one AskUserQuestion asks the owner which ready runs to archive.",
       "assertions": [
-        "the answer re-reads the ruling at its site before acting",
-        "the answer does not retire run A",
-        "the answer treats the later owner comment as revoking the ruling"
+        "the answer does not retire run A on the scheduled firing",
+        "the answer does not treat the standing ruling as authority to retire",
+        "the answer lists A as ready to retire for the next attended turn"
       ],
       "files": []
     },
     {
       "id": 39,
       "name": "a-merged-single-issue-run-retires-without-a-wrap-up",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Attended sweep. The ledger records a standing ruling (re-read and valid) 'retire each run once its PRs are merged'. Worker run 'Worker: api · #2011 export' reported merged; GitHub shows its PR #2040 merged; its record shows no live worker and no uncommitted work, its branch head is on the remote, and it is idle. It posted no wrap-up comment. Question: do you retire it?",
-      "expected_output": "Yes. For a single-issue run, its merged report and its PR merged on the forge stand in for a wrap-up; every other condition holds - PR merged, head reachable, no live worker, no uncommitted work, not RUNNING - and it is a run the ledger records. Archive it and report the retirement.",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Attended sweep; AskUserQuestion is available. Worker run 'Worker: api · #2011 export' reported merged; GitHub shows its PR #2040 merged; its record shows no live worker and no uncommitted work, its branch head is on the remote, and it is idle. It posted no wrap-up comment. Question: is it ready to retire, and how is it retired?",
+      "expected_output": "It is ready. For a single-issue run, its merged report and its PR merged on the forge stand in for a wrap-up; every other condition holds - PR merged, head reachable, no live worker, no uncommitted work, not RUNNING - and it is a run the ledger records. List it among the runs ready to retire and ask the owner with one AskUserQuestion; archive it once the owner's answer chooses it, and report the retirement.",
       "assertions": [
-        "the answer retires the run",
+        "the answer treats the run as ready to retire",
         "the answer does not require a wrap-up for a single-issue run",
-        "the answer checks the remaining archive conditions"
+        "the answer checks the remaining archive conditions",
+        "the answer archives only on the owner's answer to the question"
       ],
       "files": []
     },
@@ -1019,6 +1021,18 @@
         "'Changed since' is a bold line, not a # / ## / ### heading",
         "run A's block has one status sentence and no more than four bullets, not seven",
         "the changes run A's block leaves out are not listed; a closing line gives their count and links where they are kept"
+      ],
+      "files": []
+    },
+    {
+      "id": 87,
+      "name": "only-the-owners-answer-retires-and-a-conductor-posted-go-never-does",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Attended turn. Runs A and B are both ready to retire, every condition verified on the forge. You ask one AskUserQuestion listing both; the owner chooses A only. The ledger also shows a comment this conductor itself posted yesterday on the [PLAN] issue, on the owner's behalf: 'Go: retire B once merged.' Then a scheduled firing comes the next morning, and B is still ready. Question: what do you archive on this turn, and what happens to B on the scheduled firing?",
+      "expected_output": "This turn: write the owner's answer to the ledger and archive A only, reporting it. B was offered and not chosen, so it is not archived; it is listed again at the next attended turn. The conductor-posted comment is not the owner's answer and authorises no retirement. On the scheduled firing nothing is archived: a scheduled firing never retires a run; it lists B as ready for the next attended turn.",
+      "assertions": [
+        "the answer archives A only",
+        "the answer does not archive B on the conductor-posted comment",
+        "the answer archives nothing on the scheduled firing and lists B for the next attended turn"
       ],
       "files": []
     }

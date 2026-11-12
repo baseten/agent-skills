@@ -454,7 +454,7 @@
       "files": []
     },
     {
-      "id": 41,
+      "id": 44,
       "name": "a-quiet-remote-head-is-a-report-line-not-a-raise",
       "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: invoked directly over three tasks on remote worker sessions; you cannot reach any worker's checkout, and the return channel is present. Worker W's remote head has not moved for two and a half hours since its first push. It has sent no message. Your check-in has just fired at its 60-minute cap, and W's status reads working, as it did on the last two firings. The other two workers are also live and pushed in the last hour. Question: what do you do about W on this firing — nudge it, raise NEEDS_USER, capture, or something else — and what does your output say?",
       "expected_output": "No threshold action. An unadvanced head on the unreachable tier is not a trigger: there is no elapsed-time stall rule, no nudge and no parent-side capture. W reads working with nothing moved, so it is not stalled — stalled means the status read finds it blocked, idle with no result, or gone, or it reports itself stuck. This firing writes one report-only line for W: its status, when its head last moved, and when it last messaged (never). The other workers' pushes are deltas, so this firing is productive and the watch re-arms at the 60-minute cap while workers are live.",
@@ -467,7 +467,7 @@
       "files": []
     },
     {
-      "id": 42,
+      "id": 45,
       "name": "a-check-in-is-one-shot-guarded-and-unpostponable",
       "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: invoked directly over remote workers. Two things happen. First, a scheduled check-in fires whose prompt was written yesterday and names two PRs as open; since then this session wrote a stop record returning the run in a restartable checkpoint, every worker released and both PRs still open. Second, in a different live run of yours, a teammate proposes replacing the one-shot check-in with a recurring hourly trigger to save effort, and observes that unrelated wakes (a sibling's CI event every few minutes, each finding nothing new) have been re-arming the pending check-in each time; one of them, unlike the rest, observed a delta - a sibling's CI turned red. Question: what does the firing check-in do, and what do you say to the teammate on both points?",
       "expected_output": "The firing check-in hits its liveness guard: a stop record newer than its prompt says the arming session returned, so it acts on nothing - it does not re-read or supervise the two open PRs, which the restartable checkpoint leaves for a fresh invocation - arms nothing, and ends. To the teammate: no recurring trigger - every check-in is one-shot and each firing arms the next with a prompt written then, because a recurring trigger re-fires its original prompt, with stale state and a count that never rises, so the budget never binds. Re-arming replaces the pending check-in rather than adding one. And a wake that observed no delta must not re-arm it: the pending check-in keeps its firing time and count, so a stream of quiet wakes cannot postpone the backstop; only the wake that observed the red CI may re-arm it.",
@@ -488,6 +488,19 @@
         "The answer does not treat the swarm invocation or the standing guidance as answering the subagents question",
         "The answer has the unattended run stop with the question as NEEDS_USER rather than choosing a tier",
         "The answer degrades the third run to subagents because the invocation named them, and states that without that answer the degrade goes to serialized"
+      ],
+      "files": []
+    },
+    {
+      "id": 46,
+      "name": "a-bare-still-working-message-is-no-delta",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: invoked directly over two tasks on remote worker sessions; you cannot reach either checkout, the return channel is present, and nothing else is in flight. Your check-in fires at its 60-minute cap. Since the last firing, worker W1 sent one message - 'still working on the parser' - and its status still reads working; its head has not moved. Worker W2 sent 'blocked: the fixture repo needs an access grant'. Questions: (a) is this firing productive, and what does each worker's message count for? (b) W2 is later unblocked and finishes; W1 keeps sending the same 'still working' message every hour, with no push, no PR and no status change, for eight more firings. What happens to the watch?",
+      "expected_output": "(a) Productive, because of W2: a message reporting something substantive - done, blocked, a question, or a new push or PR - is a delta, here a block, and W2 takes Blocked workers. W1's bare 'still working' is no delta: W1 reads working with nothing moved, so it gets the report-only line (its status, when its head last moved, when it last messaged) and no threshold action. (b) The 'still working' messages reset nothing, so the eight firings are unproductive and the budget ends the watch: the stop report names W1 as alive with its session link and its line, in a restartable checkpoint, never archived on the run's authority.",
+      "assertions": [
+        "The answer counts W2's blocked message as a delta and W1's 'still working' message as none",
+        "The answer gives W1 a report-only line and no threshold action",
+        "The answer ends the watch after eight firings with only 'still working' messages from W1",
+        "The answer names W1 as alive in a restartable checkpoint and does not archive it"
       ],
       "files": []
     }
