@@ -1455,6 +1455,19 @@
         "after the per-pr move retargets the three PRs, acme/api's empty branch is deleted"
       ],
       "files": []
+    },
+    {
+      "id": 117,
+      "name": "a-restart-after-the-integration-pr-merged-deletes-the-old-branch-at-preflight-and-keeps-the-fresh-one",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are resuming manifest 412 after its session died. acme/api runs under `ci-mode: integration-branch`, and the run's branch is `integration/acme-api-412`. Before dying, the earlier run's integration PR #300 (head `integration/acme-api-412`, base `main`) merged, carrying four issues. Two more in-scope issues in acme/api, #305 and #306, were NEEDS_USER then; the owner has since answered, and both are now READY. The owner is at the keyboard. Case (a): the earlier run died before deleting the branch, so `integration/acme-api-412` still exists, its head contained in `main`, with gate-note refs under `refs/notes/agent-gate/integration/acme-api-412/`. Case (b): the earlier run had already deleted the branch and its gate-note refs, so it does not exist. For each case: at which step of the resume does anything happen to the branch, what exactly, and what does #305's worker base its PR on? In particular, at `restart-resume.md` step 6, is the branch deleted?",
+      "expected_output": "(a) At the preflight (restart-resume step 2, integration-branch.md item 6): the leftover branch, whose integration PR merged and whose head main contains, is deleted with its gate-note refs as Restart states, then created afresh by the two pushes — at the first parent of main's head, then fast-forwarded to main's head — establishing the push permission while the owner is present. (b) The preflight simply creates it by the same two pushes. In both cases step 6 adopts the fresh branch as it stands and does not delete it, though a merged integration PR from that branch name exists: that PR's branch was handled at the preflight. #305 and #306 dispatch with the fresh integration branch as their PRs' base.",
+      "assertions": [
+        "in case (a) the leftover branch is deleted, with its gate-note refs, at the preflight (before step 6), not at step 6",
+        "in both cases the preflight creates the branch afresh by a creation and a fast-forward push, before any dispatch",
+        "at step 6 the freshly created branch is adopted, not deleted, despite the merged integration PR #300 from that branch name",
+        "#305's PR is based on the fresh integration branch"
+      ],
+      "files": []
     }
   ]
 }
