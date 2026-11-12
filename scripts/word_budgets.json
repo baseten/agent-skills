@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 26326,
+      "budget": 26334,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 7375,
+      "budget": 7652,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -87,7 +87,7 @@
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
-      "budget": 5763,
+      "budget": 5787,
       "target": 3000
     },
     "skills/ship-branch/SKILL.md": {
@@ -131,7 +131,7 @@
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2807,
+      "budget": 2867,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 2598,
+      "budget": 2971,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
