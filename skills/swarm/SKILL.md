@@ -870,14 +870,13 @@ stranded commits is always safe against a live worker.
 only where the run established it can reach it** (*Remote worker session
 arguments*). Where it cannot, the remote head is the only observable; do not read
 the section's silence as permission to guess — durability there is the worker's to
-satisfy, and enforcement is the dispatch prompt. **Make a stalled head actionable —
-in elapsed time, never in cycles** (the loop has no minimum interval): a tier-2
-worker whose remote head has not advanced for **30 minutes** is reported as such,
-and at **2 hours** is `NEEDS_USER`, naming the session, its last observed head,
-and how long it has been unchanged. Both thresholds run from the last observed
-advance (or dispatch), across at least two observations; a burst of cycles inside
-one minute is one observation. Where a channel exists, nudge first (*Enforce, do
-not re-ask*). This is not a capture and does not pretend to be one.
+satisfy, and enforcement is the dispatch prompt. **An unadvanced head there is not
+a trigger**: the worker reports its own state, and one that cannot — frozen on a
+prompt, its container gone — is what the hourly status read catches
+(`references/wake-budget.md`, *Live workers: the hourly status read*), whose
+report-only line is the whole response to a worker that reads working with nothing
+moved. **A worker is stalled** when that read finds it blocked, idle with no result,
+or gone, or it reports itself stuck — never on elapsed time alone.
 
 #### Capturing without racing the worker
 
@@ -945,21 +944,17 @@ its reachability half, and the rest of this lifecycle still applies; for
 #### Enforce, do not re-ask
 
 The escalation turns on the two capabilities (*Remote worker session arguments*),
-detected independently, so there are four combinations:
+detected independently; where the checkout is unreachable, the channel changes nothing:
 
 | checkout | channel | trigger | action |
 |---|---|---|---|
 | reachable | present (subagents in parent-created worktrees, serialized) | uncommitted completed work in the worktree | on first observation, instruct the worker to commit and push; if the next cycle still shows it uncommitted, **capture it yourself** rather than nudging again |
 | reachable | absent | uncommitted completed work in the worktree | **capture on first observation** — a nudge nobody can deliver is not evidence of anything |
-| unreachable | present | a remote head that has not advanced, on the stalled-head observations | **nudge, repeatedly**, then the stalled-head escalation |
-| unreachable | absent (tier 2, normally) | a remote head that has not advanced, on the stalled-head observations | the stalled-head escalation alone; there is no parent-side capture |
+| unreachable | present or absent | none on the head | the worker's own report, and the hourly status read for one that cannot make it; there is no parent-side capture and no nudge |
 
-Where the nudge repeats, **repeat it on the stalled-head rule's elapsed-time
-observations, not once per cycle** — one nudge per observation, from the same
-clock and two-observation floor. **An advancing remote head clears the state**,
-nudged or not, and a later stall starts over. The parent's own repetition is not
-progress: nudges are unacknowledged, so the escalation's thresholds run on the head
-alone and are neither reset nor deferred by another nudge.
+Nothing on the unreachable row runs on elapsed time: a quiet head is a worker
+reading code as often as one sitting on finished files, and only the worker can say
+which.
 
 ## Report
 

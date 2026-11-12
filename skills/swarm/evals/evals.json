@@ -452,6 +452,31 @@
         "the answer raises a permission hold naming the literal tool string and keeps the container"
       ],
       "files": []
+    },
+    {
+      "id": 41,
+      "name": "a-quiet-remote-head-is-a-report-line-not-a-raise",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: invoked directly over three tasks on remote worker sessions; you cannot reach any worker's checkout, and the return channel is present. Worker W's remote head has not moved for two and a half hours since its first push. It has sent no message. Your check-in has just fired at its 60-minute cap, and W's status reads working, as it did on the last two firings. The other two workers are also live and pushed in the last hour. Question: what do you do about W on this firing — nudge it, raise NEEDS_USER, capture, or something else — and what does your output say?",
+      "expected_output": "No threshold action. An unadvanced head on the unreachable tier is not a trigger: there is no elapsed-time stall rule, no nudge and no parent-side capture. W reads working with nothing moved, so it is not stalled — stalled means the status read finds it blocked, idle with no result, or gone, or it reports itself stuck. This firing writes one report-only line for W: its status, when its head last moved, and when it last messaged (never). The other workers' pushes are deltas, so this firing is productive and the watch re-arms at the 60-minute cap while workers are live.",
+      "assertions": [
+        "The answer takes no threshold action on W: no NEEDS_USER and no escalation on elapsed time",
+        "The answer does not nudge W on the quiet head and does not attempt a parent-side capture",
+        "The answer writes a report-only line for W naming its status, when its head last moved and when it last messaged",
+        "The answer does not treat W as stalled while its status reads working"
+      ],
+      "files": []
+    },
+    {
+      "id": 42,
+      "name": "a-check-in-is-one-shot-guarded-and-unpostponable",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: invoked directly over remote workers. Two things happen. First, a scheduled check-in fires whose prompt was written yesterday; since then this session wrote a stop record returning the run, with every worker released. Second, in a different live run of yours, a teammate proposes replacing the one-shot check-in with a recurring hourly trigger to save effort, and observes that unrelated wakes (a sibling's CI event every few minutes, each finding nothing new) have been re-arming the pending check-in each time. Question: what does the firing check-in do, and what do you say to the teammate on both points?",
+      "expected_output": "The firing check-in hits its liveness guard: a stop record newer than its prompt says the arming session returned, so it acts on nothing, arms nothing, and ends. To the teammate: no recurring trigger — every check-in is one-shot and each firing arms the next with a prompt written then, because a recurring trigger re-fires its original prompt, with stale state and a count that never rises, so the budget never binds. Re-arming replaces the pending check-in rather than adding one. And a wake that observed no delta must not re-arm it: the pending check-in keeps its firing time and count, so a stream of quiet wakes cannot postpone the backstop.",
+      "assertions": [
+        "The answer has the stale check-in act on nothing, arm nothing and end because a newer stop record says its run returned",
+        "The answer rejects the recurring trigger because it carries stale state and a count that never rises",
+        "The answer says a wake with no delta leaves the pending check-in's firing time and count unchanged, so quiet wakes cannot postpone it"
+      ],
+      "files": []
     }
   ],
   "companions": []

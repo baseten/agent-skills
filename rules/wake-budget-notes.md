@@ -32,6 +32,8 @@ The conflation underneath was between **how long to keep waking** and **when to 
 
 One consequence is worth stating: a wake that could not read never clears the count, because clearing requires an observed delta and it observed nothing. That is what makes the single counter bind on a permanently contended credential, and it is the property the second counter was invented to supply.
 
+**Why every check-in is one-shot, guarded, and unpostponable (#199's salvage, carried by #214):** a recurring trigger re-fires the prompt it was armed with, so its count never rises and its state is hours stale — the budget never binds. A check-in that outlives its run (the runtime could not cancel it at return) fired into a finished run and acted; the liveness guard makes it end instead. And a cycle woken by an unrelated event that re-armed the check-in on every wake let a stream of quiet wakes push the backstop out indefinitely; only a delta may move it. These came from #199's remote-tier check-in work; its 20-minute in-flight cadence and stall extensions were not salvaged, the hourly status read below replacing them.
+
 ## A watch kept past a settled result
 
 **Why a separate, shorter schedule (#183, owner's ruling):** after settle the run waits on a human reviewer, not on CI. Twenty minutes is too eager for that, and eight wakes is longer than anyone waits for a review to be noticed. About 50 minutes, then every 4 hours, three times, covers a working afternoon and stops. It is still a bounded budget with the same unproductive-wake rules, so protected rule 9 holds.

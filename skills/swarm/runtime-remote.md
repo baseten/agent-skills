@@ -92,8 +92,9 @@ shared mounts.
 | anything else | — | absent |
 
 Do not require an observed landing before treating the channel as present.
-It is enough to act on and never enough to wait on: nothing waits on it — nudges are unacknowledged and every escalation runs on the
-observed remote head — so a wrongly-presumed channel costs one composed message.
+It is enough to act on and never enough to wait on — a worker that never answers
+is the hourly status read's (`references/wake-budget.md`) — so a wrongly-presumed
+channel costs one composed message.
 **A send that errors or is refused is direct evidence and flips the recorded
 capability to absent for the rest of the run**; that negative observation
 overrides an `available` field, never the reverse.
@@ -105,7 +106,7 @@ recovery that would redirect a worker is archive-and-redispatch or `NEEDS_USER`
 instead (`SKILL.md`, *Blocked workers*, step 3).
 
 **Record how each session's channel was decided, and report it**: a run that read
-the field as absent and one that never read it look identical otherwise.
+the field as absent and one that never read it look identical.
 
 **The return channel — worker to parent — is the same two halves, mirrored.**
 Its target's half is this session's own record: one `get_session` with no id at
@@ -120,12 +121,14 @@ adopted on a resume was dispatched by the predecessor, and its send clause names
 that session: record the return channel absent for it**, so the pull decides.
 
 **What was observed (2026-10-31)**: `send_message` delivered both ways between
-cloud sessions — four idle orchestrator sessions answered a status request with
-`send_message`, each reply arriving as a new turn within about three minutes —
-and every session record read `cross_session_inbound: available`. A send's
-`{"status":"delivered"}` is delivery, not a reply. The `ListAgents` tool
-description still says a cloud session cannot message any session back; that is
-stale, and it is not evidence either way.
+cloud sessions — four idle orchestrator sessions answered by `send_message`, each
+reply a new turn within three minutes — and every session record read
+`cross_session_inbound: available`. `{"status":"delivered"}` is delivery, not a
+reply. The `ListAgents` tool
+description says a cloud session cannot message back; that is stale.
+
+**A local CLI parent (observed 2026-11-12)** held no `send_message` and listed no
+cloud session: both directions are absent unless a listing shows otherwise.
 
 ## The countermand on this tier
 
