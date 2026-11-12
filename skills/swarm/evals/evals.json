@@ -235,10 +235,10 @@
     {
       "id": 21,
       "name": "a-held-worker-is-watched-on-a-bound-then-returned-alive-in-a-restartable-checkpoint",
-      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you were invoked directly, not by an orchestrator, over three tasks on remote worker sessions. Two finished and were released. The third, worker W, stopped on a permission request for `Bash(pnpm publish:*)`; you raised it as NEEDS_USER with the session URL and the tool string two and a half hours ago, and have observed it several times since — it is still stopped, the owner has not answered, and nothing else is in flight. Question: do you keep waiting, archive W, or stop — and if you stop, what exactly does your output say about W?",
-      "expected_output": "Stop, and do not archive. The hold bounds the work, not the watch: invoked directly, the parent supervises a held worker on the elapsed-time observations the stalled-head rule defines, measured from when the hold was raised, and with nothing else in flight the bound is spent at the two-hour threshold — two and a half hours across several observations is past it. Archiving is not the run's to do: the slot is held on the owner's authority, and a redispatch would stop on the same tool. So return a restartable checkpoint that names W's session as alive, gives its URL and the literal tool string `Bash(pnpm publish:*)`, and states it is never archived on the run's authority — the owner or the next invocation picks it up. It is reported as held and left to the owner, not failed and not clean; silently ending with W unmentioned, or waiting on indefinitely, are both the forbidden 'still waiting'.",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you were invoked directly, not by an orchestrator, over three tasks on remote worker sessions. Two finished and were released. The third, worker W, stopped on a permission request for `Bash(pnpm publish:*)`; you raised it as NEEDS_USER with the session URL and the tool string, and your check-in has since fired eight times at its hourly cap, each reading W's status — it is still stopped, with no status change, message or push, the owner has not answered, and nothing else is in flight. Question: do you keep waiting, archive W, or stop — and if you stop, what exactly does your output say about W?",
+      "expected_output": "Stop, and do not archive. The hold bounds the work, not the watch: invoked directly, the parent supervises a held worker on its own check-in under the wake budget, whose hourly status read covers W, and eight unproductive firings spend that budget — a status read that finds W still blocked is no delta. Archiving is not the run's to do: the slot is held on the owner's authority, and a redispatch would stop on the same tool. So return a restartable checkpoint that names W's session as alive, gives its URL and the literal tool string `Bash(pnpm publish:*)`, and states it is never archived on the run's authority — the owner or the next invocation picks it up. It is reported as held and left to the owner, not failed and not clean; silently ending with W unmentioned, or waiting on indefinitely, are both the forbidden 'still waiting'.",
       "assertions": [
-        "The answer stops supervising because the bound is spent, citing the elapsed-time observations measured from when the hold was raised, rather than waiting indefinitely",
+        "The answer stops supervising because the wake budget is spent after eight unproductive firings, rather than waiting indefinitely",
         "The answer does not archive or redispatch W on the run's own authority",
         "The answer returns a restartable checkpoint naming W's session as alive with its URL and the literal tool string",
         "The answer states the session is never archived on the run's authority and is left to the owner or the next invocation"
@@ -284,7 +284,7 @@
     {
       "id": 25,
       "name": "a-live-repair-pass-ahead-of-its-remote-is-left-alone",
-      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a supervision cycle observes two live workers whose checkouts you can reach. Worker A is an implementation worker: its worktree is clean and its local branch is two commits ahead of the tracked remote. Worker B is a repair-pr pass, not stalled: its worktree is clean and its local branch is three commits ahead, one per review thread, and it has not yet pushed. Questions: (a) what do you do for each? (b) what changes if B's remote head then stays unadvanced past the stalled-head threshold?",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a supervision cycle observes two live workers whose checkouts you can reach. Worker A is an implementation worker: its worktree is clean and its local branch is two commits ahead of the tracked remote. Worker B is a repair-pr pass, not stalled: its worktree is clean and its local branch is three commits ahead, one per review thread, and it has not yet pushed. Questions: (a) what do you do for each? (b) what changes if B is then found stalled — its session read finds it idle with no result, the three commits still unpushed?",
       "expected_output": "(a) A: push the stranded commits, as for any clean worktree whose push failed or was deferred. B: nothing, neither to its branch nor to a recovery ref. Its local-ahead state is the design working: a repair pass pushes once, at the end, after its local verification, and that push lands the commits. A parent push to the branch would be a second push mid-pass. (b) Stalled, B takes this section's path unchanged, and any capture goes through the tested `checkpoint-capture.sh` script, never a hand-rolled push to the ref.",
       "assertions": [
         "A's stranded commits are pushed",
@@ -450,6 +450,57 @@
         "the answer does not release the worker on the footered report",
         "the answer says the footer is not evidence the report is the session's",
         "the answer raises a permission hold naming the literal tool string and keeps the container"
+      ],
+      "files": []
+    },
+    {
+      "id": 44,
+      "name": "a-quiet-remote-head-is-a-report-line-not-a-raise",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: invoked directly over three tasks on remote worker sessions; you cannot reach any worker's checkout, and the return channel is present. Worker W's remote head has not moved for two and a half hours since its first push. It has sent no message. Your check-in has just fired at its 60-minute cap, and W's status reads working, as it did on the last two firings. The other two workers are also live and pushed in the last hour. Question: what do you do about W on this firing — nudge it, raise NEEDS_USER, capture, or something else — and what does your output say?",
+      "expected_output": "No threshold action. An unadvanced head on the unreachable tier is not a trigger: there is no elapsed-time stall rule, no nudge and no parent-side capture. W reads working with nothing moved, so it is not stalled — stalled means the status read finds it blocked, idle with no result, or gone, or it reports itself stuck. This firing writes one report-only line for W: its status, when its head last moved, and when it last messaged (never). The other workers' pushes are deltas, so this firing is productive and the watch re-arms at the 60-minute cap while workers are live.",
+      "assertions": [
+        "The answer takes no threshold action on W: no NEEDS_USER and no escalation on elapsed time",
+        "The answer does not nudge W on the quiet head and does not attempt a parent-side capture",
+        "The answer writes a report-only line for W naming its status, when its head last moved and when it last messaged",
+        "The answer does not treat W as stalled while its status reads working"
+      ],
+      "files": []
+    },
+    {
+      "id": 45,
+      "name": "a-check-in-is-one-shot-guarded-and-unpostponable",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: invoked directly over remote workers. Two things happen. First, a scheduled check-in fires whose prompt was written yesterday and names two PRs as open; since then this session wrote a stop record returning the run in a restartable checkpoint, every worker released and both PRs still open. Second, in a different live run of yours, a teammate proposes replacing the one-shot check-in with a recurring hourly trigger to save effort, and observes that unrelated wakes (a sibling's CI event every few minutes, each finding nothing new) have been re-arming the pending check-in each time; one of them, unlike the rest, observed a delta - a sibling's CI turned red. Question: what does the firing check-in do, and what do you say to the teammate on both points?",
+      "expected_output": "The firing check-in hits its liveness guard: a stop record newer than its prompt says the arming session returned, so it acts on nothing - it does not re-read or supervise the two open PRs, which the restartable checkpoint leaves for a fresh invocation - arms nothing, and ends. To the teammate: no recurring trigger - every check-in is one-shot and each firing arms the next with a prompt written then, because a recurring trigger re-fires its original prompt, with stale state and a count that never rises, so the budget never binds. Re-arming replaces the pending check-in rather than adding one. And a wake that observed no delta must not re-arm it: the pending check-in keeps its firing time and count, so a stream of quiet wakes cannot postpone the backstop; only the wake that observed the red CI may re-arm it.",
+      "assertions": [
+        "The answer has the stale check-in act on nothing - not re-reading or supervising the two open PRs - arm nothing and end, because a newer stop record says its run returned",
+        "The answer rejects the recurring trigger because it carries stale state and a count that never rises",
+        "The answer says a wake with no delta leaves the pending check-in's firing time and count unchanged, while the wake that observed the red CI may re-arm it"
+      ],
+      "files": []
+    },
+    {
+      "id": 43,
+      "name": "subagent-workers-are-chosen-never-detected",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the user invoked you in a local CLI session over four independent tasks, with no runtime named. No Dynamic Workflow was opted into, and the session has no create_session, but it does expose the Agent tool. The session carries standing guidance 'do not use subagents unless asked'. Questions: (a) what do you do before the first dispatch? (b) the same run, a week later, is started by a conductor in a session nobody is watching, under the same conditions — what then? (c) a third run was invoked with `runtime: subagents` and its remote tier failed twice mid-run in a different setup — where does it degrade to?",
+      "expected_output": "(a) Ask the user once, before dispatching: subagents, serialized, or stop. Tier 3 is never taken on detection alone, because a background subagent dies with its parent session; invoking swarm authorizes dispatch on every other tier but not subagent workers, and the standing guidance neither answers nor forbids the question. (b) Nobody can answer, so the run stops with that question as NEEDS_USER rather than choosing subagents or serialized for the owner. (c) The invocation already named subagents, so the degrade goes to tier 3, reported; without that answer it would go to serialized (tier 4), never to subagents.",
+      "assertions": [
+        "The answer asks one question offering subagents, serialized, or stop before the first dispatch, rather than dispatching subagents on detection",
+        "The answer does not treat the swarm invocation or the standing guidance as answering the subagents question",
+        "The answer has the unattended run stop with the question as NEEDS_USER rather than choosing a tier",
+        "The answer degrades the third run to subagents because the invocation named them, and states that without that answer the degrade goes to serialized"
+      ],
+      "files": []
+    },
+    {
+      "id": 46,
+      "name": "a-bare-still-working-message-is-no-delta",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: invoked directly over two tasks on remote worker sessions; you cannot reach either checkout, the return channel is present, and nothing else is in flight. Your check-in fires at its 60-minute cap. Since the last firing, worker W1 sent one message - 'still working on the parser' - and its status still reads working; its head has not moved. Worker W2 sent 'blocked: the fixture repo needs an access grant'. Questions: (a) is this firing productive, and what does each worker's message count for? (b) W2 is later unblocked and finishes; W1 keeps sending the same 'still working' message every hour, with no push, no PR and no status change, for eight more firings. What happens to the watch?",
+      "expected_output": "(a) Productive, because of W2: a message reporting something substantive - done, blocked, a question, or a new push or PR - is a delta, here a block, and W2 takes Blocked workers. W1's bare 'still working' is no delta: W1 reads working with nothing moved, so it gets the report-only line (its status, when its head last moved, when it last messaged) and no threshold action. (b) The 'still working' messages reset nothing, so the eight firings are unproductive and the budget ends the watch: the stop report names W1 as alive with its session link and its line, in a restartable checkpoint, never archived on the run's authority.",
+      "assertions": [
+        "The answer counts W2's blocked message as a delta and W1's 'still working' message as none",
+        "The answer gives W1 a report-only line and no threshold action",
+        "The answer ends the watch after eight firings with only 'still working' messages from W1",
+        "The answer names W1 as alive in a restartable checkpoint and does not archive it"
       ],
       "files": []
     }

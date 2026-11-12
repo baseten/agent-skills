@@ -461,7 +461,8 @@ Scenarios: `a-changed-needs-you-republishes-the-work-queue-in-the-same-turn`,
 
 **What a scheduled firing may do is stated the same at every decision point:** it
 sweeps, reports and executes a conditional go the owner already recorded, once
-verified; it rules nothing and dispatches nothing else. **Retiring under a standing
+verified; it rules nothing and dispatches nothing else. *(Superseded by the owner's
+2026-11-12 ruling, below: a scheduled firing never retires a run.)* **Retiring under a standing
 ruling is allowed unattended (owner's ruling, 2026-11-02):** the pass first kept it
 to attended sweeps; the owner ruled that a scheduled firing may retire once the
 ruling's condition is verified on the forge. Protected rule 9 still binds every
@@ -469,7 +470,7 @@ archive: the conditions in *6. Dispatch* — wrap-up posted (for a single-issue 
 `merged` report and merged PR stand in), every PR settled, each
 branch head on the remote, no live worker and no outstanding recovery ref — are
 checked on that firing exactly as on an attended one. Scenario:
-`an-unattended-retirement-under-a-standing-ruling-checks-the-remote-first`.
+`an-unattended-retirement-under-a-standing-ruling-checks-the-remote-first` (since #214, `an-attended-turn-asks-which-ready-runs-to-retire-and-checks-the-remote-first`).
 
 **Why "active" includes waiting on the owner's merge and a pending go:** the
 check-in was restored so that work gated on an owner's merge starts without the
@@ -502,7 +503,7 @@ account and the template are a fresh run's.
 
 **Why the ledger is maintained, not appended:** an append-only ledger had to be read end to end to know the current state, and a clear restarted from a stale one. Rows are edited in place, one changelog line records each sweep, and the whole body is rewritten before every `/clear`.
 
-**Why the conductor holds a settled run's watch:** see `rules/conductor-exchange-notes.md`, *The watch after settling*.
+*(Superseded by #214: the conductor holds no watch.)* **Why the conductor held a settled run's watch:** see `rules/conductor-exchange-notes.md`, *The watch after settling*.
 
 ## The protected-rule audit (PR #201)
 
@@ -591,16 +592,17 @@ Pinned in `evals/evals.json`:
   - where the repository has not opted into filing, owner steps are listed, not
     filed (`owner-steps-are-listed-not-filed-where-the-repository-has-not-opted-in`).
 - the owner's 2026-11-02 rulings and field feedback:
-  - an unattended retirement under a standing ruling checks the remote first
-    (`an-unattended-retirement-under-a-standing-ruling-checks-the-remote-first`);
+  - an attended turn asks which ready runs to retire, checking the remote first
+    (`an-attended-turn-asks-which-ready-runs-to-retire-and-checks-the-remote-first`,
+    rewritten by #214 from the standing-ruling version);
   - a sweep reports each state change once, never its steps or waits on others
     (`a-sweep-reports-state-changes-once-never-steps-or-waits-on-others`);
   - decisions one at a time, with links and a recommendation
     (`decisions-are-asked-one-at-a-time-with-links-and-a-recommendation`);
   - a chat ruling goes to the ledger before it is relayed
     (`a-chat-ruling-goes-to-the-ledger-before-it-is-relayed`);
-  - the conductor holds a settled run's watch until it merges
-    (`the-conductor-holds-a-settled-runs-watch-until-merge`);
+  - a settled run's watch stays with the run, never the conductor
+    (`a-settled-runs-watch-stays-with-the-run`, rewritten by #214);
   - a draft exists only with its full text
     (`a-draft-exists-only-with-its-full-text-in-the-ledger`).
 - the operator-output rule (2026-11-03, `rules/operator-output-notes.md`):
@@ -642,13 +644,13 @@ Pinned in `evals/evals.json`:
   - a reviewer waiting on a prompt, or silent, is read from its record and the forge
     (`a-silent-or-blocked-reviewer-is-read-from-its-record-and-the-forge`).
 
-**From two independent reviews (PR #201):** a standing retirement ruling is re-read at its site exactly as a conditional go is, because a revoked ruling found only in the ledger would otherwise retire runs unattended; a single-issue run's `merged` report and its merged PR stand in for a wrap-up it never posts; on the default `github-issue` ledger held replies and draft answers are only named, so a deployment where drafts matter configures `tracker-document`; and a relayed approval puts the complete reply text in the question's option, so the owner answers once. Scenarios: `a-revoked-retirement-ruling-retires-nothing`, `a-merged-single-issue-run-retires-without-a-wrap-up`, `a-relayed-ruling-that-posts-a-reply-is-one-question`.
+**From two independent reviews (PR #201):** *(the retirement half superseded by #214: no standing ruling retires a run.)* a standing retirement ruling is re-read at its site exactly as a conditional go is, because a revoked ruling found only in the ledger would otherwise retire runs unattended; a single-issue run's `merged` report and its merged PR stand in for a wrap-up it never posts; on the default `github-issue` ledger held replies and draft answers are only named, so a deployment where drafts matter configures `tracker-document`; and a relayed approval puts the complete reply text in the question's option, so the owner answers once. Scenarios: `a-revoked-retirement-ruling-retires-nothing`, `a-merged-single-issue-run-retires-without-a-wrap-up`, `a-relayed-ruling-that-posts-a-reply-is-one-question`.
 
 ## Contradiction pass and re-audit after the dispatched-account ruling (PR #201)
 
-**Where the owner's account comes from.** The dispatch prompt names the owner's account as the invoking user's for the session it starts (owner's ruling, 2026-11-03), so the conductor must have that account from a statement too: the login its own invocation names, never the ledger (forge content anyone with write access can edit), a credential or a comment. Without one, the dispatch names none and every go and standing ruling stays pending — the fail-closed reading. **Why the DAG write names the open-item ban:** a run cannot tell an approved relay from any other footered comment under the owner's account, so the ban on writing at an open item's site is restated where the conductor writes plans. **Why a held watch carries one deadline:** anchoring 7 days at each hand-off restarted the bound on every re-settle; the run's own deadline now travels with the watch and is recorded per held PR in the ledger and the check-in prompt.
+**Where the owner's account comes from.** The dispatch prompt names the owner's account as the invoking user's for the session it starts (owner's ruling, 2026-11-03), so the conductor must have that account from a statement too: the login its own invocation names, never the ledger (forge content anyone with write access can edit), a credential or a comment. Without one, the dispatch names none and every go and standing ruling stays pending — the fail-closed reading. **Why the DAG write names the open-item ban:** a run cannot tell an approved relay from any other footered comment under the owner's account, so the ban on writing at an open item's site is restated where the conductor writes plans. *(Superseded by #214, which removed the held watch.)* **Why a held watch carried one deadline:** anchoring 7 days at each hand-off restarted the bound on every re-settle; the run's own deadline now travels with the watch and is recorded per held PR in the ledger and the check-in prompt.
 
-**Owner's rulings on the held watch (2026-11-04):** the held watch ignores empty sweeps and runs until the PR merges or closes, or its deadline passes; and a conductor that dies after taking over a settled PR's watch leaves an accepted gap — the run keeps no check-in at its deadline. Recorded in full in `rules/conductor-exchange-notes.md`, *The watch after settling*.
+*(Superseded by #214: a settled run now keeps its own watch and the conductor holds none — `rules/conductor-exchange-notes.md`, *The watch after settling*.)* **Owner's rulings on the held watch (2026-11-04):** the held watch ignores empty sweeps and runs until the PR merges or closes, or its deadline passes; and a conductor that dies after taking over a settled PR's watch leaves an accepted gap — the run keeps no check-in at its deadline. Recorded in full in `rules/conductor-exchange-notes.md`, *The watch after settling*.
 
 ## Owner's rulings (2026-11-05, PR #205)
 
@@ -659,3 +661,10 @@ Pinned in `evals/evals.json`:
 **One exception with `settle-outstanding-decisions` (owner's ruling, 2026-11-05):** a ruling whose complete comment the owner approved word for word — its full text in the option they chose — is posted by the conductor itself, on any issue, as `settle-outstanding-decisions` posts one; the exception is stated once in `rules/authored-write-form.md` and read from the conductor's record of the approval, never from a footer.
 
 **Why every go is the owner's to post, on any issue (contradiction pass after the rebase onto #206, 2026-11-05):** a go is the owner's authority. Under #206 a comment whose id the run holds is its own write, so a go the conductor posted itself — even on an issue it created — and then re-read by that id would be its own write accepted as the owner's (protected rules 2 and 3). So the owner posts every go from a draft, the ledger keeps owner-comment ids apart from own-write ids, and both re-reads refuse an own-write id. Only a ruling on an item a run raised is under the exception. A reviewer's go is the other exception, recorded in the ledger alone (*Reviewers*).
+
+## Owner's rulings (2026-11-12, PR #214)
+
+**Why a run retires only on the owner's answer in an attended turn.** The standing retirement ruling let a scheduled firing archive sessions nobody was watching, and every guard on it — re-read by comment id, authored by the owner, unedited, not revoked — existed to stop that path doing harm. The owner replaced it: each attended turn lists the runs ready to retire, meeting every *Retire a finished run* condition verified that turn, and asks one `AskUserQuestion` confirming which to archive. A scheduled firing only lists them for the next attended turn. The cost is one question per attended turn while a run is ready; the gain is that no archive happens without the owner answering in the session that does it. A conductor-posted go never authorises a retirement either (#215 states the same for its posted dispatch go). A drafted reviewer's archive is unchanged (`reviewers.md`). Protected rule 9's conditions bind every archive exactly as before; only the authority moved. Scenarios: conductor#5 #31 #38 #39 rewritten, conductor#87 new.
+
+**The conductor shrink is not in this PR** (owner's ruling): it gets its own.
+

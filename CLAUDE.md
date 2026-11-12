@@ -45,7 +45,7 @@ evals (`<skill>#<id>`).
    supervise-prs#56 #88, swarm#30, conductor#57, review-pr#0 #5.
 2. **Identity is observed authorship; own writes are known by id, never by footer or content.**
    `rules/posting-identity.md`; `swarm`, *Releasing a worker*, *Blocked workers*; `supervise-prs`, *Integration-branch CI*, step 3;
-   `rules/conductor-exchange.md`, *Pushes*, *The watch after settling*.
+   `rules/conductor-exchange.md`, *Pushes*.
    backlog-orchestrator#5 #58,
    resolve-pr-comment#48 #49, supervise-prs#86 #89 #105 #112, backlog-orchestrator#53 #90 #91 #102 #103 #105 #109 #110, settle-and-merge#47 #48 #49, implement-issue#40 #41, swarm#37 #38 #39,
    merge-stack#11, settle-outstanding-decisions#18, review-pr#3.
@@ -103,8 +103,8 @@ evals (`<skill>#<id>`).
 9. **Stranded work reaches a remote ref before any archive; permission holds name the
    literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked
    workers*; `rules/wake-budget.md`; `rules/conductor-exchange.md`, *The watch after settling*; `conductor`,
-   *6. Dispatch*, `reviewers.md`. backlog-orchestrator#4 #19, swarm#20 #25 #26,
-   implement-issue#14 #19 #20 #21, supervise-prs#87, backlog-orchestrator#92, conductor#5 #8 #21 #31 #35 #38 #39 #75 #76 #78,
+   *6. Dispatch*, `reviewers.md`. backlog-orchestrator#4 #19, swarm#20 #21 #25 #26 #44 #45 #46,
+   implement-issue#14 #19 #20 #21, supervise-prs#87, backlog-orchestrator#92, conductor#5 #8 #21 #31 #35 #38 #39 #75 #76 #78 #90,
    implement-issue#36 #39 #42, merge-stack#12.
 
 **A PR changing a protected rule's text says so in its body**, and gets a blind

@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 26326,
+      "budget": 26411,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -27,11 +27,11 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
-      "budget": 2310,
+      "budget": 2327,
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 7375,
+      "budget": 7287,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -39,7 +39,7 @@
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 5856,
+      "budget": 5809,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
@@ -55,7 +55,7 @@
       "target": 3000
     },
     "skills/npm-dependency-upgrade-orchestrator/SKILL.md": {
-      "budget": 5360,
+      "budget": 5391,
       "target": 8000
     },
     "skills/owner-steps/SKILL.md": {
@@ -103,11 +103,11 @@
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
-      "budget": 10344,
+      "budget": 10396,
       "target": 8000
     },
     "skills/swarm/runtime-remote.md": {
-      "budget": 1516,
+      "budget": 1515,
       "target": 1500
     },
     "skills/upgrade-npm-dependency/SKILL.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 2598,
+      "budget": 2431,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
@@ -163,7 +163,7 @@
       "target": 1500
     },
     "rules/platform-pr-posture.md": {
-      "budget": 1659,
+      "budget": 1635,
       "target": 1500
     },
     "rules/posting-identity.md": {
@@ -191,7 +191,7 @@
       "target": 1500
     },
     "rules/wake-budget.md": {
-      "budget": 1657,
+      "budget": 2076,
       "target": 1500
     },
     "rules/watch-and-read.md": {
@@ -199,7 +199,7 @@
       "target": 1500
     },
     "rules/operator-output.md": {
-      "budget": 2034,
+      "budget": 2041,
       "target": 1500
     },
     "skills/write-spec/SKILL.md": {
