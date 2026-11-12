@@ -214,6 +214,22 @@ sweep (README, *Running the evals*). The model calls stay the caller's.
 `scripts/eval_reminder.sh` flags a contract change whose evals did not move; it is advisory
 and needs someone to act on it.
 
+**Spend the eval budget where the disagreement can be.** A round is three model calls per
+scenario, and sweeping rounds were most of a working day's usage. The defaults:
+
+- **Scope:** run the scenarios a change adds or rewrites, plus any whose verdict it could
+  flip. A wording-only fix that cannot flip a verdict needs no round.
+- **The whole pinning round** that a protected rule's text change requires runs **once, before
+  merge, over the batch** — after a large sweep of work, never per fix iteration. Propose
+  it to the owner with an estimate of its size; do not start one unasked.
+- **Readers:** Haiku by default — it follows the text literally, which is what a
+  discriminating scenario needs. Escalate a scenario to a larger model only where Haiku fails
+  both arms the same way on text the change did not touch.
+- **One reader per arm**, no repeats unless a disagreement needs confirming. **Re-run only**
+  the scenarios a fix touched.
+- **Grade by matching** where an assertion names a token — an id, an option, a tool string —
+  and use one blind model grader for the rest of the round, not one per answer.
+
 **Record the why.** Add the reasoning to the skill's `NOTES.md`, keyed by section, naming
 the review round it came from. The existing entries do this; it is what stops the next
 fixer re-breaking the fix. Where the skill has no `NOTES.md` (the one named at the top of

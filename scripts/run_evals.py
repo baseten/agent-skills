@@ -24,7 +24,8 @@ answer back beside it.
 
   # 1. scaffold both arms
   python3 scripts/run_evals.py prepare --skill swarm --base origin/main
-  # 2. dispatch one reader per packet; save its answer to <packet-dir>/answer.md
+  # 2. dispatch one reader per packet (Haiku by default; CLAUDE.md, *Spend the
+  #    eval budget*); save its answer to <packet-dir>/answer.md
   # 3. grade each answer against that scenario's assertions, writing
   #    grading.json with expectations[{text, passed, evidence}]
   # 4. score, and read the disagreements
@@ -459,7 +460,7 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path,
         print(f"\n  ONE ARM ONLY - {single_arm_reason}.")
         print("  The information in this method is the disagreement between arms, so treat")
         print("  these scores as a baseline for the next round, not as a result.")
-    print("\nNext: dispatch one reader per packet.json, save its reply to answer.md")
+    print("\nNext: dispatch one reader per packet.json (Haiku by default), save its reply to answer.md")
     print("beside it, then grade answer.md against key.json into grading.json.")
     return 0
 
