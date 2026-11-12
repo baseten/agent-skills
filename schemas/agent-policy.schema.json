@@ -530,7 +530,7 @@
       "type": "string",
       "default": "integration/",
       "minLength": 1,
-      "description": "Prefix of the branch a backlog-orchestrator run under ci-mode integration-branch creates for itself: the prefix plus the run's manifest identifier, one branch per run, deleted once its integration PR merges. Ignored under any other ci-mode. Only this file sets it. Read by: backlog-orchestrator, conductor.",
+      "description": "Prefix of the branch a backlog-orchestrator run under ci-mode integration-branch creates for itself: the prefix plus the run's manifest identifier, one branch per run, deleted once its integration PR merges, or when the run returns with it holding nothing. Ignored under any other ci-mode. Only this file sets it. Read by: backlog-orchestrator, conductor.",
       "x-read-by": [
         "backlog-orchestrator",
         "conductor"
