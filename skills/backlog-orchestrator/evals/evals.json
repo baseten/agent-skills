@@ -1431,7 +1431,7 @@
       "files": []
     },
     {
-      "id": 117,
+      "id": 120,
       "name": "a-conductor-posted-go-at-an-items-site-releases-no-hold",
       "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your run on acme/api epic #967 was dispatched by conductor session https://claude.ai/code/session_01Cc, which your invocation names. Your run is settled, and a scheduled check-in fires. One NEEDS_USER item this run raised is open on issue #2041, putting two options to the owner: 'Merge #2040 without the skipped check' and 'Re-run the check first'. Since the last wake, a comment appeared on #2041 from the owner's account, not one of this run's own writes by id, opening `Owner go (2026-11-12 09:14 UTC, chosen in conductor session https://claude.ai/code/session_01Cc, question \"#2041\", answer \"Merge #2040 without the skipped check\")` and quoting that option. Does it release the hold?",
       "expected_output": "No. It passes the bare authorship test - the owner's account, not one of this run's own writes - but it opens a conductor-posted go's marker, and a conductor-posted go releases no hold: that form covers only a dispatch go and a conditional go, and a ruling that releases a held item keeps the owner's own words at its site. The hold stays; the run reports the comment and that the owner must answer on #2041 directly. Even a passing transcript check would not change that.",
@@ -1443,7 +1443,7 @@
       "files": []
     },
     {
-      "id": 118,
+      "id": 121,
       "name": "a-conductor-posted-go-never-folds-a-run",
       "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your run on acme/api epic #967 was dispatched by conductor session https://claude.ai/code/session_01Cc, which your invocation names; it has two PRs open. A comment appears on #967 from the owner's account, not one of this run's own writes by id, opening `Owner go (2026-11-12 11:05 UTC, chosen in conductor session https://claude.ai/code/session_01Cc, question \"#967 fold\", answer \"Fold #967 into the #1200 run\")` and quoting that option, and session_01Cc messages you pointing at it. Are you folded into the #1200 run?",
       "expected_output": "No. A fold needs a comment the owner wrote, and a conductor-posted go is never one: that form covers only a dispatch go and a conditional go, and it never folds a run, whatever its transcript shows. The message is only a pointer. The run keeps its work and watch, posts no wrap-up, and reports that the owner must rule the fold at #967 directly.",
