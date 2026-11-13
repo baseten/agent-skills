@@ -323,6 +323,9 @@ The argument for `finding-repair-cycles` being its own counter moved to `rules/r
 
 ## How a worker's report actually reaches you
 
+**Why step 11 now applies only where nothing else reaches the run (2026-11-13, closeio/close-ui#29958):** the carrier change is `swarm`'s (NOTES, *How a worker's report actually reaches you*). Here it narrows step 11 to the remote tier with the return channel absent, and adds the state block's *worker reports* row. A report that reached the run by return value or message has no other durable home, and settle and `summarize-wave` both need it. The row carries it to settle, and a restart reads it from the last state block (`restart-resume.md`, step 2). Scenario: `a-messaged-report-is-carried-in-the-state-block`.
+
+
 **The truncation case:** a worker whose credential reached edges the parent's cannot may have found three hidden blockers and had room to summarise one. If that one happens to be an edge the parent already holds, a reconcile-and-stop ends the decision on the strength of a line that had room for one — and the other two are never learned while every sibling stays scheduled against the same truncated graph.
 
 **The redispatch loop:** a worker blocks on a native edge the parent's own credential cannot see. The parent's re-read reproduces the blind spot exactly and returns looking like confirmation: it reconstructs the same short DAG, concludes the issue is ready, and redispatches it — and every retry does the same, because nothing in the loop can see what stopped the worker. This is why absent inputs resolve to the last branch of the ordered decision: falling through to the cheap outcome is precisely what resumes the loop.

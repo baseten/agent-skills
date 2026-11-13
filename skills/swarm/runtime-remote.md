@@ -113,11 +113,13 @@ startup, its `cross_session_inbound` tested for `available` exactly as above. It
 caller's half is the worker's: holding `send_message` (the claude-code-remote
 tool) — which the worker establishes from its own toolset and this run cannot
 see. So where this session reads `available`, record the return channel present,
-pass this session's id in the template's send clause, and expect pushes that may
+pass this session's id in the template's send clause, and expect messages that may
 never come; elsewhere, record it absent and remove the clause. A worker this run
 created can also address it as `@parent`, but pass the id regardless. **A worker
 adopted on a resume was dispatched by the predecessor, and its send clause names
-that session: record the return channel absent for it**, so the pull decides.
+that session: record the return channel absent for it**, so the pull decides — and
+its report, if it was sent, went there: read it from the predecessor's last
+checkpoint, or treat the worker as having none.
 
 **What was observed (2026-10-31)**: `send_message` delivered both ways between
 cloud sessions — four idle orchestrator sessions answered a status request with

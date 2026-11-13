@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 26326,
+      "budget": 26353,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -23,11 +23,11 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/restart-resume.md": {
-      "budget": 1196,
+      "budget": 1201,
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
-      "budget": 2310,
+      "budget": 2354,
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
@@ -67,7 +67,7 @@
       "target": 3000
     },
     "skills/repair-pr/SKILL.md": {
-      "budget": 3974,
+      "budget": 4004,
       "target": 3000
     },
     "skills/resolve-pr-comment/SKILL.md": {
@@ -95,19 +95,19 @@
       "target": 3000
     },
     "skills/summarize-wave/SKILL.md": {
-      "budget": 2312,
+      "budget": 2330,
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 9587,
+      "budget": 9601,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
-      "budget": 10344,
+      "budget": 10545,
       "target": 8000
     },
     "skills/swarm/runtime-remote.md": {
-      "budget": 1516,
+      "budget": 1540,
       "target": 1500
     },
     "skills/upgrade-npm-dependency/SKILL.md": {
@@ -131,7 +131,7 @@
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2807,
+      "budget": 2836,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {

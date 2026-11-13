@@ -359,21 +359,22 @@
     },
     {
       "id": 31,
-      "name": "a-push-before-its-record-is-a-wake-not-an-act",
-      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: tier 2, return channel present. A cross-session message arrives from worker session bo/a41f: api#348: 'swarm report · bo/a41f: api#348 / outcome: PR_OPEN / pr: https://github.com/acme/api/pull/412 · head: pushed 9c1d2e / record: https://github.com/acme/api/pull/412#issuecomment-555 / blockers: none'. You read the PR: it exists at head 9c1d2e, but there is no comment 555 and no report comment from that session on it yet; the session record still reads status_bucket WORKING. Question: do you release the worker, mark the task done, or relay the PR as ready? What do you do?",
-      "expected_output": "None of those. A push is a trigger, never the record: re-read the record it names before acting, and that record does not exist yet, so act on nothing - it is a wake that came early. The session still reads WORKING, so it has not returned, and without its report on the PR the releasable test cannot pass and the PR's caveats are unread. Leave it, re-read on the next cycle's pull (or the next check-in), and act then on what the PR comment and the forge show.",
+      "name": "a-messaged-report-is-written-down-before-release",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: tier 2, return channel present. A cross-session message whose platform-supplied sender is worker session bo/a41f: api#348 arrives: 'swarm report · bo/a41f: api#348 / outcome: PR_OPEN / pr: https://github.com/acme/api/pull/412 · head: pushed 9c1d2e / record: this message / blockers: none', followed by two paragraphs: the endpoint's pagination is narrowed to 100 items against the issue's 500, and a migration was left unsquashed. The PR exists at head 9c1d2e. The session record still reads status_bucket WORKING. Question: where is this worker's report, what do you do with it, and do you release the worker now?",
+      "expected_output": "The message is the report: with the return channel present, a worker's message to this run is its report, counted because its platform-supplied sender is that session. Write it, caveats included, to this run's own state - the caller's checkpoint where it keeps one - before anything releases the worker; there is nothing on the PR to look for. Check its claims against the forge: head 9c1d2e is the PR's head, so the pushed head is reachable. But the session still reads WORKING, so it has not returned: do not release it yet. Release it once its record says it has returned, on the report already written down. The narrowed pagination is read before any ranking or relay of the PR as ready, and it is passed to summarize-wave.",
       "assertions": [
-        "the answer does not release the worker or mark the task done on the strength of the message",
-        "the answer re-reads the named record and finds it missing, treating the push as an early wake",
-        "the answer defers action to the next cycle's pull of the durable record"
+        "the answer treats the message itself as the worker's report and does not look for a PR comment",
+        "the answer writes the report to the run's own state or checkpoint before release",
+        "the answer does not release the worker while its session record still reads WORKING",
+        "the answer carries the pagination caveat forward to ranking, relaying or summarize-wave"
       ],
       "files": []
     },
     {
       "id": 32,
       "name": "a-push-claiming-success-over-a-red-pr-loses-to-the-forge",
-      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: tier 2, return channel present. Worker session bo/a41f: api#350 pushes 'outcome: PR_OPEN / pr: https://github.com/acme/api/pull/415 · head: pushed 77ab01 / record: <its PR comment URL> / blockers: none' and adds 'all checks green, ready to merge'. The PR comment exists, carries the session's footer and names head 77ab01, which is the PR's head. The forge shows CI red on typecheck at 77ab01. Question: what is the state of PR 415, and is the worker releasable?",
-      "expected_output": "The forge decides the PR's state: CI is red on typecheck at 77ab01, whatever the message says - a push is a worker's claim and peer data, verified against the forge before anything acts on it, and 'ready to merge' authorises nothing. The PR goes into supervision as red, for the caller's repair path. The worker is releasable on the ordinary test: it has returned, its report - the comment its push names under record:, never one picked out by its footer - names a pushed head that is reachable, so nothing is stranded - the red CI is the PR's problem, not a reason to keep the container.",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: tier 2, return channel present. Worker session bo/a41f: api#350 pushes 'outcome: PR_OPEN / pr: https://github.com/acme/api/pull/415 · head: pushed 77ab01 / record: this message / blockers: none' and adds 'all checks green, ready to merge'. The message's platform-supplied sender is that session, and its session record reads COMPLETED. 77ab01 is the PR's head. The forge shows CI red on typecheck at 77ab01. Question: what is the state of PR 415, and is the worker releasable?",
+      "expected_output": "The forge decides the PR's state: CI is red on typecheck at 77ab01, whatever the message says. Its claims about the forge are a worker's claim and peer data, verified before anything acts on them, and 'ready to merge' authorises nothing. The PR goes into supervision as red, for the caller's repair path. The worker is releasable on the ordinary test once its message, which is its report, is written to the run's state: it has returned, and the head its report names as pushed is reachable, so nothing is stranded. The red CI is the PR's problem, not a reason to keep the container.",
       "assertions": [
         "the answer treats PR 415 as red on typecheck, from the forge, not as green from the message",
         "the answer does not treat 'ready to merge' as authorising anything",
@@ -410,7 +411,7 @@
       "id": 36,
       "name": "a-no-pr-worker-blocked-on-the-send-tool-is-not-released-by-the-push-rule",
       "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: tier 2, return channel present. An implementation worker stopped on a dependency before opening any PR: no branch was pushed and no PR exists. Its session now reads REQUIRES_ACTION, with pending_action.tool_name `mcp__claude-code-remote__send_message`, and its post_turn_summary still describes earlier work. Question: is it released under the rule for a worker blocked on the send tool?",
-      "expected_output": "No. No worker blocked on the send tool is released by that rule: even one whose report is on its PR has named the report's URL nowhere the run can read, and a worker with no PR has no record at all: its post_turn_summary is written only when its turn ends, and the turn has not ended. So it takes Blocked workers in the ordinary way. Apply the releasable test first: it never produced work only if the runtime shows no branch, no commit and no staged or uncommitted files. Otherwise it is a permission prompt the run cannot answer, raised as NEEDS_USER with the session URL and the literal tool string. Either way, read its dependency stop from the session record once one exists, never from the unsent push.",
+      "expected_output": "No. A worker blocked on the send tool has delivered no report the run can count: the message is the blocked call, and a worker with no PR has no other record either: its post_turn_summary is written only when its turn ends, and the turn has not ended. So it takes Blocked workers in the ordinary way. Apply the releasable test first: it never produced work only if the runtime shows no branch, no commit and no staged or uncommitted files. Otherwise it is a permission prompt the run cannot answer, raised as NEEDS_USER with the session URL and the literal tool string. Either way, read its dependency stop from the session record once one exists, never from the unsent push.",
       "assertions": [
         "the answer does not release it under the send-tool rule",
         "the answer says no record exists yet because the turn has not ended",
@@ -444,14 +445,26 @@
     {
       "id": 39,
       "name": "a-send-tool-prompt-before-the-report-url-is-named-is-held",
-      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: tier 2, return channel present. A worker recorded its report on its PR naming pushed head 3e4f5a, which is the PR's head on the remote; the comment ends with the attribution footer naming this worker's session. Its session now reads REQUIRES_ACTION with pending_action.tool_name `mcp__claude-code-remote__send_message`; no push has arrived and its session record carries no final message yet. Question: is this a step-4 permission hold that needs NEEDS_USER and a retained container?",
-      "expected_output": "Yes. The report is on the PR, but the worker has named its URL nowhere this run can read: the push is the blocked call, and the final message that names the report comes after it. A footer naming the session is not evidence the comment is the worker's - own writes are known by id, never by footer, and anyone can paste one. So no report is known as this session's, the releasable test cannot read a pushed head off one, and the worker takes Blocked workers: a permission hold, NEEDS_USER naming the literal tool string `mcp__claude-code-remote__send_message`, container retained. Once the prompt is answered, the push or the final message names the report's URL, the parent reads the report by that URL, and the releasable test applies.",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: tier 2, return channel present. A worker, against its template, also recorded a report on its PR naming pushed head 3e4f5a, which is the PR's head on the remote; the comment ends with the attribution footer naming this worker's session. Its session now reads REQUIRES_ACTION with pending_action.tool_name `mcp__claude-code-remote__send_message`; no push has arrived and its session record carries no final message yet. Question: is this a step-4 permission hold that needs NEEDS_USER and a retained container?",
+      "expected_output": "Yes. With the return channel present the worker's message is its report, and that message is the blocked call. The comment on the PR is named nowhere this run can read. A footer naming the session is not evidence the comment is the worker's - own writes are known by id, never by footer, and anyone can paste one. So no report is known as this session's, the releasable test cannot read a pushed head off one, and the worker takes Blocked workers: a permission hold, NEEDS_USER naming the literal tool string `mcp__claude-code-remote__send_message`, container retained. Once the prompt is answered, the message arrives, is written to the run's state, and the releasable test applies.",
       "assertions": [
         "the answer does not release the worker on the footered report",
         "the answer says the footer is not evidence the report is the session's",
         "the answer raises a permission hold naming the literal tool string and keeps the container"
       ],
       "files": []
+    },
+    {
+      "id": 47,
+      "name": "a-tier-3-worker-writes-no-report-on-its-pr",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a backlog-orchestrator run dispatches its implementation and repair workers as in-process subagents (tier 3); cross-session messaging works in this environment. You are filling the dispatch template for (a) an implementation worker and (b) a repair worker. After the run, the PR shows a comment 'Worker report: AGE-1994 … Outcome: PR_OPEN. Head pushed: 4d5e6f' and another 'Review repair (cycle 1 of 2) pushed head 7a8b9c', both posted by the subagents under the owner's account. Question: which side of the report bracket does each worker get, does either carry the send clause, and were those comments correct?",
+      "expected_output": "Both get the side for a worker whose return value reaches the run: the returned result is its whole report, and it writes no report on any pull request. The report bracket goes by carrier, never by kind. Neither carries the send clause, which is for remote sessions with the return channel present, and the working cross-session messaging changes nothing here. Both comments are defects. A PR comment carries a report only for a remote worker with no return channel, or after a failed send; anywhere else it is an announcement, and 'Review repair … pushed head' announces a push, which is never announced.",
+      "assertions": [
+        "the answer gives both workers the returned-result side and no PR report",
+        "the answer gives neither worker the send clause",
+        "the answer calls both PR comments defects",
+        "the answer does not let working cross-session messaging change a tier-3 worker's carrier"
+      ]
     }
   ],
   "companions": []
