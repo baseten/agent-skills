@@ -229,6 +229,10 @@ scenario, and sweeping rounds were most of a working day's usage. The defaults:
   the scenarios a fix touched.
 - **Grade by matching** where an assertion names a token — an id, an option, a tool string —
   and use one blind model grader for the rest of the round, not one per answer.
+- **A reader's cost is the contract it reads**, not the prompt: on a large skill each reader
+  spent 80–165k tokens, nearly all of it on the contract. So batch the scenarios of one skill
+  into one reader per arm (`prepare --batch`), and pass `--lazy-side-files` where the skill
+  has side files, so a reader opens one only where the text sends it there.
 
 **Record the why.** Add the reasoning to the skill's `NOTES.md`, keyed by section, naming
 the review round it came from. The existing entries do this; it is what stops the next
