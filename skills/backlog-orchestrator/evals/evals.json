@@ -1363,7 +1363,8 @@
       "assertions": [
         "the answer counts the workers' send clauses in the stopped test",
         "the answer relies on the recorded hand-back",
-        "the answer records the return channel absent for the adopted workers"
+        "the answer records the return channel absent for the adopted workers",
+        "the answer reads a report an adopted worker already sent from the predecessor's last checkpoint, or treats the worker as having none"
       ],
       "files": []
     },
