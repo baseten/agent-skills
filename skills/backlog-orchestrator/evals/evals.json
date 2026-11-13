@@ -1359,7 +1359,7 @@
       "id": 105,
       "name": "a-resume-adopts-live-workers-with-the-return-channel-absent",
       "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Resuming a run whose predecessor session_01Pp handed back cleanly (its checkpoint records the hand-back). Two remote workers it dispatched are still live; their send clauses name session_01Pp. This session's own record reads cross_session_inbound: available. Question: is the predecessor stopped, and how do you treat those workers' return channel?",
-      "expected_output": "The predecessor counts as stopped only because its checkpoint records the hand-back, which also makes it act on no push from those workers; a live worker whose send clause names it would otherwise be a wake bound to it. For the adopted workers, record the return channel absent - their send clauses name the predecessor - so the pull decides; nothing is inferred from a missing push.",
+      "expected_output": "The predecessor counts as stopped only because its checkpoint records the hand-back, which also makes it act on no push from those workers; a live worker whose send clause names it would otherwise be a wake bound to it. For the adopted workers, record the return channel absent - their send clauses name the predecessor - so the pull decides; nothing is inferred from a missing message. A report one of them already sent went to the predecessor: read it from the predecessor's last checkpoint, or treat that worker as having none.",
       "assertions": [
         "the answer counts the workers' send clauses in the stopped test",
         "the answer relies on the recorded hand-back",
@@ -1429,6 +1429,18 @@
         "the answer raises #640 as a NEEDS_USER item rather than dispatching it"
       ],
       "files": []
+    },
+    {
+      "id": 122,
+      "name": "a-messaged-report-is-carried-in-the-state-block",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Tier 2, return channel present. Worker session bo/c2: api#360 sends its swarm report as a message (record: this message): PR_OPEN, head pushed 1f2e3d, and a caveat that the retry policy was left at the library default because the issue's value conflicts with the gateway's timeout. Its session then reads COMPLETED, 1f2e3d is the PR head, and you release it. Two cycles later this session is compacted and a successor resumes the run. Question: where must the report live for settle, summarize-wave and the successor to see the caveat, and do you post it on the PR?",
+      "expected_output": "In the state block's worker-reports row, written in full and as received before the worker is released. That row is the report's only durable carrier: a report that reached the run as a message or return value is on no forge. It stays there until settle has read it, it is passed to summarize-wave, and the successor reads it from the last state block on resume. It is not posted on the PR. A PR comment carries a report only where neither a return value nor the return channel reaches the run, and posting it would be an announcement.",
+      "assertions": [
+        "the answer records the report in full in the state block before release",
+        "the answer has the successor read it from the last state block",
+        "the answer passes it to summarize-wave or settle",
+        "the answer does not post the report on the PR"
+      ]
     }
   ]
 }

@@ -51,6 +51,8 @@ So the rule is conditional on a capture path existing, and it carries the fallba
 
 **Why SHAs are bare (#158):** GitHub autolinks a bare SHA, not one in a code span, so the old reply template posted unlinked SHAs. No-announce sits beside it because that reply is where a repair is answered; a dispatch's worker report names the head as data for the parent, which is a different write.
 
+**Why the worker-report exemption narrowed (2026-11-13, closeio/close-ui#29958):** the exemption let any dispatched worker's report onto the timeline, and in-process workers whose return value already reached the run used it. That produced comments the owner had to hide. The exemption now covers only the remote tier with no return channel.
+
 **Why a skip token is banned from prose too (incident, Oct 2026):** a commit message describing the deferred-CI feature quoted the token, and GitHub skipped CI on that PR and on its squash merge to the base — the one run nothing is meant to defer. The forge matches the token anywhere in the message, so there is no safe way to quote it; the rule names it instead. It extends `merge-stack`'s explicit-merge-message default to every message the run writes, so it is stated once here.
 
 **Why a PR body is edited after creation only under three conditions (#163, owner's ruling 2026-09-30):** a run rewrote a published description a person had read, to add behaviour changes, because the settle reconcile then told it to unconditionally. A draft, a body still carrying the footer, and a repository that granted `auto-merge` are the cases where nobody's read text is overwritten or the owner already handed the PR to the run; everywhere else the drift is reported with a replacement for the author to apply, and the merge still holds on it.

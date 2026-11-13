@@ -514,8 +514,9 @@ account and the template are a fresh run's.
 
 Pinned in `evals/evals.json`:
 
-- a push arrives before its durable record exists → re-read later, do not act
-  (`swarm`, `a-push-before-its-record-is-a-wake-not-an-act`);
+- a worker's message is its report, written down before release
+  (`swarm`, `a-messaged-report-is-written-down-before-release`, which replaced
+  `a-push-before-its-record-is-a-wake-not-an-act` on 2026-11-13);
 - a push claims success but the PR is red → act on GitHub (`swarm`,
   `a-push-claiming-success-over-a-red-pr-loses-to-the-forge`);
 - `send_message` errors → fall back to pull; the channel is absent for the run
