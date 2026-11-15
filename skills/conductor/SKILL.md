@@ -41,8 +41,8 @@ version line.
   and `feature-plan` arguments this skill was given.
 - **Nobody is present.** The owner pass and every go need a person to answer
   (*4. Owner pass*); a scheduled firing sweeps, reports, and acts only on what
-  the owner already recorded, once verified (*6. Dispatch*) — a conditional go, a
-  retirement under a standing ruling, or a drafted reviewer's archive
+  the owner already recorded, once verified (*6. Dispatch*) — a dispatch go, plain
+  or conditional, a retirement under a standing ruling, or a drafted reviewer's archive
   (`reviewers.md`) — and rules nothing.
 - **A repository outside the configured scope.** Its sessions are noted in the
   ledger and left alone.
@@ -195,7 +195,7 @@ swept as `reviewers.md` says.
 8. **The default branch**, per repository in scope: CI on its current head, and
    the deploy that head triggered where the repository deploys from it — each
    reported with the head SHA and its result, failing or unread said as such.
-9. **Pending conditional gos**: verify each one's condition on the forge, and execute every go whose condition now holds, once re-read as *6. Dispatch* says — a conductor-posted one only after its transcript check passes again.
+9. **Pending gos**: execute every recorded dispatch go not yet executed — a plain one, or a conditional one whose condition the forge now shows — once re-read as *6. Dispatch* says, a conductor-posted one only after its transcript check passes again. A verified go is never put to the owner a second time.
 10. **Live reviewers**, verified and archived as `reviewers.md` says.
 
 Not runs, and reported as such: a run's own `swarm` worker sessions (read as part
@@ -224,7 +224,7 @@ status, a PR of its opened, pushed, merged or closed, its CI conclusions, its op
 items, a pending go's condition, or a reviewer's state. Its prompt
 carries the consecutive-empty count, the ledger's URL, the comparands, each
 held watch's PR and deadline, and the no-change preflight result. **A
-firing sweeps, reports, executes a verified conditional go, retires a run
+firing sweeps, reports, executes a verified dispatch go, plain or conditional, retires a run
 under a verified standing ruling, and archives a drafted reviewer whose review the
 owner submitted (`reviewers.md`); it rules nothing, starts no reviewer, and
 dispatches, retires or archives nothing else.**
@@ -389,6 +389,11 @@ merged, an issue closed, every PR of a named wave merged. The ledger carries it.
 verified on the forge** — and only after re-reading the go at its site by the comment id the ledger recorded: unedited, not superseded by a later owner comment, and either authored by the owner's account and not one of this skill's own writes by id, or one of its own-write ids tagged `conductor-posted go` whose check (d) under `references/conductor-exchange.md`, *A conductor-posted go*, passes again on this session's transcript; a go found only in the ledger stays pending — and reports that it did. The go is the owner's recorded
 choice; the sweep only verifies the condition, never widens or reinterprets it, and
 a condition that cannot be verified as written stays pending and is reported.
+
+**A plain go posted after the pass that drafted it is executed the same way**, never
+asked again: the next sweep, a scheduled one included, finds it where the draft names —
+the owner's account, not an own write by id, word for word the draft, unedited, not
+superseded — records its id among the owner-comment ids, and dispatches.
 
 **Per run, reuse or start fresh:**
 

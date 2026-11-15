@@ -195,6 +195,8 @@ go is recorded where any go is, so it is the owner's own recorded choice; what t
 sweep adds is only the verification that the stated condition holds on the forge.
 A condition the forge cannot show is not interpreted; it waits.
 
+**Why a verified plain go needs no second confirmation (owner, 2026-11-15):** a plain go the owner posted after the pass that drafted it waited for the owner to say "go" again in chat, while a conditional go verified the same way was already executed by a scheduled firing. Both are the owner's recorded word, read back at their site by id, authorship, edit state and supersession; the second confirmation added a round trip and no authority. So the sweep (*1. Sweep*, step 9) executes either once verified. What a firing may not do is unchanged: it rules nothing, and a go found only in the ledger, edited, superseded, or carrying the footer of one of this skill's own writes is no go. Scenarios: `a-plain-go-posted-later-is-dispatched-by-a-scheduled-firing`, `a-footered-go-on-the-owners-account-is-not-a-go`.
+
 **Why seeds are verified gate by gate, and carry standing rulings (owner's audit
 item 4):** on 2026-10-31 a seed said a gate still held that an owner comment had
 already cleared, and the new run waited on nothing. A gate is therefore re-read at

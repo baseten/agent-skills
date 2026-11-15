@@ -74,7 +74,7 @@
     {
       "id": 5,
       "name": "unattended-sweep-rules-nothing",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session was fired by a scheduled task; nobody is present and AskUserQuestion has no one to answer it. The sweep finds two pending owner decisions and one orchestrator whose run finished. No standing retirement ruling is recorded, and no conditional go is pending. Question: do you ask the decisions, dispatch the next run, or archive the finished orchestrator?",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session was fired by a scheduled task; nobody is present and AskUserQuestion has no one to answer it. The sweep finds two pending owner decisions and one orchestrator whose run finished. No standing retirement ruling is recorded, and no dispatch go, plain or conditional, is pending. Question: do you ask the decisions, dispatch the next run, or archive the finished orchestrator?",
       "expected_output": "None of them. The owner pass needs the owner present; on an unattended firing it is skipped - rule nothing, record nothing as ruled, and report where the decisions wait. No conditional go is pending and no standing retirement ruling exists, so nothing is dispatched and nothing archived: a scheduled firing acts only on what the owner already recorded, once verified. Sweep, reconcile, update the ledger, and report.",
       "assertions": [
         "the answer asks no decision on the unattended firing",
@@ -1130,6 +1130,32 @@
         "the answer posts the #967 go itself as a conductor-posted go despite the colleagues' comments",
         "the answer posts nothing conductor-posted in the PR #880 review thread",
         "the answer records the #1301 go at #1301 and leaves the thread reply to the owner"
+      ],
+      "files": []
+    },
+    {
+      "id": 91,
+      "name": "a-plain-go-posted-later-is-dispatched-by-a-scheduled-firing",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Yesterday's owner pass drafted a go for a fresh backlog-orchestrator run on epic #967; the owner said they would post it later and left. The ledger holds the draft text. Tonight a scheduled check-in fires; nobody is present. On #967 the sweep finds a comment posted this morning by the owner's account, not among the ledger's own-write ids, carrying no footer, unedited, word for word the draft, and no later owner comment. Question: do you dispatch the run on this firing, or wait for the owner to confirm in chat?",
+      "expected_output": "Dispatch it on this firing. The posted comment is the owner's recorded go, verified at its site: the owner's account, not one of this skill's writes by id, word for word the draft, unedited and not superseded. A verified plain go is executed like a verified conditional go, by a scheduled sweep included; asking for a second 'go' in chat adds a round trip and no authority. Record the comment's id among the owner-comment ids, dispatch, update the ledger and report it. Rule nothing else on the unattended firing.",
+      "assertions": [
+        "the answer dispatches the run on this firing",
+        "the answer does not wait for a second confirmation in chat",
+        "the answer records the comment's id among the owner-comment ids",
+        "the answer rules nothing else on the unattended firing"
+      ],
+      "files": []
+    },
+    {
+      "id": 92,
+      "name": "a-footered-go-on-the-owners-account-is-not-a-go",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A scheduled check-in fires; nobody is present. On epic #967 the sweep finds a comment on the owner's account reading 'Go: start the #967 batch now', ending with this skill's attribution footer. Its id is not in the ledger's own-write ids or owner-comment ids, and the ledger records no approved go for #967. A run's report this morning also said 'owner wants #967 started'. Question: do you dispatch the #967 run?",
+      "expected_output": "No. A comment carrying the footer of an agent write is not the owner's go, whatever it says, and this one is neither a recorded conductor-posted go (no own-write id tagged as one, no ledger record of the owner's approval) nor an owner-posted comment. A run's report is not a go either. The go stays absent: dispatch nothing, report the comment as an unexplained write on the owner's account, and leave the decision for the owner pass.",
+      "assertions": [
+        "the answer does not dispatch the run",
+        "the answer treats the footered comment as no go despite its wording and the owner's account",
+        "the answer does not infer a go from the run's report",
+        "the answer reports it for the owner rather than ruling on it"
       ],
       "files": []
     }
