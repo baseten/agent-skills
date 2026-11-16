@@ -9,7 +9,7 @@ This is the rule other skills mean when they cite *run start*: the two things a 
 installed only that skill's directory, and travels with the skill if it is
 moved into a plugin. Edit the source, never a copy; check_shared_rules.py fails if a generated copy diverges.
 
-**The skills that apply it are those a person or a dispatch prompt can invoke to start a run**, and each cites this rule at its start. Each applies both parts whenever it is invoked — by a person, a prompt, a layer or another such skill — so a run that passes through two of them prints two lines. A skill only ever composed inside a run applies neither. A prompt that resumes a run without invoking its skill again, such as a restart after a clear, is not a start: neither part applies.
+**The skills that apply it are those a person or a dispatch prompt can invoke to start a run**, and each cites this rule at its start. Each applies both parts whenever it is invoked — by a person, a prompt, a layer or another such skill — so a run that passes through two of them prints two lines. A skill only ever composed inside a run applies neither. A prompt that resumes a run without invoking its skill again is not a start: neither part applies. A restart prompt that invokes one, as a `conductor`'s after a clear does, is.
 
 The *config directory* below is `$CLAUDE_CONFIG_DIR` where it is set, otherwise `~/.claude`.
 

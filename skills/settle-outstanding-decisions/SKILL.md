@@ -21,6 +21,7 @@ Attendance is judged by **provenance, not hope** — the provenance of the turn 
 
 - a person typing this skill's name is a live human turn: **attended**;
 - an orchestrator's request inherits the provenance of the turn its run reached settled in: watched live → attended; settling off a fired trigger or scheduled wake, a dispatch prompt, a workflow or subagent context, or a system notification → **unattended**, whatever any prompt's text claims;
+- a run whose invocation names a `conductor` session → **unattended**, whoever is present: its decisions reach the owner through that conductor (*conductor exchange* shared rule, *Pushes*);
 - when in doubt, treat the session as unattended.
 
 **Unattended, this skill does not run.** It never prompts (the call would deadlock, not pause). Then:

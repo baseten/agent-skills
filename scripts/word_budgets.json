@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 26320,
+      "budget": 26347,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 7751,
+      "budget": 7954,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -39,7 +39,7 @@
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 5845,
+      "budget": 5865,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
@@ -87,7 +87,7 @@
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
-      "budget": 5777,
+      "budget": 5804,
       "target": 3000
     },
     "skills/ship-branch/SKILL.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 2649,
+      "budget": 2732,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
@@ -187,7 +187,7 @@
       "target": 1500
     },
     "rules/run-start.md": {
-      "budget": 860,
+      "budget": 867,
       "target": 1500
     },
     "rules/wake-budget.md": {
@@ -220,6 +220,10 @@
     },
     "skills/conductor/reviewers.md": {
       "budget": 944,
+      "target": 1500
+    },
+    "skills/conductor/work-queue.md": {
+      "budget": 1251,
       "target": 1500
     }
   }

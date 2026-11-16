@@ -149,3 +149,15 @@ restated at the decision point.
 **Why the owner posts them:** the shared permission rule (`rules/authored-write-form.md`, *Issues the run did not create*) bars a run from commenting on an issue it did not create without the owner's permission for that issue, and the owner ruled that a relayed ruling there is drafted for them to post — later narrowed by the exception below. The owner's own comment then passes every test a run applies to an owner's reply — authored by the owner's account, not one of the run's writes — so nothing downstream changes. Rulings on a PR keep the existing relay path.
 
 **Why an approved ruling is posted by the conductor itself (owner's ruling, 2026-11-05):** where the owner approved the complete comment word for word — the full text was in the option they chose — the comment is theirs, and the shared rule's one exception lets the conductor post it on any issue; its approval lives in the conductor's record, never in a footer. Anything the owner did not approve word for word is still drafted for them to post.
+
+## Questions under a conductor (owner's request, 2026-11-16)
+
+**Why a coordinated run never asks in its own session:** a dispatched run's session
+has nobody in it, and where the owner happens to be, the question still bypasses the
+one place they answer everything, the conductor's work queue. So a question the
+run's skill would put to a person becomes a hold at its site, pushed, and the answer
+is read there by the run's own test (protected rule 3). Tool-permission prompts stay:
+only the session that asks can be granted one. The owner also asked that a run might
+verify an answer by reading the conductor's page; that was not adopted, since the
+page cannot show who wrote a pick (`conductor` NOTES, *The work queue page*), and a
+dispatched session may hold no Artifact tool.

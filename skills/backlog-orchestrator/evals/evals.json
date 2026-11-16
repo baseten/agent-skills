@@ -1429,6 +1429,17 @@
         "the answer raises #640 as a NEEDS_USER item rather than dispatching it"
       ],
       "files": []
+    },
+    {
+      "id": 131,
+      "name": "a-spent-budget-under-a-conductor-is-pushed-not-asked",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your invocation names conductor session_C. A node's implementation budget is spent with no dispatchable work left, and the platform also shows a Bash permission prompt for a worker. Which of these, if any, do you ask in this session?",
+      "expected_output": "Only the platform's permission prompt stays in the session. The spent-budget NEEDS_USER is raised at its site and pushed to session_C as a hold, never asked here.",
+      "assertions": [
+        "the permission prompt stays in the session",
+        "the NEEDS_USER is pushed as a hold, not asked"
+      ],
+      "files": []
     }
   ]
 }

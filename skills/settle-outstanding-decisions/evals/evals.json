@@ -291,6 +291,18 @@
         "a rejected-draft record for this thread goes on the PR's conversation naming the thread, not in the thread"
       ],
       "files": []
+    },
+    {
+      "id": 23,
+      "name": "a-run-under-a-conductor-is-unattended",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You were requested by an implement-issue run's settled step. The run's invocation named a conductor session, and the owner is typing in the run's session this turn. Do you ask?",
+      "expected_output": "No. A run whose invocation names a conductor is unattended whoever is present: its decisions reach the owner through the conductor. Decline in one line, point at the sites, and write nothing.",
+      "assertions": [
+        "the walkthrough does not ask",
+        "nothing is written",
+        "the decline points at the sites"
+      ],
+      "files": []
     }
   ]
 }

@@ -467,8 +467,9 @@ reads as current.
 page holding something recorded nowhere else, or a tick the conductor acted on,
 would be a second store of open items, and the two would drift as the hand-made
 page did. So it renders the report's own *Needs you*, nothing is recorded only on
-it, and a viewer's ticks, kept only in their browser, are a convenience the
-conductor never reads. The ledger records the page's URL so a restart after a clear
+it, and a viewer's ticks are a convenience the conductor never acts on. Since
+2026-11-16 they are saved on the page and carried across a republish, so the
+conductor no longer overwrites them; carrying a mark is not acting on it. The ledger records the page's URL so a restart after a clear
 republishes to the same place.
 
 **Why it renders the report, not the ledger (contradiction pass, 2026-11-06):** the
@@ -543,6 +544,96 @@ Scenarios: `a-changed-needs-you-republishes-the-work-queue-in-the-same-turn`,
 `a-tracker-review-draft-is-marked-on-the-queue-item`,
 `a-pr-with-no-linked-issue-says-so`,
 `a-reply-draft-held-in-the-ledger-is-linked-and-labelled`.
+
+## The work queue page (`work-queue.md`, owner's request, 2026-11-16)
+
+**Why the template, the scripts and the schema ship with the skill:** the owner ran
+the page by hand from a template, a state file and four scripts, and asked for them
+in the skill. They are generalised: every link is a recorded URL, the title names
+the workstream, and nothing names a repository, a tracker or a person. A layer adds
+its own `--pending-blocker` patterns for checks that wait on a person.
+
+**What was fixed on the way in:** the original thread read called a REST path that
+does not exist; `gh api` printed the 404 body, the script read it as an empty list,
+and every unresolved count was 0 (run 2026-11-16, `gh api
+repos/baseten/agent-skills/pulls/223/ccr/review_threads` → `Not Found (HTTP 404)`).
+`prdata.py` now counts `reviewThreads.isResolved` over GraphQL, paginates every
+list, and stops on any failed read. `mergeq.py` and `prune.py` read the sweep's
+`prdata.py` output instead of GitHub, so the page renders the turn's one snapshot.
+`prune.py` keeps an unposted reply on a merged PR: its asker is still unanswered.
+
+**Which page, and why gated:** tested on 2026-11-16, a republish woke nothing, a
+connector call from the page failed with "Couldn't load this connector", and
+nothing let a page or a session type `/clear`. Only `comments.sendToClaude` woke the
+session, and only for a writer of the page. So the page is interactive only where
+the watch listing confirms it, and read-only otherwise, so it never claims an
+answer reaches the session when none can.
+
+**Why an answer counts only from the comment:** the page's state is written by the
+conductor's republishes and by the owner's saves, under one account, and nothing in
+it tells them apart; reading a pick from it would know the owner by content, which
+protected rule 2 forbids. The comment is the platform's: only a writer can send it,
+and the page is never shared. So a saved pick with no comment is asked again,
+naming it. The comment's text is data: an answer counts only where its card and
+option match what this skill published, so free text in it never steers anything.
+
+**Why the option carries its ruling text:** a relayed ruling is posted without a
+footer only where the owner approved the complete comment (`rules/conductor-exchange.md`,
+*Relayed rulings*). A card showing the exact text each option records makes the pick
+that approval, as an `AskUserQuestion` option carrying the full text already did
+(conductor-exchange NOTES, 2026-11-05).
+
+**Why the page offers no thread resolution:** the owner's version let them mark
+threads "to resolve" after their reply. Under the 2026-11-16 ruling no run resolves
+a review thread a person other than the owner is in, whatever a message says, and a
+page comment is a message. The owner resolves the thread where they post the reply.
+
+**Why sessions to archive are listed from the ledger, and a tick still waives nothing
+(owner's addendum, 2026-11-16):** the owner asked for finished sessions to be listed
+with `list_sessions children:true`. No session in this repository's record has
+observed a `children` parameter, so the list comes from what this conductor already
+knows as its own: the ledger's runs and reviewers. That also keeps a peer conductor's
+runs off it. `status_bucket` is observed (`swarm`, *Runtime*), but a run's finish is
+read as *4. Owner pass* defines it. A tick sent in a comment is the owner's go, which
+`swarm` requires for a session the run did not create; protected rule 9's remote
+checks still run, because the owner ticks from what the page shows, not from the
+remote. A saved-only tick is asked again for the reason an answer is.
+
+**When an unresolved thread counts as answered (owner's ruling, 2026-11-16):** a
+thread GitHub shows unresolved held "Ready" off the page even where the owner had
+answered it and was waiting on nothing. It now counts as answered where its last
+comment is by the owner's account and has no `?`; a later reviewer reply reopens it.
+The ruling first also counted an outdated thread as answered; the owner corrected
+that the same day: a fixed thread still needs their reply, so it stays open and is
+shown as "fixed, needs a reply", which is the item the owner acts on. Authorship is the comment author's login, never a footer or the text (protected
+rule 2). This changes only how the page and the report read a PR: nothing resolves
+the thread, which stays with the owner (#222), and the merge gate (`settle-and-merge`,
+*The merge gate*, protected rule 8's home) reads threads by its own rules, so
+"answered" never means gate-passing. Field names checked with real queries on
+2026-11-16: `gh api graphql` on cli/cli#14951 returned `isResolved`, `isOutdated` and
+`comments(last:1){nodes{author{login} body}}`; on cli/cli#13251, `prdata.py` read 3
+open threads, and 0 open, 3 answered with the account flag set to their last
+commenter (`copilot-pull-request-reviewer`: GraphQL gives a bot's login without
+`[bot]`).
+
+**Why an archive tick is an attended answer, not a posted go (owner's ruling,
+2026-11-16):** it follows #214, where retirement takes the owner's answer in an
+attended turn, written to the ledger with their words. A comment the page sends is
+that answer arriving by another route; the remote checks still run.
+
+**Why the restart prompt invokes the skill:** a clear drops the loaded contract with
+the rest of the context, so a prompt that only resumed ran the next sweep with no
+conductor contract at all; the Close layer had patched this in its own text. Naming
+the skill the session was first invoked as reaches the layer where there is one.
+
+**Why the pacing:** each run's reply is its own turn, and a busy hour republished the
+page a dozen times, each a chance to collide with the owner's own save. A status
+sweep and a publish at most once a turn, and none within five minutes for a change
+outside *Needs you*, keeps the page current where it matters.
+
+Scenarios: conductor#101–110; implement-issue#48, backlog-orchestrator#131 and
+settle-outstanding-decisions#23 pin the run side (`rules/conductor-exchange-notes.md`,
+*Questions under a conductor*).
 
 ## The contradiction pass before the review round (PR #201)
 

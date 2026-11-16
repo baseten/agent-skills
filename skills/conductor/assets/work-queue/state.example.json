@@ -1,0 +1,111 @@
+{
+ "title": "Work queue · acme-api · billing",
+ "interactive": true,
+ "session": "https://claude.ai/code/session_EXAMPLE",
+ "updated": "2026-01-01T12:00:00Z",
+ "nextCheckin": "13:00 UTC",
+ "refresh": {
+  "ready": false,
+  "reason": "",
+  "session": "https://claude.ai/code/session_EXAMPLE",
+  "prompt": "Invoke conductor with: <invocation arguments, verbatim> status, then, before its sweep: ..."
+ },
+ "merge": [
+  {
+   "repo": "acme/api",
+   "pr": "101",
+   "url": "https://github.com/acme/api/pull/101",
+   "title": "Add the export endpoint",
+   "sha": "abc12345",
+   "approvals": [
+    "reviewer"
+   ],
+   "unresolved": 0,
+   "ci": "green",
+   "after": null,
+   "group": "Exports",
+   "blockers": [],
+   "auto": [],
+   "note": "Base of the stack: merge first."
+  }
+ ],
+ "decisions": [
+  {
+   "id": "api-2011-retention",
+   "area": "acme/api · #2011 · PR #101",
+   "question": "acme/api #2011 bulk export: keep exports for 7 or 30 days?",
+   "context": "Why only the owner can decide, and what each option costs.",
+   "links": [
+    {
+     "k": "ses",
+     "label": "Run session",
+     "href": "https://claude.ai/code/session_EXAMPLE"
+    },
+    {
+     "k": "gh",
+     "label": "#101",
+     "href": "https://github.com/acme/api/pull/101"
+    },
+    {
+     "k": "iss",
+     "label": "#2011",
+     "href": "https://github.com/acme/api/issues/2011"
+    }
+   ],
+   "options": [
+    {
+     "id": "a",
+     "label": "7 days",
+     "recommended": true,
+     "ruling": "Owner ruling: keep exports for 7 days."
+    },
+    {
+     "id": "b",
+     "label": "30 days",
+     "ruling": "Owner ruling: keep exports for 30 days."
+    }
+   ],
+   "status": "open"
+  }
+ ],
+ "replies": [
+  {
+   "id": "1234567890",
+   "repo": "acme/api",
+   "pr": "101",
+   "url": "https://github.com/acme/api/pull/101#discussion_r1234567890",
+   "who": "reviewer",
+   "gist": "One-line summary of their comment",
+   "text": "Draft reply text, with no footer: the owner posts it.",
+   "note": "Fix in abc12345."
+  }
+ ],
+ "items": [
+  {
+   "id": "example-item",
+   "tier": "run",
+   "kind": "ship",
+   "urg": "today",
+   "what": "Example work item",
+   "why": "Why, with **flag** and `code` and [a link](https://example.com).",
+   "links": []
+  }
+ ],
+ "sessions": [
+  {
+   "id": "session_EXAMPLE123",
+   "title": "Worker: acme-api · #2011 bulk export",
+   "why": "Finished: its PR merged and nothing of it is left open.",
+   "links": [
+    {
+     "k": "gh",
+     "label": "#101",
+     "href": "https://github.com/acme/api/pull/101"
+    }
+   ]
+  }
+ ],
+ "doneRecent": [
+  "Example finished thing"
+ ]
+}

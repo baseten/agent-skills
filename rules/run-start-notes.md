@@ -46,11 +46,14 @@ guard is the session's own context. A layer that ran the generic skill through a
 subagent or a dispatched session would leave nothing there to read, and the
 generic skill would hand the run straight back to it.
 
-**Why a resume is not a start.** A restart after a clear resumes from a ledger or
-a checkpoint and invokes no skill, and the guard's context is gone with the clear;
+**Why a resume is not a start.** A restart that resumes from a ledger or a
+checkpoint and invokes no skill has lost the guard's context with the clear;
 applying the hand-off then would hand a conductor's own run to its layer on every
-restart. A restart prompt that does invoke the skill — a layer's restart prompt
-naming the layer — is a start, and both parts apply as usual.
+restart. A restart prompt that does invoke the skill is a start, and both parts
+apply as usual. **Since 2026-11-16 a conductor's restart prompt always invokes the
+skill the session was first invoked as** (`conductor`, *8. Context clear*), because
+a clear drops the contract with the rest of the context: a resume that invokes
+nothing runs the next sweep with no conductor contract loaded.
 
 **Why it fails open.** Where no layer is visible the generic skill runs as
 itself, because that is what every user of this public repository without a layer

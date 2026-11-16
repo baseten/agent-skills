@@ -602,6 +602,18 @@
         "the conductor's posting request is reported as declined"
       ],
       "files": []
+    },
+    {
+      "id": 48,
+      "name": "under-a-conductor-a-question-is-a-pushed-hold",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your invocation names conductor session_C. Core returns NEEDS_USER, unverifiable prerequisite, on acme/api#2011's blocker #1990. The owner is typing in this session right now. How do you put the question?",
+      "expected_output": "Not in this session, even though someone is present. It is raised at its site (the issue) and pushed to session_C as a hold, in the report form with the question, its context, options, a recommendation and the site. The answer is read at the site by the run's own owner-reply test.",
+      "assertions": [
+        "no AskUserQuestion in the run's session",
+        "the hold is raised at its site and pushed to the conductor",
+        "the push carries context, options, a recommendation and the site"
+      ],
+      "files": []
     }
   ]
 }
