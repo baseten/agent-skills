@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 7375,
+      "budget": 7971,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 2598,
+      "budget": 2609,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
@@ -199,7 +199,7 @@
       "target": 1500
     },
     "rules/operator-output.md": {
-      "budget": 2034,
+      "budget": 2036,
       "target": 1500
     },
     "skills/write-spec/SKILL.md": {
@@ -219,7 +219,7 @@
       "target": 3000
     },
     "skills/conductor/reviewers.md": {
-      "budget": 944,
+      "budget": 964,
       "target": 1500
     }
   }

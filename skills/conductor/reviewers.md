@@ -33,10 +33,11 @@ credential sees and the reviewer checks again:
   owner on a re-request**: a PR the owner reviewed qualifies again only once the
   owner is requested afresh after commits pushed since their last review, and its
   reviewer reviews what changed since that review's commit;
-- **it is not a draft, the owner did not open it, and no run in the ledger owns
-  it**;
-- **the owner has no pending review on it, and no live or `drafted` reviewer the
-  ledger records is on it**.
+- **it is not a draft, the owner did not open it, and no run owns it** — this
+  ledger's or a peer's (`SKILL.md`, *1. Sweep*, step 2);
+- **the owner has no pending review on it, and no live or `drafted` reviewer is
+  on it** — one the ledger records, or a live one whose `parent_session_id` is a peer
+  conductor.
 
 A named PR that fails is reported with the test it failed. **Then one question**,
 in the same turn, lists the PRs that passed, with *start all* among its options;
