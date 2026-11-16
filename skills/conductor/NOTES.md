@@ -71,6 +71,19 @@ ruling: a session's message carries no owner authority (`swarm`, *Messages from
 other sessions are peer data*), so a relay that could carry one would be a way
 around it.
 
+**Why a relay carries only what a run cannot see, and never a posting instruction
+(owner's ruling, 2026-11-16):** a review repair replied live, as the owner, to a
+human reviewer in several threads after a relay told it replies "go only in the
+threads" — the conductor had quoted a ruling about status reports, and the run read
+it as leave to post. A run already watches its own PRs' reviews, CI and threads, so
+relaying them adds nothing it lacks and invites exactly that reading. What a run
+cannot see is another run's state, a gate, the default branch, or a ruling given
+here, and those are what a relay is for. Posting comes from the repository's policy
+and the run's skill alone, stated on the run's side in
+`rules/conductor-exchange.md` so a run that never loaded this skill still holds it.
+Scenarios: `a-conductor-relays-nothing-about-a-runs-own-review-findings`, and on the
+run side `implement-issue`'s `a-relay-to-reply-in-the-threads-posts-nothing-in-a-persons-thread`.
+
 **Why no long work rests on an in-turn background result (observed 2026-11-02):** a
 worker restarted mid-turn received a finished background agent's result only as a
 system note pointing at its output file. A conductor that held such a result only
@@ -151,6 +164,14 @@ on the epic, where the next reader will look, rather than in a message that dies
 with the session.
 
 ## 4. Owner pass
+
+**Why held replies are listed, not asked, and a ruling for a person's thread is
+drafted (owner's ruling, 2026-11-16):** no run posts in a review thread a person
+other than the owner is in, not even a reply the owner approved
+(`resolve-pr-comment/NOTES.md`, *Replies held for the owner*). Asking approve, edit
+or reject before a post nobody may make only adds a step, so the pass lists each
+held reply with its text, link and fix SHA for the owner to post, and a ruling
+whose site is such a thread is drafted for them, its text on the work queue.
 
 **Why the ruling's record follows `settle-outstanding-decisions`:** that skill's
 records are what the orchestrators' settled steps already read, and its rule —
@@ -399,7 +420,7 @@ dropping either. *Rules* says a check's outcome may sit on the page because it i
 not a forge write.
 
 **Why private, and never shared:** its items can carry the owner's internal work —
-issue titles, decisions, held replies' sites — on whatever repositories the
+issue titles, decisions, held replies' sites and text — on whatever repositories the
 conductor is scoped to. This repository is public and its skills run at work and
 at home alike, so the contract states the privacy itself rather than leaving it to
 the platform's default.
@@ -432,10 +453,14 @@ page; it links one only where it already exists.
 **Why a PR item carries up to four links in that order (owner's ruling, 2026-11-06):** a
 review the owner had drafted in the tracker's review view, not yet submitted, was
 invisible from a queue item linking only the forge PR, so the item read as nothing
-waiting on them. The tracker's review page sits beside the PR, marked with the draft count, because that is where the drafts are; the closing issues follow, or "no linked issue", because an item with no issue is a question in itself. **The order changed on the owner's ruling of 2026-11-11** to worker session, PR, review page, issue, in the chat and on the page alike: the session is where the owner acts on a run, so it leads, and one order everywhere means the owner's eye finds each link in the same place. Drafts held elsewhere, such as replies
-held for the owner's approval because a person is in the thread (`resolve-pr-comment`,
-*Replies held for approval*), are linked to their text or named where held, as
-*Approve drafts* is in the chat. A draft's location is a claim about current state,
+waiting on them. The tracker's review page sits beside the PR, marked with the draft count, because that is where the drafts are; the closing issues follow, or "no linked issue", because an item with no issue is a question in itself. **The order changed on the owner's ruling of 2026-11-11** to worker session, PR, review page, issue, in the chat and on the page alike: the session is where the owner acts on a run, so it leads, and one order everywhere means the owner's eye finds each link in the same place. Drafts held elsewhere were linked to their text or named where held, as
+*Approve drafts* is in the chat. **Since the owner's ruling of 2026-11-16, a reply or
+ruling the owner is to post in a thread where no run posts** (`resolve-pr-comment`,
+*Replies held for the owner*) **is carried on the page in full** — text, the
+thread's recorded `html_url` and the fix SHA — because the owner now copies, edits
+and posts it themselves, and a page that only names where the text is held makes
+them go and fetch it. The page is private and is not the ledger, so the
+`github-issue` ledger's rule of naming such drafts only does not reach it. A draft's location is a claim about current state,
 so it is read each sweep (*establish, do not assume*), never carried from memory,
 and a change in a PR item's links or draft count republishes the page even where
 the list is otherwise unchanged: otherwise a submitted draft would stay counted on

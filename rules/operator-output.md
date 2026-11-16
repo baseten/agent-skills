@@ -31,6 +31,7 @@ A reporting turn ends with these, in this order, each omitted when empty:
    - **Decide** — asked as *Questions* says
    - **Confirm in a session** — a prompt a run's or a reviewer's session waits on, naming the literal tool string (`swarm`, *Blocked workers*)
    - **Approve drafts** — each linked to its full text, or naming where it is held; the line never carries the text
+   - **Post yourself** — a reply or ruling for a review thread where no run posts (`resolve-pr-comment`, *Replies held for the owner*): its thread link and fix SHA, the full text on the work queue or in the run's report; never under *Approve drafts*, since nobody's approval lets a run post it
    - **Owner steps**
    - **Clear a failure** only the owner can clear
 

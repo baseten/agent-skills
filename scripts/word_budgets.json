@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 26326,
+      "budget": 26320,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -27,11 +27,11 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
-      "budget": 2310,
+      "budget": 2307,
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 7375,
+      "budget": 7474,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -39,7 +39,7 @@
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 5856,
+      "budget": 5845,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
@@ -67,11 +67,11 @@
       "target": 3000
     },
     "skills/repair-pr/SKILL.md": {
-      "budget": 3974,
+      "budget": 3972,
       "target": 3000
     },
     "skills/resolve-pr-comment/SKILL.md": {
-      "budget": 8193,
+      "budget": 8219,
       "target": 3000
     },
     "skills/review-docs/SKILL.md": {
@@ -83,11 +83,11 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 6426,
+      "budget": 6383,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
-      "budget": 5763,
+      "budget": 5777,
       "target": 3000
     },
     "skills/ship-branch/SKILL.md": {
@@ -99,7 +99,7 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 9587,
+      "budget": 9488,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
@@ -127,11 +127,11 @@
       "target": 1500
     },
     "rules/agent-policy.md": {
-      "budget": 2863,
+      "budget": 2840,
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2807,
+      "budget": 2841,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 2598,
+      "budget": 2649,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
@@ -179,7 +179,7 @@
       "target": 1500
     },
     "rules/review-feedback.md": {
-      "budget": 2931,
+      "budget": 2844,
       "target": 1500
     },
     "rules/review-trigger.md": {
@@ -199,7 +199,7 @@
       "target": 1500
     },
     "rules/operator-output.md": {
-      "budget": 2034,
+      "budget": 2086,
       "target": 1500
     },
     "skills/write-spec/SKILL.md": {
