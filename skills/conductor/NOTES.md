@@ -46,6 +46,31 @@ one small issue, shown in full first, because sending one issue through a planne
 costs more than it saves. Its worst failure stays a wrong dispatch the owner
 approved, never an act.
 
+## The `status` mode
+
+**Why a `status` mode (owner, 2026-11-16):** the owner wanted the conductor's state
+on demand without being walked through decisions. The owner pass is the one step
+that needs them to answer, so `status` is the sweep with that step left out: it asks
+nothing and rules nothing, and acts within the bounds a scheduled firing already
+has, since executing an already-recorded conditional go is not ruling (*1. Sweep*).
+It is not a second process: it renders through the same snapshot every sweep does
+(*The status snapshot*), so on-demand and scheduled status cannot disagree.
+
+**Why an argument, not a command:** a skill is entered through its own name, and
+`/status` is already the client's own command, so the mode is `conductor`'s argument
+like `validate-backlog`'s modes are. A layer that extends `conductor` is handed it
+verbatim (`references/run-start.md`) and must pass it back when it invokes
+`conductor`, since a layer decides how its arguments combine. **Why it is never
+recorded:** the ledger and the restart prompt carry invocation arguments so a restart
+resumes the same configuration (*Configuration*); a recorded `status` would turn
+every restart into a status turn. **Why it always rebuilds the work queue:** the
+owner asking for status is asking for the page too, and republishing from this
+turn's snapshot is what repairs a page that drifted. **Why it stops with no
+ledger:** a status request is not a start, and a ledger created by one would be a
+conductor nobody configured.
+
+Scenario: `status-sweeps-asks-nothing-and-rebuilds-the-queue`.
+
 ## Configuration
 
 **Why the scope is a configured list (owner's ruling, 2026-11-02):** "one
@@ -145,6 +170,42 @@ there; executing a conditional go is not ruling, since the owner already chose.
 **Why GitHub is read even when every session answers:** sessions get archived,
 compacted and lost, and the epic outlives all of them. A stream whose orchestrator
 is gone still has open PRs and open decisions.
+
+## The status snapshot
+
+**Why one snapshot (owner, 2026-11-16):** in a real run the conductor's chat
+summary, its work-queue page and its ledger drifted apart. The page dropped items
+the chat still showed, and the check-in prompt went stale, still carrying
+comparands an earlier turn had read. Each output had been assembled separately —
+the chat from one pass, the page from another read, the prompt from whenever the
+check-in was last armed — so nothing made them agree. One snapshot per sweep,
+rendered by every output of that turn, makes agreement a property of the
+construction rather than of care.
+
+**Why a structure in the turn, not a record:** *7. Ledger* says the body is the
+state, and the work queue is a view because a second store drifts from the first
+(*The work queue*). A snapshot persisted anywhere would be a third store. Held in
+the turn and read by no later one, it cannot outlive the sweep that took it; the
+ledger, updated from it, stays what a restart reads.
+
+**Why "every output that shows that kind of item", not "every output":** the outputs
+legitimately differ in what they carry — a forge ledger never holds a check's
+outcome (protected rule 7), a `github-issue` ledger only names held replies, and
+the chat reprints *Needs you* only when it changed (`references/operator-output.md`).
+The rule binds membership within a kind, which is what drifted, and makes every
+abbreviation count from the same snapshot, so an unchanged line's count matches the
+page it links.
+
+**Why the check-in prompt is replaced when it differs:** the prompt is the next
+firing's comparison baseline. Re-armed only after a delta, it kept the comparands
+of the turn that armed it while attended turns moved the ledger, so a firing could
+report as new what the owner had already seen, or miss a change. The armed check-in
+is replaced, keeping its time, so one check-in remains (*The fallback check-in*);
+`rules/wake-budget.md`'s re-arm at an attended invocation's first step is
+unchanged and is simply superseded by the turn's own snapshot at its end.
+
+Scenarios: `a-needs-you-item-in-the-chat-is-on-the-queue-from-one-snapshot`,
+`a-firing-refreshes-the-check-in-prompt-from-its-own-snapshot`.
 
 ## 2. Ask
 
@@ -417,7 +478,8 @@ session* item, and a forge ledger never carries a check's outcome, so a red defa
 branch under *Clear a failure* is in the report but not the ledger (protected rule
 7). Rendering the report keeps the owner's point — no second store — without
 dropping either. *Rules* says a check's outcome may sit on the page because it is
-not a forge write.
+not a forge write. Since 2026-11-16 the report and the page render the same
+snapshot (*The status snapshot*), which is what makes "renders the report" hold.
 
 **Why private, and never shared:** its items can carry the owner's internal work —
 issue titles, decisions, held replies' sites and text — on whatever repositories the
