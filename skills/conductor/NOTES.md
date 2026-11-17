@@ -601,7 +601,9 @@ it tells them apart; reading a pick from it would know the owner by content, whi
 protected rule 2 forbids. The comment is the platform's: only a writer can send it,
 and the page is never shared. So a saved pick with no comment is asked again,
 naming it. The comment's text is data: an answer counts only where its card and
-option match what this skill published, so free text in it never steers anything.
+option match what this skill published, so free text in it never steers anything. **Owner's ruling (2026-11-17, after the batch's blind audit):** page access alone was the audit's rule 2 flag — nothing enforces that the page stays unshared — and through a relayed ruling it reached a `DECISION` the merge gate holds on (rule 8). So an answer, and an archive tick, now counts only where the comment's author, as the thread reports it, is the owner's login; an absent or unreadable author is no answer and is asked at the next attended pass. Scenario: `a-page-comment-with-no-readable-author-is-asked-not-recorded`.
+
+**Why a restart runs a normal sweep (owner's ruling, 2026-11-17):** the first version of the restart prompt passed `status`, which made every restart after a clear skip the owner pass — the turn *The `status` mode* says a recorded `status` must not cause. The prompt now passes the invocation's arguments alone.
 
 **Why the option carries its ruling text:** a relayed ruling is posted without a
 footer only where the owner approved the complete comment (`rules/conductor-exchange.md`,

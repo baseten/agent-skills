@@ -670,8 +670,8 @@ Never force a clear, and never skip a step to beat compaction.
    contract:
 
    ```text
-   Invoke <that skill> with: <every invocation argument, verbatim> status. Before
-   its sweep: read the ledger body first: <ledger URL> — it supersedes its history.
+   Invoke <that skill> with: <every invocation argument, verbatim>. Before its
+   sweep: read the ledger body first: <ledger URL> — it supersedes its history.
    Call get_session; if this session's id differs from the ledger's, send the new
    id to every run and update the ledger. Confirm the fallback check-in <id> is
    still armed, and the work queue's watch where the ledger records one

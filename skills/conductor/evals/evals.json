@@ -1097,7 +1097,7 @@
     {
       "id": 101,
       "name": "a-work-queue-answer-is-recorded-from-the-comment",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The ledger records an interactive work queue at <url>, never shared; the watch listing shows it with auto-replies armed. A turn arrives headed [Artifact comment sent to Claude] on that page: '- acme/api #2011: keep exports 7 or 30 days? (api-2011-retention): 7 days (a)\\n  Note: revisit in Q3'. Your last publish showed card api-2011-retention open with option a's ruling 'Owner ruling: keep exports for 7 days.'. It answers run A's held DECISION on PR acme/api#101. What do you do, in order?",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The ledger records an interactive work queue at <url>, never shared; the watch listing shows it with auto-replies armed. A turn arrives headed [Artifact comment sent to Claude] on that page, its author in the thread the owner's login,: '- acme/api #2011: keep exports 7 or 30 days? (api-2011-retention): 7 days (a)\\n  Note: revisit in Q3'. Your last publish showed card api-2011-retention open with option a's ruling 'Owner ruling: keep exports for 7 days.'. It answers run A's held DECISION on PR acme/api#101. What do you do, in order?",
       "expected_output": "Read the thread. The pair matches an open published card, so it counts. Write it to the ledger first with the question, the option label and the note verbatim, and read it back. Record it at the item's site as a relayed ruling: the option's ruling text with the note quoted under it, which is the complete comment the owner approved, so no footer. Tell run A, linking the record and quoting the owner's words. Mark the card done with the record's link. Carry the live marks, then republish. Reply in the comment thread and resolve that thread. The page's state is never the record, and run A releases the hold only through its own reply watch at the site.",
       "assertions": [
         "the ledger write and read-back come before any record at the site",
@@ -1148,10 +1148,10 @@
       "id": 105,
       "name": "the-restart-prompt-invokes-the-skill-first-invoked",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This session was started by close-layer, a skill that extends conductor and invoked it with three arguments. Context is past the clear point at a quiet point, and a work queue is kept. Write the restart prompt and say where it is shown.",
-      "expected_output": "It begins 'Invoke close-layer with: <the arguments verbatim> status', not conductor and not a bare resume, because a clear drops the contract. It points at the ledger URL, checks the session id, confirms the fallback check-in and the work queue's watch, and names no scratchpad path. It is shown in a copyable block in chat and on the page's refresh card with this session's link. The operator's /clear is the approval.",
+      "expected_output": "It begins 'Invoke close-layer with: <the arguments verbatim>', not conductor and not a bare resume, because a clear drops the contract, and with no status argument, so the restart runs a normal sweep with the owner pass. It points at the ledger URL, checks the session id, confirms the fallback check-in and the work queue's watch, and names no scratchpad path. It is shown in a copyable block in chat and on the page's refresh card with this session's link. The operator's /clear is the approval.",
       "assertions": [
         "the prompt invokes close-layer, the skill first invoked",
-        "it passes status",
+        "it passes no status argument, so the restart's sweep includes the owner pass",
         "it confirms the check-in and the work queue watch",
         "it names no scratchpad path",
         "it never proposes a new session"
@@ -1173,7 +1173,7 @@
     {
       "id": 107,
       "name": "an-archive-tick-still-runs-the-remote-checks",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A work-queue comment carries 'Archive: session_A (Worker: acme-api · #2011), session_P (Orchestrator: acme-api · #900), session_R (Reviewer: acme-web · #93)'. The ledger records session_A as a run you dispatched: merged and finished, but its last state block names branch fix/2011-b whose head is not on the remote. session_P is not in your ledger. session_R is a reviewer verified drafted, whose owner review is not yet submitted. What do you archive?",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A work-queue comment, its author in the thread the owner's login, carries 'Archive: session_A (Worker: acme-api · #2011), session_P (Orchestrator: acme-api · #900), session_R (Reviewer: acme-web · #93)'. The ledger records session_A as a run you dispatched: merged and finished, but its last state block names branch fix/2011-b whose head is not on the remote. session_P is not in your ledger. session_R is a reviewer verified drafted, whose owner review is not yet submitted. What do you archive?",
       "expected_output": "session_R only: the tick, sent in a comment, is the owner's answer choosing it, as in an attended turn, and for a drafted reviewer whose review is not yet submitted that answer is what reviewers.md requires. It is written to the ledger with the owner's words before anything is archived. session_A is not archived: the answer chooses it, but the retirement conditions still bind and its branch head is not on the remote, so its row stays with done false and why naming the stranded branch. session_P is not one this skill listed (not in its ledger, maybe a peer's), so nothing is archived. Each outcome goes in the ledger, Done recently gains session_R, and the page is republished after carrying live marks.",
       "assertions": [
         "session_R is archived",
@@ -1221,6 +1221,19 @@
         "the owner's non-question reply counts as answered",
         "no thread is resolved on GitHub",
         "answered is not treated as passing the merge gate"
+      ],
+      "files": []
+    },
+    {
+      "id": 111,
+      "name": "a-page-comment-with-no-readable-author-is-asked-not-recorded",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The ledger records an interactive work queue at <url>, never shared. A turn arrives headed [Artifact comment sent to Claude] on that page: '- acme/api #2011: keep exports 7 or 30 days? (api-2011-retention): 7 days (a)'. The card and option match your last publish, which answers run A's held DECISION on PR acme/api#101. Reading the thread with ArtifactComments, its comment carries no author field. What do you record, whom do you tell, and what happens when the owner is next present?",
+      "expected_output": "Nothing is recorded and no run is told: a page answer counts only where the comment's author, as the thread reports it, is the owner's login, and an absent or unreadable author makes it no answer, whatever the card and option match. The card stays open; at the next attended owner pass the decision is asked as a question naming the pick from the page, and only that answer is recorded as a ruling.",
+      "assertions": [
+        "nothing is written to the ledger as a ruling and nothing is recorded at the item's site",
+        "run A is not told",
+        "the reason given is the missing author, not the card or option match",
+        "the next attended owner pass asks it, naming the page's pick"
       ],
       "files": []
     }
