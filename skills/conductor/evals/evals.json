@@ -1113,11 +1113,11 @@
       "id": 88,
       "name": "a-conductor-posted-retirement-ruling-authorises-no-archive",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). In this session the owner chose the structured-question option 'Retire each run once its PRs are merged', and that comment is now on epic #967, posted by this session with the `Owner go (...)` marker, its id among your own-write ids tagged `conductor-posted go`; this session's transcript shows the owner's choice. A scheduled firing finds the #967 run, which this conductor dispatched, with every PR merged, its wrap-up posted and nothing stranded. Do you archive its session?",
-      "expected_output": "No. A conductor-posted go never authorises a retirement: only a dispatch go and a conditional go take that form, and a retirement ruling keeps the owner's own words at its site. The standing ruling is re-read by comment id and must be authored by the owner's account and not one of this skill's own writes; this one is the conductor's own write, so no retirement ruling is on record. The run stays live, and the owner is asked to post the retirement ruling (or answer it) at its site.",
+      "expected_output": "No. A conductor-posted go never authorises a retirement: only a dispatch go and a conditional go take that form, and a retirement keeps the owner's own answer, which this comment is not — it is the conductor's own write, whatever the transcript shows. The run stays live until the owner answers for it themselves, as *Retire a finished run* requires; a scheduled firing archives nothing on this comment.",
       "assertions": [
         "the answer does not archive the session",
         "the answer says a conductor-posted go never authorises a retirement, whatever the transcript shows",
-        "the answer leaves the retirement to a ruling the owner posts at its site"
+        "the answer leaves the retirement to the owner's own answer as *Retire a finished run* requires, never this conductor-posted comment"
       ],
       "files": []
     },
