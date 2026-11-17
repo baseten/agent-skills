@@ -45,9 +45,9 @@ evals (`<skill>#<id>`).
    supervise-prs#56 #88, swarm#30, conductor#57, review-pr#0 #5.
 2. **Identity is observed authorship; own writes are known by id, never by footer or content.**
    `rules/posting-identity.md`; `swarm`, *Releasing a worker*, *Blocked workers*; `supervise-prs`, *Integration-branch CI*, step 3;
-   `rules/conductor-exchange.md`, *Pushes*, *The watch after settling*.
+   `rules/conductor-exchange.md`, *Pushes*.
    backlog-orchestrator#5 #58,
-   resolve-pr-comment#48 #49, supervise-prs#86 #89 #105 #112, backlog-orchestrator#53 #90 #91 #102 #103 #105 #109 #110, settle-and-merge#47 #48 #49, implement-issue#40 #41, swarm#37 #38 #39,
+   resolve-pr-comment#48 #49, supervise-prs#86 #89 #105 #112 #120 #121, backlog-orchestrator#53 #90 #91 #102 #103 #105 #109 #110, settle-and-merge#47 #48 #49, implement-issue#40 #41, swarm#37 #38 #39,
    merge-stack#11, settle-outstanding-decisions#18, review-pr#3.
 3. **Only an owner reply choosing an offered option releases a hold or dispatch — or, for dispatch alone, a conductor-posted go whose choice the run verified in the conductor's transcript.**
    `backlog-orchestrator`, *Arming the wait when nothing is in flight*; `rules/review-trigger.md`,
@@ -68,8 +68,8 @@ evals (`<skill>#<id>`).
    `rules/authored-write-form.md`. settle-and-merge#6 #9 #49 #50, merge-stack#5,
    backlog-orchestrator#71, implement-issue#35, conductor#57.
 7. **No forge write reports verification, bar a gate note under `refs/notes/agent-gate/*` and, in a `NEEDS_USER` or `DECISION` hold item, the failed or unrun check it holds on with its commits; SHAs are bare.** `rules/authored-write-form.md`; `conductor`, *Rules*, *7. Ledger*; `owner-steps`, *4. Record*.
-   create-pr#11 #22, resolve-pr-comment#17, supervise-prs#85, swarm#27 #28 #29,
-   backlog-orchestrator#92 #93 #94 #97, settle-and-merge#35 #37 #38, conductor#24 #32, owner-steps#6.
+   create-pr#11 #22, resolve-pr-comment#17, supervise-prs#85 #120, swarm#27 #28 #29 #50,
+   backlog-orchestrator#92 #93 #94 #97 #130, settle-and-merge#35 #37 #38, conductor#24 #32, owner-steps#6.
 8. **Merges are opt-in, through the one gate, failing closed.** `settle-and-merge`, *The
    merge gate*; `rules/agent-policy.md`. backlog-orchestrator#0 #2. The gate reads review on the current
    head: a publish changes no head and is inert unless the repository's own configuration (policy file,
@@ -103,8 +103,8 @@ evals (`<skill>#<id>`).
 9. **Stranded work reaches a remote ref before any archive; permission holds name the
    literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked
    workers*; `rules/wake-budget.md`; `rules/conductor-exchange.md`, *The watch after settling*; `conductor`,
-   *6. Dispatch*, `reviewers.md`. backlog-orchestrator#4 #19, swarm#20 #25 #26,
-   implement-issue#14 #19 #20 #21, supervise-prs#87, backlog-orchestrator#92, conductor#5 #8 #21 #31 #35 #38 #39 #75 #76 #78,
+   *6. Dispatch*, `reviewers.md`. backlog-orchestrator#4 #19, swarm#20 #21 #25 #26 #44 #45 #46,
+   implement-issue#14 #19 #20 #21, supervise-prs#87, backlog-orchestrator#92 #111, conductor#5 #8 #21 #31 #35 #38 #39 #75 #76 #78 #90,
    implement-issue#36 #39 #42, merge-stack#12.
 
 **A PR changing a protected rule's text says so in its body**, and gets a blind
@@ -213,6 +213,26 @@ so neither side can see the other's half, and reporting the disagreements rather
 sweep (README, *Running the evals*). The model calls stay the caller's.
 `scripts/eval_reminder.sh` flags a contract change whose evals did not move; it is advisory
 and needs someone to act on it.
+
+**Spend the eval budget where the disagreement can be.** A round is three model calls per
+scenario, and sweeping rounds were most of a working day's usage. The defaults:
+
+- **Scope:** run the scenarios a change adds or rewrites, plus any whose verdict it could
+  flip. A wording-only fix that cannot flip a verdict needs no round.
+- **The whole pinning round** that a protected rule's text change requires runs **once, before
+  merge, over the batch** — after a large sweep of work, never per fix iteration. Propose
+  it to the owner with an estimate of its size; do not start one unasked.
+- **Readers:** Haiku by default — it follows the text literally, which is what a
+  discriminating scenario needs. Escalate a scenario to a larger model only where Haiku fails
+  both arms the same way on text the change did not touch.
+- **One reader per arm**, no repeats unless a disagreement needs confirming. **Re-run only**
+  the scenarios a fix touched.
+- **Grade by matching** where an assertion names a token — an id, an option, a tool string —
+  and use one blind model grader for the rest of the round, not one per answer.
+- **A reader's cost is the contract it reads**, not the prompt: on a large skill each reader
+  spent 80–165k tokens, nearly all of it on the contract. So batch the scenarios of one skill
+  into one reader per arm (`prepare --batch`), and pass `--lazy-side-files` where the skill
+  has side files, so a reader opens one only where the text sends it there.
 
 **Record the why.** Add the reasoning to the skill's `NOTES.md`, keyed by section, naming
 the review round it came from. The existing entries do this; it is what stops the next
