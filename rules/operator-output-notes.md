@@ -51,6 +51,8 @@ into *Review or assign a reviewer* would lose what makes it quick — the recomm
 and the blocking count say how long the read will take. The text stays on the surface it was
 drafted on, where the owner submits it; the conductor links it and never copies it.
 
+**Why *Post yourself* is its own group (owner's ruling, 2026-11-16):** no run posts in a review thread a person other than the owner is in, not even a reply the owner approved (`resolve-pr-comment/NOTES.md`, *Replies held for the owner*). Listed under *Approve drafts*, such a reply would ask for an approval that changes nothing; what the owner does is copy, edit, post and resolve, so the group names that act.
+
 **Why *Changed since* is in the chat at all:** PR #201's conductor rule kept every
 change out of chat, and a sweep with nothing for the owner was one line. The
 owner's design keeps state changes — a merge, a run started, a run failed — in the

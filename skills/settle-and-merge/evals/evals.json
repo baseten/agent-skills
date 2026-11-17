@@ -120,10 +120,10 @@
     {
       "id": 10,
       "name": "the-closing-output-lists-unposted-held-replies",
-      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a run settles on a scheduled wake with nobody present, so the walkthrough declines. The caller passed two approval-pending reply items, each a thread a person is in with its fix pushed and its one-line held reply. Questions: (a) does the closing output mention them, and with what? (b) can the owner recover them later by running settle-outstanding-decisions?",
-      "expected_output": "(a) Yes: it lists every held reply not yet posted — thread URL, fix SHA and the one-line text — separately from the decisions, so the owner can post it themselves. It also lists each fix pushed on a thread a person is in that also asks a question as 'fix pushed — thread left for you (it also asks a question)'. (b) No. A held reply's text is run state and is dropped when the run ends; no later walkthrough recovers it, and the closing output must not say otherwise. The threads stay open with their fixes pushed. A later run that re-dispatches such a thread finds the change already on the head and composes a fresh held reply rather than fixing it again.",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a run settles on a scheduled wake with nobody present, so the walkthrough declines. The caller passed two held-reply items, each a thread a person is in with its fix pushed and its one-line held reply. Questions: (a) does the closing output mention them, and with what? (b) can the owner recover them later by running settle-outstanding-decisions?",
+      "expected_output": "(a) Yes: it lists every held reply the owner has not posted — thread URL, fix SHA and the full text — separately from the decisions, so the owner can post and resolve it themselves; no run posts in those threads. It also lists each fix pushed on a thread a person is in that also asks a question as 'fix pushed — thread left for you (it also asks a question)'. (b) No. A held reply's text is run state and is dropped when the run ends; no later walkthrough recovers it, and the closing output must not say otherwise. The threads stay open with their fixes pushed. A later run that re-dispatches such a thread finds the change already on the head and composes a fresh held reply rather than fixing it again.",
       "assertions": [
-        "the closing output lists each unposted held reply with its thread URL, fix SHA and text",
+        "the closing output lists each held reply the owner has not posted with its thread URL, fix SHA and full text, for the owner to post",
         "the answer says a later settle-outstanding-decisions run cannot recover the held text",
         "the answer says a later re-dispatch finds the change on the head and composes a fresh held reply",
         "the answer does not claim the walkthrough is idempotent over held replies"
@@ -131,25 +131,27 @@
     },
     {
       "id": 11,
-      "name": "a-rejected-thread-is-still-listed-after-a-second-settle",
-      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: at the first settle the owner rejected one held reply, and you returned it to the caller, which had supervise-prs record it as rejected. The wave un-settles, a merge lands, and it settles again with nobody present. The held-reply records the caller passes now carry no approval-pending items, one rejected held reply and one mixed-thread fix. Questions: (a) what does step 4 pass the walkthrough? (b) what does step 7 list?",
-      "expected_output": "(a) No held replies: rejected ones are not passed to be asked again. (b) The rejected one as 'reply not posted — thread open for you' with its thread URL and fix SHA, still listed although it was rejected at an earlier settle, and the mixed-thread fix as 'fix pushed — thread left for you (it also asks a question)'. Both are read from the held-reply records.",
+      "name": "a-held-reply-is-listed-again-after-a-second-settle",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: at the first settle the walkthrough listed one held reply for the owner to post, and the owner has not posted it. The wave un-settles, a merge lands, and it settles again with nobody present. The held-reply records the caller passes now carry that one held-reply item and one mixed-thread fix. Questions: (a) what does step 4 pass the walkthrough, and does it return anything about the held reply? (b) what does step 7 list?",
+      "expected_output": "(a) The held-reply item, to be listed — though here the walkthrough declines, nobody being present. Nothing about a held reply is ever returned: no run posts one, so there is no approved or rejected outcome. (b) The held reply, still unposted after the earlier settle, with its thread URL, fix SHA and full text for the owner to post and resolve, and the mixed-thread fix as 'fix pushed — thread left for you (it also asks a question)'. Both are read from the held-reply records.",
       "assertions": [
-        "the rejected reply is not passed to the walkthrough",
-        "step 7 still lists the rejected reply after the second settle",
+        "the held-reply item is passed to the walkthrough to list, not to ask",
+        "no outcome for the held reply is returned",
+        "step 7 lists the held reply again with its full text, thread URL and fix SHA",
         "step 7 lists the mixed-thread fix",
         "both come from the held-reply records"
       ]
     },
     {
       "id": 12,
-      "name": "an-approved-held-reply-is-not-re-asked-at-a-second-settle",
-      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: at the first settle the owner approved one held reply, which was posted (write id 9001) and its thread resolved. You returned that outcome, and the caller passed it to supervise-prs. The wave settles again later. Questions: (a) is that reply passed to the walkthrough again? (b) does step 7 list it as unposted?",
-      "expected_output": "(a) No: the approved outcome cleared its approval-pending record in supervise-prs' record, so it is not among the held-reply records passed in. (b) No: it was posted and the thread resolved, so it is not listed as unposted.",
+      "name": "a-held-reply-the-owner-posted-is-not-listed-at-a-second-settle",
+      "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: at the first settle the walkthrough listed one held reply. The owner then posted the text in the thread themselves and resolved it. Supervision read the owner's post as new content wanting nothing, recorded it no-action, and the thread is resolved. The wave settles again later. Questions: (a) is that reply passed to the walkthrough again? (b) does step 7 list it as unposted? (c) did any run post or resolve anything in that thread?",
+      "expected_output": "(a) No: the owner's post was classified no-action, which ended its held record in supervise-prs' record, so it is not among the held-reply records passed in. (b) No: the owner posted it and the thread is resolved. (c) No: the owner did both; no run posts in or resolves a thread a person other than the owner is in.",
       "assertions": [
-        "the approved reply is not passed to the walkthrough again",
+        "the reply the owner posted is not passed to the walkthrough again",
         "it is not listed as unposted at step 7",
-        "the outcome reached supervise-prs through the caller"
+        "the held record ended through the owner's own post being classified no-action, not through any outcome a run returned",
+        "no run posted or resolved in the thread"
       ]
     },
     {
@@ -383,7 +385,7 @@
       "id": 32,
       "name": "unproven-dependency-view-without-auto-merge-asks-nothing",
       "prompt": "You are executing the settle-and-merge skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). backlog-orchestrator settles a wave of three PRs. The run's dependency transport was unavailable, so each PR's dependency-view input is `unproven: dependency transport unavailable`, discharge: the owner answering for the view. The repository's resolved policy has `auto-merge: false`. `auto-request-settle` is on and the owner is present. The summary carries one DECISION about a naming choice. Question: what does step 4 pass the walkthrough, and does anything merge?",
-      "expected_output": "Step 4 passes the summary (with its one naming DECISION), the posting-identity map and any approval-pending held replies — and no dependency-view DECISION: seeding is only for PRs whose repository opted into auto-merge, and with auto-merge off no gate is evaluated, so the question would answer nothing. Nothing merges; step 6 evaluates no gate for these PRs.",
+      "expected_output": "Step 4 passes the summary (with its one naming DECISION), the posting-identity map and any held-reply items, to list — and no dependency-view DECISION: seeding is only for PRs whose repository opted into auto-merge, and with auto-merge off no gate is evaluated, so the question would answer nothing. Nothing merges; step 6 evaluates no gate for these PRs.",
       "assertions": [
         "The answer does not add a dependency-view DECISION to the walkthrough, because auto-merge is off",
         "The answer merges nothing"

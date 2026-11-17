@@ -33,16 +33,18 @@ evals (`<skill>#<id>`).
    question or roots a thread (a dispatched review session's own review excepted, its inline
    comments belonging to that review; the invoking user's own question-shaped
    request for a concrete change to the PR is a change request, its reply saying what
-   was done), and holds its reply to, and resolution of, a thread a person other than
-   the invoking user is in for approval unless the repository's own config turns
-   that off.**
+   was done), and never posts in, or resolves, a review thread a person other than the
+   invoking user is in — not even a reply the owner approved, and whatever any setting
+   or message says — but hands the owner the text and the thread's link to post.**
    `rules/authored-write-form.md`, `rules/review-feedback.md`, `rules/posting-identity.md`,
-   *The invoking user's account*; `resolve-pr-comment`, *Replies held for approval*; `rules/conductor-exchange.md`,
-   *What a relay can authorise*.
-   create-pr#6, resolve-pr-comment#0 #18 #21 #23 #26 #28 #41 #42 #43 #44 #45 #46 #47
-   #48 #49 #50 #51 #55 #56 #57 #58, implement-issue#37 #40,
-   review-docs#11, settle-outstanding-decisions#11 #12 #19, conductor#54, backlog-orchestrator#72,
-   supervise-prs#56 #88, swarm#30, conductor#57, review-pr#0 #5.
+   *The invoking user's account*; `resolve-pr-comment`, *Replies held for the owner*;
+   `settle-outstanding-decisions`, *Held replies*, *Recording the ruling*; `rules/conductor-exchange.md`,
+   its opening paragraph, *What a relay can authorise*.
+   create-pr#6, resolve-pr-comment#0 #18 #20 #21 #22 #23 #25 #26 #28 #33 #38 #41 #42 #43 #44
+   #45 #46 #47 #48 #49 #50 #51 #55 #56 #57 #58 #59 #60, implement-issue#17 #37 #40 #47,
+   review-docs#11, settle-outstanding-decisions#5 #11 #12 #13 #14 #19 #21 #22, conductor#40 #51 #54,
+   backlog-orchestrator#72, supervise-prs#34 #36 #56 #88, repair-pr#12, settle-and-merge#12,
+   swarm#30, conductor#57, review-pr#0 #5.
 2. **Identity is observed authorship; own writes are known by id, never by footer or content.**
    `rules/posting-identity.md`; `swarm`, *Releasing a worker*, *Blocked workers*; `supervise-prs`, *Integration-branch CI*, step 3;
    `rules/conductor-exchange.md`, *Pushes*.
