@@ -456,11 +456,11 @@
     },
     {
       "id": 36,
-      "name": "a-settled-run-hands-its-watch-to-the-conductor-only-on-a-delivered-push",
+      "name": "a-settled-run-keeps-its-own-watch-whether-or-not-its-push-lands",
       "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A conductor (session_01Cd) coordinates this run. PR #2040 is settled, healthy and waiting on the owner's merge; auto-merge is off. You send the 'settled, waiting on owner merge' report. Case (a): send_message returns {\"status\":\"delivered\"}. Case (b): the send errors. Question: what happens to this run's check-in and subscription in each case?",
-      "expected_output": "(a) Hand the watch to the conductor: cancel this run's check-in, end its PR subscription as the stop rules end them, record that the conductor holds the watch, and go quiet; the conductor's sweep wakes it on the owner's merge or new review activity. (b) The push failed, so keep this run's own watch exactly as before - the bounded post-settle check-in and subscription - and pushes end for the run.",
+      "expected_output": "In both cases the run keeps its own watch: the bounded post-settle check-in (about 50 minutes, then about every 4 hours, ending after 3 unproductive wakes or 7 days from the result) and its PR subscription. A delivered push hands nothing to the conductor - a settled run never hands its watch over. In (b) the failed send also ends pushes for the run, but changes nothing about the watch.",
       "assertions": [
-        "in (a) the answer cancels its check-in and records that the conductor holds the watch",
+        "in (a) the answer keeps its own check-in and subscription and does not hand the watch to the conductor",
         "in (b) the answer keeps its own watch",
         "the answer never leaves the PR unwatched"
       ],
@@ -493,13 +493,13 @@
     },
     {
       "id": 39,
-      "name": "a-handed-off-watch-is-polled-by-the-conductor-until-merge",
-      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A conductor (session_01Cd) coordinates this run. PR #2040 is settled and waiting on the owner's merge; the run handed its watch to the conductor after a delivered push. Two days pass with no merge. Question: does this run keep any check-in of its own, and what wakes it?",
-      "expected_output": "No check-in of its own: once the watch is handed off, the run cancelled its check-in and subscriptions and went quiet; the conductor polls PR #2040 until it merges or closes. The run wakes only on a message whose platform-supplied sender is its recorded conductor id - on a merge, close, new review activity or mergeability change - and then runs one pass of its own supervision, re-arming its own watch only if that pass leaves the PR unsettled.",
+      "name": "a-settled-run-under-a-conductor-wakes-on-its-own-watch",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A conductor (session_01Cd) coordinates this run. PR #2040 is settled and waiting on the owner's merge; its 'settled, waiting on owner merge' push to the conductor was delivered. Two days pass with no merge. Question: does this run keep any check-in of its own, and what wakes it?",
+      "expected_output": "Yes. A settled run keeps its own watch whether or not a conductor coordinates it: its post-settle check-in (about 50 minutes after the last delta, then about every 4 hours, until 3 unproductive wakes or 7 days from the result) and its PR subscription. Those wake it - a merge, close, new review activity or a mergeability change - and each wake runs one supervise-prs pass. A message from the conductor is answered as a status request; it neither starts a pass nor re-arms the watch.",
       "assertions": [
-        "the answer keeps no check-in of its own after the hand-off",
-        "the answer wakes only on a message from the recorded conductor id",
-        "the answer re-arms its own watch only if a pass unsettles the PR"
+        "the answer keeps its own post-settle check-in and subscription",
+        "the answer is woken by its own watch, not by a conductor message",
+        "the answer does not treat a conductor message as starting a pass or re-arming the watch"
       ],
       "files": []
     },
@@ -530,19 +530,19 @@
     {
       "id": 42,
       "name": "a-re-settled-watch-keeps-its-first-deadline",
-      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given, and the references it points to). Your invocation named conductor session_01Cd. Your PR #612 returned PR_OPEN on day 0 and you handed its watch to the conductor with a delivered push. On day 4 a wake from session_01Cd says a reviewer commented; your pass repairs it and the PR is settled again on day 5, with nothing else open. On day 8 another wake from session_01Cd arrives saying new review activity on #612. Question: what deadline does your day-5 hand-off carry, and what do you do with the day-8 wake?",
-      "expected_output": "The day-5 hand-off carries the original deadline, day 7 (7 days from the result), never a fresh 7 days: a re-armed watch keeps its count and deadline and no later hand-off moves it. The day-8 wake arrives after that deadline, so the run runs nothing and replies that its watch ended.",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given, and the references it points to). Your invocation named conductor session_01Cd. Your PR #612 returned PR_OPEN on day 0, and you kept your post-settle watch. On day 4 your subscription wakes you on a reviewer's comment; your pass repairs it and the PR is settled again on day 5, with nothing else open. On day 8 there is new review activity on #612, and session_01Cd messages you about it. Question: what deadline does your re-settled watch carry, and what do you do on day 8?",
+      "expected_output": "The re-settled watch keeps its original deadline, day 7 (7 days from the result), never a fresh 7 days: a delta restarts the schedule's steps and the unproductive count, never the deadline. On day 7 the watch ended - check-in cancelled, subscription ended, reported - so on day 8 the run runs no pass: it answers the conductor's message as a status request, saying its watch ended on day 7.",
       "assertions": [
-        "the day-5 hand-off carries the day-7 deadline, not a new 7 days",
-        "the day-8 wake runs no pass",
-        "the run replies that its watch ended"
+        "the re-settled watch carries the day-7 deadline, not a new 7 days",
+        "the day-8 activity runs no pass",
+        "the run says its watch ended"
       ],
       "files": []
     },
     {
       "id": 43,
       "name": "a-quiet-post-settle-check-in-ends-with-its-final-status-line",
-      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A conductor coordinates this run on acme/api issue #2011; the run kept its own watch (it could not hand off). PR #2040 settled at 12:00 UTC and waits on the owner's merge. The post-settle check-in fires at 16:00 and finds no delta; the next is due 20:00. The title is 'Worker: acme-api · #2011 bulk export'. Question: what does this turn print?",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A conductor coordinates this run on acme/api issue #2011; the run keeps its own watch, as every settled run does. PR #2040 settled at 12:00 UTC and waits on the owner's merge. The post-settle check-in fires at 16:00 and finds no delta; the next is due 20:00. The title is 'Worker: acme-api · #2011 bulk export'. Question: what does this turn print?",
       "expected_output": "Nothing but its one line 'final status: settled, waiting on owner merge · <PR #2040 link>', which the conductor exchange requires as the last output of a turn that leaves the session idle - that is the quiet check-in's minimal line. No structured result, pass record or 'still waiting' message. The title gets only a suffix: 'Worker: acme-api · #2011 bulk export · quiet since 12:00 · 1 waiting on you · next 20:00', restored on the next reporting turn.",
       "assertions": [
         "the answer prints only the final status line",
