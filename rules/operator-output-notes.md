@@ -267,7 +267,7 @@ line: for a coordinated run, the `final status:` line its contract already requi
 quiet firing end with no text and read the session's record and chat afterwards;
 if both are sound, the minimal line can go.
 
-**Why a held watch reaching its deadline is not quiet (rebase onto #201's final head):** #201 lets a conductor hold a settled run's watch, polled on the post-settle cadence and ended at the deadline the hand-off carried, reported as unwatched. That end is a stop the owner must hear about, so the quiet test names it beside the check-in's own stop. The held watch's polling fits the preflight rule as it stands: a polled item whose poll ran is quiet with its last-observed time, carried in the re-armed prompt with the held watch's PR and deadline, and the title's next time is whatever cadence keeps the check-in armed.
+*(Superseded by #214: a settled run now keeps its own watch and the conductor holds none — `rules/conductor-exchange-notes.md`, *The watch after settling*.)* **Why a held watch reaching its deadline is not quiet (rebase onto #201's final head):** #201 lets a conductor hold a settled run's watch, polled on the post-settle cadence and ended at the deadline the hand-off carried, reported as unwatched. That end is a stop the owner must hear about, so the quiet test names it beside the check-in's own stop. The held watch's polling fits the preflight rule as it stands: a polled item whose poll ran is quiet with its last-observed time, carried in the re-armed prompt with the held watch's PR and deadline, and the title's next time is whatever cadence keeps the check-in armed.
 
 **Why the stop message stays:** the *wake budget* rule requires a stopped watch to
 be reported, never silent, because an expired watch is a cost decision the owner

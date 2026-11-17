@@ -1,6 +1,6 @@
 ---
 name: conductor
-description: The owner's daily view and portfolio scheduler over a configured set of repositories — which epics run, in what order and how many at once, and the gates between them. Takes in epics a planner wrote and dispatches backlog-orchestrator, implement-issue or ship-branch runs on the owner's go, and, when the owner asks, review-pr reviewers that draft their reviews of others' PRs; sweeps them and the default branch; relays verified facts between runs; puts decisions and manual steps to the owner one at a time; holds a settled run's watch; keeps one ledger. Never plans features, supervises, repairs, merges or approves. Use when several runs are in flight and the owner wants one place to decide.
+description: The owner's daily view and portfolio scheduler over a configured set of repositories — which epics run, in what order and how many at once, and the gates between them. Takes in epics a planner wrote and dispatches backlog-orchestrator, implement-issue or ship-branch runs on the owner's go, and, when the owner asks, review-pr reviewers that draft their reviews of others' PRs; sweeps them and the default branch; relays verified facts between runs; puts decisions and manual steps to the owner one at a time; keeps one ledger. Never plans features, supervises, repairs, merges or approves. Use when several runs are in flight and the owner wants one place to decide.
 ---
 
 # Conductor
@@ -41,9 +41,9 @@ version line.
   and `feature-plan` arguments this skill was given.
 - **Nobody is present.** The owner pass and every go need a person to answer
   (*4. Owner pass*); a scheduled firing sweeps, reports, and acts only on what
-  the owner already recorded, once verified (*6. Dispatch*) — a conditional go, a
-  retirement under a standing ruling, or a drafted reviewer's archive
-  (`reviewers.md`) — and rules nothing.
+  the owner already recorded, once verified (*6. Dispatch*) — a conditional go or a
+  drafted reviewer's archive (`reviewers.md`) — and rules nothing. It never
+  archives a run: it lists the runs ready to retire for the next attended turn.
 - **A repository outside the configured scope.** Its sessions are noted in the
   ledger and left alone.
 
@@ -85,14 +85,14 @@ skill would read as the owner's stays pending.
 - **The configured repositories.** Every read, write and dispatch is scoped to
   them.
 - **A go is the owner's to post, on any issue**: a dispatch go, a conditional go
-  and a standing ruling — a retirement ruling included — are drafted in full for the
+  and a standing ruling are drafted in full for the
   owner to post at their site, because a go is the owner's authority — bar a
   reviewer's go, which the ledger alone records and is never posted
   (`reviewers.md`). The owner
   gives the posted comment's link; this skill reads it back — authored by the
   owner's account, and not a write whose id the ledger holds as its own — and
   records its id among the ledger's owner-comment ids, kept apart from its own-write
-  ids. Whatever waits on it — a dispatch, a retirement, a relay — stays pending until
+  ids. Whatever waits on it — a dispatch, a relay — stays pending until
   then.
 - **On an issue this skill did not create**, it posts only a ruling under the shared
   exception (`references/authored-write-form.md`, *Issues the run did not create*),
@@ -189,12 +189,8 @@ swept as `reviewers.md` says.
 7. **Read the forge directly as well**, per repository in scope: the epics and
    issues the ledger lists; each run's open PRs, and its integration branch where
    it has one; **each run's PRs merged since the last sweep, and by whom** —
-   the owner's merges are how a stream waiting on the owner moves; new review
-   activity on any PR whose watch this conductor holds; and the issues opened since
-   the last sweep. **Where it holds a settled run's watch** (*The fallback check-in*),
-   a merge by anyone, a close, new review activity or a mergeability change on that
-   run's PR is messaged to the run to
-   wake it. **The forge is the source of truth where sessions
+   the owner's merges are how a stream waiting on the owner moves; and the issues
+   opened since the last sweep. **The forge is the source of truth where sessions
    are missing** — an epic or issue whose run was archived or never found is still
    a stream.
 8. **The default branch**, per repository in scope: CI on its current head, and
@@ -211,29 +207,23 @@ never a session to message as a run.
 
 ## The fallback check-in
 
-**This check-in also holds the watch over every settled run's PR that run handed
-over** (`references/conductor-exchange.md`, *The watch after settling*): it polls
-each such PR until it merges or closes, on `references/wake-budget.md`'s schedule
-for a held watch, and messages the run on a merge by anyone, a close, new review
-activity or a change in mergeability; a held watch never stops it on empty sweeps, and
-ends at the deadline the hand-off carried, reported as unwatched.
-
 **While any run in the ledger is active — any not *finished* (*4. Owner pass*,
 step 1) — or a conditional go is pending, keep one `send_later` check-in bound to
 this session**, on `references/wake-budget.md`'s *A conductor's fallback sweep*
 schedule: about hourly; re-armed silently after a sweep that observed a delta;
-stopped after 3 consecutive empty sweeps, said once — bar while it holds a watch,
-when it continues on the held watch's cadence instead; cancelled when neither holds.
+stopped after 3 consecutive empty sweeps, said once; cancelled when neither holds.
+It holds no PR watch: a settled run keeps its own
+(`references/conductor-exchange.md`, *The watch after settling*).
 A sweep prints as `references/operator-output.md`, *Quiet turns*, says, where it meets that rule's definition.
 **A delta** is a change in durable state the ledger compares: a run's session
 status, a PR of its opened, pushed, merged or closed, its CI conclusions, its open
 items, a pending go's condition, or a reviewer's state. Its prompt
-carries the consecutive-empty count, the ledger's URL, the comparands, each
-held watch's PR and deadline, and the no-change preflight result. **A
-firing sweeps, reports, executes a verified conditional go, retires a run
-under a verified standing ruling, and archives a drafted reviewer whose review the
-owner submitted (`reviewers.md`); it rules nothing, starts no reviewer, and
-dispatches, retires or archives nothing else.**
+carries the consecutive-empty count, the ledger's URL, the comparands and the
+no-change preflight result. **A
+firing sweeps, reports, executes a verified conditional go, lists the runs ready
+to retire for the next attended turn, and archives a drafted reviewer whose review
+the owner submitted (`reviewers.md`); it rules nothing, starts no reviewer, retires
+no run, and dispatches or archives nothing else.**
 One check-in, never two; record its id and next time in the ledger.
 
 # 2. Ask
@@ -301,7 +291,8 @@ the report; the rest follow it** (`references/operator-output.md`, *Questions*).
    The chat carries only its rows that need the owner (*Report*).
 2. **Every pending decision not already asked while unchanged, one at a time**, as
    `references/operator-output.md`, *Questions*, says, the decision that frees the
-   most downstream work first.
+   most downstream work first. The runs ready to retire are one such question
+   (*6. Dispatch*, *Retire a finished run*).
    Anything a question asserts about the code or a PR is read before it is put.
    **Held replies awaiting approval are collected across runs into this pass**, each
    asked the same way — approve, edit or reject, with its full text and every
@@ -501,16 +492,19 @@ A run is not a `swarm` worker: it owns its PRs' supervision, so it carries no
 countermand and no release test applies to it while it runs; retiring it takes
 *Releasing a worker*'s conditions, as below.
 
-**Retire a finished run** by archiving its session, **on the owner's go, which is
-the authority** — this skill did not necessarily create it, and `swarm` archives
-a session its run did not create only on the owner's ruling (*Releasing a
-worker*, the paragraph beginning *Two things are never archived*). The go may be a
-standing ruling recorded on the forge — "retire each run once its PRs are
-merged" — verified against each retirement on the forge, not asked afresh: re-read
-at its site by the comment id the ledger recorded, authored by the owner's account,
-not one of this skill's own writes by id, unedited, and neither superseded nor revoked by a later owner comment; a ruling
-found only in the ledger stays pending. A scheduled firing may act on it too, for a session the ledger records as dispatched
-or adopted by this conductor. Only once its wrap-up is posted on its
+**Retire a finished run** by archiving its session, **only on the owner's answer in
+an attended turn, which is the authority** — this skill did not necessarily create
+it, and `swarm` archives a session its run did not create only on the owner's
+ruling (*Releasing a worker*, the paragraph beginning *Two things are never
+archived*). **On each attended turn, list the runs ready to retire** — each a
+session the ledger records as dispatched or adopted by this conductor that meets
+every condition below, verified on the forge this turn — **and ask one
+`AskUserQuestion` confirming which to archive** (*4. Owner pass*), each run an
+option. Write the answer to the ledger with the owner's words, archive exactly the
+runs chosen, and report each; a run left unchosen is listed again next attended
+turn. **A scheduled firing never archives a run**: it lists the ready runs for the
+next attended turn. No ruling on the forge, standing or otherwise, and no go this
+skill posts stands in for that answer. A run is ready only once its wrap-up is posted on its
 epic or issue — a single-issue run's `merged` report and its PR merged on the forge stand in
 for one —; every PR of its run is merged, closed or recorded as moved to another
 run; nothing of its run is stranded — each of its branches' heads, taken from its last
@@ -531,8 +525,7 @@ store — and is reported. It is found from the URL recorded in it and in the re
 prompt, never by title alone. Rulings stay at their sites; the ledger links to them.
 
 - the **live-sessions table** — per stream: repository, epic or issue, the run's
-  skill, the session's link and title, state (*4. Owner pass*, step 1), who holds
-  its watch and, where this session does, the deadline the hand-off carried, its context use (`used_tokens` of `max_tokens`, as read this
+  skill, the session's link and title, state (*4. Owner pass*, step 1), its context use (`used_tokens` of `max_tokens`, as read this
   sweep), and the version line or lines its reports carry
   (`references/conductor-exchange.md`, *Reports*), else `not reported`; an
   archived session leaves it;
@@ -680,7 +673,7 @@ it does in *6. Dispatch*:
 **In this session, shaped as `references/operator-output.md` says.** *Needs you*
 is what needs the owner to act: decisions and approvals (asked as *4. Owner pass*
 says), owner steps, a failure only the owner can clear — a red default branch, a
-run whose push contradicted the forge — any PR whose watch lapsed, and each
+run whose push contradicted the forge — any PR whose run pushed that its watch stopped with the PR still open, and each
 drafted review to submit (`reviewers.md`). *Changed
 since* is each run whose state from the fixed set changed, and every dispatch,
 executed conditional go, retirement and reviewer archived, each linked to its record. A default branch's CI and deploy are a *Clear a failure* item when red or failed, a change when their result moved, and otherwise counted under *Unchanged*.
