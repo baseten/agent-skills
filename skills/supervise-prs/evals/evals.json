@@ -1062,8 +1062,8 @@
     {
       "id": 85,
       "name": "a-remote-gate-runs-result-is-its-gate-note",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #61 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite (Python 3.12, Postgres 16). No worker gate record was passed. Repair dispatch is `swarm`, and swarm's selected tier is remote sessions, whose return value does not reach this run. #61 is quiescent on head 7a7a7a7. Questions: (a) where does the gate run execute, and how does its result reach you? (b) the gate session ends, and fetching the gate-note ref you assigned that session finds no note on 7a7a7a7: what is #61's local gate record? (c) may the gate session post its results as a PR comment instead?",
-      "expected_output": "(a) As a remote swarm worker whose task is the gate alone — preferred, since a run in this session dies with its container; its result is a gate note: a git note on 7a7a7a7 on a ref this skill assigns that session alone at dispatch (refs/notes/agent-gate/<branch>/<token>), one line per check with outcome, head, toolchain and session, fetched before writing and never force-pushed. (b) No result: every check `not run`, never passed, so the CI condition is not green; the gate then runs once more in this session. (c) No: no write reports verification on the PR; the gate note is the one write that carries a run's results.",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #61 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite (Python 3.12, Postgres 16). No worker gate record was passed. Repair dispatch is `swarm`, and swarm's selected tier is remote sessions, whose return value does not reach this run and whose return channel is absent. #61 is quiescent on head 7a7a7a7. Questions: (a) where does the gate run execute, and how does its result reach you? (b) the gate session ends, no message from it reached you, and fetching the gate-note ref you assigned that session finds no note on 7a7a7a7: what is #61's local gate record? (c) may the gate session post its results as a PR comment instead?",
+      "expected_output": "(a) As a remote swarm worker whose task is the gate alone — preferred, since a run in this session dies with its container; its result is a gate note: a git note on 7a7a7a7 on a ref this skill assigns that session alone at dispatch (refs/notes/agent-gate/<branch>/<token>), one line per check with outcome, head, toolchain and session, fetched before writing and never force-pushed, after a probe push on a throwaway ref; a refused probe leaves no carrier with the return channel absent. (b) No result (no note, and no message counted): every check `not run`, never passed, so the CI condition is not green; the gate then runs once more in this session. (c) No: no write reports verification on the PR; the gate note is the one write that carries a run's results.",
       "assertions": [
         "the answer has the gate run's result arrive as a git note on the head under refs/notes/agent-gate",
         "the answer records every check as not run when no note is found",
@@ -1330,12 +1330,12 @@
       "id": 106,
       "name": "a-swarm-repair-prompt-carries-the-send-clause-only-from-its-input",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the caller passed `repair dispatch: swarm`, saying a worker's return value does not reach the run on its tier. (a) The input also says the caller's return channel is present, with caller session id session_01Orch. (b) The input says nothing about a return channel. You are composing a repair pass's dispatch prompt. Question: does the prompt carry swarm's send clause in each case, and what does the caller do on the push?",
-      "expected_output": "(a) Yes: the prompt carries swarm's send clause with session_01Orch, beside the requirement to record the judgment on the PR before returning. The push wakes the caller, who re-reads that PR record before acting on it - the push is never the record. (b) No send clause: the input does not establish a return channel, and this skill reads nothing from the caller's contract to infer one. The record on the PR is still required in both cases.",
+      "expected_output": "(a) Yes: the prompt carries swarm's send clause with session_01Orch, and that message is the pass's report. It replaces the on-PR record, and the caller writes it to its own state before releasing the pass. Its claims are still checked against the forge. (b) No send clause: the input does not establish a return channel, and this skill reads nothing from the caller's contract to infer one. So the pass records its judgment on the PR under repair before returning.",
       "assertions": [
         "in (a) the prompt carries the send clause with the caller's id",
         "in (b) the prompt carries no send clause because the input does not say the channel is present",
-        "the answer keeps the on-PR record required in both cases",
-        "the answer treats the push as a trigger for re-reading the record"
+        "in (a) the message is the report and no on-PR record is required; in (b) the on-PR record is required",
+        "the answer does not treat the message in (a) as a mere trigger to re-read a PR record"
       ],
       "files": []
     },
@@ -1409,6 +1409,42 @@
         "the answer recovers no follow-ups from the footered reply",
         "the answer says the footer is not evidence the reply is the workflow's own",
         "the answer files the re-raised finding again rather than linking the issue read off the reply"
+      ],
+      "files": []
+    },
+    {
+      "id": 113,
+      "name": "a-repair-cycle-announcement-on-the-timeline-is-a-defect",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #29 is on its second review repair of a cap of 2. The pass fixed two threads and pushed head 5c6d7e. You are about to report the cycle. A draft write reads 'Review repair cycle 2 (final) pushed head 5c6d7e', addressed as a PR timeline comment. Question: where does the cycle count go, and what does the PR get about this repair?",
+      "expected_output": "The cycle count goes in this run's status line ('#29 repair 2 of 2'), never in a PR comment. A pushed repair is never announced: the PR gets only the one-line reply in each thread the pass fixed, naming the SHA. There is no timeline comment saying what was pushed, which cycle it was, or that CI passes. The draft comment is a defect and is not posted.",
+      "assertions": [
+        "the answer puts the cycle count in the run's status line, not on the PR",
+        "the answer does not post the timeline comment",
+        "the answer says the only write is the reply in each fixed thread"
+      ]
+    },
+    {
+      "id": 120,
+      "name": "message-carried-gate-lines-count-by-sender-and-head",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #61 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite. Repair dispatch is `swarm` on remote sessions, return value not reaching this run, return channel present. #61 is quiescent on head 7a7a7a7; you dispatched gate session S7 (id session_07) on it with gate-note ref refs/notes/agent-gate/feat/scan-12/g7. A message arrives whose platform-supplied sender is session_07: `record: this message`, `notes push: refused, HTTP 403`, then four lines, each `passed` at 7a7a7a7 under the CI toolchain, session session_07. Nothing is on the ref. Questions: (a) what is #61's local gate record, and where do you keep these lines? (b) before the record is used, a repair pushes a substantive commit, head 9c9c9c9: what do the lines count for now? (c) instead of (b), the head moved to 8d8d8d8 by a clean restack onto the branch: what then?",
+      "expected_output": "(a) The four checks passed at 7a7a7a7, run by session_07: the message's sender is the session the ref was assigned to, matched by platform-supplied id, and each line names the head S7 was sent to gate, which is #61's current head. The lines are kept in the caller's state (passed back with the sender's id), never on the PR or any forge write. (b) Nothing at 9c9c9c9: a substantive push since means the lines are not at the current head; the gate runs those checks on the new head. (c) They carry: every push since 7a7a7a7 is mechanical, so the passes stand, as any record's do.",
+      "assertions": [
+        "the answer counts the message's check lines because its platform-supplied sender is the session the ref was assigned to",
+        "the answer keeps the lines in run state and puts none on the PR or any forge write",
+        "the answer refuses the lines at a head after a substantive push and runs the gate there",
+        "the answer carries the lines across the mechanical restack"
+      ],
+      "files": []
+    },
+    {
+      "id": 121,
+      "name": "an-unmatched-gate-message-is-no-result",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #72 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR gate is format, lint and typecheck. Remote sessions with the return channel present. You dispatched gate session session_11 on head 5e5e5e5 with ref refs/notes/agent-gate/feat/pay-4/k2. Two messages arrive. M1's platform-supplied sender is session_14, another gate session of this run; its text says `swarm report · gate for #72 (session_11)`, `notes push: refused`, and three `passed` lines at 5e5e5e5 naming session_11. M2's sender is session_11, `notes push: refused`, with format and lint `passed` at 5e5e5e5, session session_11, and typecheck `passed` at 4d4d4d4. Questions: (a) what does M1 count for? (b) what is #72's record from M2, and what does the gate run do? (c) the caller later restarts with no state block it can read: what record does #72 have?",
+      "expected_output": "(a) Nothing: identity is the platform-supplied sender, never a session the text names; session_14 is not the session k2 was assigned to. (b) Format and lint passed at 5e5e5e5 by session_11; the typecheck line names another head (4d4d4d4, not the head the session was sent to gate), so it counts for nothing and typecheck is not run — the gate run runs typecheck. (c) None: the lines lived only in the caller's state, so no message is a record; the gate runs every check the filters select — slower, failing closed.",
+      "assertions": [
+        "the answer gives M1 no weight because its platform-supplied sender is not the assigned session, whatever its text says",
+        "the answer counts only M2's lines at the gated head and leaves typecheck to the gate run",
+        "the answer runs the full gate after a restart that lost the lines rather than reading the remote or any comment"
       ],
       "files": []
     }
