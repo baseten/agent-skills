@@ -24,7 +24,7 @@ It governs the chat only. A forge or tracker write — a ledger kept as a forge 
 
 A reporting turn ends with these, in this order, each omitted when empty:
 
-1. **`## Needs you`**, grouped by what the owner does, each group a bold line, one line per item with its links:
+1. **Needs you**, grouped by what the owner does, each group a bold line, one line per item with its links:
    - **Merge**
    - **Review or assign a reviewer**
    - **Review and submit** — a review drafted for the owner (`conductor`, `reviewers.md`): its drafts link, the recommendation and the blocking count; the line never carries the draft text, and the draft is never under *Approve drafts*
@@ -35,11 +35,11 @@ A reporting turn ends with these, in this order, each omitted when empty:
    - **Clear a failure** only the owner can clear
 
    **Reprint it only when its items changed since the last report printed it**; otherwise one line, `3 still waiting on you, unchanged`, linking the ledger and any work queue beside it — its questions not asked again (*Questions*). Where the last printed list has left context, reprint.
-2. **`## Changed since <time>`** — since the last report, or the run's start — each state change once, by run, then issue. **A table only here**, where rows share columns: runs started, each with its session and its go's record.
+2. **Changed since <time>** — since the last report, or the run's start — each state change once, by work stream, then issue, within a stream's cap (*Headings and links*). **A table only here**, where rows share columns: runs started, each with its session and its go's record, placed under the label and before the streams; a run in it gets no block of its own until a later report.
 3. **`Unchanged: …`** — one line of linked counts.
 4. **A link to the ledger**, or for a run without one, to its epic or issue — and beside it the consumer's work queue, a page rendering *Needs you*, where it keeps one.
 
-**Times** are the owner's local time where the session knows their timezone, otherwise UTC, labelled either way; a title's times excepted. **A `---` line separates top-level groups** — a record, a meta answer, each report section, and each run's block.
+**Times** are the owner's local time where the session knows their timezone, otherwise UTC, labelled either way; a title's times excepted. **A `---` line separates top-level groups** — a record, a meta answer, each report section, and each work stream's block, so a `---` always precedes a stream's heading. **A blank line goes before and after every `---`**: directly under a line of text, `---` turns that line into a heading.
 
 **The report is the turn's last text**, bar, in this order: questions nothing earlier in the turn needed; a consumer's closing proposal, such as a `conductor`'s context-clear proposal; and a coordinated run's `final status:` line (the *conductor exchange* shared rule, *Reports*), always last.
 
@@ -49,26 +49,44 @@ A reporting turn ends with these, in this order, each omitted when empty:
 
 ## Headings and links
 
-**Every block opens with a linked heading naming its subject.** `##` is a section; `###` a run — its session by title, its repository and its epic, or its issue for a single-issue run; a bold line an issue — its tracker issue and its PR, with its worker session where it has its own. A run's own report uses the same levels, with its one run heading under each section but *Needs you*, which groups by action.
+**Every block opens with a line naming its subject.** A report section's label — *Needs you*, *Changed since <time>* — is a short bold line, never a heading; **a work stream is a `##` heading, linked** — a session the report follows: a run, by its session's title, its repository and its epic, or its issue for a single-issue run; a reviewer, by its session's title, its repository and its PR; an issue is a bullet under its stream. A run's own report uses the same levels, with its one stream heading under *Changed since*; *Needs you* groups by action, not by stream.
+
+**An item's links run in one order, in a stream's bullets and *Needs you*'s lines alike**: its worker session, where it has its own; its PR; the tracker's review page for that PR, where its repository's tracker hosts PR review — Linear's diff view, say; then its tracker issue. A link the item does not have is left out, never stood in for.
+
+**A stream's block is one status sentence and at most four bullets.** A change to the stream itself — dispatched, retired, failed, archived — is its status sentence, linked to its record; each bullet is an issue's change, most consequential first. What does not fit is left out, one closing line — plain text, not a fifth bullet — giving the count and linking where the full list is kept — for a `conductor`, the run's session, whose own report lists it; for a run, its record (`+3 more in the session`).
 
 **Every reference is a link** — an issue, a PR, a session (`https://claude.ai/code/<session id>`, its title as the link text), a repository, a commit — never a bare id, a raw session id, or a title standing in for a link; text shown for approval exactly as it will be posted is shown as it will be posted. **Name each repository once per block** — in the run's heading, or on a *Needs you* group's line where its items share one — then write short `#N` refs, always linked. In a table cell a session's link text may drop its title's prefix, so it does not wrap.
 
 A `conductor`'s turn:
 
 ```text
-## Needs you
+**Needs you**
+
 **Merge** · [acme/api](…)
-- [#841](…) — settled · [Worker: acme-api · #810 export](…)
+- [Worker: acme-api · #810 export](…) · [#841](…) · [diff](…) · [#810](…) — settled
+
 **Review and submit** · [acme/web](…)
-- [#93](…) — request changes, 1 blocking · [drafts](…) · [Reviewer: acme-web · #93 cache keys](…)
+- [Reviewer: acme-web · #93 cache keys](…) · [#93](…) · [drafts](…) — request changes, 1 blocking
+
 ---
-## Changed since 14:00 (UTC)
-### [Orchestrator: acme-api · #2005 exports](…) · [acme/api](…) · [#2005](…)
-**[#2011](…) · [#2040](…)** — merged
+
+**Changed since 14:00 (UTC)**
+
 ---
-### [Worker: acme-web · #77 search box](…) · [acme/web](…) · [#77](…)
-**[#77](…) · [#91](…)** — PR opened, waiting on CI
+
+## [Orchestrator: acme-api · #2005 exports](…) · [acme/api](…) · [#2005](…)
+Two issues merged; four still in flight.
+- [Worker: acme-api · #2011 csv](…) · [#2040](…) · [diff](…) · [#2011](…) — merged
+- [Worker: acme-api · #2012 pdf](…) · [#2041](…) · [diff](…) · [#2012](…) — merged
+
 ---
+
+## [Worker: acme-web · #77 search box](…) · [acme/web](…) · [#77](…)
+PR opened, waiting on CI.
+- [#91](…) · [diff](…) · [#77](…) — PR opened
+
+---
+
 Unchanged: [3 runs](…) · [1 PR waiting on a reviewer](…)
 [Ledger](…)
 ```
@@ -76,10 +94,16 @@ Unchanged: [3 runs](…) · [1 PR waiting on a reviewer](…)
 A run's turn, after its record:
 
 ```text
-## Changed since 09:00 (UTC)
-### [Orchestrator: acme-api · #2005 exports](…) · [acme/api](…) · [#2005](…)
-**[#2012](…) · [#2041](…)** — merged
+**Changed since 09:00 (UTC)**
+
 ---
+
+## [Orchestrator: acme-api · #2005 exports](…) · [acme/api](…) · [#2005](…)
+One issue merged; three still in flight.
+- [Worker: acme-api · #2012 pdf](…) · [#2041](…) · [diff](…) · [#2012](…) — merged
+
+---
+
 [#2005](…)
 ```
 

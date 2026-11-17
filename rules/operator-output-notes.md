@@ -54,7 +54,7 @@ drafted on, where the owner submits it; the conductor links it and never copies 
 **Why *Changed since* is in the chat at all:** PR #201's conductor rule kept every
 change out of chat, and a sweep with nothing for the owner was one line. The
 owner's design keeps state changes — a merge, a run started, a run failed — in the
-chat, once each, because that is what the owner reads to decide what to do next;
+chat, once each, because that is what the owner reads to decide what to do next — within a stream's cap, below;
 what stays out is the steps, the checking and the unchanged. An attended sweep with no
 change and nothing for the owner reduces to its *Unchanged* line and the ledger
 link, and a scheduled one to its title and minimal line (*Quiet turns*). The conductor's scenario
@@ -119,15 +119,36 @@ terse.
 
 **Why one heading scheme for a conductor and a run (review of #204):** the first
 draft gave a run's own issues the `###` a conductor gives a run, so the same
-heading level meant two things. A run's report now carries its one run heading
-under each section, and the levels mean the same everywhere. The two worked
+heading level meant two things. A run's report now carries its one stream heading under *Changed since*, and the levels mean the same everywhere. The two worked
 examples exist because a model applying the rule every turn copies an example more
 reliably than it assembles one from clauses.
+
+**Why a stream is `##` and a section label a bold line (owner's ruling, 2026-11-11):**
+a screenshot of a conductor's chat showed `###` run headings rendering barely larger
+than body text, so one stream ran into the next even with `---` between them. A work
+stream is what the owner scans for, so it takes the largest heading the chat renders
+well, and the section labels, which the fixed order already locates, step down to a
+bold line so they do not compete with it. Issues became bullets because a bold line
+per issue was the third bold level in one block.
+
+**Why a stream is capped at one sentence and four bullets (same ruling):** a stream
+with many changes pushed the next stream, and *Needs you* above it, off the screen.
+The owner asked for "about four"; the rule says four so that a reader can tell when
+it is over. What is cut is not lost, and the closing line says how many and where: a conductor's ledger keeps one row per stream rather than every issue's change, so a conductor links the run's session, whose own report lists them; a run links its record, which holds every PR's state (contradiction pass, 2026-11-11). A change to the stream itself — a dispatch, a retirement, a failure — is its status sentence rather than a bullet, so a consumer that must report every one of them, as the `conductor` must, never has one capped out. A reviewer session is a stream of its own, so a failed reviewer's line has a heading to sit under.
+
+**Why a blank line around `---` (found writing that ruling, 2026-11-11):** in
+CommonMark a `---` directly under a line of text is a setext underline, turning the
+line above into an `<h2>`. Rendering `PR opened.\n---` with commonmark.js 0.31.2
+gave `<h2>PR opened.</h2>`; after a list item it gave a rule. The previous examples
+put `---` straight under an issue's line, so a reader copying them made headings of
+arbitrary lines.
 
 **Why every block names its subject:** in both transcripts a reader could not tell
 where one run's news stopped and another's began; context switches between runs
 and between issues were unmarked. A heading with the session, repository and epic
 makes every block self-locating.
+
+**Why an item's links run worker, PR, review page, issue (owner's ruling, 2026-11-11):** the issue line used to lead with the issue and the PR, the worker session last, and the conductor's work-queue page used a different order again. The owner acts on a run in its session, then reads its PR, then its diff in the tracker, then the issue for context, so that is the order, and it is one order in the chat and on the page so each link is always in the same place. A link an item lacks is dropped rather than replaced, so a missing review page never shifts the issue into its slot unannounced.
 
 **Why every reference is a link, and the repository once:** references were
 written three ways in one message — a full `org/repo#N`, a bare `#N`, and plain
@@ -135,8 +156,7 @@ unlinked text — and sessions appeared as raw ids, even in tables, or as plain
 titles that wrapped. A link with the title as its text is clickable and readable;
 naming the repository once per block — in a run's heading, or on a *Needs you*
 group's line where its items share one — lets every ref below it be short without
-being ambiguous. The three-link header PR #201 required is this rule's heading for
-a run and for an issue.
+being ambiguous. The three-link header PR #201 required is this rule's heading for a stream and its line for an issue.
 
 ## Questions
 

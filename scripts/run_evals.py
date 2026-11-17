@@ -24,7 +24,8 @@ answer back beside it.
 
   # 1. scaffold both arms
   python3 scripts/run_evals.py prepare --skill swarm --base origin/main
-  # 2. dispatch one reader per packet; save its answer to <packet-dir>/answer.md
+  # 2. dispatch one reader per packet (Haiku by default; CLAUDE.md, *Spend the
+  #    eval budget*); save its answer to <packet-dir>/answer.md
   # 3. grade each answer against that scenario's assertions, writing
   #    grading.json with expectations[{text, passed, evidence}]
   # 4. score, and read the disagreements
@@ -61,6 +62,15 @@ to open a side file only where the text it is reading sends it there, and to end
 its answer naming each side file it opened with the line that sent it - so a
 grader can tell a rule reached through its pointer from one read because it was
 lying there. key.json lists that arm's side files for the grader.
+
+`prepare --batch N` puts up to N scenarios into one reader packet per arm, at
+`<arm>/batch-XX/packet.json`, because a reader's cost is mostly the contract it
+reads, not the prompt it answers. The reader reads the contract once and answers
+each scenario under a heading `## eval <id>`, into that batch's answer.md. Each
+scenario keeps its own `<arm>/eval-XX/` with key.json, and the grader grades that
+scenario's section of the batch answer into the scenario's grading.json, so
+`score` is unchanged. Both arms are batched the same way, so whatever one
+scenario's prompt does to the reading of the next, it does to both arms.
 """
 from __future__ import annotations
 
@@ -325,7 +335,7 @@ def _lazy_note(side: list[str]) -> str:
 
 
 def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path,
-            lazy_side_files: bool = False) -> int:
+            lazy_side_files: bool = False, batch: int = 1) -> int:
     evals_path = ROOT / "skills" / skill / "evals" / "evals.json"
     if not evals_path.exists():
         print(f"no evals at {_disp(evals_path)}", file=sys.stderr)
@@ -404,12 +414,15 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path,
         arm: _side_files(skill, arms[arm], comp_names[arm]) if lazy_side_files else []
         for arm in arms}
 
+    batches = [cases[i:i + batch] for i in range(0, len(cases), batch)] if batch > 1 else []
     for arm in arms:
         for c in cases:
             pdir = round_dir / arm / f"eval-{c['id']:02d}"
             pdir.mkdir(parents=True, exist_ok=True)
             packet = {k: v for k, v in c.items() if k not in WITHHELD}
             packet["contract_dir"] = _disp(round_dir / arm / "contract")
+            if batches:
+                packet.pop("contract_dir")
             if present[arm]:
                 names = [f"`{n}`" for c in present[arm] for n in comp_names[arm][c]]
                 packet["contract_note"] = (
@@ -421,8 +434,11 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path,
             if side[arm]:
                 note = packet.get("contract_note")
                 packet["contract_note"] = (note + " " if note else "") + _lazy_note(side[arm])
-            (pdir / "packet.json").write_text(
-                json.dumps(packet, indent=2) + "\n", encoding="utf-8")
+            if not batches:
+                (pdir / "packet.json").write_text(
+                    json.dumps(packet, indent=2) + "\n", encoding="utf-8")
+            else:
+                c["_packet"] = packet
             # The grading key sits beside the packet, not inside it. A reader is
             # given packet.json; a grader is given key.json and answer.md.
             key = {"id": c["id"], "name": c["name"],
@@ -431,6 +447,22 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path,
             if lazy_side_files:
                 key["side_files"] = side[arm]
             (pdir / "key.json").write_text(json.dumps(key, indent=2) + "\n", encoding="utf-8")
+        for n, group in enumerate(batches, 1):
+            bdir = round_dir / arm / f"batch-{n:02d}"
+            bdir.mkdir(parents=True, exist_ok=True)
+            first = group[0]["_packet"]
+            bp = {"contract_dir": _disp(round_dir / arm / "contract")}
+            if "contract_note" in first:
+                bp["contract_note"] = first["contract_note"]
+            bp["instructions"] = (
+                "Read the contract once, then answer each scenario below on its own, as if it "
+                "were the only one. Put each answer under a heading `## eval <id>`, in the order "
+                "given. No scenario's facts carry into another.")
+            bp["scenarios"] = [{k: v for k, v in c["_packet"].items() if k != "contract_note"}
+                               for c in group]
+            (bdir / "packet.json").write_text(json.dumps(bp, indent=2) + "\n", encoding="utf-8")
+    for c in cases:
+        c.pop("_packet", None)
 
     (round_dir / "round.json").write_text(json.dumps({
         "skill": skill, "base": base, "arms": sorted(arms),
@@ -438,6 +470,7 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path,
         "companions": {arm: present[arm] for arm in sorted(arms)},
         "scenarios": [c["id"] for c in cases],
         "lazy_side_files": {arm: side[arm] for arm in sorted(arms)} if lazy_side_files else None,
+        "batches": [[c["id"] for c in g] for g in batches] or None,
         "prepared_at": datetime.now(timezone.utc).isoformat(),
         "single_arm_reason": single_arm_reason,
     }, indent=2) + "\n", encoding="utf-8")
@@ -454,13 +487,20 @@ def prepare(skill: str, base: str | None, ids: set[int] | None, round_dir: Path,
     for arm in sorted(arms):
         if companions:
             print(f"  companions {arm}: {', '.join(present[arm]) or 'none at this revision'}")
-    print(f"  packets    {len(cases) * len(arms)}  (each: packet.json for a reader, key.json for a grader)")
+    if batches:
+        print(f"  packets    {len(batches) * len(arms)} batches of up to {batch}  "
+              "(batch-XX/packet.json for a reader; eval-XX/key.json for a grader)")
+    else:
+        print(f"  packets    {len(cases) * len(arms)}  (each: packet.json for a reader, key.json for a grader)")
     if single_arm_reason:
         print(f"\n  ONE ARM ONLY - {single_arm_reason}.")
         print("  The information in this method is the disagreement between arms, so treat")
         print("  these scores as a baseline for the next round, not as a result.")
-    print("\nNext: dispatch one reader per packet.json, save its reply to answer.md")
+    print("\nNext: dispatch one reader per packet.json (Haiku by default), save its reply to answer.md")
     print("beside it, then grade answer.md against key.json into grading.json.")
+    if batches:
+        print("Batched: grade each scenario's `## eval <id>` section of its batch's answer.md")
+        print("against eval-XX/key.json, writing grading.json into eval-XX/.")
     return 0
 
 
@@ -535,6 +575,9 @@ def main() -> int:
     p.add_argument("--lazy-side-files", action="store_true",
                    help="tell readers to open a side file only where the contract sends them, "
                         "and to name each one they opened")
+    p.add_argument("--batch", type=int, default=1,
+                   help="scenarios per reader packet (default 1); a reader reads the contract "
+                        "once per packet, so batching cuts the cost of a round")
 
     s = sub.add_parser("score", help="read grading.json files and report disagreements")
     s.add_argument("--round", required=True)
@@ -543,7 +586,8 @@ def main() -> int:
     if a.cmd == "prepare":
         ids = {int(x) for x in a.ids.split(",")} if a.ids else None
         out = Path(a.out) if a.out else Path("/tmp") / f"evals-{a.skill}-{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}"
-        return prepare(a.skill, a.base or None, ids, out.resolve(), a.lazy_side_files)
+        return prepare(a.skill, a.base or None, ids, out.resolve(), a.lazy_side_files,
+                       max(1, a.batch))
     return score(Path(a.round).resolve())
 
 
