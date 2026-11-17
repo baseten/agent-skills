@@ -86,6 +86,8 @@ Only these may interrupt the user mid-run:
 - a `FAIL` validation result leaving no safe independent path;
 - a genuine conflict with no documented default, where every available option loses work that cannot be recreated.
 
+**Where the invocation names a conductor, none of these but the first is asked in this session**: each is raised and pushed as a hold (`references/conductor-exchange.md`, *Pushes*).
+
 Everything else belongs in the checkpoint output.
 
 ## Worker dispatch authority

@@ -1,0 +1,514 @@
+<title>Work queue</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,600&display=swap">
+<style id="page-style">
+/* Generic conductor work queue (skills/conductor/work-queue.md). Layout: one reading column. Decisions you answer in place, replies to copy and post, then the run order, later items and done. A sticky bar sends everything you changed in one go. */
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --fg: #1b2230; --muted: #5d6676; --line: #dde1e8;
+  --accent: #2f5bd3; --accent-soft: #e8eefc; --tracker: #5e5ad8; --gh: #24292f;
+  --review: #5e5ad8; --ship: #2c7a55; --reply: #b7791f; --hot: #c2412d; --done: #9aa2b1;
+  --display: "Fraunces", Georgia, serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161d; --surface: #1a2029; --fg: #e6e9ef; --muted: #9aa3b2; --line: #2b3340;
+    --accent: #7b9cf0; --accent-soft: #232c45; --tracker: #a5a2f5; --gh: #d6dbe3;
+    --review: #a5a2f5; --ship: #74c095; --reply: #e0b15a; --hot: #f0816d; --done: #5f6877;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12161d; --surface: #1a2029; --fg: #e6e9ef; --muted: #9aa3b2; --line: #2b3340;
+  --accent: #7b9cf0; --accent-soft: #232c45; --tracker: #a5a2f5; --gh: #d6dbe3;
+  --review: #a5a2f5; --ship: #74c095; --reply: #e0b15a; --hot: #f0816d; --done: #5f6877;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 760px; margin: 0 auto; padding-block: 32px 120px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 28px; }
+header { display: grid; gap: 8px; }
+h1 { font-family: var(--display); font-size: 30px; line-height: 1.15; margin: 0; text-wrap: balance; }
+.meta { color: var(--muted); font-size: 13px; }
+.notice { font-size: 13px; color: var(--muted); }
+.notice.ok { color: var(--ship); }
+.notice.bad { color: var(--reply); }
+section { display: grid; gap: 10px; }
+.tier { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.tier h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; margin: 0; font-weight: 600; }
+.tier p { margin: 0; color: var(--muted); font-size: 13px; }
+ol.list { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+ol.list > li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 12px; padding: 14px 16px; border-top: 1px solid var(--line); }
+ol.list > li:first-child { border-top: 0; }
+ol.list > li > div { min-width: 0; }
+ol.list.run { counter-reset: step; }
+ol.list.run > li { counter-increment: step; }
+ol.list.run .what::before { content: counter(step) ". "; color: var(--muted); font-variant-numeric: tabular-nums; }
+input[type=checkbox] { width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--accent); cursor: pointer; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+.kind, .urg { font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 1px 7px; border-radius: 3px; white-space: nowrap; }
+.kind.review { color: var(--review); border: 1px solid var(--review); }
+.kind.ship { color: var(--ship); border: 1px solid var(--ship); }
+.kind.reply { color: var(--reply); border: 1px solid var(--reply); }
+.urg { color: var(--muted); }
+.what { font-weight: 500; }
+.why { color: var(--muted); font-size: 13.5px; margin-top: 2px; }
+.flag { color: var(--hot); font-weight: 500; }
+code { font-family: var(--mono); font-size: 12.5px; }
+li.is-done .what, li.is-done .why { color: var(--done); text-decoration: line-through; }
+li.changed { background: var(--accent-soft); }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 8px; font-family: var(--mono); font-size: 12.5px; }
+.k { display: inline-flex; align-items: center; gap: 5px; padding: 1px 7px; border-radius: 4px; border: 1px solid var(--line); white-space: nowrap; text-decoration: none; }
+.k:hover { text-decoration: underline; }
+.k::before { font-family: var(--body); font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; opacity: .75; }
+.k.gh { color: var(--gh); } .k.gh::before { content: "GH"; }
+.k.iss { color: var(--accent); } .k.iss::before { content: "Issue"; }
+.k.tr { color: var(--tracker); } .k.tr::before { content: "Tracker"; }
+.k.ses { color: var(--ship); } .k.ses::before { content: "Session"; }
+.cards { display: grid; gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: grid; gap: 10px; min-width: 0; }
+.card.picked { border-color: var(--accent); }
+.card.answered { border-left: 3px solid var(--reply); }
+.card.done { border-left: 3px solid var(--ship); }
+.area { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.card h3 { font-size: 16.5px; line-height: 1.35; margin: 0; font-weight: 600; text-wrap: balance; }
+.ctx { margin: 0; color: var(--muted); font-size: 14px; }
+.opts { display: grid; gap: 6px; }
+.opt { display: flex; align-items: flex-start; gap: 10px; text-align: left; width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--fg); font: inherit; font-size: 14px; cursor: pointer; }
+.opt:hover { border-color: var(--accent); }
+.opt[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.opt .dot { flex: none; width: 14px; height: 14px; margin-top: 3px; border-radius: 50%; border: 2px solid var(--muted); }
+.opt[aria-checked="true"] .dot { border-color: var(--accent); background: var(--accent); box-shadow: inset 0 0 0 2px var(--surface); }
+.ruling { display: block; margin-top: 4px; font-size: 12.5px; color: var(--muted); }
+.rec { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ship); margin-left: 6px; white-space: nowrap; }
+details.note summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+details.note textarea { margin-top: 6px; width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; min-height: 56px; resize: vertical; }
+.clear { font: inherit; font-size: 13px; color: var(--muted); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; justify-self: start; }
+.answer { font-size: 14px; display: grid; gap: 4px; }
+.answer .who { color: var(--muted); font-size: 13px; }
+.status { font-size: 13px; font-weight: 500; color: var(--reply); }
+.status.ok { color: var(--ship); }
+.outcome { font-size: 14px; margin: 0; }
+.draft { font-family: var(--mono); font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; margin: 8px 0 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); }
+button.copy { font: inherit; font-family: var(--body); font-size: 12.5px; font-weight: 600; padding: 2px 10px; border-radius: 4px; border: 1px solid var(--accent); background: transparent; color: var(--accent); cursor: pointer; }
+.empty { color: var(--muted); font-size: 14px; padding: 4px 0; }
+.card.refresh { border-left: 3px solid var(--accent); }
+details.posted summary { cursor: pointer; font-size: 13px; color: var(--muted); padding: 4px 0; }
+details.posted ol.list { margin-top: 6px; }
+ol.mlist { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+li.mrow { padding: 12px 16px; border-top: 1px solid var(--line); display: grid; gap: 6px; min-width: 0; }
+li.mrow:first-child { border-top: 0; }
+li.mrow.is-ready { box-shadow: inset 3px 0 0 var(--ship); }
+.mhead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; }
+.mpr { font-family: var(--mono); font-size: 13px; color: var(--accent); text-decoration: none; font-weight: 500; }
+.mpr:hover { text-decoration: underline; }
+.mtitle { font-weight: 500; min-width: 0; }
+.pill { font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 1px 7px; border-radius: 3px; white-space: nowrap; }
+.pill.ready { color: var(--surface); background: var(--ship); }
+.pill.wait { color: var(--reply); border: 1px solid var(--reply); }
+.pill.blocked { color: var(--muted); border: 1px solid var(--line); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12px; padding: 1px 8px; border-radius: 10px; border: 1px solid var(--line); color: var(--muted); }
+.chip.ok { color: var(--ship); border-color: var(--ship); }
+.chip.bad { color: var(--hot); border-color: var(--hot); }
+.chip.warn { color: var(--reply); border-color: var(--reply); }
+ul.blockers { margin: 0; padding-left: 18px; font-size: 13.5px; color: var(--fg); }
+a.copygo { font-family: var(--body); font-size: 12.5px; font-weight: 600; padding: 3px 12px; border-radius: 4px; background: var(--accent); color: var(--surface); text-decoration: none; white-space: nowrap; }
+a.copygo:hover { filter: brightness(1.1); }
+a.copygo.alt { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+.resolved { font-family: var(--body); font-size: 12.5px; color: var(--ship); }
+.donelist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; color: var(--done); font-size: 14px; }
+.sendbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; background: var(--surface); border-top: 1px solid var(--line);
+  padding-block: 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.sendbar .in { max-width: 760px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; justify-content: space-between; }
+.sendbar .sum { font-size: 14px; }
+.sendbar .err { color: var(--hot); font-size: 13px; }
+button.send { font: inherit; font-weight: 600; font-size: 14px; padding: 9px 18px; border-radius: 6px; border: 0; background: var(--accent); color: var(--surface); cursor: pointer; }
+button.send:disabled { opacity: .45; cursor: default; }
+button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+<div id="app"><div class="wrap"><header><h1>Work queue</h1><div class="meta">Loading…</div></header></div></div>
+<script id="state" type="application/json">__STATE__</script>
+<script id="page-script">
+(function () {
+  var RESET = ':root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}';
+  var FONTS = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,600&display=swap';
+  var state;
+  try { state = JSON.parse(document.getElementById('state').textContent); } catch (e) { state = {}; }
+  state.merge = state.merge || [];
+  var TITLE = String(state.title || 'Work queue');
+  var INTERACTIVE = state.interactive === true;
+  document.title = TITLE;
+  state.refresh = state.refresh || null;
+  state.decisions = state.decisions || []; state.replies = state.replies || []; state.items = state.items || []; state.sessions = state.sessions || []; state.doneRecent = state.doneRecent || [];
+  var app = document.getElementById('app');
+  var artifactNs = null, commentsNs = null;
+  var mode = 'connecting', canSend = 'checking';
+  var picks = {}, ticks = {};
+  var sending = false, sendError = '';
+  var KEY = 'queue-pending';
+
+  try { var saved = JSON.parse(sessionStorage.getItem(KEY) || 'null'); if (saved) { picks = saved.picks || {}; ticks = saved.ticks || {}; } } catch (e) {}
+  Object.keys(picks).forEach(function (id) { var d = find(state.decisions, id); if (!d || d.status !== 'open') delete picks[id]; });
+  function persist() { try { sessionStorage.setItem(KEY, JSON.stringify({ picks: picks, ticks: ticks })); } catch (e) {} }
+
+  function find(list, id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return null; }
+
+  function h(tag, attrs, kids) {
+    var el = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      var v = attrs[k];
+      if (v === null || v === undefined || v === false) return;
+      if (k === 'text') el.textContent = v;
+      else if (k.slice(0, 2) === 'on') el.addEventListener(k.slice(2), v);
+      else el.setAttribute(k, v === true ? '' : v);
+    });
+    (kids || []).forEach(function (c) { if (c) el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return el;
+  }
+
+  function rich(text) {
+    var out = [];
+    String(text || '').split(/(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\(https:\/\/[^)\s]+\))/).forEach(function (part) {
+      if (!part) return;
+      var m = /^\[([^\]]+)\]\((https:\/\/[^)\s]+)\)$/.exec(part);
+      if (m) out.push(h('a', { href: m[2], target: '_blank', rel: 'noopener', text: m[1] }));
+      else if (part.slice(0, 2) === '**') out.push(h('span', { class: 'flag', text: part.slice(2, -2) }));
+      else if (part[0] === '`') out.push(h('code', { text: part.slice(1, -1) }));
+      else out.push(part);
+    });
+    return out;
+  }
+
+  function fmt(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d)) return iso;
+    return d.toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function linkRow(links, extra) {
+    var kids = (extra || []).concat((links || []).map(function (l) {
+      return h('a', { class: 'k ' + (l.k || 'gh'), href: l.href, target: '_blank', rel: 'noopener', text: l.label });
+    }));
+    return kids.length ? h('div', { class: 'row' }, kids) : null;
+  }
+
+  function optLabel(d, id) { var o = find(d.options || [], id); return o ? o.label : id; }
+
+  function isDone(kind, obj) {
+    var key = kind + ':' + obj.id;
+    return ticks.hasOwnProperty(key) ? ticks[key] : !!obj.done;
+  }
+  function toggle(kind, obj, value) {
+    var key = kind + ':' + obj.id;
+    if (value === !!obj.done) delete ticks[key]; else ticks[key] = value;
+    persist(); render();
+  }
+
+  function decisionCard(d) {
+    var pick = picks[d.id];
+    var cls = 'card' + (d.status === 'answered' ? ' answered' : d.status === 'done' ? ' done' : '') + (pick && pick.choice ? ' picked' : '');
+    var kids = [h('div', { class: 'area', text: d.area }), h('h3', { text: d.question })];
+    if (d.context) kids.push(h('p', { class: 'ctx' }, rich(d.context)));
+    var lr = linkRow(d.links); if (lr) kids.push(lr);
+    if (d.status === 'open' && !INTERACTIVE) {
+      kids.push(h('ul', { class: 'blockers' }, (d.options || []).map(function (o) { return h('li', null, [o.label, o.recommended ? h('span', { class: 'rec', text: 'Recommended' }) : null]); })));
+      kids.push(h('div', { class: 'status', text: 'Answer this in the conductor session.' }));
+    } else if (d.status === 'open') {
+      var editable = mode === 'ready' && !sending;
+      kids.push(h('div', { class: 'opts', role: 'radiogroup', 'aria-label': d.question }, (d.options || []).map(function (o) {
+        return h('button', { type: 'button', class: 'opt', role: 'radio', 'aria-checked': pick && pick.choice === o.id ? 'true' : 'false', disabled: !editable,
+          onclick: function () { picks[d.id] = Object.assign({}, picks[d.id], { choice: o.id }); persist(); render(); } },
+          [h('span', { class: 'dot' }), h('span', null, [o.label, o.recommended ? h('span', { class: 'rec', text: 'Recommended' }) : null,
+            o.ruling ? h('span', { class: 'ruling', text: 'Recorded as: ' + o.ruling }) : null])]);
+      })));
+      var ta = h('textarea', { id: 'note-' + d.id, maxlength: '600', placeholder: 'Quoted under the ruling when it is recorded', disabled: !editable,
+        oninput: function (e) { picks[d.id] = Object.assign({}, picks[d.id], { note: e.target.value }); persist(); renderBar(); } });
+      ta.value = (pick && pick.note) || '';
+      var det = h('details', { class: 'note' }, [h('summary', { text: pick && pick.note ? 'Note (added)' : 'Add a note' }), ta]);
+      if (pick && pick.noteOpen) det.open = true;
+      det.addEventListener('toggle', function () { picks[d.id] = Object.assign({}, picks[d.id], { noteOpen: det.open }); persist(); });
+      kids.push(det);
+      if (pick && pick.choice) kids.push(h('button', { type: 'button', class: 'clear', disabled: !editable, onclick: function () { delete picks[d.id]; persist(); render(); }, text: 'Clear my choice' }));
+    } else {
+      var a = d.answer || {};
+      var ans = [h('div', null, ['You chose: ', h('strong', { text: optLabel(d, a.choice) })])];
+      if (a.note) ans.push(h('div', { text: 'Note: ' + a.note }));
+      ans.push(h('div', { class: 'who', text: 'Sent ' + fmt(a.at) + (a.messaged === true ? ' · sent to the conductor' : a.messaged === false ? ' · saved only; the conductor puts it to you to confirm' : '') }));
+      kids.push(h('div', { class: 'answer' }, ans));
+      if (d.status === 'answered') kids.push(h('div', { class: 'status', text: 'Waiting for the conductor to act on it' }));
+      else {
+        kids.push(h('div', { class: 'status ok', text: 'Done ' + fmt(d.doneAt) }));
+        if (d.outcome) kids.push(h('p', { class: 'outcome' }, rich(d.outcome)));
+      }
+    }
+    return h('article', { class: cls, id: 'd-' + d.id }, kids);
+  }
+
+  function replyItem(r) {
+    var done = isDone('reply', r);
+    var url = r.url;
+    var label = 'Open thread';
+    var box = h('input', { type: 'checkbox', id: 'tick-reply-' + r.id, 'aria-label': 'Posted: ' + r.gist, disabled: !INTERACTIVE || mode !== 'ready' || sending,
+      onchange: function (e) { toggle('reply', r, e.target.checked); } });
+    box.checked = done;
+    var kids = [h('div', { class: 'tags' }, [h('span', { class: 'kind reply', text: 'reply' }), h('span', { class: 'urg', text: '#' + r.pr + ' · ' + r.who })]),
+      h('div', { class: 'what', text: r.gist })];
+    if (r.note) kids.push(h('div', { class: 'why' }, rich(r.note)));
+    var pre = h('pre', { class: 'draft', id: 'draft-' + r.id, text: r.text });
+    kids.push(pre);
+    var copy = h('button', { type: 'button', class: 'copy', text: 'Copy reply', onclick: function () { copyText(copy, pre); } });
+    var row = [copy, h('a', { class: 'k gh', href: url, target: '_blank', rel: 'noopener', text: label })];
+    if (!done && INTERACTIVE) {
+      var all = h('a', { class: 'copygo', href: url, target: '_blank', rel: 'noopener', text: 'Copy, open and tick',
+        onclick: function () { copyQuiet(pre.textContent, all, 'Copy, open and tick'); ticks['reply:' + r.id] = true; persist(); setTimeout(render, 50); } });
+      row.push(all);
+    }
+    kids.push(h('div', { class: 'row' }, row));
+    var changed = ticks.hasOwnProperty('reply:' + r.id);
+    return h('li', { class: (done ? 'is-done' : '') + (changed ? ' changed' : '') }, [box, h('div', null, kids)]);
+  }
+
+  function copyText(btn, el) {
+    function flash(t) { btn.textContent = t; setTimeout(function () { btn.textContent = 'Copy reply'; }, 2000); }
+    function selectIt() { var r = document.createRange(); r.selectNodeContents(el); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); flash('Selected: press Ctrl/Cmd+C'); }
+    try { navigator.clipboard.writeText(el.textContent).then(function () { flash('Copied'); }, selectIt); } catch (e) { selectIt(); }
+  }
+
+  function copyQuiet(text, el, label) {
+    try {
+      navigator.clipboard.writeText(text).then(function () { el.textContent = 'Copied, opening…'; setTimeout(function () { el.textContent = label; }, 2500); },
+        function () { el.textContent = 'Opened; copy didn’t work, use Copy reply'; setTimeout(function () { el.textContent = label; }, 4000); });
+    } catch (e) {}
+  }
+
+  function workItem(it) {
+    var done = isDone('item', it);
+    var box = h('input', { type: 'checkbox', id: 'tick-item-' + it.id, 'aria-label': 'Done: ' + it.what, disabled: !INTERACTIVE || mode !== 'ready' || sending,
+      onchange: function (e) { toggle('item', it, e.target.checked); } });
+    box.checked = done;
+    var kids = [];
+    if (it.kind || it.urg) kids.push(h('div', { class: 'tags' }, [it.kind ? h('span', { class: 'kind ' + it.kind, text: it.kind }) : null, it.urg ? h('span', { class: 'urg', text: it.urg }) : null]));
+    kids.push(h('div', { class: 'what' }, rich(it.what)));
+    if (it.why) kids.push(h('div', { class: 'why' }, rich(it.why)));
+    var lr = linkRow(it.links); if (lr) kids.push(lr);
+    var changed = ticks.hasOwnProperty('item:' + it.id);
+    return h('li', { class: (done ? 'is-done' : '') + (changed ? ' changed' : '') }, [box, h('div', null, kids)]);
+  }
+
+  function mergeRow(m) {
+    var waiting = m.after && state.merge.some(function (x) { return x.pr === m.after && x.repo === m.repo; });
+    var ready = !m.blockers.length && !(m.auto || []).length && !waiting;
+    var pill = ready ? h('span', { class: 'pill ready', text: 'Ready to merge' })
+      : waiting && !m.blockers.length && !(m.auto || []).length ? h('span', { class: 'pill wait', text: 'After #' + m.after })
+      : h('span', { class: 'pill blocked', text: 'Not yet' });
+    var chips = [
+      h('span', { class: 'chip ok', text: 'Approved: ' + m.approvals.join(', ') }),
+      h('span', { class: 'chip ' + (m.unresolved ? 'bad' : 'ok'), text: m.unresolved ? m.unresolved + ' unresolved' : 'Threads resolved' }),
+      h('span', { class: 'chip ' + (m.ci === 'green' ? 'ok' : m.ci === 'red' ? 'bad' : 'warn'), text: m.ci === 'green' ? 'CI green' : m.ci === 'red' ? 'CI red' : m.ci === 'none' ? 'No checks read' : 'CI running' })
+    ];
+    if (m.needs_reply) chips.push(h('span', { class: 'chip warn', text: m.needs_reply + ' fixed, needs a reply' }));
+    if (m.answered) chips.push(h('span', { class: 'chip', text: m.answered + (m.answered === 1 ? ' thread answered' : ' threads answered') }));
+    if (waiting && m.blockers.length) chips.push(h('span', { class: 'chip warn', text: 'After #' + m.after }));
+    var kids = [h('div', { class: 'mhead' }, [pill, h('a', { class: 'mpr', href: m.url, target: '_blank', rel: 'noopener', text: '#' + m.pr }), h('span', { class: 'mtitle', text: m.title })]),
+      h('div', { class: 'chips' }, chips)];
+    if (m.blockers.length) kids.push(h('ul', { class: 'blockers' }, m.blockers.map(function (b) { return h('li', null, rich(b)); })));
+    if (m.note) kids.push(h('div', { class: 'why' }, rich(m.note)));
+    return h('li', { class: 'mrow' + (ready ? ' is-ready' : '') }, kids);
+  }
+
+  function refreshCard() {
+    var r = state.refresh;
+    if (!r || !r.ready || !r.prompt) return null;
+    var pre = h('pre', { class: 'draft', id: 'restart-prompt', text: r.prompt });
+    var btn = h('button', { type: 'button', class: 'copy', text: 'Copy restart prompt', onclick: function () {
+      function flash(t) { btn.textContent = t; setTimeout(function () { btn.textContent = 'Copy restart prompt'; }, 2500); }
+      try { navigator.clipboard.writeText(pre.textContent).then(function () { flash('Copied'); }, function () { var g = document.createRange(); g.selectNodeContents(pre); var x = window.getSelection(); x.removeAllRanges(); x.addRange(g); flash('Selected: press Ctrl/Cmd+C'); }); } catch (e) {}
+    } });
+    var kids = [h('div', { class: 'tier' }, [h('h2', { text: 'Ready for a refresh' })]),
+      h('div', { class: 'card refresh' }, [
+        h('p', { class: 'ctx', text: (r.reason ? r.reason + ' ' : '') + 'In the conductor session, type /clear, then paste this prompt. The session id, the page watch and the check-in stay the same.' }),
+        h('div', { class: 'row' }, [btn, r.session ? h('a', { class: 'k ses', href: r.session, target: '_blank', rel: 'noopener', text: 'Conductor session' }) : null]),
+        h('details', { class: 'posted' }, [h('summary', { text: 'Show the prompt' }), pre])
+      ])];
+    return h('section', { id: 'refresh' }, kids);
+  }
+
+  function sessionItem(se) {
+    var done = isDone('session', se);
+    var box = h('input', { type: 'checkbox', id: 'tick-session-' + se.id, 'aria-label': 'Archive: ' + se.title, disabled: !INTERACTIVE || mode !== 'ready' || sending || !!se.done,
+      onchange: function (e) { toggle('session', se, e.target.checked); } });
+    box.checked = done;
+    var kids = [h('div', { class: 'what' }, rich(se.title))];
+    if (se.why) kids.push(h('div', { class: 'why' }, rich(se.done ? 'Archive requested; the conductor is on it.' : se.why)));
+    var lr = linkRow([{ k: 'ses', label: 'Open session', href: 'https://claude.ai/code/' + encodeURIComponent(se.id) }].concat(se.links || [])); if (lr) kids.push(lr);
+    var changed = ticks.hasOwnProperty('session:' + se.id);
+    return h('li', { class: (done ? 'is-done' : '') + (changed ? ' changed' : '') }, [box, h('div', null, kids)]);
+  }
+
+  function counts() {
+    var answers = Object.keys(picks).filter(function (id) { return picks[id] && picks[id].choice; });
+    var archives = Object.keys(ticks).filter(function (k) { return k.indexOf('session:') === 0 && ticks[k]; }).map(function (k) { return k.slice(8); });
+    return { answers: answers, ticks: Object.keys(ticks), archives: archives };
+  }
+
+  function notice() {
+    if (!INTERACTIVE) return h('div', { class: 'notice bad', text: 'Read-only view. Answer decisions in the conductor session; nothing here reaches it.' });
+    if (mode === 'readonly') return h('div', { class: 'notice bad', text: 'This view is read-only. Only the page owner can send answers or save ticks.' });
+    if (mode === 'unavailable') return h('div', { class: 'notice bad', text: 'Saving isn’t available in this view. Open the page on claude.ai to answer.' });
+    if (mode !== 'ready') return null;
+    if (canSend === 'available') return h('div', { class: 'notice ok', text: 'Pick answers on as many cards as you like, then send them together. They reach the conductor within seconds.' });
+    if (canSend === 'checking') return h('div', { class: 'notice', text: 'Checking whether the conductor can be reached…' });
+    var why = canSend === 'no_session' ? 'no conductor session is watching this page right now' : canSend === 'writers_only' ? 'only editors of this page can send to Claude' : 'sending to Claude isn’t available here (' + canSend + ')';
+    return h('div', { class: 'notice bad', text: 'Answers will save, but ' + why + '. The conductor will put saved answers to you to confirm; they are not acted on from the page alone.' });
+  }
+
+  var bar = h('div', { class: 'sendbar', hidden: true });
+  function renderBar() {
+    var c = counts();
+    var n = c.answers.length, t = c.ticks.length;
+    if ((!n && !t) || mode !== 'ready' || !INTERACTIVE) { bar.hidden = true; return; }
+    bar.hidden = false;
+    var parts = [];
+    if (n) parts.push(n + (n === 1 ? ' answer' : ' answers'));
+    if (t) parts.push(t + (t === 1 ? ' tick' : ' ticks'));
+    var av = c.archives.length;
+    if (av) parts.push(av + (av === 1 ? ' session to archive' : ' sessions to archive'));
+    var label = sending ? 'Sending…' : (n || av) ? 'Send to conductor' : 'Save ticks';
+    var kids = [h('span', { class: 'sum', text: parts.join(' · ') + ' not sent yet' }),
+      h('button', { type: 'button', class: 'send', id: 'send-all', disabled: sending, onclick: sendAll, text: label })];
+    if (sendError) kids.splice(1, 0, h('span', { class: 'err', text: sendError }));
+    bar.replaceChildren(h('div', { class: 'in' }, kids));
+  }
+
+  function render() {
+    var focused = document.activeElement && document.activeElement.id;
+    var open = state.decisions.filter(function (d) { return d.status === 'open'; });
+    var sent = state.decisions.filter(function (d) { return d.status === 'answered'; });
+    var done = state.decisions.filter(function (d) { return d.status === 'done'; });
+    var replies = state.replies;
+    var postedCount = replies.filter(function (r) { return isDone('reply', r); }).length;
+    var run = state.items.filter(function (i) { return i.tier === 'run'; });
+    var later = state.items.filter(function (i) { return i.tier === 'later'; });
+    var wrap = h('div', { class: 'wrap' }, [
+      h('header', null, [h('h1', { text: TITLE }),
+        h('div', { class: 'meta', text: 'Read ' + fmt(state.updated) + ' by the conductor\u2019s last sweep · next check-in ' + (state.nextCheckin || '') + ' · ' + open.length + ' decisions open · ' + (replies.length - postedCount) + ' replies to post' }),
+        notice()]),
+      refreshCard(),
+      state.merge.length ? h('section', { id: 'merge' }, [h('div', { class: 'tier' }, [h('h2', { text: 'PRs to merge' }), h('p', { text: 'Approved, with review settled. Top to bottom within each group; refreshed at every check-in.' })]),
+        h('ol', { class: 'mlist' }, state.merge.map(mergeRow))]) : null,
+      h('section', { id: 'decisions' }, [h('div', { class: 'tier' }, [h('h2', { text: 'Decisions waiting on you' }), h('p', { text: 'Recommended options are marked. A note is optional.' })]),
+        open.length ? h('div', { class: 'cards' }, open.map(decisionCard)) : h('div', { class: 'empty', text: 'Nothing waiting on you.' })]),
+      sent.length ? h('section', null, [h('div', { class: 'tier' }, [h('h2', { text: 'Sent to the conductor' })]), h('div', { class: 'cards' }, sent.map(decisionCard))]) : null,
+      replies.length ? h('section', { id: 'replies' }, (function () {
+        var todo = replies.filter(function (r) { return !r.done || ticks.hasOwnProperty('reply:' + r.id); });
+        var posted = replies.filter(function (r) { return r.done && !ticks.hasOwnProperty('reply:' + r.id); });
+        var kids = [h('div', { class: 'tier' }, [h('h2', { text: 'Replies to post' }), h('p', { text: 'Copy, open the thread, paste and post, then tick. Posted replies fold away and drop off once their PR merges or closes.' })])];
+        kids.push(todo.length ? h('ol', { class: 'list' }, todo.map(replyItem)) : h('div', { class: 'empty', text: 'Nothing to post.' }));
+        if (posted.length) kids.push(h('details', { class: 'posted' }, [h('summary', { text: 'Posted (' + posted.length + ')' }), h('ol', { class: 'list' }, posted.map(replyItem))]));
+        return kids;
+      })()) : null,
+      state.sessions.length ? h('section', { id: 'sessions' }, [h('div', { class: 'tier' }, [h('h2', { text: 'Sessions to archive' }), h('p', { text: 'Finished sessions with nothing left to do. Tick the ones to archive and send; the conductor archives them.' })]),
+        h('ol', { class: 'list' }, state.sessions.map(sessionItem))]) : null,
+      run.length ? h('section', null, [h('div', { class: 'tier' }, [h('h2', { text: 'Run order' }), h('p', { text: 'Top to bottom.' })]), h('ol', { class: 'list run' }, run.map(workItem))]) : null,
+      later.length ? h('section', null, [h('div', { class: 'tier' }, [h('h2', { text: 'When there’s time' })]), h('ol', { class: 'list' }, later.map(workItem))]) : null,
+      done.length ? h('section', null, [h('div', { class: 'tier' }, [h('h2', { text: 'Decisions done' })]), h('div', { class: 'cards' }, done.map(decisionCard))]) : null,
+      state.doneRecent.length ? h('section', null, [h('div', { class: 'tier' }, [h('h2', { text: 'Done recently' })]), h('ul', { class: 'donelist' }, state.doneRecent.map(function (t) { return h('li', null, rich(t)); }))]) : null
+    ]);
+    app.replaceChildren(wrap, bar);
+    renderBar();
+    if (focused) { var f = document.getElementById(focused); if (f) f.focus(); }
+  }
+
+  function clean(s) { return String(s || '').replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, ''); }
+
+  function commentText(next, ids, at, aids) {
+    aids = aids || [];
+    var lines = ['[Work queue] ' + ids.length + (ids.length === 1 ? ' answer' : ' answers') + (aids.length ? ' and ' + aids.length + ' sessions to archive' : '') + ' sent at ' + at + ':'];
+    ids.forEach(function (id) {
+      var d = find(next.decisions, id);
+      var line = '- ' + clean(d.question).slice(0, 160) + ' (' + id + '): ' + clean(optLabel(d, d.answer.choice)).slice(0, 160) + ' (' + d.answer.choice + ')';
+      if (d.answer.note) line += '\n  Note: ' + clean(d.answer.note).slice(0, 600);
+      lines.push(line);
+    });
+    if (aids.length) lines.push('Archive: ' + aids.map(function (id) { var se = find(next.sessions, id); return id + (se ? ' (' + clean(se.title).slice(0, 80) + ')' : ''); }).join(', '));
+    lines.push('Everything is also saved on the page.');
+    var text = lines.join('\n');
+    while (new Blob([text]).size > 3900) text = text.slice(0, -200);
+    return text;
+  }
+
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  function buildDoc(next) {
+    var style = document.getElementById('page-style').textContent;
+    var script = document.getElementById('page-script').textContent;
+    var json = JSON.stringify(next).replace(/</g, '\\u003c');
+    var close = '</' + 'script>';
+    return '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>' + RESET + '</style></head><body>' +
+      '<title>' + esc(TITLE) + '</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n' +
+      '<link rel="stylesheet" href="' + FONTS + '">\n' +
+      '<style id="page-style">' + style + '</style>\n' +
+      '<div id="app"><div class="wrap"><header><h1>' + esc(TITLE) + '</h1><div class="meta">Loading…</div></header></div></div>\n' +
+      '<script id="state" type="application/json">' + json + close + '\n' +
+      '<script id="page-script">' + script + close + '\n</body></html>';
+  }
+
+  function sendAll() {
+    if (!artifactNs || sending) return;
+    var c = counts();
+    if (!INTERACTIVE || (!c.answers.length && !c.ticks.length)) return;
+    var at = new Date().toISOString();
+    var next = JSON.parse(JSON.stringify(state));
+    c.answers.forEach(function (id) {
+      var d = find(next.decisions, id);
+      d.status = 'answered';
+      d.answer = { choice: picks[id].choice, note: clean(picks[id].note || '').trim(), at: at };
+    });
+    c.ticks.forEach(function (key) {
+      var kind = key.split(':')[0], id = key.slice(kind.length + 1);
+      var obj = find(kind === 'reply' ? next.replies : kind === 'session' ? next.sessions : next.items, id);
+      if (obj) { obj.done = ticks[key]; obj.doneAt = ticks[key] ? at : null; }
+    });
+    var wake = c.answers.length || c.archives.length;
+    var anchorP = wake && commentsNs && canSend === 'available' ? commentsNs.anchorFor(document.getElementById(c.answers.length ? 'decisions' : 'sessions')) : null;
+    sending = true; sendError = ''; render();
+    var notified = anchorP
+      ? anchorP.then(function (anchor) { return commentsNs.sendToClaude({ anchor: anchor, text: commentText(next, c.answers, at, c.archives) }); })
+          .then(function (r) { return { ok: true, threadId: r.threadId }; }, function (e) { return { ok: false, code: (e && e.code) || 'error' }; })
+      : Promise.resolve(wake ? { ok: false, code: canSend } : null);
+    notified.then(function (r) {
+      if (r) c.answers.forEach(function (id) { var d = find(next.decisions, id); d.answer.messaged = r.ok; if (r.ok) d.answer.threadId = r.threadId; else d.answer.messageError = r.code; });
+      return artifactNs.publish(buildDoc(next));
+    }).then(function () {
+      try { sessionStorage.removeItem(KEY); } catch (e) {}
+    }, function (err) {
+      sending = false;
+      var code = err && err.code;
+      if (code === 'conflict') sendError = 'The page was just updated. It’s reloading with your choices kept; press Send again.';
+      else if (code === 'not_writer' || code === 'not_granted' || code === 'capability_disabled' || code === 'capability_removed') mode = 'readonly';
+      else if (code === 'rate_limited') sendError = 'Too many saves just now. Wait a minute and send again.';
+      else sendError = 'Couldn’t save (' + (code || 'error') + '). Send again.';
+      render();
+    });
+  }
+
+  function refreshCanSend() {
+    if (!commentsNs || typeof commentsNs.canSendToClaude !== 'function') { canSend = commentsNs ? 'unsupported' : 'unavailable'; render(); return; }
+    commentsNs.canSendToClaude().then(function (v) { canSend = String(v); render(); }, function (e) { canSend = (e && e.code) || 'error'; render(); });
+  }
+
+  render();
+  var cl = window.claude;
+  if (INTERACTIVE && cl && typeof cl.use === 'function') {
+    cl.use('artifact').then(function (x) { artifactNs = x; mode = x ? 'ready' : 'unavailable'; render(); }, function () { mode = 'unavailable'; render(); });
+    cl.use('comments').then(function (x) { commentsNs = x; refreshCanSend(); }, function () { commentsNs = null; refreshCanSend(); });
+    window.addEventListener('focus', refreshCanSend);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) refreshCanSend(); });
+  } else { mode = 'unavailable'; render(); }
+})();
+</script>

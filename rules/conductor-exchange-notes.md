@@ -176,3 +176,15 @@ restated at the decision point.
 **Why an approved ruling is posted by the conductor itself (owner's ruling, 2026-11-05):** where the owner approved the complete comment word for word — the full text was in the option they chose — the comment is theirs, and the shared rule's one exception lets the conductor post it on any issue; its approval lives in the conductor's record, never in a footer. Anything the owner did not approve word for word is still drafted for them to post.
 
 **Why a report names no check's outcome (pinning round over the batch integration, 2026-11-17):** a worker's gate lines can now reach a run in a message, where its notes push is refused (`swarm`, *The message*). A reader deciding what to send its conductor read only this file and relayed the passes, attributed and "unverified", in a milestone report; the conductor's ledger would then carry them on the forge, which protected rule 7 bars. The bar already stood in the *authored write form* shared rule, so it is restated here, at the point a run composes a report. Scenario: backlog-orchestrator `a-refused-notes-push-gate-record-stays-in-the-state-block`.
+
+## Questions under a conductor (owner's request, 2026-11-16)
+
+**Why a coordinated run never asks in its own session:** a dispatched run's session
+has nobody in it, and where the owner happens to be, the question still bypasses the
+one place they answer everything, the conductor's work queue. So a question the
+run's skill would put to a person becomes a hold at its site, pushed, and the answer
+is read there by the run's own test (protected rule 3). Tool-permission prompts stay:
+only the session that asks can be granted one. The owner also asked that a run might
+verify an answer by reading the conductor's page; that was not adopted, since the
+page cannot show who wrote a pick (`conductor` NOTES, *The work queue page*), and a
+dispatched session may hold no Artifact tool.

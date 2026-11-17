@@ -63,7 +63,9 @@ to *3. Reconcile*, and renders its outputs (*The status snapshot*), **republishi
 the work queue even where it is unchanged. It skips *4. Owner pass*, asking and
 ruling nothing, and acts only as a scheduled firing may** (*The fallback
 check-in*). A mode, never a recorded argument; with no ledger found, it says so
-and stops.
+and stops. **It also runs unasked** at the end of a turn that took no snapshot and
+whose event changed *Needs you* — a run's reply or push, a work-queue answer —
+once however many events the turn took in; other changes wait for the next sweep.
 
 ## Configuration
 
@@ -96,13 +98,14 @@ skill would read as the owner's stays pending.
   and nothing this skill sends carries any either.
 - **Rulings live where the decision lives** — the PR, or the issue in whichever
   tracker holds it. Every ruling is recorded there before any run is told of it,
-  and a run acts on one only after reading it there. A ruling given in this chat
-  is written to the ledger first, with the owner's exact words, and read back
+  and a run acts on one only after reading it there — never on the work queue. A
+  ruling given in this chat, or answered on the work queue (`work-queue.md`,
+  *Answers*), is written to the ledger first, with the owner's exact words, and read back
   (`references/conductor-exchange.md`, *Relayed rulings*); the ledger and every
   message then link to the site's record.
 - **The configured repositories.** Every read, write and dispatch is scoped to
   them.
-- **A go is the owner's authority, recorded at its site in one of two forms**: a dispatch go, a conditional go and a standing ruling — bar a reviewer's go, which the ledger alone records and is never posted (`reviewers.md`).
+- **A go is the owner's authority, recorded at its site in one of two forms**: a dispatch go, a conditional go and a standing ruling — bar a reviewer's go, which the ledger alone records and is never posted (`reviewers.md`), and an archive the owner chooses on the work queue, which is their answer as in an attended turn (`work-queue.md`, *Sessions to archive*).
   - **Owner-posted**: drafted in full for the owner to post. The owner gives the posted comment's link; this skill reads it back — authored by the owner's account, and not a write whose id the ledger holds as its own — and records its id among the ledger's owner-comment ids, kept apart from its own-write ids.
   - **Conductor-posted**: this skill asks the owner with the structured question tool, the chosen option carrying the complete text of the go; writes the owner's exact answer — the question's header, the option's label and its text — to the ledger and reads it back; then posts the go on the epic or issue — never at a run's open item's site (*Nothing at an open item's site*, below), where it is owner-posted — a comment opening `Owner go (<UTC>, chosen in conductor session <session URL>, question "<header>", answer "<exact option label>")` and quoting that full text, with the footer, since the owner approved its text, not the comment — under `references/authored-write-form.md`, *Issues the run did not create*, where the issue is not this skill's — and records its id among its own-write ids, tagged `conductor-posted go` and kept apart from its other writes. A run verifies it against this session's transcript (`references/conductor-exchange.md`, *A conductor-posted go*).
 
@@ -346,7 +349,8 @@ the report; the rest follow it** (`references/operator-output.md`, *Questions*).
    `references/operator-output.md`, *Questions*, says, the decision that frees the
    most downstream work first. The runs ready to retire are one such question
    (*6. Dispatch*, *Retire a finished run*).
-   Anything a question asserts about the code or a PR is read before it is put.
+   Anything a question asserts about the code or a PR is read before it is put; a
+   pick the work queue saved without reaching this session is named in it.
    Only this ledger's runs' decisions are put; a peer's are its own owner pass's.
    **Held replies are collected across runs and listed, never asked**: each one's
    full text, thread link and fix SHA, with every comment posted in its thread
@@ -374,8 +378,8 @@ the report; the rest follow it** (`references/operator-output.md`, *Questions*).
    before telling any run — a reviewer's go aside (`reviewers.md`). Record it as
    `settle-outstanding-decisions`, *Recording the ruling*, does: the complete
    comment shown to the owner and posted as they approved or edited it. **A ruling
-   the owner gives in this session outside a question is recorded the same way, as
-   a relayed ruling** (`references/conductor-exchange.md`, *Relayed rulings*). A
+   the owner gives in this session outside a question, or on the work queue, is
+   recorded the same way, as a relayed ruling** (`references/conductor-exchange.md`, *Relayed rulings*). A
    ruling that answers a run's held item chooses one of the options that item put;
    **whether it releases the hold is that run's own test to decide**, never this
    skill's to declare.
@@ -577,6 +581,10 @@ it, the session holds no uncommitted work (`swarm`, *Releasing a worker*),
 and its last state block reports no live worker session and no outstanding recovery
 ref; and it is not `RUNNING`.
 
+**A tick the owner sends on the work queue is the owner's answer choosing that
+run**, as one given in an attended turn (`work-queue.md`, *Sessions to archive*);
+every condition above still binds it.
+
 # 7. Ledger
 
 **One ledger holds this conductor's state** — its workstream's, and no other: each
@@ -610,7 +618,8 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
   linked to where it is recorded;
 - pending conditional gos, each with its condition and its record;
 - the seed template: a link to the last good run's first prompt;
-- the work queue's URL, where one is kept (*Report*);
+- the work queue's URL, where one is kept (*Report*), and the merge notes the
+  owner gave for it (`work-queue.md`);
 - the fallback check-in's id, next time and empty count;
 - the invocation arguments this skill was given;
 - owner-comment ids — each go, ruling or draft the owner posted — kept apart from
@@ -653,7 +662,8 @@ all three hold:**
 2. **It is a quiet point** — this section's own test, not a quiet turn; a turn
    that proposes is never quiet:
    - no tool work pending — the proposal is the last thing in the turn;
-   - no question to the owner waiting for an answer;
+   - no question to the owner waiting for an answer, and no work-queue answer
+     received but its card not yet marked done (`work-queue.md`, *Answers*);
    - **no owner ruling given only in chat** — write it to the ledger and record it
      at its site first, or hand the owner its draft (*Rules*; *4. Owner pass*,
      step 4), then carry on;
@@ -686,15 +696,17 @@ Never force a clear, and never skip a step to beat compaction.
    given a different scratchpad path**, so move that content into the ledger, and
    verify again.
 4. **Restart prompt.** Short, pointing at the ledger rather than restating it, and
-   **never naming a scratchpad path**:
+   **never naming a scratchpad path**. It invokes the skill this session was first
+   invoked as — the layer, where one extends this skill — since a clear drops the
+   contract:
 
    ```text
-   Conductor: <home repo> · <workstream>, after /clear. Read the ledger body
-   first: <ledger URL> — it supersedes its history. Re-read the conductor keys
-   from the policy file; invoked with: <every invocation argument, verbatim>.
+   Invoke <that skill> with: <every invocation argument, verbatim>. Before its
+   sweep: read the ledger body first: <ledger URL> — it supersedes its history.
    Call get_session; if this session's id differs from the ledger's, send the new
    id to every run the ledger records and update the ledger. Confirm the fallback check-in <id> is
-   still armed. Read queued notifications. Then sweep, checking first: <the one or
+   still armed, and the work queue's watch where the ledger records one
+   (ArtifactComments, watch). Read queued notifications. Check first: <the one or
    two checks the dump named>.
    ```
 5. **Propose**, in a few lines: the context figure; that the ledger is written and
@@ -703,11 +715,13 @@ Never force a clear, and never skip a step to beat compaction.
    target, with messages arriving meanwhile queued — and that the restart prompt
    checks the id rather than assuming it; and the restart prompt in a copyable
    block. Ask the operator to type `/clear` and paste the prompt. **Their `/clear`
-   is the approval.** Never describe the clear as done before it happens.
+   is the approval.** Never describe the clear as done before it happens. Where a
+   work queue is kept, its refresh card carries the same prompt, the reason and
+   this session's link until the next build.
 6. **Declined or unanswered** — carry on. The dump is still the latest verified
    state.
 
-**After a restart, check the id before anything else**: where `get_session`
+**After a restart, check the id first, after the version line**: where `get_session`
 returns an id other than the ledger's, send it to every run the ledger records —
 never a peer's — and update the ledger, keeping the old id, before the sweep. The message says it is this conductor's new id and is sent from
 that id, which is what lets a run adopt it (`references/conductor-exchange.md`,
@@ -756,11 +770,14 @@ the owner, such as an Artifact, it keeps one — its own, a peer keeping another
 its items may carry internal work: *Needs you* in full, each item linked, grouped as
 the report groups it, within a group what frees the most downstream work first and
 owner steps by dependency (*4. Owner pass*), with the ledger's last sweep time as
-when it was read. **It is a view, never a record**: it renders the *Needs you* of
+when it was read. **`work-queue.md` beside this file is part of the contract
+wherever it is built, published or answered. It is a view, never a record**: it renders the *Needs you* of
 this turn's snapshot (*The status snapshot*), which only the sweep collects, with the links below read each sweep; nothing
-is recorded only there, and a viewer's marks are never read. **A report whose *Needs
+is recorded only there, and a viewer's marks are carried, never acted on, bar an
+answer `work-queue.md`, *Answers*, accepts. **A report whose *Needs
 you* changed, or a PR item's links or draft count** — emptied, or on a scheduled
-firing, included — **and every `status` turn publish it in the same turn**: to the URL the ledger records,
+firing, included — **and every `status` turn publish it**, paced as `work-queue.md`,
+*Publishing*, says: to the URL the ledger records,
 or, where none is recorded, as a new page whose URL the ledger then records
 (*7. Ledger*). **Only where the ledger records that URL does a report link it**,
 beside the ledger, the unchanged one-line form included; otherwise the ledger link
