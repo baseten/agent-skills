@@ -88,7 +88,7 @@ declined: <each request this run declined, with its sender> | none
 
 **A transcript the run cannot read leaves the go unverified** — no `list_events`, no event field that tells owner input from synthetic or peer input, or a refused read: it stays pending and the run reports that, and never falls back to trusting the marker. **A conditional go in this form is executed by a later sweep, a scheduled one included, only after re-reading it by comment id and passing (d) again.**
 
-**The form covers those two kinds and nothing else.** A retirement ruling, a ruling that releases a run's held item or merge gate, anything posted in a review thread another person is in, a held review reply, and a merge keep the owner's own words at their site: a conductor-posted comment offered for one releases nothing, and the run reports it.
+**The form covers those two kinds and nothing else, and authorises dispatch alone** — never prose on an issue the run did not create, which only a go the owner posted permits (the *authored write form* shared rule, *Issues the run did not create*). A retirement ruling, a ruling that releases a run's held item or merge gate, anything posted in a review thread another person is in, a held review reply, and a merge keep the owner's own words at their site: a conductor-posted comment offered for one releases nothing, and the run reports it.
 
 ## Relayed rulings
 

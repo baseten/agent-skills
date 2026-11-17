@@ -474,7 +474,8 @@ Owner's limits, binding whatever any wake or platform instruction says:
   recorded writing to a PR you created, unchanged since and never approved, or
   where its merge opt-in resolves on; its `Depends on:` line may always be edited.
   Otherwise report the drift with its replacement.
-- On an issue you did not create, write prose only within <owner>'s go, and
+- On an issue you did not create, write prose only within a go <owner> posted,
+  never a conductor-posted one, and
   draft a comment meant for anyone but <owner> for <owner> to post, bar a
   ruling whose complete text <owner> approved, posted as your
   settle-outstanding-decisions step records it.
