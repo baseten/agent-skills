@@ -283,6 +283,13 @@ open a side file only where the text sends it, and to name each one it opened wi
 the line that sent it; `key.json` lists the arm's side files for the grader. Use it
 for any change that moves text into a side file or edits a pointer to one.
 
+`prepare --batch N` puts up to N scenarios into one reader packet per arm
+(`<arm>/batch-XX/packet.json`), so a reader reads the contract once rather than once
+per scenario. It answers each under `## eval <id>`; the grader grades that section
+into the scenario's own `grading.json`, and `score` reads them as before. Both arms
+are batched alike, so whatever one prompt does to the reading of the next, it does
+to both.
+
 `score` reads the `grading.json` files and reports the pass rate per arm, then the
 disagreements, which is the only part that carries information. It marks an ungraded
 scenario as ungraded rather than counting it either way.

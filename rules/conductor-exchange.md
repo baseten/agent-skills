@@ -53,6 +53,7 @@ declined: <each request this run declined, with its sender> | none
 - **States**: `working`, `waiting on CI`, `waiting on review`, `blocked-on-owner`, `settled, waiting on owner merge`, `merged`, `closed`, `failed`. **`blocked-on-owner` only where the owner must act** — a decision, an approval, an owner step — never for a missing link or anything another run or a person reviewing will supply.
 - **After its PR merges, a single-issue run reports `merged` and stops.** It never offers or asks to start other work: choosing what runs next is the conductor's.
 - **Every turn that leaves the session idle ends with one line, `final status: <state> · <PR link>`**, as its last output, so a sweep can tell a finished session from one still working; the platform's own turn summary can lag.
+- **A report names no check's outcome**, a worker's messaged gate lines included: they stay in the run's own state (the *authored write form* shared rule), since a conductor records what it is sent in a ledger that is a forge write.
 
 ## Pushes
 
