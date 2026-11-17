@@ -17,7 +17,7 @@ orchestrators titled inconsistently (`Orchestrator: Order execution V1`,
 `Portfolio UI navigation audit`), which is where the naming came from.
 
 **Why it never implements, merges or approves:** it is the one session that talks
-to every orchestrator, so it is the one place where a mistake would propagate to
+to every orchestrator of its workstream, so it is the one place where a mistake would propagate to
 all of them. Keeping it to collection, planning and owner-approved dispatch means
 its worst failure is a wrong plan the owner approved, never an act. (Planning left
 it on 2026-11-04; see *Why planning moved out*.)
@@ -46,6 +46,19 @@ one small issue, shown in full first, because sending one issue through a planne
 costs more than it saves. Its worst failure stays a wrong dispatch the owner
 approved, never an act.
 
+**Why one conductor per workstream, with no shared ledger (owner's ruling, 2026-11-16):** the
+first version assumed one conductor overall — one ledger, runs on other projects
+tracked in that same ledger, and a second `Conductor:` session on a repository in
+scope treated as a conflict. The owner ruled the other way: one conductor per
+project or workstream, several in parallel, each with its own ledger, and two may
+cover the same repositories — at work every project runs on the same two. A
+single ledger across projects grows past what one session can keep in context,
+and one owner pass across unrelated projects interleaves decisions nobody is
+weighing together. So the peer rule is stated once at the top, and each section
+says only what a peer changes there. Scenarios: `a-peer-conductors-run-on-the-same-repo-is-not-adopted-or-retitled`,
+`a-peer-conductor-found-in-the-sweep-is-a-peer-not-a-conflict`,
+`an-epic-of-another-workstream-is-not-taken-in`.
+
 ## Configuration
 
 **Why the scope is a configured list (owner's ruling, 2026-11-02):** "one
@@ -64,7 +77,7 @@ an orchestrator that receives it either ignores it — correctly — or acts on 
 relayed ruling, which is the failure the trust boundary exists to stop.
 
 **Why relaying is a duty, and carries facts only (owner's ruling, 2026-11-02):** the
-conductor is the one session that sees every run, so a fact one run needs from
+conductor is the one session that sees every run of its workstream, so a fact one run needs from
 another — a merge to rebase onto, a gate cleared — reaches it only if the conductor
 passes it on. It passes the fact after verifying it, with a link, and never a
 ruling: a session's message carries no owner authority (`swarm`, *Messages from
@@ -97,6 +110,13 @@ sweep reads both prefixes, and neither decides anything: a run this conductor
 dispatched is known by its ledger id, and a session titled `Worker:` with no
 ledger record is not a run on that title alone. `Worker:` stays distinct from a
 `swarm` worker's run-prefixed name, which the sweep never treats as a run.
+
+**Why the title names the workstream (owner's ruling, 2026-11-16):** two conductors on one home
+repository titled `Conductor: <home repo>` would be indistinguishable in the
+session list, which is the only grouping a person scanning it gets. The name comes
+from the owner, else the ledger's tracker project, because those are what the owner
+calls the workstream; it is recorded in the ledger and the restart prompt so a
+clear does not lose it. The title stays a finding aid: nothing decides on it.
 
 ## 1. Sweep
 
@@ -133,6 +153,44 @@ there; executing a conditional go is not ruling, since the owner already chose.
 compacted and lost, and the epic outlives all of them. A stream whose orchestrator
 is gone still has open PRs and open decisions.
 
+**How a peer's run is told apart (owner's ruling, 2026-11-16):** the sweep found runs by title and
+by structure, then retitled and asked them. With two conductors on one repository
+each would find, retitle and message the other's runs. Three marks were weighed:
+
+- **this ledger's record** — decides "mine", as before, but says nothing about
+  whose an unrecorded session is;
+- **`parent_session_id`** — platform-supplied provenance, set on a session another
+  session creates. `swarm`, *Runtime*, already makes it the authoritative key for
+  sessions a run created, and this file's own note above records orchestrators
+  observed as the `parent_session_id` of the `bo/` workers they created. A run a
+  conductor dispatches is created the same way (`create_session`), so it carries
+  that conductor as its parent. This is the mark used;
+- **the dispatch prompt's conductor id** — every run records it in its state block,
+  but that lives in the run's own output, which a sweep cannot read without asking,
+  and asking is the message a peer's run must not get.
+
+So a session whose parent is another session is that session's, whatever its title
+or structure, and a session whose parent is this conductor (or an earlier id of
+it, which the ledger now keeps for this purpose) is this conductor's even where a
+crash lost its ledger row. **What provenance cannot see** is a run nobody created
+from a session — one the owner started by hand, then adopted by a peer; adoption is
+recorded only in the adopting ledger, which no peer reads. Where a peer covers the
+repository, such a run is therefore a doubtful match, as a non-structural match
+already was, and the owner's go adopts it. Where no peer is in sight the sweep
+behaves exactly as before, so a single-conductor deployment loses nothing. The
+`Conductor:` title is used here only to narrow what this conductor does — a wrong
+title can make it more cautious, never make it act — which is why a finding aid is
+enough for it. Not yet observed: a `get_session` on a run a conductor created,
+showing the conductor as its parent; the first two-conductor sweep should confirm
+it, and where it does not, every peer's run falls to the doubtful-match case,
+which still never acts.
+
+**Why a peer is not a conflict (owner's ruling, 2026-11-16):** the earlier text made a second
+`Conductor:` session something to put to the owner. Under the ruling it is the
+expected state, so reporting it each sweep would be noise; it is noted in the
+ledger, and never messaged, because what a peer conductor would do with a message
+is not this contract's to define.
+
 ## 2. Ask
 
 **Why the request is never awaited:** a cross-session reply arrives as a new turn,
@@ -162,6 +220,14 @@ where that is tested.
 
 **Why owner steps are issues and not a list in the pass (2026-10-31, the owner's addendum):** a list in a chat pass is gone when the session ends, and a step left in a PR body is invisible once the PR merges. Each step is filed as a `[Manual]` issue (`rules/manual-step-issues.md`), the order goes on the manual-steps epic and in the ledger, and `owner-steps` walks each one. Scenario: `owner-steps-are-ordered-as-manual-issues-on-the-epic`.
 
+**Why a peer's decisions and owner-step order stay with the peer (owner's ruling, 2026-11-16):**
+the owner pass is one place the owner decides a workstream's questions; putting a
+peer's there would ask them twice, and a ruling recorded from one could race the
+other's. Manual-steps epics are per repository, so two conductors may both post an
+order there: each names its workstream and supersedes only its own, so neither
+erases the other's. A run claimed by a peer and by this ledger is the owner's call,
+since neither conductor can tell the other's run anything.
+
 ## 5. Intake and replan
 
 **Why a planner's pointer is only a pointer (2026-11-04):** it is a message from
@@ -185,6 +251,18 @@ every repair push on it costs a run, so the integration count said nothing and t
 plan's cost read as zero. The *settled, waiting on owner merge* state exists for
 the same deployment: a stream there is not stalled, and work gated on it starts
 from the owner's merge, which only a forge read sees.
+
+**Why an epic of another workstream is not taken in, and why replanning narrows
+(owner's ruling, 2026-11-16):** an epic belongs to the workstream whose tracker project or recorded go
+holds it; taking it in here would put one stream in two ledgers. Every conductor
+on a repository also sees every issue opened there, so "unscheduled issues since
+the last sweep" would pull a peer's follow-ups into this DAG. The set narrows to
+this workstream's, and an issue under none goes to the owner rather than to
+whichever conductor swept first. Collisions with a peer's PRs — files, version
+bumps, migrations — stay each run's own preflight's, and are reported where seen.
+**The default branch's CI and deploy are swept by every conductor on it**, which
+duplicates a read but no write, and each owner report needs that fact; it is left
+as is.
 
 ## 6. Dispatch
 
@@ -286,6 +364,11 @@ failed its environment setup, and the create call did not warn of it. The sessio
 sidebar nests only one level, so a title's prefix and repository are the only
 grouping a person scanning the list gets.
 
+**Why a reviewer's candidate test counts a peer's runs and reviewers (owner's ruling, 2026-11-16):** a
+PR a peer's run opened, or one a peer's reviewer is already drafting, failed none
+of the earlier tests, which read only this ledger; two drafted reviews of one PR,
+or a review of the owner's own run's PR, is what those tests exist to stop.
+
 ## 8. Context clear
 
 **Why (2026-10-31, the owner's instruction):** a conductor runs for days and its
@@ -355,6 +438,13 @@ in-flight supervision that its checkpoints only partly carry. Its own checkpoint
 and auto-compaction are what its contract was written for; a boundary is where a
 fresh session costs nothing, which the reuse rule already says.
 
+**Why a new id goes only to this ledger's runs (owner's ruling, 2026-11-16):** a run adopts a new
+conductor id from its sender where that session's sources include the conductor's
+home repository (`rules/conductor-exchange.md`, *Pushes*). Two conductors can share
+a home repository, so that test cannot tell them apart; what keeps a run with its
+own conductor is that a conductor sends its new id only to the runs its ledger
+records. The run-side residual is recorded in `rules/conductor-exchange-notes.md`.
+
 ## 7. Ledger
 
 **Why the ledger's home is configurable (owner's ruling, 2026-11-02):** the work
@@ -370,6 +460,11 @@ The row records what the run's reports said — `not reported` where none carrie
 line, which is itself the finding — and nothing the conductor inferred. The
 conductor's own line opens its first report, under the same rule
 (`rules/run-start.md`).
+
+**Why the ledger keeps earlier session ids and the peers seen (owner's ruling, 2026-11-16):** the
+provenance test in *1. Sweep* needs every id this conductor has had, or a run
+created before an id change would read as another session's. Peers are recorded
+so the next context, after a clear, does not rediscover and re-report them.
 
 ## The work queue
 
@@ -458,6 +553,11 @@ Scenarios: `a-changed-needs-you-republishes-the-work-queue-in-the-same-turn`,
 `a-tracker-review-draft-is-marked-on-the-queue-item`,
 `a-pr-with-no-linked-issue-says-so`,
 `a-reply-draft-held-in-the-ledger-is-linked-and-labelled`.
+
+**Why the work queue and the check-in are per conductor (owner's ruling, 2026-11-16):** each is bound
+to one session and recorded in its ledger, so a peer's is simply another; the
+wording says so only so that "one check-in, never two" is not read across
+conductors.
 
 ## The contradiction pass before the review round (PR #201)
 

@@ -49,6 +49,17 @@ is what lets a conductor start work gated on it without waiting for a sweep.
 Under `ci-mode: integration-branch` only the integration PR goes into the default
 branch, so the same words give the integration milestones.
 
+**Why the conductor's title names a workstream, and what a shared home repository
+leaves (owner's ruling, 2026-11-16):** the owner runs one conductor per workstream,
+several in parallel and possibly on one home repository, so the title row now
+carries the workstream (`conductor`, *Session titles*). The new-id test in *Pushes* reads
+the sender's sources for the conductor's home repository; two conductors on one
+home repository both pass it. That is left as it is: a conductor sends a new id
+only to the runs its own ledger records (`conductor`, *8. Context clear*), and no
+conductor messages a peer's run, so a run never meets another's id this way. A
+stricter run-side test would have to read the message's text, which this rule
+refuses as evidence.
+
 ## New work, or a fold
 
 **Why a fold and new work need different evidence (round 2 of PR #201's contract

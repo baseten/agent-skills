@@ -525,12 +525,12 @@
     {
       "id": 41,
       "name": "a-quiet-check-in-writes-nothing-and-updates-the-title",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Session title 'Conductor: acme-api'. The fallback check-in fires at 23:59 UTC with nobody present. The sweep finds no delta in any run, PR or pending go since 22:59, the last sweep that saw one; three items have been waiting on the owner since then, unchanged; this is the first empty sweep in a row, and the next check-in is due about 00:59. set_session_title is available. Question: what does this turn write to chat, and what else does it change?",
-      "expected_output": "Nothing to chat beyond one minimal line: whether a turn can end with no text is not established, so it ends with a single minimal line such as 'quiet' - no 'nothing new since 22:59', no next time in prose, no reprinted list. It updates the session title in place by appending only a suffix: 'Conductor: acme-api · quiet since 22:59 · 3 waiting on you · next 00:59' (UTC), leaving 'Conductor: acme-api' unchanged; the first turn that reports, or the check-in stopping, restores the normal title. It re-arms the check-in with the empty count (1) and comparands in its prompt, and records the check-in in the ledger.",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Session title 'Conductor: acme-api · billing'. The fallback check-in fires at 23:59 UTC with nobody present. The sweep finds no delta in any run, PR or pending go since 22:59, the last sweep that saw one; three items have been waiting on the owner since then, unchanged; this is the first empty sweep in a row, and the next check-in is due about 00:59. set_session_title is available. Question: what does this turn write to chat, and what else does it change?",
+      "expected_output": "Nothing to chat beyond one minimal line: whether a turn can end with no text is not established, so it ends with a single minimal line such as 'quiet' - no 'nothing new since 22:59', no next time in prose, no reprinted list. It updates the session title in place by appending only a suffix: 'Conductor: acme-api · billing · quiet since 22:59 · 3 waiting on you · next 00:59' (UTC), leaving 'Conductor: acme-api · billing' unchanged; the first turn that reports, or the check-in stopping, restores the normal title. It re-arms the check-in with the empty count (1) and comparands in its prompt, and records the check-in in the ledger.",
       "assertions": [
         "the answer writes no report, status list or 'nothing new' message to chat - at most one minimal line",
         "the answer updates the session title by appending a quiet suffix with the since time, the waiting count and the next time",
-        "the answer keeps the 'Conductor: acme-api' part of the title unchanged and restores it on the next reporting turn",
+        "the answer keeps the 'Conductor: acme-api · billing' part of the title unchanged and restores it on the next reporting turn",
         "the answer carries the empty-sweep count in the re-armed check-in's prompt"
       ],
       "files": []
@@ -602,8 +602,8 @@
     {
       "id": 47,
       "name": "a-reply-with-no-delta-is-a-quiet-turn",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Title 'Conductor: acme-api · quiet since 22:59 · 2 waiting on you · next 00:59'. At 23:59 the fallback check-in fired, found no delta, sent a status request to each of three runs, and ended quiet. At 00:02 run A's reply arrives as a new turn: its state and PR are exactly what the ledger already records, and you verify that on the forge. Question: was the 23:59 check-in, which sent those requests, quiet? What does this reply turn write to chat, and does it change the title?",
-      "expected_output": "The reply brought no delta, and sending status requests is not acting, so this is a quiet turn: one minimal line ('quiet') and nothing else - no report, no Unchanged line, no ledger link, no '3 runs replied' narration. A quiet reply turn leaves the title alone: 'Conductor: acme-api · quiet since 22:59 · 2 waiting on you · next 00:59' stays as it is, so three replies do not churn it three times.",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Title 'Conductor: acme-api · billing · quiet since 22:59 · 2 waiting on you · next 00:59'. At 23:59 the fallback check-in fired, found no delta, sent a status request to each of three runs, and ended quiet. At 00:02 run A's reply arrives as a new turn: its state and PR are exactly what the ledger already records, and you verify that on the forge. Question: was the 23:59 check-in, which sent those requests, quiet? What does this reply turn write to chat, and does it change the title?",
+      "expected_output": "The reply brought no delta, and sending status requests is not acting, so this is a quiet turn: one minimal line ('quiet') and nothing else - no report, no Unchanged line, no ledger link, no '3 runs replied' narration. A quiet reply turn leaves the title alone: 'Conductor: acme-api · billing · quiet since 22:59 · 2 waiting on you · next 00:59' stays as it is, so three replies do not churn it three times.",
       "assertions": [
         "the answer writes only one minimal line for the reply turn, with no report or Unchanged line",
         "the answer leaves the session title unchanged",
@@ -1023,6 +1023,46 @@
         "'Changed since' is a bold line, not a # / ## / ### heading",
         "run A's block has one status sentence and no more than four bullets, not seven",
         "the changes run A's block leaves out are not listed; a closing line gives their count and links where they are kept"
+      ],
+      "files": []
+    },
+    {
+      "id": 93,
+      "name": "a-peer-conductors-run-on-the-same-repo-is-not-adopted-or-retitled",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are session_01Bl, titled 'Conductor: acme-api · billing', with acme/api in scope; your ledger records one run, session_03Cc ('Orchestrator: acme-api · #2005 invoices'). The sweep lists session_05Ee, titled 'Portfolio search audit', whose sources include acme/api: it is the parent_session_id of worker sessions titled 'bo/4d1a: implement #3110' and so on, its outcomes name integration/search-facets, and its own parent_session_id is session_09Sr. The ledger does not record session_05Ee. Question: is session_05Ee one of your runs, and what do you do about its title and its status?",
+      "expected_output": "No. Its parent_session_id is session_09Sr, another session, so session_09Sr created it - a peer conductor's run where that session is one - and it is never this conductor's run, whatever its structure says: it would pass the structural test, but provenance is read first and steps 3-5 skip it. Send it no status request, do not retitle it (its title is not in the Orchestrator: form, and that is the peer's to fix), do not offer it for adoption or retire it, and keep it out of this ledger's live-sessions table, owner pass and Needs you. Note it in the ledger under the peer that created it.",
+      "assertions": [
+        "the answer does not treat session_05Ee as this conductor's run",
+        "the answer does not retitle session_05Ee",
+        "the answer sends session_05Ee no status request",
+        "the answer decides by parent_session_id provenance, not by the title or the structural test",
+        "the answer keeps session_05Ee out of the live-sessions table and the owner pass"
+      ],
+      "files": []
+    },
+    {
+      "id": 94,
+      "name": "a-peer-conductor-found-in-the-sweep-is-a-peer-not-a-conflict",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are session_01Bl, titled 'Conductor: acme-api · billing', with acme/api in scope. The sweep lists two sessions with acme/api among their sources that your ledger does not record: session_09Sr, titled 'Conductor: acme-api · search', and session_06Ff, titled 'Orchestrator: acme-api · #3100 search facets', which has no parent_session_id. Question: how do you treat each, and do you send either a message?",
+      "expected_output": "session_09Sr is a peer conductor - another conductor on a repository in scope, which the owner runs one per workstream. Note it in the ledger as a peer with its link. It is not a conflict and is not raised to the owner as one, and it is never messaged. session_06Ff is found by title, but neither the ledger nor provenance records it, and a peer covers acme/api, so it may be the peer's: it is a doubtful match, reported naming the peer, sent no status request and not retitled, until the owner's go naming its id adopts it.",
+      "assertions": [
+        "the answer reports session_09Sr as a peer, not as a conflict for the owner",
+        "the answer sends session_09Sr no message",
+        "the answer treats session_06Ff as a doubtful match and sends it no status request",
+        "the answer adopts session_06Ff only on the owner's go naming its id"
+      ],
+      "files": []
+    },
+    {
+      "id": 95,
+      "name": "an-epic-of-another-workstream-is-not-taken-in",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are 'Conductor: acme-api · billing'; your ledger is a document on the tracker's Billing project. The owner pastes a link to epic #3200, which sits in the tracker's Search project; the sweep has seen a peer, 'Conductor: acme-api · search', on the same repositories. The owner says nothing else. Question: do you take #3200 into your ledger and ask dispatch?",
+      "expected_output": "No. #3200 belongs to another workstream - the Search project - so it is the Search conductor's: say so to the owner, and do not add it to this ledger or ask dispatch? on it. Only if the owner rules otherwise is it taken in, as any intake is. Nothing is sent to the peer conductor or its runs.",
+      "assertions": [
+        "the answer does not add #3200 to its ledger or ask dispatch on it",
+        "the answer tells the owner the epic belongs to the other workstream's conductor",
+        "the answer takes it in only if the owner rules otherwise",
+        "the answer sends the peer conductor nothing"
       ],
       "files": []
     },
