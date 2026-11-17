@@ -164,9 +164,10 @@ resolving it** (step 6): a comment by anyone but this workflow that the deciding
 read did not see re-decides the thread's row from that read, and a person found
 there holds the reply and the resolution (*Replies held for the owner*).
 
-**Every SHA a reply names is on the pushed head, read from the remote after the
-push** — checked before the reply is posted, and before a held reply is handed
-over: `git fetch origin <branch>`, then `git merge-base --is-ancestor <sha>
+**Every SHA of this repository a reply names is on the pushed head, read from
+the remote after the push** — checked before the reply is posted, and before a
+held reply is handed over; another repository's commit, written *owner/repo@sha*,
+is not this branch's and is not checked here: `git fetch origin <branch>`, then `git merge-base --is-ancestor <sha>
 origin/<branch>` for each. A rebase or base refresh rewrites SHAs, so one captured
 before it can name a commit the branch no longer holds. **One that fails is
 corrected before anything goes out**, to the commit on `origin/<branch>` carrying
