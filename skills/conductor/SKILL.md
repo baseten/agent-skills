@@ -554,6 +554,10 @@ it, the session holds no uncommitted work (`swarm`, *Releasing a worker*),
 and its last state block reports no live worker session and no outstanding recovery
 ref; and it is not `RUNNING`.
 
+**A tick the owner sends on the work queue is the owner's answer choosing that
+run**, as one given in an attended turn (`work-queue.md`, *Sessions to archive*);
+every condition above still binds it.
+
 # 7. Ledger
 
 **One ledger holds this skill's state.** Its home is the first of
