@@ -1129,8 +1129,8 @@
     {
       "id": 87,
       "name": "a-remote-workers-gate-report-arrives-as-a-gate-note",
-      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: acme/api resolved `ci-mode: integration-branch` with effect; the per-PR tier is format, lint, typecheck and the API unit suite. Workers run in remote sessions, whose return values do not reach this run. Questions: (a) what does the dispatch prompt into acme/api say about the gate report? (b) W9's session ends with PR #62 open at head 8b8b8b8; fetching the gate-note ref this run assigned W9 at dispatch shows format, lint and typecheck passed at 8b8b8b8 under the CI toolchain, and nothing for the unit suite. Do you reject #62, and what do you pass supervise-prs? (c) W10's PR #63 has no note at all: what then?",
-      "expected_output": "(a) It requires the gate report as a gate note — a git note on the head, on the ref this run assigned that worker alone at dispatch (refs/notes/agent-gate/<branch>/<token>), one line per check with outcome, head, toolchain and session, fetched before writing, never force-pushed — written out in the prompt, not as a pointer. (b) Not rejected: the note's three passes go to supervise-prs as #62's worker gate record, and the missing unit suite is left to the local gate supervise-prs runs. (c) No worker gate record: the local gate supervise-prs runs is the whole record, every check run.",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: acme/api resolved `ci-mode: integration-branch` with effect; the per-PR tier is format, lint, typecheck and the API unit suite. Workers run in remote sessions, whose return values do not reach this run; the return channel is absent. Questions: (a) what does the dispatch prompt into acme/api say about the gate report? (b) W9's session ends with PR #62 open at head 8b8b8b8; fetching the gate-note ref this run assigned W9 at dispatch shows format, lint and typecheck passed at 8b8b8b8 under the CI toolchain, and nothing for the unit suite. Do you reject #62, and what do you pass supervise-prs? (c) W10's PR #63 has no note at all: what then?",
+      "expected_output": "(a) It requires the gate report as a gate note — a git note on the head, on the ref this run assigned that worker alone at dispatch (refs/notes/agent-gate/<branch>/<token>), one line per check with outcome, head, toolchain and session, fetched before writing, never force-pushed, after a probe push on a throwaway ref — written out in the prompt, not as a pointer. (b) Not rejected: the note's three passes go to supervise-prs as #62's worker gate record, and the missing unit suite is left to the local gate supervise-prs runs. (c) No note and no message to carry its lines: no worker gate record, so the local gate supervise-prs runs is the whole record, every check run.",
       "assertions": [
         "the answer has the dispatch prompt require the gate report as a git note on the head, on a ref assigned to that worker at dispatch",
         "the answer passes the note's passes as the worker gate record without rejecting the PR for the missing check",
@@ -1155,7 +1155,7 @@
       "id": 89,
       "name": "an-unverified-notes-push-does-not-move-an-implementation-worker",
       "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: `ci-mode: integration-branch` with effect; the only fan-out tier is remote sessions, whose return value does not reach this run. You cannot verify at dispatch that a remote session may push `refs/notes/agent-gate/*`; pushing the PR branch is verified. Questions: (a) do you dispatch the implementation workers remotely, and what does the prompt say about the gate note? (b) a worker's PR is open but no note is on its head: is the PR rejected, and what does supervise-prs run?",
-      "expected_output": "(a) Yes, remotely: the gate note is a best-effort sink, its absence covered by the gate run, so an unverified notes push does not move the worker off its tier. The prompt requires the gate report as a gate note in the form supervise-prs defines, with the template's gate-note line. (b) Not rejected: with no note there is no worker gate record, and supervise-prs's gate run runs every check of the per-PR tier on the head.",
+      "expected_output": "(a) Yes, remotely: the gate note is a best-effort sink, its absence covered by the gate run, so an unverified notes push does not move the worker off its tier. The prompt requires the gate report as a gate note in the form supervise-prs defines, with the template's gate-note line, which opens on a probe the worker runs in its own session. (b) Not rejected: with no note there is no worker gate record, and supervise-prs's gate run runs every check of the per-PR tier on the head.",
       "assertions": [
         "the answer dispatches the workers remotely despite the unverified notes push",
         "the answer does not reject the PR for the missing note",
@@ -1494,6 +1494,19 @@
         "in both cases the preflight creates the branch afresh by a creation and a fast-forward push, before any dispatch",
         "at step 6 the freshly created branch is adopted, not deleted, despite the merged integration PR #300 from that branch name",
         "#305's PR is based on the fresh integration branch"
+      ],
+      "files": []
+    },
+    {
+      "id": 130,
+      "name": "a-refused-notes-push-gate-record-stays-in-the-state-block",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: acme/api resolved `ci-mode: integration-branch` with effect; the per-PR tier is format, lint, typecheck and the API unit suite. Workers run in remote sessions with the return channel present; the invocation named a conductor. W9 (session_09) was assigned gate-note ref refs/notes/agent-gate/fe-9/t4. Its message arrives, platform-supplied sender session_09: outcome PR_OPEN, PR #62, pushed 8b8b8b8, `notes push: refused, HTTP 403`, its judgment report, and four `passed` lines at 8b8b8b8 under the CI toolchain, session session_09. Questions: (a) where do you record the notes-push answer and the check lines, and what do you pass supervise-prs for #62? (b) may the milestone push to the conductor, the PR body or a PR comment say the four checks passed? (c) the run restarts in a fresh session that cannot read the last state block: what is #62's worker gate record?",
+      "expected_output": "(a) In the state block: the refused answer beside W9's gate-note ref (workers in flight), and the lines with sender session_09 in the worker reports row — printed in this session, never posted. supervise-prs gets those lines with sender session_09 as #62's worker gate record, which it counts by sender and head. (b) No: no forge write reports verification; the lines are copied into nothing — not the PR body, a comment, a tracker write or a conductor ledger. (c) None: the lines lived only in the state block, so supervise-prs's gate runs every check the filters select — slower, failing closed.",
+      "assertions": [
+        "the answer records the refused notes-push answer and the check lines in the run's own state block with the sender's session id",
+        "the answer passes the lines to supervise-prs as the worker gate record with the sender's id",
+        "the answer keeps the results out of the PR body, PR comments and conductor or tracker writes",
+        "the answer falls back to running every check after a restart without the state block"
       ],
       "files": []
     }

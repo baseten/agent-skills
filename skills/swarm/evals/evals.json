@@ -310,11 +310,11 @@
       "id": 27,
       "name": "a-gate-note-push-is-allowed-beside-push-nothing",
       "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a caller asks you to dispatch a remote worker session whose only task is to run a PR's local gate on head 9c9c9c9 of branch `feat/scan-12` and write its result as a gate note to `refs/notes/agent-gate/feat/scan-12/g7`, the ref the caller assigned it alone. It must not change the branch. Question: what push lines does the worker prompt carry, and may the worker push the notes ref?",
-      "expected_output": "The third side of the push bracket (push nothing to any branch; a gate run) — the worker must not push to the branch — plus the gate-note line naming refs/notes/agent-gate/feat/scan-12/g7 and no other ref: that one push is allowed whatever the push line says, and is never forced. Before dispatch, verify the session can push that ref (sink verification); where it cannot, dispatch the task on a tier whose return value reaches the run.",
+      "expected_output": "The third side of the push bracket (push nothing to any branch; a gate run) — the worker must not push to the branch — plus the gate-note line naming refs/notes/agent-gate/feat/scan-12/g7 and no other ref for the note, opening on a probe push to the throwaway g7-probe beside it, deleted after: those pushes are allowed whatever the push line says, and are never forced. Before dispatch, verify the session has a sink: the return channel, which carries the check lines in its message if the probe is refused, or a note an earlier session of this run pushed on that runtime; with neither, dispatch the task on a tier whose return value reaches the run.",
       "assertions": [
         "the answer forbids pushing to the branch",
-        "the answer allows pushing the named notes ref and forbids forcing it",
-        "the answer verifies at dispatch that the session can push the ref"
+        "the answer allows pushing the named notes ref and its probe ref and forbids forcing them",
+        "the answer verifies the gate session's sink at dispatch by the return channel or an earlier landed note, else moves the task to a tier whose return reaches the run"
       ],
       "files": []
     },
@@ -348,12 +348,12 @@
       "id": 30,
       "name": "a-gate-sessions-prompt-carries-the-notes-form-and-footer",
       "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a caller dispatches a remote gate session to run PR #61's local gate (format, lint, typecheck) on head 7a7a7a7 of branch `feat/scan-12`, with its result as a gate note on `refs/notes/agent-gate/feat/scan-12/g7`, the ref the caller minted for it alone. The session runs the gate's commands and no skill. Nobody has pushed that ref yet. Questions: (a) what does the filled prompt tell the session to write on each line of the note, and on its last line? (b) how does it write and push the note?",
-      "expected_output": "(a) The template's gate-note line carries the form itself: a git note on the head it was given, 7a7a7a7, one line per check with its outcome, the head and toolchain it ran at, the session, and any reason or question, and the session's attribution footer as the last line. (b) Fetch the ref only where it exists (here it does not yet), add the note with `git notes add`, push refs/notes/agent-gate/feat/scan-12/g7 and no other ref, never forced; nothing on the PR.",
+      "expected_output": "(a) The template's gate-note line carries the form itself: a git note on the head it was given, 7a7a7a7, one line per check with its outcome, the head and toolchain it ran at, the session, and any reason or question, and the session's attribution footer as the last line. (b) After a probe push on the throwaway g7-probe ref, deleted again, fetch the ref only where it exists (here it does not yet), add the note with `git notes add`, push refs/notes/agent-gate/feat/scan-12/g7 and no other ref for the note, never forced; nothing on the PR.",
       "assertions": [
         "the answer has the prompt itself state the note's per-check line form, head and toolchain included",
         "the answer puts the attribution footer as the note's last line",
         "the answer does not fail or stop because the ref does not exist yet",
-        "the answer pushes only the assigned ref, never forced"
+        "the answer writes the note only on the assigned ref, its probe aside, never forced"
       ],
       "files": []
     },
@@ -465,6 +465,29 @@
         "the answer calls both PR comments defects",
         "the answer does not let working cross-session messaging change a tier-3 worker's carrier"
       ]
+    },
+    {
+      "id": 50,
+      "name": "a-refused-notes-probe-moves-the-gate-lines-into-the-message",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a caller dispatches a remote gate session for PR #61's local gate on head 7a7a7a7 of `feat/scan-12`, gate-note ref refs/notes/agent-gate/feat/scan-12/g7; the run's return channel is present. Questions: (a) what does the session do before running any check, and where? (b) its push of refs/notes/agent-gate/feat/scan-12/g7-probe is refused with HTTP 403: where do its check results go, and what does its message's `record:` and `notes push:` say? (c) its send_message errors: may it post the results on PR #61?",
+      "expected_output": "(a) In its own session, before any other work, it probes the notes push: a note reading `probe` under <ref>-probe (g7-probe), pushed, then deleted from the remote — its own proxy is the one that refuses, so no other session can test it. (b) It pushes no note; its check lines (outcome, head, toolchain, session) go in its one message to the run: `record: this message`, `notes push: refused` with the error — the message is then its report, and the caller records the answer in its state. (c) No: no check lines on any PR; it does not retry, and the caller's own gate run covers the checks.",
+      "assertions": [
+        "the answer has the probe run in the worker's own session before any check, on a throwaway ref deleted afterwards",
+        "the answer puts the check lines in the message with record naming the message and notes push refused",
+        "the answer never posts check results on the PR, even when the send fails"
+      ],
+      "files": []
+    },
+    {
+      "id": 51,
+      "name": "an-accepted-notes-probe-keeps-the-gate-note",
+      "prompt": "You are executing the swarm skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a caller under `ci-mode: integration-branch` dispatches remote implementation workers told to write a gate note, each on its own assigned ref. Questions: (a) with the return channel present, W3's probe push is accepted: where does its gate report go, and does its message repeat the check lines? (b) with the return channel absent, W4's probe push is refused: where do its check lines go, and is W4 moved to another tier for it?",
+      "expected_output": "(a) On its gate note on the assigned ref: notes stay the carrier wherever the probe is accepted. Its message is its judgment report with `notes push: accepted`, and carries no check lines. (b) Nowhere: with no send clause there is no message, and no PR comment may carry them, so the caller's own gate run runs those checks. W4 is not moved: an implementation worker's gate note is a best-effort sink.",
+      "assertions": [
+        "the answer keeps the gate note as the carrier when the probe is accepted and leaves the check lines out of the message",
+        "the answer puts W4's check lines nowhere, leaving them to the caller's gate run, without moving W4's tier"
+      ],
+      "files": []
     }
   ],
   "companions": []
