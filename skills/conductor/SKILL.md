@@ -1,6 +1,6 @@
 ---
 name: conductor
-description: The owner's daily view and portfolio scheduler over a configured set of repositories — which epics run, in what order and how many at once, and the gates between them. Takes in epics a planner wrote and dispatches backlog-orchestrator, implement-issue or ship-branch runs on the owner's go, and, when the owner asks, review-pr reviewers that draft their reviews of others' PRs; sweeps them and the default branch; relays verified facts between runs; puts decisions and manual steps to the owner one at a time; keeps one ledger per workstream, beside peer conductors on the same repositories. Never plans features, supervises, repairs, merges or approves. Use when several runs are in flight and the owner wants one place to decide.
+description: The owner's daily view and portfolio scheduler over a configured set of repositories — which epics run, in what order and how many at once, and the gates between them. Takes in epics a planner wrote and dispatches backlog-orchestrator, implement-issue or ship-branch runs on the owner's go, and, when the owner asks, review-pr reviewers that draft their reviews of others' PRs; sweeps them and the default branch; relays verified facts between runs; puts decisions and manual steps to the owner one at a time; keeps one ledger per workstream, beside peer conductors on the same repositories. Never plans features, supervises, repairs, merges or approves. Use when several runs are in flight and the owner wants one place to decide, or `status` for one sweep that asks nothing.
 ---
 
 # Conductor
@@ -54,6 +54,16 @@ version line.
   attended turn.
 - **A repository outside the configured scope.** Its sessions are noted in the
   ledger and left alone.
+
+## The `status` mode
+
+**`/conductor status`** — or `status` passed back by a layer extending this skill;
+the client's own `/status` is not this skill — runs one sweep on demand, *1. Sweep*
+to *3. Reconcile*, and renders its outputs (*The status snapshot*), **republishing
+the work queue even where it is unchanged. It skips *4. Owner pass*, asking and
+ruling nothing, and acts only as a scheduled firing may** (*The fallback
+check-in*). A mode, never a recorded argument; with no ledger found, it says so
+and stops.
 
 ## Configuration
 
@@ -230,6 +240,19 @@ peer with its link, never as a conflict, and never messaged; and **a peer's runs
 and reviewers** (step 2), noted under that peer, never in this ledger's
 live-sessions table, its owner pass or *Needs you*.
 
+## The status snapshot
+
+**Every sweep — attended, scheduled or `status` — takes one status snapshot, and
+every output of its turn renders from it**: the chat report, the work queue, the
+ledger update (*7. Ledger*) and the fallback check-in's prompt. **Nothing is
+assembled separately**, from a later re-read or an earlier turn. The snapshot is a
+structure held in the turn — all that steps 1–10 read and *3. Reconcile* verified,
+with its read time — **never a record**: written nowhere as itself, read by no
+later turn; the ledger stays the record. **An item in one output is in every
+output showing its kind** — a *Needs you* item in the chat is on the work queue —
+and an abbreviation, the unchanged line or a stream's cap, counts from the same
+snapshot.
+
 ## The fallback check-in
 
 **While any run in the ledger is active — any not *finished* (*4. Owner pass*,
@@ -244,7 +267,9 @@ A sweep prints as `references/operator-output.md`, *Quiet turns*, says, where it
 status, a PR of its opened, pushed, merged or closed, its CI conclusions, its open
 items, a pending go's condition, or a reviewer's state. Its prompt
 carries the consecutive-empty count, the ledger's URL, the comparands and the
-no-change preflight result. **A
+no-change preflight result, **each from the latest sweep's snapshot** (*The status
+snapshot*): a sweep whose snapshot differs from the armed prompt replaces it,
+re-armed at its time. **A
 firing sweeps, reports, executes a verified dispatch go, plain or conditional, lists
 the runs ready to retire for the next attended turn, and archives a drafted reviewer
 whose review the owner submitted (`reviewers.md`); it rules nothing, starts no
@@ -307,7 +332,8 @@ is a decision for the owner pass, and only this ledger's run is told the ruling.
 # 4. Owner pass
 
 **In this session, and only where the owner is present to answer** — invoked by
-the owner, with `AskUserQuestion` available. Otherwise skip to the report — or a
+the owner, with `AskUserQuestion` available, and never in a `status` turn.
+Otherwise skip to the report — or a
 quiet turn's one line — rule nothing, record nothing as ruled, and say where the
 decisions wait. **Questions whose answer this turn acts on are asked here, before
 the report; the rest follow it** (`references/operator-output.md`, *Questions*).
@@ -597,8 +623,8 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
 - one short dated changelog;
 - the last sweep time, in UTC.
 
-**The ledger is maintained, not appended to**: update it at the end of every sweep,
-editing rows in place, adding one changelog line, and rewriting the whole of it
+**The ledger is maintained, not appended to**: update it at the end of every sweep
+from that sweep's snapshot (*The status snapshot*), editing rows in place, adding one changelog line, and rewriting the whole of it
 before every `/clear`. **The ledger body is the state; its comments, or the
 document's history, are history**, and the body supersedes them. A conductor whose context
 fills clears it in this same session, on the operator's `/clear` (*8. Context
@@ -730,11 +756,11 @@ the owner, such as an Artifact, it keeps one — its own, a peer keeping another
 its items may carry internal work: *Needs you* in full, each item linked, grouped as
 the report groups it, within a group what frees the most downstream work first and
 owner steps by dependency (*4. Owner pass*), with the ledger's last sweep time as
-when it was read. **It is a view, never a record**: it renders this report's *Needs
-you*, which only the sweep collects, with the links below read each sweep; nothing
+when it was read. **It is a view, never a record**: it renders the *Needs you* of
+this turn's snapshot (*The status snapshot*), which only the sweep collects, with the links below read each sweep; nothing
 is recorded only there, and a viewer's marks are never read. **A report whose *Needs
 you* changed, or a PR item's links or draft count** — emptied, or on a scheduled
-firing, included — **publishes it in the same turn**: to the URL the ledger records,
+firing, included — **and every `status` turn publish it in the same turn**: to the URL the ledger records,
 or, where none is recorded, as a new page whose URL the ledger then records
 (*7. Ledger*). **Only where the ledger records that URL does a report link it**,
 beside the ledger, the unchanged one-line form included; otherwise the ledger link

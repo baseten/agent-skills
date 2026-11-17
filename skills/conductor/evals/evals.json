@@ -1242,6 +1242,47 @@
         "the answer offers no forge ruling, standing or conditional, as a way to retire B on a scheduled firing"
       ],
       "files": []
+    },
+    {
+      "id": 98,
+      "name": "status-sweeps-asks-nothing-and-rebuilds-the-queue",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This session has been conducting acme/api for two days; its ledger is the default github-issue ledger, it can publish a private Artifact page, and the ledger records the work queue's URL. A fallback check-in is armed. The owner types `/conductor status`. The sweep finds: run A's PR acme/api#2045 merged by the owner since the last sweep; run B waiting on a decision the owner has not been asked yet (which of two migration orders to use on acme/api#2050); and nothing else new. The page's Needs you list is otherwise the same as the last report printed. Question: list, in order, what this turn does and does not do — does it ask the migration question, does it record any ruling, does it publish the work queue, what does it write to the ledger, does the ledger or the restart prompt record `status`, and what happens to the armed check-in?",
+      "expected_output": "`status` runs one sweep on demand and skips the owner pass: it does not ask the migration question with AskUserQuestion and records no ruling; the decision stays under Needs you with its site. It takes one snapshot and renders every output from it: prints the chat report (the merge under Changed since, the new decision under Needs you), rebuilds and publishes the work queue to the recorded URL even though the list is otherwise unchanged, updates the ledger in place from the snapshot with one changelog line, and, because the snapshot differs from what the armed check-in's prompt carries, replaces that check-in (cancelled and re-armed at its time) so its prompt carries this snapshot's comparands. It does not record `status` as an invocation argument in the ledger or restart prompt.",
+      "assertions": [
+        "the answer does not ask the migration question",
+        "the answer records no ruling",
+        "the answer publishes the work queue this turn",
+        "the answer updates the ledger with one changelog line",
+        "the answer refreshes the armed check-in's prompt from this turn's sweep",
+        "the answer does not record `status` as an invocation argument"
+      ],
+      "files": []
+    },
+    {
+      "id": 99,
+      "name": "a-needs-you-item-in-the-chat-is-on-the-queue-from-one-snapshot",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). An attended sweep of acme/api and acme/web. The ledger is a tracker-document ledger and records the work queue's URL. Early in the turn a subagent gathered PR links and draft counts and returned five Needs you items: Merge acme/api#2045; Decide on acme/web#77; Post yourself a held reply on acme/api#2046; Review and submit a reviewer's drafts on acme/web#93; Clear a failure, the red default branch of acme/web. Later in the turn, while building the page, a fresh read of the forge shows acme/web#93 with no reviewer session listed, and you are tempted to rebuild the page from that later read, which yields four items. Question: which items does the chat's Needs you carry, which does the work queue carry, and what do you do about the later read?",
+      "expected_output": "The chat and the work queue render from the turn's one status snapshot, so both carry the same five items; nothing is assembled separately, so the page is not rebuilt from a re-read outside the sweep, and it never drops an item the chat shows. The ledger carries each item of a kind it shows (the open decision, the held reply as a draft, the reviewer row, the owner steps) from the same snapshot. If the later read matters, it belongs to the next sweep's snapshot, not this turn's outputs.",
+      "assertions": [
+        "the chat and the work queue carry the same five items",
+        "the page is not rebuilt from the later read",
+        "the answer names a single per-turn snapshot as the source of every output",
+        "the later read is left to a later sweep"
+      ],
+      "files": []
+    },
+    {
+      "id": 100,
+      "name": "a-firing-refreshes-the-check-in-prompt-from-its-own-snapshot",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The fallback check-in was armed at 09:00 with comparands from that sweep: run A open with PR acme/api#2045 red, run B waiting on the owner. At 10:30 the owner, attended, recorded a ruling that released run B, and run B has since pushed; nothing re-armed the check-in then. It now fires at 11:00, unattended. Its sweep finds acme/api#2045 green and run B's new PR acme/api#2051 opened. Question: what does this firing compare against, what does it do about the check-in, and what does its re-armed prompt carry?",
+      "expected_output": "The firing sweeps and takes one snapshot; every output of the turn renders from it. It reports the changes (no owner pass, rules nothing), updates the ledger from the snapshot with one changelog line, and re-arms the check-in, since a delta was observed, with the count at zero. The new prompt carries the ledger URL, the empty count, the comparands and preflight result taken from this firing's own snapshot (2045 green, 2051 open, run B released) — never the 09:00 comparands carried forward. One check-in, never two: the old one is replaced, its id and next time recorded in the ledger.",
+      "assertions": [
+        "the answer re-arms the check-in with comparands from this firing's sweep",
+        "the answer does not carry forward the 09:00 comparands",
+        "the answer keeps one check-in",
+        "the answer rules nothing and asks nothing"
+      ],
+      "files": []
     }
   ]
 }
