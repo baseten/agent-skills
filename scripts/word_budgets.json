@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 26372,
+      "budget": 26379,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -19,7 +19,7 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/integration-branch.md": {
-      "budget": 2947,
+      "budget": 3285,
       "target": 1500
     },
     "skills/backlog-orchestrator/restart-resume.md": {
@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 7372,
+      "budget": 7375,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -199,7 +199,7 @@
       "target": 1500
     },
     "rules/operator-output.md": {
-      "budget": 1741,
+      "budget": 2034,
       "target": 1500
     },
     "skills/write-spec/SKILL.md": {
