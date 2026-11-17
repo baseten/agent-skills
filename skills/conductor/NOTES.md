@@ -553,12 +553,14 @@ in the skill. They are generalised: every link is a recorded URL, the title name
 the workstream, and nothing names a repository, a tracker or a person. A layer adds
 its own `--pending-blocker` patterns for checks that wait on a person.
 
-**What was fixed on the way in:** the original thread read called a REST path that
-a local session's GitHub does not serve (see the next entry for where it does); `gh api` printed the 404 body, the script read it as an empty list,
-and every unresolved count was 0 (run 2026-11-16, `gh api
-repos/baseten/agent-skills/pulls/223/ccr/review_threads` → `Not Found (HTTP 404)`).
-`prdata.py` now counts `reviewThreads.isResolved` over GraphQL, paginates every
-list, and stops on any failed read. `mergeq.py` and `prune.py` read the sweep's
+**What changed on the way in:** the owner's scripts were written and run in a cloud
+session, where the thread read's REST route, `pulls/{n}/ccr/review_threads`, is the
+one that works. It is cloud-only: a local session gets a 404 for it (run 2026-11-16,
+`gh api repos/baseten/agent-skills/pulls/223/ccr/review_threads` → `Not Found (HTTP
+404)`), which the first local port read as an empty list, so every count came out 0.
+GraphQL is the reverse, working locally and refused in cloud (next entry), so
+`prdata.py` reads by whichever route answers, paginates every list, and stops on
+any failed read. `mergeq.py` and `prune.py` read the sweep's
 `prdata.py` output instead of GitHub, so the page renders the turn's one snapshot.
 `prune.py` keeps an unposted reply on a merged PR: its asker is still unanswered.
 
