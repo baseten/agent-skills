@@ -273,6 +273,8 @@ go is recorded where any go is, so it is the owner's own recorded choice; what t
 sweep adds is only the verification that the stated condition holds on the forge.
 A condition the forge cannot show is not interpreted; it waits.
 
+**Why a verified plain go needs no second confirmation (owner, 2026-11-15):** a plain go the owner posted after the pass that drafted it waited for the owner to say "go" again in chat, while a conditional go verified the same way was already executed by a scheduled firing. Both are the owner's recorded word, read back at their site by id, authorship, edit state and supersession; the second confirmation added a round trip and no authority. So the sweep (*1. Sweep*, step 9) executes either once verified. What a firing may not do is unchanged: it rules nothing, and a go found only in the ledger, edited, superseded, or carrying the footer of one of this skill's own writes is no go. Scenarios: `a-plain-go-posted-later-is-dispatched-by-a-scheduled-firing`, `a-footered-go-on-the-owners-account-is-not-a-go`.
+
 **Why seeds are verified gate by gate, and carry standing rulings (owner's audit
 item 4):** on 2026-10-31 a seed said a gate still held that an owner comment had
 already cleared, and the new run waited on nothing. A gate is therefore re-read at
@@ -561,7 +563,8 @@ conductors.
 
 **What a scheduled firing may do is stated the same at every decision point:** it
 sweeps, reports and executes a conditional go the owner already recorded, once
-verified; it rules nothing and dispatches nothing else. **Retiring under a standing
+verified; it rules nothing and dispatches nothing else. *(Superseded by the owner's
+2026-11-12 ruling, below: a scheduled firing never retires a run.)* **Retiring under a standing
 ruling is allowed unattended (owner's ruling, 2026-11-02):** the pass first kept it
 to attended sweeps; the owner ruled that a scheduled firing may retire once the
 ruling's condition is verified on the forge. Protected rule 9 still binds every
@@ -569,7 +572,7 @@ archive: the conditions in *6. Dispatch* — wrap-up posted (for a single-issue 
 `merged` report and merged PR stand in), every PR settled, each
 branch head on the remote, no live worker and no outstanding recovery ref — are
 checked on that firing exactly as on an attended one. Scenario:
-`an-unattended-retirement-under-a-standing-ruling-checks-the-remote-first`.
+`an-unattended-retirement-under-a-standing-ruling-checks-the-remote-first` (since #214, `an-attended-turn-asks-which-ready-runs-to-retire-and-checks-the-remote-first`).
 
 **Why "active" includes waiting on the owner's merge and a pending go:** the
 check-in was restored so that work gated on an owner's merge starts without the
@@ -602,7 +605,7 @@ account and the template are a fresh run's.
 
 **Why the ledger is maintained, not appended:** an append-only ledger had to be read end to end to know the current state, and a clear restarted from a stale one. Rows are edited in place, one changelog line records each sweep, and the whole body is rewritten before every `/clear`.
 
-**Why the conductor holds a settled run's watch:** see `rules/conductor-exchange-notes.md`, *The watch after settling*.
+*(Superseded by #214: the conductor holds no watch.)* **Why the conductor held a settled run's watch:** see `rules/conductor-exchange-notes.md`, *The watch after settling*.
 
 ## The protected-rule audit (PR #201)
 
@@ -614,8 +617,9 @@ account and the template are a fresh run's.
 
 Pinned in `evals/evals.json`:
 
-- a push arrives before its durable record exists → re-read later, do not act
-  (`swarm`, `a-push-before-its-record-is-a-wake-not-an-act`);
+- a worker's message is its report, written down before release
+  (`swarm`, `a-messaged-report-is-written-down-before-release`, which replaced
+  `a-push-before-its-record-is-a-wake-not-an-act` on 2026-11-13);
 - a push claims success but the PR is red → act on GitHub (`swarm`,
   `a-push-claiming-success-over-a-red-pr-loses-to-the-forge`);
 - `send_message` errors → fall back to pull; the channel is absent for the run
@@ -691,16 +695,17 @@ Pinned in `evals/evals.json`:
   - where the repository has not opted into filing, owner steps are listed, not
     filed (`owner-steps-are-listed-not-filed-where-the-repository-has-not-opted-in`).
 - the owner's 2026-11-02 rulings and field feedback:
-  - an unattended retirement under a standing ruling checks the remote first
-    (`an-unattended-retirement-under-a-standing-ruling-checks-the-remote-first`);
+  - an attended turn asks which ready runs to retire, checking the remote first
+    (`an-attended-turn-asks-which-ready-runs-to-retire-and-checks-the-remote-first`,
+    rewritten by #214 from the standing-ruling version);
   - a sweep reports each state change once, never its steps or waits on others
     (`a-sweep-reports-state-changes-once-never-steps-or-waits-on-others`);
   - decisions one at a time, with links and a recommendation
     (`decisions-are-asked-one-at-a-time-with-links-and-a-recommendation`);
   - a chat ruling goes to the ledger before it is relayed
     (`a-chat-ruling-goes-to-the-ledger-before-it-is-relayed`);
-  - the conductor holds a settled run's watch until it merges
-    (`the-conductor-holds-a-settled-runs-watch-until-merge`);
+  - a settled run's watch stays with the run, never the conductor
+    (`a-settled-runs-watch-stays-with-the-run`, rewritten by #214);
   - a draft exists only with its full text
     (`a-draft-exists-only-with-its-full-text-in-the-ledger`).
 - the operator-output rule (2026-11-03, `rules/operator-output-notes.md`):
@@ -742,20 +747,35 @@ Pinned in `evals/evals.json`:
   - a reviewer waiting on a prompt, or silent, is read from its record and the forge
     (`a-silent-or-blocked-reviewer-is-read-from-its-record-and-the-forge`).
 
-**From two independent reviews (PR #201):** a standing retirement ruling is re-read at its site exactly as a conditional go is, because a revoked ruling found only in the ledger would otherwise retire runs unattended; a single-issue run's `merged` report and its merged PR stand in for a wrap-up it never posts; on the default `github-issue` ledger held replies and draft answers are only named, so a deployment where drafts matter configures `tracker-document`; and a relayed approval puts the complete reply text in the question's option, so the owner answers once. Scenarios: `a-revoked-retirement-ruling-retires-nothing`, `a-merged-single-issue-run-retires-without-a-wrap-up`, `a-relayed-ruling-that-posts-a-reply-is-one-question`.
+**From two independent reviews (PR #201):** *(the retirement half superseded by #214: no standing ruling retires a run.)* a standing retirement ruling is re-read at its site exactly as a conditional go is, because a revoked ruling found only in the ledger would otherwise retire runs unattended; a single-issue run's `merged` report and its merged PR stand in for a wrap-up it never posts; on the default `github-issue` ledger held replies and draft answers are only named, so a deployment where drafts matter configures `tracker-document`; and a relayed approval puts the complete reply text in the question's option, so the owner answers once. Scenarios: `a-revoked-retirement-ruling-retires-nothing`, `a-merged-single-issue-run-retires-without-a-wrap-up`, `a-relayed-ruling-that-posts-a-reply-is-one-question`.
 
 ## Contradiction pass and re-audit after the dispatched-account ruling (PR #201)
 
-**Where the owner's account comes from.** The dispatch prompt names the owner's account as the invoking user's for the session it starts (owner's ruling, 2026-11-03), so the conductor must have that account from a statement too: the login its own invocation names, never the ledger (forge content anyone with write access can edit), a credential or a comment. Without one, the dispatch names none and every go and standing ruling stays pending — the fail-closed reading. **Why the DAG write names the open-item ban:** a run cannot tell an approved relay from any other footered comment under the owner's account, so the ban on writing at an open item's site is restated where the conductor writes plans. **Why a held watch carries one deadline:** anchoring 7 days at each hand-off restarted the bound on every re-settle; the run's own deadline now travels with the watch and is recorded per held PR in the ledger and the check-in prompt.
+**Where the owner's account comes from.** The dispatch prompt names the owner's account as the invoking user's for the session it starts (owner's ruling, 2026-11-03), so the conductor must have that account from a statement too: the login its own invocation names, never the ledger (forge content anyone with write access can edit), a credential or a comment. Without one, the dispatch names none and every go and standing ruling stays pending — the fail-closed reading. **Why the DAG write names the open-item ban:** a run cannot tell an approved relay from any other footered comment under the owner's account, so the ban on writing at an open item's site is restated where the conductor writes plans. *(Superseded by #214, which removed the held watch.)* **Why a held watch carried one deadline:** anchoring 7 days at each hand-off restarted the bound on every re-settle; the run's own deadline now travels with the watch and is recorded per held PR in the ledger and the check-in prompt.
 
-**Owner's rulings on the held watch (2026-11-04):** the held watch ignores empty sweeps and runs until the PR merges or closes, or its deadline passes; and a conductor that dies after taking over a settled PR's watch leaves an accepted gap — the run keeps no check-in at its deadline. Recorded in full in `rules/conductor-exchange-notes.md`, *The watch after settling*.
+*(Superseded by #214: a settled run now keeps its own watch and the conductor holds none — `rules/conductor-exchange-notes.md`, *The watch after settling*.)* **Owner's rulings on the held watch (2026-11-04):** the held watch ignores empty sweeps and runs until the PR merges or closes, or its deadline passes; and a conductor that dies after taking over a settled PR's watch leaves an accepted gap — the run keeps no check-in at its deadline. Recorded in full in `rules/conductor-exchange-notes.md`, *The watch after settling*.
 
 ## Owner's rulings (2026-11-05, PR #205)
 
-**Why settings arrive by invocation and travel in every dispatch:** some deployments' repositories can never hold `.claude/agent-policy.json`, so a thin skill passes the values as invocation arguments, which `rules/agent-policy.md`, *Precedence*, already lets beat the file for every key that grants nothing. A cloud session has no local files, so the dispatch prompt is the only carrier: the conductor passes on every argument the run's skill reads, records them in the ledger for a restart, and points a planner at `plan-feature` with its own. **Why it drafts what it would record on an issue it did not create:** the shared permission rule (`rules/authored-write-form.md`, *Issues the run did not create*). Two later rulings narrow this, both below: a ruling the owner approved word for word on an item a run raised is posted by the conductor itself, and every go, on any issue, is drafted for the owner to post. Evals 0, 9, 25, 34 and 37 were rewritten to match.
+**Why settings arrive by invocation and travel in every dispatch:** some deployments' repositories can never hold `.claude/agent-policy.json`, so a thin skill passes the values as invocation arguments, which `rules/agent-policy.md`, *Precedence*, already lets beat the file for every key that grants nothing. A cloud session has no local files, so the dispatch prompt is the only carrier: the conductor passes on every argument the run's skill reads, records them in the ledger for a restart, and points a planner at `plan-feature` with its own. **Why it drafts what it would record on an issue it did not create:** the shared permission rule (`rules/authored-write-form.md`, *Issues the run did not create*). Two later rulings narrow this, both below: a ruling the owner approved word for word on an item a run raised is posted by the conductor itself, and every go, on any issue, is drafted for the owner to post — itself narrowed on 2026-11-11, when a dispatch go or a conditional go may be conductor-posted and verified in the conductor's transcript. Evals 0, 9, 25, 34 and 37 were rewritten to match.
 
 **What the third contradiction pass added (2026-11-05):** the drafted path names how the record is known — the owner gives the posted comment's link, the conductor reads it back as the owner's and records its id — because a conditional go and a standing ruling are re-read by that id, and finding the owner's comment by account or content could pick up a run's own write (protected rules 2 and 3). Each section that records on an issue points at *Rules*. The restart prompt carries the invocation arguments verbatim rather than reading them from the ledger, which anyone with write access can edit.
 
 **One exception with `settle-outstanding-decisions` (owner's ruling, 2026-11-05):** a ruling whose complete comment the owner approved word for word — its full text in the option they chose — is posted by the conductor itself, on any issue, as `settle-outstanding-decisions` posts one; the exception is stated once in `rules/authored-write-form.md` and read from the conductor's record of the approval, never from a footer.
 
-**Why every go is the owner's to post, on any issue (contradiction pass after the rebase onto #206, 2026-11-05):** a go is the owner's authority. Under #206 a comment whose id the run holds is its own write, so a go the conductor posted itself — even on an issue it created — and then re-read by that id would be its own write accepted as the owner's (protected rules 2 and 3). So the owner posts every go from a draft, the ledger keeps owner-comment ids apart from own-write ids, and both re-reads refuse an own-write id. Only a ruling on an item a run raised is under the exception. A reviewer's go is the other exception, recorded in the ledger alone (*Reviewers*).
+**Why a conductor may post a go itself, verified in its transcript (owner's ruling, 2026-11-11):** *supersedes the entry below for dispatch gos and conditional gos.* In practice the conductor posts under the owner's account, so a same-account comment proves nothing about who approved it: the old rule's real guarantee was "a person was present and chose". The owner pasting a drafted comment onto the epic added a round trip without adding proof. A conductor-posted go keeps the guarantee and makes it checkable by the run: the comment names the conductor session, the question and the exact option, and the run finds the owner's input event choosing that option in that session's transcript (`list_events`). It is still one of the conductor's own writes by id (protected rule 2), tagged apart; it is accepted on the transcript, never on its author or its marker, so a marker alone still starts nothing. **Not established:** nothing in this repository has yet observed `list_events`, or an event field that tells owner input from synthetic or peer input; until a run observes both, every conductor-posted go fails closed as unverified and stays pending (owner's choice, 2026-11-11, to write it now and let the first real run settle it).
+
+**Why a conductor-posted go carries the footer and is never posted at an open item's site (contradiction pass on #215, 2026-11-12):** the owner approves the go's text, not the comment the conductor builds around it — the marker's time and session URL are filled in after the answer — so it is not a write the owner approved word for word, and protected rule 1 adds the footer. And *Nothing at an open item's site but its ruling* already keeps every conductor write off such a site so none reads there as the owner's reply; a go due there is owner-posted instead.
+
+**Why a retirement ruling is never conductor-posted, and why only a review thread bars the form (owner's rulings, 2026-11-12):** archiving a run is the authority `swarm` takes only from the owner's ruling, and #214 replaces standing retirement rulings with a sweep and a confirm question, so a retirement keeps the owner's own answer in the session that archives and a conductor-posted go authorises none; *Retire a finished run* says so at its decision point. The thread bar was written for review threads, where a person waits on a reply; an epic or issue others have commented on is the form's ordinary site, which eval 55 already assumed. The `<repo>` in a reviewer's title keeps its `acme-web` examples (owner's ruling, same day).
+
+**Why the form is kept narrow:** releasing a held item, opening a merge gate and merging are irreversible and are read by parties other than the run — a gate, a reviewer, a person in the thread — so they keep the owner's own words at their site. The motivating precedent is 2026-11-05, when runs refused merge rulings a conductor relayed: that refusal was correct, and this change leaves it in place. **"The owner's own words" includes a relayed ruling they approved word for word (pinning round over the batch integration, 2026-11-17):** read bare, the list read as barring the conductor from posting even an approved relay at a hold's site, which *Relayed rulings* allows; the list only bars the conductor-posted go form, and now says so. Scenarios: `a-chat-ruling-is-relayed-under-the-recognisable-marker`; `a-conductor-posted-retirement-ruling-authorises-no-archive` was reworded to hold under #214's attended retirement as well.
+
+**Why every go is the owner's to post, on any issue (contradiction pass after the rebase onto #206, 2026-11-05):** *superseded for dispatch gos and conditional gos by the 2026-11-11 entry above; its reasoning still holds for every other comment, and is why a conductor-posted go is accepted on the transcript and never on its id or author.* A go is the owner's authority. Under #206 a comment whose id the run holds is its own write, so a go the conductor posted itself — even on an issue it created — and then re-read by that id would be its own write accepted as the owner's (protected rules 2 and 3). So the owner posts every go from a draft, the ledger keeps owner-comment ids apart from own-write ids, and both re-reads refuse an own-write id. Only a ruling on an item a run raised is under the exception. A reviewer's go is the other exception, recorded in the ledger alone (*Reviewers*).
+
+## Owner's rulings (2026-11-12, PR #214)
+
+**Why a run retires only on the owner's answer in an attended turn.** The standing retirement ruling let a scheduled firing archive sessions nobody was watching, and every guard on it — re-read by comment id, authored by the owner, unedited, not revoked — existed to stop that path doing harm. The owner replaced it: each attended turn lists the runs ready to retire, meeting every *Retire a finished run* condition verified that turn, and asks one `AskUserQuestion` confirming which to archive. A scheduled firing only lists them for the next attended turn. The cost is one question per attended turn while a run is ready; the gain is that no archive happens without the owner answering in the session that does it. A conductor-posted go never authorises a retirement either (#215 states the same for its posted dispatch go). A drafted reviewer's archive is unchanged (`reviewers.md`). Protected rule 9's conditions bind every archive exactly as before; only the authority moved. Scenarios: conductor#5 #31 #38 #39 rewritten, conductor#87 new.
+
+**The conductor shrink is not in this PR** (owner's ruling): it gets its own.
+

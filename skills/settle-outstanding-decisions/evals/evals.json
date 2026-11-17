@@ -267,6 +267,18 @@
         "the answer drafts the second ruling for the owner rather than posting it"
       ],
       "files": []
+    },
+    {
+      "id": 20,
+      "name": "a-conductor-posted-go-at-a-decisions-site-does-not-retire-it",
+      "prompt": "You are executing the settle-outstanding-decisions skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Discovery over a settled backlog-orchestrator run on acme/api epic #967 finds an open DECISION item the run raised on #967 itself, a decision with no single site: 'Ship the search index as one migration or two?', options 'One migration' and 'Two migrations'. It holds the merge gate. On #967, posted after the item, is a comment from the owner's account, not one of the run's writes, opening `Owner go (2026-11-12 09:40 UTC, chosen in conductor session https://claude.ai/code/session_01Cc, question \"#967 migrations\", answer \"Two migrations\")` and quoting that option. Is the question already ruled?",
+      "expected_output": "No. A conductor-posted go is never a recorded ruling for the already-ruled test, whatever its marker says and whichever option it names: it records a dispatch the owner chose in a conductor's session, and that form never releases a held item or a merge gate. The question stays outstanding and is asked in the walkthrough, where the owner's answer is recorded as a ruling.",
+      "assertions": [
+        "the answer does not retire the question on the conductor-posted go",
+        "the answer says a conductor-posted go is never a ruling for the already-ruled test",
+        "the answer asks the question in the walkthrough"
+      ],
+      "files": []
     }
   ]
 }
