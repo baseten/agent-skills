@@ -20,6 +20,10 @@ Decided from what this session holds, read before each build:
 | the Artifact tool, but the watch listing (`ArtifactComments`, `watch`, no url) does not show this page with comment replies armed — a new page's first publish included | `interactive: false`, published with no capabilities: read-only, each decision marked to answer in this session | here; **nothing on the page says an answer reaches this session** |
 | the Artifact tool and that listing confirms the watch | `interactive: true`, capabilities `{artifact:{}, comments:{}}` | on the page; it checks `canSendToClaude()` and says when an answer will only save |
 
+**Where `python3` or a working `gh api` is missing, no page is built**: the session
+takes the first row's fallback, the ledger link and the chat. A failing `gh auth
+status` does not show this; a successful `gh api user` shows `gh` works.
+
 **Nothing this skill must read depends on a call from the page to a connector, on
 a republish waking this session, or on browser storage**: none of these is
 established to work.

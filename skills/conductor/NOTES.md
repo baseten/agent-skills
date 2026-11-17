@@ -554,13 +554,37 @@ the workstream, and nothing names a repository, a tracker or a person. A layer a
 its own `--pending-blocker` patterns for checks that wait on a person.
 
 **What was fixed on the way in:** the original thread read called a REST path that
-does not exist; `gh api` printed the 404 body, the script read it as an empty list,
+a local session's GitHub does not serve (see the next entry for where it does); `gh api` printed the 404 body, the script read it as an empty list,
 and every unresolved count was 0 (run 2026-11-16, `gh api
 repos/baseten/agent-skills/pulls/223/ccr/review_threads` → `Not Found (HTTP 404)`).
 `prdata.py` now counts `reviewThreads.isResolved` over GraphQL, paginates every
 list, and stops on any failed read. `mergeq.py` and `prune.py` read the sweep's
 `prdata.py` output instead of GitHub, so the page renders the turn's one snapshot.
 `prune.py` keeps an unposted reply on a merged PR: its asker is still unanswered.
+
+**Why threads are read by two routes (observed 2026-11-17, a Claude Code cloud conductor
+session):** there, `python3` 3.13 with the standard library and `gh` 2.89 were
+present; `gh auth status` reported the token invalid while `gh api` REST calls
+succeeded through the session's proxy, and `gh api user` returned the owner's login.
+`gh api graphql` returned HTTP 403, "GitHub GraphQL is not available from Claude Code
+sessions; use the REST API", pointing review threads at `GET
+/repos/{owner}/{repo}/pulls/{n}/ccr/review_threads`. That route answered there, each
+entry shaped `{"comment_ids": [...], "path": ..., "line": ..., "resolved": ...,
+"outdated": ...}` with the ids in thread order; a comment's author and body come from
+`pulls/{n}/comments` (one paginated read) or `pulls/comments/{id}`. Locally the
+opposite holds: the `ccr` route is a 404 and GraphQL works. So `prdata.py` tries
+GraphQL, falls back on a 403 to the `ccr` route, and stops where neither answers; both
+routes feed one counting function, so the answered and "fixed, needs a reply" rule
+cannot differ by route. The session also exposes `ccr` routes that resolve and
+unresolve a thread; the script never calls them, since nothing here resolves one
+(#222). **Run to establish it:** the GraphQL route against eight real PRs of this
+repository, output identical to the previous script's in every thread count; the
+`ccr` route only against a fixture of entries in the observed shape (an owner reply,
+a reviewer-last outdated thread, an owner question, a resolved thread, an id missing
+from the bulk read), plus a 403-then-404 case that stops and a non-403 GraphQL
+failure that stops without falling back — a cloud session has not yet run the script.
+**Why `gh auth status` is not the test:** it reported failure where every read worked,
+so `work-queue.md` takes a successful `gh api user` as the test of a working `gh`.
 
 **Which page, and why gated:** tested on 2026-11-16, a republish woke nothing, a
 connector call from the page failed with "Couldn't load this connector", and
