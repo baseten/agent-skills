@@ -1,6 +1,6 @@
 ---
 name: conductor
-description: The owner's daily view and portfolio scheduler over a configured set of repositories — which epics run, in what order and how many at once, and the gates between them. Takes in epics a planner wrote and dispatches backlog-orchestrator, implement-issue or ship-branch runs on the owner's go, and, when the owner asks, review-pr reviewers that draft their reviews of others' PRs; sweeps them and the default branch; relays verified facts between runs; puts decisions and manual steps to the owner one at a time; holds a settled run's watch; keeps one ledger. Never plans features, supervises, repairs, merges or approves. Use when several runs are in flight and the owner wants one place to decide, or `status` for one sweep that asks nothing.
+description: The owner's daily view and portfolio scheduler over a configured set of repositories — which epics run, in what order and how many at once, and the gates between them. Takes in epics a planner wrote and dispatches backlog-orchestrator, implement-issue or ship-branch runs on the owner's go, and, when the owner asks, review-pr reviewers that draft their reviews of others' PRs; sweeps them and the default branch; relays verified facts between runs; puts decisions and manual steps to the owner one at a time; keeps one ledger per workstream, beside peer conductors on the same repositories. Never plans features, supervises, repairs, merges or approves. Use when several runs are in flight and the owner wants one place to decide, or `status` for one sweep that asks nothing.
 ---
 
 # Conductor
@@ -19,6 +19,13 @@ and pending decisions into one place, and **relays** verified facts between runs
 approves, or changes a permission**, and it tells a
 run nothing the owner has not ruled except facts it has verified and requests for
 status.
+
+**One conductor per workstream.** A workstream is one portfolio of the owner's —
+a tracker project, or a stream of epics the owner names — and each has its own
+conductor and its own ledger; there is no shared ledger. Several conductors run in
+parallel, and two may cover the same repositories. Each other is a **peer**: a
+peer's runs, reviewers, rulings and owner steps are its own, and this skill never
+messages, retitles, adopts, retires or reports one as its own (*1. Sweep*).
 
 It serves a deployment of many parallel orchestrators whose repositories opt into
 `auto-merge`, and one of several single-issue runs with `auto-merge` off and the
@@ -41,9 +48,10 @@ version line.
   and `feature-plan` arguments this skill was given.
 - **Nobody is present.** The owner pass and every go need a person to answer
   (*4. Owner pass*); a scheduled firing sweeps, reports, and acts only on what
-  the owner already recorded, once verified (*6. Dispatch*) — a conditional go, a
-  retirement under a standing ruling, or a drafted reviewer's archive
-  (`reviewers.md`) — and rules nothing.
+  the owner already recorded, once verified (*6. Dispatch*) — a dispatch go, plain
+  or conditional, or a drafted reviewer's archive (`reviewers.md`) — and rules
+  nothing. It never archives a run: it lists the runs ready to retire for the next
+  attended turn.
 - **A repository outside the configured scope.** Its sessions are noted in the
   ledger and left alone.
 
@@ -94,22 +102,17 @@ skill would read as the owner's stays pending.
   message then link to the site's record.
 - **The configured repositories.** Every read, write and dispatch is scoped to
   them.
-- **A go is the owner's to post, on any issue**: a dispatch go, a conditional go
-  and a standing ruling — a retirement ruling included — are drafted in full for the
-  owner to post at their site, because a go is the owner's authority — bar a
-  reviewer's go, which the ledger alone records and is never posted
-  (`reviewers.md`). The owner
-  gives the posted comment's link; this skill reads it back — authored by the
-  owner's account, and not a write whose id the ledger holds as its own — and
-  records its id among the ledger's owner-comment ids, kept apart from its own-write
-  ids. Whatever waits on it — a dispatch, a retirement, a relay — stays pending until
-  then.
+- **A go is the owner's authority, recorded at its site in one of two forms**: a dispatch go, a conditional go and a standing ruling — bar a reviewer's go, which the ledger alone records and is never posted (`reviewers.md`).
+  - **Owner-posted**: drafted in full for the owner to post. The owner gives the posted comment's link; this skill reads it back — authored by the owner's account, and not a write whose id the ledger holds as its own — and records its id among the ledger's owner-comment ids, kept apart from its own-write ids.
+  - **Conductor-posted**: this skill asks the owner with the structured question tool, the chosen option carrying the complete text of the go; writes the owner's exact answer — the question's header, the option's label and its text — to the ledger and reads it back; then posts the go on the epic or issue — never at a run's open item's site (*Nothing at an open item's site*, below), where it is owner-posted — a comment opening `Owner go (<UTC>, chosen in conductor session <session URL>, question "<header>", answer "<exact option label>")` and quoting that full text, with the footer, since the owner approved its text, not the comment — under `references/authored-write-form.md`, *Issues the run did not create*, where the issue is not this skill's — and records its id among its own-write ids, tagged `conductor-posted go` and kept apart from its other writes. A run verifies it against this session's transcript (`references/conductor-exchange.md`, *A conductor-posted go*).
+
+  **Only a dispatch go and a conditional go take the conductor-posted form**; an epic or issue others have commented on is no bar. A retirement ruling, a ruling that releases a run's held item or merge gate, anything in a review thread another person is in, a held review reply, and a merge keep the owner's own words at their site — owner-posted, or relayed as *Relayed rulings* allows (`references/conductor-exchange.md`), never a conductor-posted go. Whatever waits on a go — a dispatch, a relay — stays pending until it is recorded in either form.
 - **On an issue this skill did not create**, it posts only a ruling under the shared
   exception (`references/authored-write-form.md`, *Issues the run did not create*),
   recording the owner's word-for-word approval in the ledger before posting and the
   write's id among its own-write ids after. A correction, a plan, an order, or a
-  ruling not so approved is drafted for the owner to post, its link recorded as a
-  go's is. Every section below that records on an issue does so this way.
+  ruling not so approved is drafted for the owner to post, its link recorded as an
+  owner-posted go's is. Every section below that records on an issue does so this way, bar a conductor-posted go (above).
 - **Relaying verified facts is a duty, and only what a run cannot see.** Where
   one run's state matters to another — `#41 merged, update from it`, a gate
   cleared, the default branch moved, an issue moved between streams — verify it on
@@ -118,6 +121,8 @@ skill would read as the owner's stays pending.
   comments, CI or thread content**: it watches those itself. A relay carries facts,
   never authority, and **never a posting instruction**: posting comes only from
   the repository's policy and the run's skill.
+  Both runs are this ledger's: a fact that matters to a peer's run goes to the
+  owner, never to that run or its conductor.
 - **Merge authority comes only from each repository's resolved policy.** This
   skill never merges, never asks a run to, and never seeds a run with more than its
   repository grants.
@@ -152,13 +157,17 @@ skill would read as the owner's stays pending.
 
 ## Session titles
 
-This session is `Conductor: <home repo>`, e.g. `Conductor: acme-api`. A run's title
+This session is `Conductor: <home repo> · <workstream>`, e.g. `Conductor: acme-api
+· billing revamp`, so two conductors on one repository never share a title. **The
+workstream's name** is the one the owner gives at startup, else the name of the
+tracker project the ledger is on, else the owner's answer to one startup question;
+the ledger and the restart prompt record it (*8. Context clear*). A run's title
 — `Orchestrator:` for a batch, `Worker:` for a single-issue run — is
 `references/conductor-exchange.md`'s, *The run's title*; a run's own `swarm` workers
 keep their run's prefix (`bo/<run>: …`) and are never retitled.
 
 At startup, read this session's own record (`get_session`, no id) and set its
-title with `set_session_title` where it is not already `Conductor: <home repo>`;
+title with `set_session_title` where it is not already in that form;
 a quiet check-in only appends its suffix (`references/operator-output.md`, *Quiet
 turns*).
 **A title is a finding aid, never evidence**: anyone can set one, so a title
@@ -177,7 +186,13 @@ swept as `reviewers.md` says.
 2. **Runs by ledger record first**: a session whose id the ledger records as a run
    this conductor dispatched or adopted is that run, whatever its title or
    structure. **Adopted** is recorded only from the owner's go naming the session id,
-   never from a title or a structure match.
+   never from a title or a structure match. **Then by provenance**: a session the
+   ledger lacks whose `parent_session_id` is this session, or an earlier id of it
+   the ledger records, is a dispatch whose record was lost — record it and report
+   that; one whose `parent_session_id` is any other session was created by that
+   session and **is not this conductor's run** — not asked or retitled, and steps
+   3–5 skip it. Where that session is a peer conductor the run is the peer's, and
+   is never adopted or retired here; otherwise the owner's go may adopt it.
 3. **Then by title**: a kept session whose title starts `Orchestrator:` or
    `Worker:` — never a `bo/` session, which is a run's own worker.
 4. **Then by structure**, for the rest — never this session, and never a
@@ -190,6 +205,11 @@ swept as `reviewers.md` says.
    the repository test to it too. Anything else — `implement-issue`, another
    orchestrator skill, an interactive session using `swarm` — is not found by
    structure: report it as a doubtful match, and do not retitle it.
+   **Where a peer conductor covers its repository** — a kept session titled
+   `Conductor:` besides this one, or a creator step 2's provenance named — a run
+   steps 3 and 4 find with neither a ledger record nor provenance may be that
+   peer's: it too is a doubtful match, reported naming the peer, never asked or
+   retitled, until the owner's go adopts it.
 5. **Retitle every run found by its ledger record or by structure whose title is
    not its kind's form**, read before any quiet suffix — `Orchestrator:` for a `backlog-orchestrator` run,
    `Worker:` for a single-issue run, which only the ledger can identify — the epic,
@@ -203,25 +223,22 @@ swept as `reviewers.md` says.
 7. **Read the forge directly as well**, per repository in scope: the epics and
    issues the ledger lists; each run's open PRs, and its integration branch where
    it has one; **each run's PRs merged since the last sweep, and by whom** —
-   the owner's merges are how a stream waiting on the owner moves; new review
-   activity on any PR whose watch this conductor holds; and the issues opened since
-   the last sweep. **Where it holds a settled run's watch** (*The fallback check-in*),
-   a merge by anyone, a close, new review activity or a mergeability change on that
-   run's PR is messaged to the run to
-   wake it. **The forge is the source of truth where sessions
+   the owner's merges are how a stream waiting on the owner moves; and the issues
+   opened since the last sweep. **The forge is the source of truth where sessions
    are missing** — an epic or issue whose run was archived or never found is still
    a stream.
 8. **The default branch**, per repository in scope: CI on its current head, and
    the deploy that head triggered where the repository deploys from it — each
    reported with the head SHA and its result, failing or unread said as such.
-9. **Pending conditional gos**: verify each one's condition on the forge, and
-   execute every go whose condition now holds (*6. Dispatch*).
+9. **Pending gos**: execute every recorded dispatch go not yet executed — a plain one, or a conditional one whose condition the forge now shows — once re-read as *6. Dispatch* says, a conductor-posted one only after its transcript check passes again. A verified go is never put to the owner a second time.
 10. **Live reviewers**, verified and archived as `reviewers.md` says.
 
 Not runs, and reported as such: a run's own `swarm` worker sessions (read as part
-of their parent's stream), reviewers, sessions on repositories outside the scope, and **another `Conductor:`
-session on a repository in scope** — two conductors is a conflict for the owner,
-never a session to message as a run.
+of their parent's stream), reviewers, sessions on repositories outside the scope, and **a peer conductor** —
+another `Conductor:` session on a repository in scope — noted in the ledger as a
+peer with its link, never as a conflict, and never messaged; and **a peer's runs
+and reviewers** (step 2), noted under that peer, never in this ledger's
+live-sessions table, its owner pass or *Needs you*.
 
 ## The status snapshot
 
@@ -238,32 +255,27 @@ snapshot.
 
 ## The fallback check-in
 
-**This check-in also holds the watch over every settled run's PR that run handed
-over** (`references/conductor-exchange.md`, *The watch after settling*): it polls
-each such PR until it merges or closes, on `references/wake-budget.md`'s schedule
-for a held watch, and messages the run on a merge by anyone, a close, new review
-activity or a change in mergeability; a held watch never stops it on empty sweeps, and
-ends at the deadline the hand-off carried, reported as unwatched.
-
 **While any run in the ledger is active — any not *finished* (*4. Owner pass*,
 step 1) — or a conditional go is pending, keep one `send_later` check-in bound to
 this session**, on `references/wake-budget.md`'s *A conductor's fallback sweep*
 schedule: about hourly; re-armed silently after a sweep that observed a delta;
-stopped after 3 consecutive empty sweeps, said once — bar while it holds a watch,
-when it continues on the held watch's cadence instead; cancelled when neither holds.
+stopped after 3 consecutive empty sweeps, said once; cancelled when neither holds.
+It holds no PR watch: a settled run keeps its own
+(`references/conductor-exchange.md`, *The watch after settling*).
 A sweep prints as `references/operator-output.md`, *Quiet turns*, says, where it meets that rule's definition.
 **A delta** is a change in durable state the ledger compares: a run's session
 status, a PR of its opened, pushed, merged or closed, its CI conclusions, its open
 items, a pending go's condition, or a reviewer's state. Its prompt
-carries the consecutive-empty count, the ledger's URL, the comparands, each
-held watch's PR and deadline, and the no-change preflight result, **each from the
-latest sweep's snapshot** (*The status snapshot*): a sweep whose snapshot differs
-from the armed prompt replaces it, re-armed at its time. **A
-firing sweeps, reports, executes a verified conditional go, retires a run
-under a verified standing ruling, and archives a drafted reviewer whose review the
-owner submitted (`reviewers.md`); it rules nothing, starts no reviewer, and
-dispatches, retires or archives nothing else.**
-One check-in, never two; record its id and next time in the ledger.
+carries the consecutive-empty count, the ledger's URL, the comparands and the
+no-change preflight result, **each from the latest sweep's snapshot** (*The status
+snapshot*): a sweep whose snapshot differs from the armed prompt replaces it,
+re-armed at its time. **A
+firing sweeps, reports, executes a verified dispatch go, plain or conditional, lists
+the runs ready to retire for the next attended turn, and archives a drafted reviewer
+whose review the owner submitted (`reviewers.md`); it rules nothing, starts no
+reviewer, retires no run, and dispatches or archives nothing else.**
+One check-in, never two — per conductor, a peer's being its own; record its id and
+next time in the ledger.
 
 # 2. Ask
 
@@ -314,7 +326,8 @@ pass, not into a correction.
 else the one whose manifest listed it first; else the stream rebuilding the files
 it touches — and carry the pick into the plan the owner approves (*6. Dispatch*).
 Once approved, it is recorded on both epics (*Rules*) and both runs are told, pointing at
-the record.
+the record. **Where the other run is a peer's**, nothing is picked here: the claim
+is a decision for the owner pass, and only this ledger's run is told the ruling.
 
 # 4. Owner pass
 
@@ -331,8 +344,10 @@ the report; the rest follow it** (`references/operator-output.md`, *Questions*).
    The chat carries only its rows that need the owner (*Report*).
 2. **Every pending decision not already asked while unchanged, one at a time**, as
    `references/operator-output.md`, *Questions*, says, the decision that frees the
-   most downstream work first.
+   most downstream work first. The runs ready to retire are one such question
+   (*6. Dispatch*, *Retire a finished run*).
    Anything a question asserts about the code or a PR is read before it is put.
+   Only this ledger's runs' decisions are put; a peer's are its own owner pass's.
    **Held replies are collected across runs and listed, never asked**: each one's
    full text, thread link and fix SHA, with every comment posted in its thread
    since the fix, read fresh, for the owner to post and resolve — no run, this one
@@ -346,7 +361,9 @@ the report; the rest follow it** (`references/operator-output.md`, *Questions*).
    Where the repository the step concerns opted into filing (its `manual-steps`), each is a
    `[Manual]` issue under that repository's manual-steps epic — filed now for any
    step no stream has filed, its exact commands in the issue — and **the order is
-   posted as a comment on that epic** (*Rules*); where it does not, the steps
+   posted as a comment on that epic** (*Rules*), naming this workstream and
+   superseding only this conductor's own earlier order, since a peer may post
+   its own there; where it does not, the steps
    themselves are the list. Either way the order goes in the ledger, and the owner works each step
    with `owner-steps`. Respect every owner constraint the repository records. No
    secret goes in an issue, a comment or this pass.
@@ -373,15 +390,22 @@ adopted. Read it and its children (out of
 scope: reported only), count its CI per *Replanning*, add it to the ledger as
 awaiting dispatch — no run, no check-in — and ask *dispatch?* as *6. Dispatch*
 says; a project's or product issue's children run as an explicit issue set, stubs excluded.
+**An epic of another workstream** — another tracker project's, or one whose
+recorded go or plan names a peer's run — belongs to that workstream's conductor:
+say so and do not take it in, unless the owner rules otherwise.
 **Planning features is `plan-feature`'s.** Beyond replanning and owner-pass
 writes, it may write one small issue, its full text shown first, on the owner's
 go.
 
 ## Replanning
 
-**Collect the follow-ups** — issues the runs filed, deferred review findings,
-unscheduled issues since the last sweep — and **build one cross-stream DAG** over
-them and the runs still open:
+**Collect the follow-ups** — issues this ledger's runs filed, deferred review
+findings on their PRs, and unscheduled issues since the last sweep under this
+workstream's epics or tracker project; one under no workstream is listed for the
+owner's intake, never planned unasked — and **build one cross-stream DAG** over
+them and this ledger's runs still open — never a peer's, whose collision with
+one of them (the same files, a version bump, a migration number) is reported to
+the owner:
 
 - **hard edges** — dependencies verified on the forge, not read off a reply;
 - **merge-order edges** where two runs touch the same files;
@@ -415,20 +439,20 @@ skill it runs, its session decision below, and the plan's cost, with *go* among 
 options. A batch on an epic is a `backlog-orchestrator` run; one issue is an
 `implement-issue` run, and a branch with no PR a `ship-branch` run; a reviewer is
 started as `reviewers.md` says. The go is recorded on
-each run's epic or issue, naming the session, by the owner from this skill's draft
-(*Rules*): it is the record a reused run verifies before taking the work.
+each run's epic or issue, naming the session, in either form *Rules* gives: it is the record a reused run verifies before taking the work.
 
 **A conditional go** — "start the batch on #967 when #2049's wave 5 merges" — is
-the owner's choice of an option put to them, recorded the same way under the owner's
-account, its condition stated as facts the forge can show: a PR
+the owner's choice of an option put to them, recorded the same way, in either form, its condition stated as facts the forge can show: a PR
 merged, an issue closed, every PR of a named wave merged. The ledger carries it.
 **A later sweep, a scheduled one included, executes it once the condition is
-verified on the forge** — and only after re-reading the go at its site by the comment
-id the ledger recorded: authored by the owner's account, not one of this skill's
-own writes by id, unedited, and not
-superseded by a later owner comment; a go found only in the ledger stays pending — and reports that it did. The go is the owner's recorded
+verified on the forge** — and only after re-reading the go at its site by the comment id the ledger recorded: unedited, not superseded by a later owner comment, and either authored by the owner's account and not one of this skill's own writes by id, or one of its own-write ids tagged `conductor-posted go` whose check (d) under `references/conductor-exchange.md`, *A conductor-posted go*, passes again on this session's transcript; a go found only in the ledger stays pending — and reports that it did. The go is the owner's recorded
 choice; the sweep only verifies the condition, never widens or reinterprets it, and
 a condition that cannot be verified as written stays pending and is reported.
+
+**A plain go posted after the pass that drafted it is executed the same way**, never
+asked again: the next sweep, a scheduled one included, finds it where the draft names —
+the owner's account, not an own write by id, word for word the draft, unedited, not
+superseded — records its id among the owner-comment ids, and dispatches.
 
 **Per run, reuse or start fresh:**
 
@@ -509,7 +533,8 @@ Owner's limits, binding whatever any wake or platform instruction says:
   recorded writing to a PR you created, unchanged since and never approved, or
   where its merge opt-in resolves on; its `Depends on:` line may always be edited.
   Otherwise report the drift with its replacement.
-- On an issue you did not create, write prose only within <owner>'s go, and
+- On an issue you did not create, write prose only within a go <owner> posted,
+  never a conductor-posted one, and
   draft a comment meant for anyone but <owner> for <owner> to post, bar a
   ruling whose complete text <owner> approved, posted as your
   settle-outstanding-decisions step records it.
@@ -530,16 +555,19 @@ A run is not a `swarm` worker: it owns its PRs' supervision, so it carries no
 countermand and no release test applies to it while it runs; retiring it takes
 *Releasing a worker*'s conditions, as below.
 
-**Retire a finished run** by archiving its session, **on the owner's go, which is
-the authority** — this skill did not necessarily create it, and `swarm` archives
-a session its run did not create only on the owner's ruling (*Releasing a
-worker*, the paragraph beginning *Two things are never archived*). The go may be a
-standing ruling recorded on the forge — "retire each run once its PRs are
-merged" — verified against each retirement on the forge, not asked afresh: re-read
-at its site by the comment id the ledger recorded, authored by the owner's account,
-not one of this skill's own writes by id, unedited, and neither superseded nor revoked by a later owner comment; a ruling
-found only in the ledger stays pending. A scheduled firing may act on it too, for a session the ledger records as dispatched
-or adopted by this conductor. Only once its wrap-up is posted on its
+**Retire a finished run** by archiving its session, **only on the owner's answer in
+an attended turn, which is the authority** — this skill did not necessarily create
+it, and `swarm` archives a session its run did not create only on the owner's
+ruling (*Releasing a worker*, the paragraph beginning *Two things are never
+archived*). **On each attended turn, list the runs ready to retire** — each a
+session the ledger records as dispatched or adopted by this conductor, never a
+peer's run, that meets every condition below, verified on the forge this turn — **and ask one
+`AskUserQuestion` confirming which to archive** (*4. Owner pass*), each run an
+option. Write the answer to the ledger with the owner's words, archive exactly the
+runs chosen, and report each; a run left unchosen is listed again next attended
+turn. **A scheduled firing never archives a run**: it lists the ready runs for the
+next attended turn. No ruling on the forge, standing or otherwise, and no go this
+skill posts stands in for that answer. A run is ready only once its wrap-up is posted on its
 epic or issue — a single-issue run's `merged` report and its PR merged on the forge stand in
 for one —; every PR of its run is merged, closed or recorded as moved to another
 run; nothing of its run is stranded — each of its branches' heads, taken from its last
@@ -551,7 +579,8 @@ ref; and it is not `RUNNING`.
 
 # 7. Ledger
 
-**One ledger holds this skill's state.** Its home is the first of
+**One ledger holds this conductor's state** — its workstream's, and no other: each
+peer keeps its own, and no ledger is shared or written by two conductors. Its home is the first of
 `conductor-ledger`'s kinds this session can write — `github-issue`, a `[PLAN]`
 issue in the home repository (the default); `tracker-document`, a document on the
 feature's tracker project, on Linear written as `references/linear-mechanics.md`
@@ -559,9 +588,11 @@ says; `document-store-page`, a page in the connected document
 store — and is reported. It is found from the URL recorded in it and in the restart
 prompt, never by title alone. Rulings stay at their sites; the ledger links to them.
 
+- the workstream's name, and this conductor's session id with every earlier one
+  (*1. Sweep*, step 2);
+- peer conductors seen, each with its link, and the sessions reported as theirs;
 - the **live-sessions table** — per stream: repository, epic or issue, the run's
-  skill, the session's link and title, state (*4. Owner pass*, step 1), who holds
-  its watch and, where this session does, the deadline the hand-off carried, its context use (`used_tokens` of `max_tokens`, as read this
+  skill, the session's link and title, state (*4. Owner pass*, step 1), its context use (`used_tokens` of `max_tokens`, as read this
   sweep), and the version line or lines its reports carry
   (`references/conductor-exchange.md`, *Reports*), else `not reported`; an
   archived session leaves it;
@@ -584,7 +615,8 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
 - the invocation arguments this skill was given;
 - owner-comment ids — each go, ruling or draft the owner posted — kept apart from
   this skill's own-write ids;
-- own-write ids — each write this skill posted, with its site;
+- own-write ids — each write this skill posted, with its site, a conductor-posted go
+  tagged as one beside the owner's answer it quotes;
 - the default branches' heads as last read, each linked to its CI and deploy runs —
   their outcomes go in the session's report, never in a forge write;
 - the plan's expected CI runs;
@@ -657,11 +689,11 @@ Never force a clear, and never skip a step to beat compaction.
    **never naming a scratchpad path**:
 
    ```text
-   Conductor: <home repo>, after /clear. Read the ledger body first: <ledger URL> —
-   it supersedes its history. Re-read the conductor keys from the policy file;
-   invoked with: <every invocation argument, verbatim>.
+   Conductor: <home repo> · <workstream>, after /clear. Read the ledger body
+   first: <ledger URL> — it supersedes its history. Re-read the conductor keys
+   from the policy file; invoked with: <every invocation argument, verbatim>.
    Call get_session; if this session's id differs from the ledger's, send the new
-   id to every run and update the ledger. Confirm the fallback check-in <id> is
+   id to every run the ledger records and update the ledger. Confirm the fallback check-in <id> is
    still armed. Read queued notifications. Then sweep, checking first: <the one or
    two checks the dump named>.
    ```
@@ -676,8 +708,8 @@ Never force a clear, and never skip a step to beat compaction.
    state.
 
 **After a restart, check the id before anything else**: where `get_session`
-returns an id other than the ledger's, send it to every run and update the ledger
-before the sweep. The message says it is this conductor's new id and is sent from
+returns an id other than the ledger's, send it to every run the ledger records —
+never a peer's — and update the ledger, keeping the old id, before the sweep. The message says it is this conductor's new id and is sent from
 that id, which is what lets a run adopt it (`references/conductor-exchange.md`,
 *Pushes*).
 
@@ -709,7 +741,7 @@ it does in *6. Dispatch*:
 **In this session, shaped as `references/operator-output.md` says.** *Needs you*
 is what needs the owner to act: decisions and approvals (asked as *4. Owner pass*
 says), owner steps, replies and rulings to post yourself, a failure only the owner can clear — a red default branch, a
-run whose push contradicted the forge — any PR whose watch lapsed, and each
+run whose push contradicted the forge — any PR whose run pushed that its watch stopped with the PR still open, and each
 drafted review to submit (`reviewers.md`). *Changed
 since* is each run whose state from the fixed set changed, and every dispatch,
 executed conditional go, retirement and reviewer archived, each linked to its record. A default branch's CI and deploy are a *Clear a failure* item when red or failed, a change when their result moved, and otherwise counted under *Unchanged*.
@@ -720,7 +752,7 @@ their expected CI runs, sessions left alone, the fallback check-in's state, and
 this session's context use with any clear proposed.
 
 **The work queue.** Where this session holds a tool that publishes a page private to
-the owner, such as an Artifact, it keeps one, **never shared or made public**, since
+the owner, such as an Artifact, it keeps one — its own, a peer keeping another — **never shared or made public**, since
 its items may carry internal work: *Needs you* in full, each item linked, grouped as
 the report groups it, within a group what frees the most downstream work first and
 owner steps by dependency (*4. Owner pass*), with the ledger's last sweep time as
