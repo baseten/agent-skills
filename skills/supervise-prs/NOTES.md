@@ -148,6 +148,9 @@ The reasoning for the rule this section applies — why promotion is never the r
 
 ## Budgets
 
+**Why the status line is never a PR comment (2026-11-13, closeio/close-ui#29958):** "Review repair (cycle 1 of 2) pushed head …" appeared on the timeline as the owner. The cycle count belongs in this run's status line, and a pushed repair is answered only by its thread reply (the *authored write form* shared rule, *A push is never announced*). The sentence restates that by reference at the place a run writes the count. Scenario: `a-repair-cycle-announcement-on-the-timeline-is-a-defect`.
+
+
 **Why the invoking user's own rounds spend no review cycle (#183, owner's ruling):** `review-repair-cycles` exists to stop a run grinding against an automated reviewer that answers every push with another round. The owner's own comments are not that loop: each round is a person deciding to comment, and it ends when they stop. Spending the budget on them meant the owner's review of a draft — the workflow the ruling describes — could exhaust the cycles the bot rounds needed, or be left as deferred repairs on the owner's own instructions. Splitting the owner's threads into their own pass is what keeps the budget binding on everything else. A trailer rebuild cannot tell the passes apart without a new trailer, and counting them all only hands back less budget, so it was left that way.
 
 **Why the no-cycle pass is decided by the new content's author (blind audit of #184):** an owner-rooted thread that a bot follows up in is a bot round. Keyed on the root, a reviewer replying inside the owner's threads would get unbudgeted rounds, which is the loop the budget exists to bound.

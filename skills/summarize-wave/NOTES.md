@@ -12,6 +12,9 @@ Companion to `SKILL.md`. That file is the contract; this one holds the reasoning
 
 ## Sources
 
+**Why a run-held report is an input (2026-11-13):** worker reports moved off the PR wherever a return value or message reaches the run (`swarm` NOTES, *How a worker's report actually reaches you*), so a caveat a worker raised is now often on no forge. The caller passes the reports it holds. Without them this skill would summarize a wave with its caveats missing.
+
+
 Durable evidence, not the orchestrator's recollection, because a restarted session summarizing the same wave must produce substantially the same text — the summary participates in restart-safe workflows. Run context is welcome only as enrichment (why a worker abandoned an approach, what a reviewer and worker disagreed about); it never replaces the record. A worker's own report comment on its PR is part of the durable record, and it is where a deliberately raised caveat lives.
 
 ## Action points
