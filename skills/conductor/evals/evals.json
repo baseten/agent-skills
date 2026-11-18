@@ -1468,7 +1468,7 @@
     },
     {
       "id": 114,
-      "name": "the-owners-pending-review-on-a-runs-pr-is-review-and-submit",
+      "name": "an-owner-pending-review-is-surfaced-not-misread",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner's account is @owner. Run A in this ledger owns acme/api#2045, approved by a person, CI green, no open threads. The sweep reads the PR's reviews and finds one in state PENDING by @owner holding 3 comments, two of them replies in threads where run A had answered a reviewer. A reviewer session in the same ledger has drafted a review of acme/web#77, a colleague's PR no run owns. Question: what Needs you items do these produce, how is #2045's item worded, how does the work queue's merge section show #2045, and may the report say run A's comments were edited?",
       "expected_output": "#2045 gets a Review and submit item: 'Submit your pending review on #2045 (3 draft comments)', linking the PR and labelled as @owner's unsubmitted review on GitHub; no run acts on the drafts until they are submitted. The merge section does not show #2045 as Ready: it carries the blocker 'Your unsubmitted review: 3 drafts', and the two threads whose last comment sits in that pending review count as neither open nor answered. #77 is a separate Review and submit item for the reviewer's drafted review, with its drafts link, recommendation and blocking count. The two are different things - the owner's own drafts on a run's PR against a reviewer's draft on a PR no run owns - and a reviewer never drafts on a run's PR, so no PR carries both. The report never describes the drafts as edits to run A's comments.",
       "assertions": [

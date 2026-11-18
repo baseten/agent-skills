@@ -245,7 +245,7 @@ itself:** the first version took the count from `prdata.py`, which runs only ove
 the PRs the merge section or a held reply names, so a run's PR outside both was
 never read; the review read is now part of step 7's read of each run's PR, and
 `prdata.py` keeps its field for the merge section. Scenario:
-`the-owners-pending-review-on-a-runs-pr-is-review-and-submit`.
+`an-owner-pending-review-is-surfaced-not-misread`.
 
 **Why step 6 compares a run's version with the install (owner's request,
 2026-11-18, a close-conductor run):** the ledger recorded each run's version line
