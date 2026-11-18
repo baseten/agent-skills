@@ -294,6 +294,8 @@ one assembled afterwards. Scenarios: `a-stale-run-is-flagged-before-its-next-rep
 `nothing-goes-to-a-stale-run-before-the-owner-answers`,
 `a-docs-only-gap-is-not-a-stale-run`.
 
+**Why a handed-back watch keeps the check-in hourly, and a merge is named (owner's report, 2026-11-18):** a run on a contract older than #214 may report that it handed its PR watch to the conductor, which holds none, so those PRs are watched by nothing but the fallback check-in. The check-in therefore keeps its hourly schedule while any is open, never stopped by empty sweeps (`rules/wake-budget.md`, *A conductor's fallback sweep*), and the report says so, so the owner knows the latency is an hour. The stale item names a merge beside a submitted review because the owner's merge is the other act that wakes such a run, which then wraps up under its old contract. Scenario: `a-handed-back-watch-keeps-the-check-in-hourly`.
+
 ## The status snapshot
 
 **Why one snapshot (owner, 2026-11-16):** in a real run the conductor's chat

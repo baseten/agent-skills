@@ -1549,6 +1549,19 @@
         "nothing about run A goes under Needs you"
       ],
       "files": []
+    },
+    {
+      "id": 120,
+      "name": "a-handed-back-watch-keeps-the-check-in-hourly",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Run A is recorded stale and the owner chose to let it finish. Its last report says 'settled, waiting on owner merge - PR watch handed to the conductor' for acme/web#310, which is open and approved. The fallback check-in has now fired 3 times in a row with nothing changed. Question: is the check-in stopped, what does the report say about #310, and what does the stale item say wakes run A?",
+      "expected_output": "The check-in is not stopped: a run on an older contract handed #310's watch to the conductor, which holds none, so while #310 is open nothing else watches it and the check-in stays hourly without the three-empty-sweeps stop. The conductor arms no PR watch of its own. The report says #310 is covered only by the hourly check-in. The stale item says that a review the owner submits on #310, or the owner's merge of it, wakes run A under the old contract.",
+      "assertions": [
+        "the check-in is not stopped after three empty sweeps while #310 is open",
+        "the conductor does not arm a PR watch of its own",
+        "the report says #310 is covered only by the check-in",
+        "the stale item names the owner's merge as well as a submitted review as waking run A"
+      ],
+      "files": []
     }
   ]
 }

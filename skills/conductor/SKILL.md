@@ -286,7 +286,11 @@ this session**, on `references/wake-budget.md`'s *A conductor's fallback sweep*
 schedule: about hourly; re-armed silently after a sweep that observed a delta;
 stopped after 3 consecutive empty sweeps, said once; cancelled when neither holds.
 It holds no PR watch: a settled run keeps its own
-(`references/conductor-exchange.md`, *The watch after settling*).
+(`references/conductor-exchange.md`, *The watch after settling*). **A stale run
+(*Report*) whose report says it handed its PR watch to this conductor**, as an
+older contract did, leaves those PRs watched by nothing: while any is open the
+check-in stays hourly and is not stopped by empty sweeps, and the report says
+those PRs are covered only by this check-in. This skill still arms no PR watch.
 A sweep prints as `references/operator-output.md`, *Quiet turns*, says, where it meets that rule's definition.
 **A delta** is a change in durable state the ledger compares: a run's session
 status, a PR of its opened, pushed, merged or closed, its CI conclusions, its open
@@ -809,7 +813,8 @@ only on a PR no run owns (`reviewers.md`), so one PR never carries both.
 **A stale run** (*1. Sweep*, step 6) is a *Decide* item, "running an older
 contract", naming its version and the installed one, marked unconfirmed where only
 dates decided it, and saying that a review the
-owner submits on its PR wakes it under the old contract; its two options are to
+owner submits on its PR, or the owner's merge of it, wakes it under the old
+contract; its two options are to
 retire it and redispatch on the current skills (*6. Dispatch*, *Retire a finished
 run*), or to let it finish. The first carries everything *6. Dispatch* puts in a
 go's question — the skill, a fresh session, the plan's cost — and the go's complete
