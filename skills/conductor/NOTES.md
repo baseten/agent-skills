@@ -242,6 +242,32 @@ reviews list hides a pending review from everyone but its author, so a run's or 
 peer's credential would read "none" where there is one. Scenario:
 `the-owners-pending-review-on-a-runs-pr-is-review-and-submit`.
 
+**Why step 6 compares a run's version with the install (owner's request,
+2026-11-18, a close-conductor run):** the ledger recorded each run's version line
+and nothing read it. Two `backlog-orchestrator` runs reported a093d8f7
+(2026-11-11), older than the 2026-11-13 change that moved worker reports from PR
+comments to messages (`swarm` NOTES, *Why the carrier is chosen by runtime*), and
+their workers posted "Worker report" and "Repair r1" comments on
+closeio/close-ui#30068 under the owner's account; the next repair would have posted
+again. The comparison uses the fields that exist: `committed` in
+`.agent-skills-install`, which `bootstrap.sh` writes as an ISO date, against the
+`<date>` of the run's line (`rules/run-start.md`), which carries only a day. A day
+cannot order two commits made on it, so the same day is settled by ancestry where
+the compare route answers and is otherwise reported unsettled, never guessed. A
+missing stamp or line is unreadable rather than stale, because absence is not a
+verdict. A layer's line is skipped because its `metadata.version` stamps another
+repository, and comparing it with agent-skills' install would order unrelated
+histories. **Why the owner is asked before any relay, and the run never told to
+post differently:** a relayed ruling or a submitted review wakes the run, and it
+then acts under the contract it loaded; the conductor cannot stop the owner
+submitting a review, so the line says that a review wakes it, and the conductor
+holds its own relays until the owner answers. Telling the run to post otherwise
+would be a message changing posting, which `rules/conductor-exchange.md` rules out;
+the remedy is a redispatch on the current skills, through the existing retirement
+conditions (protected rule 9), which is why a stale run's retirement waives only
+the wrap-up and moves its open PRs to the new run. Scenario:
+`a-stale-run-is-flagged-before-its-next-repair`.
+
 ## The status snapshot
 
 **Why one snapshot (owner, 2026-11-16):** in a real run the conductor's chat
@@ -567,7 +593,9 @@ an owner audit could not tell which skill revision a dispatched session had run.
 The row records what the run's reports said — `not reported` where none carried a
 line, which is itself the finding — and nothing the conductor inferred. The
 conductor's own line opens its first report, under the same rule
-(`rules/run-start.md`).
+(`rules/run-start.md`). Since 2026-11-18 the row also carries the installed version
+and the comparison *1. Sweep*, step 6, makes; the reported line is still recorded
+as the run gave it, and the verdict sits beside it, never in its place.
 
 **Why the ledger keeps earlier session ids and the peers seen (owner's ruling, 2026-11-16):** the
 provenance test in *1. Sweep* needs every id this conductor has had, or a run

@@ -222,7 +222,18 @@ swept as `reviewers.md` says.
    line where it left one (`references/conductor-exchange.md`, *Reports*) over
    `post_turn_summary`, which can lag, `external_metadata.cross_session_inbound`,
    context usage where the record exposes it (otherwise say it is unread), and last
-   activity.
+   activity. **Then compare each live run's version with this session's install**:
+   `committed` in the config directory's `.agent-skills-install`
+   (`references/run-start.md`) against the date in each of the run's version lines
+   for a skill that stamp's `repo` ships — never a layer's line, such as one read
+   from an uploaded layer's `metadata.version`, which is another repository's stamp.
+   An install committed on a later date makes the run **stale**; an earlier one,
+   or the same commit, current. **On the same date ancestry decides where it reads**
+   — `gh api repos/<repo>/compare/<run commit>...<installed commit>`: `ahead` is
+   stale, `identical` or `behind` current — else, `diverged` included, it is
+   **unsettled**; never guessed. No readable install record, or no version line, is
+   **unreadable**, never stale. The result goes in the run's version column
+   (*7. Ledger*); only a stale run reaches *Needs you* (*Report*).
 7. **Read the forge directly as well**, per repository in scope: the epics and
    issues the ledger lists; each run's open PRs, and its integration branch where
    it has one; **each run's PRs merged since the last sweep, and by whom** —
@@ -384,7 +395,8 @@ the report; the rest follow it** (`references/operator-output.md`, *Questions*).
    recorded the same way, as a relayed ruling** (`references/conductor-exchange.md`, *Relayed rulings*). A
    ruling that answers a run's held item chooses one of the options that item put;
    **whether it releases the hold is that run's own test to decide**, never this
-   skill's to declare.
+   skill's to declare. **Nothing is relayed to a stale run** (*Report*) until the
+   owner has answered its question in this pass.
 
 # 5. Intake and replan
 
@@ -583,7 +595,10 @@ state block or result, or from a report it builds from durable state where the
 channel is open, is reachable on the remote, `list_sessions` shows no live worker of
 it, the session holds no uncommitted work (`swarm`, *Releasing a worker*),
 and its last state block reports no live worker session and no outstanding recovery
-ref; and it is not `RUNNING`.
+ref; and it is not `RUNNING`. **A stale run the owner chose to retire and
+redispatch** (*Report*) needs no wrap-up and has its open PRs recorded as moved to
+the new run, whose dispatch go that answer is, recorded and executed as above; every other
+condition binds, and it waits, still listed, until they hold.
 
 **A tick the owner sends on the work queue is the owner's answer choosing that
 run**, as one given in an attended turn (`work-queue.md`, *Sessions to archive*);
@@ -606,7 +621,8 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
 - the **live-sessions table** — per stream: repository, epic or issue, the run's
   skill, the session's link and title, state (*4. Owner pass*, step 1), its context use (`used_tokens` of `max_tokens`, as read this
   sweep), and the version line or lines its reports carry
-  (`references/conductor-exchange.md`, *Reports*), else `not reported`; an
+  (`references/conductor-exchange.md`, *Reports*), else `not reported`, with the
+  installed version and the comparison's result (*1. Sweep*, step 6); an
   archived session leaves it;
 - **reviewers** — each reviewer's PR, the owner's request it answers, its
   session's link and its state, `drafted` or `failed` once reported (`reviewers.md`);
@@ -772,7 +788,14 @@ and submit* item, "Submit your pending review on #N (k draft comments)", linking
 the PR and labelled as drafts on GitHub under the owner's login: the run cannot read
 or act on them until submitted, and they are never described as edits to a run's
 comments. It is not a reviewer's draft: a reviewer drafts, under the same account,
-only on a PR no run owns (`reviewers.md`), so one PR never carries both. *Changed
+only on a PR no run owns (`reviewers.md`), so one PR never carries both.
+**A stale run** (*1. Sweep*, step 6) is a *Decide* item, "running an older
+contract", naming its version and the installed one and saying that a review the
+owner submits on its PR wakes it under the old contract; its two options are to
+retire it and redispatch on the current skills (*6. Dispatch*, *Retire a finished
+run*), or to let it finish. It is asked in the owner pass before any relay this
+conductor would make to that run (*4. Owner pass*, step 4). **Never message a run
+to change how it posts.** *Changed
 since* is each run whose state from the fixed set changed, and every dispatch,
 executed conditional go, retirement and reviewer archived, each linked to its record. A default branch's CI and deploy are a *Clear a failure* item when red or failed, a change when their result moved, and otherwise counted under *Unchanged*.
 
