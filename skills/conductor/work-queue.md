@@ -85,10 +85,17 @@ in a review thread.
 
 ## Publishing
 
-- **Merge before republishing.** Read the live version (the Artifact tool, `read`)
-  and run `carry.py` over it, so the owner's saved answers and ticks survive; where
+- **Merge before every publish**, a turn's first rebuild and a first publish's
+  upgrade included. Read the live version (the Artifact tool, `read`)
+  and run `carry.py` over it, so the owner's saved answers and ticks survive — a
+  build from a copy held since an earlier turn would erase them; where
   a publish is refused, carry onto the version the refusal hands over and publish
   again. Carried marks are never acted on.
+- **A session that publishes the page starts watching it.** Any session other than
+  the conductor's that publishes it — a subagent's, or one the owner asked to —
+  stops that watch at
+  once (`ArtifactComments`, `watch`, the page's URL, `on: false`), so answers wake
+  the conductor alone.
 - **At most one publish per turn**, after the turn's last snapshot — bar a first
   publish's upgrade (*Which page*), which republishes the same snapshot with only
   `interactive`, the capabilities and any `ruling` written (*Building it*) changed,

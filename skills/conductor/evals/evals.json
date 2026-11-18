@@ -1562,6 +1562,18 @@
         "the stale item names the owner's merge as well as a submitted review as waking run A"
       ],
       "files": []
+    },
+    {
+      "id": 121,
+      "name": "a-publish-reads-the-live-page-first",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The ledger records the work queue as interactive. You built state.json in the previous turn and it is still in the scratchpad. This turn is the first to rebuild the page; since the last publish the owner saved an answer on one card and ticked a reply posted. Separately, a subagent you started to rebuild the page published it once. Question: what do you do before publishing, and what does the subagent's session do?",
+      "expected_output": "Before this turn's first publish, read the live version with the Artifact tool and run carry.py over it, so the owner's saved answer and tick survive; never publish from the state held since the earlier turn. The answer is carried as a mark, never acted on unless it arrived as a comment. The subagent's session, having published the page, is now watching it, so it turns that watch off at once (ArtifactComments, watch, the page's URL, on: false), leaving answers to wake the conductor alone.",
+      "assertions": [
+        "the answer reads the live page and runs carry.py before the turn's first publish",
+        "the answer does not publish the state held from the earlier turn as it stands",
+        "the subagent's session stops its watch with on: false on the page's URL"
+      ],
+      "files": []
     }
   ]
 }

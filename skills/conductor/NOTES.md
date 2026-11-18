@@ -908,6 +908,8 @@ the rest of the context, so a prompt that only resumed ran the next sweep with n
 conductor contract at all; the Close layer had patched this in its own text. Naming
 the skill the session was first invoked as reaches the layer where there is one.
 
+**Why every publish reads the live page first, and another publisher drops its watch (owner's report, 2026-11-18):** "merge before republishing" was read as applying to later publishes only, so a turn's first rebuild went out from a copy built in an earlier turn. Once the page is interactive that erases every answer and tick the owner saved since, so the live read and `carry.py` now precede every publish. Publishing a page also starts the publishing session watching it; a second session that published the conductor's page would then be woken by the owner's answers too, and could act on one the conductor never sees, so it turns that watch off at once. Scenario: `a-publish-reads-the-live-page-first`.
+
 **Why the pacing:** each run's reply is its own turn, and a busy hour republished the
 page a dozen times, each a chance to collide with the owner's own save. A status
 sweep and a publish at most once a turn, and none within five minutes for a change
