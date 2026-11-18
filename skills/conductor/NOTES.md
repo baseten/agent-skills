@@ -249,15 +249,22 @@ and nothing read it. Two `backlog-orchestrator` runs reported a093d8f7
 comments to messages (`swarm` NOTES, *Why the carrier is chosen by runtime*), and
 their workers posted "Worker report" and "Repair r1" comments on
 closeio/close-ui#30068 under the owner's account; the next repair would have posted
-again. The comparison uses the fields that exist: `committed` in
-`.agent-skills-install`, which `bootstrap.sh` writes as an ISO date, against the
+again. The comparison uses the fields that exist: the `committed` this skill's own
+version line reads, which `bootstrap.sh` writes as an ISO date, against the
 `<date>` of the run's line (`rules/run-start.md`), which carries only a day. A day
 cannot order two commits made on it, so the same day is settled by ancestry where
 the compare route answers and is otherwise reported unsettled, never guessed. A
 missing stamp or line is unreadable rather than stale, because absence is not a
 verdict. A layer's line is skipped because its `metadata.version` stamps another
 repository, and comparing it with agent-skills' install would order unrelated
-histories. **Why the owner is asked before any relay, and the run never told to
+histories. **Why the conductor's own `.source` comes first (owner's ruling,
+2026-11-18, on this PR):** the request named `.agent-skills-install`, but
+`rules/run-start.md` reads that only where the skill's own directory cannot be
+found, because a merge-only install can leave it describing a different install.
+Compared against a stale stamp, a run older than the skills the conductor itself
+runs could read as current. So the comparison reads `committed` in
+the order the conductor's own version line does, and the restatement points at
+that rule. **Why the owner is asked before any relay, and the run never told to
 post differently:** a relayed ruling or a submitted review wakes the run, and it
 then acts under the contract it loaded; the conductor cannot stop the owner
 submitting a review, so the line says that a review wakes it, and the conductor

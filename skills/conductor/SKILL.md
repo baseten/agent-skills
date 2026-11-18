@@ -223,15 +223,16 @@ swept as `reviewers.md` says.
    `post_turn_summary`, which can lag, `external_metadata.cross_session_inbound`,
    context usage where the record exposes it (otherwise say it is unread), and last
    activity. **Then compare each live run's version with this session's install**:
-   `committed` in the config directory's `.agent-skills-install`
-   (`references/run-start.md`) against the date in each of the run's version lines
-   for a skill that stamp's `repo` ships — never a layer's line, such as one read
+   the `committed` this skill's own version line is read from, in
+   `references/run-start.md`'s order — its `.source` first, the config directory's
+   `.agent-skills-install` only where that rule falls back to it — against the date in each of the run's version lines
+   for a skill this repository ships — never a layer's line, such as one read
    from an uploaded layer's `metadata.version`, which is another repository's stamp.
    An install committed on a later date makes the run **stale**; an earlier one,
    or the same commit, current. **On the same date ancestry decides where it reads**
    — `gh api repos/<repo>/compare/<run commit>...<installed commit>`: `ahead` is
    stale, `identical` or `behind` current — else, `diverged` included, it is
-   **unsettled**; never guessed. No readable install record, or no version line, is
+   **unsettled**; never guessed. No `committed` read by that order, or no version line, is
    **unreadable**, never stale. The result goes in the run's version column
    (*7. Ledger*); only a stale run reaches *Needs you* (*Report*).
 7. **Read the forge directly as well**, per repository in scope: the epics and
