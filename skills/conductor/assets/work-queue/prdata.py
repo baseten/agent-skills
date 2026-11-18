@@ -20,6 +20,17 @@ comment, taken from one paginated read of pulls/{n}/comments; both routes feed
 the same rule above. Where neither answers, the script stops. It only reads: the
 ccr routes that resolve or unresolve a thread are never called, since the work
 queue never resolves one.
+
+A review still PENDING is visible only to the account that wrote it, and its
+comments are absent from pulls/{n}/comments and 404 on pulls/comments/{id}. So
+every PENDING review the reviews list returns has its comments read from
+pulls/{n}/reviews/{id}/comments, before any single-comment read, and the GraphQL
+route reads each comment's state. A thread whose last comment is in the owner's
+own pending review is held by the owner: counted neither unresolved nor answered.
+The owner's pending review is emitted as owner_pending_drafts (its comment count,
+0 for none) and owner_pending_review (its id, or null). A pending last comment by
+any other login counts as unresolved. Every other failed read still stops the
+script.
 """
 import argparse
 import json
@@ -29,7 +40,7 @@ import sys
 THREADS = """query($owner:String!,$name:String!,$n:Int!,$endCursor:String){
  repository(owner:$owner,name:$name){pullRequest(number:$n){
   reviewThreads(first:100,after:$endCursor){nodes{isResolved isOutdated
-   comments(last:1){nodes{author{login} body}}}
+   comments(last:1){nodes{author{login} body state}}}
    pageInfo{hasNextPage endCursor}}}}}"""
 
 
@@ -64,37 +75,41 @@ def threads_graphql(repo, n):
             last = (t["comments"]["nodes"] or [None])[-1] or {}
             out.append(dict(resolved=t["isResolved"], outdated=t["isOutdated"],
                             login=(last.get("author") or {}).get("login"),
-                            body=last.get("body") or ""))
+                            body=last.get("body") or "",
+                            pending=last.get("state") == "PENDING"))
     return out
 
 
-def threads_ccr(repo, n):
+def threads_ccr(repo, n, pending_comments):
     entries = [t for page in gh_try("--paginate", "--slurp",
                                     f"repos/{repo}/pulls/{n}/ccr/review_threads")
                for t in (page if isinstance(page, list) else [page])]
     # one paginated read of the PR's review comments; a single read only for a miss
     by_id = {c["id"]: c for page in pages(f"repos/{repo}/pulls/{n}/comments?per_page=100")
              for c in page}
+    # a pending review's comments are in neither read: taken from main's read of them
+    by_id.update(pending_comments)
     out = []
     for t in entries:
-        login, body = None, ""
+        login, body, pending = None, "", False
         if not t["resolved"] and t.get("comment_ids"):
             cid = t["comment_ids"][-1]  # thread order, so the last is the newest
             c = by_id.get(cid) or gh(f"repos/{repo}/pulls/comments/{cid}")
             login, body = (c.get("user") or {}).get("login"), c.get("body") or ""
+            pending = cid in pending_comments
         out.append(dict(resolved=t["resolved"], outdated=bool(t.get("outdated")),
-                        login=login, body=body))
+                        login=login, body=body, pending=pending))
     return out
 
 
-def threads(repo, n):
+def threads(repo, n, pending_comments):
     try:
         return threads_graphql(repo, n)
     except GhError as e:
         if "403" not in str(e):
             sys.exit(str(e))
     try:
-        return threads_ccr(repo, n)
+        return threads_ccr(repo, n, pending_comments)
     except GhError as e:
         sys.exit(f"review threads unreadable over GraphQL (403) and the ccr route: {e}")
 
@@ -105,7 +120,11 @@ def count_threads(ts, owner_login):
     for t in ts:
         if t["resolved"]:
             continue
-        if t["login"] == owner_login and "?" not in t["body"]:
+        if t.get("pending") and t["login"] == owner_login:
+            continue  # held in the owner's unsubmitted review: neither open nor answered
+        if t.get("pending"):
+            unresolved += 1
+        elif t["login"] == owner_login and "?" not in t["body"]:
             answered += 1
         else:
             unresolved += 1
@@ -124,14 +143,20 @@ def main():
     for n in a.prs:
         p = gh(f"repos/{a.repo}/pulls/{n}")
         sha = p["head"]["sha"]
-        latest = {}
+        latest, pending_comments, own_pending = {}, {}, None
         for page in pages(f"repos/{a.repo}/pulls/{n}/reviews?per_page=100"):
             for r in page:  # chronological, so the last state per reviewer wins
                 if r["state"] in ("APPROVED", "CHANGES_REQUESTED", "DISMISSED"):
                     latest[r["user"]["login"]] = (r["state"], r["user"].get("type"))
+                elif r["state"] == "PENDING":
+                    cs = [c for cp in pages(f"repos/{a.repo}/pulls/{n}/reviews/{r['id']}"
+                                            "/comments?per_page=100") for c in cp]
+                    pending_comments.update({c["id"]: c for c in cs})
+                    if (r.get("user") or {}).get("login") == a.owner:
+                        own_pending = (r["id"], len(cs))
         approvals = [u for u, (s, kind) in latest.items() if s == "APPROVED" and kind != "Bot"]
         changes = [u for u, (s, _) in latest.items() if s == "CHANGES_REQUESTED"]
-        unresolved, answered, needs_reply = count_threads(threads(a.repo, n), a.owner)
+        unresolved, answered, needs_reply = count_threads(threads(a.repo, n, pending_comments), a.owner)
         runs = [r for page in pages(f"repos/{a.repo}/commits/{sha}/check-runs?per_page=100")
                 for r in page["check_runs"]]
         statuses = [s for page in pages(f"repos/{a.repo}/commits/{sha}/status?per_page=100")
@@ -146,6 +171,8 @@ def main():
                         merged=p["merged"], mergeable=p.get("mergeable_state"),
                         approvals=approvals, changes=changes, unresolved=unresolved, answered=answered,
                         needs_reply=needs_reply,
+                        owner_pending_drafts=own_pending[1] if own_pending else 0,
+                        owner_pending_review=own_pending[0] if own_pending else None,
                         checks=len(runs) + len(statuses), fail=fail, pending=pending))
     print(json.dumps(out, indent=1))
 

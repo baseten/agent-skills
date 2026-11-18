@@ -302,6 +302,7 @@ python3 scripts/test_run_evals.py                    # the eval runner's determi
 python3 scripts/check_word_budgets.py                # no contract outgrows its word budget
 python3 scripts/test_check_word_budgets.py           # and each of that check's guards can fail
 bash skills/swarm/scripts/test-checkpoint-capture.sh
+python3 -I scripts/test_work_queue_prdata.py         # conductor's work-queue scripts, against a stubbed gh
 bash scripts/test_bootstrap_stamp.sh
 bash scripts/test_bootstrap_instructions.sh
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh scripts/test_bootstrap_stamp.sh scripts/test_bootstrap_instructions.sh

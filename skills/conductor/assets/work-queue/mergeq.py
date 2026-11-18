@@ -8,7 +8,9 @@ open, approved by a person and has no outstanding change request. `after` and
 the blockers come from the owner's merge notes; only open threads block, and
 threads prdata.py read as answered, or as fixed and needing a reply, show as counts; `--pending-blocker` turns a
 pending check whose name matches REGEX into a named blocker, for a check that
-waits on a person rather than on CI. Nothing here decides a merge: the owner does.
+waits on a person rather than on CI. The owner's own unsubmitted review, which
+prdata.py reads as owner_pending_review, is always a blocker, never part of a Ready
+row. Nothing here decides a merge: the owner does.
 """
 import argparse
 import json
@@ -41,6 +43,9 @@ for n in notes:
     blockers, auto = list(n.get("blockers", [])), []
     if d["unresolved"]:
         auto.append("threads")
+    if d.get("owner_pending_review") is not None:
+        k = d.get("owner_pending_drafts", 0)
+        blockers.insert(0, f"Your unsubmitted review: {k} draft{'' if k == 1 else 's'}")
     if ci == "red":
         blockers.insert(0, "CI red: " + ", ".join(d["fail"]))
     elif ci == "running":

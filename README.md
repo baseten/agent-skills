@@ -175,6 +175,7 @@ python3 scripts/test_no_machine_paths.py              # and that detector can ac
 python3 scripts/check_word_budgets.py --report       # no contract outgrows its budget; --report adds runtime load
 python3 scripts/test_check_word_budgets.py            # and each of its guards can actually fail
 bash skills/swarm/scripts/test-checkpoint-capture.sh
+python3 -I scripts/test_work_queue_prdata.py          # conductor's work-queue scripts, against a stubbed gh
 bash scripts/test_bootstrap_stamp.sh                  # bootstrap.sh's install stamp, against a scratch HOME
 bash scripts/test_bootstrap_instructions.sh          # bootstrap.sh's managed block in ~/.claude/CLAUDE.md
 shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh scripts/test_bootstrap_stamp.sh scripts/test_bootstrap_instructions.sh
