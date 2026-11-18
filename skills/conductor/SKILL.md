@@ -226,8 +226,10 @@ swept as `reviewers.md` says.
 7. **Read the forge directly as well**, per repository in scope: the epics and
    issues the ledger lists; each run's open PRs, and its integration branch where
    it has one; **each run's PRs merged since the last sweep, and by whom** —
-   the owner's merges are how a stream waiting on the owner moves; and the issues
-   opened since the last sweep. **The forge is the source of truth where sessions
+   the owner's merges are how a stream waiting on the owner moves; on each run's open
+   PR, **a review in state `PENDING` by the owner's account and its comment count**
+   (`prdata.py`'s `owner_pending_drafts`), which only that account can read — read
+   by another, it is unread; and the issues opened since the last sweep. **The forge is the source of truth where sessions
    are missing** — an epic or issue whose run was archived or never found is still
    a stream.
 8. **The default branch**, per repository in scope: CI on its current head, and
@@ -685,7 +687,8 @@ Never force a clear, and never skip a step to beat compaction.
 1. **Dump.** Rewrite the ledger body with the full run state: each stream's state
    and next step; each run's session id, last known PR or head, its channel state
    (absent for the run, or not), whether it answered this sweep, and its context
-   use; each reviewer's row; this session's id; the resolved `conductor-clear-at` and its source; the
+   use; each reviewer's row; this session's id; the work queue's URL, or that none
+   is recorded; the resolved `conductor-clear-at` and its source; the
    last clear proposal's level, if unanswered; and what the next sweep must do
    first.
 2. **Verify.** Re-read the ledger body from its home and compare it with what was
@@ -711,6 +714,10 @@ Never force a clear, and never skip a step to beat compaction.
    (ArtifactComments, watch). Read queued notifications. Check first: <the one or
    two checks the dump named>.
    ```
+
+   **Where the ledger records no work-queue URL and this session holds the Artifact
+   tool**, the prompt says instead "Build the work queue first and record its URL in
+   the ledger" (*Report*), in place of confirming its watch.
 5. **Propose**, in a few lines: the context figure; that the ledger is written and
    verified, with its link; what is expected to stay bound to this session through
    a clear — its id, its check-ins and PR subscriptions, and runs' `send_message`
@@ -759,7 +766,13 @@ is what needs the owner to act: decisions and approvals (asked as *4. Owner pass
 says), owner steps, replies and rulings to post yourself, a failure only the owner can clear — a red default branch, a
 run whose push contradicted the forge — any PR whose run pushed that its watch stopped with the PR still open, each
 drafted review to submit (`reviewers.md`), and each run's force-push held for approval, under *Confirm in a session*,
-linking its session and naming the literal tool string and the exact command waiting. *Changed
+linking its session and naming the literal tool string and the exact command waiting.
+**The owner's own pending review on a run's PR** (*1. Sweep*, step 7) is a *Review
+and submit* item, "Submit your pending review on #N (k draft comments)", linking
+the PR and labelled as drafts on GitHub under the owner's login: the run cannot read
+or act on them until submitted, and they are never described as edits to a run's
+comments. It is not a reviewer's draft: a reviewer drafts, under the same account,
+only on a PR no run owns (`reviewers.md`), so one PR never carries both. *Changed
 since* is each run whose state from the fixed set changed, and every dispatch,
 executed conditional go, retirement and reviewer archived, each linked to its record. A default branch's CI and deploy are a *Clear a failure* item when red or failed, a change when their result moved, and otherwise counted under *Unchanged*.
 
@@ -782,7 +795,11 @@ you* changed, or a PR item's links or draft count** — emptied, or on a schedul
 firing, included — **and every `status` turn publish it**, paced as `work-queue.md`,
 *Publishing*, says: to the URL the ledger records,
 or, where none is recorded, as a new page whose URL the ledger then records
-(*7. Ledger*). **Only where the ledger records that URL does a report link it**,
+(*7. Ledger*). **Any sweep — attended, scheduled or `status` — that finds no
+work-queue URL in the ledger while this session holds the Artifact tool builds and
+publishes the first page that turn**, *Needs you* changed or not, `interactive:
+false` (`work-queue.md`, *Which page*) unless that section builds none, and records its URL in the ledger; a
+firing that does so is not quiet. **Only where the ledger records that URL does a report link it**,
 beside the ledger, the unchanged one-line form included; otherwise the ledger link
 stands in.
 

@@ -43,7 +43,10 @@ build, so none is a record and no restart prompt names one.
 
 **The merge section lists, never decides**: "Ready" means open, approved by a
 person, no change request, no open thread, checks green and no blocker — never
-that a merge gate passed. A layer may add `--pending-blocker` patterns.
+that a merge gate passed. A layer may add `--pending-blocker` patterns. **The
+owner's own unsubmitted review is always a blocker**, "Your unsubmitted review: k
+drafts", and a thread whose last comment sits in it counts as neither open nor
+answered until it is submitted.
 
 **An unresolved thread is answered, not open, on the page and in the report** only
 where its last comment's author login is the owner's account and holds no `?`; a

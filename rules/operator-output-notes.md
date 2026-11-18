@@ -51,6 +51,15 @@ into *Review or assign a reviewer* would lose what makes it quick — the recomm
 and the blocking count say how long the read will take. The text stays on the surface it was
 drafted on, where the owner submits it; the conductor links it and never copies it.
 
+**Why the owner's own pending review on a run's PR joins it (owner's report,
+2026-11-18, FE Testing Guild run):** the owner had left draft comments on a run's PR
+and not submitted them; nothing surfaced them, the run could not see them, and a
+sweep the day before had misread such drafts as edits to a run's comments. The act
+is the same as a reviewer's draft — read, then submit on the forge — so it takes the
+same group rather than a new one, carrying the PR and the draft count instead of a
+recommendation, since nobody drafted a recommendation. The two never meet on one PR:
+a conductor's reviewer only drafts on a PR no run owns.
+
 **Why *Post yourself* is its own group (owner's ruling, 2026-11-16):** no run posts in a review thread a person other than the owner is in, not even a reply the owner approved (`resolve-pr-comment/NOTES.md`, *Replies held for the owner*). Listed under *Approve drafts*, such a reply would ask for an approval that changes nothing; what the owner does is copy, edit, post and resolve, so the group names that act.
 
 **Why *Changed since* is in the chat at all:** PR #201's conductor rule kept every

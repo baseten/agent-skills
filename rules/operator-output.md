@@ -27,7 +27,7 @@ A reporting turn ends with these, in this order, each omitted when empty:
 1. **Needs you**, grouped by what the owner does, each group a bold line, one line per item with its links:
    - **Merge**
    - **Review or assign a reviewer**
-   - **Review and submit** — a review drafted for the owner (`conductor`, `reviewers.md`): its drafts link, the recommendation and the blocking count; the line never carries the draft text, and the draft is never under *Approve drafts*
+   - **Review and submit** — a review drafted for the owner (`conductor`, `reviewers.md`): its drafts link, the recommendation and the blocking count; or the owner's own pending review on a run's PR (`conductor`, *Report*): the PR's link and its draft count, labelled as the owner's drafts on the forge. The line never carries the draft text, and the draft is never under *Approve drafts*
    - **Decide** — asked as *Questions* says
    - **Confirm in a session** — a prompt a run's or a reviewer's session waits on, naming the literal tool string (`swarm`, *Blocked workers*); a force-push held for approval also names the exact command waiting
    - **Approve drafts** — each linked to its full text, or naming where it is held; the line never carries the text

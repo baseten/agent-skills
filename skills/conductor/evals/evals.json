@@ -540,7 +540,7 @@
     {
       "id": 42,
       "name": "an-unchanged-needs-you-list-is-one-line",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. At the 10:00 UTC report you printed 'Needs you' with three items: merge acme/api#841, decide on acme/api#812, post a held reply on acme/web#77. At this 11:00 sweep the same three are still waiting and nothing new needs the owner; run C merged acme/api#2040 since 10:00. The ledger records no work-queue URL. Question: what does this turn print?",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. At the 10:00 UTC report you printed 'Needs you' with three items: merge acme/api#841, decide on acme/api#812, post a held reply on acme/web#77. At this 11:00 sweep the same three are still waiting and nothing new needs the owner; run C merged acme/api#2040 since 10:00. This session holds no tool that publishes a page, and the ledger records no work-queue URL. Question: what does this turn print?",
       "expected_output": "It does not reprint the three items, and does not ask the #812 decision again or re-list the #77 reply - they return only when an item is new or changed. In place of the 'Needs you' list it writes one line - '3 still waiting on you, unchanged' - linking the ledger. Then 'Changed since 10:00 UTC' with the merge of #2040 under run C's heading (session link by title, repository, epic), the reference linked; any unchanged counts as one linked line; the ledger link last.",
       "assertions": [
         "the answer does not reprint the three unchanged items",
@@ -1437,6 +1437,46 @@
         "the answer is asked with the structured question tool and recorded in the ledger",
         "the answer says the click must still happen in the run's own session",
         "the conductor does not relay the approval as a push instruction"
+      ],
+      "files": []
+    },
+    {
+      "id": 112,
+      "name": "a-quiet-sweep-with-no-work-queue-recorded-builds-the-first-page",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This session holds the Artifact tool; python3 and gh api work. The conductor has run for two days and the ledger records no work-queue URL. A scheduled check-in fires: nobody is present, and the sweep finds the same two items waiting on the owner as the last report printed, with nothing else changed. Question: does this turn publish a work queue, with what capabilities, what does it record, and is the turn quiet?",
+      "expected_output": "Yes. Any sweep, attended or scheduled, that finds no work-queue URL in the ledger while the session holds the Artifact tool builds and publishes the first page that turn, whether or not Needs you changed. It is built read-only - interactive false, no capabilities - since no watch is confirmed for a new page, with each decision marked to answer in this session, and its URL is recorded in the ledger. Having built it, the turn is not quiet. Later reports link it beside the ledger and republish to that URL.",
+      "assertions": [
+        "the answer builds and publishes the work queue this turn although Needs you is unchanged",
+        "the page is published with interactive false and no capabilities",
+        "the answer records the page's URL in the ledger",
+        "the answer does not treat the turn as quiet"
+      ],
+      "files": []
+    },
+    {
+      "id": 113,
+      "name": "a-restart-with-no-work-queue-recorded-builds-one-first",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This session holds the Artifact tool. Context is past the clear point at a quiet point. The ledger records the fallback check-in but no work-queue URL: no queue has been built. Question: what does the dump record about the work queue, and what does the restart prompt say about it?",
+      "expected_output": "The dump records that no work-queue URL is recorded. Because the ledger records none and the session holds the Artifact tool, the restart prompt says to build the work queue first and record its URL in the ledger, in place of confirming a watch on a page that does not exist. It still invokes the skill first invoked with its arguments, points at the ledger, checks the session id and confirms the fallback check-in, and names no scratchpad path.",
+      "assertions": [
+        "the dump records that no work-queue URL is recorded",
+        "the restart prompt says to build the work queue first and record its URL",
+        "the restart prompt does not only confirm a work-queue watch",
+        "the restart prompt names no scratchpad path"
+      ],
+      "files": []
+    },
+    {
+      "id": 114,
+      "name": "the-owners-pending-review-on-a-runs-pr-is-review-and-submit",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner's account is @owner. Run A in this ledger owns acme/api#2045, approved by a person, CI green, no open threads. The sweep reads the PR's reviews and finds one in state PENDING by @owner holding 3 comments, two of them replies in threads where run A had answered a reviewer. A reviewer session in the same ledger has drafted a review of acme/web#77, a colleague's PR no run owns. Question: what Needs you items do these produce, how is #2045's item worded, how does the work queue's merge section show #2045, and may the report say run A's comments were edited?",
+      "expected_output": "#2045 gets a Review and submit item: 'Submit your pending review on #2045 (3 draft comments)', linking the PR and labelled as drafts on GitHub under @owner's login; run A cannot read or act on them until they are submitted. The merge section does not show #2045 as Ready: it carries the blocker 'Your unsubmitted review: 3 drafts', and the two threads whose last comment sits in that pending review count as neither open nor answered. #77 is a separate Review and submit item for the reviewer's drafted review, with its drafts link, recommendation and blocking count. The two are different things - the owner's own drafts on a run's PR against a reviewer's draft on a PR no run owns - and a reviewer never drafts on a run's PR, so no PR carries both. The report never describes the drafts as edits to run A's comments.",
+      "assertions": [
+        "#2045's item is under Review and submit, worded as submitting the owner's pending review with its 3 draft comments",
+        "the item is labelled as drafts on GitHub under the owner's login, linking the PR",
+        "the merge section shows #2045 with the unsubmitted-review blocker, not as Ready",
+        "#77 stays a separate reviewer's Review and submit item",
+        "the answer never calls the drafts edits to run A's comments"
       ],
       "files": []
     }

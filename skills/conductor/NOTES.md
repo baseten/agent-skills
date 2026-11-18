@@ -229,6 +229,19 @@ expected state, so reporting it each sweep would be noise; it is noted in the
 ledger, and never messaged, because what a peer conductor would do with a message
 is not this contract's to define.
 
+**Why step 7 reads the owner's pending review (owner's report, 2026-11-18, FE Testing
+Guild run):** the owner had draft comments on a run's PR, unsubmitted, and nothing
+put them in front of them: a pending review is invisible to every account but its
+author's, so the run could not act on them either, and a sweep on 2026-11-17 had
+read such drafts as edits to a run's comments. The sweep now reads it per run's PR
+and *Report* makes it a *Review and submit* item labelled as the owner's drafts on
+GitHub. It shares the group with a reviewer's drafted review because the act is the
+same, and the two cannot meet on one PR: `reviewers.md` starts a reviewer only on a
+PR no run owns. "Read by another account, it is unread" is there because the
+reviews list hides a pending review from everyone but its author, so a run's or a
+peer's credential would read "none" where there is one. Scenario:
+`the-owners-pending-review-on-a-runs-pr-is-review-and-submit`.
+
 ## The status snapshot
 
 **Why one snapshot (owner, 2026-11-16):** in a real run the conductor's chat
@@ -531,6 +544,15 @@ a home repository, so that test cannot tell them apart; what keeps a run with it
 own conductor is that a conductor sends its new id only to the runs its ledger
 records. The run-side residual is recorded in `rules/conductor-exchange-notes.md`.
 
+**Why the restart prompt builds a missing work queue (owner's report, 2026-11-18, FE
+Testing Guild run):** the prompt only confirmed the queue's watch "where the ledger
+records one", so a conductor that had never built a queue restarted with nothing
+telling it to, and ran on without one. The dump now records the URL or its absence,
+and where it is absent and the tool is held, the prompt says to build it first. The
+rule that does the building is *Report*'s (*The work queue*, below); this is its
+restatement at the restart's decision point. Scenario:
+`a-restart-with-no-work-queue-recorded-builds-one-first`.
+
 ## 7. Ledger
 
 **Why the ledger's home is configurable (owner's ruling, 2026-11-02):** the work
@@ -610,9 +632,18 @@ changes: the ledger link carries the list, as before.
 "every report links it" read as unconditional, and readers linked, even published,
 a queue in scenarios that never said one could exist. The ledger's record of the URL
 is the one thing a report can check, so a link appears only where it is recorded,
-and a page is created only by a report whose *Needs you* changed, from a session
-holding a tool that publishes one. An unchanged list therefore never creates a
-page; it links one only where it already exists.
+and a page was created only by a report whose *Needs you* changed, from a session
+holding a tool that publishes one.
+
+**Why any sweep now builds the first page (owner's report, 2026-11-18, FE Testing
+Guild run):** that rule left a gap. A conductor whose list never changed while it
+could publish — quiet attended sweeps, then firings — never built a queue, and ran
+two days without one. So a sweep of any kind that finds no URL in the ledger while
+the session holds the Artifact tool builds the first page that turn, read-only as
+*Which page* says for a first publish, and records its URL; the link still appears
+only once the URL is recorded. A session with no such tool is unchanged, which is
+why `an-unchanged-needs-you-list-is-one-line` now says the session holds none.
+Scenario: `a-quiet-sweep-with-no-work-queue-recorded-builds-the-first-page`.
 
 **Why a PR item carries up to four links in that order (owner's ruling, 2026-11-06):** a
 review the owner had drafted in the tracker's review view, not yet submitted, was
@@ -644,7 +675,8 @@ Scenarios: `a-changed-needs-you-republishes-the-work-queue-in-the-same-turn`,
 `a-red-default-branch-is-on-the-page-never-in-a-forge-ledger`,
 `a-tracker-review-draft-is-marked-on-the-queue-item`,
 `a-pr-with-no-linked-issue-says-so`,
-`a-reply-draft-held-in-the-ledger-is-linked-and-labelled`.
+`a-reply-draft-held-in-the-ledger-is-linked-and-labelled`,
+`a-quiet-sweep-with-no-work-queue-recorded-builds-the-first-page`.
 
 **Why the work queue and the check-in are per conductor (owner's ruling, 2026-11-16):** each is bound
 to one session and recorded in its ledger, so a peer's is simply another; the
@@ -691,6 +723,26 @@ repository, output identical to the previous script's in every thread count; the
 a reviewer-last outdated thread, an owner question, a resolved thread, an id missing
 from the bulk read), plus a 403-then-404 case that stops and a non-403 GraphQL
 failure that stops without falling back — a cloud session has not yet run the script.
+**Why a pending review's comments are read first (owner's report, 2026-11-18, FE
+Testing Guild run):** on a cloud session, `pulls/{n}/ccr/review_threads` listed a
+thread whose last comment was in the owner's unsubmitted review. That comment is in
+neither `pulls/{n}/comments` nor `pulls/comments/{id}`, which returned 404, and the
+script stopped, losing the whole merge section. A PENDING review is visible only to
+its author, so `prdata.py` now reads every PENDING review the reviews list returns
+through `pulls/{n}/reviews/{id}/comments` before any single-comment read, and every
+other 404 still stops it. GraphQL's `reviewThreads` includes the viewer's pending
+comments too, with `state: PENDING`, so that route reads the state and both feed one
+rule: a thread whose last comment is in the owner's pending review is the owner's to
+finish, counted neither open nor answered, and the review's id and comment count
+become `owner_pending_review` and `owner_pending_drafts`, which `mergeq.py` shows as
+a blocker. A pending last comment by another login is counted open, failing closed.
+**Run to establish it:** `scripts/test_work_queue_prdata.py`, which runs both scripts
+against a stubbed `gh` over a fixture of that shape, by both routes; against the
+previous `prdata.py` it fails with the reported 404 on `pulls/comments/5001`. The
+GraphQL field was read live on 2026-11-18: `comments(last:1){nodes{state}}` on
+cli/cli#13251 returned `SUBMITTED`; a `PENDING` value has not been observed live
+here, only in the schema and the owner's report.
+
 **Why `gh auth status` is not the test:** it reported failure where every read worked,
 so `work-queue.md` takes a successful `gh api user` as the test of a working `gh`.
 
