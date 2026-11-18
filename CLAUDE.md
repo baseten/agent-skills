@@ -105,7 +105,7 @@ evals (`<skill>#<id>`).
 9. **Stranded work reaches a remote ref before any archive; permission holds name the
    literal tool string; wakes are bounded.** `swarm`, *Releasing a worker*, *Blocked
    workers*; `rules/wake-budget.md`; `rules/conductor-exchange.md`, *The watch after settling*; `conductor`,
-   *6. Dispatch*, `reviewers.md`. backlog-orchestrator#4 #19, swarm#20 #21 #25 #26 #44 #45 #46,
+   *6. Dispatch*, `reviewers.md`. backlog-orchestrator#4 #19, swarm#20 #21 #25 #26 #40 #41 #42 #44 #45 #46,
    implement-issue#14 #19 #20 #21, supervise-prs#87, backlog-orchestrator#92 #111, conductor#5 #8 #21 #31 #35 #38 #39 #75 #76 #78 #90,
    implement-issue#36 #39 #42, merge-stack#12.
 

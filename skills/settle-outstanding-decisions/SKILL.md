@@ -13,7 +13,7 @@ This skill **collects and records; it does not act**. It never implements a ruli
 
 ## Attendance is the precondition
 
-One rule, applied to opposite contexts: **ask only where someone is watching to answer.** `backlog-orchestrator` forbids its workers `AskUserQuestion` and this skill exists to call it — no conflict; the distinguishing property is never the tool, it is attendance (NOTES).
+One rule, applied to opposite contexts: **ask only where someone is watching to answer.** `backlog-orchestrator` forbids its workers `AskUserQuestion` — bar a refused force-push, asked where the owner can open the session — and this skill exists to call it — no conflict; the distinguishing property is never the tool, it is attendance (NOTES).
 
 **Two kinds of caller are intended: a person typing this skill's name, and an orchestrating skill's settled step** — the request `settle-and-merge`, *The settle sequence*, step 4, makes when it settles for `backlog-orchestrator`'s wave or `implement-issue`'s one issue, right after `summarize-wave` returns and gated by the `auto-request-settle` option it applies before requesting. An invocation matching neither caller deserves scepticism: a walkthrough fired at nobody, or at someone who asked a different question, produces a transcript nobody read (NOTES: why the frontmatter no longer forbids model invocation).
 
