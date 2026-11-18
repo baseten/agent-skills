@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 26353,
+      "budget": 26657,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -19,19 +19,19 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/integration-branch.md": {
-      "budget": 2947,
+      "budget": 3323,
       "target": 1500
     },
     "skills/backlog-orchestrator/restart-resume.md": {
-      "budget": 1196,
+      "budget": 1283,
       "target": 1500
     },
     "skills/backlog-orchestrator/schemas/checkpoint-output.md": {
-      "budget": 2310,
+      "budget": 2443,
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 7493,
+      "budget": 8982,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -39,7 +39,7 @@
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 5856,
+      "budget": 5818,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
@@ -55,7 +55,7 @@
       "target": 3000
     },
     "skills/npm-dependency-upgrade-orchestrator/SKILL.md": {
-      "budget": 5360,
+      "budget": 5391,
       "target": 8000
     },
     "skills/owner-steps/SKILL.md": {
@@ -67,11 +67,11 @@
       "target": 3000
     },
     "skills/repair-pr/SKILL.md": {
-      "budget": 3974,
+      "budget": 4002,
       "target": 3000
     },
     "skills/resolve-pr-comment/SKILL.md": {
-      "budget": 8193,
+      "budget": 8236,
       "target": 3000
     },
     "skills/review-docs/SKILL.md": {
@@ -83,11 +83,11 @@
       "target": 3000
     },
     "skills/settle-and-merge/SKILL.md": {
-      "budget": 6426,
+      "budget": 6383,
       "target": 8000
     },
     "skills/settle-outstanding-decisions/SKILL.md": {
-      "budget": 5777,
+      "budget": 5841,
       "target": 3000
     },
     "skills/ship-branch/SKILL.md": {
@@ -95,19 +95,19 @@
       "target": 3000
     },
     "skills/summarize-wave/SKILL.md": {
-      "budget": 2312,
+      "budget": 2330,
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 9587,
+      "budget": 9698,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
-      "budget": 10576,
+      "budget": 11166,
       "target": 8000
     },
     "skills/swarm/runtime-remote.md": {
-      "budget": 1516,
+      "budget": 1539,
       "target": 1500
     },
     "skills/upgrade-npm-dependency/SKILL.md": {
@@ -127,11 +127,11 @@
       "target": 1500
     },
     "rules/agent-policy.md": {
-      "budget": 3023,
+      "budget": 3000,
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2807,
+      "budget": 2979,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 2598,
+      "budget": 3026,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
@@ -163,7 +163,7 @@
       "target": 1500
     },
     "rules/platform-pr-posture.md": {
-      "budget": 1659,
+      "budget": 1635,
       "target": 1500
     },
     "rules/posting-identity.md": {
@@ -179,7 +179,7 @@
       "target": 1500
     },
     "rules/review-feedback.md": {
-      "budget": 2931,
+      "budget": 2844,
       "target": 1500
     },
     "rules/review-trigger.md": {
@@ -187,11 +187,11 @@
       "target": 1500
     },
     "rules/run-start.md": {
-      "budget": 860,
+      "budget": 867,
       "target": 1500
     },
     "rules/wake-budget.md": {
-      "budget": 1657,
+      "budget": 2089,
       "target": 1500
     },
     "rules/watch-and-read.md": {
@@ -199,7 +199,7 @@
       "target": 1500
     },
     "rules/operator-output.md": {
-      "budget": 2045,
+      "budget": 2106,
       "target": 1500
     },
     "skills/write-spec/SKILL.md": {
@@ -219,7 +219,11 @@
       "target": 3000
     },
     "skills/conductor/reviewers.md": {
-      "budget": 944,
+      "budget": 964,
+      "target": 1500
+    },
+    "skills/conductor/work-queue.md": {
+      "budget": 1337,
       "target": 1500
     }
   }

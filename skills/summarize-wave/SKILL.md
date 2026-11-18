@@ -21,11 +21,11 @@ Read-only over the wave's durable state: it ranks nothing, merges nothing, and �
 
 - the wave's scope: manifest/root issue URL, or the explicit issue set — or, for a run with no issue, the brief it was built from, as its PR body's `Source:` line records it (`implement-issue`, *Phase 1, from an existing branch*);
 - its PRs;
-- worker outcomes and review findings from the run, where available.
+- worker outcomes and review findings from the run, where available, and **every worker report the run holds** — a report returned or messaged to the run is on no forge.
 
 ## Sources
 
-Derive everything from **durable evidence** — tracker state, PR bodies, diffs and comment threads (a worker's report comment on its PR included — it is where a deliberately raised caveat lives), completed review findings, CI results — never from the orchestrator's recollection. A restarted session summarizing the same wave must produce substantially the same text. Run context may enrich (why an approach was abandoned, what a reviewer and worker disagreed about); it never replaces the record.
+Derive everything from **durable evidence** — tracker state, PR bodies, diffs and comment threads (a worker's report comment on its PR included, where the worker had no other carrier), completed review findings, CI results — never from the orchestrator's recollection A restarted session summarizing the same wave must produce substantially the same text. Run context may enrich (why an approach was abandoned, what a reviewer and worker disagreed about); it never replaces the record.
 
 # 1. The summary
 
@@ -74,9 +74,9 @@ API `html_url` as the orchestrator recorded it and never rebuilt
 budget was spent, and that the next step is to apply it or lift the budget. A
 **question** thread is not an action point of its own: the walkthrough reads it from
 the question item the run recorded, which is what spares the owner opening the
-thread at all. **An approval-pending reply is not one either**: its fix is pushed, and
-the walkthrough reads it from the item the run recorded
-(`references/review-feedback.md`, *Approval-pending replies*).
+thread at all. **A held reply is not one either**: its fix is pushed, and the
+walkthrough lists it from the item the run recorded
+(`references/review-feedback.md`, *Held replies*).
 
 **The test is the absence of a dispatch, not the reservation.** One reserved thread has
 one: a thread carrying a **recorded code-changing ruling whose change has not been pushed**

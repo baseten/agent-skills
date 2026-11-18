@@ -49,12 +49,35 @@ is what lets a conductor start work gated on it without waiting for a sweep.
 Under `ci-mode: integration-branch` only the integration PR goes into the default
 branch, so the same words give the integration milestones.
 
+**Why the conductor's title names a workstream, and what a shared home repository
+leaves (owner's ruling, 2026-11-16):** the owner runs one conductor per workstream,
+several in parallel and possibly on one home repository, so the title row now
+carries the workstream (`conductor`, *Session titles*). The new-id test in *Pushes* reads
+the sender's sources for the conductor's home repository; two conductors on one
+home repository both pass it. That is left as it is: a conductor sends a new id
+only to the runs its own ledger records (`conductor`, *8. Context clear*), and no
+conductor messages a peer's run, so a run never meets another's id this way. A
+stricter run-side test would have to read the message's text, which this rule
+refuses as evidence.
+
 ## New work, or a fold
 
 **Why a fold and new work need different evidence (round 2 of PR #201's contract
 review):** a fold only ends work, so a comment the owner wrote is enough; new work
 starts dispatch, which protected rule 3 releases only on the owner's reply
 choosing an offered option or a recorded ruling.
+
+## A conductor-posted go
+
+**Why a run checks the conductor's transcript (owner's ruling, 2026-11-11):** the conductor posts under the owner's account, so authorship cannot tell a go the owner chose from one the conductor wrote. The transcript can: an owner input event, not synthetic and not a peer message, choosing the exact option whose text the comment quotes, before the marker's time, in the session that dispatched this run. Each other check closes one way around it — another conductor's session (b), an edit after approval (c), a later owner comment (e), another issue (a). An unreadable transcript leaves the go pending rather than trusting the marker, because the marker is content anyone with the account can write. `list_events` and its owner-input field are not yet observed (`conductor` NOTES); until they are, the form fails closed.
+
+**Why it never folds a run, and is refused at the hold test itself (contradiction pass on #215, 2026-11-12):** a fold's authorship test and `backlog-orchestrator`'s reply watch both asked only for the owner's account and not the run's own write, which a conductor-posted go passes. *What a relay can authorise* already said such a comment releases nothing, but neither decision point did; both now refuse it by its marker, read only to refuse.
+
+**Why (b) matches by id, (c) fails closed and (d) reads the forge's time (blind audit of protected rule 3 on #215, 2026-11-12):** the comment's text is content anyone with the owner's account can write, so a transcript event matched on text would pass a copy (protected rule 2); the write that created the comment's id cannot be copied. An edit history the run cannot read is not evidence of no edit. And the marker's time is text the conductor wrote, so a wrong one would admit an answer given after the post; the forge's creation time is not the conductor's to set.
+
+**Why retirement left the form, and the thread bar narrowed to review threads (owner's rulings, 2026-11-12):** a retirement archives a run, which `swarm` takes only on the owner's ruling, and #214 replaces standing retirement rulings with a sweep and a confirm question; the form now covers a dispatch go and a conditional go only. The thread bar now reads "a review thread another person is in": an epic or issue with other people's comments is where a go ordinarily lives.
+
+**Why it stops at dispatch:** a dispatch go starts work the owner can stop; a released hold, an opened merge gate and a merge cannot be taken back and are read by other parties. On 2026-11-05 runs refused relayed merge rulings, correctly; this form leaves that refusal intact and says so.
 
 ## Relayed rulings
 
@@ -112,6 +135,8 @@ restated at the decision point.
 
 ## The watch after settling
 
+**Why the hand-off was removed (owner's ruling, 2026-11-12, #214):** the conductor is the owner's portfolio view and scheduler, and polling one PR's merge is PR-level supervision the conductor otherwise never does — the messaging audit of 2026-11-02 flagged it as work leaking into the conductor. A settled run already carries a bounded post-settle watch (`rules/wake-budget.md`, *A watch kept past a settled result*); keeping it there removes the hand-off conditions, the conductor-id wake, the deadline carried in the push, the conductor's held-watch cadence and the accepted gap of a conductor dying while holding one. The price is one idle run session per settled PR until its watch ends, which the owner accepted. Archiving a finished run stays the owner's: since the owner's 2026-11-12 ruling, only their answer to the one question an attended turn asks (`conductor`, *Retire a finished run*). The paragraphs below record the hand-off as it stood and are history. **Why a stopped watch is now a push (the protected-rule audit of #214):** the conductor's report still listed "any PR whose watch lapsed" under *Needs you*, which it could see only while it held the watch. With the watch back in the run, a run whose watch stops with its PR open pushes that, so the owner still hears it where they read. Scenarios: conductor `a-settled-runs-watch-stays-with-the-run`, implement-issue #36 #39 #42 rewritten.
+
 **Owner's rulings (2026-11-04), recorded for the protected-rule 9 re-audit:** (1) a conductor that dies after taking over a settled PR's watch leaves that gap accepted — the run keeps no check-in at its deadline; (2) the held watch ignores empty sweeps — it watches until the PR merges or closes, or its deadline passes. Both close the open decisions the re-audit of PR #201 found unrecorded.
 
 **Why the conductor takes the watch (owner's ruling, 2026-11-02):** a settled run and the conductor were both polling the same PR. Once a run is settled and waiting on the owner's merge, the conductor's hourly sweep already reads that PR, so the run's own check-in only duplicates it. The hand-off happens only on a delivered push, so a run whose conductor never heard keeps its watch; and the conductor hands the watch back before its own check-in stops, naming any PR it could not, so the hand-off never leaves a PR unwatched. *(Superseded: the hand-back is gone — see* Two independent reviews of the final head *below.)* Protected rule 9's bound is unchanged: each side's watch stays under the *wake budget* rule.
@@ -121,6 +146,8 @@ restated at the decision point.
 **Why the trigger is never put up for approval (field feedback):** the approval test exists to stop unread prose going out under the owner's name. A review trigger is a fixed token whose exact text the repository documents; there is nothing in it to read, and holding it for approval only delayed review. The trigger rule already exempts it from the footer for the same reason. **Why replies are kept short:** under the usual posting identity a reply reads as the owner's own words, marked only by a footer where it carries one.
 
 ## What a relay can authorise
+
+**Why a relay no longer posts an approved held reply, and why no message changes posting (owner's ruling, 2026-11-16):** the owner ruled that no run posts in a review thread a person other than the owner is in, not even a reply the owner approved, because every post through the GitHub connection carries the agent footer and GitHub has no draft the owner could edit first (`resolve-pr-comment/NOTES.md`, *Replies held for the owner*). The relay's approved-reply item was the one path left for that post, so it is gone, and the closing sentence now names the post among what a relay never authorises. The run-side sentence in the opening paragraph and the status-request bullet came from the incident behind the ruling: a relay quoting an owner ruling about status reports ("replies go only in the threads") was read by a review repair as leave to reply to a human reviewer, live and as the owner. A run reads this file, not the conductor's, so the rule that a message never changes how or whether a run posts is stated here, where the run decides. A conductor's ruling for such a thread is drafted for the owner, its text and link on the work queue (*Relayed rulings*). The re-audit entry below on resolving after a relayed approved reply is history.
 
 **Why a short list, inside the protected rules (owner's ruling, 2026-11-02):** runs were stalling on acts the owner had plainly asked for in the conductor's chat. The owner listed what a relayed ruling may authorise. Each item is fenced by the rule that already governs it, so none widens: marking ready stops at an explicitly held draft (protected rule 8); a body edit only where the body-edit table already allows (protected rule 6); a branch update by the repository's convention, the lease pinned; an approved reply under the hold rule (protected rule 1); a session's own pending review. A merge is never on the list. The relay must pass the owner's-reply test, as a hold release does (protected rule 3). Where the owner's list met a protected rule — publishing a held draft, editing a published body a person has read — the rule won, and the collision is reported for the owner.
 
@@ -147,3 +174,17 @@ restated at the decision point.
 **Why the owner posts them:** the shared permission rule (`rules/authored-write-form.md`, *Issues the run did not create*) bars a run from commenting on an issue it did not create without the owner's permission for that issue, and the owner ruled that a relayed ruling there is drafted for them to post — later narrowed by the exception below. The owner's own comment then passes every test a run applies to an owner's reply — authored by the owner's account, not one of the run's writes — so nothing downstream changes. Rulings on a PR keep the existing relay path.
 
 **Why an approved ruling is posted by the conductor itself (owner's ruling, 2026-11-05):** where the owner approved the complete comment word for word — the full text was in the option they chose — the comment is theirs, and the shared rule's one exception lets the conductor post it on any issue; its approval lives in the conductor's record, never in a footer. Anything the owner did not approve word for word is still drafted for them to post.
+
+**Why a report names no check's outcome (pinning round over the batch integration, 2026-11-17):** a worker's gate lines can now reach a run in a message, where its notes push is refused (`swarm`, *The message*). A reader deciding what to send its conductor read only this file and relayed the passes, attributed and "unverified", in a milestone report; the conductor's ledger would then carry them on the forge, which protected rule 7 bars. The bar already stood in the *authored write form* shared rule, so it is restated here, at the point a run composes a report. Scenario: backlog-orchestrator `a-refused-notes-push-gate-record-stays-in-the-state-block`.
+
+## Questions under a conductor (owner's request, 2026-11-16)
+
+**Why a coordinated run never asks in its own session:** a dispatched run's session
+has nobody in it, and where the owner happens to be, the question still bypasses the
+one place they answer everything, the conductor's work queue. So a question the
+run's skill would put to a person becomes a hold at its site, pushed, and the answer
+is read there by the run's own test (protected rule 3). Tool-permission prompts stay:
+only the session that asks can be granted one. The owner also asked that a run might
+verify an answer by reading the conductor's page; that was not adopted, since the
+page cannot show who wrote a pick (`conductor` NOTES, *The work queue page*), and a
+dispatched session may hold no Artifact tool.

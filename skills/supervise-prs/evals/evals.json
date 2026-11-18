@@ -20,7 +20,7 @@
     {
       "id": 1,
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a supervised PR was passed review-repair-cycles 2, with 0 used. Three review threads are open on the diff: (a) rooted by a human colleague, asking you to rename a variable for clarity; (b) rooted by example-review-bot[bot], asking why you chose this caching strategy over an alternative; (c) rooted by you earlier in this run, a reply you posted in an existing thread. Question: for each thread, is it auto-fixed, escalated, or neither, and why?",
-      "expected_output": "(a) Auto-fixed. It roots on the diff and asks for a code change the pass can make and verify. That the author is a human is irrelevant to that — author identity decides nothing about what is fixed; it decides only that the fix's reply is held for the owner's approval and the thread left open, auto-resolve-comments being off by default. (b) NEEDS_USER, reserved for the owner: it asks for rationale, not a diff, so it is escalated with its URL and what it asks, never answered on the run's own authority, and it holds the PR's merge. That the author is an automated reviewer does not make it repairable. (c) Neither: a comment this run authored is never feedback, which follows from the thread-root test rather than from any author test. No reviewer allowlist or bot test is consulted for any of these classifications.",
+      "expected_output": "(a) Auto-fixed. It roots on the diff and asks for a code change the pass can make and verify. That the author is a human is irrelevant to that — author identity decides nothing about what is fixed; it decides only that the fix's reply is held for the owner to post and the thread left open: no run posts in a thread a person is in. (b) NEEDS_USER, reserved for the owner: it asks for rationale, not a diff, so it is escalated with its URL and what it asks, never answered on the run's own authority, and it holds the PR's merge. That the author is an automated reviewer does not make it repairable. (c) Neither: a comment this run authored is never feedback, which follows from the thread-root test rather than from any author test. No reviewer allowlist or bot test is consulted for any of these classifications.",
       "name": "review-thread-kind-not-author",
       "assertions": [
         "the human-rooted rename is auto-fixed, and the answer states author identity does not decide repairability",
@@ -430,39 +430,41 @@
     },
     {
       "id": 34,
-      "name": "an-approval-pending-thread-is-not-redispatched",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Last pass, a review repair-pr pass on PR #60 fixed a human reviewer's nit and pushed it; resolve-pr-comment held the reply because auto-resolve-comments is false, and the pass returned an approval-pending reply item for the thread, which you recorded. This pass, the thread is still unresolved and nothing new has been posted on it. Questions: (a) is it unhandled feedback, and do you dispatch a review pass for it? (b) what if the reviewer now posts a follow-up in that thread asking for a further change? (c) the settle walkthrough later posts the owner-approved reply into the thread — does that make it unhandled?",
-      "expected_output": "(a) No. An approval-pending thread is recorded as handled, like a reserved or no-action one, so it is not regrouped or redispatched while it waits; redispatching would re-fix a pushed change every cycle. (b) The reviewer's follow-up is new content, so the thread is unhandled again and goes into the next review round. (c) No. The approved reply is this workflow's own write, a settlement record, not new content, so it does not re-admit the thread.",
+      "name": "a-held-thread-is-not-redispatched",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Last pass, a review repair-pr pass on PR #60 fixed a human reviewer's nit and pushed it; resolve-pr-comment held the reply because a person is in the thread, and the pass returned a held-reply item for the thread, with its full text, which you recorded. This pass, the thread is still unresolved and nothing new has been posted on it. Questions: (a) is it unhandled feedback, and do you dispatch a review pass for it? (b) what if the reviewer now posts a follow-up in that thread asking for a further change? (c) the owner posts the held text in the thread themselves — what does that do to the thread's record?",
+      "expected_output": "(a) No. A held thread is recorded as handled, like a reserved or no-action one, so it is not regrouped or redispatched while it waits; redispatching would re-fix a pushed change every cycle. (b) The reviewer's follow-up is new content, so the thread is unhandled again and goes into the next review round. (c) The owner's post is new content too — not this workflow's write — so it is classified; it wants nothing, so it is no-action, which replaces and ends the held record. The thread stays open, holding the merge gate, until the owner resolves it; no run resolves it.",
       "assertions": [
-        "the approval-pending thread is treated as handled and not redispatched",
+        "the held thread is treated as handled and not redispatched",
         "a reviewer's follow-up re-opens it as unhandled",
-        "the walkthrough's posted approved reply is not treated as new content"
+        "the owner's own post is classified as new content wanting nothing, ending the held record",
+        "no run resolves the thread; it holds the gate until the owner resolves it"
       ],
       "files": []
     },
     {
       "id": 35,
-      "name": "an-approval-pending-thread-holds-the-merge-gate-not-finishing",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #60's CI is green, every required review round has completed, no pass is in flight, and its only open thread holds an approval-pending reply: the fix is pushed, the reply is held for the owner. Questions: (a) what outcome does PR #60 take? (b) does the thread count against the clean-review condition of the merge gate? (c) what does your report carry for it?",
-      "expected_output": "(a) finished: the thread is handled and nothing a pass within budget would do remains, so it does not stop the PR finishing. It is surfaced. (b) Yes. Open and its reply unposted, it fails the clean-review condition as any unresolved actionable thread does, so the gate does not open over it, though it does not block settlement. (c) The approval-pending reply verbatim — the thread's API html_url unrebuilt, the human author, the fix SHA and the held reply — the owner's only copy once the run ends.",
+      "name": "a-held-thread-holds-the-merge-gate-not-finishing",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). PR #60's CI is green, every required review round has completed, no pass is in flight, and its only open thread holds a held reply: the fix is pushed, the reply is held for the owner to post. Questions: (a) what outcome does PR #60 take? (b) does the thread count against the clean-review condition of the merge gate? (c) what does your report carry for it?",
+      "expected_output": "(a) finished: the thread is handled and nothing a pass within budget would do remains, so it does not stop the PR finishing. It is surfaced. (b) Yes. Open and its reply unposted, it fails the clean-review condition as any unresolved actionable thread does, so the gate does not open over it, though it does not block settlement. (c) The held reply verbatim — the thread's API html_url unrebuilt, the human author, the fix SHA and the held reply's full text — for the owner to post and resolve themselves; it is the owner's only copy once the run ends.",
       "assertions": [
-        "the PR is finished with the approval-pending thread surfaced",
-        "the approval-pending thread holds the merge gate's clean-review condition",
+        "the PR is finished with the held thread surfaced",
+        "the held thread holds the merge gate's clean-review condition",
         "the thread does not block finishing or settlement",
-        "the report carries the approval-pending reply verbatim with its html_url, the human author, fix SHA and held reply"
+        "the report carries the held reply verbatim with its html_url, the human author, fix SHA and full text, for the owner to post"
       ],
       "files": []
     },
     {
       "id": 36,
-      "name": "a-rejected-thread-is-not-redispatched-until-new-content",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #60's settle returned one rejected held reply — thread T, fix 4a5b6c7 — and your caller passed it to you as a rejected held reply. On the next passes, T is still unresolved. Questions: (a) is T unhandled feedback, and do you dispatch a review pass for it or hold a new reply? (b) what changes if the reviewer posts a follow-up in T? (c) does T hold the merge gate, and does your report carry it?",
-      "expected_output": "(a) No. T is recorded as handled — rejected, keyed by thread and fix 4a5b6c7, so it is neither redispatched nor re-held for the rest of the run. (b) The follow-up is new content, so T is unhandled again and goes into the next review round. A newer fix there would be a fresh held reply. (c) Yes: it is still an unresolved thread, so it holds the gate. The report lists it as 'reply not posted — thread open for you'.",
+      "name": "a-held-reply-gets-no-outcome-and-no-rejected-record",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #60's settle ran with the owner present. The walkthrough listed one held reply — thread T, fix 4a5b6c7 — for the owner to post. The owner said they would word it differently and has not posted anything yet. Your caller passes you nothing back from the settle about T. On the next passes, T is still unresolved. Questions: (a) is there a rejected record for T, and is T unhandled feedback — do you dispatch a review pass for it or hold a new reply? (b) what changes if the reviewer posts a follow-up in T? (c) does T hold the merge gate, and does your report carry it?",
+      "expected_output": "(a) No rejected record: this skill takes in no held-reply outcomes, since no run posts a held reply and the walkthrough returns none. T stays recorded as held, which is handled, so it is neither redispatched nor re-held for the rest of the run. (b) The follow-up is new content, so T is unhandled again and goes into the next review round; a newer fix there would be a fresh held reply. (c) Yes: it is still an unresolved thread, so it holds the gate. The report lists the held reply verbatim with its full text, thread URL and fix SHA for the owner to post and resolve.",
       "assertions": [
-        "the rejected thread is treated as handled and not redispatched or re-held",
+        "no rejected record or held-reply outcome is taken in",
+        "the held thread is treated as handled and not redispatched or re-held",
         "new content makes it unhandled again",
         "it still holds the merge gate",
-        "the report lists it as reply not posted — thread open for you"
+        "the report lists the held reply with full text, thread URL and fix SHA for the owner to post"
       ],
       "files": []
     },
@@ -481,21 +483,22 @@
     {
       "id": 38,
       "name": "a-two-item-thread-keeps-both-records",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a zero-budget review pass on PR #60 returned two items for thread U, a deferred repair and a question item, and on the next pass a held reply for a different thread V was approved and its outcome passed to you. Questions: (a) how many records does U hold? (b) what does V's outcome do to V's record?",
-      "expected_output": "(a) Two: the deferred repair and the question item. A thread with two items keeps both, and only held-reply records replace each other. (b) An approval with its write id clears V's approval-pending record, whether its outcome says resolved or left open; left open, V is reported as 'reply posted — thread left open'.",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: a zero-budget review pass on PR #60 returned two items for thread U, a deferred repair and a question item, and on the next pass the owner posted the held reply for a different thread V in the thread themselves, without resolving it. Questions: (a) how many records does U hold? (b) what does V's outcome do to V's record?",
+      "expected_output": "(a) Two: the deferred repair and the question item. A thread with two items keeps both, and only held-reply records replace each other. (b) The owner's post is new content wanting nothing, so it is recorded no-action, which replaces and ends V's held record. V stays open, holding the merge gate, until the owner resolves it.",
       "assertions": [
         "thread U keeps both records",
-        "an approved outcome clears the approval-pending record"
+        "the owner's own post ends V's held record by a no-action record replacing it",
+        "V still holds the gate until the owner resolves it"
       ],
       "files": []
     },
     {
       "id": 39,
       "name": "a-held-reply-ends-when-the-thread-turns-mixed",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: on PR #60, two threads have an approval-pending reply recorded. Thread A, fix 1a1a1a1: the reviewer then posts 'why is this cached per request?', which the next pass classifies as a reserved question. Thread B, fix 2b2b2b2: the reviewer then asks for a further change, and the pass, at zero review budget, returns it as a deferred repair. The run then settles. Questions: (a) what happens to each held reply? (b) is either thread resolved? (c) how is each listed?",
-      "expected_output": "(a) Both held replies end. A later reserved or deferred-repair record makes each a mixed thread from then on, so its held reply is dropped — not passed to the walkthrough, not asked, not posted. (b) Neither: no run resolves a thread carrying an open reservation or deferred repair. (c) A as 'fix pushed — thread left for you (it also asks a question)' with 1a1a1a1. B as 'fix pushed — thread left for you (a further change is deferred)' with 2b2b2b2.",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: on PR #60, two threads have a held reply recorded. Thread A, fix 1a1a1a1: the reviewer then posts 'why is this cached per request?', which the next pass classifies as a reserved question. Thread B, fix 2b2b2b2: the reviewer then asks for a further change, and the pass, at zero review budget, returns it as a deferred repair. The run then settles. Questions: (a) what happens to each held reply? (b) is either thread resolved? (c) how is each listed?",
+      "expected_output": "(a) Both held replies end. A later reserved or deferred-repair record makes each a mixed thread from then on, so its held reply is dropped — not passed to the walkthrough, not handed over, not posted. (b) Neither: no run resolves a thread carrying an open reservation or deferred repair. (c) A as 'fix pushed — thread left for you (it also asks a question)' with 1a1a1a1. B as 'fix pushed — thread left for you (a further change is deferred)' with 2b2b2b2.",
       "assertions": [
-        "both held replies are dropped, not asked and not posted",
+        "both held replies are dropped, not handed over and not posted",
         "neither thread is resolved",
         "thread A is listed with its fix SHA as also asking a question",
         "thread B is listed with its fix SHA as having a further change deferred"
@@ -607,7 +610,7 @@
     {
       "id": 48,
       "name": "a-held-reply-does-not-block-the-trigger",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #89 has `minimize-ci-runs` true, from repo config, and the key has effect in its repository. Its current head carries [skip ci], has no CI run, and is up to date with main. The workflow producing the required checks declares `workflow_dispatch`, with no job gated to `pull_request` events. No repair pass is in flight. The review round on this head completed. Its one thread, from a person, was fixed earlier, and the one-line reply is held for the owner's approval, so the thread is unresolved. No other finding is open. Question: does CI run, and does the held reply change anything?",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #89 has `minimize-ci-runs` true, from repo config, and the key has effect in its repository. Its current head carries [skip ci], has no CI run, and is up to date with main. The workflow producing the required checks declares `workflow_dispatch`, with no job gated to `pull_request` events. No repair pass is in flight. The review round on this head completed. Its one thread, from a person, was fixed earlier, and the one-line reply is held for the owner to post, so the thread is unresolved. No other finding is open. Question: does CI run, and does the held reply change anything?",
       "expected_output": "Yes, CI is triggered once. A held reply is not a repairable finding open on the head, so the PR is quiescent. The thread stays unresolved and the reply stays held. It holds the merge gate, since an unresolved thread is not a clean review, but not the CI trigger.",
       "assertions": [
         "the held-reply thread does not block the CI trigger",
@@ -709,13 +712,13 @@
     {
       "id": 56,
       "name": "a-footer-appending-transport-confirms-by-run-and-strips-before-a-body-edit",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your posting-identity map records the GitHub MCP server's pair as appending its own footer to every write. (a) You post the review trigger through it on PR #130; the read-back shows the trigger text plus the server's footer. Ninety seconds later a check run starts on the head; a minute after that, the automated reviewer reacts to the trigger comment. Is the trigger confirmed, and by which of those? (b) Later, the PR still a draft, the settle's body reconcile edits the PR body through the same pair; the body currently ends with that server's exact footer text, recorded on the map entry. What do you write? (c) The owner approves a one-line held reply, which you post through the same pair. What do you record for it, and what does its footer change?",
-      "expected_output": "(a) Confirmed by the reaction, not the check run. Through a footer-appending transport a trigger is confirmed only by a reaction or reply to the trigger comment, or by a review on the head where nothing else requested one; a check run alone can belong to another round. The read-back alone bars nothing. (b) Strip that transport's exact known footer text from the end of the body before writing, and no other trailing text, so the transport's own appended footer does not double it. (c) The approved reply is posted and the transport appends its footer; it may carry it. Record it as approved with its write id: the footer changes nothing, and never makes it read as unapproved or re-held.",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your posting-identity map records the GitHub MCP server's pair as appending its own footer to every write. (a) You post the review trigger through it on PR #130; the read-back shows the trigger text plus the server's footer. Ninety seconds later a check run starts on the head; a minute after that, the automated reviewer reacts to the trigger comment. Is the trigger confirmed, and by which of those? (b) Later, the PR still a draft, the settle's body reconcile edits the PR body through the same pair; the body currently ends with that server's exact footer text, recorded on the map entry. What do you write? (c) The owner tells you a one-line held reply, in a human reviewer's thread, is fine and asks you to post it through the same pair. Do you, and what does the footer have to do with it?",
+      "expected_output": "(a) Confirmed by the reaction, not the check run. Through a footer-appending transport a trigger is confirmed only by a reaction or reply to the trigger comment, or by a review on the head where nothing else requested one; a check run alone can belong to another round. The read-back alone bars nothing. (b) Strip that transport's exact known footer text from the end of the body before writing, and no other trailing text, so the transport's own appended footer does not double it. (c) No. No run posts in a thread a person other than the owner is in, not even a reply the owner approved: the reply stays held and is handed to the owner, full text, thread link and fix SHA, to post themselves. The footer is the reason, not a test: this transport would append it to the post whatever was approved, putting an agent-marked comment in the owner's name, and the forge has no draft the owner could edit first. Nothing reads the footer to decide approval either way.",
       "assertions": [
         "the check run alone does not confirm the trigger",
         "the reaction to the trigger comment confirms it",
         "the body edit strips only the transport's exact footer before writing",
-        "the approved reply is recorded as approved with its write id, and the transport's footer is not treated as marking it unapproved"
+        "the held reply is not posted even with the owner's approval; it is handed to the owner, and the transport's unremovable footer is named as why"
       ],
       "files": []
     },
@@ -1059,8 +1062,8 @@
     {
       "id": 85,
       "name": "a-remote-gate-runs-result-is-its-gate-note",
-      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #61 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite (Python 3.12, Postgres 16). No worker gate record was passed. Repair dispatch is `swarm`, and swarm's selected tier is remote sessions, whose return value does not reach this run. #61 is quiescent on head 7a7a7a7. Questions: (a) where does the gate run execute, and how does its result reach you? (b) the gate session ends, and fetching the gate-note ref you assigned that session finds no note on 7a7a7a7: what is #61's local gate record? (c) may the gate session post its results as a PR comment instead?",
-      "expected_output": "(a) As a remote swarm worker whose task is the gate alone — preferred, since a run in this session dies with its container; its result is a gate note: a git note on 7a7a7a7 on a ref this skill assigns that session alone at dispatch (refs/notes/agent-gate/<branch>/<token>), one line per check with outcome, head, toolchain and session, fetched before writing and never force-pushed. (b) No result: every check `not run`, never passed, so the CI condition is not green; the gate then runs once more in this session. (c) No: no write reports verification on the PR; the gate note is the one write that carries a run's results.",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #61 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite (Python 3.12, Postgres 16). No worker gate record was passed. Repair dispatch is `swarm`, and swarm's selected tier is remote sessions, whose return value does not reach this run and whose return channel is absent. #61 is quiescent on head 7a7a7a7. Questions: (a) where does the gate run execute, and how does its result reach you? (b) the gate session ends, no message from it reached you, and fetching the gate-note ref you assigned that session finds no note on 7a7a7a7: what is #61's local gate record? (c) may the gate session post its results as a PR comment instead?",
+      "expected_output": "(a) As a remote swarm worker whose task is the gate alone — preferred, since a run in this session dies with its container; its result is a gate note: a git note on 7a7a7a7 on a ref this skill assigns that session alone at dispatch (refs/notes/agent-gate/<branch>/<token>), one line per check with outcome, head, toolchain and session, fetched before writing and never force-pushed, after a probe push on a throwaway ref; a refused probe leaves no carrier with the return channel absent. (b) No result (no note, and no message counted): every check `not run`, never passed, so the CI condition is not green; the gate then runs once more in this session. (c) No: no write reports verification on the PR; the gate note is the one write that carries a run's results.",
       "assertions": [
         "the answer has the gate run's result arrive as a git note on the head under refs/notes/agent-gate",
         "the answer records every check as not run when no note is found",
@@ -1327,12 +1330,12 @@
       "id": 106,
       "name": "a-swarm-repair-prompt-carries-the-send-clause-only-from-its-input",
       "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the caller passed `repair dispatch: swarm`, saying a worker's return value does not reach the run on its tier. (a) The input also says the caller's return channel is present, with caller session id session_01Orch. (b) The input says nothing about a return channel. You are composing a repair pass's dispatch prompt. Question: does the prompt carry swarm's send clause in each case, and what does the caller do on the push?",
-      "expected_output": "(a) Yes: the prompt carries swarm's send clause with session_01Orch, beside the requirement to record the judgment on the PR before returning. The push wakes the caller, who re-reads that PR record before acting on it - the push is never the record. (b) No send clause: the input does not establish a return channel, and this skill reads nothing from the caller's contract to infer one. The record on the PR is still required in both cases.",
+      "expected_output": "(a) Yes: the prompt carries swarm's send clause with session_01Orch, and that message is the pass's report. It replaces the on-PR record, and the caller writes it to its own state before releasing the pass. Its claims are still checked against the forge. (b) No send clause: the input does not establish a return channel, and this skill reads nothing from the caller's contract to infer one. So the pass records its judgment on the PR under repair before returning.",
       "assertions": [
         "in (a) the prompt carries the send clause with the caller's id",
         "in (b) the prompt carries no send clause because the input does not say the channel is present",
-        "the answer keeps the on-PR record required in both cases",
-        "the answer treats the push as a trigger for re-reading the record"
+        "in (a) the message is the report and no on-PR record is required; in (b) the on-PR record is required",
+        "the answer does not treat the message in (a) as a mere trigger to re-read a PR record"
       ],
       "files": []
     },
@@ -1406,6 +1409,42 @@
         "the answer recovers no follow-ups from the footered reply",
         "the answer says the footer is not evidence the reply is the workflow's own",
         "the answer files the re-raised finding again rather than linking the issue read off the reply"
+      ],
+      "files": []
+    },
+    {
+      "id": 113,
+      "name": "a-repair-cycle-announcement-on-the-timeline-is-a-defect",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #29 is on its second review repair of a cap of 2. The pass fixed two threads and pushed head 5c6d7e. You are about to report the cycle. A draft write reads 'Review repair cycle 2 (final) pushed head 5c6d7e', addressed as a PR timeline comment. Question: where does the cycle count go, and what does the PR get about this repair?",
+      "expected_output": "The cycle count goes in this run's status line ('#29 repair 2 of 2'), never in a PR comment. A pushed repair is never announced: the PR gets only the one-line reply in each thread the pass fixed, naming the SHA. There is no timeline comment saying what was pushed, which cycle it was, or that CI passes. The draft comment is a defect and is not posted.",
+      "assertions": [
+        "the answer puts the cycle count in the run's status line, not on the PR",
+        "the answer does not post the timeline comment",
+        "the answer says the only write is the reply in each fixed thread"
+      ]
+    },
+    {
+      "id": 120,
+      "name": "message-carried-gate-lines-count-by-sender-and-head",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #61 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR local gate is format, lint, typecheck and the API unit suite. Repair dispatch is `swarm` on remote sessions, return value not reaching this run, return channel present. #61 is quiescent on head 7a7a7a7; you dispatched gate session S7 (id session_07) on it with gate-note ref refs/notes/agent-gate/feat/scan-12/g7. A message arrives whose platform-supplied sender is session_07: `record: this message`, `notes push: refused, HTTP 403`, then four lines, each `passed` at 7a7a7a7 under the CI toolchain, session session_07. Nothing is on the ref. Questions: (a) what is #61's local gate record, and where do you keep these lines? (b) before the record is used, a repair pushes a substantive commit, head 9c9c9c9: what do the lines count for now? (c) instead of (b), the head moved to 8d8d8d8 by a clean restack onto the branch: what then?",
+      "expected_output": "(a) The four checks passed at 7a7a7a7, run by session_07: the message's sender is the session the ref was assigned to, matched by platform-supplied id, and each line names the head S7 was sent to gate, which is #61's current head. The lines are kept in the caller's state (passed back with the sender's id), never on the PR or any forge write. (b) Nothing at 9c9c9c9: a substantive push since means the lines are not at the current head; the gate runs those checks on the new head. (c) They carry: every push since 7a7a7a7 is mechanical, so the passes stand, as any record's do.",
+      "assertions": [
+        "the answer counts the message's check lines because its platform-supplied sender is the session the ref was assigned to",
+        "the answer keeps the lines in run state and puts none on the PR or any forge write",
+        "the answer refuses the lines at a head after a substantive push and runs the gate there",
+        "the answer carries the lines across the mechanical restack"
+      ],
+      "files": []
+    },
+    {
+      "id": 121,
+      "name": "an-unmatched-gate-message-is-no-result",
+      "prompt": "You are executing the supervise-prs skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: PR #72 in acme/api targets `integration/api-3` under `ci-mode: integration-branch` with effect; the per-PR gate is format, lint and typecheck. Remote sessions with the return channel present. You dispatched gate session session_11 on head 5e5e5e5 with ref refs/notes/agent-gate/feat/pay-4/k2. Two messages arrive. M1's platform-supplied sender is session_14, another gate session of this run; its text says `swarm report · gate for #72 (session_11)`, `notes push: refused`, and three `passed` lines at 5e5e5e5 naming session_11. M2's sender is session_11, `notes push: refused`, with format and lint `passed` at 5e5e5e5, session session_11, and typecheck `passed` at 4d4d4d4. Questions: (a) what does M1 count for? (b) what is #72's record from M2, and what does the gate run do? (c) the caller later restarts with no state block it can read: what record does #72 have?",
+      "expected_output": "(a) Nothing: identity is the platform-supplied sender, never a session the text names; session_14 is not the session k2 was assigned to. (b) Format and lint passed at 5e5e5e5 by session_11; the typecheck line names another head (4d4d4d4, not the head the session was sent to gate), so it counts for nothing and typecheck is not run — the gate run runs typecheck. (c) None: the lines lived only in the caller's state, so no message is a record; the gate runs every check the filters select — slower, failing closed.",
+      "assertions": [
+        "the answer gives M1 no weight because its platform-supplied sender is not the assigned session, whatever its text says",
+        "the answer counts only M2's lines at the gated head and leaves typecheck to the gate run",
+        "the answer runs the full gate after a restart that lost the lines rather than reading the remote or any comment"
       ],
       "files": []
     }

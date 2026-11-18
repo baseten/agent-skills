@@ -17,7 +17,7 @@ orchestrators titled inconsistently (`Orchestrator: Order execution V1`,
 `Portfolio UI navigation audit`), which is where the naming came from.
 
 **Why it never implements, merges or approves:** it is the one session that talks
-to every orchestrator, so it is the one place where a mistake would propagate to
+to every orchestrator of its workstream, so it is the one place where a mistake would propagate to
 all of them. Keeping it to collection, planning and owner-approved dispatch means
 its worst failure is a wrong plan the owner approved, never an act. (Planning left
 it on 2026-11-04; see *Why planning moved out*.)
@@ -46,6 +46,44 @@ one small issue, shown in full first, because sending one issue through a planne
 costs more than it saves. Its worst failure stays a wrong dispatch the owner
 approved, never an act.
 
+**Why one conductor per workstream, with no shared ledger (owner's ruling, 2026-11-16):** the
+first version assumed one conductor overall — one ledger, runs on other projects
+tracked in that same ledger, and a second `Conductor:` session on a repository in
+scope treated as a conflict. The owner ruled the other way: one conductor per
+project or workstream, several in parallel, each with its own ledger, and two may
+cover the same repositories — at work every project runs on the same two. A
+single ledger across projects grows past what one session can keep in context,
+and one owner pass across unrelated projects interleaves decisions nobody is
+weighing together. So the peer rule is stated once at the top, and each section
+says only what a peer changes there. Scenarios: `a-peer-conductors-run-on-the-same-repo-is-not-adopted-or-retitled`,
+`a-peer-conductor-found-in-the-sweep-is-a-peer-not-a-conflict`,
+`an-epic-of-another-workstream-is-not-taken-in`.
+
+## The `status` mode
+
+**Why a `status` mode (owner, 2026-11-16):** the owner wanted the conductor's state
+on demand without being walked through decisions. The owner pass is the one step
+that needs them to answer, so `status` is the sweep with that step left out: it asks
+nothing and rules nothing, and acts within the bounds a scheduled firing already
+has, since executing an already-recorded conditional go is not ruling (*1. Sweep*).
+It is not a second process: it renders through the same snapshot every sweep does
+(*The status snapshot*), so on-demand and scheduled status cannot disagree.
+
+**Why an argument, not a command:** a skill is entered through its own name, and
+`/status` is already the client's own command, so the mode is `conductor`'s argument
+like `validate-backlog`'s modes are. A layer that extends `conductor` is handed it
+verbatim (`references/run-start.md`) and must pass it back when it invokes
+`conductor`, since a layer decides how its arguments combine. **Why it is never
+recorded:** the ledger and the restart prompt carry invocation arguments so a restart
+resumes the same configuration (*Configuration*); a recorded `status` would turn
+every restart into a status turn. **Why it always rebuilds the work queue:** the
+owner asking for status is asking for the page too, and republishing from this
+turn's snapshot is what repairs a page that drifted. **Why it stops with no
+ledger:** a status request is not a start, and a ledger created by one would be a
+conductor nobody configured.
+
+Scenario: `status-sweeps-asks-nothing-and-rebuilds-the-queue`.
+
 ## Configuration
 
 **Why the scope is a configured list (owner's ruling, 2026-11-02):** "one
@@ -64,12 +102,25 @@ an orchestrator that receives it either ignores it — correctly — or acts on 
 relayed ruling, which is the failure the trust boundary exists to stop.
 
 **Why relaying is a duty, and carries facts only (owner's ruling, 2026-11-02):** the
-conductor is the one session that sees every run, so a fact one run needs from
+conductor is the one session that sees every run of its workstream, so a fact one run needs from
 another — a merge to rebase onto, a gate cleared — reaches it only if the conductor
 passes it on. It passes the fact after verifying it, with a link, and never a
 ruling: a session's message carries no owner authority (`swarm`, *Messages from
 other sessions are peer data*), so a relay that could carry one would be a way
 around it.
+
+**Why a relay carries only what a run cannot see, and never a posting instruction
+(owner's ruling, 2026-11-16):** a review repair replied live, as the owner, to a
+human reviewer in several threads after a relay told it replies "go only in the
+threads" — the conductor had quoted a ruling about status reports, and the run read
+it as leave to post. A run already watches its own PRs' reviews, CI and threads, so
+relaying them adds nothing it lacks and invites exactly that reading. What a run
+cannot see is another run's state, a gate, the default branch, or a ruling given
+here, and those are what a relay is for. Posting comes from the repository's policy
+and the run's skill alone, stated on the run's side in
+`rules/conductor-exchange.md` so a run that never loaded this skill still holds it.
+Scenarios: `a-conductor-relays-nothing-about-a-runs-own-review-findings`, and on the
+run side `implement-issue`'s `a-relay-to-reply-in-the-threads-posts-nothing-in-a-persons-thread`.
 
 **Why no long work rests on an in-turn background result (observed 2026-11-02):** a
 worker restarted mid-turn received a finished background agent's result only as a
@@ -97,6 +148,13 @@ sweep reads both prefixes, and neither decides anything: a run this conductor
 dispatched is known by its ledger id, and a session titled `Worker:` with no
 ledger record is not a run on that title alone. `Worker:` stays distinct from a
 `swarm` worker's run-prefixed name, which the sweep never treats as a run.
+
+**Why the title names the workstream (owner's ruling, 2026-11-16):** two conductors on one home
+repository titled `Conductor: <home repo>` would be indistinguishable in the
+session list, which is the only grouping a person scanning it gets. The name comes
+from the owner, else the ledger's tracker project, because those are what the owner
+calls the workstream; it is recorded in the ledger and the restart prompt so a
+clear does not lose it. The title stays a finding aid: nothing decides on it.
 
 ## 1. Sweep
 
@@ -133,6 +191,80 @@ there; executing a conditional go is not ruling, since the owner already chose.
 compacted and lost, and the epic outlives all of them. A stream whose orchestrator
 is gone still has open PRs and open decisions.
 
+**How a peer's run is told apart (owner's ruling, 2026-11-16):** the sweep found runs by title and
+by structure, then retitled and asked them. With two conductors on one repository
+each would find, retitle and message the other's runs. Three marks were weighed:
+
+- **this ledger's record** — decides "mine", as before, but says nothing about
+  whose an unrecorded session is;
+- **`parent_session_id`** — platform-supplied provenance, set on a session another
+  session creates. `swarm`, *Runtime*, already makes it the authoritative key for
+  sessions a run created, and this file's own note above records orchestrators
+  observed as the `parent_session_id` of the `bo/` workers they created. A run a
+  conductor dispatches is created the same way (`create_session`), so it carries
+  that conductor as its parent. This is the mark used;
+- **the dispatch prompt's conductor id** — every run records it in its state block,
+  but that lives in the run's own output, which a sweep cannot read without asking,
+  and asking is the message a peer's run must not get.
+
+So a session whose parent is another session is that session's, whatever its title
+or structure, and a session whose parent is this conductor (or an earlier id of
+it, which the ledger now keeps for this purpose) is this conductor's even where a
+crash lost its ledger row. **What provenance cannot see** is a run nobody created
+from a session — one the owner started by hand, then adopted by a peer; adoption is
+recorded only in the adopting ledger, which no peer reads. Where a peer covers the
+repository, such a run is therefore a doubtful match, as a non-structural match
+already was, and the owner's go adopts it. Where no peer is in sight the sweep
+behaves exactly as before, so a single-conductor deployment loses nothing. The
+`Conductor:` title is used here only to narrow what this conductor does — a wrong
+title can make it more cautious, never make it act — which is why a finding aid is
+enough for it. Not yet observed: a `get_session` on a run a conductor created,
+showing the conductor as its parent; the first two-conductor sweep should confirm
+it, and where it does not, every peer's run falls to the doubtful-match case,
+which still never acts.
+
+**Why a peer is not a conflict (owner's ruling, 2026-11-16):** the earlier text made a second
+`Conductor:` session something to put to the owner. Under the ruling it is the
+expected state, so reporting it each sweep would be noise; it is noted in the
+ledger, and never messaged, because what a peer conductor would do with a message
+is not this contract's to define.
+
+## The status snapshot
+
+**Why one snapshot (owner, 2026-11-16):** in a real run the conductor's chat
+summary, its work-queue page and its ledger drifted apart. The page dropped items
+the chat still showed, and the check-in prompt went stale, still carrying
+comparands an earlier turn had read. Each output had been assembled separately —
+the chat from one pass, the page from another read, the prompt from whenever the
+check-in was last armed — so nothing made them agree. One snapshot per sweep,
+rendered by every output of that turn, makes agreement a property of the
+construction rather than of care.
+
+**Why a structure in the turn, not a record:** *7. Ledger* says the body is the
+state, and the work queue is a view because a second store drifts from the first
+(*The work queue*). A snapshot persisted anywhere would be a third store. Held in
+the turn and read by no later one, it cannot outlive the sweep that took it; the
+ledger, updated from it, stays what a restart reads.
+
+**Why "every output that shows that kind of item", not "every output":** the outputs
+legitimately differ in what they carry — a forge ledger never holds a check's
+outcome (protected rule 7), a `github-issue` ledger only names held replies, and
+the chat reprints *Needs you* only when it changed (`references/operator-output.md`).
+The rule binds membership within a kind, which is what drifted, and makes every
+abbreviation count from the same snapshot, so an unchanged line's count matches the
+page it links.
+
+**Why the check-in prompt is replaced when it differs:** the prompt is the next
+firing's comparison baseline. Re-armed only after a delta, it kept the comparands
+of the turn that armed it while attended turns moved the ledger, so a firing could
+report as new what the owner had already seen, or miss a change. The armed check-in
+is replaced, keeping its time, so one check-in remains (*The fallback check-in*);
+`rules/wake-budget.md`'s re-arm at an attended invocation's first step is
+unchanged and is simply superseded by the turn's own snapshot at its end.
+
+Scenarios: `a-needs-you-item-in-the-chat-is-on-the-queue-from-one-snapshot`,
+`a-firing-refreshes-the-check-in-prompt-from-its-own-snapshot`.
+
 ## 2. Ask
 
 **Why the request is never awaited:** a cross-session reply arrives as a new turn,
@@ -152,6 +284,14 @@ with the session.
 
 ## 4. Owner pass
 
+**Why held replies are listed, not asked, and a ruling for a person's thread is
+drafted (owner's ruling, 2026-11-16):** no run posts in a review thread a person
+other than the owner is in, not even a reply the owner approved
+(`resolve-pr-comment/NOTES.md`, *Replies held for the owner*). Asking approve, edit
+or reject before a post nobody may make only adds a step, so the pass lists each
+held reply with its text, link and fix SHA for the owner to post, and a ruling
+whose site is such a thread is drafted for them, its text on the work queue.
+
 **Why the ruling's record follows `settle-outstanding-decisions`:** that skill's
 records are what the orchestrators' settled steps already read, and its rule —
 the complete comment shown and approved — is what makes the record the owner's
@@ -165,6 +305,14 @@ where that is tested.
 **Why the conductor asks about a held force-push but cannot approve it (owner's ruling, 2026-11-11):** the owner is in the conductor session, not the run's, so asking there surfaces the decision where they already are, and the ledger records it. But the run's permission mode accepts approval only in its own session, so the conductor's answer is a decision, not the approval: the chat says plainly that the click still has to happen in the run's session, and links it.
 
 **Why the recorded answer is never relayed, and the limits' scope names *Branch updates* (PR #216, blind audit):** an answer written to the ledger as a decision reads, to a later pass, like a ruling to carry to the run, and a relayed approval is exactly what the run's permission mode refuses; so the owner-pass sentence says it is never relayed. The dispatched-session limits had gained a force-push line while their scope sentence still claimed to restate only protected rules 1, 4 and 6, so the sentence now names the *agent policy* rule's *Branch updates* as the governing text. The *Needs you* line names the runtime's literal tool string as well as the command, per protected rule 9.
+
+**Why a peer's decisions and owner-step order stay with the peer (owner's ruling, 2026-11-16):**
+the owner pass is one place the owner decides a workstream's questions; putting a
+peer's there would ask them twice, and a ruling recorded from one could race the
+other's. Manual-steps epics are per repository, so two conductors may both post an
+order there: each names its workstream and supersedes only its own, so neither
+erases the other's. A run claimed by a peer and by this ledger is the owner's call,
+since neither conductor can tell the other's run anything.
 
 ## 5. Intake and replan
 
@@ -190,6 +338,18 @@ plan's cost read as zero. The *settled, waiting on owner merge* state exists for
 the same deployment: a stream there is not stalled, and work gated on it starts
 from the owner's merge, which only a forge read sees.
 
+**Why an epic of another workstream is not taken in, and why replanning narrows
+(owner's ruling, 2026-11-16):** an epic belongs to the workstream whose tracker project or recorded go
+holds it; taking it in here would put one stream in two ledgers. Every conductor
+on a repository also sees every issue opened there, so "unscheduled issues since
+the last sweep" would pull a peer's follow-ups into this DAG. The set narrows to
+this workstream's, and an issue under none goes to the owner rather than to
+whichever conductor swept first. Collisions with a peer's PRs — files, version
+bumps, migrations — stay each run's own preflight's, and are reported where seen.
+**The default branch's CI and deploy are swept by every conductor on it**, which
+duplicates a read but no write, and each owner report needs that fact; it is left
+as is.
+
 ## 6. Dispatch
 
 **Why a conditional go, and why it stays within protected rule 3 (owner's audit
@@ -198,6 +358,8 @@ the #967 batch when #2049 wave 5 merges" — and then had to come back to say go
 go is recorded where any go is, so it is the owner's own recorded choice; what the
 sweep adds is only the verification that the stated condition holds on the forge.
 A condition the forge cannot show is not interpreted; it waits.
+
+**Why a verified plain go needs no second confirmation (owner, 2026-11-15):** a plain go the owner posted after the pass that drafted it waited for the owner to say "go" again in chat, while a conditional go verified the same way was already executed by a scheduled firing. Both are the owner's recorded word, read back at their site by id, authorship, edit state and supersession; the second confirmation added a round trip and no authority. So the sweep (*1. Sweep*, step 9) executes either once verified. What a firing may not do is unchanged: it rules nothing, and a go found only in the ledger, edited, superseded, or carrying the footer of one of this skill's own writes is no go. Scenarios: `a-plain-go-posted-later-is-dispatched-by-a-scheduled-firing`, `a-footered-go-on-the-owners-account-is-not-a-go`.
 
 **Why seeds are verified gate by gate, and carry standing rulings (owner's audit
 item 4):** on 2026-10-31 a seed said a gate still held that an owner comment had
@@ -288,6 +450,11 @@ failed its environment setup, and the create call did not warn of it. The sessio
 sidebar nests only one level, so a title's prefix and repository are the only
 grouping a person scanning the list gets.
 
+**Why a reviewer's candidate test counts a peer's runs and reviewers (owner's ruling, 2026-11-16):** a
+PR a peer's run opened, or one a peer's reviewer is already drafting, failed none
+of the earlier tests, which read only this ledger; two drafted reviews of one PR,
+or a review of the owner's own run's PR, is what those tests exist to stop.
+
 ## 8. Context clear
 
 **Why (2026-10-31, the owner's instruction):** a conductor runs for days and its
@@ -357,6 +524,13 @@ in-flight supervision that its checkpoints only partly carry. Its own checkpoint
 and auto-compaction are what its contract was written for; a boundary is where a
 fresh session costs nothing, which the reuse rule already says.
 
+**Why a new id goes only to this ledger's runs (owner's ruling, 2026-11-16):** a run adopts a new
+conductor id from its sender where that session's sources include the conductor's
+home repository (`rules/conductor-exchange.md`, *Pushes*). Two conductors can share
+a home repository, so that test cannot tell them apart; what keeps a run with its
+own conductor is that a conductor sends its new id only to the runs its ledger
+records. The run-side residual is recorded in `rules/conductor-exchange-notes.md`.
+
 ## 7. Ledger
 
 **Why the ledger's home is configurable (owner's ruling, 2026-11-02):** the work
@@ -372,6 +546,11 @@ The row records what the run's reports said — `not reported` where none carrie
 line, which is itself the finding — and nothing the conductor inferred. The
 conductor's own line opens its first report, under the same rule
 (`rules/run-start.md`).
+
+**Why the ledger keeps earlier session ids and the peers seen (owner's ruling, 2026-11-16):** the
+provenance test in *1. Sweep* needs every id this conductor has had, or a run
+created before an id change would read as another session's. Peers are recorded
+so the next context, after a clear, does not rediscover and re-report them.
 
 ## The work queue
 
@@ -389,8 +568,9 @@ reads as current.
 page holding something recorded nowhere else, or a tick the conductor acted on,
 would be a second store of open items, and the two would drift as the hand-made
 page did. So it renders the report's own *Needs you*, nothing is recorded only on
-it, and a viewer's ticks, kept only in their browser, are a convenience the
-conductor never reads. The ledger records the page's URL so a restart after a clear
+it, and a viewer's ticks are a convenience the conductor never acts on. Since
+2026-11-16 they are saved on the page and carried across a republish, so the
+conductor no longer overwrites them; carrying a mark is not acting on it. The ledger records the page's URL so a restart after a clear
 republishes to the same place.
 
 **Why it renders the report, not the ledger (contradiction pass, 2026-11-06):** the
@@ -400,10 +580,11 @@ session* item, and a forge ledger never carries a check's outcome, so a red defa
 branch under *Clear a failure* is in the report but not the ledger (protected rule
 7). Rendering the report keeps the owner's point — no second store — without
 dropping either. *Rules* says a check's outcome may sit on the page because it is
-not a forge write.
+not a forge write. Since 2026-11-16 the report and the page render the same
+snapshot (*The status snapshot*), which is what makes "renders the report" hold.
 
 **Why private, and never shared:** its items can carry the owner's internal work —
-issue titles, decisions, held replies' sites — on whatever repositories the
+issue titles, decisions, held replies' sites and text — on whatever repositories the
 conductor is scoped to. This repository is public and its skills run at work and
 at home alike, so the contract states the privacy itself rather than leaving it to
 the platform's default.
@@ -436,10 +617,14 @@ page; it links one only where it already exists.
 **Why a PR item carries up to four links in that order (owner's ruling, 2026-11-06):** a
 review the owner had drafted in the tracker's review view, not yet submitted, was
 invisible from a queue item linking only the forge PR, so the item read as nothing
-waiting on them. The tracker's review page sits beside the PR, marked with the draft count, because that is where the drafts are; the closing issues follow, or "no linked issue", because an item with no issue is a question in itself. **The order changed on the owner's ruling of 2026-11-11** to worker session, PR, review page, issue, in the chat and on the page alike: the session is where the owner acts on a run, so it leads, and one order everywhere means the owner's eye finds each link in the same place. Drafts held elsewhere, such as replies
-held for the owner's approval because a person is in the thread (`resolve-pr-comment`,
-*Replies held for approval*), are linked to their text or named where held, as
-*Approve drafts* is in the chat. A draft's location is a claim about current state,
+waiting on them. The tracker's review page sits beside the PR, marked with the draft count, because that is where the drafts are; the closing issues follow, or "no linked issue", because an item with no issue is a question in itself. **The order changed on the owner's ruling of 2026-11-11** to worker session, PR, review page, issue, in the chat and on the page alike: the session is where the owner acts on a run, so it leads, and one order everywhere means the owner's eye finds each link in the same place. Drafts held elsewhere were linked to their text or named where held, as
+*Approve drafts* is in the chat. **Since the owner's ruling of 2026-11-16, a reply or
+ruling the owner is to post in a thread where no run posts** (`resolve-pr-comment`,
+*Replies held for the owner*) **is carried on the page in full** — text, the
+thread's recorded `html_url` and the fix SHA — because the owner now copies, edits
+and posts it themselves, and a page that only names where the text is held makes
+them go and fetch it. The page is private and is not the ledger, so the
+`github-issue` ledger's rule of naming such drafts only does not reach it. A draft's location is a claim about current state,
 so it is read each sweep (*establish, do not assume*), never carried from memory,
 and a change in a PR item's links or draft count republishes the page even where
 the list is otherwise unchanged: otherwise a submitted draft would stay counted on
@@ -461,11 +646,135 @@ Scenarios: `a-changed-needs-you-republishes-the-work-queue-in-the-same-turn`,
 `a-pr-with-no-linked-issue-says-so`,
 `a-reply-draft-held-in-the-ledger-is-linked-and-labelled`.
 
+**Why the work queue and the check-in are per conductor (owner's ruling, 2026-11-16):** each is bound
+to one session and recorded in its ledger, so a peer's is simply another; the
+wording says so only so that "one check-in, never two" is not read across
+conductors.
+
+## The work queue page (`work-queue.md`, owner's request, 2026-11-16)
+
+**Why the template, the scripts and the schema ship with the skill:** the owner ran
+the page by hand from a template, a state file and four scripts, and asked for them
+in the skill. They are generalised: every link is a recorded URL, the title names
+the workstream, and nothing names a repository, a tracker or a person. A layer adds
+its own `--pending-blocker` patterns for checks that wait on a person.
+
+**What changed on the way in:** the owner's scripts were written and run in a cloud
+session, where the thread read's REST route, `pulls/{n}/ccr/review_threads`, is the
+one that works. It is cloud-only: a local session gets a 404 for it (run 2026-11-16,
+`gh api repos/baseten/agent-skills/pulls/223/ccr/review_threads` → `Not Found (HTTP
+404)`), which the first local port read as an empty list, so every count came out 0.
+GraphQL is the reverse, working locally and refused in cloud (next entry), so
+`prdata.py` reads by whichever route answers, paginates every list, and stops on
+any failed read. `mergeq.py` and `prune.py` read the sweep's
+`prdata.py` output instead of GitHub, so the page renders the turn's one snapshot.
+`prune.py` keeps an unposted reply on a merged PR: its asker is still unanswered.
+
+**Why threads are read by two routes (observed 2026-11-17, a Claude Code cloud conductor
+session):** there, `python3` 3.13 with the standard library and `gh` 2.89 were
+present; `gh auth status` reported the token invalid while `gh api` REST calls
+succeeded through the session's proxy, and `gh api user` returned the owner's login.
+`gh api graphql` returned HTTP 403, "GitHub GraphQL is not available from Claude Code
+sessions; use the REST API", pointing review threads at `GET
+/repos/{owner}/{repo}/pulls/{n}/ccr/review_threads`. That route answered there, each
+entry shaped `{"comment_ids": [...], "path": ..., "line": ..., "resolved": ...,
+"outdated": ...}` with the ids in thread order; a comment's author and body come from
+`pulls/{n}/comments` (one paginated read) or `pulls/comments/{id}`. Locally the
+opposite holds: the `ccr` route is a 404 and GraphQL works. So `prdata.py` tries
+GraphQL, falls back on a 403 to the `ccr` route, and stops where neither answers; both
+routes feed one counting function, so the answered and "fixed, needs a reply" rule
+cannot differ by route. The session also exposes `ccr` routes that resolve and
+unresolve a thread; the script never calls them, since nothing here resolves one
+(#222). **Run to establish it:** the GraphQL route against eight real PRs of this
+repository, output identical to the previous script's in every thread count; the
+`ccr` route only against a fixture of entries in the observed shape (an owner reply,
+a reviewer-last outdated thread, an owner question, a resolved thread, an id missing
+from the bulk read), plus a 403-then-404 case that stops and a non-403 GraphQL
+failure that stops without falling back — a cloud session has not yet run the script.
+**Why `gh auth status` is not the test:** it reported failure where every read worked,
+so `work-queue.md` takes a successful `gh api user` as the test of a working `gh`.
+
+**Which page, and why gated:** tested on 2026-11-16, a republish woke nothing, a
+connector call from the page failed with "Couldn't load this connector", and
+nothing let a page or a session type `/clear`. Only `comments.sendToClaude` woke the
+session, and only for a writer of the page. So the page is interactive only where
+the watch listing confirms it, and read-only otherwise, so it never claims an
+answer reaches the session when none can.
+
+**Why an answer counts only from the comment:** the page's state is written by the
+conductor's republishes and by the owner's saves, under one account, and nothing in
+it tells them apart; reading a pick from it would know the owner by content, which
+protected rule 2 forbids. The comment is the platform's: only a writer can send it,
+and the page is never shared. So a saved pick with no comment is asked again,
+naming it. The comment's text is data: an answer counts only where its card and
+option match what this skill published, so free text in it never steers anything. **Owner's ruling (2026-11-17, after the batch's blind audit):** page access alone was the audit's rule 2 flag — nothing enforces that the page stays unshared — and through a relayed ruling it reached a `DECISION` the merge gate holds on (rule 8). So an answer, and an archive tick, now counts only where the comment's author, as the thread reports it, is the owner's login; an absent or unreadable author is no answer and is asked at the next attended pass. Scenario: `a-page-comment-with-no-readable-author-is-asked-not-recorded`.
+
+**Why a restart runs a normal sweep (owner's ruling, 2026-11-17):** the first version of the restart prompt passed `status`, which made every restart after a clear skip the owner pass — the turn *The `status` mode* says a recorded `status` must not cause. The prompt now passes the invocation's arguments alone.
+
+**Why the option carries its ruling text:** a relayed ruling is posted without a
+footer only where the owner approved the complete comment (`rules/conductor-exchange.md`,
+*Relayed rulings*). A card showing the exact text each option records makes the pick
+that approval, as an `AskUserQuestion` option carrying the full text already did
+(conductor-exchange NOTES, 2026-11-05).
+
+**Why the page offers no thread resolution:** the owner's version let them mark
+threads "to resolve" after their reply. Under the 2026-11-16 ruling no run resolves
+a review thread a person other than the owner is in, whatever a message says, and a
+page comment is a message. The owner resolves the thread where they post the reply.
+
+**Why sessions to archive are listed from the ledger, and a tick still waives nothing
+(owner's addendum, 2026-11-16):** the owner asked for finished sessions to be listed
+with `list_sessions children:true`. No session in this repository's record has
+observed a `children` parameter, so the list comes from what this conductor already
+knows as its own: the ledger's runs and reviewers. That also keeps a peer conductor's
+runs off it. `status_bucket` is observed (`swarm`, *Runtime*), but a run's finish is
+read as *4. Owner pass* defines it. A tick sent in a comment is the owner's go, which
+`swarm` requires for a session the run did not create; protected rule 9's remote
+checks still run, because the owner ticks from what the page shows, not from the
+remote. A saved-only tick is asked again for the reason an answer is.
+
+**When an unresolved thread counts as answered (owner's ruling, 2026-11-16):** a
+thread GitHub shows unresolved held "Ready" off the page even where the owner had
+answered it and was waiting on nothing. It now counts as answered where its last
+comment is by the owner's account and has no `?`; a later reviewer reply reopens it.
+The ruling first also counted an outdated thread as answered; the owner corrected
+that the same day: a fixed thread still needs their reply, so it stays open and is
+shown as "fixed, needs a reply", which is the item the owner acts on. Authorship is the comment author's login, never a footer or the text (protected
+rule 2). This changes only how the page and the report read a PR: nothing resolves
+the thread, which stays with the owner (#222), and the merge gate (`settle-and-merge`,
+*The merge gate*, protected rule 8's home) reads threads by its own rules, so
+"answered" never means gate-passing. Field names checked with real queries on
+2026-11-16: `gh api graphql` on cli/cli#14951 returned `isResolved`, `isOutdated` and
+`comments(last:1){nodes{author{login} body}}`; on cli/cli#13251, `prdata.py` read 3
+open threads, and 0 open, 3 answered with the account flag set to their last
+commenter (`copilot-pull-request-reviewer`: GraphQL gives a bot's login without
+`[bot]`).
+
+**Why an archive tick is an attended answer, not a posted go (owner's ruling,
+2026-11-16):** it follows #214, where retirement takes the owner's answer in an
+attended turn, written to the ledger with their words. A comment the page sends is
+that answer arriving by another route; the remote checks still run.
+
+**Why the restart prompt invokes the skill:** a clear drops the loaded contract with
+the rest of the context, so a prompt that only resumed ran the next sweep with no
+conductor contract at all; the Close layer had patched this in its own text. Naming
+the skill the session was first invoked as reaches the layer where there is one.
+
+**Why the pacing:** each run's reply is its own turn, and a busy hour republished the
+page a dozen times, each a chance to collide with the owner's own save. A status
+sweep and a publish at most once a turn, and none within five minutes for a change
+outside *Needs you*, keeps the page current where it matters.
+
+Scenarios: conductor#101–110; implement-issue#48, backlog-orchestrator#131 and
+settle-outstanding-decisions#23 pin the run side (`rules/conductor-exchange-notes.md`,
+*Questions under a conductor*).
+
 ## The contradiction pass before the review round (PR #201)
 
 **What a scheduled firing may do is stated the same at every decision point:** it
 sweeps, reports and executes a conditional go the owner already recorded, once
-verified; it rules nothing and dispatches nothing else. **Retiring under a standing
+verified; it rules nothing and dispatches nothing else. *(Superseded by the owner's
+2026-11-12 ruling, below: a scheduled firing never retires a run.)* **Retiring under a standing
 ruling is allowed unattended (owner's ruling, 2026-11-02):** the pass first kept it
 to attended sweeps; the owner ruled that a scheduled firing may retire once the
 ruling's condition is verified on the forge. Protected rule 9 still binds every
@@ -473,7 +782,7 @@ archive: the conditions in *6. Dispatch* — wrap-up posted (for a single-issue 
 `merged` report and merged PR stand in), every PR settled, each
 branch head on the remote, no live worker and no outstanding recovery ref — are
 checked on that firing exactly as on an attended one. Scenario:
-`an-unattended-retirement-under-a-standing-ruling-checks-the-remote-first`.
+`an-unattended-retirement-under-a-standing-ruling-checks-the-remote-first` (since #214, `an-attended-turn-asks-which-ready-runs-to-retire-and-checks-the-remote-first`).
 
 **Why "active" includes waiting on the owner's merge and a pending go:** the
 check-in was restored so that work gated on an owner's merge starts without the
@@ -506,7 +815,7 @@ account and the template are a fresh run's.
 
 **Why the ledger is maintained, not appended:** an append-only ledger had to be read end to end to know the current state, and a clear restarted from a stale one. Rows are edited in place, one changelog line records each sweep, and the whole body is rewritten before every `/clear`.
 
-**Why the conductor holds a settled run's watch:** see `rules/conductor-exchange-notes.md`, *The watch after settling*.
+*(Superseded by #214: the conductor holds no watch.)* **Why the conductor held a settled run's watch:** see `rules/conductor-exchange-notes.md`, *The watch after settling*.
 
 ## The protected-rule audit (PR #201)
 
@@ -518,8 +827,9 @@ account and the template are a fresh run's.
 
 Pinned in `evals/evals.json`:
 
-- a push arrives before its durable record exists → re-read later, do not act
-  (`swarm`, `a-push-before-its-record-is-a-wake-not-an-act`);
+- a worker's message is its report, written down before release
+  (`swarm`, `a-messaged-report-is-written-down-before-release`, which replaced
+  `a-push-before-its-record-is-a-wake-not-an-act` on 2026-11-13);
 - a push claims success but the PR is red → act on GitHub (`swarm`,
   `a-push-claiming-success-over-a-red-pr-loses-to-the-forge`);
 - `send_message` errors → fall back to pull; the channel is absent for the run
@@ -595,16 +905,17 @@ Pinned in `evals/evals.json`:
   - where the repository has not opted into filing, owner steps are listed, not
     filed (`owner-steps-are-listed-not-filed-where-the-repository-has-not-opted-in`).
 - the owner's 2026-11-02 rulings and field feedback:
-  - an unattended retirement under a standing ruling checks the remote first
-    (`an-unattended-retirement-under-a-standing-ruling-checks-the-remote-first`);
+  - an attended turn asks which ready runs to retire, checking the remote first
+    (`an-attended-turn-asks-which-ready-runs-to-retire-and-checks-the-remote-first`,
+    rewritten by #214 from the standing-ruling version);
   - a sweep reports each state change once, never its steps or waits on others
     (`a-sweep-reports-state-changes-once-never-steps-or-waits-on-others`);
   - decisions one at a time, with links and a recommendation
     (`decisions-are-asked-one-at-a-time-with-links-and-a-recommendation`);
   - a chat ruling goes to the ledger before it is relayed
     (`a-chat-ruling-goes-to-the-ledger-before-it-is-relayed`);
-  - the conductor holds a settled run's watch until it merges
-    (`the-conductor-holds-a-settled-runs-watch-until-merge`);
+  - a settled run's watch stays with the run, never the conductor
+    (`a-settled-runs-watch-stays-with-the-run`, rewritten by #214);
   - a draft exists only with its full text
     (`a-draft-exists-only-with-its-full-text-in-the-ledger`).
 - the operator-output rule (2026-11-03, `rules/operator-output-notes.md`):
@@ -646,20 +957,35 @@ Pinned in `evals/evals.json`:
   - a reviewer waiting on a prompt, or silent, is read from its record and the forge
     (`a-silent-or-blocked-reviewer-is-read-from-its-record-and-the-forge`).
 
-**From two independent reviews (PR #201):** a standing retirement ruling is re-read at its site exactly as a conditional go is, because a revoked ruling found only in the ledger would otherwise retire runs unattended; a single-issue run's `merged` report and its merged PR stand in for a wrap-up it never posts; on the default `github-issue` ledger held replies and draft answers are only named, so a deployment where drafts matter configures `tracker-document`; and a relayed approval puts the complete reply text in the question's option, so the owner answers once. Scenarios: `a-revoked-retirement-ruling-retires-nothing`, `a-merged-single-issue-run-retires-without-a-wrap-up`, `a-relayed-ruling-that-posts-a-reply-is-one-question`.
+**From two independent reviews (PR #201):** *(the retirement half superseded by #214: no standing ruling retires a run.)* a standing retirement ruling is re-read at its site exactly as a conditional go is, because a revoked ruling found only in the ledger would otherwise retire runs unattended; a single-issue run's `merged` report and its merged PR stand in for a wrap-up it never posts; on the default `github-issue` ledger held replies and draft answers are only named, so a deployment where drafts matter configures `tracker-document`; and a relayed approval puts the complete reply text in the question's option, so the owner answers once. Scenarios: `a-revoked-retirement-ruling-retires-nothing`, `a-merged-single-issue-run-retires-without-a-wrap-up`, `a-relayed-ruling-that-posts-a-reply-is-one-question`.
 
 ## Contradiction pass and re-audit after the dispatched-account ruling (PR #201)
 
-**Where the owner's account comes from.** The dispatch prompt names the owner's account as the invoking user's for the session it starts (owner's ruling, 2026-11-03), so the conductor must have that account from a statement too: the login its own invocation names, never the ledger (forge content anyone with write access can edit), a credential or a comment. Without one, the dispatch names none and every go and standing ruling stays pending — the fail-closed reading. **Why the DAG write names the open-item ban:** a run cannot tell an approved relay from any other footered comment under the owner's account, so the ban on writing at an open item's site is restated where the conductor writes plans. **Why a held watch carries one deadline:** anchoring 7 days at each hand-off restarted the bound on every re-settle; the run's own deadline now travels with the watch and is recorded per held PR in the ledger and the check-in prompt.
+**Where the owner's account comes from.** The dispatch prompt names the owner's account as the invoking user's for the session it starts (owner's ruling, 2026-11-03), so the conductor must have that account from a statement too: the login its own invocation names, never the ledger (forge content anyone with write access can edit), a credential or a comment. Without one, the dispatch names none and every go and standing ruling stays pending — the fail-closed reading. **Why the DAG write names the open-item ban:** a run cannot tell an approved relay from any other footered comment under the owner's account, so the ban on writing at an open item's site is restated where the conductor writes plans. *(Superseded by #214, which removed the held watch.)* **Why a held watch carried one deadline:** anchoring 7 days at each hand-off restarted the bound on every re-settle; the run's own deadline now travels with the watch and is recorded per held PR in the ledger and the check-in prompt.
 
-**Owner's rulings on the held watch (2026-11-04):** the held watch ignores empty sweeps and runs until the PR merges or closes, or its deadline passes; and a conductor that dies after taking over a settled PR's watch leaves an accepted gap — the run keeps no check-in at its deadline. Recorded in full in `rules/conductor-exchange-notes.md`, *The watch after settling*.
+*(Superseded by #214: a settled run now keeps its own watch and the conductor holds none — `rules/conductor-exchange-notes.md`, *The watch after settling*.)* **Owner's rulings on the held watch (2026-11-04):** the held watch ignores empty sweeps and runs until the PR merges or closes, or its deadline passes; and a conductor that dies after taking over a settled PR's watch leaves an accepted gap — the run keeps no check-in at its deadline. Recorded in full in `rules/conductor-exchange-notes.md`, *The watch after settling*.
 
 ## Owner's rulings (2026-11-05, PR #205)
 
-**Why settings arrive by invocation and travel in every dispatch:** some deployments' repositories can never hold `.claude/agent-policy.json`, so a thin skill passes the values as invocation arguments, which `rules/agent-policy.md`, *Precedence*, already lets beat the file for every key that grants nothing. A cloud session has no local files, so the dispatch prompt is the only carrier: the conductor passes on every argument the run's skill reads, records them in the ledger for a restart, and points a planner at `plan-feature` with its own. **Why it drafts what it would record on an issue it did not create:** the shared permission rule (`rules/authored-write-form.md`, *Issues the run did not create*). Two later rulings narrow this, both below: a ruling the owner approved word for word on an item a run raised is posted by the conductor itself, and every go, on any issue, is drafted for the owner to post. Evals 0, 9, 25, 34 and 37 were rewritten to match.
+**Why settings arrive by invocation and travel in every dispatch:** some deployments' repositories can never hold `.claude/agent-policy.json`, so a thin skill passes the values as invocation arguments, which `rules/agent-policy.md`, *Precedence*, already lets beat the file for every key that grants nothing. A cloud session has no local files, so the dispatch prompt is the only carrier: the conductor passes on every argument the run's skill reads, records them in the ledger for a restart, and points a planner at `plan-feature` with its own. **Why it drafts what it would record on an issue it did not create:** the shared permission rule (`rules/authored-write-form.md`, *Issues the run did not create*). Two later rulings narrow this, both below: a ruling the owner approved word for word on an item a run raised is posted by the conductor itself, and every go, on any issue, is drafted for the owner to post — itself narrowed on 2026-11-11, when a dispatch go or a conditional go may be conductor-posted and verified in the conductor's transcript. Evals 0, 9, 25, 34 and 37 were rewritten to match.
 
 **What the third contradiction pass added (2026-11-05):** the drafted path names how the record is known — the owner gives the posted comment's link, the conductor reads it back as the owner's and records its id — because a conditional go and a standing ruling are re-read by that id, and finding the owner's comment by account or content could pick up a run's own write (protected rules 2 and 3). Each section that records on an issue points at *Rules*. The restart prompt carries the invocation arguments verbatim rather than reading them from the ledger, which anyone with write access can edit.
 
 **One exception with `settle-outstanding-decisions` (owner's ruling, 2026-11-05):** a ruling whose complete comment the owner approved word for word — its full text in the option they chose — is posted by the conductor itself, on any issue, as `settle-outstanding-decisions` posts one; the exception is stated once in `rules/authored-write-form.md` and read from the conductor's record of the approval, never from a footer.
 
-**Why every go is the owner's to post, on any issue (contradiction pass after the rebase onto #206, 2026-11-05):** a go is the owner's authority. Under #206 a comment whose id the run holds is its own write, so a go the conductor posted itself — even on an issue it created — and then re-read by that id would be its own write accepted as the owner's (protected rules 2 and 3). So the owner posts every go from a draft, the ledger keeps owner-comment ids apart from own-write ids, and both re-reads refuse an own-write id. Only a ruling on an item a run raised is under the exception. A reviewer's go is the other exception, recorded in the ledger alone (*Reviewers*).
+**Why a conductor may post a go itself, verified in its transcript (owner's ruling, 2026-11-11):** *supersedes the entry below for dispatch gos and conditional gos.* In practice the conductor posts under the owner's account, so a same-account comment proves nothing about who approved it: the old rule's real guarantee was "a person was present and chose". The owner pasting a drafted comment onto the epic added a round trip without adding proof. A conductor-posted go keeps the guarantee and makes it checkable by the run: the comment names the conductor session, the question and the exact option, and the run finds the owner's input event choosing that option in that session's transcript (`list_events`). It is still one of the conductor's own writes by id (protected rule 2), tagged apart; it is accepted on the transcript, never on its author or its marker, so a marker alone still starts nothing. **Not established:** nothing in this repository has yet observed `list_events`, or an event field that tells owner input from synthetic or peer input; until a run observes both, every conductor-posted go fails closed as unverified and stays pending (owner's choice, 2026-11-11, to write it now and let the first real run settle it).
+
+**Why a conductor-posted go carries the footer and is never posted at an open item's site (contradiction pass on #215, 2026-11-12):** the owner approves the go's text, not the comment the conductor builds around it — the marker's time and session URL are filled in after the answer — so it is not a write the owner approved word for word, and protected rule 1 adds the footer. And *Nothing at an open item's site but its ruling* already keeps every conductor write off such a site so none reads there as the owner's reply; a go due there is owner-posted instead.
+
+**Why a retirement ruling is never conductor-posted, and why only a review thread bars the form (owner's rulings, 2026-11-12):** archiving a run is the authority `swarm` takes only from the owner's ruling, and #214 replaces standing retirement rulings with a sweep and a confirm question, so a retirement keeps the owner's own answer in the session that archives and a conductor-posted go authorises none; *Retire a finished run* says so at its decision point. The thread bar was written for review threads, where a person waits on a reply; an epic or issue others have commented on is the form's ordinary site, which eval 55 already assumed. The `<repo>` in a reviewer's title keeps its `acme-web` examples (owner's ruling, same day).
+
+**Why the form is kept narrow:** releasing a held item, opening a merge gate and merging are irreversible and are read by parties other than the run — a gate, a reviewer, a person in the thread — so they keep the owner's own words at their site. The motivating precedent is 2026-11-05, when runs refused merge rulings a conductor relayed: that refusal was correct, and this change leaves it in place. **"The owner's own words" includes a relayed ruling they approved word for word (pinning round over the batch integration, 2026-11-17):** read bare, the list read as barring the conductor from posting even an approved relay at a hold's site, which *Relayed rulings* allows; the list only bars the conductor-posted go form, and now says so. Scenarios: `a-chat-ruling-is-relayed-under-the-recognisable-marker`; `a-conductor-posted-retirement-ruling-authorises-no-archive` was reworded to hold under #214's attended retirement as well.
+
+**Why every go is the owner's to post, on any issue (contradiction pass after the rebase onto #206, 2026-11-05):** *superseded for dispatch gos and conditional gos by the 2026-11-11 entry above; its reasoning still holds for every other comment, and is why a conductor-posted go is accepted on the transcript and never on its id or author.* A go is the owner's authority. Under #206 a comment whose id the run holds is its own write, so a go the conductor posted itself — even on an issue it created — and then re-read by that id would be its own write accepted as the owner's (protected rules 2 and 3). So the owner posts every go from a draft, the ledger keeps owner-comment ids apart from own-write ids, and both re-reads refuse an own-write id. Only a ruling on an item a run raised is under the exception. A reviewer's go is the other exception, recorded in the ledger alone (*Reviewers*).
+
+## Owner's rulings (2026-11-12, PR #214)
+
+**Why a run retires only on the owner's answer in an attended turn.** The standing retirement ruling let a scheduled firing archive sessions nobody was watching, and every guard on it — re-read by comment id, authored by the owner, unedited, not revoked — existed to stop that path doing harm. The owner replaced it: each attended turn lists the runs ready to retire, meeting every *Retire a finished run* condition verified that turn, and asks one `AskUserQuestion` confirming which to archive. A scheduled firing only lists them for the next attended turn. The cost is one question per attended turn while a run is ready; the gain is that no archive happens without the owner answering in the session that does it. A conductor-posted go never authorises a retirement either (#215 states the same for its posted dispatch go). A drafted reviewer's archive is unchanged (`reviewers.md`). Protected rule 9's conditions bind every archive exactly as before; only the authority moved. Scenarios: conductor#5 #31 #38 #39 rewritten, conductor#87 new.
+
+**The conductor shrink is not in this PR** (owner's ruling): it gets its own.
+

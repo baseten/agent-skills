@@ -1,0 +1,5 @@
+[
+ {"repo": "acme/api", "pr": "101", "group": "Exports", "note": "Base of the stack: merge first."},
+ {"repo": "acme/api", "pr": "102", "group": "Exports", "after": "101"},
+ {"repo": "acme/web", "pr": "77", "group": "Search", "blockers": ["Waiting on the owner's copy review"]}
+]

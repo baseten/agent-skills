@@ -51,6 +51,8 @@ into *Review or assign a reviewer* would lose what makes it quick — the recomm
 and the blocking count say how long the read will take. The text stays on the surface it was
 drafted on, where the owner submits it; the conductor links it and never copies it.
 
+**Why *Post yourself* is its own group (owner's ruling, 2026-11-16):** no run posts in a review thread a person other than the owner is in, not even a reply the owner approved (`resolve-pr-comment/NOTES.md`, *Replies held for the owner*). Listed under *Approve drafts*, such a reply would ask for an approval that changes nothing; what the owner does is copy, edit, post and resolve, so the group names that act.
+
 **Why *Changed since* is in the chat at all:** PR #201's conductor rule kept every
 change out of chat, and a sweep with nothing for the owner was one line. The
 owner's design keeps state changes — a merge, a run started, a run failed — in the
@@ -267,7 +269,7 @@ line: for a coordinated run, the `final status:` line its contract already requi
 quiet firing end with no text and read the session's record and chat afterwards;
 if both are sound, the minimal line can go.
 
-**Why a held watch reaching its deadline is not quiet (rebase onto #201's final head):** #201 lets a conductor hold a settled run's watch, polled on the post-settle cadence and ended at the deadline the hand-off carried, reported as unwatched. That end is a stop the owner must hear about, so the quiet test names it beside the check-in's own stop. The held watch's polling fits the preflight rule as it stands: a polled item whose poll ran is quiet with its last-observed time, carried in the re-armed prompt with the held watch's PR and deadline, and the title's next time is whatever cadence keeps the check-in armed.
+*(Superseded by #214: a settled run now keeps its own watch and the conductor holds none — `rules/conductor-exchange-notes.md`, *The watch after settling*.)* **Why a held watch reaching its deadline is not quiet (rebase onto #201's final head):** #201 lets a conductor hold a settled run's watch, polled on the post-settle cadence and ended at the deadline the hand-off carried, reported as unwatched. That end is a stop the owner must hear about, so the quiet test names it beside the check-in's own stop. The held watch's polling fits the preflight rule as it stands: a polled item whose poll ran is quiet with its last-observed time, carried in the re-armed prompt with the held watch's PR and deadline, and the title's next time is whatever cadence keeps the check-in armed.
 
 **Why the stop message stays:** the *wake budget* rule requires a stopped watch to
 be reported, never silent, because an expired watch is a cost decision the owner
