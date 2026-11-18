@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Run conductor's work-queue prdata.py and mergeq.py against a stubbed `gh`.
+"""Run conductor's work-queue prdata.py and mergeq.py against a stubbed `gh`,
+and build.py against fake states.
 
     python3 -I scripts/test_work_queue_prdata.py
 
@@ -165,6 +166,30 @@ def main():
         row = json.load(open(state))["merge"][0]
         assert row["blockers"] == ["Your unsubmitted review: 2 drafts"], row["blockers"]
         print(f"ok  mergeq.py blocks the row: {row['blockers']}")
+
+        # build.py: an interactive page never carries an open option with no ruling
+        def build(st):
+            sp, out = os.path.join(tmp, "build-state.json"), os.path.join(tmp, "index.html")
+            with open(sp, "w") as f:
+                json.dump(st, f)
+            return subprocess.run([sys.executable, "-I", os.path.join(WQ, "build.py"),
+                                   "--state", sp, "--template",
+                                   os.path.join(WQ, "template.html"), "--out", out],
+                                  capture_output=True, text=True)
+        unruled = {"title": "Work queue", "decisions": [{"id": "d1", "status": "open",
+                   "options": [{"id": "a", "label": "7 days", "ruling": "Owner ruling: 7 days."},
+                               {"id": "b", "label": "30 days"}]}]}
+        r = build(dict(unruled, interactive=True))
+        assert r.returncode != 0 and "d1/b" in r.stderr, \
+            f"an interactive state with an unruled option must not build: {r.returncode} {r.stderr}"
+        print("ok  build.py refuses an interactive state with an unruled open option")
+        r = build(dict(unruled, interactive=False))
+        assert r.returncode == 0, r.stderr
+        print("ok  build.py builds the same state read-only")
+        with open(os.path.join(WQ, "state.example.json")) as f:
+            r = build(json.load(f))
+        assert r.returncode == 0, r.stderr
+        print("ok  build.py builds state.example.json")
 
 
 if __name__ == "__main__":

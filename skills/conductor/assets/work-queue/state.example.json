@@ -1,6 +1,7 @@
 {
  "title": "Work queue · acme-api · billing",
  "interactive": true,
+ "readonlyReason": null,
  "session": "https://claude.ai/code/session_EXAMPLE",
  "updated": "2026-01-01T12:00:00Z",
  "nextCheckin": "13:00 UTC",

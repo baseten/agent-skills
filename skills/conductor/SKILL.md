@@ -639,7 +639,8 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
   linked to where it is recorded;
 - pending conditional gos, each with its condition and its record;
 - the seed template: a link to the last good run's first prompt;
-- the work queue's URL, where one is kept (*Report*), and the merge notes the
+- the work queue's URL, where one is kept (*Report*), with `interactive since
+  <UTC>` or `read-only: <reason>` and its time (`work-queue.md`, *Which page*), and the merge notes the
   owner gave for it (`work-queue.md`);
 - the fallback check-in's id, next time and empty count;
 - the invocation arguments this skill was given;
@@ -727,14 +728,15 @@ Never force a clear, and never skip a step to beat compaction.
    sweep: read the ledger body first: <ledger URL> — it supersedes its history.
    Call get_session; if this session's id differs from the ledger's, send the new
    id to every run the ledger records and update the ledger. Confirm the fallback check-in <id> is
-   still armed, and the work queue's watch where the ledger records one
-   (ArtifactComments, watch). Read queued notifications. Check first: <the one or
+   still armed; where the ledger records a work queue, re-read its watch
+   (ArtifactComments, watch, no url) and record interactive or read-only beside
+   its URL. Read queued notifications. Check first: <the one or
    two checks the dump named>.
    ```
 
    **Where the ledger records no work-queue URL and this session holds the Artifact
    tool**, the prompt says instead "Build the work queue first and record its URL in
-   the ledger" (*Report*), in place of confirming its watch.
+   the ledger" (*Report*), in place of re-reading its watch.
 5. **Propose**, in a few lines: the context figure; that the ledger is written and
    verified, with its link; what is expected to stay bound to this session through
    a clear — its id, its check-ins and PR subscriptions, and runs' `send_message`
@@ -821,11 +823,15 @@ firing, included — **and every `status` turn publish it**, paced as `work-queu
 or, where none is recorded, as a new page whose URL the ledger then records
 (*7. Ledger*). **Any sweep — attended, scheduled or `status` — that finds no
 work-queue URL in the ledger while this session holds the Artifact tool builds and
-publishes the first page that turn**, *Needs you* changed or not, `interactive:
-false` (`work-queue.md`, *Which page*) unless that section builds none, and records its URL in the ledger; a
+publishes the first page that turn**, *Needs you* changed or not, as
+`work-queue.md`, *Which page*, says for a first publish — read-only, upgraded that
+turn where the watch lists it — unless that section builds none, and records its URL in the ledger; a
 firing that does so is not quiet. **Only where the ledger records that URL does a report link it**,
 beside the ledger, the unchanged one-line form included; otherwise the ledger link
-stands in.
+stands in. **While the ledger records the page read-only**, the link says so and
+that answers go here, in this chat. A page recorded interactive whose watch is gone
+is a *Clear a failure* item, "work queue can't take answers" (`work-queue.md`,
+*Which page*).
 
 **On the page, an item about a PR carries its links in the order `references/operator-output.md` gives an item**: the run's session, where one owns the PR; the PR on the forge; the tracker's review page for it, where the repository is linked to a tracker that hosts PR review (`references/linear-mechanics.md`, *Review pages*), **marked with the count of unsubmitted drafts there**, labelled with the tracker account that holds them, so the item never implies a draft is on the forge when it is on the tracker; then every issue the PR closes, or a plain "no linked issue". A draft held anywhere else is linked to where it is held, labelled so — **bar a
 reply or ruling the owner is to post in a thread where no run posts, which the page

@@ -4,7 +4,9 @@
 
 The page is the template plus one state block; the page script regenerates the
 whole document from that state and never serialises the DOM. `<` is escaped so
-no state value can close the script element.
+no state value can close the script element. An interactive state whose open
+decision has an option with no `ruling` is refused: its answer could not be
+recorded.
 """
 import argparse
 import html
@@ -20,6 +22,14 @@ with open(a.state, encoding="utf-8") as f:
     st = json.load(f)
 with open(a.template, encoding="utf-8") as f:
     t = f.read()
+if st.get("interactive") is True:
+    # an answer records the option's ruling text: a card without one cannot be answered
+    unruled = [f'{d.get("id")}/{o.get("id")}' for d in st.get("decisions") or []
+               if d.get("status") == "open" for o in d.get("options") or []
+               if not str(o.get("ruling") or "").strip()]
+    if unruled:
+        raise SystemExit("interactive state has open decision options with no ruling: "
+                         + ", ".join(unruled))
 for token in ("__STATE__", "<title>Work queue</title>"):
     if t.count(token) != 1:
         raise SystemExit(f"template must hold {token!r} exactly once")

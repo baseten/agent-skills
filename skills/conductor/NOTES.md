@@ -674,8 +674,9 @@ holding a tool that publishes one.
 Guild run):** that rule left a gap. A conductor whose list never changed while it
 could publish — quiet attended sweeps, then firings — never built a queue, and ran
 two days without one. So a sweep of any kind that finds no URL in the ledger while
-the session holds the Artifact tool builds the first page that turn, read-only as
-*Which page* says for a first publish, and records its URL; the link still appears
+the session holds the Artifact tool builds the first page that turn as *Which
+page* says for a first publish — read-only, upgraded that turn where the watch
+lists it (*The work queue page*, below) — and records its URL; the link still appears
 only once the URL is recorded. A session with no such tool is unchanged, which is
 why `an-unchanged-needs-you-list-is-one-line` now says the session holds none.
 Scenario: `a-quiet-sweep-with-no-work-queue-recorded-builds-the-first-page`.
@@ -787,6 +788,31 @@ nothing let a page or a session type `/clear`. Only `comments.sendToClaude` woke
 session, and only for a writer of the page. So the page is interactive only where
 the watch listing confirms it, and read-only otherwise, so it never claims an
 answer reaches the session when none can.
+
+**Why the listing is read again after a first publish, and every build (owner's
+report, 2026-11-18, a close-conductor run):** *Which page* was read before each
+build, but a new page's first publish is read-only because no watch can list a
+page that does not exist yet, and nothing made a later build look again. One
+session published its queue 8 times read-only while `ArtifactComments` `watch`
+had listed the page's comment-wake subscription since a minute after the first
+publish; the owner saw "Read-only view…" and could not answer. So the listing is
+read straight after a first publish, and where it shows the page, the same
+snapshot is republished interactive in that turn. *Publishing* allows one publish
+per turn to keep the owner's saves from colliding with republishes; the upgrade
+is the one exception, stated there, because it changes nothing the owner could
+have saved — the read-only page takes no answer — and waiting a turn is what left
+the queue read-only. The result goes in the ledger beside the URL so a restart,
+and the report's link, know the page's state without guessing; the link says
+"read-only, answers here" so the banner is no surprise. A watch that disappears
+from a page recorded interactive republishes read-only with the reason in the
+banner and becomes a *Clear a failure* item, since only the owner can restore it.
+**Why `build.py` refuses an interactive state with an unruled option:** an answer
+records the option's `ruling` text as the complete comment the owner approved
+(*Answers*); with none, the pick could only become a draft, after the owner
+believed they had answered. A read-only page records no answer, so it still
+builds. `scripts/test_work_queue_prdata.py` runs both cases. Scenarios:
+`a-first-publish-is-upgraded-once-the-watch-lists-it`,
+`a-state-with-an-unruled-option-does-not-build`.
 
 **Why an answer counts only from the comment:** the page's state is written by the
 conductor's republishes and by the owner's saves, under one account, and nothing in

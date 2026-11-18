@@ -1325,12 +1325,12 @@
     {
       "id": 104,
       "name": "an-unconfirmed-watch-means-a-read-only-page",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This session holds the Artifact tool. The ledger records no work queue yet, and Needs you changed. What do you publish, with what capabilities, and what does the page say about answering?",
-      "expected_output": "A new page, with the title naming the workstream, built with interactive false and published with no capabilities. Each decision is marked to answer in this session, and nothing claims an answer reaches the conductor. The URL is recorded in the ledger. Only once the watch listing shows this page with auto-replies armed does a later build go interactive with {artifact:{}, comments:{}}.",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This session holds the Artifact tool. The ledger records no work queue yet, and Needs you changed. Read straight after the publish, the watch listing (ArtifactComments, watch, no url) does not show the page. What do you publish, with what capabilities, and what does the page say about answering?",
+      "expected_output": "A new page, with the title naming the workstream, built with interactive false and published with no capabilities. Each decision is marked to answer in this session, and nothing claims an answer reaches the conductor. The URL is recorded in the ledger with 'read-only: no watch' and the time. Every later build reads the listing again, and the first that shows this page with comment wakes armed goes interactive with {artifact:{}, comments:{}}.",
       "assertions": [
         "the first publish is read-only with no capabilities",
         "the page never says answers reach the conductor",
-        "interactive only after the watch listing confirms it"
+        "interactive only once a watch listing read for a build confirms it, and the read-only state is recorded beside the URL"
       ],
       "files": []
     },
@@ -1443,8 +1443,8 @@
     {
       "id": 112,
       "name": "a-quiet-sweep-with-no-work-queue-recorded-builds-the-first-page",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This session holds the Artifact tool; python3 and gh api work. The conductor has run for two days and the ledger records no work-queue URL. A scheduled check-in fires: nobody is present, and the sweep finds the same two items waiting on the owner as the last report printed, with nothing else changed. Question: does this turn publish a work queue, with what capabilities, what does it record, and is the turn quiet?",
-      "expected_output": "Yes. Any sweep, attended or scheduled, that finds no work-queue URL in the ledger while the session holds the Artifact tool builds and publishes the first page that turn, whether or not Needs you changed. It is built read-only - interactive false, no capabilities - since no watch is confirmed for a new page, with each decision marked to answer in this session, and its URL is recorded in the ledger. Having built it, the turn is not quiet. Later reports link it beside the ledger and republish to that URL.",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This session holds the Artifact tool; python3 and gh api work. The conductor has run for two days and the ledger records no work-queue URL. A scheduled check-in fires: nobody is present, and the sweep finds the same two items waiting on the owner as the last report printed, with nothing else changed. Read straight after a publish, the watch listing would not show the page. Question: does this turn publish a work queue, with what capabilities, what does it record, and is the turn quiet?",
+      "expected_output": "Yes. Any sweep, attended or scheduled, that finds no work-queue URL in the ledger while the session holds the Artifact tool builds and publishes the first page that turn, whether or not Needs you changed. It is built read-only - interactive false, no capabilities - since no watch is confirmed for a new page, with each decision marked to answer in this session, and, the listing read after it not showing the page, its URL is recorded in the ledger with 'read-only: no watch' and the time. Having built it, the turn is not quiet. Later reports link it beside the ledger and republish to that URL.",
       "assertions": [
         "the answer builds and publishes the work queue this turn although Needs you is unchanged",
         "the page is published with interactive false and no capabilities",
@@ -1494,6 +1494,32 @@
         "the question, with the two options, is asked before the ruling is relayed to run A",
         "retiring goes through the existing retirement conditions, with nothing stranded before any archive",
         "the answer does not message run A to change how it posts"
+      ],
+      "files": []
+    },
+    {
+      "id": 116,
+      "name": "a-first-publish-is-upgraded-once-the-watch-lists-it",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. This session holds the Artifact tool and ArtifactComments; the ledger records no work queue, and Needs you changed. You publish the first page. Read straight after, the watch listing (ArtifactComments, watch, no url) shows that page with comment wakes to Claude armed. Two sweeps later the listing no longer shows it. Question: what do you publish in the first turn and how many times, what does the ledger record, what does the report's link say in each state, and what happens when the watch disappears?",
+      "expected_output": "The first publish is read-only (interactive false, no capabilities). Because the listing read in the same turn shows the page with comment wakes, the same snapshot is republished at once with interactive true and capabilities {artifact:{}, comments:{}}; Publishing's one-publish limit counts that upgrade with the first publish as the turn's one, its stated exception. The ledger records the URL with 'interactive since <UTC>'. While interactive the report links the page beside the ledger. When a later build's listing no longer shows the page, it republishes read-only with readonlyReason saying the watch is gone, shown in the banner; the ledger records 'read-only: <reason>' with the time; the report lists 'work queue can't take answers' under Clear a failure, and its link says the page is read-only and answers go here in the chat.",
+      "assertions": [
+        "the first publish is read-only and is upgraded to interactive with {artifact:{}, comments:{}} in the same turn",
+        "the answer says Publishing's exception lets the upgrade share the turn's one publish",
+        "the ledger records 'interactive since <UTC>' beside the URL, later 'read-only' with its reason and time",
+        "the lost watch republishes read-only with the reason in the banner and is a Needs you item 'work queue can't take answers'",
+        "while read-only, the report's link says so and that answers go in the chat"
+      ],
+      "files": []
+    },
+    {
+      "id": 117,
+      "name": "a-state-with-an-unruled-option-does-not-build",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The ledger records the work queue as interactive since 09:12 UTC. This sweep's state carries an open decision on acme/api#2050 with two options; the first has a ruling text, the second has only a label. You run build.py. Question: what happens, and what do you do?",
+      "expected_output": "build.py refuses the state, naming the decision and the option, because on an interactive page an answer records the option's ruling text as the complete comment the owner approved, and a card without one could not be recorded. Nothing is published from that state. Write the missing ruling text for the second option, rebuild and publish. A read-only state with the same card would build, since a read-only page records no answer.",
+      "assertions": [
+        "build.py refuses the interactive state and nothing is published from it",
+        "the answer supplies the missing ruling text before building again",
+        "the answer does not publish the card without a ruling, or drop the page to read-only to get past the check"
       ],
       "files": []
     }
