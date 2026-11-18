@@ -28,8 +28,10 @@ pulls/{n}/reviews/{id}/comments, before any single-comment read, and the GraphQL
 route reads each comment's state. A thread whose last comment is in the owner's
 own pending review is held by the owner: counted neither unresolved nor answered.
 The owner's pending review is emitted as owner_pending_drafts (its comment count,
-0 for none) and owner_pending_review (its id, or null). A pending last comment by
-any other login counts as unresolved. Every other failed read still stops the
+0 for none) and owner_pending_review (its id, or null). Where `gh api user` is not
+the --owner login, or cannot be read, the owner's pending review cannot be seen:
+owner_pending_drafts is null and owner_pending_read false, never 0. A pending last
+comment by any other login counts as unresolved. Every other failed read still stops the
 script.
 """
 import argparse
@@ -138,6 +140,12 @@ def main():
     ap.add_argument("--owner", required=True, help="the owner's account login")
     ap.add_argument("prs", nargs="+")
     a = ap.parse_args()
+    # a pending review is shown only to its author: read as anyone else, it is unread
+    try:
+        reader = gh_try("user").get("login")
+    except GhError:
+        reader = None
+    owner_reads = reader == a.owner
 
     out = []
     for n in a.prs:
@@ -171,8 +179,11 @@ def main():
                         merged=p["merged"], mergeable=p.get("mergeable_state"),
                         approvals=approvals, changes=changes, unresolved=unresolved, answered=answered,
                         needs_reply=needs_reply,
-                        owner_pending_drafts=own_pending[1] if own_pending else 0,
-                        owner_pending_review=own_pending[0] if own_pending else None,
+                        owner_pending_drafts=(own_pending[1] if own_pending else 0)
+                        if owner_reads else None,
+                        owner_pending_review=own_pending[0] if own_pending and owner_reads
+                        else None,
+                        owner_pending_read=owner_reads,
                         checks=len(runs) + len(statuses), fail=fail, pending=pending))
     print(json.dumps(out, indent=1))
 

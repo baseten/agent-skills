@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 9620,
+      "budget": 9838,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -223,7 +223,7 @@
       "target": 1500
     },
     "skills/conductor/work-queue.md": {
-      "budget": 1539,
+      "budget": 1660,
       "target": 1500
     }
   }

@@ -53,7 +53,7 @@ drafted on, where the owner submits it; the conductor links it and never copies 
 
 **Why the owner's own pending review on a run's PR joins it (owner's report,
 2026-11-18, FE Testing Guild run):** the owner had left draft comments on a run's PR
-and not submitted them; nothing surfaced them, the run could not see them, and a
+and not submitted them; nothing surfaced them, no run acts on an unsubmitted review, and a
 sweep the day before had misread such drafts as edits to a run's comments. The act
 is the same as a reviewer's draft — read, then submit on the forge — so it takes the
 same group rather than a new one, carrying the PR and the draft count instead of a

@@ -22,13 +22,18 @@ Decided from what this session holds, read before each build:
 
 **Every build reads that listing before choosing a row**, and the ledger records the
 result beside the queue's URL: `interactive since <UTC>`, or `read-only: <reason>`
-with its time. **A first publish is read-only, then the listing is read again in
-the same turn**: where it shows the page with comment wakes to Claude, republish at
-once with `interactive: true` and those capabilities; otherwise record `read-only:
-no watch`. **A downgrade** — a page recorded interactive whose listing no longer
-shows it — republishes read-only with `readonlyReason` saying why, shown in the
-page's banner, and is a *Clear a failure* item, "work queue can't take answers"
-(`SKILL.md`, *Report*).
+with its time. **Only that listing establishes a watch**; a publish result's arming
+line does not. **A first publish is read-only, then the listing is read again in
+the same turn**; where it does not show the page with comment wakes to Claude, call
+`ArtifactComments` `watch` with the page's URL and read the listing once more.
+Where it shows the page, republish at once with `interactive: true` and the full
+`{artifact:{}, comments:{}}` — never `composer_only`, under which
+`canSendToClaude()` is off; otherwise record `read-only: no watch`. **A downgrade**
+— a page recorded interactive whose listing no longer shows it — first re-arms the
+same way; where that fails it republishes read-only with `readonlyReason` saying
+why, shown in the page's banner. The owner has nothing to do about either: the
+report's link says the page is read-only and answers go in the chat (`SKILL.md`,
+*Report*).
 
 **Where `python3` or a working `gh api` is missing, no page is built**: the session
 takes the first row's fallback, the ledger link and the chat. A failing `gh auth
@@ -41,8 +46,9 @@ established to work.
 ## Building it
 
 Each build, from the turn's snapshot: write `state.json` from it, the title naming
-the workstream; run `prdata.py` as the sweep's read of every PR the merge section
-or a held reply names, then `mergeq.py` and `prune.py` over that output — never a
+the workstream; run `prdata.py` as part of the sweep's read of every PR the merge
+section or a held reply names (*1. Sweep*, step 7, whose read of a run's PR reads
+its reviews too), then `mergeq.py` and `prune.py` over that output — never a
 second read of the forge (*The status snapshot*); then `carry.py` over the live
 version (below), then `build.py`. **Every link is a recorded URL** — a PR's
 `html_url`, a thread's `html_url` as carried — never one built from a repository
@@ -50,7 +56,10 @@ name. **The merge notes** — the order and blockers the owner gave for PRs wait
 their merge — **are kept in the ledger**, and the notes file is written from it each
 build. **On an interactive page every option of an open decision carries its
 `ruling`**: `build.py` refuses a state where one lacks it, rather than publish a
-card whose answer could not be recorded. The working files sit in this session's scratchpad and are rebuilt every
+card whose answer could not be recorded. So an interactive build first writes any
+missing `ruling` — every option put to the owner has a determinate meaning, so it
+can be written; where it cannot, the page stays read-only, `read-only: an option
+lacks a ruling`. The working files sit in this session's scratchpad and are rebuilt every
 build, so none is a record and no restart prompt names one.
 
 **The merge section lists, never decides**: "Ready" means open, approved by a
@@ -82,8 +91,9 @@ in a review thread.
   again. Carried marks are never acted on.
 - **At most one publish per turn**, after the turn's last snapshot — bar a first
   publish's upgrade (*Which page*), which republishes the same snapshot with only
-  `interactive` and the capabilities changed and counts with it as that turn's one
-  publish, since the first could take no answer. A turn other
+  `interactive`, the capabilities and any `ruling` written (*Building it*) changed,
+  and counts with it as that turn's one publish, since the first could take no
+  answer. A turn other
   than `status` that changes no *Needs you* item within 5 minutes of the last
   publish skips its publish; the next publishing turn or the check-in carries the
   change.

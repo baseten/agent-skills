@@ -54,6 +54,7 @@ def base_fixture():
     owner_done = comment(1003, OWNER, "Fixed in abc1234")
     reviewer_open = comment(1004, "rev", "Please add a test")
     return {
+        "user": {"login": OWNER},
         p: {"head": {"sha": "f" * 40}, "html_url": f"https://github.com/{REPO}/pull/{N}",
             "title": "Add thing", "base": {"ref": "main"}, "draft": False, "state": "open",
             "merged": False, "mergeable_state": "clean"},
@@ -151,6 +152,24 @@ def main():
         assert (d["owner_pending_drafts"], d["owner_pending_review"]) == (0, None), d
         print("ok  no pending review: owner_pending_drafts 0, owner_pending_review null")
 
+        unread_out = None
+        for label, user in (("another account", {"login": "someone-else"}), ("no user read", None)):
+            fx = base_fixture()
+            fx[f"repos/{REPO}/pulls/{N}/reviews"].pop()  # its pending review is invisible
+            fx[f"repos/{REPO}/pulls/{N}/ccr/review_threads"] = \
+                fx[f"repos/{REPO}/pulls/{N}/ccr/review_threads"][2:]
+            if user is None:
+                del fx["user"]
+            else:
+                fx["user"] = user
+            r = run_prdata(tmp, fx)
+            assert r.returncode == 0, r.stderr
+            d = json.loads(r.stdout)[0]
+            got = (d["owner_pending_drafts"], d["owner_pending_review"], d["owner_pending_read"])
+            assert got == (None, None, False), f"{label}: {got}"
+            unread_out = r.stdout
+            print(f"ok  read as {label}: the owner's pending review is unread (null), never 0")
+
         prp = os.path.join(tmp, "prdata.json")
         with open(prp, "w") as f:
             f.write(out)
@@ -166,6 +185,17 @@ def main():
         row = json.load(open(state))["merge"][0]
         assert row["blockers"] == ["Your unsubmitted review: 2 drafts"], row["blockers"]
         print(f"ok  mergeq.py blocks the row: {row['blockers']}")
+
+        with open(prp, "w") as f:
+            f.write(unread_out)
+        with open(state, "w") as f:
+            json.dump({}, f)
+        r = subprocess.run([sys.executable, "-I", os.path.join(WQ, "mergeq.py"), "--state", state,
+                            "--notes", notes, "--prdata", prp], capture_output=True, text=True)
+        assert r.returncode == 0, r.stderr
+        row = json.load(open(state))["merge"][0]
+        assert any("unread" in b for b in row["blockers"]), row["blockers"]
+        print(f"ok  mergeq.py shows an unread pending review as a blocker: {row['blockers']}")
 
         # build.py: an interactive page never carries an open option with no ruling
         def build(st):
