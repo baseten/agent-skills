@@ -229,6 +229,71 @@ expected state, so reporting it each sweep would be noise; it is noted in the
 ledger, and never messaged, because what a peer conductor would do with a message
 is not this contract's to define.
 
+**Why step 7 reads the owner's pending review (owner's report, 2026-11-18, FE Testing
+Guild run):** the owner had draft comments on a run's PR, unsubmitted, and nothing
+put them in front of them, no run acts on an unsubmitted review, and a sweep on
+2026-11-17 had read such drafts as edits to a run's comments. The sweep now reads it
+per run's PR and *Report* makes it a *Review and submit* item labelled as the
+owner's unsubmitted review. It shares the group with a reviewer's drafted review
+because the act is the same, and the two cannot meet on one PR: `reviewers.md`
+starts a reviewer only on a PR no run owns. **Why "unread" is tested by `gh api
+user` (review round 1 on this PR):** GitHub shows a pending review only to its
+author's account, so a sweep reading as any other account would see "none" where
+there is one; a run under the owner's account can read it, which is why the item
+says no run acts on it, not that none can see it. **Why step 7 reads the reviews
+itself:** the first version took the count from `prdata.py`, which runs only over
+the PRs the merge section or a held reply names, so a run's PR outside both was
+never read; the review read is now part of step 7's read of each run's PR, and
+`prdata.py` keeps its field for the merge section. Scenario:
+`the-owners-pending-review-on-a-runs-pr-is-review-and-submit`.
+
+**Why step 6 compares a run's version with the install (owner's request,
+2026-11-18, a close-conductor run):** the ledger recorded each run's version line
+and nothing read it. Two `backlog-orchestrator` runs reported a093d8f7
+(2026-11-11), older than the 2026-11-13 change that moved worker reports from PR
+comments to messages (`swarm` NOTES, *Why the carrier is chosen by runtime*), and
+their workers posted "Worker report" and "Repair r1" comments on
+closeio/close-ui#30068 under the owner's account; the next repair would have posted
+again. **Why the compare API decides, not "committed later" (review round 1 on
+this PR, a deliberate departure from the request's wording):** the owner asked for
+a run to be stale where the install's `committed` is later. Read literally, any
+later commit to the repository — a README, a script — flags every live run, and a
+run's line carries only a day, in its committer's offset, so dates mis-order
+across timezones. So the compare route on the agent-skills repository (the `repo`
+in the install stamp, never a workstream's) decides: stale only where the install
+is ahead by a change under `skills/` or `rules/`, the paths a run's contract is
+made of. Where it cannot be read, dates still give a warning, marked unconfirmed,
+and a gap under two days orders nothing. A missing stamp or line is unreadable
+rather than stale, because absence is not a verdict. A run's layer line is skipped
+because a layer's `metadata.version` stamps another repository; the conductor's
+own version is read by `rules/run-start.md`'s whole order, `metadata.version`
+included, since an uploaded conductor is still agent-skills. **Why the conductor's own `.source` comes first (owner's ruling,
+2026-11-18, on this PR):** the request named `.agent-skills-install`, but
+`rules/run-start.md` reads that only where the skill's own directory cannot be
+found, because a merge-only install can leave it describing a different install.
+Compared against a stale stamp, a run older than the skills the conductor itself
+runs could read as current. So the comparison reads `committed` in
+the order the conductor's own version line does, and the restatement points at
+that rule. **Why the owner is asked before anything goes to the run, and the run
+never told to post differently:** a relayed ruling or a submitted review wakes the
+run, and it then acts under the contract it loaded; the conductor cannot stop the
+owner submitting a review, so the line says that a review wakes it, and the
+conductor holds everything it would send. That hold first sat only in the owner
+pass; review round 1 on this PR found the relay duty, *3. Reconcile*'s messages and
+the post-clear id message each sending without it, and a firing or `status` turn
+having no owner pass at all. So it is stated in *Rules*, where every send reads it,
+pointed at from each, and what falls due unanswered waits in the ledger. Telling
+the run to post otherwise would be a message changing posting, which
+`rules/conductor-exchange.md` rules out; the remedy is a redispatch on the current
+skills. **Why the redispatch waits for the archive:** dispatched at once, both runs
+would work the same PRs; so the answer is a go that executes only once the stale
+run is retired under the existing conditions (protected rule 9), which waive only
+its wrap-up, and its PRs move to the new run then. The option carries what
+*6. Dispatch* puts in any go's question, so choosing it is a valid go rather than
+one assembled afterwards. Scenarios: `a-stale-run-is-flagged-before-its-next-repair`,
+`nothing-goes-to-a-stale-run-before-the-owner-answers`,
+`a-docs-only-gap-is-not-a-stale-run`.
+
 ## The status snapshot
 
 **Why one snapshot (owner, 2026-11-16):** in a real run the conductor's chat
@@ -531,6 +596,15 @@ a home repository, so that test cannot tell them apart; what keeps a run with it
 own conductor is that a conductor sends its new id only to the runs its ledger
 records. The run-side residual is recorded in `rules/conductor-exchange-notes.md`.
 
+**Why the restart prompt builds a missing work queue (owner's report, 2026-11-18, FE
+Testing Guild run):** the prompt only confirmed the queue's watch "where the ledger
+records one", so a conductor that had never built a queue restarted with nothing
+telling it to, and ran on without one. The dump now records the URL or its absence,
+and where it is absent and the tool is held, the prompt says to build it first. The
+rule that does the building is *Report*'s (*The work queue*, below); this is its
+restatement at the restart's decision point. Scenario:
+`a-restart-with-no-work-queue-recorded-builds-one-first`.
+
 ## 7. Ledger
 
 **Why the ledger's home is configurable (owner's ruling, 2026-11-02):** the work
@@ -545,7 +619,9 @@ an owner audit could not tell which skill revision a dispatched session had run.
 The row records what the run's reports said — `not reported` where none carried a
 line, which is itself the finding — and nothing the conductor inferred. The
 conductor's own line opens its first report, under the same rule
-(`rules/run-start.md`).
+(`rules/run-start.md`). Since 2026-11-18 the row also carries the installed version
+and the comparison *1. Sweep*, step 6, makes; the reported line is still recorded
+as the run gave it, and the verdict sits beside it, never in its place.
 
 **Why the ledger keeps earlier session ids and the peers seen (owner's ruling, 2026-11-16):** the
 provenance test in *1. Sweep* needs every id this conductor has had, or a run
@@ -610,9 +686,19 @@ changes: the ledger link carries the list, as before.
 "every report links it" read as unconditional, and readers linked, even published,
 a queue in scenarios that never said one could exist. The ledger's record of the URL
 is the one thing a report can check, so a link appears only where it is recorded,
-and a page is created only by a report whose *Needs you* changed, from a session
-holding a tool that publishes one. An unchanged list therefore never creates a
-page; it links one only where it already exists.
+and a page was created only by a report whose *Needs you* changed, from a session
+holding a tool that publishes one.
+
+**Why any sweep now builds the first page (owner's report, 2026-11-18, FE Testing
+Guild run):** that rule left a gap. A conductor whose list never changed while it
+could publish — quiet attended sweeps, then firings — never built a queue, and ran
+two days without one. So a sweep of any kind that finds no URL in the ledger while
+the session holds the Artifact tool builds the first page that turn as *Which
+page* says for a first publish — read-only, upgraded that turn where the watch
+lists it (*The work queue page*, below) — and records its URL; the link still appears
+only once the URL is recorded. A session with no such tool is unchanged, which is
+why `an-unchanged-needs-you-list-is-one-line` now says the session holds none.
+Scenario: `a-quiet-sweep-with-no-work-queue-recorded-builds-the-first-page`.
 
 **Why a PR item carries up to four links in that order (owner's ruling, 2026-11-06):** a
 review the owner had drafted in the tracker's review view, not yet submitted, was
@@ -644,7 +730,8 @@ Scenarios: `a-changed-needs-you-republishes-the-work-queue-in-the-same-turn`,
 `a-red-default-branch-is-on-the-page-never-in-a-forge-ledger`,
 `a-tracker-review-draft-is-marked-on-the-queue-item`,
 `a-pr-with-no-linked-issue-says-so`,
-`a-reply-draft-held-in-the-ledger-is-linked-and-labelled`.
+`a-reply-draft-held-in-the-ledger-is-linked-and-labelled`,
+`a-quiet-sweep-with-no-work-queue-recorded-builds-the-first-page`.
 
 **Why the work queue and the check-in are per conductor (owner's ruling, 2026-11-16):** each is bound
 to one session and recorded in its ledger, so a peer's is simply another; the
@@ -691,6 +778,29 @@ repository, output identical to the previous script's in every thread count; the
 a reviewer-last outdated thread, an owner question, a resolved thread, an id missing
 from the bulk read), plus a 403-then-404 case that stops and a non-403 GraphQL
 failure that stops without falling back — a cloud session has not yet run the script.
+**Why a pending review's comments are read first (owner's report, 2026-11-18, FE
+Testing Guild run):** on a cloud session, `pulls/{n}/ccr/review_threads` listed a
+thread whose last comment was in the owner's unsubmitted review. That comment is in
+neither `pulls/{n}/comments` nor `pulls/comments/{id}`, which returned 404, and the
+script stopped, losing the whole merge section. A PENDING review is visible only to
+its author, so `prdata.py` now reads every PENDING review the reviews list returns
+through `pulls/{n}/reviews/{id}/comments` before any single-comment read, and every
+other 404 still stops it. GraphQL's `reviewThreads` includes the viewer's pending
+comments too, with `state: PENDING`, so that route reads the state and both feed one
+rule: a thread whose last comment is in the owner's pending review is the owner's to
+finish, counted neither open nor answered, and the review's id and comment count
+become `owner_pending_review` and `owner_pending_drafts`, which `mergeq.py` shows as
+a blocker. A pending last comment by another login is counted open, failing closed.
+Where `gh api user` is not the owner's login, or cannot be read, the owner's
+pending review is invisible to the script, so its fields are null, never 0, and
+`mergeq.py` shows the review as unread (review round 1 on this PR).
+**Run to establish it:** `scripts/test_work_queue_prdata.py`, which runs both scripts
+against a stubbed `gh` over a fixture of that shape, by both routes; against the
+previous `prdata.py` it fails with the reported 404 on `pulls/comments/5001`. The
+GraphQL field was read live on 2026-11-18: `comments(last:1){nodes{state}}` on
+cli/cli#13251 returned `SUBMITTED`; a `PENDING` value has not been observed live
+here, only in the schema and the owner's report.
+
 **Why `gh auth status` is not the test:** it reported failure where every read worked,
 so `work-queue.md` takes a successful `gh api user` as the test of a working `gh`.
 
@@ -700,6 +810,42 @@ nothing let a page or a session type `/clear`. Only `comments.sendToClaude` woke
 session, and only for a writer of the page. So the page is interactive only where
 the watch listing confirms it, and read-only otherwise, so it never claims an
 answer reaches the session when none can.
+
+**Why the listing is read again after a first publish, and every build (owner's
+report, 2026-11-18, a close-conductor run):** *Which page* was read before each
+build, but a new page's first publish is read-only because no watch can list a
+page that does not exist yet, and nothing made a later build look again. One
+session published its queue 8 times read-only while `ArtifactComments` `watch`
+had listed the page's comment-wake subscription since a minute after the first
+publish; the owner saw "Read-only view…" and could not answer. So the listing is
+read straight after a first publish, and where it shows the page, the same
+snapshot is republished interactive in that turn. *Publishing* allows one publish
+per turn to keep the owner's saves from colliding with republishes; the upgrade
+is the one exception, stated there, because it changes nothing the owner could
+have saved — the read-only page takes no answer — and waiting a turn is what left
+the queue read-only. The result goes in the ledger beside the URL so a restart,
+and the report's link, know the page's state without guessing; the link says
+"read-only, answers here" so the banner is no surprise. **Why the session arms the
+watch itself (review round 1 on this PR):** the first version only read the
+listing, so a page whose subscription never armed stayed read-only and became an
+owner item the owner could do nothing about. The session now calls `watch` with
+the page's URL and reads the listing again, on a first publish and on a downgrade;
+what still fails is a line beside the queue link, not a *Needs you* item, since the
+answer path — this chat — still works. **Mechanism, from the owner's wake tests
+against artifact contract 0.2.96:** a publish result's "arming" line is not a watch,
+only the listing establishes one; and `composer_only` comments make
+`canSendToClaude()` return "off", so the queue always uses the full
+`{artifact:{}, comments:{}}`. **Why `build.py` refuses an interactive state with an
+unruled option:** an answer records the option's `ruling` text as the complete
+comment the owner approved (*Answers*); with none, the pick could only become a
+draft, after the owner believed they had answered. A read-only page records no
+answer, so it still builds. Review round 1 found that the upgrade, carrying the same
+snapshot, could hit that refusal; so an interactive build writes any missing
+`ruling` first — every option put to the owner already has a determinate meaning —
+and stays read-only only where it cannot. `scripts/test_work_queue_prdata.py` runs
+both cases. Scenarios:
+`a-first-publish-is-upgraded-once-the-watch-lists-it`,
+`a-state-with-an-unruled-option-does-not-build`.
 
 **Why an answer counts only from the comment:** the page's state is written by the
 conductor's republishes and by the owner's saves, under one account, and nothing in

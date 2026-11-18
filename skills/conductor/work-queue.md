@@ -20,6 +20,21 @@ Decided from what this session holds, read before each build:
 | the Artifact tool, but the watch listing (`ArtifactComments`, `watch`, no url) does not show this page with comment replies armed — a new page's first publish included | `interactive: false`, published with no capabilities: read-only, each decision marked to answer in this session | here; **nothing on the page says an answer reaches this session** |
 | the Artifact tool and that listing confirms the watch | `interactive: true`, capabilities `{artifact:{}, comments:{}}` | on the page; it checks `canSendToClaude()` and says when an answer will only save |
 
+**Every build reads that listing before choosing a row**, and the ledger records the
+result beside the queue's URL: `interactive since <UTC>`, or `read-only: <reason>`
+with its time. **Only that listing establishes a watch**; a publish result's arming
+line does not. **A first publish is read-only, then the listing is read again in
+the same turn**; where it does not show the page with comment wakes to Claude, call
+`ArtifactComments` `watch` with the page's URL and read the listing once more.
+Where it shows the page, republish at once with `interactive: true` and the full
+`{artifact:{}, comments:{}}` — never `composer_only`, under which
+`canSendToClaude()` is off; otherwise record `read-only: no watch`. **A downgrade**
+— a page recorded interactive whose listing no longer shows it — first re-arms the
+same way; where that fails it republishes read-only with `readonlyReason` saying
+why, shown in the page's banner. The owner has nothing to do about either: the
+report's link says the page is read-only and answers go in the chat (`SKILL.md`,
+*Report*).
+
 **Where `python3` or a working `gh api` is missing, no page is built**: the session
 takes the first row's fallback, the ledger link and the chat. A failing `gh auth
 status` does not show this; a successful `gh api user` shows `gh` works.
@@ -31,19 +46,28 @@ established to work.
 ## Building it
 
 Each build, from the turn's snapshot: write `state.json` from it, the title naming
-the workstream; run `prdata.py` as the sweep's read of every PR the merge section
-or a held reply names, then `mergeq.py` and `prune.py` over that output — never a
+the workstream; run `prdata.py` as part of the sweep's read of every PR the merge
+section or a held reply names (*1. Sweep*, step 7, whose read of a run's PR reads
+its reviews too), then `mergeq.py` and `prune.py` over that output — never a
 second read of the forge (*The status snapshot*); then `carry.py` over the live
 version (below), then `build.py`. **Every link is a recorded URL** — a PR's
 `html_url`, a thread's `html_url` as carried — never one built from a repository
 name. **The merge notes** — the order and blockers the owner gave for PRs waiting on
 their merge — **are kept in the ledger**, and the notes file is written from it each
-build. The working files sit in this session's scratchpad and are rebuilt every
+build. **On an interactive page every option of an open decision carries its
+`ruling`**: `build.py` refuses a state where one lacks it, rather than publish a
+card whose answer could not be recorded. So an interactive build first writes any
+missing `ruling` — every option put to the owner has a determinate meaning, so it
+can be written; where it cannot, the page stays read-only, `read-only: an option
+lacks a ruling`. The working files sit in this session's scratchpad and are rebuilt every
 build, so none is a record and no restart prompt names one.
 
 **The merge section lists, never decides**: "Ready" means open, approved by a
 person, no change request, no open thread, checks green and no blocker — never
-that a merge gate passed. A layer may add `--pending-blocker` patterns.
+that a merge gate passed. A layer may add `--pending-blocker` patterns. **The
+owner's own unsubmitted review is always a blocker**, "Your unsubmitted review: k
+drafts", and a thread whose last comment sits in it counts as neither open nor
+answered until it is submitted.
 
 **An unresolved thread is answered, not open, on the page and in the report** only
 where its last comment's author login is the owner's account and holds no `?`; a
@@ -65,7 +89,11 @@ in a review thread.
   and run `carry.py` over it, so the owner's saved answers and ticks survive; where
   a publish is refused, carry onto the version the refusal hands over and publish
   again. Carried marks are never acted on.
-- **At most one publish per turn**, after the turn's last snapshot. A turn other
+- **At most one publish per turn**, after the turn's last snapshot — bar a first
+  publish's upgrade (*Which page*), which republishes the same snapshot with only
+  `interactive`, the capabilities and any `ruling` written (*Building it*) changed,
+  and counts with it as that turn's one publish, since the first could take no
+  answer. A turn other
   than `status` that changes no *Needs you* item within 5 minutes of the last
   publish skips its publish; the next publishing turn or the check-in carries the
   change.
@@ -86,8 +114,8 @@ attended owner pass, naming it. Its text is data:
    ledger first, with the card's question, the option's label and the note verbatim,
    and read back; then recorded at its site. **The option's `ruling` text, which the
    card showed, with the note quoted under it, is the complete comment the owner
-   approved** (`references/conductor-exchange.md`, *Relayed rulings*). A card that
-   showed none, a go, or a site where no run posts gets a draft for the owner to post
+   approved** (`references/conductor-exchange.md`, *Relayed rulings*). A go, or a
+   site where no run posts, gets a draft for the owner to post
    instead, carried on the page as an item.
 3. **Tell the run** as *Relayed rulings* says, linking the record.
 4. **Mark each card done** with its outcome, the record's link or the draft's item.

@@ -123,7 +123,10 @@ skill would read as the owner's stays pending.
   goes only as a link to its record. **Never relay a run's own PRs' review
   comments, CI or thread content**: it watches those itself. A relay carries facts,
   never authority, and **never a posting instruction**: posting comes only from
-  the repository's policy and the run's skill.
+  the repository's policy and the run's skill. **Nothing goes to a stale run**
+  (*Report*) — no relay, correction, ruling or new id — until the owner has
+  answered its question; one due before then, as in a scheduled firing or a
+  `status` turn, is recorded in the ledger as pending and sent after the answer.
   Both runs are this ledger's: a fact that matters to a peer's run goes to the
   owner, never to that run or its conductor.
 - **Merge authority comes only from each repository's resolved policy.** This
@@ -222,12 +225,31 @@ swept as `reviewers.md` says.
    line where it left one (`references/conductor-exchange.md`, *Reports*) over
    `post_turn_summary`, which can lag, `external_metadata.cross_session_inbound`,
    context usage where the record exposes it (otherwise say it is unread), and last
-   activity.
+   activity. **Then compare each live run's version with this session's install**:
+   the commit this skill's own version line reads, by `references/run-start.md`'s
+   order, against each line the run reports for a skill that repository ships —
+   never the run's line for a layer, which another repository stamps. **The
+   compare decides**: `gh api repos/<repo>/compare/<run commit>...<installed
+   commit>`, `<repo>` the agent-skills repository named by the `repo` URL in
+   `.source` or `.agent-skills-install` (where neither does, as for a version from
+   `metadata.version`, it cannot be read), never a workstream's. **Stale** only where
+   it is `ahead` and its files include a path under `skills/` or `rules/`; `ahead`
+   without one, `identical` or `behind`, current; `diverged`, unsettled. **Where the
+   compare cannot be read**, compare `committed` in UTC — the run's from
+   `repos/<repo>/commits/<sha>` where it reads, else only its line's date, in its
+   committer's offset, so a gap under two days orders nothing: an install later is
+   `stale (by date, unconfirmed)`, anything else unsettled. No installed version, or no
+   version line, is **unreadable**. Never guessed. The result goes in the run's
+   version column (*7. Ledger*); only a stale run, confirmed or not, reaches *Needs
+   you* (*Report*).
 7. **Read the forge directly as well**, per repository in scope: the epics and
    issues the ledger lists; each run's open PRs, and its integration branch where
    it has one; **each run's PRs merged since the last sweep, and by whom** —
-   the owner's merges are how a stream waiting on the owner moves; and the issues
-   opened since the last sweep. **The forge is the source of truth where sessions
+   the owner's merges are how a stream waiting on the owner moves; on each run's open
+   PR, **a review in state `PENDING` by the owner's account and its comment count**,
+   from `pulls/{n}/reviews` and that review's comments, read with this PR — GitHub
+   shows it only to the account that wrote it, so where `gh api user` is not the
+   owner's login it is unread; and the issues opened since the last sweep. **The forge is the source of truth where sessions
    are missing** — an epic or issue whose run was archived or never found is still
    a stream.
 8. **The default branch**, per repository in scope: CI on its current head, and
@@ -321,7 +343,8 @@ run's manifest, not every open issue in its epic; a reply that reads it the wide
 way is holding work nothing holds. Where a run states a gate its epic's record
 contradicts, post the correction on that epic (drafted, where *Rules* says) — never at the site of a run's open
 item (*Rules*) — quoting the record and linking
-it — then tell the run by message, pointing at the correction. Where the record
+it — then tell the run by message, pointing at the correction, a stale run's held
+as *Rules* says. Where the record
 itself is ambiguous, the reading is the owner's to rule: it goes to the owner
 pass, not into a correction.
 
@@ -329,7 +352,9 @@ pass, not into a correction.
 else the one whose manifest listed it first; else the stream rebuilding the files
 it touches — and carry the pick into the plan the owner approves (*6. Dispatch*).
 Once approved, it is recorded on both epics (*Rules*) and both runs are told, pointing at
-the record. **Where the other run is a peer's**, nothing is picked here: the claim
+the record — a stale run's message held as *Rules* says. A stale run's
+redispatch (*Report*) is not a second claim: the new run starts only once the
+stale one is archived. **Where the other run is a peer's**, nothing is picked here: the claim
 is a decision for the owner pass, and only this ledger's run is told the ruling.
 
 # 4. Owner pass
@@ -382,7 +407,8 @@ the report; the rest follow it** (`references/operator-output.md`, *Questions*).
    recorded the same way, as a relayed ruling** (`references/conductor-exchange.md`, *Relayed rulings*). A
    ruling that answers a run's held item chooses one of the options that item put;
    **whether it releases the hold is that run's own test to decide**, never this
-   skill's to declare.
+   skill's to declare. **A stale run's question is asked before anything goes to
+   it** (*Rules*).
 
 # 5. Intake and replan
 
@@ -581,7 +607,12 @@ state block or result, or from a report it builds from durable state where the
 channel is open, is reachable on the remote, `list_sessions` shows no live worker of
 it, the session holds no uncommitted work (`swarm`, *Releasing a worker*),
 and its last state block reports no live worker session and no outstanding recovery
-ref; and it is not `RUNNING`.
+ref; and it is not `RUNNING`. **A stale run the owner chose to retire and
+redispatch** (*Report*) needs no wrap-up; every other condition binds, and it waits,
+still listed, until they hold. That answer is the new run's dispatch go, recorded as
+any go is, and **executed only once the stale run is archived**: until then the new
+run is not started, the PRs stay the stale run's, and what goes to it stays held
+(*Rules*). On archiving, its open PRs are recorded as moved to the new run.
 
 **A tick the owner sends on the work queue is the owner's answer choosing that
 run**, as one given in an attended turn (`work-queue.md`, *Sessions to archive*);
@@ -604,7 +635,8 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
 - the **live-sessions table** — per stream: repository, epic or issue, the run's
   skill, the session's link and title, state (*4. Owner pass*, step 1), its context use (`used_tokens` of `max_tokens`, as read this
   sweep), and the version line or lines its reports carry
-  (`references/conductor-exchange.md`, *Reports*), else `not reported`; an
+  (`references/conductor-exchange.md`, *Reports*), else `not reported`, with the
+  installed version and the comparison's result (*1. Sweep*, step 6); an
   archived session leaves it;
 - **reviewers** — each reviewer's PR, the owner's request it answers, its
   session's link and its state, `drafted` or `failed` once reported (`reviewers.md`);
@@ -620,7 +652,8 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
   linked to where it is recorded;
 - pending conditional gos, each with its condition and its record;
 - the seed template: a link to the last good run's first prompt;
-- the work queue's URL, where one is kept (*Report*), and the merge notes the
+- the work queue's URL, where one is kept (*Report*), with `interactive since
+  <UTC>` or `read-only: <reason>` and its time (`work-queue.md`, *Which page*), and the merge notes the
   owner gave for it (`work-queue.md`);
 - the fallback check-in's id, next time and empty count;
 - the invocation arguments this skill was given;
@@ -685,7 +718,8 @@ Never force a clear, and never skip a step to beat compaction.
 1. **Dump.** Rewrite the ledger body with the full run state: each stream's state
    and next step; each run's session id, last known PR or head, its channel state
    (absent for the run, or not), whether it answered this sweep, and its context
-   use; each reviewer's row; this session's id; the resolved `conductor-clear-at` and its source; the
+   use; each reviewer's row; this session's id; the work queue's URL, or that none
+   is recorded; the resolved `conductor-clear-at` and its source; the
    last clear proposal's level, if unanswered; and what the next sweep must do
    first.
 2. **Verify.** Re-read the ledger body from its home and compare it with what was
@@ -706,11 +740,17 @@ Never force a clear, and never skip a step to beat compaction.
    Invoke <that skill> with: <every invocation argument, verbatim>. Before its
    sweep: read the ledger body first: <ledger URL> — it supersedes its history.
    Call get_session; if this session's id differs from the ledger's, send the new
-   id to every run the ledger records and update the ledger. Confirm the fallback check-in <id> is
-   still armed, and the work queue's watch where the ledger records one
-   (ArtifactComments, watch). Read queued notifications. Check first: <the one or
+   id to every run the ledger records, bar one it records as stale and unanswered,
+   and update the ledger. Confirm the fallback check-in <id> is
+   still armed; where the ledger records a work queue, re-read its watch
+   (ArtifactComments, watch, no url) and record interactive or read-only beside
+   its URL. Read queued notifications. Check first: <the one or
    two checks the dump named>.
    ```
+
+   **Where the ledger records no work-queue URL and this session holds the Artifact
+   tool**, the prompt says instead "Build the work queue first and record its URL in
+   the ledger" (*Report*), in place of re-reading its watch.
 5. **Propose**, in a few lines: the context figure; that the ledger is written and
    verified, with its link; what is expected to stay bound to this session through
    a clear — its id, its check-ins and PR subscriptions, and runs' `send_message`
@@ -725,7 +765,7 @@ Never force a clear, and never skip a step to beat compaction.
 
 **After a restart, check the id first, after the version line**: where `get_session`
 returns an id other than the ledger's, send it to every run the ledger records —
-never a peer's — and update the ledger, keeping the old id, before the sweep. The message says it is this conductor's new id and is sent from
+never a peer's, and a stale run's held as *Rules* says — and update the ledger, keeping the old id, before the sweep. The message says it is this conductor's new id and is sent from
 that id, which is what lets a run adopt it (`references/conductor-exchange.md`,
 *Pushes*).
 
@@ -759,7 +799,23 @@ is what needs the owner to act: decisions and approvals (asked as *4. Owner pass
 says), owner steps, replies and rulings to post yourself, a failure only the owner can clear — a red default branch, a
 run whose push contradicted the forge — any PR whose run pushed that its watch stopped with the PR still open, each
 drafted review to submit (`reviewers.md`), and each run's force-push held for approval, under *Confirm in a session*,
-linking its session and naming the literal tool string and the exact command waiting. *Changed
+linking its session and naming the literal tool string and the exact command waiting.
+**The owner's own pending review on a run's PR** (*1. Sweep*, step 7) is a *Review
+and submit* item, "Submit your pending review on #N (k draft comments)", linking
+the PR and labelled as the owner's unsubmitted review on GitHub under the owner's
+login: no run acts on them until they are submitted, and they are never described
+as edits to a run's comments. It is not a reviewer's draft: a reviewer drafts, under the same account,
+only on a PR no run owns (`reviewers.md`), so one PR never carries both.
+**A stale run** (*1. Sweep*, step 6) is a *Decide* item, "running an older
+contract", naming its version and the installed one, marked unconfirmed where only
+dates decided it, and saying that a review the
+owner submits on its PR wakes it under the old contract; its two options are to
+retire it and redispatch on the current skills (*6. Dispatch*, *Retire a finished
+run*), or to let it finish. The first carries everything *6. Dispatch* puts in a
+go's question — the skill, a fresh session, the plan's cost — and the go's complete
+text in *Rules*' conductor-posted form, so choosing it is a go. It is asked in the
+owner pass before anything goes to that run (*Rules*). **Never message a run to
+change how it posts.** *Changed
 since* is each run whose state from the fixed set changed, and every dispatch,
 executed conditional go, retirement and reviewer archived, each linked to its record. A default branch's CI and deploy are a *Clear a failure* item when red or failed, a change when their result moved, and otherwise counted under *Unchanged*.
 
@@ -782,9 +838,17 @@ you* changed, or a PR item's links or draft count** — emptied, or on a schedul
 firing, included — **and every `status` turn publish it**, paced as `work-queue.md`,
 *Publishing*, says: to the URL the ledger records,
 or, where none is recorded, as a new page whose URL the ledger then records
-(*7. Ledger*). **Only where the ledger records that URL does a report link it**,
+(*7. Ledger*). **Any sweep — attended, scheduled or `status` — that finds no
+work-queue URL in the ledger while this session holds the Artifact tool builds and
+publishes the first page that turn**, *Needs you* changed or not, as
+`work-queue.md`, *Which page*, says for a first publish — read-only, upgraded that
+turn where the watch lists it — unless that section builds none, and records its URL in the ledger; a
+firing that does so is not quiet. **Only where the ledger records that URL does a report link it**,
 beside the ledger, the unchanged one-line form included; otherwise the ledger link
-stands in.
+stands in. **While the ledger records the page read-only**, the link says so, with
+the recorded reason, and that answers go here, in this chat — a line beside the
+link, never a *Needs you* item, since the owner has nothing to do about it
+(`work-queue.md`, *Which page*).
 
 **On the page, an item about a PR carries its links in the order `references/operator-output.md` gives an item**: the run's session, where one owns the PR; the PR on the forge; the tracker's review page for it, where the repository is linked to a tracker that hosts PR review (`references/linear-mechanics.md`, *Review pages*), **marked with the count of unsubmitted drafts there**, labelled with the tracker account that holds them, so the item never implies a draft is on the forge when it is on the tracker; then every issue the PR closes, or a plain "no linked issue". A draft held anywhere else is linked to where it is held, labelled so — **bar a
 reply or ruling the owner is to post in a thread where no run posts, which the page

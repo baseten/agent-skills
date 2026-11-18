@@ -357,7 +357,7 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
   }
 
   function notice() {
-    if (!INTERACTIVE) return h('div', { class: 'notice bad', text: 'Read-only view. Answer decisions in the conductor session; nothing here reaches it.' });
+    if (!INTERACTIVE) return h('div', { class: 'notice bad', text: 'Read-only view' + (state.readonlyReason ? ' (' + state.readonlyReason + ')' : '') + '. Answer decisions in the conductor session; nothing here reaches it.' });
     if (mode === 'readonly') return h('div', { class: 'notice bad', text: 'This view is read-only. Only the page owner can send answers or save ticks.' });
     if (mode === 'unavailable') return h('div', { class: 'notice bad', text: 'Saving isn’t available in this view. Open the page on claude.ai to answer.' });
     if (mode !== 'ready') return null;
