@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Run conductor's work-queue prdata.py and mergeq.py against a stubbed `gh`,
-and build.py against fake states.
+and build.py and prsteps.py against fake states.
 
     python3 -I scripts/test_work_queue_prdata.py
 
@@ -57,7 +57,8 @@ def base_fixture():
         "user": {"login": OWNER},
         p: {"head": {"sha": "f" * 40}, "html_url": f"https://github.com/{REPO}/pull/{N}",
             "title": "Add thing", "base": {"ref": "main"}, "draft": False, "state": "open",
-            "merged": False, "mergeable_state": "clean"},
+            "merged": False, "mergeable_state": "clean", "user": {"login": "author"},
+            "requested_teams": [{"slug": "payments"}]},
         f"{p}/reviews": [
             {"id": 800, "state": "APPROVED", "user": {"login": "rev", "type": "User"}},
             {"id": 900, "state": "PENDING", "user": {"login": OWNER, "type": "User"}},
@@ -126,6 +127,9 @@ def main():
 
         out = expect_counts("ccr route, owner's pending review",
                             run_prdata(tmp, base_fixture()))
+        d = json.loads(out)[0]
+        assert (d["requested_teams"], d["reviewed_by"]) == (["payments"], ["rev"]), d
+        print("ok  prdata.py reads requested teams and who reviewed, for the PR steps")
         expect_counts("graphql route, owner's pending review",
                       run_prdata(tmp, graphql_threads(base_fixture())))
 
@@ -220,6 +224,56 @@ def main():
             r = build(json.load(f))
         assert r.returncode == 0, r.stderr
         print("ok  build.py builds state.example.json")
+        r = build({"title": "Work queue", "prs": [{"repo": REPO, "pr": "7", "steps": [{"label": "Merge"}]}]})
+        assert r.returncode != 0 and f"{REPO}#7" in r.stderr, r.stderr
+        print("ok  build.py refuses a PR item whose steps were not read")
+
+        # prsteps.py: the "Your PRs" items, steps read from prdata, never ticked
+        def pr(n, **kw):
+            base = dict(repo=REPO, pr=n, url=f"https://github.com/{REPO}/pull/{n}", title=f"PR {n}",
+                        draft=False, state="open", merged=False, approvals=[], changes=[],
+                        requested_teams=[], reviewed_by=[])
+            base.update(kw)
+            return base
+        prdata = [pr("1", draft=True), pr("2", requested_teams=["payments"]),
+                  pr("3", reviewed_by=["rev"], approvals=["rev"]), pr("4", merged=True, state="closed"),
+                  pr("5", approvals=["rev"])]
+        prs = [{"repo": REPO, "pr": "1", "team": "payments"},
+               {"repo": REPO, "pr": "2", "team": "payments",
+                "review": {"href": "https://tracker.example.com/r/2", "label": "Tracker review", "drafts": 2},
+                "issues": [{"label": "#9", "href": f"https://github.com/{REPO}/issues/9"}]},
+               {"repo": REPO, "pr": "3", "team": "payments",
+                "review": {"href": "https://tracker.example.com/r/3", "label": "Tracker review", "drafts": None}},
+               {"repo": REPO, "pr": "4"},
+               {"repo": REPO, "pr": "5", "session": "https://claude.ai/code/session_X",
+                "review": {"href": "https://tracker.example.com/r/5", "label": "Tracker review"}}]
+        for name, val in (("prdata.json", prdata), ("prs.json", prs),
+                          ("state.json", {"merge": [{"repo": REPO, "pr": "5", "blockers": []}],
+                                          "doneRecent": []})):
+            with open(os.path.join(tmp, name), "w") as f:
+                json.dump(val, f)
+        r = subprocess.run([sys.executable, "-I", os.path.join(WQ, "prsteps.py"), "--state", state,
+                            "--prs", os.path.join(tmp, "prs.json"), "--prdata", os.path.join(tmp, "prdata.json")],
+                           capture_output=True, text=True)
+        assert r.returncode == 0, r.stderr
+        st = json.load(open(state))
+        steps = {p["pr"]: [s["done"] for s in p["steps"]] for p in st["prs"]}
+        assert steps == {"1": [False, False, False, False], "2": [True, True, False, False],
+                         "3": [True, True, True, False]}, steps
+        print(f"ok  prsteps.py reads each step from prdata: {steps}")
+        assert st["prs"][1]["steps"][1]["label"] == "Request payments"
+        labels = {p["pr"]: [(l["k"], l["label"]) for l in p["links"]] for p in st["prs"]}
+        assert labels["2"] == [("gh", "#2"), ("rv", "Tracker review · 2 drafts"), ("iss", "#9")], labels["2"]
+        assert labels["3"] == [("gh", "#3"), ("rv", "Tracker review")], labels["3"]
+        print("ok  the review link sits right after the PR link, with a count only where one was read")
+        assert st["doneRecent"] and "#4" in st["doneRecent"][0] and "merged" in st["doneRecent"][0], st["doneRecent"]
+        assert "4" not in steps
+        print(f"ok  a merged PR leaves the section for Done recently: {st['doneRecent'][0]}")
+        assert "5" not in steps and [l["k"] for l in st["merge"][0]["links"]] == ["ses", "gh", "rv"], st["merge"]
+        print("ok  a PR that is a merge row is not listed twice, and its row takes the links")
+        r = build(dict(st, title="Work queue"))
+        assert r.returncode == 0, r.stderr
+        print("ok  build.py builds the prsteps.py output")
 
 
 if __name__ == "__main__":

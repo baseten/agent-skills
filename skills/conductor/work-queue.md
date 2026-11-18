@@ -46,9 +46,10 @@ established to work.
 ## Building it
 
 Each build, from the turn's snapshot: write `state.json` from it, the title naming
-the workstream; run `prdata.py` as part of the sweep's read of every PR the merge
-section or a held reply names (*1. Sweep*, step 7, whose read of a run's PR reads
-its reviews too), then `mergeq.py` and `prune.py` over that output — never a
+the workstream; run `prdata.py` as part of the sweep's read of every open PR of a
+run in this ledger, every PR the merge notes name and every held reply's PR
+(*1. Sweep*, step 7, whose read of a run's PR reads its reviews too), then
+`mergeq.py`, `prsteps.py` and `prune.py` over that output — never a
 second read of the forge (*The status snapshot*); then `carry.py` over the live
 version (below), then `build.py`. **Every link is a recorded URL** — a PR's
 `html_url`, a thread's `html_url` as carried — never one built from a repository
@@ -62,7 +63,19 @@ can be written; where it cannot, the page stays read-only, `read-only: an option
 lacks a ruling`. The working files sit in this session's scratchpad and are rebuilt every
 build, so none is a record and no restart prompt names one.
 
-**The merge section lists, never decides**: "Ready" means open, approved by a
+**"Your PRs" is one section, above the decisions**: the merge rows first, then one
+item per other open PR of a run in this ledger. **An item's steps** — Mark ready,
+Request <team>, Team approves, Merge — **are read from the forge at each build**
+by `prsteps.py` (not a draft; the team requested or a person reviewing; a person's
+approval; merged), the done ones marked and the next one pointed to; the page
+offers no tick for them, and `build.py` refuses an item whose steps it did not
+read. The team is the caller's, from where a layer says. A merged PR leaves the
+section for *Done recently*. **A tracker review link** (kind `rv`) sits right after
+the PR's link where the caller supplies one, with its label and a draft count only
+where the caller read one, never implied. Work that is not a PR goes under "When
+there's time".
+
+**The merge rows list, never decide**: "Ready" means open, approved by a
 person, no change request, no open thread, checks green and no blocker — never
 that a merge gate passed. A layer may add `--pending-blocker` patterns. **The
 owner's own unsubmitted review is always a blocker**, "Your unsubmitted review: k

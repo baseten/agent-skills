@@ -1,4 +1,4 @@
-"""Build the work queue's "PRs to merge" rows into state.json.
+"""Build the merge rows of the work queue's "Your PRs" section into state.json.
 
     python3 -I mergeq.py --state state.json --notes merge-notes.json --prdata prdata.json \
         [--pending-blocker 'REGEX=Text shown as a blocker'] ...

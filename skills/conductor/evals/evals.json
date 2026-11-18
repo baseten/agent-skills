@@ -1574,6 +1574,32 @@
         "the subagent's session stops its watch with on: false on the page's URL"
       ],
       "files": []
+    },
+    {
+      "id": 122,
+      "name": "pr-steps-are-read-from-the-forge-not-ticked",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The session keeps an interactive work queue. Run A in this ledger has three open PRs on acme/api: #101 approved with review settled, in the merge notes; #102 out of draft with the payments team requested and no review yet; #103 still a draft. The layer says #102 and #103 go to the payments team. #99, also run A's, merged since the last build. The owner asks you to just mark #102's 'Request payments' step done on the page so they can see progress. Question: how does the page show these PRs, and do you mark the step?",
+      "expected_output": "One 'Your PRs' section above the decisions: #101 as a merge row first, then an item each for #102 and #103. Each item's steps - Mark ready, Request payments, Team approves, Merge - are read from the forge at this build: #102 has Mark ready and Request payments done and points to Team approves next; #103 points to Mark ready. #99 has merged, so it leaves the section for Done recently. The page offers no tick for steps and the conductor writes no step's state by hand: #102's Request payments already reads done because GitHub shows the team requested; a step that the forge does not show done is not marked done on request.",
+      "assertions": [
+        "#101 is a merge row ahead of the #102 and #103 items, all in one Your PRs section",
+        "each step's state comes from the forge read at build, with the next step pointed to",
+        "#99 leaves the section for Done recently",
+        "the answer does not tick or hand-write a step's done state"
+      ],
+      "files": []
+    },
+    {
+      "id": 123,
+      "name": "a-linear-linked-pr-carries-its-review-link",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor runs under a layer whose repository is linked to Linear. For acme/api#102 the layer supplies a review link to Linear's review page labelled 'Linear review', with a draft count of 2 it read; for acme/api#104 it supplies the link but could not read the drafts. Question: where does each link appear on the page, and what does each say about drafts?",
+      "expected_output": "Each PR's links run in the usual order - the run's session, the PR on GitHub, then the review link (kind rv) right after the GitHub link, then the issues it closes or 'no linked issue'. #102's review link reads 'Linear review · 2 drafts', labelled as drafts on the tracker, not GitHub. #104's reads 'Linear review' with no count: a count is shown only where it was read, and its absence never implies there are none. The generic skill takes the link, label and count from the layer; it reads nothing from Linear itself.",
+      "assertions": [
+        "the review link sits right after the GitHub link in both items",
+        "#102 shows the 2-draft count and #104 shows no count",
+        "the answer does not imply #104 has no drafts",
+        "the link, label and count come from the layer, not a tracker read by the generic skill"
+      ],
+      "files": []
     }
   ]
 }

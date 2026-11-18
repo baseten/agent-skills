@@ -6,7 +6,8 @@ The page is the template plus one state block; the page script regenerates the
 whole document from that state and never serialises the DOM. `<` is escaped so
 no state value can close the script element. An interactive state whose open
 decision has an option with no `ruling` is refused: its answer could not be
-recorded.
+recorded. So is a "Your PRs" item whose steps do not each carry a `done` read by
+prsteps.py.
 """
 import argparse
 import html
@@ -30,6 +31,11 @@ if st.get("interactive") is True:
     if unruled:
         raise SystemExit("interactive state has open decision options with no ruling: "
                          + ", ".join(unruled))
+# a PR's steps are read from the forge by prsteps.py: each carries its done as read
+unread = [f'{p.get("repo")}#{p.get("pr")}' for p in st.get("prs") or []
+          if not p.get("steps") or any(not isinstance(s.get("done"), bool) for s in p["steps"])]
+if unread:
+    raise SystemExit("PR items whose steps were not read by prsteps.py: " + ", ".join(unread))
 for token in ("__STATE__", "<title>Work queue</title>"):
     if t.count(token) != 1:
         raise SystemExit(f"template must hold {token!r} exactly once")

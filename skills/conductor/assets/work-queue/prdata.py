@@ -1,4 +1,4 @@
-"""Read one repository's PR facts from GitHub for the work queue's merge section.
+"""Read one repository's PR facts from GitHub for the work queue's "Your PRs" section.
 
     python3 -I prdata.py --repo owner/name --owner LOGIN 101 102 > prdata.json
 
@@ -151,9 +151,14 @@ def main():
     for n in a.prs:
         p = gh(f"repos/{a.repo}/pulls/{n}")
         sha = p["head"]["sha"]
-        latest, pending_comments, own_pending = {}, {}, None
+        latest, pending_comments, own_pending, reviewed_by = {}, {}, None, set()
+        author = (p.get("user") or {}).get("login")
         for page in pages(f"repos/{a.repo}/pulls/{n}/reviews?per_page=100"):
             for r in page:  # chronological, so the last state per reviewer wins
+                u = r.get("user") or {}
+                if (r["state"] in ("APPROVED", "CHANGES_REQUESTED", "COMMENTED")
+                        and u.get("type") != "Bot" and u.get("login") != author):
+                    reviewed_by.add(u.get("login"))
                 if r["state"] in ("APPROVED", "CHANGES_REQUESTED", "DISMISSED"):
                     latest[r["user"]["login"]] = (r["state"], r["user"].get("type"))
                 elif r["state"] == "PENDING":
@@ -177,6 +182,8 @@ def main():
         out.append(dict(repo=a.repo, pr=str(n), url=p["html_url"], title=p["title"],
                         sha=sha, base=p["base"]["ref"], draft=p["draft"], state=p["state"],
                         merged=p["merged"], mergeable=p.get("mergeable_state"),
+                        requested_teams=sorted(t.get("slug") for t in p.get("requested_teams") or []),
+                        reviewed_by=sorted(reviewed_by),
                         approvals=approvals, changes=changes, unresolved=unresolved, answered=answered,
                         needs_reply=needs_reply,
                         owner_pending_drafts=(own_pending[1] if own_pending else 0)

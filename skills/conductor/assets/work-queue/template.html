@@ -67,6 +67,11 @@ li.changed { background: var(--accent-soft); }
 .k.iss { color: var(--accent); } .k.iss::before { content: "Issue"; }
 .k.tr { color: var(--tracker); } .k.tr::before { content: "Tracker"; }
 .k.ses { color: var(--ship); } .k.ses::before { content: "Session"; }
+.k.rv { color: var(--tracker); } .k.rv::before { content: "Review"; }
+ol.steps { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); }
+ol.steps li.done { color: var(--ship); } ol.steps li.done::before { content: "\2713  "; }
+ol.steps li.next { color: var(--fg); font-weight: 600; } ol.steps li.next::before { content: "\2192  "; }
+.noissue { font-size: 12.5px; color: var(--muted); }
 .cards { display: grid; gap: 12px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: grid; gap: 10px; min-width: 0; }
 .card.picked { border-color: var(--accent); }
@@ -138,7 +143,7 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
   var FONTS = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,600&display=swap';
   var state;
   try { state = JSON.parse(document.getElementById('state').textContent); } catch (e) { state = {}; }
-  state.merge = state.merge || [];
+  state.merge = state.merge || []; state.prs = state.prs || [];
   var TITLE = String(state.title || 'Work queue');
   var INTERACTIVE = state.interactive === true;
   document.title = TITLE;
@@ -190,10 +195,10 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
     return d.toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' });
   }
 
-  function linkRow(links, extra) {
+  function linkRow(links, extra, after) {
     var kids = (extra || []).concat((links || []).map(function (l) {
       return h('a', { class: 'k ' + (l.k || 'gh'), href: l.href, target: '_blank', rel: 'noopener', text: l.label });
-    }));
+    })).concat(after || []);
     return kids.length ? h('div', { class: 'row' }, kids) : null;
   }
 
@@ -318,7 +323,24 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
       h('div', { class: 'chips' }, chips)];
     if (m.blockers.length) kids.push(h('ul', { class: 'blockers' }, m.blockers.map(function (b) { return h('li', null, rich(b)); })));
     if (m.note) kids.push(h('div', { class: 'why' }, rich(m.note)));
+    var lr = prLinks(m); if (lr) kids.push(lr);
     return h('li', { class: 'mrow' + (ready ? ' is-ready' : '') }, kids);
+  }
+
+  function prLinks(p) {
+    return linkRow(p.links, null, p.noIssue ? [h('span', { class: 'noissue', text: 'no linked issue' })] : null);
+  }
+
+  // Steps are read from the forge at each build; the page shows them and never ticks them.
+  function prItem(p) {
+    var next = -1;
+    (p.steps || []).forEach(function (s, i) { if (next < 0 && !s.done) next = i; });
+    var kids = [h('div', { class: 'mhead' }, [h('a', { class: 'mpr', href: p.url, target: '_blank', rel: 'noopener', text: '#' + p.pr }), h('span', { class: 'mtitle', text: p.title })]),
+      h('ol', { class: 'steps', 'aria-label': 'Steps' }, (p.steps || []).map(function (s, i) {
+        return h('li', { class: s.done ? 'done' : i === next ? 'next' : '', text: s.label });
+      }))];
+    var lr = prLinks(p); if (lr) kids.push(lr);
+    return h('li', { class: 'mrow' }, kids);
   }
 
   function refreshCard() {
@@ -395,15 +417,14 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
     var done = state.decisions.filter(function (d) { return d.status === 'done'; });
     var replies = state.replies;
     var postedCount = replies.filter(function (r) { return isDone('reply', r); }).length;
-    var run = state.items.filter(function (i) { return i.tier === 'run'; });
-    var later = state.items.filter(function (i) { return i.tier === 'later'; });
+    var later = state.items;
     var wrap = h('div', { class: 'wrap' }, [
       h('header', null, [h('h1', { text: TITLE }),
         h('div', { class: 'meta', text: 'Read ' + fmt(state.updated) + ' by the conductor\u2019s last sweep · next check-in ' + (state.nextCheckin || '') + ' · ' + open.length + ' decisions open · ' + (replies.length - postedCount) + ' replies to post' }),
         notice()]),
       refreshCard(),
-      state.merge.length ? h('section', { id: 'merge' }, [h('div', { class: 'tier' }, [h('h2', { text: 'PRs to merge' }), h('p', { text: 'Approved, with review settled. Top to bottom within each group; refreshed at every check-in.' })]),
-        h('ol', { class: 'mlist' }, state.merge.map(mergeRow))]) : null,
+      state.merge.length || state.prs.length ? h('section', { id: 'prs' }, [h('div', { class: 'tier' }, [h('h2', { text: 'Your PRs' }), h('p', { text: 'Approved PRs with review settled first, then every other open PR of a run. Steps are read from GitHub at each check-in.' })]),
+        h('ol', { class: 'mlist' }, state.merge.map(mergeRow).concat(state.prs.map(prItem)))]) : null,
       h('section', { id: 'decisions' }, [h('div', { class: 'tier' }, [h('h2', { text: 'Decisions waiting on you' }), h('p', { text: 'Recommended options are marked. A note is optional.' })]),
         open.length ? h('div', { class: 'cards' }, open.map(decisionCard)) : h('div', { class: 'empty', text: 'Nothing waiting on you.' })]),
       sent.length ? h('section', null, [h('div', { class: 'tier' }, [h('h2', { text: 'Sent to the conductor' })]), h('div', { class: 'cards' }, sent.map(decisionCard))]) : null,
@@ -417,7 +438,6 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
       })()) : null,
       state.sessions.length ? h('section', { id: 'sessions' }, [h('div', { class: 'tier' }, [h('h2', { text: 'Sessions to archive' }), h('p', { text: 'Finished sessions with nothing left to do. Tick the ones to archive and send; the conductor archives them.' })]),
         h('ol', { class: 'list' }, state.sessions.map(sessionItem))]) : null,
-      run.length ? h('section', null, [h('div', { class: 'tier' }, [h('h2', { text: 'Run order' }), h('p', { text: 'Top to bottom.' })]), h('ol', { class: 'list run' }, run.map(workItem))]) : null,
       later.length ? h('section', null, [h('div', { class: 'tier' }, [h('h2', { text: 'When there’s time' })]), h('ol', { class: 'list' }, later.map(workItem))]) : null,
       done.length ? h('section', null, [h('div', { class: 'tier' }, [h('h2', { text: 'Decisions done' })]), h('div', { class: 'cards' }, done.map(decisionCard))]) : null,
       state.doneRecent.length ? h('section', null, [h('div', { class: 'tier' }, [h('h2', { text: 'Done recently' })]), h('ul', { class: 'donelist' }, state.doneRecent.map(function (t) { return h('li', null, rich(t)); }))]) : null

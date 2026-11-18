@@ -27,7 +27,69 @@
    "group": "Exports",
    "blockers": [],
    "auto": [],
-   "note": "Base of the stack: merge first."
+   "note": "Base of the stack: merge first.",
+   "links": [
+    {
+     "k": "ses",
+     "label": "Run session",
+     "href": "https://claude.ai/code/session_EXAMPLE"
+    },
+    {
+     "k": "gh",
+     "label": "#101",
+     "href": "https://github.com/acme/api/pull/101"
+    },
+    {
+     "k": "rv",
+     "label": "Tracker review · 1 draft",
+     "href": "https://tracker.example.com/review/101"
+    },
+    {
+     "k": "iss",
+     "label": "#2011",
+     "href": "https://github.com/acme/api/issues/2011"
+    }
+   ],
+   "noIssue": false
+  }
+ ],
+ "prs": [
+  {
+   "repo": "acme/api",
+   "pr": "102",
+   "url": "https://github.com/acme/api/pull/102",
+   "title": "Page the export list",
+   "links": [
+    {
+     "k": "ses",
+     "label": "Run session",
+     "href": "https://claude.ai/code/session_EXAMPLE"
+    },
+    {
+     "k": "gh",
+     "label": "#102",
+     "href": "https://github.com/acme/api/pull/102"
+    }
+   ],
+   "noIssue": true,
+   "steps": [
+    {
+     "label": "Mark ready",
+     "done": true
+    },
+    {
+     "label": "Request payments",
+     "done": true
+    },
+    {
+     "label": "Team approves",
+     "done": false
+    },
+    {
+     "label": "Merge",
+     "done": false
+    }
+   ]
   }
  ],
  "decisions": [
@@ -84,7 +146,6 @@
  "items": [
   {
    "id": "example-item",
-   "tier": "run",
    "kind": "ship",
    "urg": "today",
    "what": "Example work item",
