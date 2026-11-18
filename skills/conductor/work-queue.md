@@ -107,6 +107,15 @@ in a review thread.
 
 ## Answers
 
+**A save (`artifact.publish`) wakes nobody; only `comments.sendToClaude` does**,
+within seconds. So the template, which a build never alters here, takes its comment
+anchor in the click, awaits the send before saving (a save reloads the view),
+reads `canSendToClaude()` at load and on focus, never in the click, and sends
+plain text under 4 KiB that keeps every answer line whole. Its banner names each
+state's fix: `writers_only`, share the page as an editor; `no_session`, the
+conductor re-arms its watch; `off`, open it on claude.ai; a `capability_removed`
+rejection, unavailable.
+
 **An answer reaches this session only as a comment the page sends to Claude**: a
 turn headed `[Artifact comment sent to Claude]` on the page whose URL the ledger
 records. Only a writer of the page can send one, and the page is never shared. **It

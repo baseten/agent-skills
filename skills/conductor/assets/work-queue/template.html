@@ -363,7 +363,10 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
     if (mode !== 'ready') return null;
     if (canSend === 'available') return h('div', { class: 'notice ok', text: 'Pick answers on as many cards as you like, then send them together. They reach the conductor within seconds.' });
     if (canSend === 'checking') return h('div', { class: 'notice', text: 'Checking whether the conductor can be reached…' });
-    var why = canSend === 'no_session' ? 'no conductor session is watching this page right now' : canSend === 'writers_only' ? 'only editors of this page can send to Claude' : 'sending to Claude isn’t available here (' + canSend + ')';
+    var why = canSend === 'no_session' ? 'no conductor session is watching this page right now; the conductor re-arms its watch at its next sweep'
+      : canSend === 'writers_only' ? 'only editors of this page can send to Claude; open it from an account it is shared with as an editor'
+      : canSend === 'off' ? 'sending to Claude is off in this view; open the page on claude.ai, where the conductor publishes it with full comments'
+      : 'sending to Claude isn’t available here (' + canSend + ')';
     return h('div', { class: 'notice bad', text: 'Answers will save, but ' + why + '. The conductor will put saved answers to you to confirm; they are not acted on from the page alone.' });
   }
 
@@ -426,19 +429,28 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
 
   function clean(s) { return String(s || '').replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, ''); }
 
+  // Plain text under 4 KiB that always carries every answer whole: card id, option id
+  // and label. When it would be too long, prose is shortened level by level — never an
+  // answer line cut off, which the conductor could not match to its card.
+  var LEVELS = [{ q: 160, l: 160, n: 600, t: 80 }, { q: 80, l: 80, n: 200, t: 40 }, { q: 40, l: 60, n: 0, t: 0 }, { q: 0, l: 40, n: 0, t: 0 }];
   function commentText(next, ids, at, aids) {
     aids = aids || [];
-    var lines = ['[Work queue] ' + ids.length + (ids.length === 1 ? ' answer' : ' answers') + (aids.length ? ' and ' + aids.length + ' sessions to archive' : '') + ' sent at ' + at + ':'];
-    ids.forEach(function (id) {
-      var d = find(next.decisions, id);
-      var line = '- ' + clean(d.question).slice(0, 160) + ' (' + id + '): ' + clean(optLabel(d, d.answer.choice)).slice(0, 160) + ' (' + d.answer.choice + ')';
-      if (d.answer.note) line += '\n  Note: ' + clean(d.answer.note).slice(0, 600);
-      lines.push(line);
-    });
-    if (aids.length) lines.push('Archive: ' + aids.map(function (id) { var se = find(next.sessions, id); return id + (se ? ' (' + clean(se.title).slice(0, 80) + ')' : ''); }).join(', '));
-    lines.push('Everything is also saved on the page.');
-    var text = lines.join('\n');
-    while (new Blob([text]).size > 3900) text = text.slice(0, -200);
+    var text = '';
+    for (var i = 0; i < LEVELS.length; i++) {
+      var L = LEVELS[i];
+      var lines = ['[Work queue] ' + ids.length + (ids.length === 1 ? ' answer' : ' answers') + (aids.length ? ' and ' + aids.length + ' sessions to archive' : '') + ' sent at ' + at + ':'];
+      ids.forEach(function (id) {
+        var d = find(next.decisions, id);
+        var q = L.q ? clean(d.question).slice(0, L.q) + ' ' : '';
+        var line = '- ' + q + '(' + id + '): ' + clean(optLabel(d, d.answer.choice)).slice(0, L.l) + ' (' + d.answer.choice + ')';
+        if (d.answer.note) line += L.n ? '\n  Note: ' + clean(d.answer.note).slice(0, L.n) : '\n  Note: saved on the page';
+        lines.push(line);
+      });
+      if (aids.length) lines.push('Archive: ' + aids.map(function (id) { var se = find(next.sessions, id); return id + (se && L.t ? ' (' + clean(se.title).slice(0, L.t) + ')' : ''); }).join(', '));
+      lines.push('Everything is also saved on the page.');
+      text = lines.join('\n');
+      if (new Blob([text]).size <= 3900) break;
+    }
     return text;
   }
 
@@ -490,7 +502,8 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
       sending = false;
       var code = err && err.code;
       if (code === 'conflict') sendError = 'The page was just updated. It’s reloading with your choices kept; press Send again.';
-      else if (code === 'not_writer' || code === 'not_granted' || code === 'capability_disabled' || code === 'capability_removed') mode = 'readonly';
+      else if (code === 'capability_removed') mode = 'unavailable';
+      else if (code === 'not_writer' || code === 'not_granted' || code === 'capability_disabled') mode = 'readonly';
       else if (code === 'rate_limited') sendError = 'Too many saves just now. Wait a minute and send again.';
       else sendError = 'Couldn’t save (' + (code || 'error') + '). Send again.';
       render();
@@ -499,13 +512,17 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
 
   function refreshCanSend() {
     if (!commentsNs || typeof commentsNs.canSendToClaude !== 'function') { canSend = commentsNs ? 'unsupported' : 'unavailable'; render(); return; }
-    commentsNs.canSendToClaude().then(function (v) { canSend = String(v); render(); }, function (e) { canSend = (e && e.code) || 'error'; render(); });
+    commentsNs.canSendToClaude().then(function (v) { canSend = String(v); render(); }, function (e) {
+      canSend = (e && e.code) || 'error';
+      if (canSend === 'capability_removed') mode = 'unavailable';
+      render();
+    });
   }
 
   render();
   var cl = window.claude;
   if (INTERACTIVE && cl && typeof cl.use === 'function') {
-    cl.use('artifact').then(function (x) { artifactNs = x; mode = x ? 'ready' : 'unavailable'; render(); }, function () { mode = 'unavailable'; render(); });
+    cl.use('artifact').then(function (x) { artifactNs = x; mode = x && canSend !== 'capability_removed' ? 'ready' : 'unavailable'; render(); }, function () { mode = 'unavailable'; render(); });
     cl.use('comments').then(function (x) { commentsNs = x; refreshCanSend(); }, function () { commentsNs = null; refreshCanSend(); });
     window.addEventListener('focus', refreshCanSend);
     document.addEventListener('visibilitychange', function () { if (!document.hidden) refreshCanSend(); });
