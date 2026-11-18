@@ -243,7 +243,8 @@ def main():
                 "review": {"href": "https://tracker.example.com/r/2", "label": "Tracker review", "drafts": 2},
                 "issues": [{"label": "#9", "href": f"https://github.com/{REPO}/issues/9"}]},
                {"repo": REPO, "pr": "3", "team": "payments",
-                "review": {"href": "https://tracker.example.com/r/3", "label": "Tracker review", "drafts": None}},
+                "review": {"href": "https://tracker.example.com/r/3", "label": "Tracker review", "drafts": None},
+                "issues": [{"k": "tr", "label": "T-1", "href": "https://tracker.example.com/T-1"}]},
                {"repo": REPO, "pr": "4"},
                {"repo": REPO, "pr": "5", "session": "https://claude.ai/code/session_X",
                 "review": {"href": "https://tracker.example.com/r/5", "label": "Tracker review"}}]
@@ -264,8 +265,10 @@ def main():
         assert st["prs"][1]["steps"][1]["label"] == "Request payments"
         labels = {p["pr"]: [(l["k"], l["label"]) for l in p["links"]] for p in st["prs"]}
         assert labels["2"] == [("gh", "#2"), ("rv", "Tracker review · 2 drafts"), ("iss", "#9")], labels["2"]
-        assert labels["3"] == [("gh", "#3"), ("rv", "Tracker review")], labels["3"]
-        print("ok  the review link sits right after the PR link, with a count only where one was read")
+        assert labels["3"] == [("gh", "#3"), ("rv", "Tracker review"), ("tr", "T-1")], labels["3"]
+        assert st["prs"][0]["noIssue"] and not st["prs"][1]["noIssue"]
+        print("ok  the review link sits right after the PR link, with a count only where one was read;"
+              " an issue keeps a caller's kind, and none says so")
         assert st["doneRecent"] and "#4" in st["doneRecent"][0] and "merged" in st["doneRecent"][0], st["doneRecent"]
         assert "4" not in steps
         print(f"ok  a merged PR leaves the section for Done recently: {st['doneRecent'][0]}")

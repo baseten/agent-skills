@@ -10,6 +10,9 @@ from the ledger each build:
       "review": {"href": "https://...", "label": "Tracker review", "drafts": 2},
       "issues": [{"label": "#2011", "href": "https://github.com/acme/api/issues/2011"}]}]
 
+An issue link takes kind `iss` unless the entry gives its own `k`, as a tracker's
+`tr`.
+
 `team` and `review` are the caller's: this skill has no convention for either, so a
 layer says where they come from. A review link's draft count is shown only where
 it is an integer the caller read; absent or null, no count is shown or implied.
@@ -49,7 +52,7 @@ def links(e, d):
             label += f" · {n} draft{'' if n == 1 else 's'}"
         out.append({"k": "rv", "label": label, "href": rv["href"]})
     for i in e.get("issues") or []:
-        out.append({"k": "iss", "label": i["label"], "href": i["href"]})
+        out.append({"k": i.get("k") or "iss", "label": i["label"], "href": i["href"]})
     return out
 
 
