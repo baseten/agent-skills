@@ -50,7 +50,8 @@
      "href": "https://github.com/acme/api/issues/2011"
     }
    ],
-   "noIssue": false
+   "noIssue": false,
+   "ready": true
   }
  ],
  "prs": [

@@ -11,7 +11,9 @@ pending check whose name matches REGEX into a named blocker, for a check that
 waits on a person rather than on CI. The owner's own unsubmitted review, which
 prdata.py reads as owner_pending_review, is always a blocker, never part of a Ready
 row; where prdata.py could not read it (owner_pending_drafts null), the row says it
-is unread, a blocker too. Nothing here decides a merge: the owner does.
+is unread, a blocker too. Each row's `ready` is the page's "Ready to merge": no
+blocker, nothing pending, and not after a PR still listed — the only case in which
+merging it is a Needs you item. Nothing here decides a merge: the owner does.
 """
 import argparse
 import json
@@ -64,6 +66,10 @@ for n in notes:
                      answered=d.get("answered", 0), needs_reply=d.get("needs_reply", 0), ci=ci,
                      after=n.get("after"), group=n.get("group"), blockers=blockers,
                      auto=auto, note=n.get("note", "")))
+for r in rows:  # "Ready" as the page shows it: the only merge that is a Needs you item
+    waiting = r["after"] and any(x["repo"] == r["repo"] and str(x["pr"]) == str(r["after"])
+                                 for x in rows)
+    r["ready"] = not r["blockers"] and not r["auto"] and not waiting
 st["merge"] = rows
 json.dump(st, open(a.state, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 if missing:

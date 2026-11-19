@@ -73,7 +73,7 @@ evals (`<skill>#<id>`).
    create-pr#11 #22, resolve-pr-comment#17, supervise-prs#85 #120, swarm#27 #28 #29 #50,
    backlog-orchestrator#92 #93 #94 #97 #130, settle-and-merge#35 #37 #38, conductor#24 #32, owner-steps#6.
 8. **Merges are opt-in, through the one gate, failing closed.** `settle-and-merge`, *The
-   merge gate*; `rules/agent-policy.md`. backlog-orchestrator#0 #2. The gate reads review on the current
+   merge gate*; `rules/agent-policy.md`. backlog-orchestrator#0 #2, conductor#122 #125. The gate reads review on the current
    head: a publish changes no head and is inert unless the repository's own configuration (policy file,
    `CLAUDE.md`/`AGENTS.md`, a `ready_for_review` workflow) says it starts a review or a check, never a
    bot's comment; a push after review still needs re-review; a review request on a head the round spans, unanswered under its provider's mark or still inside its confirmation window, keeps it unclean, and a

@@ -65,26 +65,37 @@ lacks a ruling`. The working files sit in this session's scratchpad and are rebu
 build, so none is a record and no restart prompt names one.
 
 **"Your PRs" is one section, above the decisions**: the merge rows first, then one
-item per other open PR of a run in this ledger. **An item's steps** — Mark ready,
-Request <team>, Team approves, Merge — **are read from the forge at each build**
-by `prsteps.py` (not a draft; the team requested — `team` matched, ignoring case,
-against the forge team's slug or name — or a person reviewing; a person's approval
-with no person's latest review requesting changes, shown as "Changes requested"
-while one does; merged), the done ones marked and the next one pointed to. The page
-offers no tick for them, and **steps are never written by hand**: `build.py`
+item per other open PR of a run in this ledger. **An item's steps are read from the
+forge at each build** by `prsteps.py`, the done ones marked and the next one
+pointed to:
+
+- **Mark ready** — done when not a draft; a draft ever ready is held
+  (`references/draft-state.md`) and reads "Held in draft", never offered;
+- **Request <team>** — the team requested (`team` matched, ignoring case, against
+  the forge team's slug or name) or a person reviewing; the owner's own act, never
+  this skill's (`references/review-trigger.md`);
+- **Team approves** — a member's approval where `prdata.py` read the team's members,
+  else any person's, labelled "team not verified"; "Changes requested" while any
+  person's latest review asks for changes;
+- **never "Merge"**: merging is offered only on a merge row reading Ready, so an
+  item's last step names what keeps it out — CI, open threads, the owner's
+  unsubmitted review, or the merge notes.
+
+The page offers no tick, and **steps are never written by hand**: `build.py`
 refuses an item without `prsteps.py`'s `stepsReadAt` stamp, which catches steps it
-never filled, though not a hand edit after it. An item waiting on its team is
-marked so (`SKILL.md`, *The status snapshot*). The team is the caller's, from where
-a layer says. A merged PR leaves the section for *Done recently*. **A tracker
-review link** (kind `rv`) sits right after the PR's link only where a layer
-supplies one: its link, a label naming the tracker, and a draft count only where
-the layer read one, never implied.
+never filled, not a hand edit after it. Which items are *Needs you* is
+`SKILL.md`'s, *The status snapshot*. The team is the caller's, from where a layer
+says. A merged PR leaves for *Done recently*. **The tracker review link** (kind
+`rv`) sits right after the PR's link: this skill's own read where the repository
+is linked to Linear (`references/linear-mechanics.md`, *Review pages*), or a
+layer's, labelled with the tracker account holding the drafts and counted only
+where read, never implied.
 
 **Other *Needs you* items keep the report's groups** (`SKILL.md`, *Report*), each
 item's `group` naming one, above "When there's time", which holds only what the
 report puts at low urgency.
 
-**The merge rows list, never decide**: "Ready" means open, approved by a
+**The merge rows list, never decide**: "Ready" (`mergeq.py`'s `ready`) means open, approved by a
 person, no change request, no open thread, checks green and no blocker — never
 that a merge gate passed. A layer may add `--pending-blocker` patterns. **The
 owner's own unsubmitted review is always a blocker**, "Your unsubmitted review: k

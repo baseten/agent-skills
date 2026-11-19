@@ -13,22 +13,36 @@ from the ledger each build:
 An issue link takes kind `iss` unless the entry gives its own `k`, as a tracker's
 `tr`.
 
-`team` and `review` are the caller's: this skill has no convention for either, so a
-layer says where they come from. A review link's draft count is shown only where
-it is an integer the caller read; absent or null, no count is shown or implied.
+`team` is the caller's: this skill has no convention for it, so a layer says where
+it comes from. `review` is the PR's tracker review page: the conductor's own read of
+it where the repository is linked to Linear (rules/linear-mechanics.md, Review
+pages), or a layer's. Its label names the tracker account holding the drafts, and
+its draft count is shown only where it is an integer that was read; absent or
+null, no count is shown or implied.
 
 Each item's steps are read from the sweep's prdata.json, never ticked on the page:
-Mark ready (not a draft), Request <team> (the team requested — `team` matched,
-ignoring case, against a requested team's slug or name — or a person other than the
-author has reviewed), Team approves (an approval from a person, and no person's
-latest review requesting changes; while one does, the step reads "Changes
-requested"), Merge (merged). Each item is stamped `stepsReadAt` (UTC), which
-build.py requires: the stamp shows prsteps.py filled the steps, not that nobody
-edited them after, which the contract forbids and no check can see. `waitsOn` is
-"team" where the next step is the team's, else "owner". A merged PR leaves the
-section for "Done recently"; a closed one leaves it too. A PR already a merge row
-is not listed twice: its row takes the links. A PR with no prdata stops the
-script, as mergeq.py does.
+
+- Mark ready: done when not a draft. A draft that was ever ready is held (draft
+  state) and reads "Held in draft", never offered to the owner to publish.
+- Request <team>: done when the team is requested — `team` matched, ignoring case,
+  against a team's slug or name — or a person other than the author has reviewed.
+- Team approves: done on an approval from a member where the team's membership was
+  read; where it was not, any person's approval, labelled "approved (team not
+  verified)". While any person's latest review requests changes it reads "Changes
+  requested" and is not done.
+- The last step is never "Merge": a merge row reading Ready (mergeq.py) is the only
+  merge offered, and this PR is not a merge row, so the step names what keeps it
+  out — CI, open threads, the owner's unsubmitted review, or not being in the merge
+  notes.
+
+`waitsOn` is "owner" where the next step is the owner's (mark ready, request the
+team), "team" where it is the team's approval or a change request, "held" for a
+held draft and "blocked" past approval. Each item is stamped `stepsReadAt` (UTC),
+which build.py requires: the stamp shows prsteps.py filled the steps, not that
+nobody edited them after, which the contract forbids and no check can see. A
+merged PR leaves the section for "Done recently"; a closed one leaves it too. A PR
+already a merge row is not listed twice: its row takes the links. A PR with no
+prdata stops the script, as mergeq.py does.
 """
 import argparse
 import datetime
@@ -64,6 +78,20 @@ def links(e, d):
     return out
 
 
+def blocker(d):
+    if d.get("fail"):
+        return "Blocked: CI red (" + ", ".join(d["fail"]) + ")"
+    if d.get("pending"):
+        return "Blocked: CI running"
+    if d.get("unresolved"):
+        return f'Blocked: {d["unresolved"]} open thread{"" if d["unresolved"] == 1 else "s"}'
+    if d.get("owner_pending_drafts", 0) is None:
+        return "Blocked: your unsubmitted review is unread"
+    if d.get("owner_pending_review") is not None:
+        return "Blocked: your unsubmitted review"
+    return "Not in the merge notes"
+
+
 items, missing = [], []
 for e in json.load(open(a.prs, encoding="utf-8")):
     key = (e["repo"], str(e["pr"]))
@@ -83,21 +111,35 @@ for e in json.load(open(a.prs, encoding="utf-8")):
         continue
     team = e.get("team")
     wanted = (team or "").strip().lower()
-    requested = any(wanted and wanted in (str(t.get("slug") or "").lower(), str(t.get("name") or "").lower())
-                    for t in d.get("requested_teams") or [])
+
+    def named(slug, name):
+        return wanted and wanted in (str(slug or "").lower(), str(name or "").lower())
+    requested = any(named(t.get("slug"), t.get("name")) for t in d.get("requested_teams") or [])
+    members = next((t.get("members") for s, t in (d.get("teams") or {}).items()
+                    if named(s, t.get("name")) and t.get("members") is not None), None)
     changes = bool(d.get("changes"))
+    approvers = d["approvals"] if members is None else [u for u in d["approvals"] if u in members]
+    held = bool(d["draft"] and d.get("ever_ready"))
+    if changes:
+        approve = {"label": "Changes requested", "done": False}
+    elif approvers and members is None:
+        approve = {"label": "Team approves — approved (team not verified)", "done": True}
+    else:
+        approve = {"label": "Team approves", "done": bool(approvers)}
     steps = [
-        {"label": "Mark ready", "done": not d["draft"]},
+        {"label": "Held in draft" if held else "Mark ready", "done": not d["draft"]},
         {"label": f"Request {team}" if team else "Request review",
          "done": bool(requested or d.get("reviewed_by"))},
-        {"label": "Changes requested" if changes else "Team approves",
-         "done": bool(d["approvals"]) and not changes},
-        {"label": "Merge", "done": False},
+        approve,
+        # never "Merge" here: a merge row reading Ready is the only merge to offer, and
+        # this PR is not one, so its last step names what keeps it out
+        {"label": blocker(d), "done": False},
     ]
     nxt = next(i for i, s in enumerate(steps) if not s["done"])
+    waits = "held" if held else "team" if nxt == 2 else "blocked" if nxt == 3 else "owner"
     items.append(dict(repo=d["repo"], pr=d["pr"], url=d["url"], title=d["title"],
                       links=lk, noIssue=not e.get("issues"), steps=steps,
-                      waitsOn="team" if nxt == 2 else "owner", stepsReadAt=read_at))
+                      waitsOn=waits, stepsReadAt=read_at))
 st["prs"] = items
 st["doneRecent"] = done_recent
 json.dump(st, open(a.state, "w", encoding="utf-8"), ensure_ascii=False, indent=1)

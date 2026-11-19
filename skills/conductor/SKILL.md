@@ -16,7 +16,9 @@ session at a time. This skill **schedules** the portfolio, **takes in** planned
 epics, **dispatches** and **retires** runs on the owner's go, **collects** status
 and pending decisions into one place, and **relays** verified facts between runs.
 **It never plans a feature, implements, supervises or repairs a PR, merges,
-approves, or changes a permission**, and it tells a
+approves, changes a permission, or requests, re-requests or removes a reviewer**
+(`references/review-trigger.md`; a "request its team" item is the owner's own
+action), and it tells a
 run nothing the owner has not ruled except facts it has verified and requests for
 status.
 
@@ -277,11 +279,14 @@ later turn; the ledger stays the record. **An item in one output is in every
 output showing its kind** — a *Needs you* item in the chat is on the work queue —
 and an abbreviation, the unchanged line or a stream's cap, counts from the same
 snapshot. **An open PR of a run in this ledger whose next step is the owner's** —
-mark it ready or request its team (*Review or assign a reviewer*), or merge it
-(*Merge*) — **is a *Needs you* item in every output.** One whose next step is the
-team's approval, or a requested change, is not: **the one place the work queue
-shows more than *Needs you***, it is listed there as waiting on the team and counted
-in the report's *Unchanged* line (`work-queue.md`, *Building it*).
+mark it ready where `references/draft-state.md` makes publishing the next step,
+never a held draft; request its team, the owner's own act; or merge it, **only
+where it is a merge row reading Ready** (`work-queue.md`, *Building it*) — **is a
+*Needs you* item in every output**, under *Review or assign a reviewer* or
+*Merge*. One waiting on its team, a held draft, or an approved PR whose merge row
+is blocked or absent is not: **the one place the work queue shows more than *Needs
+you***, it is listed there as waiting, held or blocked, with its blocker as the
+current step, and counted in the report's *Unchanged* line.
 
 ## The fallback check-in
 
@@ -302,8 +307,9 @@ A sweep prints as `references/operator-output.md`, *Quiet turns*, says, where it
 **A delta** is a change in durable state the ledger compares: a run's session
 status, a PR of its opened, pushed, merged or closed, its CI conclusions, its open
 items, a pending go's condition, or a reviewer's state. Its prompt
-carries the consecutive-empty count, the ledger's URL, the comparands and the
-no-change preflight result, **each from the latest sweep's snapshot** (*The status
+carries the consecutive-empty count, the ledger's URL, the comparands, the
+no-change preflight result and each handed-over PR's 7-day deadline, **each from
+the latest sweep's snapshot** (*The status
 snapshot*): a sweep whose snapshot differs from the armed prompt replaces it,
 re-armed at its time. **A
 firing sweeps, reports, executes a verified dispatch go, plain or conditional, lists
@@ -862,7 +868,7 @@ the recorded reason, and that answers go here, in this chat — a line beside th
 link, never a *Needs you* item, since the owner has nothing to do about it
 (`work-queue.md`, *Which page*).
 
-**On the page, an item about a PR carries its links in the order `references/operator-output.md` gives an item**: the run's session, where one owns the PR; the PR on the forge; the tracker's review page for it **only where a layer supplies it** (`work-queue.md`, *Building it*) — the link, a label naming the tracker, so its count is never read as drafts on the forge, and the count of unsubmitted drafts only where the layer read it (for Linear, as `references/linear-mechanics.md`, *Review pages*, says); with no layer supplying one, no review link; then every issue the PR closes, or a plain "no linked issue". A draft held anywhere else is linked to where it is held, labelled so — **bar a
+**On the page, an item about a PR carries its links in the order `references/operator-output.md` gives an item**: the run's session, where one owns the PR; the PR on the forge; the tracker's review page for it, where the repository is linked to Linear, read as `references/linear-mechanics.md`, *Review pages*, says, or where a layer supplies its own (`work-queue.md`, *Building it*) — **marked with the count of unsubmitted drafts only where it was read**, labelled with the tracker account that holds them, since the tracker returns only the calling account's drafts, so the item never implies a draft is on the forge; then every issue the PR closes, or a plain "no linked issue". A draft held anywhere else is linked to where it is held, labelled so — **bar a
 reply or ruling the owner is to post in a thread where no run posts, which the page
 carries in full**: its text, the link to post at — the thread's `html_url` as
 recorded, never rebuilt — and the fix SHA where there is one; the page is private

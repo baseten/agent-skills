@@ -339,7 +339,8 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
       h('ol', { class: 'steps', 'aria-label': 'Steps' }, (p.steps || []).map(function (s, i) {
         return h('li', { class: s.done ? 'done' : i === next ? 'next' : '', text: s.label });
       }))];
-    if (p.waitsOn === 'team') kids.splice(1, 0, h('div', { class: 'chips' }, [h('span', { class: 'chip', text: 'Waiting on the team' })]));
+    var waitText = { team: 'Waiting on the team', held: 'Held in draft: nothing for you to do', blocked: 'Approved, not ready to merge' }[p.waitsOn];
+    if (waitText) kids.splice(1, 0, h('div', { class: 'chips' }, [h('span', { class: 'chip', text: waitText })]));
     var lr = prLinks(p); if (lr) kids.push(lr);
     return h('li', { class: 'mrow' }, kids);
   }
