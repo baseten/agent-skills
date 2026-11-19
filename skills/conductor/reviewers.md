@@ -37,7 +37,8 @@ credential sees and the reviewer checks again:
   ledger's or a peer's (`SKILL.md`, *1. Sweep*, step 2);
 - **the owner has no pending review on it, and no live or `drafted` reviewer is
   on it** — one the ledger records, or a live one whose `parent_session_id` is a peer
-  conductor.
+  conductor — where a local listing shows no parent, a live one titled
+  `Reviewer:` for this PR, a title only withholding a start, never granting one.
 
 A named PR that fails is reported with the test it failed. **Then one question**,
 in the same turn, lists the PRs that passed, with *start all* among its options;
@@ -45,14 +46,15 @@ the owner's choice starts those it names, and nothing else does.
 
 ## Starting one
 
-**One fresh session per PR**, with `create_session`, the PR's repository as its
-source, titled `Reviewer: <repo> · #<n> <short name>`, its id recorded in the
+**One fresh session per PR**, created as `SKILL.md`, *Runtime*, says, the PR's
+repository attached, titled `Reviewer: <repo> · #<n> <short name>`, its id recorded in the
 ledger at once. Its prompt is this text, whole, `<since>` being the commit of the
 owner's last review, or `none`:
 
 ```text
 First, confirm that review-pr is among this session's available skills. If it
-is not, write nothing and invoke nothing; where you hold send_message, send
+is not, write nothing and invoke nothing; where you hold send_message or
+SendMessage, send
 <conductor id> exactly:
   report · <repo>#<n> review
   state: failed — missing skill review-pr; nothing written
@@ -98,7 +100,7 @@ the owner can clear it.
 
 **A reviewer is done at `drafted` or `failed`**: nothing watches its PR for it,
 arms a check-in for it, or messages it — never asking it to submit, which is the
-owner's alone. **A reviewer verified `drafted` is archived** once a sweep reads
+owner's alone. **A reviewer verified `drafted` is archived** (`SKILL.md`, *Runtime*, release) once a sweep reads
 the owner's review of its PR submitted after its dispatch — on the forge, or on
 the tracker its drafts were on; any other reviewer only on the owner's go; none
 while `RUNNING`. This skill created it, and it writes no branch, so nothing of it

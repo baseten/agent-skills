@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 10137,
+      "budget": 11054,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 3063,
+      "budget": 3114,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
@@ -199,7 +199,7 @@
       "target": 1500
     },
     "rules/operator-output.md": {
-      "budget": 2133,
+      "budget": 2149,
       "target": 1500
     },
     "skills/write-spec/SKILL.md": {
@@ -207,7 +207,7 @@
       "target": 3000
     },
     "skills/plan-feature/SKILL.md": {
-      "budget": 2804,
+      "budget": 2812,
       "target": 3000
     },
     "rules/linear-mechanics.md": {
@@ -215,15 +215,15 @@
       "target": 1500
     },
     "skills/review-pr/SKILL.md": {
-      "budget": 1317,
+      "budget": 1325,
       "target": 3000
     },
     "skills/conductor/reviewers.md": {
-      "budget": 964,
+      "budget": 995,
       "target": 1500
     },
     "skills/conductor/work-queue.md": {
-      "budget": 2204,
+      "budget": 2233,
       "target": 1500
     }
   }

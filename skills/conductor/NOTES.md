@@ -93,6 +93,101 @@ conductor's keys scope to the conductor, while each repository keeps its own
 `manual-steps` and merge authority, as `rules/agent-policy.md`, *Resolution*,
 already requires for a per-PR or per-issue key.
 
+## Runtime
+
+**Why a local runtime (owner's request and rulings, 2026-11-19):** the contract was
+written around the cloud session tools — `list_sessions`, `get_session`,
+`create_session`, `send_message`, `set_session_title`, `send_later` and
+`cross_session_inbound` — and a conductor started in a local Claude Code session
+has none of them, so it could not run locally at all, though the runs it
+dispatches already do. The owner ruled: runs are dispatched in the conductor's own
+environment by default; a local conductor sends a run to the cloud only where the
+owner says so, in the invocation or that run's go, and the ledger records it; a
+cloud conductor cannot start a session on the owner's machine and says so; cloud
+behaviour is unchanged. **Why one table, not a second copy of the steps:** every
+step already names what it does to a session — list, read, create, message,
+release, check in — so the mapping lives once, and each step points at its
+operation; a runtime-specific branch appears only where the decision differs
+(provenance in *1. Sweep*, the clear point in *8. Context clear*, the
+conductor-posted go). Scenarios:
+`a-local-conductor-dispatches-local-by-default`,
+`an-owner-named-cloud-run-from-a-local-conductor`,
+`a-local-release-never-discards-unpushed-work`,
+`a-cloud-conductor-cannot-start-a-local-session`.
+
+**What was run to establish each local mechanic (2026-11-19, Claude Code
+2.1.327, macOS; the CLI was invoked through a wrapper, `claude-work`, which the
+contract calls `claude`).** Every test session was a throwaway on Haiku, stopped
+and removed at once, and `claude agents --json --all` afterwards listed none.
+
+| mechanic | command | observed |
+|---|---|---|
+| this session's record | `env`; `claude agents --json` | `CLAUDE_PID`, `CLAUDE_CODE_SESSION_ID` and `CLAUDE_CODE_MESSAGING_SOCKET=/tmp/cc-socks/<pid>.sock` are set in the Bash tool; the listing's row with that `pid` carries the same `sessionId`, a `name`, `cwd`, `kind`, `status`. No row field carries context usage, a parent session or a repository |
+| create | `claude --bg -n "bgtest: trivial" -w bgtest-wt --model haiku --permission-mode dontAsk --allowedTools "Bash(git commit:*)" -- "<prompt>"`, in a checkout | printed `backgrounded · d31ae0f0 · bgtest: trivial` and returned; the session ran in `.claude/worktrees/bgtest-wt` on branch `worktree-bgtest-wt`. **Without `--`** the prompt was read as an `--allowedTools` value; **in an untrusted directory** it refused: `Workspace not trusted. Run claude in <dir> once and accept the trust prompt` |
+| survives the conductor | `ps` on the session's ancestry | `bg-spare` ← `bg-pty-host` ← `claude daemon run --origin transient --spawned-by {"label":"claude --bg",…}`, whose parent is `launchd` (pid 1): the launching process had already exited, so a run does not depend on the session that dispatched it |
+| read one | `claude agents --json`; `claude logs <id>` | a background row adds `id` (short), `kind: background` and `state` (`working`, `done`); one blocked on a permission prompt read `status: waiting`, `waitingFor: "permission prompt"`. `logs` prints raw terminal output, ANSI included, legible once stripped |
+| message, same mode | `SendMessage` to `bgtest: message` (both sessions in `bypassPermissions`) | delivered; the session answered with `SendMessage` to the `from` it was given, `uds:/tmp/cc-socks/<conductor pid>.sock`, and the reply reached the sending session. A name with `: ` in it addresses fine |
+| message, other mode | `SendMessage` to a session started `--permission-mode manual` | held, not delivered: the session showed an approval prompt for the message and read `waitingFor: "permission prompt"`; the delivery notice, which reaches the sending session, said the usual cause is differing permission modes and that a hold in a session nobody attends expires undelivered. Hence *Runtime*'s same-mode rule and *2. Ask*'s held-notice clause |
+| release with unpushed work | `claude rm d31ae0f0`, after the session committed in its worktree | exit 1: `kept d31ae0f0 — 1 unpushed commit on "worktree-bgtest-wt" … It exists on no remote, so deleting the worktree would lose it`, offering `--discard-unpushed <sha>@<worktree-id>`. `claude stop` then kept the worktree; `rm --discard-unpushed` (used only on this throwaway) removed the worktree and its branch |
+| check-in | a background session called `CronCreate` one-shot for 19:00, then `CronList` | listed `[session-only]`, `next run 6:59pm`; it fired at 18:58 as a new turn in the idle background session. The tool's description: session-only, gone when Claude exits, fires only while idle, recurring jobs expire after 7 days |
+| tools present | a `claude -p` session's `ToolSearch` | `CronCreate`, `CronList`, `CronDelete`, `ListAgents`, `ScheduleWakeup` (only in `/loop`), `Monitor`; **no tool renames a session** — hence `-n` at creation and the operator's `/rename` |
+| cloud from local | `claude -p --output-format json --cloud "<prompt>"`; `claude --bg --cloud "<prompt>"` | both refused, creating nothing: `Starting a new cloud session with --cloud is interactive only` and `--bg and --cloud can't be combined`. The first error names `claude -p "message" --cloud <session-id>` for messaging an existing one |
+
+**Taken from documentation, not run here:** `claude -p "<message>" --cloud <id>`
+queues one message and exits without a reply, printing the session id (`--output-format
+json` gives `{ok, session_id, url}`), and a cloud session "receives your message but
+cannot message any session back yet" (`ListAgents`'s description) — so the channel
+to a cloud run from a local conductor is one-way, its status the forge's, which is
+the existing absent-channel reading; `/clear` locally starts a new conversation in the
+same process (the commands reference), so the restart's id check stays; a
+`CronCreate` job is restored on `--resume` but not otherwise carried past exit (the
+scheduled-tasks reference). **Not established:** whether a `CronCreate` job survives
+`/clear` — the restart prompt re-arms it where `CronList` shows it gone, so either
+answer is safe; whether a local conductor's `ListAgents` lists cloud sessions without
+Remote Control (a local parent observed on 2026-11-12 listed none, `swarm`'s
+`runtime-remote.md`) — so a cloud run under a local conductor is read from the forge,
+never the listing; what nothing fires while the machine sleeps means for a daemon
+session mid-turn.
+
+**Why `rm` is archiving, and the discard value is never passed:** `rm` deletes the
+session's worktree, which is what protected rule 9 guards; its own refusal on
+unpushed commits is a backstop, and the `--discard-unpushed` value it offers is
+exactly the act that rule forbids, so the retirement conditions bind before it, as
+for any archive.
+
+**Why a local conductor posts no go itself:** a conductor-posted go is accepted only
+after the run reads the conductor's transcript with `list_events` and finds the
+owner's input (`rules/conductor-exchange.md`, *A conductor-posted go*, check (d)). No
+run, local or cloud, can read a local session's transcript that way, so such a go
+would stay pending for ever; owner-posted is the form that works, and nothing in
+protected rule 3 changes.
+
+**Why no provenance locally:** `claude agents --json` names no parent, so the
+mark *1. Sweep*, step 2, rests on is missing; a session the ledger lacks is then
+found, if at all, by title or structure, and where a peer covers the repository it
+stays a doubtful match until the owner's go adopts it — more cautious, never less.
+A local run's own `swarm` workers are subagents or serialized, never listed
+sessions, so the `bo/` parent test has nothing to read there.
+
+**Why a local conductor is addressed by name, and sends no new id (review pass on
+this PR):** `SendMessage` addresses a session by its listed name, and a local run
+adopts no new id (`rules/conductor-exchange.md`, *Status requests*), so the name is
+what a local dispatch passes as the conductor id and what a restart must keep: the
+restart checks it, the operator's `/rename` repairs it, and a conductor restarted
+after its process exited takes it with `claude -n`. **Why runs are never retitled
+or reused locally:** no tool renames a session after creation, so step 5 reports
+the mismatch; no record shows a local run's context, and unread already counts as
+over, so the reuse test sends every local run fresh. **Why a cloud run under a
+local conductor still names it:** under a named conductor a run raises its
+questions at their sites rather than asking in a session nobody watches; its sends
+to the local name fail and end its pushes, which the forge reading already
+absorbs.
+
+**Why the clear point is the operator's locally:** no tool reads a local
+session's context usage; the operator's `/context` does. Proposing on a guessed
+figure would either nag or never fire, so the routine runs when the operator asks,
+and compaction remains the fallback, as it already is when no quiet point comes.
+
 ## Rules
 
 **Why rulings are recorded before any orchestrator is told:** an orchestrator acts
