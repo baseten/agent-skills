@@ -18,13 +18,20 @@ layer says where they come from. A review link's draft count is shown only where
 it is an integer the caller read; absent or null, no count is shown or implied.
 
 Each item's steps are read from the sweep's prdata.json, never ticked on the page:
-Mark ready (not a draft), Request <team> (the team requested, or a person other
-than the author has reviewed), Team approves (an approval from a person), Merge
-(merged). A merged PR leaves the section for "Done recently"; a closed one leaves
-it too. A PR already a merge row is not listed twice: its row takes the links.
-A PR with no prdata stops the script, as mergeq.py does.
+Mark ready (not a draft), Request <team> (the team requested — `team` matched,
+ignoring case, against a requested team's slug or name — or a person other than the
+author has reviewed), Team approves (an approval from a person, and no person's
+latest review requesting changes; while one does, the step reads "Changes
+requested"), Merge (merged). Each item is stamped `stepsReadAt` (UTC), which
+build.py requires: the stamp shows prsteps.py filled the steps, not that nobody
+edited them after, which the contract forbids and no check can see. `waitsOn` is
+"team" where the next step is the team's, else "owner". A merged PR leaves the
+section for "Done recently"; a closed one leaves it too. A PR already a merge row
+is not listed twice: its row takes the links. A PR with no prdata stops the
+script, as mergeq.py does.
 """
 import argparse
+import datetime
 import json
 
 ap = argparse.ArgumentParser()
@@ -37,6 +44,7 @@ data = {(d["repo"], d["pr"]): d for d in json.load(open(a.prdata, encoding="utf-
 st = json.load(open(a.state, encoding="utf-8"))
 rows = {(m["repo"], str(m["pr"])): m for m in st.get("merge", [])}
 done_recent = list(st.get("doneRecent", []))
+read_at = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def links(e, d):
@@ -74,15 +82,22 @@ for e in json.load(open(a.prs, encoding="utf-8")):
         rows[key]["links"], rows[key]["noIssue"] = lk, not e.get("issues")
         continue
     team = e.get("team")
+    wanted = (team or "").strip().lower()
+    requested = any(wanted and wanted in (str(t.get("slug") or "").lower(), str(t.get("name") or "").lower())
+                    for t in d.get("requested_teams") or [])
+    changes = bool(d.get("changes"))
     steps = [
         {"label": "Mark ready", "done": not d["draft"]},
         {"label": f"Request {team}" if team else "Request review",
-         "done": bool((team and team in d.get("requested_teams", [])) or d.get("reviewed_by"))},
-        {"label": "Team approves", "done": bool(d["approvals"])},
+         "done": bool(requested or d.get("reviewed_by"))},
+        {"label": "Changes requested" if changes else "Team approves",
+         "done": bool(d["approvals"]) and not changes},
         {"label": "Merge", "done": False},
     ]
+    nxt = next(i for i, s in enumerate(steps) if not s["done"])
     items.append(dict(repo=d["repo"], pr=d["pr"], url=d["url"], title=d["title"],
-                      links=lk, noIssue=not e.get("issues"), steps=steps))
+                      links=lk, noIssue=not e.get("issues"), steps=steps,
+                      waitsOn="team" if nxt == 2 else "owner", stepsReadAt=read_at))
 st["prs"] = items
 st["doneRecent"] = done_recent
 json.dump(st, open(a.state, "w", encoding="utf-8"), ensure_ascii=False, indent=1)

@@ -89,7 +89,9 @@
      "label": "Merge",
      "done": false
     }
-   ]
+   ],
+   "waitsOn": "team",
+   "stepsReadAt": "2026-11-19T09:00:00Z"
   }
  ],
  "decisions": [
@@ -150,6 +152,13 @@
    "urg": "today",
    "what": "Example work item",
    "why": "Why, with **flag** and `code` and [a link](https://example.com).",
+   "links": [],
+   "group": "Clear a failure"
+  },
+  {
+   "id": "example-later",
+   "kind": "tidy",
+   "what": "A low-urgency follow-up",
    "links": []
   }
  ],

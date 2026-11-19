@@ -276,7 +276,12 @@ with its read time — **never a record**: written nowhere as itself, read by no
 later turn; the ledger stays the record. **An item in one output is in every
 output showing its kind** — a *Needs you* item in the chat is on the work queue —
 and an abbreviation, the unchanged line or a stream's cap, counts from the same
-snapshot.
+snapshot. **An open PR of a run in this ledger whose next step is the owner's** —
+mark it ready or request its team (*Review or assign a reviewer*), or merge it
+(*Merge*) — **is a *Needs you* item in every output.** One whose next step is the
+team's approval, or a requested change, is not: **the one place the work queue
+shows more than *Needs you***, it is listed there as waiting on the team and counted
+in the report's *Unchanged* line (`work-queue.md`, *Building it*).
 
 ## The fallback check-in
 
@@ -289,8 +294,10 @@ It holds no PR watch: a settled run keeps its own
 (`references/conductor-exchange.md`, *The watch after settling*). **A stale run
 (*Report*) whose report says it handed its PR watch to this conductor**, as an
 older contract did, leaves those PRs watched by nothing: while any is open the
-check-in stays hourly and is not stopped by empty sweeps, and the report says
-those PRs are covered only by this check-in. This skill still arms no PR watch.
+check-in stays hourly and is not stopped by empty sweeps, until the 7-day bound
+`references/wake-budget.md` sets, when the PR becomes a *Needs you* item; the
+report says those PRs are covered only by this check-in. This skill still arms no
+PR watch.
 A sweep prints as `references/operator-output.md`, *Quiet turns*, says, where it meets that rule's definition.
 **A delta** is a change in durable state the ledger compares: a run's session
 status, a PR of its opened, pushed, merged or closed, its CI conclusions, its open
@@ -836,10 +843,10 @@ the report groups it, within a group what frees the most downstream work first a
 owner steps by dependency (*4. Owner pass*), with the ledger's last sweep time as
 when it was read. **`work-queue.md` beside this file is part of the contract
 wherever it is built, published or answered. It is a view, never a record**: it renders the *Needs you* of
-this turn's snapshot (*The status snapshot*), which only the sweep collects, with the links below read each sweep; nothing
+this turn's snapshot, and the PRs waiting on their team (*The status snapshot*), which only the sweep collects, with the links below read each sweep; nothing
 is recorded only there, and a viewer's marks are carried, never acted on, bar an
 answer `work-queue.md`, *Answers*, accepts. **A report whose *Needs
-you* changed, or a PR item's links or draft count** — emptied, or on a scheduled
+you* changed, or a PR item's links, draft count or steps** — emptied, or on a scheduled
 firing, included — **and every `status` turn publish it**, paced as `work-queue.md`,
 *Publishing*, says: to the URL the ledger records,
 or, where none is recorded, as a new page whose URL the ledger then records
@@ -855,11 +862,11 @@ the recorded reason, and that answers go here, in this chat — a line beside th
 link, never a *Needs you* item, since the owner has nothing to do about it
 (`work-queue.md`, *Which page*).
 
-**On the page, an item about a PR carries its links in the order `references/operator-output.md` gives an item**: the run's session, where one owns the PR; the PR on the forge; the tracker's review page for it, where the repository is linked to a tracker that hosts PR review (`references/linear-mechanics.md`, *Review pages*), **marked with the count of unsubmitted drafts there**, labelled with the tracker account that holds them, so the item never implies a draft is on the forge when it is on the tracker; then every issue the PR closes, or a plain "no linked issue". A draft held anywhere else is linked to where it is held, labelled so — **bar a
+**On the page, an item about a PR carries its links in the order `references/operator-output.md` gives an item**: the run's session, where one owns the PR; the PR on the forge; the tracker's review page for it **only where a layer supplies it** (`work-queue.md`, *Building it*) — the link, a label naming the tracker, so its count is never read as drafts on the forge, and the count of unsubmitted drafts only where the layer read it (for Linear, as `references/linear-mechanics.md`, *Review pages*, says); with no layer supplying one, no review link; then every issue the PR closes, or a plain "no linked issue". A draft held anywhere else is linked to where it is held, labelled so — **bar a
 reply or ruling the owner is to post in a thread where no run posts, which the page
 carries in full**: its text, the link to post at — the thread's `html_url` as
 recorded, never rebuilt — and the fix SHA where there is one; the page is private
 and is not the ledger. The chat's lines keep
 `references/operator-output.md`'s form. **Every link and draft count is read each
-sweep** (`references/establish-do-not-assume.md`, *You are about to assert it*) —
+sweep**, a layer's by that layer (`references/establish-do-not-assume.md`, *You are about to assert it*) —
 a subagent may gather them, returning only compact JSON.

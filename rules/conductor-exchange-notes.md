@@ -141,6 +141,8 @@ restated at the decision point.
 
 **Why the conductor takes the watch (owner's ruling, 2026-11-02):** a settled run and the conductor were both polling the same PR. Once a run is settled and waiting on the owner's merge, the conductor's hourly sweep already reads that PR, so the run's own check-in only duplicates it. The hand-off happens only on a delivered push, so a run whose conductor never heard keeps its watch; and the conductor hands the watch back before its own check-in stops, naming any PR it could not, so the hand-off never leaves a PR unwatched. *(Superseded: the hand-back is gone — see* Two independent reviews of the final head *below.)* Protected rule 9's bound is unchanged: each side's watch stays under the *wake budget* rule.
 
+**Why the rule points at the stale-run exception (review round 1 on #226):** a run on a contract older than #214 may still hand its watch to the conductor. Read alone, "a conductor holds no PR watch" and "silence is never its cue to poll" left that PR covered by nothing in the reader's view. The conductor's fallback check-in, not a watch, covers it, within the bound `rules/wake-budget.md` keeps for it, so this decision point says so and points there.
+
 ## Writes
 
 **Why the trigger is never put up for approval (field feedback):** the approval test exists to stop unread prose going out under the owner's name. A review trigger is a fixed token whose exact text the repository documents; there is nothing in it to read, and holding it for approval only delayed review. The trigger rule already exempts it from the footer for the same reason. **Why replies are kept short:** under the usual posting identity a reply reads as the owner's own words, marked only by a footer where it carries one.

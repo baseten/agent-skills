@@ -339,6 +339,7 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
       h('ol', { class: 'steps', 'aria-label': 'Steps' }, (p.steps || []).map(function (s, i) {
         return h('li', { class: s.done ? 'done' : i === next ? 'next' : '', text: s.label });
       }))];
+    if (p.waitsOn === 'team') kids.splice(1, 0, h('div', { class: 'chips' }, [h('span', { class: 'chip', text: 'Waiting on the team' })]));
     var lr = prLinks(p); if (lr) kids.push(lr);
     return h('li', { class: 'mrow' }, kids);
   }
@@ -386,7 +387,7 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
     if (canSend === 'available') return h('div', { class: 'notice ok', text: 'Pick answers on as many cards as you like, then send them together. They reach the conductor within seconds.' });
     if (canSend === 'checking') return h('div', { class: 'notice', text: 'Checking whether the conductor can be reached…' });
     var why = canSend === 'no_session' ? 'no conductor session is watching this page right now; the conductor re-arms its watch at its next sweep'
-      : canSend === 'writers_only' ? 'only editors of this page can send to Claude; open it from an account it is shared with as an editor'
+      : canSend === 'writers_only' ? 'only the page’s owner can send to Claude; open it signed in to the account that owns it'
       : canSend === 'off' ? 'sending to Claude is off in this view; open the page on claude.ai, where the conductor publishes it with full comments'
       : 'sending to Claude isn’t available here (' + canSend + ')';
     return h('div', { class: 'notice bad', text: 'Answers will save, but ' + why + '. The conductor will put saved answers to you to confirm; they are not acted on from the page alone.' });
@@ -417,7 +418,15 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
     var done = state.decisions.filter(function (d) { return d.status === 'done'; });
     var replies = state.replies;
     var postedCount = replies.filter(function (r) { return isDone('reply', r); }).length;
-    var later = state.items;
+    // Needs you items keep the report's groups, in the order the build wrote them;
+    // only items with no group, which the report puts at low urgency, wait for time.
+    var later = state.items.filter(function (i) { return !i.group; });
+    var groups = [];
+    state.items.forEach(function (i) { if (i.group && groups.indexOf(i.group) < 0) groups.push(i.group); });
+    var grouped = groups.map(function (g) {
+      return h('section', null, [h('div', { class: 'tier' }, [h('h2', { text: g })]),
+        h('ol', { class: 'list' }, state.items.filter(function (i) { return i.group === g; }).map(workItem))]);
+    });
     var wrap = h('div', { class: 'wrap' }, [
       h('header', null, [h('h1', { text: TITLE }),
         h('div', { class: 'meta', text: 'Read ' + fmt(state.updated) + ' by the conductor\u2019s last sweep · next check-in ' + (state.nextCheckin || '') + ' · ' + open.length + ' decisions open · ' + (replies.length - postedCount) + ' replies to post' }),
@@ -438,10 +447,11 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
       })()) : null,
       state.sessions.length ? h('section', { id: 'sessions' }, [h('div', { class: 'tier' }, [h('h2', { text: 'Sessions to archive' }), h('p', { text: 'Finished sessions with nothing left to do. Tick the ones to archive and send; the conductor archives them.' })]),
         h('ol', { class: 'list' }, state.sessions.map(sessionItem))]) : null,
+    ].concat(grouped, [
       later.length ? h('section', null, [h('div', { class: 'tier' }, [h('h2', { text: 'When there’s time' })]), h('ol', { class: 'list' }, later.map(workItem))]) : null,
       done.length ? h('section', null, [h('div', { class: 'tier' }, [h('h2', { text: 'Decisions done' })]), h('div', { class: 'cards' }, done.map(decisionCard))]) : null,
       state.doneRecent.length ? h('section', null, [h('div', { class: 'tier' }, [h('h2', { text: 'Done recently' })]), h('ul', { class: 'donelist' }, state.doneRecent.map(function (t) { return h('li', null, rich(t)); }))]) : null
-    ]);
+    ]));
     app.replaceChildren(wrap, bar);
     renderBar();
     if (focused) { var f = document.getElementById(focused); if (f) f.focus(); }

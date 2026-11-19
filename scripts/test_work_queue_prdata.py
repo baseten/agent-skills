@@ -58,7 +58,7 @@ def base_fixture():
         p: {"head": {"sha": "f" * 40}, "html_url": f"https://github.com/{REPO}/pull/{N}",
             "title": "Add thing", "base": {"ref": "main"}, "draft": False, "state": "open",
             "merged": False, "mergeable_state": "clean", "user": {"login": "author"},
-            "requested_teams": [{"slug": "payments"}]},
+            "requested_teams": [{"slug": "fe-platform", "name": "FE Platform"}]},
         f"{p}/reviews": [
             {"id": 800, "state": "APPROVED", "user": {"login": "rev", "type": "User"}},
             {"id": 900, "state": "PENDING", "user": {"login": OWNER, "type": "User"}},
@@ -128,7 +128,7 @@ def main():
         out = expect_counts("ccr route, owner's pending review",
                             run_prdata(tmp, base_fixture()))
         d = json.loads(out)[0]
-        assert (d["requested_teams"], d["reviewed_by"]) == (["payments"], ["rev"]), d
+        assert (d["requested_teams"], d["reviewed_by"]) == ([{"slug": "fe-platform", "name": "FE Platform"}], ["rev"]), d
         print("ok  prdata.py reads requested teams and who reviewed, for the PR steps")
         expect_counts("graphql route, owner's pending review",
                       run_prdata(tmp, graphql_threads(base_fixture())))
@@ -224,9 +224,12 @@ def main():
             r = build(json.load(f))
         assert r.returncode == 0, r.stderr
         print("ok  build.py builds state.example.json")
-        r = build({"title": "Work queue", "prs": [{"repo": REPO, "pr": "7", "steps": [{"label": "Merge"}]}]})
-        assert r.returncode != 0 and f"{REPO}#7" in r.stderr, r.stderr
-        print("ok  build.py refuses a PR item whose steps were not read")
+        for label, item in (("no done", {"repo": REPO, "pr": "7", "steps": [{"label": "Merge"}],
+                                          "stepsReadAt": "2026-11-19T09:00:00Z"}),
+                            ("no stamp", {"repo": REPO, "pr": "7", "steps": [{"label": "Merge", "done": False}]})):
+            r = build({"title": "Work queue", "prs": [item]})
+            assert r.returncode != 0 and f"{REPO}#7" in r.stderr, (label, r.stderr)
+        print("ok  build.py refuses a PR item without prsteps.py's stamp, or with a step lacking done")
 
         # prsteps.py: the "Your PRs" items, steps read from prdata, never ticked
         def pr(n, **kw):
@@ -235,17 +238,21 @@ def main():
                         requested_teams=[], reviewed_by=[])
             base.update(kw)
             return base
-        prdata = [pr("1", draft=True), pr("2", requested_teams=["payments"]),
+        prdata = [pr("1", draft=True), pr("2", requested_teams=[{"slug": "fe-platform", "name": "FE Platform"}]),
                   pr("3", reviewed_by=["rev"], approvals=["rev"]), pr("4", merged=True, state="closed"),
-                  pr("5", approvals=["rev"])]
+                  pr("5", approvals=["rev"]),
+                  pr("6", reviewed_by=["rev", "dana"], approvals=["rev"], changes=["dana"]),
+                  pr("8", requested_teams=[{"slug": "fe-platform", "name": "FE Platform"}])]
         prs = [{"repo": REPO, "pr": "1", "team": "payments"},
-               {"repo": REPO, "pr": "2", "team": "payments",
+               {"repo": REPO, "pr": "2", "team": "FE Platform",
                 "review": {"href": "https://tracker.example.com/r/2", "label": "Tracker review", "drafts": 2},
                 "issues": [{"label": "#9", "href": f"https://github.com/{REPO}/issues/9"}]},
                {"repo": REPO, "pr": "3", "team": "payments",
                 "review": {"href": "https://tracker.example.com/r/3", "label": "Tracker review", "drafts": None},
                 "issues": [{"k": "tr", "label": "T-1", "href": "https://tracker.example.com/T-1"}]},
                {"repo": REPO, "pr": "4"},
+               {"repo": REPO, "pr": "6", "team": "payments"},
+               {"repo": REPO, "pr": "8", "team": "fe platform"},
                {"repo": REPO, "pr": "5", "session": "https://claude.ai/code/session_X",
                 "review": {"href": "https://tracker.example.com/r/5", "label": "Tracker review"}}]
         for name, val in (("prdata.json", prdata), ("prs.json", prs),
@@ -260,9 +267,18 @@ def main():
         st = json.load(open(state))
         steps = {p["pr"]: [s["done"] for s in p["steps"]] for p in st["prs"]}
         assert steps == {"1": [False, False, False, False], "2": [True, True, False, False],
-                         "3": [True, True, True, False]}, steps
+                         "3": [True, True, True, False], "6": [True, True, False, False],
+                         "8": [True, True, False, False]}, steps
         print(f"ok  prsteps.py reads each step from prdata: {steps}")
-        assert st["prs"][1]["steps"][1]["label"] == "Request payments"
+        by = {p["pr"]: p for p in st["prs"]}
+        assert by["2"]["steps"][1]["label"] == "Request FE Platform"
+        print("ok  the caller's team matches the forge team's name or slug, ignoring case")
+        assert by["6"]["steps"][2]["label"] == "Changes requested" and by["6"]["waitsOn"] == "team"
+        print("ok  an outstanding change request holds Team approves, shown as Changes requested, never Merge next")
+        assert {k: p["waitsOn"] for k, p in by.items()} == {"1": "owner", "2": "team", "3": "owner",
+                                                           "6": "team", "8": "team"}
+        assert all(p.get("stepsReadAt") for p in st["prs"])
+        print("ok  each item says whose step is next and carries prsteps.py's stamp")
         labels = {p["pr"]: [(l["k"], l["label"]) for l in p["links"]] for p in st["prs"]}
         assert labels["2"] == [("gh", "#2"), ("rv", "Tracker review · 2 drafts"), ("iss", "#9")], labels["2"]
         assert labels["3"] == [("gh", "#3"), ("rv", "Tracker review"), ("tr", "T-1")], labels["3"]

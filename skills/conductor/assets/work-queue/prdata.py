@@ -182,7 +182,8 @@ def main():
         out.append(dict(repo=a.repo, pr=str(n), url=p["html_url"], title=p["title"],
                         sha=sha, base=p["base"]["ref"], draft=p["draft"], state=p["state"],
                         merged=p["merged"], mergeable=p.get("mergeable_state"),
-                        requested_teams=sorted(t.get("slug") for t in p.get("requested_teams") or []),
+                        requested_teams=[{"slug": t.get("slug"), "name": t.get("name")}
+                                         for t in p.get("requested_teams") or []],
                         reviewed_by=sorted(reviewed_by),
                         approvals=approvals, changes=changes, unresolved=unresolved, answered=answered,
                         needs_reply=needs_reply,

@@ -835,8 +835,8 @@
     {
       "id": 65,
       "name": "a-tracker-review-draft-is-marked-on-the-queue-item",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present and the session keeps a work queue. acme/api is linked to a tracker that hosts PR review. Item: the owner must review acme/api#841. When building the page you read the tracker's review page for #841 and find one unsubmitted request-changes draft there, held by the tracker account this session reads as, which is the owner's; nothing is pending on the forge. Run A's session owns #841, which closes acme/api#810. Question: what links does #841's queue item carry, in what order, and how is the draft shown?",
-      "expected_output": "Four links, in order: run A's session; the PR on the forge; the tracker's review page for #841, marked with the draft count - '1 draft', labelled with the owner's tracker account - so the owner knows the request-changes draft is there; then the issue it closes, #810. The item never implies the draft is on the forge, and a forge link alone would be a failure: the owner would see nothing waiting. The link and the count were read this sweep, never from memory.",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present and the session keeps a work queue. acme/api is linked to a tracker that hosts PR review. Item: the owner must review acme/api#841. The layer this conductor runs under supplies the tracker's review page for #841, labelled with the tracker's name, and the one unsubmitted request-changes draft it read there, held by the owner's tracker account; nothing is pending on the forge. Run A's session owns #841, which closes acme/api#810. Question: what links does #841's queue item carry, in what order, and how is the draft shown?",
+      "expected_output": "Four links, in order: run A's session; the PR on the forge; the tracker's review page for #841 as the layer supplied it, its label naming the tracker and marked with the draft count - '1 draft' - so the owner knows the request-changes draft is there and that it is on the tracker; then the issue it closes, #810. The item never implies the draft is on the forge, and a forge link alone would be a failure: the owner would see nothing waiting. The link and the count were read this sweep, by the layer, never from memory; without a layer supplying one there would be no review link.",
       "assertions": [
         "the item links run A's session first, then the forge PR, then the tracker review page",
         "the tracker review link is marked with the draft count",
@@ -849,7 +849,7 @@
       "id": 66,
       "name": "a-pr-with-no-linked-issue-says-so",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present and the session keeps a work queue. acme/web#91 is settled and waiting on the owner's merge. Building the page, you find the PR closes no issue: no linked issue on the tracker and no issue identifier in its title. Question: what does #91's queue item show for its issues?",
-      "expected_output": "It carries the forge PR, the tracker's review page where the repository is linked to one, then a plain 'no linked issue' where the closing issues would go, and the run's session where one owns it. It does not omit the slot silently or invent an issue.",
+      "expected_output": "It carries the forge PR, the tracker's review page where a layer supplies one, then a plain 'no linked issue' where the closing issues would go, and the run's session where one owns it. It does not omit the slot silently or invent an issue.",
       "assertions": [
         "the item says plainly that the PR has no linked issue",
         "the item does not invent or guess an issue"
@@ -1553,10 +1553,11 @@
     {
       "id": 120,
       "name": "a-handed-back-watch-keeps-the-check-in-hourly",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Run A is recorded stale and the owner chose to let it finish. Its last report says 'settled, waiting on owner merge - PR watch handed to the conductor' for acme/web#310, which is open and approved. The fallback check-in has now fired 3 times in a row with nothing changed. Question: is the check-in stopped, what does the report say about #310, and what does the stale item say wakes run A?",
-      "expected_output": "The check-in is not stopped: a run on an older contract handed #310's watch to the conductor, which holds none, so while #310 is open nothing else watches it and the check-in stays hourly without the three-empty-sweeps stop. The conductor arms no PR watch of its own. The report says #310 is covered only by the hourly check-in. The stale item says that a review the owner submits on #310, or the owner's merge of it, wakes run A under the old contract.",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Run A is recorded stale and the owner chose to let it finish. Its last report says 'settled, waiting on owner merge - PR watch handed to the conductor' for acme/web#310, which is open and approved. Run A reported that result 2 days ago. The fallback check-in has now fired 3 times in a row with nothing changed. Question: is the check-in stopped now, what happens if #310 is still open 7 days after run A's report, what does the report say about #310, and what does the stale item say wakes run A?",
+      "expected_output": "The check-in is not stopped: a run on an older contract handed #310's watch to the conductor, which holds none, so while #310 is open nothing else watches it and the check-in stays hourly without the three-empty-sweeps stop, its 7-day deadline from run A's report carried in the prompt. At that bound #310 becomes a Needs you item and the stop binds again; the check-in is never unbounded. The conductor arms no PR watch of its own. The report says #310 is covered only by the hourly check-in. The stale item says that a review the owner submits on #310, or the owner's merge of it, wakes run A under the old contract.",
       "assertions": [
         "the check-in is not stopped after three empty sweeps while #310 is open",
+        "at 7 days after run A's report, #310 becomes a Needs you item and the check-in's stop binds again",
         "the conductor does not arm a PR watch of its own",
         "the report says #310 is covered only by the check-in",
         "the stale item names the owner's merge as well as a submitted review as waking run A"
@@ -1578,11 +1579,13 @@
     {
       "id": 122,
       "name": "pr-steps-are-read-from-the-forge-not-ticked",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The session keeps an interactive work queue. Run A in this ledger has three open PRs on acme/api: #101 approved with review settled, in the merge notes; #102 out of draft with the payments team requested and no review yet; #103 still a draft. The layer says #102 and #103 go to the payments team. #99, also run A's, merged since the last build. The owner asks you to just mark #102's 'Request payments' step done on the page so they can see progress. Question: how does the page show these PRs, and do you mark the step?",
-      "expected_output": "One 'Your PRs' section above the decisions: #101 as a merge row first, then an item each for #102 and #103. Each item's steps - Mark ready, Request payments, Team approves, Merge - are read from the forge at this build: #102 has Mark ready and Request payments done and points to Team approves next; #103 points to Mark ready. #99 has merged, so it leaves the section for Done recently. The page offers no tick for steps and the conductor writes no step's state by hand: #102's Request payments already reads done because GitHub shows the team requested; a step that the forge does not show done is not marked done on request.",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The session keeps an interactive work queue. Run A in this ledger has three open PRs on acme/api: #101 approved with review settled, in the merge notes; #102 out of draft with the payments team requested and no review yet; #105 approved by one person while another's latest review requests changes; #103 still a draft. The layer says #102, #103 and #105 go to the payments team. #99, also run A's, merged since the last build. The owner asks you to just mark #102's 'Request payments' step done on the page so they can see progress. Question: how does the page show these PRs, and do you mark the step?",
+      "expected_output": "One 'Your PRs' section above the decisions: #101 as a merge row first, then an item each for #102, #103 and #105. Each item's steps - Mark ready, Request payments, Team approves, Merge - are read from the forge at this build: #102 has Mark ready and Request payments done and points to Team approves next; #103 points to Mark ready. #105's third step reads 'Changes requested' and is the current one, never Merge, despite the approval. #103's next step is the owner's, so it is also a Needs you item in the chat; #102 and #105 wait on the team, so they show on the page as waiting and are counted in the report's Unchanged line, not listed under Needs you. #99 has merged, so it leaves the section for Done recently. The page offers no tick for steps and the conductor writes no step's state by hand: #102's Request payments already reads done because GitHub shows the team requested; a step that the forge does not show done is not marked done on request.",
       "assertions": [
         "#101 is a merge row ahead of the #102 and #103 items, all in one Your PRs section",
         "each step's state comes from the forge read at build, with the next step pointed to",
+        "#105 shows 'Changes requested' as its current step and is not pointed at Merge",
+        "#103 is a Needs you item; #102 and #105 are shown as waiting on the team and counted under Unchanged",
         "#99 leaves the section for Done recently",
         "the answer does not tick or hand-write a step's done state"
       ],
@@ -1592,12 +1595,24 @@
       "id": 123,
       "name": "a-linear-linked-pr-carries-its-review-link",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor runs under a layer whose repository is linked to Linear. For acme/api#102 the layer supplies a review link to Linear's review page labelled 'Linear review', with a draft count of 2 it read; for acme/api#104 it supplies the link but could not read the drafts. Question: where does each link appear on the page, and what does each say about drafts?",
-      "expected_output": "Each PR's links run in the usual order - the run's session, the PR on GitHub, then the review link (kind rv) right after the GitHub link, then the issues it closes or 'no linked issue'. #102's review link reads 'Linear review · 2 drafts', labelled as drafts on the tracker, not GitHub. #104's reads 'Linear review' with no count: a count is shown only where it was read, and its absence never implies there are none. The generic skill takes the link, label and count from the layer; it reads nothing from Linear itself.",
+      "expected_output": "Each PR's links run in the usual order - the run's session, the PR on GitHub, then the review link (kind rv) right after the GitHub link, then the issues it closes or 'no linked issue'. #102's review link reads 'Linear review · 2 drafts', labelled as drafts on the tracker, not GitHub. #104's reads 'Linear review' with no count: a count is shown only where it was read, and its absence never implies there are none. The label names the tracker, so the count is never read as drafts on GitHub. The generic skill takes the link, label and count from the layer and reads nothing from Linear itself; with no layer supplying one, a PR carries no review link.",
       "assertions": [
         "the review link sits right after the GitHub link in both items",
         "#102 shows the 2-draft count and #104 shows no count",
         "the answer does not imply #104 has no drafts",
         "the link, label and count come from the layer, not a tracker read by the generic skill"
+      ],
+      "files": []
+    },
+    {
+      "id": 124,
+      "name": "urgent-items-keep-their-group-above-when-theres-time",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The session keeps a work queue. This sweep's Needs you holds, besides decisions and PRs: a red default branch on acme/web (Clear a failure), a run waiting on a permission prompt (Confirm in a session), and two owner steps. A low-urgency tidy-up the report lists last is also on the ledger. Question: where does each go on the page?",
+      "expected_output": "Each Needs you item keeps the report's group on the page, in the report's order: the red default branch under Clear a failure and the permission prompt under Confirm in a session, each with its links, and the owner steps under Owner steps, all above 'When there's time'. Only the low-urgency tidy-up goes under 'When there's time'. Nothing urgent is put under 'When there's time' because it is not a PR.",
+      "assertions": [
+        "the red default branch and the permission prompt keep their report groups on the page",
+        "those groups sit above 'When there's time'",
+        "only the low-urgency item goes under 'When there's time'"
       ],
       "files": []
     }

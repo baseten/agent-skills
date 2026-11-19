@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 9904,
+      "budget": 10022,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -155,7 +155,7 @@
       "target": 1500
     },
     "rules/conductor-exchange.md": {
-      "budget": 3026,
+      "budget": 3063,
       "target": 1500
     },
     "rules/mechanical-pushes.md": {
@@ -191,7 +191,7 @@
       "target": 1500
     },
     "rules/wake-budget.md": {
-      "budget": 2114,
+      "budget": 2150,
       "target": 1500
     },
     "rules/watch-and-read.md": {
@@ -223,7 +223,7 @@
       "target": 1500
     },
     "skills/conductor/work-queue.md": {
-      "budget": 1982,
+      "budget": 2075,
       "target": 1500
     }
   }

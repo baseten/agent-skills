@@ -7,8 +7,9 @@ answered (`SKILL.md`, *Report*). The reasoning is in `NOTES.md`, *The work queue
 (`state.example.json` gives its shape). The page's own script regenerates the whole
 document from that state and saves through `claude.use("artifact").publish(html)`;
 nothing serialises the DOM. **It is private, never shared or made public, and a
-view, never a record**: it renders the *Needs you* of this turn's snapshot (`SKILL.md`,
-*The status snapshot*), and nothing is recorded only on it.
+view, never a record**: it renders the *Needs you* of this turn's snapshot, and the
+PRs waiting on their team (`SKILL.md`, *The status snapshot*), and nothing is
+recorded only on it.
 
 ## Which page
 
@@ -66,14 +67,22 @@ build, so none is a record and no restart prompt names one.
 **"Your PRs" is one section, above the decisions**: the merge rows first, then one
 item per other open PR of a run in this ledger. **An item's steps** — Mark ready,
 Request <team>, Team approves, Merge — **are read from the forge at each build**
-by `prsteps.py` (not a draft; the team requested or a person reviewing; a person's
-approval; merged), the done ones marked and the next one pointed to; the page
-offers no tick for them, and `build.py` refuses an item whose steps it did not
-read. The team is the caller's, from where a layer says. A merged PR leaves the
-section for *Done recently*. **A tracker review link** (kind `rv`) sits right after
-the PR's link where the caller supplies one, with its label and a draft count only
-where the caller read one, never implied. Work that is not a PR goes under "When
-there's time".
+by `prsteps.py` (not a draft; the team requested — `team` matched, ignoring case,
+against the forge team's slug or name — or a person reviewing; a person's approval
+with no person's latest review requesting changes, shown as "Changes requested"
+while one does; merged), the done ones marked and the next one pointed to. The page
+offers no tick for them, and **steps are never written by hand**: `build.py`
+refuses an item without `prsteps.py`'s `stepsReadAt` stamp, which catches steps it
+never filled, though not a hand edit after it. An item waiting on its team is
+marked so (`SKILL.md`, *The status snapshot*). The team is the caller's, from where
+a layer says. A merged PR leaves the section for *Done recently*. **A tracker
+review link** (kind `rv`) sits right after the PR's link only where a layer
+supplies one: its link, a label naming the tracker, and a draft count only where
+the layer read one, never implied.
+
+**Other *Needs you* items keep the report's groups** (`SKILL.md`, *Report*), each
+item's `group` naming one, above "When there's time", which holds only what the
+report puts at low urgency.
 
 **The merge rows list, never decide**: "Ready" means open, approved by a
 person, no change request, no open thread, checks green and no blocker — never
@@ -125,7 +134,8 @@ within seconds. So the template, which a build never alters here, takes its comm
 anchor in the click, awaits the send before saving (a save reloads the view),
 reads `canSendToClaude()` at load and on focus, never in the click, and sends
 plain text under 4 KiB that keeps every answer line whole. Its banner names each
-state's fix: `writers_only`, share the page as an editor; `no_session`, the
+state's fix: `writers_only`, open it from the account that owns it, never by
+sharing it; `no_session`, the
 conductor re-arms its watch; `off`, open it on claude.ai; a `capability_removed`
 rejection, unavailable.
 
