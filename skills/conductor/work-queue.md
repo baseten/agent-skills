@@ -7,8 +7,9 @@ answered (`SKILL.md`, *Report*). The reasoning is in `NOTES.md`, *The work queue
 (`state.example.json` gives its shape). The page's own script regenerates the whole
 document from that state and saves through `claude.use("artifact").publish(html)`;
 nothing serialises the DOM. **It is private, never shared or made public, and a
-view, never a record**: it renders the *Needs you* of this turn's snapshot (`SKILL.md`,
-*The status snapshot*), and nothing is recorded only on it.
+view, never a record**: it renders the *Needs you* of this turn's snapshot, and the
+PRs waiting on their team (`SKILL.md`, *The status snapshot*), and nothing is
+recorded only on it.
 
 ## Which page
 
@@ -46,9 +47,10 @@ established to work.
 ## Building it
 
 Each build, from the turn's snapshot: write `state.json` from it, the title naming
-the workstream; run `prdata.py` as part of the sweep's read of every PR the merge
-section or a held reply names (*1. Sweep*, step 7, whose read of a run's PR reads
-its reviews too), then `mergeq.py` and `prune.py` over that output — never a
+the workstream; run `prdata.py` as part of the sweep's read of every open PR of a
+run in this ledger, every PR the merge notes name and every held reply's PR
+(*1. Sweep*, step 7, whose read of a run's PR reads its reviews too), then
+`mergeq.py`, `prsteps.py` and `prune.py` over that output — never a
 second read of the forge (*The status snapshot*); then `carry.py` over the live
 version (below), then `build.py`. **Every link is a recorded URL** — a PR's
 `html_url`, a thread's `html_url` as carried — never one built from a repository
@@ -62,7 +64,43 @@ can be written; where it cannot, the page stays read-only, `read-only: an option
 lacks a ruling`. The working files sit in this session's scratchpad and are rebuilt every
 build, so none is a record and no restart prompt names one.
 
-**The merge section lists, never decides**: "Ready" means open, approved by a
+**"Your PRs" is one section, above the decisions**: the merge rows first, then one
+item per other open PR of a run in this ledger. **An item's steps are read from the
+forge at each build** by `prsteps.py`, the done ones marked and the next one
+pointed to:
+
+- **Mark ready** — done when not a draft; a draft ever ready is held
+  (`references/draft-state.md`) and reads "Held in draft". A hold can also sit
+  where no timeline shows it, so a draft is offered only where the entry carries
+  `awaitingPublish`, set from its run's report that it awaits the owner's publish;
+  any other reads "Draft", with no owner step;
+- **Request <team>** — the team requested (`team` matched, ignoring case, against
+  the forge team's slug or name) or a person reviewing; the owner's own act, never
+  this skill's (`references/review-trigger.md`);
+- **Team approves** — a member's approval where `prdata.py` read the team's members,
+  else any person's, labelled "team not verified"; "Changes requested" while any
+  person's latest review asks for changes. A team can leave `requested_teams` once
+  a member reviews, and is then checked only where the caller passes `--team`
+  with its slug;
+- **never "Merge"**: merging is offered only on a merge row reading Ready, so an
+  item's last step names what keeps it out — CI, open threads, the owner's
+  unsubmitted review, or the merge notes.
+
+The page offers no tick, and **steps are never written by hand**: `build.py`
+refuses an item without `prsteps.py`'s `stepsReadAt` stamp, which catches steps it
+never filled, not a hand edit after it. Which items are *Needs you* is
+`SKILL.md`'s, *The status snapshot*. The team is the caller's, from where a layer
+says. A merged PR leaves for *Done recently*. **The tracker review link** (kind
+`rv`) sits right after the PR's link: this skill's own read where the repository
+is linked to Linear (`references/linear-mechanics.md`, *Review pages*), or a
+layer's, labelled with the tracker account holding the drafts and counted only
+where read, never implied.
+
+**Other *Needs you* items keep the report's groups** (`SKILL.md`, *Report*), each
+item's `group` naming one, above "When there's time", which holds only what the
+report puts at low urgency.
+
+**The merge rows list, never decide**: "Ready" (`mergeq.py`'s `ready`) means open, approved by a
 person, no change request, no open thread, checks green and no blocker — never
 that a merge gate passed. A layer may add `--pending-blocker` patterns. **The
 owner's own unsubmitted review is always a blocker**, "Your unsubmitted review: k
@@ -85,10 +123,17 @@ in a review thread.
 
 ## Publishing
 
-- **Merge before republishing.** Read the live version (the Artifact tool, `read`)
-  and run `carry.py` over it, so the owner's saved answers and ticks survive; where
+- **Merge before every publish**, a turn's first rebuild and a first publish's
+  upgrade included. Read the live version (the Artifact tool, `read`)
+  and run `carry.py` over it, so the owner's saved answers and ticks survive — a
+  build from a copy held since an earlier turn would erase them; where
   a publish is refused, carry onto the version the refusal hands over and publish
   again. Carried marks are never acted on.
+- **A session that publishes the page starts watching it.** Any session other than
+  the conductor's that publishes it — a subagent's, or one the owner asked to —
+  stops that watch at
+  once (`ArtifactComments`, `watch`, the page's URL, `on: false`), so answers wake
+  the conductor alone.
 - **At most one publish per turn**, after the turn's last snapshot — bar a first
   publish's upgrade (*Which page*), which republishes the same snapshot with only
   `interactive`, the capabilities and any `ruling` written (*Building it*) changed,
@@ -99,6 +144,16 @@ in a review thread.
   change.
 
 ## Answers
+
+**A save (`artifact.publish`) wakes nobody; only `comments.sendToClaude` does**,
+within seconds. So the template, which a build never alters here, takes its comment
+anchor in the click, awaits the send before saving (a save reloads the view),
+reads `canSendToClaude()` at load and on focus, never in the click, and sends
+plain text under 4 KiB that keeps every answer line whole. Its banner names each
+state's fix: `writers_only`, open it from the account that owns it, never by
+sharing it; `no_session`, the
+conductor re-arms its watch; `off`, open it on claude.ai; a `capability_removed`
+rejection, unavailable.
 
 **An answer reaches this session only as a comment the page sends to Claude**: a
 turn headed `[Artifact comment sent to Claude]` on the page whose URL the ledger

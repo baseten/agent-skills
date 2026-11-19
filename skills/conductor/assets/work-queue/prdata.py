@@ -1,11 +1,18 @@
-"""Read one repository's PR facts from GitHub for the work queue's merge section.
+"""Read one repository's PR facts from GitHub for the work queue's "Your PRs" section.
 
-    python3 -I prdata.py --repo owner/name --owner LOGIN 101 102 > prdata.json
+    python3 -I prdata.py --repo owner/name --owner LOGIN [--team SLUG] 101 102 > prdata.json
 
 Run as part of the sweep: its output is that sweep's snapshot of these PRs
-(conductor, *The status snapshot*), and mergeq.py renders from it rather than
-reading GitHub again. Any read that fails stops the script: a count it could not
-read is never written as zero.
+(conductor, *The status snapshot*), and mergeq.py and prsteps.py render from it
+rather than reading GitHub again. Any read that fails stops the script: a count it
+could not read is never written as zero. Two reads are the exceptions, each
+written as unread rather than stopping: the owner's pending review (below), and a
+team's membership (`teams[slug].members` null), which the token may not see.
+
+For the PR steps it also reports `ever_ready`, for a draft only, from the PR's
+timeline (a `ready_for_review` or `convert_to_draft` event): a draft that was ever
+ready is held (draft state); and `teams`, each requested team and each --team
+slug with its name and members.
 
 An unresolved thread counts as answered, not open, only where its last comment's
 author login is the --owner login and the comment holds no "?". An open thread that
@@ -138,6 +145,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo", required=True, help="owner/name")
     ap.add_argument("--owner", required=True, help="the owner's account login")
+    ap.add_argument("--team", action="append", default=[],
+                    help="a team slug whose membership the PR steps check, beside requested teams")
     ap.add_argument("prs", nargs="+")
     a = ap.parse_args()
     # a pending review is shown only to its author: read as anyone else, it is unread
@@ -151,9 +160,33 @@ def main():
     for n in a.prs:
         p = gh(f"repos/{a.repo}/pulls/{n}")
         sha = p["head"]["sha"]
-        latest, pending_comments, own_pending = {}, {}, None
+        # a draft that was ever ready is held (draft state): read from the timeline,
+        # never from a record; a failed read stops the script like any other
+        ever_ready = False
+        if p["draft"]:
+            ever_ready = any(ev.get("event") in ("ready_for_review", "convert_to_draft")
+                             for page in pages(f"repos/{a.repo}/issues/{n}/timeline?per_page=100")
+                             for ev in page)
+        org = a.repo.split("/", 1)[0]
+        teams = {}
+        for slug in sorted({t.get("slug") for t in p.get("requested_teams") or []} | set(a.team)):
+            if not slug:
+                continue
+            try:  # membership may be unreadable to this token: then unverified, never a stop
+                name = gh_try(f"orgs/{org}/teams/{slug}").get("name")
+                members = sorted(m["login"] for pg in gh_try("--paginate", "--slurp",
+                                 f"orgs/{org}/teams/{slug}/members?per_page=100") for m in pg)
+            except GhError:
+                name, members = None, None
+            teams[slug] = {"name": name, "members": members}
+        latest, pending_comments, own_pending, reviewed_by = {}, {}, None, set()
+        author = (p.get("user") or {}).get("login")
         for page in pages(f"repos/{a.repo}/pulls/{n}/reviews?per_page=100"):
             for r in page:  # chronological, so the last state per reviewer wins
+                u = r.get("user") or {}
+                if (r["state"] in ("APPROVED", "CHANGES_REQUESTED", "COMMENTED")
+                        and u.get("type") != "Bot" and u.get("login") != author):
+                    reviewed_by.add(u.get("login"))
                 if r["state"] in ("APPROVED", "CHANGES_REQUESTED", "DISMISSED"):
                     latest[r["user"]["login"]] = (r["state"], r["user"].get("type"))
                 elif r["state"] == "PENDING":
@@ -177,6 +210,9 @@ def main():
         out.append(dict(repo=a.repo, pr=str(n), url=p["html_url"], title=p["title"],
                         sha=sha, base=p["base"]["ref"], draft=p["draft"], state=p["state"],
                         merged=p["merged"], mergeable=p.get("mergeable_state"),
+                        requested_teams=[{"slug": t.get("slug"), "name": t.get("name")}
+                                         for t in p.get("requested_teams") or []],
+                        reviewed_by=sorted(reviewed_by), ever_ready=ever_ready, teams=teams,
                         approvals=approvals, changes=changes, unresolved=unresolved, answered=answered,
                         needs_reply=needs_reply,
                         owner_pending_drafts=(own_pending[1] if own_pending else 0)

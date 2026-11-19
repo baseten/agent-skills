@@ -836,7 +836,7 @@
       "id": 65,
       "name": "a-tracker-review-draft-is-marked-on-the-queue-item",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present and the session keeps a work queue. acme/api is linked to a tracker that hosts PR review. Item: the owner must review acme/api#841. When building the page you read the tracker's review page for #841 and find one unsubmitted request-changes draft there, held by the tracker account this session reads as, which is the owner's; nothing is pending on the forge. Run A's session owns #841, which closes acme/api#810. Question: what links does #841's queue item carry, in what order, and how is the draft shown?",
-      "expected_output": "Four links, in order: run A's session; the PR on the forge; the tracker's review page for #841, marked with the draft count - '1 draft', labelled with the owner's tracker account - so the owner knows the request-changes draft is there; then the issue it closes, #810. The item never implies the draft is on the forge, and a forge link alone would be a failure: the owner would see nothing waiting. The link and the count were read this sweep, never from memory.",
+      "expected_output": "Four links, in order: run A's session; the PR on the forge; the tracker's review page for #841, marked with the draft count - '1 draft', labelled with the owner's tracker account - so the owner knows the request-changes draft is there; then the issue it closes, #810. The item never implies the draft is on the forge, and a forge link alone would be a failure: the owner would see nothing waiting. The link and the count were read this sweep, never from memory. A layer may supply its own review link instead; without one, the conductor's own read stands.",
       "assertions": [
         "the item links run A's session first, then the forge PR, then the tracker review page",
         "the tracker review link is marked with the draft count",
@@ -1468,7 +1468,7 @@
     },
     {
       "id": 114,
-      "name": "the-owners-pending-review-on-a-runs-pr-is-review-and-submit",
+      "name": "an-owner-pending-review-is-surfaced-not-misread",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner's account is @owner. Run A in this ledger owns acme/api#2045, approved by a person, CI green, no open threads. The sweep reads the PR's reviews and finds one in state PENDING by @owner holding 3 comments, two of them replies in threads where run A had answered a reviewer. A reviewer session in the same ledger has drafted a review of acme/web#77, a colleague's PR no run owns. Question: what Needs you items do these produce, how is #2045's item worded, how does the work queue's merge section show #2045, and may the report say run A's comments were edited?",
       "expected_output": "#2045 gets a Review and submit item: 'Submit your pending review on #2045 (3 draft comments)', linking the PR and labelled as @owner's unsubmitted review on GitHub; no run acts on the drafts until they are submitted. The merge section does not show #2045 as Ready: it carries the blocker 'Your unsubmitted review: 3 drafts', and the two threads whose last comment sits in that pending review count as neither open nor answered. #77 is a separate Review and submit item for the reviewer's drafted review, with its drafts link, recommendation and blocking count. The two are different things - the owner's own drafts on a run's PR against a reviewer's draft on a PR no run owns - and a reviewer never drafts on a run's PR, so no PR carries both. The report never describes the drafts as edits to run A's comments.",
       "assertions": [
@@ -1547,6 +1547,87 @@
         "run A is recorded current, not stale",
         "the answer reasons from the compare's changed paths, not from the later committed date",
         "nothing about run A goes under Needs you"
+      ],
+      "files": []
+    },
+    {
+      "id": 120,
+      "name": "a-handed-back-watch-keeps-the-check-in-hourly",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Run A is recorded stale and the owner chose to let it finish. Its last report says 'settled, waiting on owner merge - PR watch handed to the conductor' for acme/web#310, which is open and approved. Run A first reported that hand-over 2 days ago and has sent one more report since. The fallback check-in has now fired 3 times in a row with nothing changed. Question: is the check-in stopped now, what happens if #310 is still open 7 days after run A's report, what does the report say about #310, and what does the stale item say wakes run A?",
+      "expected_output": "The check-in is not stopped: a run on an older contract handed #310's watch to the conductor, which holds none, so while #310 is open nothing else watches it and the check-in stays hourly without the three-empty-sweeps stop, its 7-day deadline, counted from run A's first report after the hand-over and never moved by the later one, carried in the prompt. At that bound #310 becomes a Needs you item and the stop binds again; the check-in is never unbounded. The conductor arms no PR watch of its own. The report says #310 is covered only by the hourly check-in. The stale item says that a review the owner submits on #310, or the owner's merge of it, wakes run A under the old contract.",
+      "assertions": [
+        "the check-in is not stopped after three empty sweeps while #310 is open",
+        "the 7 days run from run A's first report after the hand-over, never moved by a later report, and at the bound #310 becomes a Needs you item and the stop binds again",
+        "the conductor does not arm a PR watch of its own",
+        "the report says #310 is covered only by the check-in",
+        "the stale item names the owner's merge as well as a submitted review as waking run A"
+      ],
+      "files": []
+    },
+    {
+      "id": 121,
+      "name": "a-publish-reads-the-live-page-first",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The ledger records the work queue as interactive. You built state.json in the previous turn and it is still in the scratchpad. This turn is the first to rebuild the page; since the last publish the owner saved an answer on one card and ticked a reply posted. Separately, a subagent you started to rebuild the page published it once. Question: what do you do before publishing, and what does the subagent's session do?",
+      "expected_output": "Before this turn's first publish, read the live version with the Artifact tool and run carry.py over it, so the owner's saved answer and tick survive; never publish from the state held since the earlier turn. The answer is carried as a mark, never acted on unless it arrived as a comment. The subagent's session, having published the page, is now watching it, so it turns that watch off at once (ArtifactComments, watch, the page's URL, on: false), leaving answers to wake the conductor alone.",
+      "assertions": [
+        "the answer reads the live page and runs carry.py before the turn's first publish",
+        "the answer does not publish the state held from the earlier turn as it stands",
+        "the subagent's session stops its watch with on: false on the page's URL"
+      ],
+      "files": []
+    },
+    {
+      "id": 122,
+      "name": "pr-steps-are-read-from-the-forge-not-ticked",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The session keeps an interactive work queue. Run A in this ledger has four open PRs on acme/api: #101 approved with review settled, in the merge notes, its merge row reading Ready; #102 out of draft with the payments team requested and no review yet; #105 approved by one person while another's latest review requests changes; #103 a draft that has never been marked ready, which run A's last report says awaits the owner's publish. The layer says #102, #103 and #105 go to the payments team. #99, also run A's, merged since the last build. The owner asks you to just mark #102's 'Request payments' step done on the page so they can see progress. Question: how does the page show these PRs, and do you mark the step?",
+      "expected_output": "One 'Your PRs' section above the decisions: #101 as a merge row first, then an item each for #102, #103 and #105. Each item's steps - Mark ready, Request payments, Team approves, and a last step that is never Merge for an item - are read from the forge at this build: #102 has Mark ready and Request payments done and points to Team approves next; #103 points to Mark ready. #105's third step reads 'Changes requested' and is the current one, never Merge, despite the approval. #101's merge row reads Ready, so merging it is a Needs you item; #103 was never ready and its run reported it awaiting the owner's publish, so marking it ready is the owner's step and also a Needs you item in the chat; #102 and #105 wait on the team, so they show on the page as waiting and are counted in the report's Unchanged line, not listed under Needs you. #99 has merged, so it leaves the section for Done recently. The page offers no tick for steps and the conductor writes no step's state by hand: #102's Request payments already reads done because GitHub shows the team requested; a step that the forge does not show done is not marked done on request.",
+      "assertions": [
+        "#101 is a merge row ahead of the #102 and #103 items, all in one Your PRs section",
+        "each step's state comes from the forge read at build, with the next step pointed to",
+        "#105 shows 'Changes requested' as its current step and is not pointed at Merge",
+        "#103 is a Needs you item; #102 and #105 are shown as waiting on the team and counted under Unchanged",
+        "#99 leaves the section for Done recently",
+        "the answer does not tick or hand-write a step's done state",
+        "only #101, a merge row reading Ready, is offered as a merge"
+      ],
+      "files": []
+    },
+    {
+      "id": 123,
+      "name": "a-linear-linked-pr-carries-its-review-link",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). acme/api is linked to Linear. Building the page, you read Linear's review page for acme/api#102 with get_diff and find 2 unsubmitted drafts there with get_diff_threads, under the owner's Linear account, which this session reads as; for acme/api#104, get_diff returns the review page but get_diff_threads fails. Question: where does each review link appear on the page, and what does each say about drafts?",
+      "expected_output": "Each PR's links run in the usual order - the run's session, the PR on GitHub, then the review link (kind rv) right after the GitHub link, then the issues it closes or 'no linked issue'. #102's review link is marked '2 drafts' and labelled with the owner's Linear account, since get_diff_threads returns only the calling account's drafts, so the count is never read as drafts on GitHub. #104's has no count: a count is shown only where it was read, and its absence never implies there are none. The conductor reads these itself, as the Linear mechanics rule says; a layer could supply its own link instead.",
+      "assertions": [
+        "the review link sits right after the GitHub link in both items",
+        "#102 shows the 2-draft count labelled with the owner's Linear account, and #104 shows no count",
+        "the answer does not imply #104 has no drafts",
+        "the conductor reads the Linear review page itself here, a layer's link being optional"
+      ],
+      "files": []
+    },
+    {
+      "id": 124,
+      "name": "urgent-items-keep-their-group-above-when-theres-time",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The session keeps a work queue. This sweep's Needs you holds, besides decisions and PRs: a red default branch on acme/web (Clear a failure), a run waiting on a permission prompt (Confirm in a session), and two owner steps. A low-urgency tidy-up the report lists last is also on the ledger. Question: where does each go on the page?",
+      "expected_output": "Each Needs you item keeps the report's group on the page, in the report's order: the red default branch under Clear a failure and the permission prompt under Confirm in a session, each with its links, and the owner steps under Owner steps, all above 'When there's time'. Only the low-urgency tidy-up goes under 'When there's time'. Nothing urgent is put under 'When there's time' because it is not a PR.",
+      "assertions": [
+        "the red default branch and the permission prompt keep their report groups on the page",
+        "those groups sit above 'When there's time'",
+        "only the low-urgency item goes under 'When there's time'"
+      ],
+      "files": []
+    },
+    {
+      "id": 125,
+      "name": "an-approved-pr-off-the-merge-rows-is-not-a-merge-item",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Run A in this ledger has four open PRs on acme/api. #110 is approved by @kim, a member of the payments team whose members prdata.py read, but its e2e check is red and it is not in the merge notes. #111 is approved by @out, who is not on the team; the team's members were read. #112 is a draft that was marked ready last week and returned to draft by a reviewer. #113 is a draft never marked ready, about which run A has reported nothing. Question: what does the page show as each PR's current step, and which are Needs you items?",
+      "expected_output": "None of them is offered as a merge, since merging is a Needs you item only on a merge row reading Ready. #110's last step names its blocker, 'Blocked: CI red (e2e)', and it shows as approved but not ready to merge, counted under Unchanged, not as 'merge it'. #111's Team approves is not done: only a member's approval counts where membership was read, so it waits on the team. #112 is held - currently a draft and ever ready, per the draft-state rule - so it reads 'Held in draft' with no owner step, never 'mark it ready'. #113 reads 'Draft' with no owner step: a draft can be held by an instruction, a preference or a convention the timeline does not show, so it is offered to mark ready only where its run reported it awaiting the owner's publish, and run A has not. None of the four is a Needs you item.",
+      "assertions": [
+        "#110 shows its CI blocker as the current step and is not offered as a merge",
+        "#111's approval from a non-member does not complete Team approves",
+        "#112 is shown as held, never as 'mark it ready'",
+        "#113 is a plain draft with no owner step, since its run never reported it awaiting the owner's publish",
+        "none of the four is a Needs you item"
       ],
       "files": []
     }

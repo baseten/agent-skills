@@ -59,7 +59,7 @@ AGENT_POLICY="write-spec plan-feature backlog-orchestrator conductor owner-steps
   npm-dependency-upgrade-orchestrator supervise-prs"
 
 # Skills that promote a draft, decline to, or gate on the drafts it defines as held.
-DRAFT_STATE="backlog-orchestrator settle-and-merge supervise-prs"
+DRAFT_STATE="backlog-orchestrator conductor settle-and-merge supervise-prs"
 
 # Skills that dispatch a repair-pr pass, choose its model and count its cycles.
 REPAIR_ROUNDS="supervise-prs"
@@ -71,7 +71,7 @@ MECHANICAL_PUSHES="review-docs backlog-orchestrator repair-pr
 
 # Skills that issue or re-trigger an automated review, or gate on the rounds
 # its routing requires.
-REVIEW_TRIGGER="create-pr backlog-orchestrator
+REVIEW_TRIGGER="create-pr backlog-orchestrator conductor
   npm-dependency-upgrade-orchestrator settle-and-merge supervise-prs"
 
 # Skills that gate on, or supervise a PR toward, green CI or a clean review.

@@ -63,7 +63,7 @@ declined: <each request this run declined, with its sender> | none
 
 ## The watch after settling
 
-**A settled run keeps its own watch; it never hands it to a conductor.** It pushes `settled, waiting on owner merge`, and later `merged` or its watch stopping with the PR still open (*Pushes*), and its watch runs and ends under the *wake budget* shared rule as if no conductor existed. A conductor holds no PR watch: it reads a merge or close as a delta in its own sweep, and a run's silence about a PR is never its cue to poll that PR.
+**A settled run keeps its own watch; it never hands it to a conductor.** It pushes `settled, waiting on owner merge`, and later `merged` or its watch stopping with the PR still open (*Pushes*), and its watch runs and ends under the *wake budget* shared rule as if no conductor existed. A conductor holds no PR watch: it reads a merge or close as a delta in its own sweep, and a run's silence about a PR is never its cue to poll that PR. A run on an older contract may still have handed its watch over; the conductor's fallback check-in, never a watch, then covers that PR, within the *wake budget* shared rule's bound for it (*A conductor's fallback sweep*).
 
 ## Writes
 

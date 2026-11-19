@@ -16,7 +16,10 @@ session at a time. This skill **schedules** the portfolio, **takes in** planned
 epics, **dispatches** and **retires** runs on the owner's go, **collects** status
 and pending decisions into one place, and **relays** verified facts between runs.
 **It never plans a feature, implements, supervises or repairs a PR, merges,
-approves, or changes a permission**, and it tells a
+approves, changes a permission, or requests, re-requests or removes a human
+reviewer on the forge** — a GitHub review request (`references/review-trigger.md`;
+a "request its team" item is the owner's own action; starting a `reviewers.md`
+reviewer session is not one) — and it tells a
 run nothing the owner has not ruled except facts it has verified and requests for
 status.
 
@@ -276,7 +279,17 @@ with its read time — **never a record**: written nowhere as itself, read by no
 later turn; the ledger stays the record. **An item in one output is in every
 output showing its kind** — a *Needs you* item in the chat is on the work queue —
 and an abbreviation, the unchanged line or a stream's cap, counts from the same
-snapshot.
+snapshot. **An open PR of a run in this ledger whose next step is the owner's** —
+mark it ready **only where its run reported the draft as awaiting the owner's
+publish** (`references/draft-state.md`: a hold can sit in an instruction, a
+preference or a convention no timeline shows, so a draft without that report is
+not offered); request its team, the owner's own act; or merge it, **only where it
+is a merge row reading Ready** (`work-queue.md`, *Building it*) — **is a *Needs
+you* item in every output**, under *Review or assign a reviewer* or *Merge*. One
+waiting on its team, any other draft, or an approved PR whose merge row is blocked
+or absent is not: **the one place the work queue shows more than *Needs
+you***, it is listed there as waiting, a draft or blocked, with its blocker as the
+current step, and counted in the report's *Unchanged* line.
 
 ## The fallback check-in
 
@@ -286,13 +299,20 @@ this session**, on `references/wake-budget.md`'s *A conductor's fallback sweep*
 schedule: about hourly; re-armed silently after a sweep that observed a delta;
 stopped after 3 consecutive empty sweeps, said once; cancelled when neither holds.
 It holds no PR watch: a settled run keeps its own
-(`references/conductor-exchange.md`, *The watch after settling*).
+(`references/conductor-exchange.md`, *The watch after settling*). **A stale run
+(*Report*) whose report says it handed its PR watch to this conductor**, as an
+older contract did, leaves those PRs watched by nothing: while any is open the
+check-in stays hourly and is not stopped by empty sweeps, until the 7-day bound
+`references/wake-budget.md` sets, when the PR becomes a *Needs you* item; the
+report says those PRs are covered only by this check-in. This skill still arms no
+PR watch.
 A sweep prints as `references/operator-output.md`, *Quiet turns*, says, where it meets that rule's definition.
 **A delta** is a change in durable state the ledger compares: a run's session
 status, a PR of its opened, pushed, merged or closed, its CI conclusions, its open
 items, a pending go's condition, or a reviewer's state. Its prompt
-carries the consecutive-empty count, the ledger's URL, the comparands and the
-no-change preflight result, **each from the latest sweep's snapshot** (*The status
+carries the consecutive-empty count, the ledger's URL, the comparands, the
+no-change preflight result and each handed-over PR's 7-day deadline, **each from
+the latest sweep's snapshot** (*The status
 snapshot*): a sweep whose snapshot differs from the armed prompt replaces it,
 re-armed at its time. **A
 firing sweeps, reports, executes a verified dispatch go, plain or conditional, lists
@@ -809,7 +829,8 @@ only on a PR no run owns (`reviewers.md`), so one PR never carries both.
 **A stale run** (*1. Sweep*, step 6) is a *Decide* item, "running an older
 contract", naming its version and the installed one, marked unconfirmed where only
 dates decided it, and saying that a review the
-owner submits on its PR wakes it under the old contract; its two options are to
+owner submits on its PR, or the owner's merge of it, wakes it under the old
+contract; its two options are to
 retire it and redispatch on the current skills (*6. Dispatch*, *Retire a finished
 run*), or to let it finish. The first carries everything *6. Dispatch* puts in a
 go's question — the skill, a fresh session, the plan's cost — and the go's complete
@@ -831,10 +852,10 @@ the report groups it, within a group what frees the most downstream work first a
 owner steps by dependency (*4. Owner pass*), with the ledger's last sweep time as
 when it was read. **`work-queue.md` beside this file is part of the contract
 wherever it is built, published or answered. It is a view, never a record**: it renders the *Needs you* of
-this turn's snapshot (*The status snapshot*), which only the sweep collects, with the links below read each sweep; nothing
+this turn's snapshot, and the PRs waiting on their team (*The status snapshot*), which only the sweep collects, with the links below read each sweep; nothing
 is recorded only there, and a viewer's marks are carried, never acted on, bar an
 answer `work-queue.md`, *Answers*, accepts. **A report whose *Needs
-you* changed, or a PR item's links or draft count** — emptied, or on a scheduled
+you* changed, or a PR item's links, draft count or steps** — emptied, or on a scheduled
 firing, included — **and every `status` turn publish it**, paced as `work-queue.md`,
 *Publishing*, says: to the URL the ledger records,
 or, where none is recorded, as a new page whose URL the ledger then records
@@ -850,11 +871,11 @@ the recorded reason, and that answers go here, in this chat — a line beside th
 link, never a *Needs you* item, since the owner has nothing to do about it
 (`work-queue.md`, *Which page*).
 
-**On the page, an item about a PR carries its links in the order `references/operator-output.md` gives an item**: the run's session, where one owns the PR; the PR on the forge; the tracker's review page for it, where the repository is linked to a tracker that hosts PR review (`references/linear-mechanics.md`, *Review pages*), **marked with the count of unsubmitted drafts there**, labelled with the tracker account that holds them, so the item never implies a draft is on the forge when it is on the tracker; then every issue the PR closes, or a plain "no linked issue". A draft held anywhere else is linked to where it is held, labelled so — **bar a
+**On the page, an item about a PR carries its links in the order `references/operator-output.md` gives an item**: the run's session, where one owns the PR; the PR on the forge; the tracker's review page for it, where the repository is linked to Linear, read as `references/linear-mechanics.md`, *Review pages*, says, or where a layer supplies its own (`work-queue.md`, *Building it*) — **marked with the count of unsubmitted drafts only where it was read**, labelled with the tracker account that holds them, since the tracker returns only the calling account's drafts, so the item never implies a draft is on the forge; then every issue the PR closes, or a plain "no linked issue". A draft held anywhere else is linked to where it is held, labelled so — **bar a
 reply or ruling the owner is to post in a thread where no run posts, which the page
 carries in full**: its text, the link to post at — the thread's `html_url` as
 recorded, never rebuilt — and the fix SHA where there is one; the page is private
 and is not the ledger. The chat's lines keep
 `references/operator-output.md`'s form. **Every link and draft count is read each
-sweep** (`references/establish-do-not-assume.md`, *You are about to assert it*) —
+sweep**, a layer's by that layer (`references/establish-do-not-assume.md`, *You are about to assert it*) —
 a subagent may gather them, returning only compact JSON.
