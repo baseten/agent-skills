@@ -70,13 +70,18 @@ forge at each build** by `prsteps.py`, the done ones marked and the next one
 pointed to:
 
 - **Mark ready** — done when not a draft; a draft ever ready is held
-  (`references/draft-state.md`) and reads "Held in draft", never offered;
+  (`references/draft-state.md`) and reads "Held in draft". A hold can also sit
+  where no timeline shows it, so a draft is offered only where the entry carries
+  `awaitingPublish`, set from its run's report that it awaits the owner's publish;
+  any other reads "Draft", with no owner step;
 - **Request <team>** — the team requested (`team` matched, ignoring case, against
   the forge team's slug or name) or a person reviewing; the owner's own act, never
   this skill's (`references/review-trigger.md`);
 - **Team approves** — a member's approval where `prdata.py` read the team's members,
   else any person's, labelled "team not verified"; "Changes requested" while any
-  person's latest review asks for changes;
+  person's latest review asks for changes. A team can leave `requested_teams` once
+  a member reviews, and is then checked only where the caller passes `--team`
+  with its slug;
 - **never "Merge"**: merging is offered only on a merge row reading Ready, so an
   item's last step names what keeps it out — CI, open threads, the owner's
   unsubmitted review, or the merge notes.

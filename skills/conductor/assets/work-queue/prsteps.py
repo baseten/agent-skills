@@ -6,7 +6,7 @@ Run after mergeq.py. prs.json lists each open PR of a run in this ledger, writte
 from the ledger each build:
 
     [{"repo": "acme/api", "pr": "101", "team": "payments",
-      "session": "https://claude.ai/code/session_...",
+      "session": "https://claude.ai/code/session_...", "awaitingPublish": false,
       "review": {"href": "https://...", "label": "Tracker review", "drafts": 2},
       "issues": [{"label": "#2011", "href": "https://github.com/acme/api/issues/2011"}]}]
 
@@ -23,7 +23,11 @@ null, no count is shown or implied.
 Each item's steps are read from the sweep's prdata.json, never ticked on the page:
 
 - Mark ready: done when not a draft. A draft that was ever ready is held (draft
-  state) and reads "Held in draft", never offered to the owner to publish.
+  state) and reads "Held in draft". Draft state also holds drafts no timeline
+  shows (an instruction, a preference, a convention), so a draft is offered to the
+  owner to mark ready only where the entry carries `"awaitingPublish": true`, which
+  the conductor sets from the run's own report that the draft awaits the owner's
+  publish; any other draft reads "Draft" with no owner step.
 - Request <team>: done when the team is requested — `team` matched, ignoring case,
   against a team's slug or name — or a person other than the author has reviewed.
 - Team approves: done on an approval from a member where the team's membership was
@@ -37,7 +41,7 @@ Each item's steps are read from the sweep's prdata.json, never ticked on the pag
 
 `waitsOn` is "owner" where the next step is the owner's (mark ready, request the
 team), "team" where it is the team's approval or a change request, "held" for a
-held draft and "blocked" past approval. Each item is stamped `stepsReadAt` (UTC),
+held draft, "draft" for one not offered, and "blocked" past approval. Each item is stamped `stepsReadAt` (UTC),
 which build.py requires: the stamp shows prsteps.py filled the steps, not that
 nobody edited them after, which the contract forbids and no check can see. A
 merged PR leaves the section for "Done recently"; a closed one leaves it too. A PR
@@ -120,6 +124,10 @@ for e in json.load(open(a.prs, encoding="utf-8")):
     changes = bool(d.get("changes"))
     approvers = d["approvals"] if members is None else [u for u in d["approvals"] if u in members]
     held = bool(d["draft"] and d.get("ever_ready"))
+    # fail closed: a hold can sit where no timeline shows it, so only a draft its run
+    # reported as awaiting the owner's publish is offered to mark ready
+    offered = bool(d["draft"] and not held and e.get("awaitingPublish") is True)
+    draft_label = "Held in draft" if held else "Mark ready" if offered or not d["draft"] else "Draft"
     if changes:
         approve = {"label": "Changes requested", "done": False}
     elif approvers and members is None:
@@ -127,7 +135,7 @@ for e in json.load(open(a.prs, encoding="utf-8")):
     else:
         approve = {"label": "Team approves", "done": bool(approvers)}
     steps = [
-        {"label": "Held in draft" if held else "Mark ready", "done": not d["draft"]},
+        {"label": draft_label, "done": not d["draft"]},
         {"label": f"Request {team}" if team else "Request review",
          "done": bool(requested or d.get("reviewed_by"))},
         approve,
@@ -136,7 +144,8 @@ for e in json.load(open(a.prs, encoding="utf-8")):
         {"label": blocker(d), "done": False},
     ]
     nxt = next(i for i, s in enumerate(steps) if not s["done"])
-    waits = "held" if held else "team" if nxt == 2 else "blocked" if nxt == 3 else "owner"
+    waits = ("held" if held else "draft" if d["draft"] and not offered
+             else "team" if nxt == 2 else "blocked" if nxt == 3 else "owner")
     items.append(dict(repo=d["repo"], pr=d["pr"], url=d["url"], title=d["title"],
                       links=lk, noIssue=not e.get("issues"), steps=steps,
                       waitsOn=waits, stepsReadAt=read_at))

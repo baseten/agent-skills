@@ -16,9 +16,10 @@ session at a time. This skill **schedules** the portfolio, **takes in** planned
 epics, **dispatches** and **retires** runs on the owner's go, **collects** status
 and pending decisions into one place, and **relays** verified facts between runs.
 **It never plans a feature, implements, supervises or repairs a PR, merges,
-approves, changes a permission, or requests, re-requests or removes a reviewer**
-(`references/review-trigger.md`; a "request its team" item is the owner's own
-action), and it tells a
+approves, changes a permission, or requests, re-requests or removes a human
+reviewer on the forge** — a GitHub review request (`references/review-trigger.md`;
+a "request its team" item is the owner's own action; starting a `reviewers.md`
+reviewer session is not one) — and it tells a
 run nothing the owner has not ruled except facts it has verified and requests for
 status.
 
@@ -279,13 +280,15 @@ later turn; the ledger stays the record. **An item in one output is in every
 output showing its kind** — a *Needs you* item in the chat is on the work queue —
 and an abbreviation, the unchanged line or a stream's cap, counts from the same
 snapshot. **An open PR of a run in this ledger whose next step is the owner's** —
-mark it ready where `references/draft-state.md` makes publishing the next step,
-never a held draft; request its team, the owner's own act; or merge it, **only
-where it is a merge row reading Ready** (`work-queue.md`, *Building it*) — **is a
-*Needs you* item in every output**, under *Review or assign a reviewer* or
-*Merge*. One waiting on its team, a held draft, or an approved PR whose merge row
-is blocked or absent is not: **the one place the work queue shows more than *Needs
-you***, it is listed there as waiting, held or blocked, with its blocker as the
+mark it ready **only where its run reported the draft as awaiting the owner's
+publish** (`references/draft-state.md`: a hold can sit in an instruction, a
+preference or a convention no timeline shows, so a draft without that report is
+not offered); request its team, the owner's own act; or merge it, **only where it
+is a merge row reading Ready** (`work-queue.md`, *Building it*) — **is a *Needs
+you* item in every output**, under *Review or assign a reviewer* or *Merge*. One
+waiting on its team, any other draft, or an approved PR whose merge row is blocked
+or absent is not: **the one place the work queue shows more than *Needs
+you***, it is listed there as waiting, a draft or blocked, with its blocker as the
 current step, and counted in the report's *Unchanged* line.
 
 ## The fallback check-in

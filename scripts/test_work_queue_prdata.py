@@ -270,7 +270,7 @@ def main():
                         requested_teams=[], reviewed_by=[])
             base.update(kw)
             return base
-        prdata = [pr("1", draft=True), pr("2", requested_teams=[{"slug": "fe-platform", "name": "FE Platform"}]),
+        prdata = [pr("1", draft=True), pr("12", draft=True), pr("13", draft=True, ever_ready=True), pr("2", requested_teams=[{"slug": "fe-platform", "name": "FE Platform"}]),
                   pr("9", draft=True, ever_ready=True),
                   pr("10", reviewed_by=["out"], approvals=["out"],
                      teams={"fe-platform": {"name": "FE Platform", "members": ["kim"]}}),
@@ -281,6 +281,8 @@ def main():
                   pr("6", reviewed_by=["rev", "dana"], approvals=["rev"], changes=["dana"]),
                   pr("8", requested_teams=[{"slug": "fe-platform", "name": "FE Platform"}])]
         prs = [{"repo": REPO, "pr": "1", "team": "payments"},
+               {"repo": REPO, "pr": "12", "awaitingPublish": True},
+               {"repo": REPO, "pr": "13", "awaitingPublish": True},
                {"repo": REPO, "pr": "2", "team": "FE Platform",
                 "review": {"href": "https://tracker.example.com/r/2", "label": "Tracker review", "drafts": 2},
                 "issues": [{"label": "#9", "href": f"https://github.com/{REPO}/issues/9"}]},
@@ -306,7 +308,8 @@ def main():
         assert r.returncode == 0, r.stderr
         st = json.load(open(state))
         steps = {p["pr"]: [s["done"] for s in p["steps"]] for p in st["prs"]}
-        assert steps == {"1": [False, False, False, False], "2": [True, True, False, False],
+        assert steps == {"1": [False, False, False, False], "12": [False, False, False, False],
+                         "13": [False, False, False, False], "2": [True, True, False, False],
                          "3": [True, True, True, False], "6": [True, True, False, False],
                          "8": [True, True, False, False], "9": [False, False, False, False],
                          "10": [True, True, False, False], "11": [True, True, True, False]}, steps
@@ -317,8 +320,11 @@ def main():
         assert by["6"]["steps"][2]["label"] == "Changes requested" and by["6"]["waitsOn"] == "team"
         print("ok  an outstanding change request holds Team approves, shown as Changes requested, never Merge next")
         assert by["9"]["steps"][0]["label"] == "Held in draft" and by["9"]["waitsOn"] == "held"
-        assert by["1"]["steps"][0]["label"] == "Mark ready" and by["1"]["waitsOn"] == "owner"
-        print("ok  a draft ever ready is held, never offered to mark ready; one never ready is the owner's step")
+        assert by["13"]["steps"][0]["label"] == "Held in draft" and by["13"]["waitsOn"] == "held"
+        assert by["1"]["steps"][0]["label"] == "Draft" and by["1"]["waitsOn"] == "draft"
+        assert by["12"]["steps"][0]["label"] == "Mark ready" and by["12"]["waitsOn"] == "owner"
+        print("ok  a draft is offered to mark ready only where its run reported it awaiting the owner's publish;"
+              " one ever ready stays held even so, and any other is a plain Draft")
         assert by["10"]["steps"][2] == {"label": "Team approves", "done": False}
         assert by["3"]["steps"][2]["label"] == "Team approves — approved (team not verified)"
         print("ok  where the team's members were read only a member's approval counts; otherwise it is labelled unverified")
@@ -326,7 +332,7 @@ def main():
         assert by["3"]["steps"][3]["label"] == "Not in the merge notes" and by["3"]["waitsOn"] == "blocked"
         assert by["11"]["steps"][3]["label"] == "Blocked: CI red (e2e)" and by["11"]["waitsOn"] == "blocked"
         print("ok  an approved PR that is not a Ready merge row names its blocker, never Merge")
-        assert {k: p["waitsOn"] for k, p in by.items()} == {"1": "owner", "2": "team", "3": "blocked",
+        assert {k: p["waitsOn"] for k, p in by.items()} == {"1": "draft", "12": "owner", "13": "held", "2": "team", "3": "blocked",
                                                            "6": "team", "8": "team", "9": "held",
                                                            "10": "team", "11": "blocked"}
         assert all(p.get("stepsReadAt") for p in st["prs"])
@@ -334,7 +340,7 @@ def main():
         labels = {p["pr"]: [(l["k"], l["label"]) for l in p["links"]] for p in st["prs"]}
         assert labels["2"] == [("gh", "#2"), ("rv", "Tracker review · 2 drafts"), ("iss", "#9")], labels["2"]
         assert labels["3"] == [("gh", "#3"), ("rv", "Tracker review"), ("tr", "T-1")], labels["3"]
-        assert st["prs"][0]["noIssue"] and not st["prs"][1]["noIssue"]
+        assert by["1"]["noIssue"] and not by["2"]["noIssue"]
         print("ok  the review link sits right after the PR link, with a count only where one was read;"
               " an issue keeps a caller's kind, and none says so")
         assert st["doneRecent"] and "#4" in st["doneRecent"][0] and "merged" in st["doneRecent"][0], st["doneRecent"]
