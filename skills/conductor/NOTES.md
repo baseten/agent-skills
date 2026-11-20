@@ -164,8 +164,21 @@ protected rule 3 changes.
 
 **Why no provenance locally:** `claude agents --json` names no parent, so the
 mark *1. Sweep*, step 2, rests on is missing; a session the ledger lacks is then
-found, if at all, by title or structure, and where a peer covers the repository it
-stays a doubtful match until the owner's go adopts it — more cautious, never less.
+found, if at all, by title or structure, and it stays a doubtful match until the
+owner's go adopts it, peer or not — more cautious, never less. The first draft sent
+it on to steps 3 and 4 as a run; the blind audit on #227 found that a peer local
+conductor not yet renamed `Conductor:` would then have its runs asked for status.
+
+**Why the local release, cloud-run retirement and permission mode read as they do
+(blind audit on #227):** `claude stop` is only reached once every archive condition
+holds, `RUNNING` read from `status`/`state` `working`, since swarm never archives a
+running session. A cloud run under a local conductor is listed only on what the
+forge and its state block show, and its unread conditions are the owner's to check
+on claude.ai before archiving, rather than disclosed and skipped. A held prompt's
+literal tool string is read from `claude logs`, since `waitingFor` names only
+"permission prompt" (protected rule 9). Dispatching in the conductor's own mode
+means a bypass-mode conductor's runs meet no prompt; that is the operator's choice,
+so the go's question says so rather than this skill picking a mode.
 A local run's own `swarm` workers are subagents or serialized, never listed
 sessions, so the `bo/` parent test has nothing to read there.
 
