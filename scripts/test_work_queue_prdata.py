@@ -356,10 +356,66 @@ def main():
         r = build(dict(unruled, interactive=False))
         assert r.returncode == 0, r.stderr
         print("ok  build.py builds the same state read-only")
+        import datetime
+        def stamp(minutes_ago=0):
+            t = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=minutes_ago)
+            return t.strftime("%Y-%m-%dT%H:%M:%SZ")
         with open(os.path.join(WQ, "state.example.json")) as f:
-            r = build(json.load(f))
+            example = json.load(f)
+        r = build(example)
+        assert r.returncode != 0 and "Re-run prdata.py" in r.stderr and "acme/api#101" in r.stderr, r.stderr
+        print("ok  build.py refuses state.example.json as it stands: its PR stamps are not this turn's")
+        def restamp(st, minutes_ago):
+            st = json.loads(json.dumps(st))
+            for x in st.get("merge", []) + st.get("prs", []):
+                x["prdataReadAt"] = stamp(minutes_ago)
+            for x in st.get("prs", []):
+                x["stepsReadAt"] = stamp(minutes_ago)
+            return st
+        r = build(restamp(example, 2))
         assert r.returncode == 0, r.stderr
-        print("ok  build.py builds state.example.json")
+        print("ok  build.py builds state.example.json stamped this turn")
+        r = build(restamp(example, 120))
+        assert r.returncode != 0 and "not read this turn" in r.stderr, r.stderr
+        print("ok  build.py refuses a PR list read two hours ago, naming what to re-run")
+        noprd = restamp(example, 2)
+        del noprd["prs"][0]["prdataReadAt"]
+        r = build(noprd)
+        assert r.returncode != 0 and "PR item acme/api#102" in r.stderr, r.stderr
+        print("ok  build.py refuses a PR item with steps stamped but no prdata stamp")
+
+        # carry.py: the owner's answers and the conductor's own content both survive a rebuild
+        def carry(live_state, new_state):
+            lp, sp = os.path.join(tmp, "live.html"), os.path.join(tmp, "carry-state.json")
+            with open(lp, "w") as f:
+                f.write('<script id="state" type="application/json">' + json.dumps(live_state) + "</script>")
+            with open(sp, "w") as f:
+                json.dump(new_state, f)
+            r = subprocess.run([sys.executable, "-I", os.path.join(WQ, "carry.py"), "--live", lp,
+                                "--state", sp], capture_output=True, text=True)
+            assert r.returncode == 0, r.stderr
+            return json.load(open(sp)), r.stderr
+        live = {"decisions": [
+                    {"id": "d1", "status": "answered", "answer": "a", "options": []},
+                    {"id": "d2", "status": "answered", "answer": "b", "options": []},
+                    {"id": "d3", "status": "done", "answer": "a", "outcome": "Ruled: 7 days.", "options": []},
+                    {"id": "d4", "status": "open", "options": []}],
+                "replies": [{"id": "r1", "text": "Held reply one"}, {"id": "r2", "text": "Held reply two"},
+                            {"id": "r3", "text": "Posted already"}]}
+        new = {"decisions": [{"id": "d1", "status": "open", "options": []},
+                             {"id": "d2", "status": "done", "answer": "c", "options": []}],
+               "replies": [], "closed": ["r3", "d4"]}
+        got, err = carry(live, new)
+        dec = {d["id"]: d for d in got["decisions"]}
+        assert (dec["d1"]["status"], dec["d1"]["answer"]) == ("answered", "a"), dec["d1"]
+        print("ok  carry.py keeps an answered decision answered where the rebuild reset it to open")
+        assert (dec["d2"]["status"], dec["d2"]["answer"]) == ("done", "b"), dec["d2"]
+        print("ok  carry.py keeps the owner's answer over the conductor's, whatever status the build gives")
+        assert dec["d3"]["outcome"] == "Ruled: 7 days." and "d4" not in dec, dec
+        assert [x["id"] for x in got["replies"]] == ["r1", "r2"], got["replies"]
+        assert "reply r1" in err and "decision d3" in err and "r3" not in err, err
+        print("ok  carry.py carries held replies and decisions the rebuild dropped, names them,"
+              " and leaves out what closed lists")
         for label, item in (("no done", {"repo": REPO, "pr": "7", "steps": [{"label": "Merge"}],
                                           "stepsReadAt": "2026-11-19T09:00:00Z"}),
                             ("no stamp", {"repo": REPO, "pr": "7", "steps": [{"label": "Merge", "done": False}]})):
@@ -371,7 +427,7 @@ def main():
         def pr(n, **kw):
             base = dict(repo=REPO, pr=n, url=f"https://github.com/{REPO}/pull/{n}", title=f"PR {n}",
                         draft=False, state="open", merged=False, approvals=[], changes=[],
-                        requested_teams=[], reviewed_by=[])
+                        requested_teams=[], reviewed_by=[], readAt=stamp())
             base.update(kw)
             return base
         prdata = [pr("1", draft=True), pr("12", draft=True), pr("13", draft=True, ever_ready=True), pr("14", draft=True, ever_ready=None, ever_ready_read=False), pr("2", requested_teams=[{"slug": "fe-platform", "name": "FE Platform"}]),
@@ -405,7 +461,8 @@ def main():
                {"repo": REPO, "pr": "5", "session": "https://claude.ai/code/session_X",
                 "review": {"href": "https://tracker.example.com/r/5", "label": "Tracker review"}}]
         for name, val in (("prdata.json", prdata), ("prs.json", prs),
-                          ("state.json", {"merge": [{"repo": REPO, "pr": "5", "blockers": []}],
+                          ("state.json", {"merge": [{"repo": REPO, "pr": "5", "blockers": [],
+                                                     "prdataReadAt": stamp()}],
                                           "doneRecent": []})):
             with open(os.path.join(tmp, name), "w") as f:
                 json.dump(val, f)
