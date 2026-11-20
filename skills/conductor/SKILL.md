@@ -97,22 +97,41 @@ skill would read as the owner's stays pending.
 ## Runtime
 
 **This session's own environment decides how each session operation is done**:
-one holding `create_session` is a **cloud** conductor, a local Claude Code session
-(the CLI, `claude`) a **local** one, recorded in the ledger. Steps below name the
-operation — list, read, create, title, message, release (*archive*, in the cloud),
-check-in — and decide the same in both, save where a step says otherwise.
+one holding `create_session` is a **cloud** conductor; any other Claude Code
+session on the owner's machine is a **local** one — in the CLI, or in the Claude
+desktop app, where it also holds the app's session tools
+(`mcp__ccd_session__start_session`, `mcp__ccd_session_mgmt__*`; a deferred one is
+held, loaded first) — recorded in the ledger. Steps below name the operation —
+list, read, create, title, message, release (*archive*, in the cloud), check-in —
+and decide the same in every runtime, save where a step says otherwise. **This
+session's id** is, in the app, its `local_…` id (`get_session` `self`), and from
+the CLI, its name.
 
-| operation | cloud | local |
-|---|---|---|
-| this session's record | `get_session`, no id | its row in `claude agents --json` whose `pid` is `$CLAUDE_PID` |
-| list | `list_sessions`, `mine: true`, every page | `claude agents --json`; a row names no parent and no repository — its repository is its `cwd`'s checkout |
-| read one | `get_session <id>` | its row — `status`, `state`, and `waitingFor`, which names a held permission prompt — and `claude logs <id>` for its last lines, the source of a held prompt's literal tool string and command, read there before the item is raised; context usage unread |
-| create | `create_session`, the repository as its source | `claude --bg -n "<title>" -w <name> --permission-mode <mode> -- "<prompt>"` in a trusted checkout of the repository — none found, report it and dispatch nothing — `<mode>` this session's own, which the operator names where it is unknown — a mode that prompts for nothing is the operator's choice, never this skill's, and where it is one the dispatch go's question says its runs meet no permission prompt; it prints the id, and the session outlives this one |
-| title | `set_session_title` | `-n` at creation, never after: a run's wrong title is reported, and this session's own is the operator's `/rename`, asked once |
-| message | `send_message`, where its record reads `cross_session_inbound: available` | `SendMessage` to its name as `ListAgents` lists it, where listed and in this session's permission mode — a session in another mode holds messages for approval; to a cloud run, `claude -p "<message>" --cloud <id>`, one-way |
-| open, for the owner | the session's URL | none: named `local <id>`, opened with `claude attach <id>` |
-| release | archive | once every condition archiving takes holds — a `RUNNING` session, `status` or `state` `working`, is never stopped here — `claude stop <id>`, then `claude rm <id>`, which deletes its worktree; its uncommitted work is read with `git -C <its cwd> status` |
-| check-in | `send_later` | one one-shot `CronCreate` |
+**A local create tries, in order, and falls through silently**: `start_session`
+where this session holds it, then the CLI. **It never asks the owner which**: the
+owner chose the work, not the plumbing. `start_session` comes first because its
+run is in the owner's sidebar, opened, steered and stopped by them directly,
+reports back to this session when it ends a turn, without polling, and has its
+worktree managed and archived with it. **Each attempt is confirmed by listing
+sessions, never by its exit or output**: a failed `claude --bg` can exit cleanly
+having started nothing. An attempt not listed — listed once more before moving on,
+so a slow listing never doubles a run — falls through; where none is confirmed,
+the dispatch failed, and the report names each route tried. **The ledger records
+each run's route, `app` or `cli`**, and every later operation on it takes that
+route's column below: the other's tools do not find it, and a live run read the
+other way looks gone. A conductor with runs of both lists both.
+
+| operation | cloud | local, `app` | local, `cli` |
+|---|---|---|---|
+| this session's record | `get_session`, no id | `get_session` `self` | its row in `claude agents --json` whose `pid` is `$CLAUDE_PID` |
+| list | `list_sessions`, `mine: true`, every page | `list_sessions`; a row's `startedBy` names the session that created it, its repository is its `cwd`'s checkout | `claude agents --json`; a row names no parent and no repository — its repository is its `cwd`'s checkout |
+| read one | `get_session <id>` | `get_session <id>` (`isRunning`, `permissionMode`), and `list_events <id>` for its last turns, where a held prompt's literal tool string is read; where they do not show it, the item says so and links the session, whose open prompt shows the owner that string | its row — `status`, `state`, and `waitingFor`, which names a held permission prompt — and `claude logs <id>` for its last lines, the source of a held prompt's literal tool string and command, read there before the item is raised; context usage unread |
+| create | `create_session`, the repository as its source | `start_session`: `initiation` `user_asked`, the owner's go being the ask — never `offer`, which puts a card to the owner and waits; `context` `fresh` with its `background`; `cwd` a trusted checkout of the repository; `use_worktree` true; `name`, `title` and the prompt. It returns the `local_…` id; its mode is this session's `permissionMode`, which the dispatch go's question names where it prompts for nothing | `claude --bg -n "<title>" -w <name> --permission-mode <mode> -- "<prompt>"` in a trusted checkout of the repository — none found, report it and dispatch nothing — `<mode>` this session's own, which the operator names where it is unknown — a mode that prompts for nothing is the operator's choice, never this skill's, and where it is one the dispatch go's question says its runs meet no permission prompt; it prints the id, and the session outlives this one |
+| title | `set_session_title` | `title` at creation | `-n` at creation, never after: a run's wrong title is reported, and this session's own is the operator's `/rename`, asked once |
+| message | `send_message`, where its record reads `cross_session_inbound: available` | `send_message` to its `local_…` id | `SendMessage` to its name as `ListAgents` lists it, where listed and in this session's permission mode — a session in another mode holds messages for approval; to a cloud run, `claude -p "<message>" --cloud <id>`, one-way |
+| open, for the owner | the session's URL | its sidebar entry, its record's `link` | none: named `local <id>`, opened with `claude attach <id>` |
+| release | archive | once every condition archiving takes holds, as for `cli`: `archive_session <id>`, which archives its worktree with it | once every condition archiving takes holds — a `RUNNING` session, `status` or `state` `working`, is never stopped here — `claude stop <id>`, then `claude rm <id>`, which deletes its worktree; its uncommitted work is read with `git -C <its cwd> status` |
+| check-in | `send_later` | one one-shot `CronCreate` | one one-shot `CronCreate` |
 
 **`claude rm` refuses while unpushed commits remain**, offering a
 `--discard-unpushed` value: never pass it — that work reaches a remote ref first
@@ -120,7 +139,7 @@ check-in — and decide the same in both, save where a step says otherwise.
 session's process runs**: it fires only when the session is idle, never catches up,
 and dies with the terminal, a crash or a reboot, nothing firing while the machine
 sleeps — the ledger says so, and the restart re-arms it. **Local runs address this
-conductor by its name**: a local conductor that exited is restarted by the
+conductor by its id**, its name from the CLI: a CLI conductor that exited is restarted by the
 operator with the restart prompt (*8. Context clear*) under that name (`claude -n`);
 a run whose push failed meanwhile has ended its pushes, though status requests still reach it.
 
@@ -275,7 +294,7 @@ swept as `reviewers.md` says.
    line where it left one (`references/conductor-exchange.md`, *Reports*) over
    `post_turn_summary`, which can lag, `external_metadata.cross_session_inbound`,
    context usage where the record exposes it (otherwise say it is unread), and last
-   activity — locally, the row's fields and its logs' last lines; a `runtime: cloud` run under a local conductor sends no report, so its version is `not reported` unless a state block it posted on the forge carries one. **Then compare each live run's version with this session's install**:
+   activity — a `cli` run, the row's fields and its logs' last lines; an `app` run, its record and last events; a `runtime: cloud` run under a local conductor sends no report, so its version is `not reported` unless a state block it posted on the forge carries one. **Then compare each live run's version with this session's install**:
    the commit this skill's own version line reads, by `references/run-start.md`'s
    order, against each line the run reports for a skill that repository ships —
    never the run's line for a layer, which another repository stamps. **The
@@ -566,7 +585,7 @@ superseded — records its id among the owner-comment ids, and dispatches.
   the epic's or issue's URL — and record its id in the ledger at once.
 
 **Every run's dispatch — a reuse message or a fresh prompt — points at the epic or issue,
-gives this session's id — locally, its name, which `SendMessage` addresses — and home repository for status pushes, passes every argument
+gives this session's id (*Runtime*) — and home repository for status pushes, passes every argument
 this skill was invoked with that the run's skill reads, as that skill's invocation
 arguments, and states every cross-stream gate as below. Seed every fresh run from the ledger as well:** its
 prompt names the owner's account **as the invoking user's account** for that session
@@ -584,7 +603,7 @@ started it — and carries:
 
 **Every fresh run's prompt opens with this text, carried whole, before it invokes the
 run's skill** (NOTES). Fill `<owner>` with the owner's account, `<conductor id>`
-with this session's — locally, its name — `<site>` with the issue or epic link, or the branch where
+with this session's id (*Runtime*), `<site>` with the issue or epic link, or the branch where
 there is neither, and `<skills>` with the run's skill and every skill whose
 absence its contract makes a stop: for `implement-issue`, and `ship-branch` with
 that name added, `implement-issue`, `implement-issue-core`, `create-pr`,
@@ -702,7 +721,7 @@ store — and is reported. It is found from the URL recorded in it and in the re
 prompt, never by title alone. Rulings stay at their sites; the ledger links to them.
 
 - the workstream's name, this conductor's runtime (*Runtime*), and its session id
-  with every earlier one (*1. Sweep*, step 2) — locally, with its name;
+  with every earlier one (*1. Sweep*, step 2) — from the CLI, its name;
 - peer conductors seen, each with its link, and the sessions reported as theirs;
 - the **live-sessions table** — per stream: repository, epic or issue, the run's
   skill, the session's link and title, `runtime: cloud` where the owner sent it there, state (*4. Owner pass*, step 1), its context use (`used_tokens` of `max_tokens`, or `unread`, as read this
@@ -816,7 +835,7 @@ Never force a clear, and never skip a step to beat compaction.
    sweep: read the ledger body first: <ledger URL> — it supersedes its history.
    Read this session's record; if its id differs from the ledger's, send the new
    id to every run the ledger records, bar one it records as stale and unanswered,
-   and update the ledger — locally, send none: where its name differs, ask the
+   and update the ledger — from the CLI, send none: where its name differs, ask the
    operator to /rename it to the ledger's. Confirm the fallback check-in <id> is
    still armed, re-arming it where it is gone; where the ledger records a work queue, re-read its watch
    (ArtifactComments, watch, no url) and record interactive or read-only beside
@@ -839,8 +858,8 @@ Never force a clear, and never skip a step to beat compaction.
 6. **Declined or unanswered** — carry on. The dump is still the latest verified
    state.
 
-**After a restart, check the id first, after the version line** — locally, the
-name, which local runs push to and adopt no id over: where this
+**After a restart, check the id first, after the version line** — from the CLI,
+the name, which `cli` runs push to and adopt no id over: where this
 session's record shows an id other than the ledger's, send it to every run the ledger records —
 never a peer's, and a stale run's held as *Rules* says — and update the ledger, keeping the old id, before the sweep. The message says it is this conductor's new id and is sent from
 that id, which is what lets a run adopt it (`references/conductor-exchange.md`,
@@ -877,7 +896,7 @@ is what needs the owner to act: decisions and approvals (asked as *4. Owner pass
 says), owner steps, replies and rulings to post yourself, a failure only the owner can clear — a red default branch, a
 run whose push contradicted the forge — any PR whose run pushed that its watch stopped with the PR still open, each
 drafted review to submit (`reviewers.md`), and each run's force-push held for approval, under *Confirm in a session*,
-linking its session (locally, `claude attach <id>`) and naming the literal tool string and the exact command waiting.
+linking its session (a `cli` run, `claude attach <id>`) and naming the literal tool string and the exact command waiting.
 **The owner's own pending review on a run's PR** (*1. Sweep*, step 7) is a *Review
 and submit* item, "Submit your pending review on #N (k draft comments)", or "(draft count unread)", linking
 the PR and labelled as the owner's unsubmitted review on GitHub under the owner's
