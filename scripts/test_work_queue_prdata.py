@@ -10,6 +10,9 @@ scripts run unchanged. The fixture is the shape reported from a live run
 (owner's report, 2026-11-18): the owner's PENDING review on a PR, whose comment
 ids appear in the thread listing but 404 on pulls/comments/{id}. Each case
 asserts what the scripts emit, and that every other failed read still stops.
+
+prdata.py's --from-json route is run on the GitHub MCP tools' reads, in the shapes
+they returned live (2026-11-20), including what they cannot read.
 """
 import json
 import os
@@ -118,6 +121,97 @@ def expect_counts(name, r):
     return r.stdout
 
 
+def mcp_doc(pending=False, draft=False, viewer=OWNER):
+    """One PR's reads as the GitHub MCP tools return them (shapes read live, 2026-11-20)."""
+    pull = {"number": int(N), "head": {"sha": "f" * 40}, "html_url": f"https://github.com/{REPO}/pull/{N}",
+            "title": "Add thing", "base": {"ref": "main"}, "draft": draft, "state": "open",
+            "merged": False, "mergeable_state": "unknown", "user": {"login": "author"}}
+    reviews = [{"id": 700, "state": "APPROVED", "user": {"login": "chatgpt-codex-connector[bot]"}},
+               {"id": 800, "state": "APPROVED", "user": {"login": "rev"}}]
+    if pending:
+        reviews.append({"id": 900, "state": "PENDING", "user": {"login": OWNER}})
+    threads = [
+        {"is_resolved": False, "is_outdated": False,
+         "comments": [{"author": "rev", "body": "Typo here"},
+                      {"author": OWNER, "body": "Fixed in abc1234"}]},
+        {"is_resolved": False, "is_outdated": True,
+         "comments": [{"author": "rev", "body": "Please add a test"}]},
+        {"is_resolved": False, "is_outdated": False,
+         "comments": [{"author": "rev", "body": "Why?"}, {"author": OWNER, "body": "Shall I?"}]},
+        {"is_resolved": True, "is_outdated": False,
+         "comments": [{"author": "rev", "body": "Nit"}]}]
+    return {"viewer": viewer,
+            "teams": {"fe-platform": {"name": "FE Platform", "members": ["rev", "kim"]}},
+            "prs": {N: {"pull": pull, "reviews": reviews, "review_threads": threads,
+                        "check_runs": {"total_count": 1, "check_runs": [
+                            {"name": "ci", "status": "completed", "conclusion": "success"}]},
+                        "status": {"state": "pending", "statuses": [], "total_count": 0}}}}
+
+
+def run_json(tmp, doc, stdin=False, team=()):
+    args = [sys.executable, "-I", os.path.join(WQ, "prdata.py"), "--repo", REPO, "--owner", OWNER]
+    for t in team:
+        args += ["--team", t]
+    env = {"PATH": "/nonexistent"}  # no gh: the JSON route must read nothing
+    if stdin:
+        return subprocess.run(args + ["--from-json", "-"], input=json.dumps(doc),
+                              capture_output=True, text=True, env=env)
+    dp = os.path.join(tmp, "reads.json")
+    with open(dp, "w") as f:
+        json.dump(doc, f)
+    return subprocess.run(args + ["--from-json", dp], capture_output=True, text=True, env=env)
+
+
+def json_route(tmp, gh_out):
+    r = run_json(tmp, mcp_doc(), team=["fe-platform"])
+    assert r.returncode == 0, r.stderr
+    d = json.loads(r.stdout)[0]
+    assert set(d) == set(json.loads(gh_out)[0]), "the JSON route emits the gh route's fields"
+    got = {k: d[k] for k in ("unresolved", "answered", "needs_reply", "approvals", "reviewed_by",
+                             "owner_pending_drafts", "owner_pending_review", "owner_pending_read",
+                             "checks", "mergeable", "teams")}
+    want = {"unresolved": 2, "answered": 1, "needs_reply": 1, "approvals": ["rev"],
+            "reviewed_by": ["rev"], "owner_pending_drafts": 0, "owner_pending_review": None,
+            "owner_pending_read": True, "checks": 1, "mergeable": "unknown",
+            "teams": {"fe-platform": {"name": "FE Platform", "members": ["kim", "rev"]}}}
+    assert got == want, f"MCP shape: {got} != {want}"
+    print("ok  --from-json: the owner's non-question reply is answered, a question is not;"
+          " a [bot] login never approves; mergeable unknown stays unknown")
+    r2 = run_json(tmp, mcp_doc(), stdin=True, team=["fe-platform"])
+    assert r2.returncode == 0 and r2.stdout == r.stdout, r2.stderr
+    print("ok  --from-json - reads the document from stdin")
+    doc = mcp_doc()
+    doc["prs"][N]["status"]["statuses"] = [{"context": "UI Tests", "state": "pending"}]
+    d = json.loads(run_json(tmp, doc).stdout)[0]
+    assert (d["pending"], d["checks"]) == (["UI Tests"], 2), d
+    print("ok  --from-json: a commit status counts beside the check runs")
+
+    d = json.loads(run_json(tmp, mcp_doc(pending=True)).stdout)[0]
+    got = (d["owner_pending_read"], d["owner_pending_drafts"], d["owner_pending_review"])
+    assert got == (False, None, 900), got
+    print("ok  --from-json: the owner's PENDING review is unread (null drafts), never 0")
+
+    d = json.loads(run_json(tmp, mcp_doc(draft=True)).stdout)[0]
+    assert (d["ever_ready"], d["ever_ready_read"]) == (None, False), d
+    print("ok  --from-json: a draft's ready history is unread, ever_ready null")
+    d = json.loads(run_json(tmp, mcp_doc(viewer=None)).stdout)[0]
+    assert (d["owner_pending_read"], d["owner_pending_drafts"]) == (False, None), d
+    print("ok  --from-json with no viewer: the owner's pending review is unread")
+    d = json.loads(run_json(tmp, mcp_doc(), team=["other-team"]).stdout)[0]
+    assert d["teams"]["other-team"] == {"name": None, "members": None}, d["teams"]
+    print("ok  --from-json: a team with no reads has null members, unverified")
+
+    for label, change in (("no check runs", lambda pr: pr.pop("check_runs")),
+                          ("no review threads", lambda pr: pr.pop("review_threads")),
+                          ("no reviews", lambda pr: pr.pop("reviews")),
+                          ("no commit statuses", lambda pr: pr.pop("status"))):
+        doc = mcp_doc()
+        change(doc["prs"][N])
+        r = run_json(tmp, doc)
+        assert r.returncode != 0 and r.stderr, f"{label}: must stop, rc={r.returncode}"
+        print(f"ok  --from-json: {label} stops the script")
+
+
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         gh = os.path.join(tmp, "gh")
@@ -127,6 +221,7 @@ def main():
 
         out = expect_counts("ccr route, owner's pending review",
                             run_prdata(tmp, base_fixture()))
+        json_route(tmp, out)
         d = json.loads(out)[0]
         assert (d["requested_teams"], d["reviewed_by"]) == ([{"slug": "fe-platform", "name": "FE Platform"}], ["rev"]), d
         assert d["teams"] == {"fe-platform": {"name": None, "members": None}} and d["ever_ready"] is False, d
@@ -270,7 +365,7 @@ def main():
                         requested_teams=[], reviewed_by=[])
             base.update(kw)
             return base
-        prdata = [pr("1", draft=True), pr("12", draft=True), pr("13", draft=True, ever_ready=True), pr("2", requested_teams=[{"slug": "fe-platform", "name": "FE Platform"}]),
+        prdata = [pr("1", draft=True), pr("12", draft=True), pr("13", draft=True, ever_ready=True), pr("14", draft=True, ever_ready=None, ever_ready_read=False), pr("2", requested_teams=[{"slug": "fe-platform", "name": "FE Platform"}]),
                   pr("9", draft=True, ever_ready=True),
                   pr("10", reviewed_by=["out"], approvals=["out"],
                      teams={"fe-platform": {"name": "FE Platform", "members": ["kim"]}}),
@@ -283,6 +378,7 @@ def main():
         prs = [{"repo": REPO, "pr": "1", "team": "payments"},
                {"repo": REPO, "pr": "12", "awaitingPublish": True},
                {"repo": REPO, "pr": "13", "awaitingPublish": True},
+               {"repo": REPO, "pr": "14", "awaitingPublish": True},
                {"repo": REPO, "pr": "2", "team": "FE Platform",
                 "review": {"href": "https://tracker.example.com/r/2", "label": "Tracker review", "drafts": 2},
                 "issues": [{"label": "#9", "href": f"https://github.com/{REPO}/issues/9"}]},
@@ -309,7 +405,7 @@ def main():
         st = json.load(open(state))
         steps = {p["pr"]: [s["done"] for s in p["steps"]] for p in st["prs"]}
         assert steps == {"1": [False, False, False, False], "12": [False, False, False, False],
-                         "13": [False, False, False, False], "2": [True, True, False, False],
+                         "13": [False, False, False, False], "14": [False, False, False, False], "2": [True, True, False, False],
                          "3": [True, True, True, False], "6": [True, True, False, False],
                          "8": [True, True, False, False], "9": [False, False, False, False],
                          "10": [True, True, False, False], "11": [True, True, True, False]}, steps
@@ -322,9 +418,10 @@ def main():
         assert by["9"]["steps"][0]["label"] == "Held in draft" and by["9"]["waitsOn"] == "held"
         assert by["13"]["steps"][0]["label"] == "Held in draft" and by["13"]["waitsOn"] == "held"
         assert by["1"]["steps"][0]["label"] == "Draft" and by["1"]["waitsOn"] == "draft"
+        assert by["14"]["steps"][0]["label"] == "Draft" and by["14"]["waitsOn"] == "draft"
         assert by["12"]["steps"][0]["label"] == "Mark ready" and by["12"]["waitsOn"] == "owner"
         print("ok  a draft is offered to mark ready only where its run reported it awaiting the owner's publish;"
-              " one ever ready stays held even so, and any other is a plain Draft")
+              " one ever ready stays held even so, one whose history was unread is a plain Draft, as is any other")
         assert by["10"]["steps"][2] == {"label": "Team approves", "done": False}
         assert by["3"]["steps"][2]["label"] == "Team approves — approved (team not verified)"
         print("ok  where the team's members were read only a member's approval counts; otherwise it is labelled unverified")
@@ -332,7 +429,7 @@ def main():
         assert by["3"]["steps"][3]["label"] == "Not in the merge notes" and by["3"]["waitsOn"] == "blocked"
         assert by["11"]["steps"][3]["label"] == "Blocked: CI red (e2e)" and by["11"]["waitsOn"] == "blocked"
         print("ok  an approved PR that is not a Ready merge row names its blocker, never Merge")
-        assert {k: p["waitsOn"] for k, p in by.items()} == {"1": "draft", "12": "owner", "13": "held", "2": "team", "3": "blocked",
+        assert {k: p["waitsOn"] for k, p in by.items()} == {"1": "draft", "12": "owner", "13": "held", "14": "draft", "2": "team", "3": "blocked",
                                                            "6": "team", "8": "team", "9": "held",
                                                            "10": "team", "11": "blocked"}
         assert all(p.get("stepsReadAt") for p in st["prs"])

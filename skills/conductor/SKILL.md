@@ -299,12 +299,13 @@ swept as `reviewers.md` says.
    PR, **a review in state `PENDING` by the owner's account and its comment count**,
    from `pulls/{n}/reviews` and that review's comments, read with this PR — GitHub
    shows it only to the account that wrote it, so where `gh api user` is not the
-   owner's login it is unread; and the issues opened since the last sweep. **The forge is the source of truth where sessions
+   owner's login it is unread, as it is without `gh api` (`work-queue.md`, *Which page*); and the issues opened since the last sweep. **The forge is the source of truth where sessions
    are missing** — an epic or issue whose run was archived or never found is still
    a stream.
 8. **The default branch**, per repository in scope: CI on its current head, and
    the deploy that head triggered where the repository deploys from it — each
    reported with the head SHA and its result, failing or unread said as such.
+   Without `gh api`, CI is its Actions workflow runs (`work-queue.md`, *Which page*).
 9. **Pending gos**: execute every recorded dispatch go not yet executed — a plain one, or a conditional one whose condition the forge now shows — once re-read as *6. Dispatch* says, a conductor-posted one only after its transcript check passes again. A verified go is never put to the owner a second time.
 10. **Live reviewers**, verified and archived as `reviewers.md` says.
 

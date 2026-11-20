@@ -1,6 +1,13 @@
 """Read one repository's PR facts from GitHub for the work queue's "Your PRs" section.
 
     python3 -I prdata.py --repo owner/name --owner LOGIN [--team SLUG] 101 102 > prdata.json
+    python3 -I prdata.py --repo owner/name --owner LOGIN [--team SLUG] --from-json reads.json [101 102]
+
+The first form reads GitHub through `gh api`. The second reads nothing: it takes
+the GitHub MCP tools' reads (where `gh` is limited to search) as one JSON
+document, `-` for stdin, and emits the same output, with what those tools cannot
+read written unread. Both feed one transform, `pr_row`. The document's form is at
+`JsonSource` below.
 
 Run as part of the sweep: its output is that sweep's snapshot of these PRs
 (conductor, *The status snapshot*), and mergeq.py and prsteps.py render from it
@@ -40,6 +47,12 @@ the --owner login, or cannot be read, the owner's pending review cannot be seen:
 owner_pending_drafts is null and owner_pending_read false, never 0. A pending last
 comment by any other login counts as unresolved. Every other failed read still stops the
 script.
+
+`ever_ready_read` is false only where the timeline had no read (the JSON route):
+`ever_ready` is then null, and prsteps.py offers that draft no "Mark ready".
+
+A review counts as a bot's where its user's type is Bot or, where the type is not
+given (the MCP tools omit it), its login ends in [bot].
 """
 import argparse
 import json
@@ -141,87 +154,216 @@ def count_threads(ts, owner_login):
     return unresolved, answered, needs_reply
 
 
+def is_bot(user):
+    return user.get("type") == "Bot" or (user.get("login") or "").endswith("[bot]")
+
+
+class GhSource:
+    """The default route: every read is a `gh api` call; any failure stops."""
+
+    def __init__(self, repo):
+        self.repo = repo
+
+    def viewer(self):
+        try:
+            return gh_try("user").get("login")
+        except GhError:
+            return None
+
+    def pull(self, n):
+        return gh(f"repos/{self.repo}/pulls/{n}")
+
+    def timeline(self, n):
+        return [ev for page in pages(f"repos/{self.repo}/issues/{n}/timeline?per_page=100")
+                for ev in page]
+
+    def team(self, org, slug):
+        try:  # membership may be unreadable to this token: then unverified, never a stop
+            name = gh_try(f"orgs/{org}/teams/{slug}").get("name")
+            members = sorted(m["login"] for pg in gh_try("--paginate", "--slurp",
+                             f"orgs/{org}/teams/{slug}/members?per_page=100") for m in pg)
+        except GhError:
+            name, members = None, None
+        return {"name": name, "members": members}
+
+    def reviews(self, n):
+        return [r for page in pages(f"repos/{self.repo}/pulls/{n}/reviews?per_page=100")
+                for r in page]
+
+    def review_comments(self, n, rid):
+        return [c for cp in pages(f"repos/{self.repo}/pulls/{n}/reviews/{rid}"
+                                  "/comments?per_page=100") for c in cp]
+
+    def threads(self, n, pending_comments):
+        return threads(self.repo, n, pending_comments)
+
+    def check_runs(self, n, sha):
+        return [r for page in pages(f"repos/{self.repo}/commits/{sha}/check-runs?per_page=100")
+                for r in page["check_runs"]]
+
+    def statuses(self, n, sha):
+        return [s for page in pages(f"repos/{self.repo}/commits/{sha}/status?per_page=100")
+                for s in page["statuses"]]
+
+
+class JsonSource:
+    """The GitHub MCP tools' reads, handed over as one document. Gather every page
+    of each read (`page`, or `after` for review threads) before writing it:
+
+    {"viewer": "LOGIN" | null,                  # get_me
+     "teams": {"SLUG": {"name": ..., "members": [LOGIN, ...]}},   # get_team_members
+     "prs": {"101": {
+        "pull": {...},                          # pull_request_read get
+        "reviews": [...],                       # get_reviews, oldest first
+        "review_threads": [...],                # get_review_comments' review_threads
+        "check_runs": {"check_runs": [...]},    # get_check_runs
+        "status": {"statuses": [...]}}}}        # get_status
+
+    What these tools cannot read is written unread, never guessed and never zero:
+    a draft's ready history (`ever_ready` null, `ever_ready_read` false: no
+    timeline read), and the owner's pending review wherever the owner has one
+    (`owner_pending_read` false, `owner_pending_drafts` null), since thread
+    comments carry no state and its comments have no read. A team missing from
+    `teams` has null name and members. Any other key the document lacks is a read
+    that failed, and stops the script as the gh route does, `status` included:
+    an external check (Chromatic, a deploy preview) may report only there.
+    """
+
+    def __init__(self, doc):
+        self.doc = doc
+
+    def _pr(self, n):
+        pr = self.doc.get("prs", {}).get(str(n))
+        if pr is None:
+            sys.exit(f"--from-json: no reads for PR {n}")
+        return pr
+
+    def _need(self, n, key):
+        pr = self._pr(n)
+        if pr.get(key) is None:
+            sys.exit(f"--from-json: PR {n} lacks {key}")
+        return pr[key]
+
+    def viewer(self):
+        return self.doc.get("viewer")
+
+    def pull(self, n):
+        return self._need(n, "pull")
+
+    def timeline(self, n):
+        return None  # no MCP read: unread
+
+    def team(self, org, slug):
+        t = (self.doc.get("teams") or {}).get(slug) or {}
+        m = t.get("members")
+        return {"name": t.get("name"), "members": sorted(m) if m is not None else None}
+
+    def reviews(self, n):
+        return self._need(n, "reviews")
+
+    def review_comments(self, n, rid):
+        return None  # no MCP read of a pending review's comments: unread
+
+    def threads(self, n, pending_comments):
+        out = []
+        for t in self._need(n, "review_threads"):
+            cs = t.get("comments") or []
+            last = cs[-1] if cs else {}
+            author = last.get("author") or last.get("user") or {}
+            out.append(dict(resolved=bool(t["is_resolved"]), outdated=bool(t.get("is_outdated")),
+                            login=author if isinstance(author, str) else author.get("login"),
+                            body=last.get("body") or "", pending=False))
+        return out
+
+    def check_runs(self, n, sha):
+        v = self._need(n, "check_runs")
+        return v["check_runs"] if isinstance(v, dict) else v
+
+    def statuses(self, n, sha):
+        v = self._need(n, "status")
+        return v["statuses"] if isinstance(v, dict) else v
+
+
+def pr_row(src, repo, n, owner, owner_reads, extra_teams):
+    """One PR's row: the one transform both routes share."""
+    p = src.pull(n)
+    sha = p["head"]["sha"]
+    # a draft that was ever ready is held (draft state): read from the timeline,
+    # never from a record; a failed read stops the script like any other
+    ever_ready = False
+    if p["draft"]:
+        events = src.timeline(n)
+        ever_ready = None if events is None else any(
+            ev.get("event") in ("ready_for_review", "convert_to_draft") for ev in events)
+    org = repo.split("/", 1)[0]
+    teams = {}
+    for slug in sorted({t.get("slug") for t in p.get("requested_teams") or []} | set(extra_teams)):
+        if slug:
+            teams[slug] = src.team(org, slug)
+    latest, pending_comments, own_pending, reviewed_by = {}, {}, None, set()
+    author = (p.get("user") or {}).get("login")
+    for r in src.reviews(n):  # chronological, so the last state per reviewer wins
+        u = r.get("user") or {}
+        if (r["state"] in ("APPROVED", "CHANGES_REQUESTED", "COMMENTED")
+                and not is_bot(u) and u.get("login") != author):
+            reviewed_by.add(u.get("login"))
+        if r["state"] in ("APPROVED", "CHANGES_REQUESTED", "DISMISSED"):
+            latest[u["login"]] = (r["state"], is_bot(u))
+        elif r["state"] == "PENDING":
+            cs = src.review_comments(n, r["id"])
+            pending_comments.update({c["id"]: c for c in cs or []})
+            if u.get("login") == owner:
+                own_pending = (r["id"], None if cs is None else len(cs))
+    # where its comments could not be read, the owner's pending review is unread
+    owner_read = owner_reads and not (own_pending and own_pending[1] is None)
+    approvals = [u for u, (s, bot) in latest.items() if s == "APPROVED" and not bot]
+    changes = [u for u, (s, _) in latest.items() if s == "CHANGES_REQUESTED"]
+    unresolved, answered, needs_reply = count_threads(src.threads(n, pending_comments), owner)
+    runs, statuses = src.check_runs(n, sha), src.statuses(n, sha)
+    fail = sorted({r["name"] for r in runs
+                   if r.get("conclusion") in ("failure", "timed_out", "cancelled", "action_required")}
+                  | {s["context"] for s in statuses if s["state"] in ("failure", "error")})
+    pending = sorted({r["name"] for r in runs if r["status"] != "completed"}
+                     | {s["context"] for s in statuses if s["state"] == "pending"})
+    return dict(repo=repo, pr=str(n), url=p["html_url"], title=p["title"],
+                sha=sha, base=p["base"]["ref"], draft=p["draft"], state=p["state"],
+                merged=p["merged"], mergeable=p.get("mergeable_state"),
+                requested_teams=[{"slug": t.get("slug"), "name": t.get("name")}
+                                 for t in p.get("requested_teams") or []],
+                reviewed_by=sorted(reviewed_by), ever_ready=ever_ready, teams=teams,
+                approvals=approvals, changes=changes, unresolved=unresolved, answered=answered,
+                needs_reply=needs_reply,
+                ever_ready_read=ever_ready is not None,
+                owner_pending_drafts=(own_pending[1] if own_pending else 0)
+                if owner_read else None,
+                owner_pending_review=own_pending[0] if own_pending and owner_reads
+                else None,
+                owner_pending_read=owner_read,
+                checks=len(runs) + len(statuses), fail=fail, pending=pending)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo", required=True, help="owner/name")
     ap.add_argument("--owner", required=True, help="the owner's account login")
     ap.add_argument("--team", action="append", default=[],
                     help="a team slug whose membership the PR steps check, beside requested teams")
-    ap.add_argument("prs", nargs="+")
+    ap.add_argument("--from-json", metavar="FILE",
+                    help="read nothing: take the reads from this JSON document, - for stdin")
+    ap.add_argument("prs", nargs="*")
     a = ap.parse_args()
+    if a.from_json:
+        with (sys.stdin if a.from_json == "-" else open(a.from_json)) as f:
+            src = JsonSource(json.load(f))
+        prs = a.prs or list(src.doc.get("prs", {}))
+    else:
+        if not a.prs:
+            ap.error("name the PRs to read")
+        src, prs = GhSource(a.repo), a.prs
     # a pending review is shown only to its author: read as anyone else, it is unread
-    try:
-        reader = gh_try("user").get("login")
-    except GhError:
-        reader = None
-    owner_reads = reader == a.owner
-
-    out = []
-    for n in a.prs:
-        p = gh(f"repos/{a.repo}/pulls/{n}")
-        sha = p["head"]["sha"]
-        # a draft that was ever ready is held (draft state): read from the timeline,
-        # never from a record; a failed read stops the script like any other
-        ever_ready = False
-        if p["draft"]:
-            ever_ready = any(ev.get("event") in ("ready_for_review", "convert_to_draft")
-                             for page in pages(f"repos/{a.repo}/issues/{n}/timeline?per_page=100")
-                             for ev in page)
-        org = a.repo.split("/", 1)[0]
-        teams = {}
-        for slug in sorted({t.get("slug") for t in p.get("requested_teams") or []} | set(a.team)):
-            if not slug:
-                continue
-            try:  # membership may be unreadable to this token: then unverified, never a stop
-                name = gh_try(f"orgs/{org}/teams/{slug}").get("name")
-                members = sorted(m["login"] for pg in gh_try("--paginate", "--slurp",
-                                 f"orgs/{org}/teams/{slug}/members?per_page=100") for m in pg)
-            except GhError:
-                name, members = None, None
-            teams[slug] = {"name": name, "members": members}
-        latest, pending_comments, own_pending, reviewed_by = {}, {}, None, set()
-        author = (p.get("user") or {}).get("login")
-        for page in pages(f"repos/{a.repo}/pulls/{n}/reviews?per_page=100"):
-            for r in page:  # chronological, so the last state per reviewer wins
-                u = r.get("user") or {}
-                if (r["state"] in ("APPROVED", "CHANGES_REQUESTED", "COMMENTED")
-                        and u.get("type") != "Bot" and u.get("login") != author):
-                    reviewed_by.add(u.get("login"))
-                if r["state"] in ("APPROVED", "CHANGES_REQUESTED", "DISMISSED"):
-                    latest[r["user"]["login"]] = (r["state"], r["user"].get("type"))
-                elif r["state"] == "PENDING":
-                    cs = [c for cp in pages(f"repos/{a.repo}/pulls/{n}/reviews/{r['id']}"
-                                            "/comments?per_page=100") for c in cp]
-                    pending_comments.update({c["id"]: c for c in cs})
-                    if (r.get("user") or {}).get("login") == a.owner:
-                        own_pending = (r["id"], len(cs))
-        approvals = [u for u, (s, kind) in latest.items() if s == "APPROVED" and kind != "Bot"]
-        changes = [u for u, (s, _) in latest.items() if s == "CHANGES_REQUESTED"]
-        unresolved, answered, needs_reply = count_threads(threads(a.repo, n, pending_comments), a.owner)
-        runs = [r for page in pages(f"repos/{a.repo}/commits/{sha}/check-runs?per_page=100")
-                for r in page["check_runs"]]
-        statuses = [s for page in pages(f"repos/{a.repo}/commits/{sha}/status?per_page=100")
-                    for s in page["statuses"]]
-        fail = sorted({r["name"] for r in runs
-                       if r["conclusion"] in ("failure", "timed_out", "cancelled", "action_required")}
-                      | {s["context"] for s in statuses if s["state"] in ("failure", "error")})
-        pending = sorted({r["name"] for r in runs if r["status"] != "completed"}
-                         | {s["context"] for s in statuses if s["state"] == "pending"})
-        out.append(dict(repo=a.repo, pr=str(n), url=p["html_url"], title=p["title"],
-                        sha=sha, base=p["base"]["ref"], draft=p["draft"], state=p["state"],
-                        merged=p["merged"], mergeable=p.get("mergeable_state"),
-                        requested_teams=[{"slug": t.get("slug"), "name": t.get("name")}
-                                         for t in p.get("requested_teams") or []],
-                        reviewed_by=sorted(reviewed_by), ever_ready=ever_ready, teams=teams,
-                        approvals=approvals, changes=changes, unresolved=unresolved, answered=answered,
-                        needs_reply=needs_reply,
-                        owner_pending_drafts=(own_pending[1] if own_pending else 0)
-                        if owner_reads else None,
-                        owner_pending_review=own_pending[0] if own_pending and owner_reads
-                        else None,
-                        owner_pending_read=owner_reads,
-                        checks=len(runs) + len(statuses), fail=fail, pending=pending))
-    print(json.dumps(out, indent=1))
+    owner_reads = src.viewer() == a.owner
+    rows = [pr_row(src, a.repo, n, a.owner, owner_reads, a.team) for n in prs]
+    print(json.dumps(rows, indent=1))
 
 
 if __name__ == "__main__":

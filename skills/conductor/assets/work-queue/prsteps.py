@@ -27,7 +27,8 @@ Each item's steps are read from the sweep's prdata.json, never ticked on the pag
   shows (an instruction, a preference, a convention), so a draft is offered to the
   owner to mark ready only where the entry carries `"awaitingPublish": true`, which
   the conductor sets from the run's own report that the draft awaits the owner's
-  publish; any other draft reads "Draft" with no owner step.
+  publish, and whose ready history was read (prdata.py's `ever_ready_read`); any
+  other draft reads "Draft" with no owner step.
 - Request <team>: done when the team is requested — `team` matched, ignoring case,
   against a team's slug or name — or a person other than the author has reviewed.
 - Team approves: done on an approval from a member where the team's membership was
@@ -126,7 +127,9 @@ for e in json.load(open(a.prs, encoding="utf-8")):
     held = bool(d["draft"] and d.get("ever_ready"))
     # fail closed: a hold can sit where no timeline shows it, so only a draft its run
     # reported as awaiting the owner's publish is offered to mark ready
-    offered = bool(d["draft"] and not held and e.get("awaitingPublish") is True)
+    # and only where its ready history was read: an unread one may be held
+    offered = bool(d["draft"] and not held and d.get("ever_ready_read") is not False
+                   and e.get("awaitingPublish") is True)
     draft_label = "Held in draft" if held else "Mark ready" if offered or not d["draft"] else "Draft"
     if changes:
         approve = {"label": "Changes requested", "done": False}
