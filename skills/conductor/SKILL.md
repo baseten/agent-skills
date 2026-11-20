@@ -329,9 +329,9 @@ output showing its kind** — a *Needs you* item in the chat is on the work queu
 and an abbreviation, the unchanged line or a stream's cap, counts from the same
 snapshot. **An open PR of a run in this ledger whose next step is the owner's** —
 mark it ready **only where its run reported the draft as awaiting the owner's
-publish** (`references/draft-state.md`: a hold can sit in an instruction, a
-preference or a convention no timeline shows, so a draft without that report is
-not offered); request its team, the owner's own act; or merge it, **only where it
+publish** and its ready history was read (`references/draft-state.md`: a hold can
+sit in an instruction, a preference or a convention no timeline shows, so a draft
+without that report, or whose history is unread, is not offered); request its team, the owner's own act; or merge it, **only where it
 is a merge row reading Ready** (`work-queue.md`, *Building it*) — **is a *Needs
 you* item in every output**, under *Review or assign a reviewer* or *Merge*. One
 waiting on its team, any other draft, or an approved PR whose merge row is blocked

@@ -92,8 +92,8 @@ pointed to:
   owner step; any other reads "Draft", with no owner step;
 - **Request <team>** — the team requested (`team` matched, ignoring case, against
   the forge team's slug or name) or a person reviewing; the owner's own act, never
-  this skill's (`references/review-trigger.md`). Where the requests are unread,
-  the step stays the owner's, labelled to check;
+  this skill's (`references/review-trigger.md`). Where the requests are unread
+  and no person has reviewed, the step stays the owner's, labelled to check;
 - **Team approves** — a member's approval where `prdata.py` read the team's members,
   else any person's, labelled "team not verified"; "Changes requested" while any
   person's latest review asks for changes. A team can leave `requested_teams` once
