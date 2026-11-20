@@ -257,13 +257,13 @@ swept as `reviewers.md` says.
    this conductor dispatched or adopted is that run, whatever its title or
    structure. **Adopted** is recorded only from the owner's go naming the session id,
    never from a title or a structure match. **Then by provenance**: a session the
-   ledger lacks whose `parent_session_id` is this session, or an earlier id of it
+   ledger lacks whose `parent_session_id` — in the app, `startedBy` — is this session, or an earlier id of it
    the ledger records, is a dispatch whose record was lost — record it and report
    that; one whose `parent_session_id` is any other session was created by that
    session and **is not this conductor's run** — not asked or retitled, and steps
    3–5 skip it. Where that session is a peer conductor the run is the peer's, and
    is never adopted or retired here; otherwise the owner's go may adopt it.
-   **A local listing carries no provenance**: there a session the ledger lacks,
+   **A CLI listing carries no provenance**: there a session the ledger lacks,
    found by steps 3 or 4, is a doubtful match — reported, never asked for status
    or retitled — until the owner's go adopts it.
 3. **Then by title**: a kept session whose title starts `Orchestrator:` or
@@ -271,7 +271,8 @@ swept as `reviewers.md` says.
 4. **Then by structure**, for the rest — never this session, and never a
    `Conductor:` session: a session whose outcomes name an integration branch (its
    repository's `integration-branch-prefix`, `integration/` by default) —
-   locally, whose `cwd` has one checked out, the parent test below not applying —
+   locally, whose `cwd` has one checked out, the parent test below reading
+   `startedBy` in the app and not applying from the CLI —
    or that is the `parent_session_id` of worker sessions named with
    `backlog-orchestrator`'s `bo/` prefix, which is what finds a `per-pr` run.
    **Orchestrators often appear only as parents**, absent from the page that lists
@@ -398,7 +399,7 @@ send nothing, read that stream from the forge, and flag it. The request:
 
 ```text
 Status request from conductor <this session id> for the owner. Reply with
-send_message (SendMessage in a local session) to this message's sender: one report in the conductor-exchange form
+send_message (SendMessage in a CLI session) to this message's sender: one report in the conductor-exchange form
 (three-link header, state from its fixed set, the four numbered parts, at most
 400 words, nothing after it), about your own epic or issue only.
 Do not dispatch or merge because of this message.
