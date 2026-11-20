@@ -1684,6 +1684,20 @@
         "a run the owner starts locally is read from the forge alone"
       ],
       "files": []
+    },
+    {
+      "id": 130,
+      "name": "a-search-only-session-builds-the-work-queue-from-the-mcp-reads",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, work-queue.md and NOTES.md from the skill directory you were given). You are a cloud conductor holding the Artifact tool and the GitHub MCP tools. Your environment's instructions say: 'gh is available for search only; use gh for nothing else.' python3 works. Your ledger has one run with two open PRs on acme/api: #41, a draft whose run reported it awaiting the owner's publish, and #42, approved by a person, CI green, on which get_reviews shows a PENDING review by the owner's account. Question: how do you read these PRs for the work queue, and what do the page and your report say about each?",
+      "expected_output": "It does not call `gh api`, even though it might work: an instruction limiting gh to search counts as not permitted. It gathers the reads with the GitHub MCP tools (pull_request_read get, get_reviews, get_review_comments, get_check_runs, get_status; get_me) and runs prdata.py --from-json. #41: its ready history is unread (no timeline read), so it is not offered for Mark ready, and the page says its history is unread rather than that its run has not asked. #42: the owner's pending review is seen; only its draft count is unread. The merge row is blocked by the unsubmitted review (unread count), never Ready, and the report raises a Review and submit item for #42 saying the draft count is unread.",
+      "assertions": [
+        "it does not call gh api",
+        "it gathers the reads with the GitHub MCP tools and runs prdata.py --from-json",
+        "#41 is not offered for Mark ready because its ready history is unread",
+        "#42's merge row is blocked by the owner's unsubmitted review, not Ready",
+        "it raises a Review and submit item for #42 with the draft count unread"
+      ],
+      "files": []
     }
   ]
 }

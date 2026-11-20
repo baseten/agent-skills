@@ -221,9 +221,13 @@ class JsonSource:
 
     What these tools cannot read is written unread, never guessed and never zero:
     a draft's ready history (`ever_ready` null, `ever_ready_read` false: no
-    timeline read), and the owner's pending review wherever the owner has one
-    (`owner_pending_read` false, `owner_pending_drafts` null), since thread
-    comments carry no state and its comments have no read. A team missing from
+    timeline read); the PR's requested teams (`requested_teams` null,
+    `requested_teams_read` false: `get` omits them); and, where the owner has a
+    PENDING review, its draft count (`owner_pending_read` false,
+    `owner_pending_drafts` null, `owner_pending_review` its id), since its
+    comments have no read and thread comments carry no state. Each thread whose
+    last comment is the owner's is then counted held in that review: neither open
+    nor answered. A team missing from
     `teams` has null name and members. Any other key the document lacks is a read
     that failed, and stops the script as the gh route does, `status` included:
     an external check (Chromatic, a deploy preview) may report only there.
@@ -248,7 +252,9 @@ class JsonSource:
         return self.doc.get("viewer")
 
     def pull(self, n):
-        return self._need(n, "pull")
+        p = dict(self._need(n, "pull"))
+        p.setdefault("requested_teams", None)  # `get` omits it: unread, never none requested
+        return p
 
     def timeline(self, n):
         return None  # no MCP read: unread
@@ -297,6 +303,7 @@ def pr_row(src, repo, n, owner, owner_reads, extra_teams):
             ev.get("event") in ("ready_for_review", "convert_to_draft") for ev in events)
     org = repo.split("/", 1)[0]
     teams = {}
+    requested_read = p.get("requested_teams") is not None or isinstance(src, GhSource)
     for slug in sorted({t.get("slug") for t in p.get("requested_teams") or []} | set(extra_teams)):
         if slug:
             teams[slug] = src.team(org, slug)
@@ -318,7 +325,14 @@ def pr_row(src, repo, n, owner, owner_reads, extra_teams):
     owner_read = owner_reads and not (own_pending and own_pending[1] is None)
     approvals = [u for u, (s, bot) in latest.items() if s == "APPROVED" and not bot]
     changes = [u for u, (s, _) in latest.items() if s == "CHANGES_REQUESTED"]
-    unresolved, answered, needs_reply = count_threads(src.threads(n, pending_comments), owner)
+    ts = src.threads(n, pending_comments)
+    if own_pending and own_pending[1] is None:
+        # which comments sit in the owner's pending review is unread, so each thread
+        # whose last comment is theirs may be held there: counted held, never answered
+        for t in ts:
+            if t["login"] == owner:
+                t["pending"] = True
+    unresolved, answered, needs_reply = count_threads(ts, owner)
     runs, statuses = src.check_runs(n, sha), src.statuses(n, sha)
     fail = sorted({r["name"] for r in runs
                    if r.get("conclusion") in ("failure", "timed_out", "cancelled", "action_required")}
@@ -329,7 +343,9 @@ def pr_row(src, repo, n, owner, owner_reads, extra_teams):
                 sha=sha, base=p["base"]["ref"], draft=p["draft"], state=p["state"],
                 merged=p["merged"], mergeable=p.get("mergeable_state"),
                 requested_teams=[{"slug": t.get("slug"), "name": t.get("name")}
-                                 for t in p.get("requested_teams") or []],
+                                 for t in p.get("requested_teams") or []]
+                if requested_read else None,
+                requested_teams_read=requested_read,
                 reviewed_by=sorted(reviewed_by), ever_ready=ever_ready, teams=teams,
                 approvals=approvals, changes=changes, unresolved=unresolved, answered=answered,
                 needs_reply=needs_reply,
@@ -355,7 +371,9 @@ def main():
     if a.from_json:
         with (sys.stdin if a.from_json == "-" else open(a.from_json)) as f:
             src = JsonSource(json.load(f))
-        prs = a.prs or list(src.doc.get("prs", {}))
+        prs = a.prs or list(src.doc.get("prs") or {})
+        if not prs:
+            sys.exit("--from-json: the document names no PR")
     else:
         if not a.prs:
             ap.error("name the PRs to read")

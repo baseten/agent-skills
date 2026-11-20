@@ -280,7 +280,7 @@ swept as `reviewers.md` says.
    order, against each line the run reports for a skill that repository ships —
    never the run's line for a layer, which another repository stamps. **The
    compare decides**: `gh api repos/<repo>/compare/<run commit>...<installed
-   commit>`, `<repo>` the agent-skills repository named by the `repo` URL in
+   commit>`, where `gh api` is permitted (`work-queue.md`, *Which page*), else it cannot be read; `<repo>` the agent-skills repository named by the `repo` URL in
    `.source` or `.agent-skills-install` (where neither does, as for a version from
    `metadata.version`, it cannot be read), never a workstream's. **Stale** only where
    it is `ahead` and its files include a path under `skills/` or `rules/`; `ahead`
@@ -299,7 +299,7 @@ swept as `reviewers.md` says.
    PR, **a review in state `PENDING` by the owner's account and its comment count**,
    from `pulls/{n}/reviews` and that review's comments, read with this PR — GitHub
    shows it only to the account that wrote it, so where `gh api user` is not the
-   owner's login it is unread, as it is without `gh api` (`work-queue.md`, *Which page*); and the issues opened since the last sweep. **The forge is the source of truth where sessions
+   owner's login it is unread; without `gh api` (`work-queue.md`, *Which page*) the review is read but its count is not; and the issues opened since the last sweep. **The forge is the source of truth where sessions
    are missing** — an epic or issue whose run was archived or never found is still
    a stream.
 8. **The default branch**, per repository in scope: CI on its current head, and
@@ -329,9 +329,9 @@ output showing its kind** — a *Needs you* item in the chat is on the work queu
 and an abbreviation, the unchanged line or a stream's cap, counts from the same
 snapshot. **An open PR of a run in this ledger whose next step is the owner's** —
 mark it ready **only where its run reported the draft as awaiting the owner's
-publish** (`references/draft-state.md`: a hold can sit in an instruction, a
-preference or a convention no timeline shows, so a draft without that report is
-not offered); request its team, the owner's own act; or merge it, **only where it
+publish** and its ready history was read (`references/draft-state.md`: a hold can
+sit in an instruction, a preference or a convention no timeline shows, so a draft
+without that report, or whose history is unread, is not offered); request its team, the owner's own act; or merge it, **only where it
 is a merge row reading Ready** (`work-queue.md`, *Building it*) — **is a *Needs
 you* item in every output**, under *Review or assign a reviewer* or *Merge*. One
 waiting on its team, any other draft, or an approved PR whose merge row is blocked
@@ -879,7 +879,7 @@ run whose push contradicted the forge — any PR whose run pushed that its watch
 drafted review to submit (`reviewers.md`), and each run's force-push held for approval, under *Confirm in a session*,
 linking its session (locally, `claude attach <id>`) and naming the literal tool string and the exact command waiting.
 **The owner's own pending review on a run's PR** (*1. Sweep*, step 7) is a *Review
-and submit* item, "Submit your pending review on #N (k draft comments)", linking
+and submit* item, "Submit your pending review on #N (k draft comments)", or "(draft count unread)", linking
 the PR and labelled as the owner's unsubmitted review on GitHub under the owner's
 login: no run acts on them until they are submitted, and they are never described
 as edits to a run's comments. It is not a reviewer's draft: a reviewer drafts, under the same account,

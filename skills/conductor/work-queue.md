@@ -45,7 +45,8 @@ report's link says the page is read-only and answers go in the chat (`SKILL.md`,
 2. **Otherwise, the GitHub MCP tools' reads**, written into the document
    `prdata.py`'s `JsonSource` describes and run with `--from-json`. What they
    cannot read comes out unread, never guessed: a draft's ready history, so no
-   "Mark ready" is offered on it, and the owner's pending review. `mergeable`
+   "Mark ready" is offered on it; the PR's requested teams; and the draft count
+   of the owner's pending review, which is still seen and still blocks. `mergeable`
    `unknown` stays `unknown`; read the PR once more where it matters. A `--team`
    slug comes only from `get_teams`, which lists the user's own teams, so for
    any other team pass none. The default branch's CI on this route is its
@@ -86,11 +87,13 @@ pointed to:
 - **Mark ready** — done when not a draft; a draft ever ready is held
   (`references/draft-state.md`) and reads "Held in draft". A hold can also sit
   where no timeline shows it, so a draft is offered only where the entry carries
-  `awaitingPublish`, set from its run's report that it awaits the owner's publish;
-  any other reads "Draft", with no owner step;
+  `awaitingPublish`, set from its run's report that it awaits the owner's publish,
+  and whose ready history was read; one whose history is unread says so, with no
+  owner step; any other reads "Draft", with no owner step;
 - **Request <team>** — the team requested (`team` matched, ignoring case, against
   the forge team's slug or name) or a person reviewing; the owner's own act, never
-  this skill's (`references/review-trigger.md`);
+  this skill's (`references/review-trigger.md`). Where the requests are unread
+  and no person has reviewed, the step stays the owner's, labelled to check;
 - **Team approves** — a member's approval where `prdata.py` read the team's members,
   else any person's, labelled "team not verified"; "Changes requested" while any
   person's latest review asks for changes. A team can leave `requested_teams` once
@@ -119,7 +122,9 @@ person, no change request, no open thread, checks green and no blocker — never
 that a merge gate passed. A layer may add `--pending-blocker` patterns. **The
 owner's own unsubmitted review is always a blocker**, "Your unsubmitted review: k
 drafts", and a thread whose last comment sits in it counts as neither open nor
-answered until it is submitted.
+answered until it is submitted. Where its comments are unread (*Which page*), the
+blocker reads "unread", and every thread whose last comment is the owner's counts
+that way.
 
 **An unresolved thread is answered, not open, on the page and in the report** only
 where its last comment's author login is the owner's account and holds no `?`; a
