@@ -61,6 +61,15 @@ established to work.
 
 ## Building it
 
+**The queue is rendered from the ledger and the forge, never from this session's
+memory of an earlier build.** Every held reply, every decision with its status
+and answer, every outcome is read back from the ledger (on a `tracker-document`
+ledger, in full), and every PR fact from this turn's `prdata.py`. A value that
+exists only in the conversation is not one the build may use. **Never hand-author
+or hand-patch a `state.json` carried from an earlier turn**: `build.py` refuses a
+merge row or PR item whose `prdataReadAt` stamp is not this turn's, and says what
+to re-run.
+
 Each build, from the turn's snapshot: write `state.json` from it, the title naming
 the workstream; run `prdata.py` as part of the sweep's read of every open PR of a
 run in this ledger, every PR the merge notes name and every held reply's PR
@@ -144,10 +153,14 @@ in a review thread.
 
 - **Merge before every publish**, a turn's first rebuild and a first publish's
   upgrade included. Read the live version (the Artifact tool, `read`)
-  and run `carry.py` over it, so the owner's saved answers and ticks survive — a
-  build from a copy held since an earlier turn would erase them; where
-  a publish is refused, carry onto the version the refusal hands over and publish
-  again. Carried marks are never acted on.
+  and run `carry.py` over it. It carries both halves: the owner's saved answers
+  and ticks, the owner's answer winning over any status the build gives; and the
+  conductor's own held replies and decisions that the build lacks, unless
+  `state.json`'s `closed` lists their ids from the ledger (a reply posted, a
+  decision acted on). It names what it carried: each is read back into the
+  ledger, or listed under `closed`, before the next build. Where a publish is
+  refused, carry onto the version the refusal hands over and publish again.
+  Carried marks are never acted on.
 - **A session that publishes the page starts watching it.** Any session other than
   the conductor's that publishes it — a subagent's, or one the owner asked to —
   stops that watch at

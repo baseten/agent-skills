@@ -51,7 +51,8 @@
     }
    ],
    "noIssue": false,
-   "ready": true
+   "ready": true,
+   "prdataReadAt": "2026-01-01T11:58:00Z"
   }
  ],
  "prs": [
@@ -92,7 +93,8 @@
     }
    ],
    "waitsOn": "team",
-   "stepsReadAt": "2026-11-19T09:00:00Z"
+   "stepsReadAt": "2026-11-19T09:00:00Z",
+   "prdataReadAt": "2026-01-01T11:58:00Z"
   }
  ],
  "decisions": [
@@ -179,5 +181,6 @@
  ],
  "doneRecent": [
   "Example finished thing"
- ]
+ ],
+ "closed": []
 }

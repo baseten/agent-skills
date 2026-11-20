@@ -910,7 +910,7 @@ its items may carry internal work: *Needs you* in full, each item linked, groupe
 the report groups it, within a group what frees the most downstream work first and
 owner steps by dependency (*4. Owner pass*), with the ledger's last sweep time as
 when it was read. **`work-queue.md` beside this file is part of the contract
-wherever it is built, published or answered. It is a view, never a record**: it renders the *Needs you* of
+wherever it is built, published or answered. It is a view, never a record**, rendered from the ledger and the forge, never from this session's memory of an earlier build: it renders the *Needs you* of
 this turn's snapshot, and the PRs waiting on their team (*The status snapshot*), which only the sweep collects, with the links below read each sweep; nothing
 is recorded only there, and a viewer's marks are carried, never acted on, bar an
 answer `work-queue.md`, *Answers*, accepts. **A report whose *Needs

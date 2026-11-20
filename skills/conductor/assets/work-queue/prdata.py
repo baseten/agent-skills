@@ -55,6 +55,7 @@ A review counts as a bot's where its user's type is Bot or, where the type is no
 given (the MCP tools omit it), its login ends in [bot].
 """
 import argparse
+import datetime
 import json
 import subprocess
 import sys
@@ -381,6 +382,10 @@ def main():
     # a pending review is shown only to its author: read as anyone else, it is unread
     owner_reads = src.viewer() == a.owner
     rows = [pr_row(src, a.repo, n, a.owner, owner_reads, a.team) for n in prs]
+    # the read's time, carried by mergeq.py and prsteps.py, which build.py checks is this turn's
+    read_at = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    for r in rows:
+        r["readAt"] = read_at
     print(json.dumps(rows, indent=1))
 
 

@@ -159,7 +159,7 @@ for e in json.load(open(a.prs, encoding="utf-8")):
              else "team" if nxt == 2 else "blocked" if nxt == 3 else "owner")
     items.append(dict(repo=d["repo"], pr=d["pr"], url=d["url"], title=d["title"],
                       links=lk, noIssue=not e.get("issues"), steps=steps,
-                      waitsOn=waits, stepsReadAt=read_at))
+                      waitsOn=waits, stepsReadAt=read_at, prdataReadAt=d.get("readAt")))
 st["prs"] = items
 st["doneRecent"] = done_recent
 json.dump(st, open(a.state, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
