@@ -190,3 +190,23 @@ only the session that asks can be granted one. The owner also asked that a run m
 verify an answer by reading the conductor's page; that was not adopted, since the
 page cannot show who wrote a pick (`conductor` NOTES, *The work queue page*), and a
 dispatched session may hold no Artifact tool.
+
+## Local sessions (owner's request, 2026-11-19)
+
+**Why the rule names a local send and session:** a conductor can now run in a
+local Claude Code session and dispatch local runs (`conductor`, *Runtime*). A local
+session holds `SendMessage`, not `send_message`; it addresses a session by the name
+`ListAgents` lists, and answers a message by copying its `from`, observed as
+`uds:/tmp/cc-socks/<pid>.sock`, the sending process's socket. So a local run replies
+to `from` and pushes to the conductor's name, and a local session, which has no
+`https://claude.ai/code/` page, is named `local <session id>` in a report header
+rather than given an invented link. **Why a local run adopts no new conductor id,
+and why the text says so in *Status requests* rather than *Pushes*:** the adoption
+test reads the sender's record with `get_session`, which no local session holds;
+widening it to a local listing would change the home text of protected rule 2, and
+little is lost — a local `/clear` keeps the conductor's process and so its socket
+(whether it keeps the name is not established), and a push that fails ends the
+pushes as before, the forge still carrying everything. What was run to establish these mechanics is in
+`skills/conductor/NOTES.md`, *Runtime*. Not changed: a conductor-posted go still
+needs check (d)'s transcript read, which no run can make of a local conductor, so a
+local conductor posts none.

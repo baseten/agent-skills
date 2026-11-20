@@ -52,7 +52,7 @@ run in this ledger, every PR the merge notes name and every held reply's PR
 (*1. Sweep*, step 7, whose read of a run's PR reads its reviews too), then
 `mergeq.py`, `prsteps.py` and `prune.py` over that output — never a
 second read of the forge (*The status snapshot*); then `carry.py` over the live
-version (below), then `build.py`. **Every link is a recorded URL** — a PR's
+version (below), then `build.py`. **Every link is a recorded URL** — a local session, which has none, shown as text — a PR's
 `html_url`, a thread's `html_url` as carried — never one built from a repository
 name. **The merge notes** — the order and blockers the owner gave for PRs waiting on
 their merge — **are kept in the ledger**, and the notes file is written from it each
@@ -195,7 +195,8 @@ requires — is the owner's answer choosing that session to archive**, as one gi
 the owner's words before anything is archived (*Rules*). It waives nothing: a run
 is archived only once *6. Dispatch*'s retirement conditions hold — nothing stranded,
 every branch head on the remote, no live worker and no outstanding recovery ref — and
-a reviewer as `reviewers.md` says. Then archive it, drop its row, add a line under
+a reviewer as `reviewers.md` says. Then archive it (`SKILL.md`, *Runtime*, release — a
+local conductor's cloud run is the owner's to archive, on *Retire a finished run*'s terms, and its row says so), drop its row, add a line under
 *Done recently* and to the ledger's changelog, and republish. **Where an archive fails
 or a condition does not hold**, keep the row with `done: false` and `why` saying what
 failed. A tick for a session this skill did not list archives nothing. **A tick saved

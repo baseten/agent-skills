@@ -1630,6 +1630,60 @@
         "none of the four is a Needs you item"
       ],
       "files": []
+    },
+    {
+      "id": 126,
+      "name": "a-local-conductor-dispatches-local-by-default",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are running in a local Claude Code session in a terminal: you hold Bash, SendMessage, ListAgents and CronCreate, and no create_session, get_session or send_message. The owner, who started you with no runtime argument, has just chosen 'go' for an implement-issue run on https://github.com/acme/api/issues/41, in a question that named no runtime. Question: how do you start the run, what do you record, and how will you later ask it for status and keep your fallback check-in?",
+      "expected_output": "The run is dispatched in the conductor's own runtime, which is local, since the owner named no other: a background session started with `claude --bg`, titled `Worker: api · #41 ...` with -n at creation, in its own worktree (-w), with --permission-mode set to the conductor's own mode, from a trusted checkout of acme/api, with the prompt after `--`; the prompt carries the skills check, the owner's limits, and the conductor's name, which SendMessage addresses, for pushes. The printed id is recorded in the ledger at once, the conductor's runtime recorded as local. Status requests go with SendMessage to the run's name as ListAgents lists it, only where it is listed and in the same permission mode; a delivery notice saying held or refused makes the channel absent. The fallback check-in is one one-shot CronCreate, re-armed by each firing, which the ledger records as session-only: it dies with the conductor's process and nothing fires while the machine sleeps. It never tries create_session or a cloud session.",
+      "assertions": [
+        "the run is started locally with claude --bg, not in the cloud",
+        "the session is titled in its kind's form at creation with -n, in its own worktree, in the conductor's permission mode",
+        "the session's id is recorded in the ledger at once",
+        "status requests use SendMessage to the run's listed name, and a held or refused delivery makes the channel absent",
+        "the check-in is a one-shot CronCreate recorded as session-only, dying with the conductor's process"
+      ],
+      "files": []
+    },
+    {
+      "id": 127,
+      "name": "an-owner-named-cloud-run-from-a-local-conductor",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are a local conductor (a Claude Code CLI session). The owner answers your dispatch question for the backlog-orchestrator run on epic https://github.com/acme/api/issues/900 with: 'go, but run this one in the cloud — runtime: cloud'. Later, the run's PR #950 is open and you want to know its state, and another run's merge of #941 is a fact that matters to it. Question: how is the cloud run started and recorded, how do you get its status, how do you relay the #941 fact, is your go for it posted by you, and how is it retired when finished?",
+      "expected_output": "The owner's word sends this run to the cloud; the ledger row records `runtime: cloud`. `claude --cloud` starts a session only interactively, so the conductor cannot start it: it drafts the full dispatch prompt and the owner starts the session (claude --cloud in a terminal in the checkout, or claude.ai/code) and gives its id, which the conductor records as dispatched. The go is owner-posted, since a local conductor never posts a go itself: no run can read its transcript. The channel is one-way: the conductor can deliver with `claude -p \"<message>\" --cloud <id>` but the session cannot answer, so it sends no status request; the run's state is read from the forge (PR #950, its CI, the epic) as an absent channel's is, and it is not in the local listing. The verified #941 fact may be relayed one-way with claude -p --cloud. Retiring still takes the owner's answer and every retirement condition, and the owner archives the session on claude.ai.",
+      "assertions": [
+        "the ledger records runtime: cloud for this run on the owner's word",
+        "the owner starts the cloud session from the conductor's drafted prompt and gives its id, because claude --cloud is interactive only",
+        "no status request is sent; its status is read from the forge as an absent channel",
+        "a relay goes one-way with claude -p --cloud <id>",
+        "the go is owner-posted, never conductor-posted, from a local conductor",
+        "the owner archives the cloud session on claude.ai"
+      ],
+      "files": []
+    },
+    {
+      "id": 128,
+      "name": "a-local-release-never-discards-unpushed-work",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are a local conductor. In an attended turn the owner ticks 'archive' for the local Worker session 3f2a91c0 on acme/api#41, whose PR merged. You run `claude stop 3f2a91c0` and then `claude rm 3f2a91c0`, which prints: 'kept 3f2a91c0 — its worktree is still at /repo/.claude/worktrees/w41. 1 unpushed commit on \"fix-41-followup\": 9c1e0aa. It exists on no remote, so deleting the worktree would lose it. ... or discard the worktree and its commits: claude rm 3f2a91c0 --discard-unpushed 9c1e0aa...@a1b2'. Question: what do you do, and what is the difference between stop and rm here?",
+      "expected_output": "`claude stop` ends the session and keeps its conversation and worktree, so nothing is lost; `claude rm` deletes the worktree and is archiving, so it takes every retirement condition, protected rule 9 among them: stranded work reaches a remote ref before any archive. The refusal shows the run was not ready: a head is not on the remote. The conductor never passes the --discard-unpushed value. It keeps the session's row with the archive not done, saying why (an unpushed commit on fix-41-followup, 9c1e0aa), and puts it to the owner — the work must reach the remote, by the owner or the run, before the session is removed; it does not push the run's branch itself as a workaround or delete the worktree another way.",
+      "assertions": [
+        "stop keeps the conversation and worktree; rm deletes the worktree and counts as archiving",
+        "the --discard-unpushed value is never passed",
+        "the unpushed commit means a retirement condition fails, and the row stays with the reason",
+        "the remaining step goes to the owner rather than being worked around"
+      ],
+      "files": []
+    },
+    {
+      "id": 129,
+      "name": "a-cloud-conductor-cannot-start-a-local-session",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are a cloud conductor (you hold create_session, get_session, send_message). The owner says: 'Start the implement-issue run for acme/api#77 on my laptop, not in the cloud — it needs my local database.' Question: what do you do?",
+      "expected_output": "It says plainly that a cloud conductor cannot start a session on the owner's machine — no tool it holds does that. It does not create a cloud session in its place or treat the request as a go for one. It may offer the alternatives: the owner starts the run locally themselves, in which case this conductor reads that stream from the forge alone (its issue and PRs), with no session record or channel; or the owner gives a go for a cloud run.",
+      "assertions": [
+        "it says a cloud conductor cannot start a local session",
+        "it does not create a cloud session instead",
+        "a run the owner starts locally is read from the forge alone"
+      ],
+      "files": []
     }
   ]
 }
