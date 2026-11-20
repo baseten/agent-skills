@@ -1031,6 +1031,43 @@ Scenarios: conductor#101–110; implement-issue#48, backlog-orchestrator#131 and
 settle-outstanding-decisions#23 pin the run side (`rules/conductor-exchange-notes.md`,
 *Questions under a conductor*).
 
+## The work queue without `gh api` (2026-11-20)
+
+`work-queue.md`, *Which page*, the route order; `prdata.py --from-json`. **The
+incident:** on 2026-11-20 a cloud conductor built no work queue. Its environment
+limits `gh` to search ("use gh for nothing else"), and the rule then read "where a
+working `gh api` is missing, no page is built". `gh api` REST works in such a
+session, but the instruction forbids it; GraphQL returns 403 there.
+
+**Why the instruction counts as not permitted:** it binds the session even where
+the command would succeed. A contract reading "it worked, so it is allowed" teaches
+a session to probe past its instructions.
+
+**Why the MCP reads feed `prdata.py` rather than a second reader:** the reads
+differ, the rule must not. `--from-json` runs the same transform (`pr_row`), so the
+settled-thread rule and the stops are stated once.
+
+**What the MCP reads cannot cover**, tested on 2026-11-20 against the live tools,
+everything else being covered:
+
+- **`ever_ready`**: no timeline read. It is written null with `ever_ready_read`
+  false, and `prsteps.py` offers no "Mark ready" on that draft: an unread history
+  may hide a hold, so it fails closed as draft state does.
+- **The owner's pending-comment state**: `get_review_comments` gives no comment
+  state and no read of a pending review's comments exists. A thread's last comment
+  could sit in the owner's unsubmitted review unseen, so wherever `get_reviews`
+  shows a PENDING review by the owner, `owner_pending_read` is false and the merge
+  row shows it unread, never 0 drafts.
+- **`mergeable`**: computed lazily, so a first read often says `unknown`. It stays
+  `unknown`, never guessed.
+- **Team slugs**: `get_teams` lists only the user's own teams, so a Review-line
+  team the user is not in gets no `--team`, and its step reads "team not verified".
+
+Two shapes differ from REST: a review's user carries no type, so a login ending in
+`[bot]` is a bot's on both routes; and a thread comment's `author` is a bare login.
+The default branch's CI on this route is read from its Actions workflow runs, not
+its head commit's check runs.
+
 ## The contradiction pass before the review round (PR #201)
 
 **What a scheduled firing may do is stated the same at every decision point:** it

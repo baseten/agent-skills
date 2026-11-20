@@ -47,7 +47,7 @@ for n in notes:
     if d["unresolved"]:
         auto.append("threads")
     if d.get("owner_pending_drafts", 0) is None:
-        blockers.insert(0, "Your unsubmitted review: unread (gh is not your account)")
+        blockers.insert(0, "Your unsubmitted review: unread")
     elif d.get("owner_pending_review") is not None:
         k = d.get("owner_pending_drafts", 0)
         blockers.insert(0, f"Your unsubmitted review: {k} draft{'' if k == 1 else 's'}")

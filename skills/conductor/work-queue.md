@@ -36,9 +36,23 @@ why, shown in the page's banner. The owner has nothing to do about either: the
 report's link says the page is read-only and answers go in the chat (`SKILL.md`,
 *Report*).
 
-**Where `python3` or a working `gh api` is missing, no page is built**: the session
-takes the first row's fallback, the ledger link and the chat. A failing `gh auth
-status` does not show this; a successful `gh api user` shows `gh` works.
+**`prdata.py` reads GitHub by the first route this session has**, with `python3`:
+
+1. **`gh api`, where the environment permits it**, confirmed by `gh api user`
+   (`gh auth status` failing shows nothing). **An environment instruction
+   limiting `gh` to search counts as not permitted**, even where the call would
+   succeed.
+2. **Otherwise, the GitHub MCP tools' reads**, written into the document
+   `prdata.py`'s `JsonSource` describes and run with `--from-json`. What they
+   cannot read comes out unread, never guessed: a draft's ready history, so no
+   "Mark ready" is offered on it, and the owner's pending review. `mergeable`
+   `unknown` stays `unknown`; read the PR once more where it matters. A `--team`
+   slug comes only from `get_teams`, which lists the user's own teams, so for
+   any other team pass none. The default branch's CI on this route is its
+   Actions workflow runs (`actions_list`, `list_workflow_runs`, on that branch),
+   not its head commit's check runs.
+3. **Where neither is available, no page is built**: the session takes the first
+   row's fallback, the ledger link and the chat, and its report says why.
 
 **Nothing this skill must read depends on a call from the page to a connector, on
 a republish waking this session, or on browser storage**: none of these is
