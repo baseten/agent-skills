@@ -106,12 +106,12 @@ check-in — and decide the same in both, save where a step says otherwise.
 |---|---|---|
 | this session's record | `get_session`, no id | its row in `claude agents --json` whose `pid` is `$CLAUDE_PID` |
 | list | `list_sessions`, `mine: true`, every page | `claude agents --json`; a row names no parent and no repository — its repository is its `cwd`'s checkout |
-| read one | `get_session <id>` | its row — `status`, `state`, and `waitingFor`, which names a held permission prompt — and `claude logs <id>` for its last lines, which give a held prompt's literal tool string and command — where they do not, the item says so, never paraphrasing; context usage unread |
+| read one | `get_session <id>` | its row — `status`, `state`, and `waitingFor`, which names a held permission prompt — and `claude logs <id>` for its last lines, the source of a held prompt's literal tool string and command, read there before the item is raised; context usage unread |
 | create | `create_session`, the repository as its source | `claude --bg -n "<title>" -w <name> --permission-mode <mode> -- "<prompt>"` in a trusted checkout of the repository — none found, report it and dispatch nothing — `<mode>` this session's own, which the operator names where it is unknown — a mode that prompts for nothing is the operator's choice, never this skill's, and where it is one the dispatch go's question says its runs meet no permission prompt; it prints the id, and the session outlives this one |
 | title | `set_session_title` | `-n` at creation, never after: a run's wrong title is reported, and this session's own is the operator's `/rename`, asked once |
 | message | `send_message`, where its record reads `cross_session_inbound: available` | `SendMessage` to its name as `ListAgents` lists it, where listed and in this session's permission mode — a session in another mode holds messages for approval; to a cloud run, `claude -p "<message>" --cloud <id>`, one-way |
 | open, for the owner | the session's URL | none: named `local <id>`, opened with `claude attach <id>` |
-| release | archive | once every condition archiving takes holds — `RUNNING` read as `status` or `state` `working`, never stopped — `claude stop <id>`, then `claude rm <id>`, which deletes its worktree; its uncommitted work is read with `git -C <its cwd> status` |
+| release | archive | once every condition archiving takes holds — a `RUNNING` session, `status` or `state` `working`, is never stopped here — `claude stop <id>`, then `claude rm <id>`, which deletes its worktree; its uncommitted work is read with `git -C <its cwd> status` |
 | check-in | `send_later` | one one-shot `CronCreate` |
 
 **`claude rm` refuses while unpushed commits remain**, offering a
@@ -275,7 +275,7 @@ swept as `reviewers.md` says.
    line where it left one (`references/conductor-exchange.md`, *Reports*) over
    `post_turn_summary`, which can lag, `external_metadata.cross_session_inbound`,
    context usage where the record exposes it (otherwise say it is unread), and last
-   activity — locally, the row's fields and its logs' last lines; a `runtime: cloud` run under a local conductor sends no report, so its version is `not reported`. **Then compare each live run's version with this session's install**:
+   activity — locally, the row's fields and its logs' last lines; a `runtime: cloud` run under a local conductor sends no report, so its version is `not reported` unless a state block it posted on the forge carries one. **Then compare each live run's version with this session's install**:
    the commit this skill's own version line reads, by `references/run-start.md`'s
    order, against each line the run reports for a skill that repository ships —
    never the run's line for a layer, which another repository stamps. **The
@@ -668,7 +668,7 @@ turn. **A local conductor's cloud run** is listed only once every condition the
 forge and its last state block show holds, and is offered for the owner to archive
 on claude.ai: the option says its `RUNNING`, live-worker and uncommitted-work
 conditions are unread here, and that the owner archives it only once claude.ai
-shows it idle with nothing uncommitted. **A scheduled firing never archives a run**: it lists the ready runs for the
+shows it idle with nothing uncommitted or unpushed. **A scheduled firing never archives a run**: it lists the ready runs for the
 next attended turn. No ruling on the forge, standing or otherwise, and no go this
 skill posts stands in for that answer. A run is ready only once its wrap-up is posted on its
 epic or issue — a single-issue run's `merged` report and its PR merged on the forge stand in

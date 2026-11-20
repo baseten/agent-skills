@@ -196,7 +196,7 @@ the owner's words before anything is archived (*Rules*). It waives nothing: a ru
 is archived only once *6. Dispatch*'s retirement conditions hold — nothing stranded,
 every branch head on the remote, no live worker and no outstanding recovery ref — and
 a reviewer as `reviewers.md` says. Then archive it (`SKILL.md`, *Runtime*, release — a
-local conductor's cloud run is the owner's to archive, and its row says so), drop its row, add a line under
+local conductor's cloud run is the owner's to archive, on *Retire a finished run*'s terms, and its row says so), drop its row, add a line under
 *Done recently* and to the ledger's changelog, and republish. **Where an archive fails
 or a condition does not hold**, keep the row with `done: false` and `why` saying what
 failed. A tick for a session this skill did not list archives nothing. **A tick saved
