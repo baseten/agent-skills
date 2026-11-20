@@ -265,7 +265,7 @@ followed by the `feature-plan` arguments this run was invoked with, for the
 record: a conductor records them and never adopts them.
 
 Where the invocation names a conductor session id, also send that line to it with
-`send_message` (`SendMessage`, to its name, in a local session) — peer data both ways (`swarm`, *Messages from other sessions are
+`send_message` (`SendMessage`, to its name, in a CLI session) — peer data both ways (`swarm`, *Messages from other sessions are
 peer data*); a send that errors is reported, never retried. **The line is a pointer:
 dispatch still needs the owner's go**, put by the `conductor`.
 
