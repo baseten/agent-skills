@@ -217,7 +217,7 @@ class JsonSource:
         "reviews": [...],                       # get_reviews, oldest first
         "review_threads": [...],                # get_review_comments' review_threads
         "check_runs": {"check_runs": [...]},    # get_check_runs
-        "status": {"statuses": [...]}}}}        # get_status, where read
+        "status": {"statuses": [...]}}}}        # get_status
 
     What these tools cannot read is written unread, never guessed and never zero:
     a draft's ready history (`ever_ready` null, `ever_ready_read` false: no
@@ -225,8 +225,8 @@ class JsonSource:
     (`owner_pending_read` false, `owner_pending_drafts` null), since thread
     comments carry no state and its comments have no read. A team missing from
     `teams` has null name and members. Any other key the document lacks is a read
-    that failed, and stops the script as the gh route does; `status` alone is
-    optional, its absence read as no commit statuses.
+    that failed, and stops the script as the gh route does, `status` included:
+    an external check (Chromatic, a deploy preview) may report only there.
     """
 
     def __init__(self, doc):
@@ -280,8 +280,8 @@ class JsonSource:
         return v["check_runs"] if isinstance(v, dict) else v
 
     def statuses(self, n, sha):
-        v = self._pr(n).get("status") or {}
-        return v.get("statuses") or [] if isinstance(v, dict) else v
+        v = self._need(n, "status")
+        return v["statuses"] if isinstance(v, dict) else v
 
 
 def pr_row(src, repo, n, owner, owner_reads, extra_teams):

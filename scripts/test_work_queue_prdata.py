@@ -180,6 +180,11 @@ def json_route(tmp, gh_out):
     r2 = run_json(tmp, mcp_doc(), stdin=True, team=["fe-platform"])
     assert r2.returncode == 0 and r2.stdout == r.stdout, r2.stderr
     print("ok  --from-json - reads the document from stdin")
+    doc = mcp_doc()
+    doc["prs"][N]["status"]["statuses"] = [{"context": "UI Tests", "state": "pending"}]
+    d = json.loads(run_json(tmp, doc).stdout)[0]
+    assert (d["pending"], d["checks"]) == (["UI Tests"], 2), d
+    print("ok  --from-json: a commit status counts beside the check runs")
 
     d = json.loads(run_json(tmp, mcp_doc(pending=True)).stdout)[0]
     got = (d["owner_pending_read"], d["owner_pending_drafts"], d["owner_pending_review"])
@@ -198,7 +203,8 @@ def json_route(tmp, gh_out):
 
     for label, change in (("no check runs", lambda pr: pr.pop("check_runs")),
                           ("no review threads", lambda pr: pr.pop("review_threads")),
-                          ("no reviews", lambda pr: pr.pop("reviews"))):
+                          ("no reviews", lambda pr: pr.pop("reviews")),
+                          ("no commit statuses", lambda pr: pr.pop("status"))):
         doc = mcp_doc()
         change(doc["prs"][N])
         r = run_json(tmp, doc)
