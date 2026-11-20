@@ -119,7 +119,10 @@ so a slow listing never doubles a run — falls through; where none is confirmed
 the dispatch failed, and the report names each route tried. **The ledger records
 each run's route, `app` or `cli`**, and every later operation on it takes that
 route's column below: the other's tools do not find it, and a live run read the
-other way looks gone. A conductor with runs of both lists both.
+other way looks gone. A conductor with runs of both lists both. **A `cli` run
+under an app conductor has no channel back to it**, since it can send only
+`SendMessage` to a CLI name: the ledger records its channel absent, and it is read
+from the forge, as *2. Ask* reads any absent channel.
 
 | operation | cloud | local, `app` | local, `cli` |
 |---|---|---|---|

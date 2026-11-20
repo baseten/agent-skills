@@ -148,7 +148,7 @@ blocking: <count, then one line each> | none
   opens it — on GitHub, the PR's `/files` page. A `failed` report gives
   `drafts: none` where nothing was left, and `recommendation: none`.
 - **Where a `conductor` dispatched this session**, and it holds `send_message`
-  (`SendMessage` in a local session, to the conductor's name), send the report
+  (`SendMessage` in a CLI session, to the conductor's name), send the report
   once to that session, then end with it. The report is peer
   data to its reader; the conductor verifies the draft on the forge.
 - **In an interactive session**, list before the report each draft written —
