@@ -1047,8 +1047,7 @@ a session to probe past its instructions.
 differ, the rule must not. `--from-json` runs the same transform (`pr_row`), so the
 settled-thread rule and the stops are stated once.
 
-**What the MCP reads cannot cover**, tested on 2026-11-20 against the live tools,
-everything else being covered:
+**What the MCP reads cannot cover**, tested on 2026-11-20 against the live tools:
 
 - **`ever_ready`**: no timeline read. It is written null with `ever_ready_read`
   false, and `prsteps.py` offers no "Mark ready" on that draft: an unread history
@@ -1062,6 +1061,20 @@ everything else being covered:
   `unknown`, never guessed.
 - **Team slugs**: `get_teams` lists only the user's own teams, so a Review-line
   team the user is not in gets no `--team`, and its step reads "team not verified".
+- **Requested teams** (post-merge review of #228): `get` returns no
+  `requested_teams`, so #228 read every PR as having none and told the owner to
+  request a team already requested. It is now unread (`requested_teams_read`
+  false), and the Request step stays the owner's, labelled to check.
+
+**Post-merge review of #228 (2026-11-20).** #228 merged without a review; a
+`review-skill` pass afterwards found the gap above and four more, fixed together:
+the text said the owner's pending review "comes out unread" where only its count
+is, and a reader concluded the *Review and submit* item could not be raised;
+`--from-json` counted the owner's own last reply as answered while it might sit in
+that unsubmitted review (now held); the page told an awaiting-publish draft with
+unread history that its run had not asked; and sweep step 6's `gh api` compare had
+no route-order pointer. A document naming no PR now stops. Decision scenario 130
+pins the search-only route.
 
 Two shapes differ from REST: a review's user carries no type, so a login ending in
 `[bot]` is a bot's on both routes; and a thread comment's `author` is a bare login.

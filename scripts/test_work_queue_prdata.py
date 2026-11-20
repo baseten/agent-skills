@@ -169,10 +169,12 @@ def json_route(tmp, gh_out):
     assert set(d) == set(json.loads(gh_out)[0]), "the JSON route emits the gh route's fields"
     got = {k: d[k] for k in ("unresolved", "answered", "needs_reply", "approvals", "reviewed_by",
                              "owner_pending_drafts", "owner_pending_review", "owner_pending_read",
-                             "checks", "mergeable", "teams")}
+                             "checks", "mergeable", "teams", "requested_teams",
+                             "requested_teams_read")}
     want = {"unresolved": 2, "answered": 1, "needs_reply": 1, "approvals": ["rev"],
             "reviewed_by": ["rev"], "owner_pending_drafts": 0, "owner_pending_review": None,
             "owner_pending_read": True, "checks": 1, "mergeable": "unknown",
+            "requested_teams": None, "requested_teams_read": False,
             "teams": {"fe-platform": {"name": "FE Platform", "members": ["kim", "rev"]}}}
     assert got == want, f"MCP shape: {got} != {want}"
     print("ok  --from-json: the owner's non-question reply is answered, a question is not;"
@@ -189,7 +191,14 @@ def json_route(tmp, gh_out):
     d = json.loads(run_json(tmp, mcp_doc(pending=True)).stdout)[0]
     got = (d["owner_pending_read"], d["owner_pending_drafts"], d["owner_pending_review"])
     assert got == (False, None, 900), got
-    print("ok  --from-json: the owner's PENDING review is unread (null drafts), never 0")
+    assert (d["answered"], d["unresolved"]) == (0, 1), d  # both owner-last threads held
+    print("ok  --from-json: the owner's PENDING review is seen, its count unread (null), never 0;"
+          " their own last reply is counted held, never answered")
+    doc = mcp_doc()
+    doc["prs"] = {}
+    r = run_json(tmp, doc)
+    assert r.returncode != 0 and "no PR" in r.stderr, r
+    print("ok  --from-json: a document naming no PR stops the script")
 
     d = json.loads(run_json(tmp, mcp_doc(draft=True)).stdout)[0]
     assert (d["ever_ready"], d["ever_ready_read"]) == (None, False), d
@@ -374,7 +383,8 @@ def main():
                   pr("3", reviewed_by=["rev"], approvals=["rev"]), pr("4", merged=True, state="closed"),
                   pr("5", approvals=["rev"]),
                   pr("6", reviewed_by=["rev", "dana"], approvals=["rev"], changes=["dana"]),
-                  pr("8", requested_teams=[{"slug": "fe-platform", "name": "FE Platform"}])]
+                  pr("8", requested_teams=[{"slug": "fe-platform", "name": "FE Platform"}]),
+                  pr("15", requested_teams=None, requested_teams_read=False)]
         prs = [{"repo": REPO, "pr": "1", "team": "payments"},
                {"repo": REPO, "pr": "12", "awaitingPublish": True},
                {"repo": REPO, "pr": "13", "awaitingPublish": True},
@@ -388,6 +398,7 @@ def main():
                {"repo": REPO, "pr": "4"},
                {"repo": REPO, "pr": "6", "team": "payments"},
                {"repo": REPO, "pr": "8", "team": "fe platform"},
+               {"repo": REPO, "pr": "15", "team": "payments"},
                {"repo": REPO, "pr": "9", "team": "payments"},
                {"repo": REPO, "pr": "10", "team": "FE Platform"},
                {"repo": REPO, "pr": "11", "team": "fe-platform"},
@@ -407,7 +418,7 @@ def main():
         assert steps == {"1": [False, False, False, False], "12": [False, False, False, False],
                          "13": [False, False, False, False], "14": [False, False, False, False], "2": [True, True, False, False],
                          "3": [True, True, True, False], "6": [True, True, False, False],
-                         "8": [True, True, False, False], "9": [False, False, False, False],
+                         "8": [True, True, False, False], "15": [True, False, False, False], "9": [False, False, False, False],
                          "10": [True, True, False, False], "11": [True, True, True, False]}, steps
         print(f"ok  prsteps.py reads each step from prdata: {steps}")
         by = {p["pr"]: p for p in st["prs"]}
@@ -418,10 +429,13 @@ def main():
         assert by["9"]["steps"][0]["label"] == "Held in draft" and by["9"]["waitsOn"] == "held"
         assert by["13"]["steps"][0]["label"] == "Held in draft" and by["13"]["waitsOn"] == "held"
         assert by["1"]["steps"][0]["label"] == "Draft" and by["1"]["waitsOn"] == "draft"
-        assert by["14"]["steps"][0]["label"] == "Draft" and by["14"]["waitsOn"] == "draft"
+        assert by["14"]["steps"][0]["label"] == "Draft" and by["14"]["waitsOn"] == "unread"
         assert by["12"]["steps"][0]["label"] == "Mark ready" and by["12"]["waitsOn"] == "owner"
         print("ok  a draft is offered to mark ready only where its run reported it awaiting the owner's publish;"
-              " one ever ready stays held even so, one whose history was unread is a plain Draft, as is any other")
+              " one ever ready stays held even so; one awaiting publish with unread history is not offered and"
+              " waits as unread; any other is a plain Draft")
+        assert by["15"]["steps"][1]["label"] == "Request payments — check: requests not read"
+        print("ok  unread team requests leave Request the owner's step, labelled unverified")
         assert by["10"]["steps"][2] == {"label": "Team approves", "done": False}
         assert by["3"]["steps"][2]["label"] == "Team approves — approved (team not verified)"
         print("ok  where the team's members were read only a member's approval counts; otherwise it is labelled unverified")
@@ -429,8 +443,8 @@ def main():
         assert by["3"]["steps"][3]["label"] == "Not in the merge notes" and by["3"]["waitsOn"] == "blocked"
         assert by["11"]["steps"][3]["label"] == "Blocked: CI red (e2e)" and by["11"]["waitsOn"] == "blocked"
         print("ok  an approved PR that is not a Ready merge row names its blocker, never Merge")
-        assert {k: p["waitsOn"] for k, p in by.items()} == {"1": "draft", "12": "owner", "13": "held", "14": "draft", "2": "team", "3": "blocked",
-                                                           "6": "team", "8": "team", "9": "held",
+        assert {k: p["waitsOn"] for k, p in by.items()} == {"1": "draft", "12": "owner", "13": "held", "14": "unread", "2": "team", "3": "blocked",
+                                                           "6": "team", "8": "team", "15": "owner", "9": "held",
                                                            "10": "team", "11": "blocked"}
         assert all(p.get("stepsReadAt") for p in st["prs"])
         print("ok  each item says whose step is next and carries prsteps.py's stamp")

@@ -27,8 +27,11 @@ Each item's steps are read from the sweep's prdata.json, never ticked on the pag
   shows (an instruction, a preference, a convention), so a draft is offered to the
   owner to mark ready only where the entry carries `"awaitingPublish": true`, which
   the conductor sets from the run's own report that the draft awaits the owner's
-  publish, and whose ready history was read (prdata.py's `ever_ready_read`); any
-  other draft reads "Draft" with no owner step.
+  publish, and whose ready history was read (prdata.py's `ever_ready_read`); one
+  awaiting publish whose history is unread waits as "unread"; any other draft
+  reads "Draft" with no owner step.
+- Request <team>, where prdata.py could not read the requested teams and no one
+  has reviewed: not done, labelled "check: requests not read".
 - Request <team>: done when the team is requested — `team` matched, ignoring case,
   against a team's slug or name — or a person other than the author has reviewed.
 - Team approves: done on an approval from a member where the team's membership was
@@ -120,6 +123,8 @@ for e in json.load(open(a.prs, encoding="utf-8")):
     def named(slug, name):
         return wanted and wanted in (str(slug or "").lower(), str(name or "").lower())
     requested = any(named(t.get("slug"), t.get("name")) for t in d.get("requested_teams") or [])
+    # unread requests (the JSON route): the step stays the owner's, labelled unverified
+    unread_requests = d.get("requested_teams_read") is False and not d.get("reviewed_by")
     members = next((t.get("members") for s, t in (d.get("teams") or {}).items()
                     if named(s, t.get("name")) and t.get("members") is not None), None)
     changes = bool(d.get("changes"))
@@ -139,7 +144,8 @@ for e in json.load(open(a.prs, encoding="utf-8")):
         approve = {"label": "Team approves", "done": bool(approvers)}
     steps = [
         {"label": draft_label, "done": not d["draft"]},
-        {"label": f"Request {team}" if team else "Request review",
+        {"label": (f"Request {team}" if team else "Request review")
+                  + (" — check: requests not read" if unread_requests else ""),
          "done": bool(requested or d.get("reviewed_by"))},
         approve,
         # never "Merge" here: a merge row reading Ready is the only merge to offer, and
@@ -147,7 +153,9 @@ for e in json.load(open(a.prs, encoding="utf-8")):
         {"label": blocker(d), "done": False},
     ]
     nxt = next(i for i, s in enumerate(steps) if not s["done"])
-    waits = ("held" if held else "draft" if d["draft"] and not offered
+    unread_draft = bool(d["draft"] and not held and d.get("ever_ready_read") is False
+                        and e.get("awaitingPublish") is True)
+    waits = ("held" if held else "unread" if unread_draft else "draft" if d["draft"] and not offered
              else "team" if nxt == 2 else "blocked" if nxt == 3 else "owner")
     items.append(dict(repo=d["repo"], pr=d["pr"], url=d["url"], title=d["title"],
                       links=lk, noIssue=not e.get("issues"), steps=steps,
