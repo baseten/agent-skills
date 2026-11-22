@@ -65,7 +65,7 @@ for n in notes:
                      approvals=d["approvals"], unresolved=d["unresolved"],
                      answered=d.get("answered", 0), needs_reply=d.get("needs_reply", 0), ci=ci,
                      after=n.get("after"), group=n.get("group"), blockers=blockers,
-                     auto=auto, note=n.get("note", "")))
+                     auto=auto, note=n.get("note", ""), prdataReadAt=d.get("readAt")))
 for r in rows:  # "Ready" as the page shows it: the only merge that is a Needs you item
     waiting = r["after"] and any(x["repo"] == r["repo"] and str(x["pr"]) == str(r["after"])
                                  for x in rows)

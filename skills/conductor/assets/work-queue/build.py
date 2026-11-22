@@ -9,10 +9,21 @@ decision has an option with no `ruling` is refused: its answer could not be
 recorded. So is a "Your PRs" item without prsteps.py's `stepsReadAt` stamp, or
 whose steps do not each carry a `done`: the stamp shows prsteps.py filled them, and
 cannot show that nobody edited them after.
+
+**A state built from an earlier turn is refused.** Every merge row and "Your PRs"
+item carries `prdataReadAt`, the time prdata.py read that PR, copied by mergeq.py
+and prsteps.py; a PR item carries `stepsReadAt` too. Each must be within
+FRESH_MINUTES of this build's own clock. A stamp that is missing or older means the
+PR list was reused rather than read this turn: re-run prdata.py, then mergeq.py and
+prsteps.py, and build again. The window is no proof the rest of the state is this
+turn's (conductor, work-queue.md, *Building it*), only that the PR list is.
 """
 import argparse
+import datetime
 import html
 import json
+
+FRESH_MINUTES = 30
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--state", required=True)
@@ -30,7 +41,8 @@ if st.get("interactive") is True:
                if d.get("status") == "open" for o in d.get("options") or []
                if not str(o.get("ruling") or "").strip()]
     if unruled:
-        raise SystemExit("interactive state has open decision options with no ruling: "
+        raise SystemExit("refused: on an interactive page every option of an open decision "
+                         "carries its ruling (work-queue.md, Building it); missing on "
                          + ", ".join(unruled))
 # a PR's steps are filled by prsteps.py, which stamps the item. The stamp catches steps
 # it never filled; a hand edit after it is forbidden by the contract, not seen here.
@@ -39,6 +51,27 @@ unread = [f'{p.get("repo")}#{p.get("pr")}' for p in st.get("prs") or []
           or any(not isinstance(s.get("done"), bool) for s in p["steps"])]
 if unread:
     raise SystemExit("PR items whose steps were not read by prsteps.py: " + ", ".join(unread))
+now = datetime.datetime.now(datetime.timezone.utc)
+
+
+def fresh(stamp):
+    try:
+        t = datetime.datetime.strptime(stamp, "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=datetime.timezone.utc)
+    except (TypeError, ValueError):
+        return False
+    return datetime.timedelta(minutes=-5) <= now - t <= datetime.timedelta(minutes=FRESH_MINUTES)
+
+
+stale = [f'{kind} {x.get("repo")}#{x.get("pr")}'
+         for kind, rows, keys in (("merge row", st.get("merge") or [], ("prdataReadAt",)),
+                                  ("PR item", st.get("prs") or [], ("prdataReadAt", "stepsReadAt")))
+         for x in rows if not all(fresh(x.get(k)) for k in keys)]
+if stale:
+    raise SystemExit(f"refused: the PR list was not read this turn (no prdata.py stamp within "
+                     f"{FRESH_MINUTES} minutes): " + ", ".join(stale) + ". Re-run prdata.py, then "
+                     "mergeq.py and prsteps.py over its output, and build again; never patch "
+                     "a state.json carried from an earlier turn")
 for token in ("__STATE__", "<title>Work queue</title>"):
     if t.count(token) != 1:
         raise SystemExit(f"template must hold {token!r} exactly once")

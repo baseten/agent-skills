@@ -1064,6 +1064,49 @@ Scenarios: conductor#101–110; implement-issue#48, backlog-orchestrator#131 and
 settle-outstanding-decisions#23 pin the run side (`rules/conductor-exchange-notes.md`,
 *Questions under a conductor*).
 
+## Builds from memory (owner's report, 2026-11-20)
+
+`work-queue.md`, *Building it* and *Publishing*; `build.py`; `carry.py`. **The
+failures**, five in one afternoon of one interactive session, all a build put
+together from what the session remembered rather than from the ledger and the
+forge: both held replies vanished (a rebuild wrote `replies: []`; their text was
+safe in the ledger and never read back); three answered decisions reverted to
+`open` (`carry.py` caught it); five decisions answered in chat never reached the
+page; the PR list kept a closed PR and missed three new ones, because a `prs`
+array from an earlier turn was reused instead of re-running `prdata.py`; and items
+read "waiting on a reviewer" after the review.
+
+**Why a mechanism, not more instruction:** a scheduled firing has no earlier state
+to remember, so it rebuilds; the same session's check-in firings swept markedly
+better than its interactive turns, with the same tools and contract. An
+interactive turn always has a remembered state, and patching it is cheaper, so
+"write it from the snapshot" was read as advice. So the lossy path is closed in
+the scripts: `prdata.py` stamps each read, `mergeq.py` and `prsteps.py` carry the
+stamp, and `build.py` refuses a merge row or PR item whose stamp is missing or
+more than 30 minutes old, naming what to re-run. 30 minutes covers a long sweep's
+reads before the build and no earlier turn.
+
+**Why `carry.py` now carries the conductor's half, and why `closed`:** it carried
+only the owner's marks, while the text said "so the owner's saved answers and ticks
+survive", which read as though merging was handled both ways. A rule that depends
+on remembering to re-derive is the class that failed five times, so the script
+carries a held reply or decision the build lacks. Carrying alone would resurrect a
+reply already posted, so the build lists finished ids under `closed`, from the
+ledger, and `carry.py` names everything it carried so the session reads it back.
+The owner's saved answer wins over the conductor's status: an answer on the
+page is the owner's act, a status in the build this session's reading. It never
+replaces an answer the build read from the ledger (Codex on #231): a pick saved
+without reaching the conductor (`answer.messaged: false`) is put to the owner to
+confirm, and where they then chose otherwise, the ledger's answer is the
+confirmed one.
+
+**Run to establish it** (`scripts/test_work_queue_prdata.py`): `build.py` refuses
+`state.example.json` as it stands, builds it restamped two minutes ago, refuses it
+restamped two hours ago; `carry.py` keeps an answered decision answered over a
+rebuilt `open`, keeps the owner's answer over a `done` with another, carries two
+dropped replies and a dropped decision and names them, and leaves out the ids
+`closed` lists.
+
 ## The work queue without `gh api` (2026-11-20)
 
 `work-queue.md`, *Which page*, the route order; `prdata.py --from-json`. **The
