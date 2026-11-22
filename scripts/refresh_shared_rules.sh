@@ -31,7 +31,7 @@ RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
   repair-rounds mechanical-pushes review-trigger ci-and-review-verdicts
   ci-attribution watch-and-read wake-budget platform-pr-posture
   manual-step-issues conductor-exchange operator-output linear-mechanics
-  run-start"
+  run-start node-and-pnpm-upgrades"
 
 # Each list names only the skills that APPLY the rule, and every one of them
 # must cite it in its own SKILL.md (check_shared_rules.py). A rule that cites
@@ -109,6 +109,9 @@ ESTABLISH_DO_NOT_ASSUME="write-spec plan-feature backlog-orchestrator conductor 
 
 # Skills that file an owner step as a [Manual] issue, or walk one.
 MANUAL_STEP_ISSUES="plan-feature backlog-orchestrator conductor owner-steps"
+
+# Skills that upgrade dependencies, which is where a Node or pnpm move is reached.
+NODE_AND_PNPM_UPGRADES="upgrade-npm-dependency npm-dependency-upgrade-orchestrator"
 
 # Skills a conductor coordinates, and the conductor itself: status requests,
 # pushes, conductor-id adoption, new work and folds, and relayed rulings.

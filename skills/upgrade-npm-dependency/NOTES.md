@@ -222,3 +222,7 @@ proxy for the property. What holds this recipe is that it was executed: without
 `--pack-destination` npm leaves `is-number-6.0.0.tgz` in the tree, and `diff`
 exits 0 over a member no release published. Run it rather than trusting a
 grep.
+
+## Task: Node and pnpm (owner's request, 2026-11-22)
+
+**Why Node and pnpm leave this skill for the shared rule:** a runtime or package-manager move is not one package's upgrade. It touches `.nvmrc`, `engines`, `packageManager`, the lockfile's format, CI, hosting and the project's cloud environment, and the phases here would miss most of them. The procedure is `rules/node-and-pnpm-upgrades.md`, and its reasoning is in that rule's notes.

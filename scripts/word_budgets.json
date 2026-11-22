@@ -55,7 +55,7 @@
       "target": 3000
     },
     "skills/npm-dependency-upgrade-orchestrator/SKILL.md": {
-      "budget": 5391,
+      "budget": 5453,
       "target": 8000
     },
     "skills/owner-steps/SKILL.md": {
@@ -111,7 +111,7 @@
       "target": 1500
     },
     "skills/upgrade-npm-dependency/SKILL.md": {
-      "budget": 4640,
+      "budget": 4666,
       "target": 3000
     },
     "skills/validate-backlog/SKILL.md": {
@@ -224,6 +224,10 @@
     },
     "skills/conductor/work-queue.md": {
       "budget": 2595,
+      "target": 1500
+    },
+    "rules/node-and-pnpm-upgrades.md": {
+      "budget": 730,
       "target": 1500
     }
   }

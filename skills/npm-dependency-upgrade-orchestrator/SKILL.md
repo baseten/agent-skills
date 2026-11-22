@@ -11,6 +11,8 @@ description: Take a set of dependency upgrades, triage each against its changelo
 
 Upgrade this set: $ARGUMENTS
 
+**Node and pnpm are never dispatched as dependency bumps**: Node, `@types/node` and pnpm are taken out of the set and moved as `references/node-and-pnpm-upgrades.md` says. Its repository changes are a task like any other; its cloud-environment rollout (§5) needs a session on that environment and the owner's approval, so it is reported to the owner as their step, never done by a worker.
+
 This file is the contract; the reasoning behind its rules lives in `NOTES.md` beside it, keyed by section. NOTES explains; it never overrides.
 
 Derive the set where none is supplied — the package manager's outdated report, a scheduled dependency report, or the open automated-bump queue.

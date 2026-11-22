@@ -9,6 +9,8 @@ description: Upgrade one dependency, or one coupled group of them, across a vers
 
 Upgrade: $ARGUMENTS
 
+**Node itself, or pnpm, is not upgraded by this skill's phases**: follow `references/node-and-pnpm-upgrades.md` instead, which covers the repository change, the install and the project's cloud environment.
+
 This file is the contract; the reasoning behind its rules lives in `NOTES.md` beside it, keyed by section. NOTES explains; it never overrides.
 
 `$ARGUMENTS` is one package, or one **coupled group** whose members cannot move independently — a framework with its official companions, a plugin family sharing a version line. A group is one task, one branch and one PR throughout, and every rule below reads over all of its packages.

@@ -246,6 +246,20 @@
         "the base commit's two qualifiers and the closure's reason survive brevity as required contents"
       ],
       "id": 20
+    },
+    {
+      "id": 21,
+      "name": "a-pnpm-major-follows-the-node-and-pnpm-rule",
+      "prompt": "You are executing the upgrade-npm-dependency skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are asked: 'Upgrade pnpm from 10 to 12.' The repository's package.json has packageManager pnpm@10.18.0, .nvmrc says 24, and the Claude Code cloud environment's setup script runs `corepack enable` and sets COREPACK_ENABLE_DOWNLOAD_PROMPT=0. Two other open PRs touch pnpm-lock.yaml. Question: how do you go about it, and what do you change in the cloud environment?",
+      "expected_output": "It does not run this skill's phases on pnpm; it follows references/node-and-pnpm-upgrades.md. It reads the target from `npm view pnpm dist-tags` and pnpm's installation docs (the Node compatibility table), not memory. It changes packageManager, regenerates pnpm-lock.yaml with the new pnpm and adapts renamed or removed settings, in its own PR, and lands it only when the two lockfile PRs are done or accepted to conflict. It never uses Corepack: the setup script installs pnpm with npm install -g reading packageManager, reads versions from the repository with a fallback for a session with no clone, and drops COREPACK_ENABLE_DOWNLOAD_PROMPT. The environment change rolls out after the repo change merges: run the script as root in a session on that environment, confirm node -v and pnpm -v, then propose get_environment/update_environment for the owner to approve, and confirm in a fresh session.",
+      "assertions": [
+        "it follows the node-and-pnpm-upgrades rule rather than this skill's phases",
+        "it takes the pnpm target from npm view pnpm dist-tags and pnpm's docs, not memory",
+        "it holds the lockfile-rewriting PR until the other lockfile PRs are settled or accepted to conflict",
+        "it removes Corepack from the setup script and installs pnpm with npm install -g from packageManager",
+        "the environment edit is proposed for the owner's approval after the repo change merges, and confirmed in a fresh session"
+      ],
+      "files": []
     }
   ]
 }
