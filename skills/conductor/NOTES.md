@@ -1093,8 +1093,12 @@ on remembering to re-derive is the class that failed five times, so the script
 carries a held reply or decision the build lacks. Carrying alone would resurrect a
 reply already posted, so the build lists finished ids under `closed`, from the
 ledger, and `carry.py` names everything it carried so the session reads it back.
-The owner's answer wins over the conductor's status, always: an answer on the
-page is the owner's act; a status in the build is this session's reading.
+The owner's saved answer wins over the conductor's status: an answer on the
+page is the owner's act, a status in the build this session's reading. It never
+replaces an answer the build read from the ledger (Codex on #231): a pick saved
+without reaching the conductor (`answer.messaged: false`) is put to the owner to
+confirm, and where they then chose otherwise, the ledger's answer is the
+confirmed one.
 
 **Run to establish it** (`scripts/test_work_queue_prdata.py`): `build.py` refuses
 `state.example.json` as it stands, builds it restamped two minutes ago, refuses it

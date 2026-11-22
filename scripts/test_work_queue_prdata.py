@@ -397,20 +397,27 @@ def main():
             return json.load(open(sp)), r.stderr
         live = {"decisions": [
                     {"id": "d1", "status": "answered", "answer": "a", "options": []},
-                    {"id": "d2", "status": "answered", "answer": "b", "options": []},
+                    {"id": "d2", "status": "answered", "options": [],
+                     "answer": {"option": "a", "messaged": False}},
+                    {"id": "d5", "status": "answered", "options": [],
+                     "answer": {"option": "b", "messaged": True}},
                     {"id": "d3", "status": "done", "answer": "a", "outcome": "Ruled: 7 days.", "options": []},
                     {"id": "d4", "status": "open", "options": []}],
                 "replies": [{"id": "r1", "text": "Held reply one"}, {"id": "r2", "text": "Held reply two"},
                             {"id": "r3", "text": "Posted already"}]}
         new = {"decisions": [{"id": "d1", "status": "open", "options": []},
-                             {"id": "d2", "status": "done", "answer": "c", "options": []}],
+                             {"id": "d2", "status": "done", "options": [], "outcome": "Acted on B.",
+                              "answer": {"option": "b", "messaged": True}},
+                             {"id": "d5", "status": "open", "options": []}],
                "replies": [], "closed": ["r3", "d4"]}
         got, err = carry(live, new)
         dec = {d["id"]: d for d in got["decisions"]}
         assert (dec["d1"]["status"], dec["d1"]["answer"]) == ("answered", "a"), dec["d1"]
         print("ok  carry.py keeps an answered decision answered where the rebuild reset it to open")
-        assert (dec["d2"]["status"], dec["d2"]["answer"]) == ("done", "b"), dec["d2"]
-        print("ok  carry.py keeps the owner's answer over the conductor's, whatever status the build gives")
+        assert (dec["d2"]["status"], dec["d2"]["answer"]["option"]) == ("done", "b"), dec["d2"]
+        print("ok  carry.py never replaces the ledger's confirmed answer with a pick saved but never sent")
+        assert (dec["d5"]["status"], dec["d5"]["answer"]["option"]) == ("answered", "b"), dec["d5"]
+        print("ok  carry.py keeps the owner's saved answer over a build that reset its status")
         assert dec["d3"]["outcome"] == "Ruled: 7 days." and "d4" not in dec, dec
         assert [x["id"] for x in got["replies"]] == ["r1", "r2"], got["replies"]
         assert "reply r1" in err and "decision d3" in err and "r3" not in err, err

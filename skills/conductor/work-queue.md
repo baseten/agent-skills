@@ -154,7 +154,8 @@ in a review thread.
 - **Merge before every publish**, a turn's first rebuild and a first publish's
   upgrade included. Read the live version (the Artifact tool, `read`)
   and run `carry.py` over it. It carries both halves: the owner's saved answers
-  and ticks, the owner's answer winning over any status the build gives; and the
+  and ticks, a saved answer winning over the build's status but never over an
+  answer the build read from the ledger; and the
   conductor's own held replies and decisions that the build lacks, unless
   `state.json`'s `closed` lists their ids from the ledger (a reply posted, a
   decision acted on). It names what it carried: each is read back into the

@@ -9,8 +9,11 @@ saved from inside the page, nor what the conductor put there in an earlier turn.
 - **The owner's marks**: a decision the live page shows answered or done keeps
   that status and outcome; a reply or item keeps its `done`, as does a session row
   the build wrote no `done` for.
-- **The owner's answer always wins**: where the live page carries an answer, it is
-  kept over the build's, whatever status the build gives the decision.
+- **The owner's saved answer wins over the build's status**: where the live page
+  carries an answer the build lacks, it is kept and the decision is at least
+  answered. An answer the build carries, read from the ledger, is never replaced:
+  a pick saved without reaching the conductor may since have been confirmed
+  otherwise.
 - **The conductor's own content**: a held reply or a decision the live page carries
   and the build lacks is carried into it, and named on stderr, unless the state
   lists its id under `closed` — the ids the ledger shows finished (a reply posted,
@@ -48,8 +51,11 @@ for d in st.get("decisions", []):
         for k in ("status", "answer", "doneAt", "outcome"):
             if k in old:
                 d[k] = old[k]
-    if old.get("answer") is not None and d.get("answer") != old["answer"]:
-        d["answer"] = old["answer"]  # the owner's answer wins over the conductor's status
+    if old.get("answer") is not None and d.get("answer") is None:
+        # an answer the page saved wins over the build's status, never over an answer
+        # the build read from the ledger: a pick saved but never sent may since have
+        # been confirmed otherwise, at an owner pass
+        d["answer"] = old["answer"]
         if ORDER.get(d.get("status"), 0) < ORDER["answered"]:
             d["status"] = "answered"
     for k in ("outcome", "doneAt"):
