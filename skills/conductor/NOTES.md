@@ -95,6 +95,39 @@ already requires for a per-PR or per-issue key.
 
 ## Runtime
 
+**Why the app route comes first (owner's request, 2026-11-20):** *Runtime* was a
+binary, cloud or local, and local meant the CLI. A Claude Code session in the
+desktop app is local too — same machine, same checkouts — but it also holds
+`start_session`, and the binary sent it down the CLI branch. On 2026-11-20 a
+dispatched orchestrator sat blocked on a question for six minutes while the owner
+could not find it: a `claude --bg` process shows nowhere in the app. A run made
+with `start_session` is in the sidebar, can be opened and stopped there, reports
+back when its turn ends, and has its worktree archived with it.
+
+**Why fall through silently:** the earlier contract asked nothing about the
+runtime, and the owner's go names the work, not the mechanism. **Why confirm by
+listing:** the same day, on the owner's machine, bare `claude` was a wrapper that
+printed a redirect and exited 0 having started nothing; the first dispatch was
+caught only by listing sessions. **Why one more listing before falling through:**
+a create that worked but lists late would otherwise be made twice. **Why the
+route is recorded per run:** `claude agents --json` does not list an app session
+and the app's `list_sessions` does not list a `claude --bg` one, so reading a run
+by the other route reports a live run as gone.
+
+**What the app tools were read as (2026-11-20, from the owner's own app sessions,
+since this repository's sessions run in the CLI):** `start_session` takes
+`initiation` (`user_asked`, `own_initiative`, `offer` — an offer puts a card to
+the owner and waits for an answer), `context` (`fresh` needs a `background` of 80
+characters or more), `cwd`, `use_worktree`, `name`, `title` and `prompt`, and
+returns "Started session … (session_id: local_…)"; `list_sessions` rows carry
+`sessionId`, `cwd`, `isRunning`, `isArchived`, `permissionMode`, `link` and
+`startedBy`; `get_session` takes a `session_id` or `self`; `list_events` returns
+a session's recent turns; `send_message` and `archive_session` take the
+`local_…` id. Whether `list_events` shows a held permission prompt's literal tool
+string was not seen, so the read-one row says the item reports it unread rather
+than guess it. An app run, holding `send_message`, reports with it, which is why
+the shared rule's `SendMessage` clause is now the CLI's alone.
+
 **Why a local runtime (owner's request and rulings, 2026-11-19):** the contract was
 written around the cloud session tools — `list_sessions`, `get_session`,
 `create_session`, `send_message`, `set_session_title`, `send_later` and

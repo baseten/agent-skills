@@ -210,3 +210,16 @@ pushes as before, the forge still carrying everything. What was run to establish
 `skills/conductor/NOTES.md`, *Runtime*. Not changed: a conductor-posted go still
 needs check (d)'s transcript read, which no run can make of a local conductor, so a
 local conductor posts none.
+
+## A run in the desktop app (2026-11-20)
+
+*Status requests*, the `SendMessage` clause. A run the conductor starts with the
+desktop app's `start_session` holds `send_message` and replies to its sender like
+a cloud run; only a CLI session, which holds no `send_message`, sends with
+`SendMessage` to the conductor's name. The clause had said "a local Claude Code
+session", which an app run also is (`conductor`, NOTES, *Runtime*).
+
+*Pushes*, adopting a new conductor id: an app session's record names no
+`sources`, only a `cwd`, so for one in the desktop app the home repository is
+read from the checkout `cwd` names (Codex on #230). The platform-supplied sender
+test is unchanged.
