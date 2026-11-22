@@ -227,7 +227,7 @@
       "target": 1500
     },
     "rules/node-and-pnpm-upgrades.md": {
-      "budget": 730,
+      "budget": 768,
       "target": 1500
     }
   }

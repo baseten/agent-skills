@@ -61,3 +61,9 @@ native executable, `self-update` needs pnpm 11.10, and in a project pinning
 `update_environment` are the cloud environment tools as the owner used them; this
 repository has no session on which to run them.
 
+**Why Corepack's shims are removed before the install (Codex on #232):** where
+`corepack enable` has run, `npm install -g pnpm` stops with `EEXIST` on the
+`pnpm` link Corepack owns. Reproduced 2026-11-22 against a temporary global
+prefix holding a Corepack-owned `pnpm` link: the install failed with `EEXIST`,
+and succeeded after `corepack disable pnpm` removed the link.
+

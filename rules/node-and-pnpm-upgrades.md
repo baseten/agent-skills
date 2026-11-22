@@ -43,6 +43,10 @@ in `rules/node-and-pnpm-upgrades-notes.md`.
 
 - **Never use Corepack.** Node 25 and later do not ship it, and pnpm's CI docs say
   not to use it.
+- **Remove Corepack's shims first**: where `corepack` exists, run
+  `corepack disable pnpm`; where it is gone but a `pnpm` on the path still links
+  into a `corepack` directory, delete that link. Otherwise the install below fails
+  with `EEXIST`.
 - **In a setup script or session hook**:
   `npm install -g "pnpm@$(node -p "require('./package.json').packageManager.split('@')[1].split('+')[0]")"`
   (Node 18 or later).
