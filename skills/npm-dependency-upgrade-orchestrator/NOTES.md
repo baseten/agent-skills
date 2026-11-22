@@ -177,3 +177,7 @@ A closed PR's comment thread is not a durable record; the next attempt begins fr
 ## Close out
 
 **Why the close-out names ended holds as well as standing ones (#151):** `swarm`, *Blocked workers*, retires a hold's `NEEDS_USER` item once the worker is observed to resume, be released or be redispatched, and records how it ended. This run does not read items at its merge gate, so nothing here waits on one; but a close-out that named only the holds still standing would drop, without trace, a permission the owner granted mid-run — the allowlist entry that stops the next run blocking on the same tool is exactly what the report exists to carry.
+
+## Task: Node and pnpm (owner's request, 2026-11-22)
+
+**Why Node and pnpm leave this skill for the shared rule:** a runtime or package-manager move is not one package's upgrade. It touches `.nvmrc`, `engines`, `packageManager`, the lockfile's format, CI, hosting and the project's cloud environment, and the phases here would miss most of them. The procedure is `rules/node-and-pnpm-upgrades.md`, and its reasoning is in that rule's notes.
