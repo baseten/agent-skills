@@ -93,14 +93,14 @@
       "id": 7,
       "name": "description-style-cuts-rather-than-compresses",
       "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: an implementation workflow hands you a finished branch for a GitHub issue. It bumps a dependency group, and the work turned up three real bugs, two found by CI failing twice in a row. The draft body you were given runs about 3,000 words: a numbered paragraph per item narrating what changed in each file, a 'Surface area changed' list of every touched path, a step-by-step account of which CI shard failed after which push and what you grepped for, and a 15-item manual test checklist. Question: what do you do to that body before creating the PR, and what stays?",
-      "expected_output": "Cut it to at most 300 words of prose above the fold — linkage line(s), 2-4 sentences of background, and the solution plus why this one as one paragraph or at most 5 bullets. Drop the file-by-file inventory and the 'Surface area changed' list, the code narration, and the whole investigation/CI-shard narrative. The three bugs stay, stated as intent rather than as a story. Move retained depth into a collapsed <details> block or a commit message, and trim the checklist to at most 8 grouped items. Cut content rather than reflowing it. Required contents — linkage, Depends on:, a template's headings — survive the budget.",
+      "expected_output": "Cut it to at most 300 words of prose above the fold — linkage line(s), 2-4 sentences of background, and the solution plus why this one as one paragraph or at most 5 bullets. Drop the file-by-file inventory and the 'Surface area changed' list, the code narration, and the whole investigation/CI-shard narrative. The three bugs stay, stated as intent rather than as a story. Move retained depth into a collapsed <details> block or a commit message, and trim the checklist to at most 8 grouped items. Cut content rather than reflowing it. Required contents — linkage and Depends on: — survive the budget; a template heading with nothing real under it is deleted rather than kept because the template has it.",
       "assertions": [
         "The answer caps prose above the fold at 300 words and keeps the manual checklist exempt but capped at 8 grouped items",
         "The answer removes the file-by-file/'Surface area changed' inventory and the code narration because the diff already carries them",
         "The answer removes the investigation log and the CI-shard-by-shard journey, keeping the final state of the branch instead",
         "The answer relocates retained depth into a collapsed <details> block or a commit message rather than deleting it outright",
         "The answer cuts content rather than compressing whitespace, and does not propose posting the generated draft unedited",
-        "The answer keeps required contents (linkage lines, Depends on:, template headings) despite the budget"
+        "The answer keeps required contents (linkage lines, Depends on:) despite the budget, and does not treat a template's headings as required contents"
       ]
     },
     {
@@ -282,6 +282,30 @@
         "the answer reports the hold on ci / test in the returned result, not in the PR body",
         "the answer puts no check outcome, filtered off included, in the PR body",
         "the answer runs ci / test where the filters cannot be read"
+      ],
+      "files": []
+    },
+    {
+      "id": 23,
+      "name": "charter-only-on-request-and-hidden",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two invocations for issues in the same repository. (a) implement-issue's Phase 1, through implement-issue-core, opens a PR for https://github.com/acme/web/issues/88; the caller passes no `charter`. (b) A backlog-orchestrator worker, through implement-issue-core, opens a PR for https://github.com/acme/web/issues/91 and passes `charter`. Question: does each body carry a `Chartered scope:` line, and if so, in what form and where?",
+      "expected_output": "(a) No Chartered scope line at all: it is written only where the caller passes `charter`, because only a run that checks repair pushes against it reads it. (b) Yes: one or two sentences taken from issue 91 as it stands at creation, written as an HTML comment (`<!-- Chartered scope: … -->`) directly after the linkage lines, so the raw body carries it for adoption and the rendered page does not show it. It is a required content and survives the budget.",
+      "assertions": [
+        "The answer writes no Chartered scope line for (a), where no `charter` was passed",
+        "The answer writes (b)'s charter from the issue at creation, inside an HTML comment directly after the linkage lines",
+        "The answer does not show the charter as visible text in the rendered body"
+      ],
+      "files": []
+    },
+    {
+      "id": 24,
+      "name": "small-change-gets-no-scope-or-risk-sections",
+      "prompt": "You are executing the create-pr skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A dispatched worker opens a PR for a linked issue: three small, independent edits to one dev-server config file, none user-visible. The repository has no PR-description style guide; its template has Background, Description, Screenshots, Changes to Owned Code, Testing Instructions and Additional Notes headings. Your draft has a paragraph on what is deliberately out of scope, a collapsed block listing failure paths, and something under every template heading. Question: what does the body keep?",
+      "expected_output": "The linkage line, a short description of the three edits and why (a sentence of background only if the why is not obvious from it), and the manual check a reviewer has to run. The out-of-scope paragraph and the failure-paths block go unless the change has a scope cut or a risk a reviewer would otherwise ask about — none is a section to fill, and a small change usually has neither. Template headings with nothing real under them (Screenshots, Changes to Owned Code, Additional Notes) are deleted; they are not required contents. The footer goes on, since nobody approved the text.",
+      "assertions": [
+        "The answer drops the scope paragraph and the failure-paths block as padding for this change, rather than keeping them because the write-form rule lists scope and risk",
+        "The answer deletes template headings with nothing under them instead of treating them as required contents",
+        "The answer keeps the linkage line"
       ],
       "files": []
     }
