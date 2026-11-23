@@ -25,12 +25,12 @@ The one write with a budget, since a reviewer reads it before starting:
 | part | limit |
 |---|---|
 | prose above the fold — linkage, background, description and testing summary together | **300 words maximum**: a ceiling for a genuinely large change, not a target |
-| background | 2-4 sentences: the problem, not its history |
+| background | at most 4 sentences, where needed: the problem, not its history |
 | description | one paragraph, or at most 5 bullets: the solution and why this one |
 | manual test checklist | not counted in the 300; **at most 8 grouped items** |
 | depth | a collapsed `<details>` block or a commit message, never above the fold |
 
-**The body states intent, not content**: background, why this solution where a reviewer might expect another, what is deliberately in and out of scope, and what could break. So no file-by-file inventory or "surface area changed" list, no restating what a function now does, no investigation log ("grepped for", "reproduced with", "verdict:"), and no account of the order things went wrong in. The diff is the content. **Over budget means cut**, never compress by deleting whitespace while keeping every fact.
+**The body states intent, not content**: background, why this solution where a reviewer might expect another, and what is left out or could break — **each only where a reviewer would otherwise ask**, never a section to fill. So no file-by-file inventory or "surface area changed" list, no restating what a function now does, no investigation log ("grepped for", "reproduced with", "verdict:"), and no account of the order things went wrong in. The diff is the content. **Over budget means cut**, never compress by deleting whitespace while keeping every fact.
 
 **A genuinely trivial PR gets a near-empty body.** Do not manufacture prose to fill a template: delete a template heading with nothing real under it. **But where the gap is something the author can supply and this run cannot** — a capture of a visual change, a note only they hold — **keep the heading with one line naming what is needed**: deleting is right where the section will never apply to this change, and wrong where it hides a gap.
 

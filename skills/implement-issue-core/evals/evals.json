@@ -341,6 +341,17 @@
         "the answer does not return BLOCKED for implement-issue being unavailable"
       ],
       "files": []
+    },
+    {
+      "id": 28,
+      "name": "charter-forwarded-to-create-pr",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A backlog-orchestrator dispatch prompt names you with issue https://github.com/acme/web/issues/91, its branch and exact base, a merge grant, and `charter`. Implementation and checks are done. Question: which caller inputs do you pass to create-pr, and what happens to `charter` if you leave it out?",
+      "expected_output": "Pass the gate (check set, outcomes, heads, provenance), the canonical issue URL, the exact base, the merge grant, any coverage finding, the posting-identity map, and `charter` unchanged. Left out, create-pr writes no Chartered scope comment, so the orchestrator's chartered-scope check is unavailable for this PR and a repair that adds a new module is adopted unchecked.",
+      "assertions": [
+        "The answer passes `charter` on to create-pr unchanged",
+        "The answer says that dropping it leaves the PR with no charter and the supervising run's scope check unavailable"
+      ],
+      "files": []
     }
   ]
 }

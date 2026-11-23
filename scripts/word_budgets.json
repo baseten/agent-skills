@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 26657,
+      "budget": 26698,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -15,7 +15,7 @@
       "target": 1500
     },
     "skills/backlog-orchestrator/dynamic-workflow.md": {
-      "budget": 319,
+      "budget": 326,
       "target": 1500
     },
     "skills/backlog-orchestrator/integration-branch.md": {
@@ -35,7 +35,7 @@
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
-      "budget": 2710,
+      "budget": 2748,
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
@@ -43,7 +43,7 @@
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
-      "budget": 6110,
+      "budget": 6132,
       "target": 3000
     },
     "skills/merge-stack/SKILL.md": {
@@ -131,7 +131,7 @@
       "target": 1500
     },
     "rules/authored-write-form.md": {
-      "budget": 2979,
+      "budget": 2993,
       "target": 1500
     },
     "rules/ci-and-review-verdicts.md": {

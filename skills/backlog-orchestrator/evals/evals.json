@@ -1594,6 +1594,18 @@
         "the worker does not ask the question a second time: the one question was asked and answered"
       ],
       "files": []
+    },
+    {
+      "id": 132,
+      "name": "dispatch-carries-charter-and-adoption-reads-the-comment",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are composing an implementation worker's dispatch prompt for https://github.com/acme/web/issues/91. Later, after a restart, you adopt that PR; its raw body contains `<!-- Chartered scope: Guard the closed flag on candle upsert. -->` under its linkage line, and the rendered page shows no such line. Question: what does the dispatch prompt carry so the charter exists, and what do you record for the PR's charter on adoption?",
+      "expected_output": "The dispatch prompt carries `charter`, so the worker's create-pr records the issue's scope at creation; without it create-pr writes none and the chartered-scope check is unavailable for that PR. On adoption, read the raw body: the HTML comment is the Chartered scope line, so record 'Guard the closed flag on candle upsert.' as the charter in the per-PR block, never rebuilt from the issue as it now stands.",
+      "assertions": [
+        "The answer includes `charter` in the dispatch prompt",
+        "The answer recovers the charter from the HTML comment in the raw body on adoption",
+        "The answer does not rebuild the charter from the current issue"
+      ],
+      "files": []
     }
   ]
 }
