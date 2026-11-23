@@ -26,7 +26,7 @@ This file is the contract. The reasoning behind each rule — incident history, 
 - optional authorization membership — the run's bounded authorized set, or a per-blocker in/out flag;
 - implementation-attempt budget;
 - draft/full preference and merge grant, when supplied;
-- `charter`, when the caller passes it, for `create-pr`;
+- the `charter` flag, when the caller passes it, for `create-pr`; without it the caller's chartered-scope check is unavailable;
 - `ci-mode` when the caller passes it as `deferred` or `integration-branch`: every commit pushed to the issue branch while its PR is open, and the head of the last push before the PR is created, carries `[skip ci]` in its message (`supervise-prs`, *Deferred CI*, *Integration-branch CI*) — under `integration-branch`, unless the caller passes the repository's `pull_request` triggers as excluding the branch (*Integration-branch CI*, step 1);
 - the caller's posting-identity map when one exists — every `(transport, credential)` entry with its per-kind observations, never a caller-selected pair. With no map from its caller, every transport starts `unestablished` (degraded path per `references/posting-identity.md`).
 

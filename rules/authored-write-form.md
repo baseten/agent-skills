@@ -25,7 +25,7 @@ The one write with a budget, since a reviewer reads it before starting:
 | part | limit |
 |---|---|
 | prose above the fold — linkage, background, description and testing summary together | **300 words maximum**: a ceiling for a genuinely large change, not a target |
-| background | 2-4 sentences: the problem, not its history |
+| background | at most 4 sentences, where needed: the problem, not its history |
 | description | one paragraph, or at most 5 bullets: the solution and why this one |
 | manual test checklist | not counted in the 300; **at most 8 grouped items** |
 | depth | a collapsed `<details>` block or a commit message, never above the fold |

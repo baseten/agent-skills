@@ -650,7 +650,7 @@ review-session ids: per review session, the review id and its inline comment ids
 
 **Invariant 3, the frontier rule and dispatch authority do not bound one PR's diff through its review rounds; the chartered scope does**: each round's fix can be right for its finding and still enlarge what the reviewer is shown next. So the charter is written down at creation, from the issue, while it is still uncontested — never after the fact, from the diff.
 
-**It is written where a restart can find it**, which the per-PR block, a cache by invariant 1, is not: `create-pr` writes it into the PR body at creation as a **`Chartered scope:` line in an HTML comment**, when the dispatch prompt passes `charter` — a required content under the write-form rule, one or two sentences, surviving the budget as the linkage lines do — and adoption recovers it from the raw body, never rebuilding one from the issue as it now stands.
+**It is written where a restart can find it**, which the per-PR block, a cache by invariant 1, is not: `create-pr` writes it into the PR body at creation as a **`Chartered scope:` line in an HTML comment**, when this run passes `charter` — in the dispatch prompt, or directly on the serialized tier — a required content under the write-form rule, one or two sentences, surviving the budget as the linkage lines do — and adoption recovers it from the raw body, never rebuilding one from the issue as it now stands.
 
 **Where no charter line is recoverable, say so and do not invent one.** A PR this run did not create, or one whose body was rewritten without it, has no charter, and the chartered-scope comparison is **unavailable** for that PR rather than performed against a guess. Record it as unavailable in the block and report it that way.
 
