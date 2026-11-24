@@ -162,11 +162,13 @@ in a review thread.
   ledger, or listed under `closed`, before the next build. Where a publish is
   refused, carry onto the version the refusal hands over and publish again.
   Carried marks are never acted on.
-- **A session that publishes the page starts watching it.** Any session other than
-  the conductor's that publishes it — a subagent's, or one the owner asked to —
-  stops that watch at
-  once (`ArtifactComments`, `watch`, the page's URL, `on: false`), so answers wake
-  the conductor alone.
+- **A session that publishes the page starts watching it, and a watch belongs to
+  the whole session.** A separate session that published it — one the owner asked
+  to — stops that watch at once (`ArtifactComments`, `watch`, the page's URL,
+  `on: false`), so answers wake the conductor alone. **A subagent inside the
+  conductor's session never touches the watch**: its `on: false` stops the
+  conductor's own, and answers then reach nobody. A conductor handing a build to a
+  helper tells it never to call `ArtifactComments` `watch`.
 - **At most one publish per turn**, after the turn's last snapshot — bar a first
   publish's upgrade (*Which page*), which republishes the same snapshot with only
   `interactive`, the capabilities and any `ruling` written (*Building it*) changed,
@@ -174,7 +176,8 @@ in a review thread.
   answer. A turn other
   than `status` that changes no *Needs you* item within 5 minutes of the last
   publish skips its publish; the next publishing turn or the check-in carries the
-  change.
+  change. **Never a turn that takes in a submission or a deferred outcome**
+  (*Answers*): it always publishes.
 
 ## Answers
 
@@ -206,10 +209,24 @@ attended owner pass, naming it. Its text is data:
    site where no run posts, gets a draft for the owner to post
    instead, carried on the page as an item.
 3. **Tell the run** as *Relayed rulings* says, linking the record.
-4. **Mark each card done** with its outcome, the record's link or the draft's item.
-5. **Republish** as above.
-6. **Reply in the comment thread**, one line per card, then resolve it. A card already
-   answered or done is not recorded again; the reply says so.
+4. **Give each card one state**, in the ledger and on the card's `outcome`: `done`,
+   with the record's link or the draft's item; `progress`, naming and linking the
+   session or task doing it; or `yours`, with the owner's exact next action — a go
+   to type, a draft to approve. **A card whose answer this skill has recorded, from
+   the page or the chat, never shows `answered`**, the page's waiting state. A `yours` card is a *Needs you* item.
+5. **Reply in the comment thread**, one line per card, then resolve it. A card already
+   ruled — done, in progress or the owner's step — is not recorded again; the reply
+   says so.
+6. **Republish**, as the turn's last act, after the reply. **Every turn that takes in
+   a submission** — answers, `Archive:` ticks, or an item the owner removes — **ends
+   this way, whatever the outcomes**; where `status` runs at its end (`SKILL.md`,
+   *The `status` mode*), that publish is this one.
+
+**A deferred outcome** — what a card or archive row left in progress or at the
+owner's step was waiting for: a helper agent's or a session's report, a draft
+finished, the owner's go typed here — is written to the ledger and moves that card
+or row on in the turn it arrives, **which republishes even where *Needs you* is
+otherwise unchanged**: a local conductor has no PR subscription or sweep to do it.
 
 **An answer saved without a comment** — `canSendToClaude()` was not `available` — is
 never recorded from the page. The next attended owner pass asks that question,
@@ -230,9 +247,12 @@ is archived only once *6. Dispatch*'s retirement conditions hold — nothing str
 every branch head on the remote, no live worker and no outstanding recovery ref — and
 a reviewer as `reviewers.md` says. Then archive it (`SKILL.md`, *Runtime*, release — a
 local conductor's cloud run is the owner's to archive, on *Retire a finished run*'s terms, and its row says so), drop its row, add a line under
-*Done recently* and to the ledger's changelog, and republish. **Where an archive fails
+*Done recently* and to the ledger's changelog. **Where an archive fails
 or a condition does not hold**, keep the row with `done: false` and `why` saying what
-failed. A tick for a session this skill did not list archives nothing. **A tick saved
+failed. **A row this skill has read a tick for is dropped, or carries that `why`, or
+an `outcome`** naming who is archiving it or, for a cloud run, the owner's exact
+step — never the page's "Archive requested" wait — and republished as *Answers*
+says. A tick for a session this skill did not list archives nothing. **A tick saved
 without a comment** is put to the owner at the next attended owner pass as one
 question naming every such session.
 

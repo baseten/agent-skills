@@ -6,7 +6,8 @@ The page is the template plus one state block; the page script regenerates the
 whole document from that state and never serialises the DOM. `<` is escaped so
 no state value can close the script element. An interactive state whose open
 decision has an option with no `ruling` is refused: its answer could not be
-recorded. So is a "Your PRs" item without prsteps.py's `stepsReadAt` stamp, or
+recorded. So is a decision `done`, `progress` or `yours` with no `outcome`: the
+card would show no record, no session and no next step. So is a "Your PRs" item without prsteps.py's `stepsReadAt` stamp, or
 whose steps do not each carry a `done`: the stamp shows prsteps.py filled them, and
 cannot show that nobody edited them after.
 
@@ -44,6 +45,13 @@ if st.get("interactive") is True:
         raise SystemExit("refused: on an interactive page every option of an open decision "
                          "carries its ruling (work-queue.md, Building it); missing on "
                          + ", ".join(unruled))
+# an answer the conductor has read is done, in progress or the owner's step, and says which
+# (work-queue.md, Answers, step 4): a card in one of those states with no outcome is refused
+bare = [str(d.get("id")) for d in st.get("decisions") or []
+        if d.get("status") in ("done", "progress", "yours") and not str(d.get("outcome") or "").strip()]
+if bare:
+    raise SystemExit("refused: a decision done, in progress or the owner's step carries its "
+                     "outcome (work-queue.md, Answers); missing on " + ", ".join(bare))
 # a PR's steps are filled by prsteps.py, which stamps the item. The stamp catches steps
 # it never filled; a hand edit after it is forbidden by the contract, not seen here.
 unread = [f'{p.get("repo")}#{p.get("pr")}' for p in st.get("prs") or []

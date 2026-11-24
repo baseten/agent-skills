@@ -797,7 +797,8 @@ all three hold:**
    that proposes is never quiet:
    - no tool work pending — the proposal is the last thing in the turn;
    - no question to the owner waiting for an answer, and no work-queue answer
-     received but its card not yet marked done (`work-queue.md`, *Answers*);
+     received but its card not yet given its state, nor the page not yet
+     republished after it (`work-queue.md`, *Answers*);
    - **no owner ruling given only in chat** — write it to the ledger and record it
      at its site first, or hand the owner its draft (*Rules*; *4. Owner pass*,
      step 4), then carry on;
@@ -939,7 +940,8 @@ this turn's snapshot, and the PRs waiting on their team (*The status snapshot*),
 is recorded only there, and a viewer's marks are carried, never acted on, bar an
 answer `work-queue.md`, *Answers*, accepts. **A report whose *Needs
 you* changed, or a PR item's links, draft count or steps** — emptied, or on a scheduled
-firing, included — **and every `status` turn publish it**, paced as `work-queue.md`,
+firing, included — **every `status` turn, and every turn that takes in a work-queue
+submission or a deferred outcome** (`work-queue.md`, *Answers*), **publish it**, paced as `work-queue.md`,
 *Publishing*, says: to the URL the ledger records,
 or, where none is recorded, as a new page whose URL the ledger then records
 (*7. Ledger*). **Any sweep — attended, scheduled or `status` — that finds no
