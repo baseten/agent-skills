@@ -223,7 +223,9 @@ report "AGENT_SKILLS_SKILLS=0 skips skills and stamps, keeps permissions" $ok
 # the version line reads them exactly as it reads bootstrap's.
 C="$TMP/release-build"; ok=1
 git_copy "$C" https://github.com/example/fork
-if bash "$C/scripts/build_plugin_release.sh" https://github.com/example/fork >"$C.log" 2>&1; then
+if ! GITHUB_ACTIONS='' bash "$C/scripts/build_plugin_release.sh" https://github.com/example/fork >/dev/null 2>&1 \
+   && [ ! -e "$C/skills/conductor/.source" ] \
+   && bash "$C/scripts/build_plugin_release.sh" --allow-local https://github.com/example/fork >"$C.log" 2>&1; then
   ok=0
   for skill_md in "$C"/skills/*/SKILL.md; do
     d="$(dirname "$skill_md")"
@@ -236,7 +238,7 @@ if bash "$C/scripts/build_plugin_release.sh" https://github.com/example/fork >"$
   done
 fi
 [ $ok -eq 0 ] || cat "$C.log"
-report "release build stamps every skill with its commit and bundles references" $ok
+report "release build refuses outside CI, then stamps every skill and bundles references" $ok
 
 echo "passed $PASS, failed $FAILED"
 [ "$FAILED" -eq 0 ] && echo "ALL PASS"

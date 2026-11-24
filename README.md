@@ -181,7 +181,7 @@ bash skills/swarm/scripts/test-checkpoint-capture.sh
 python3 -I scripts/test_work_queue_prdata.py          # conductor's work-queue scripts, against a stubbed gh
 bash scripts/test_bootstrap_stamp.sh                  # bootstrap.sh's install stamp, against a scratch HOME
 bash scripts/test_bootstrap_instructions.sh          # bootstrap.sh's managed block in ~/.claude/CLAUDE.md
-shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh scripts/test_bootstrap_stamp.sh scripts/test_bootstrap_instructions.sh
+shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh scripts/test_bootstrap_stamp.sh scripts/test_bootstrap_instructions.sh scripts/build_plugin_release.sh
 bash scripts/eval_reminder.sh origin/main             # advisory, never fails
 ```
 
@@ -681,7 +681,9 @@ A cloud session — Claude Code on the web, a Desktop cloud container, an auto-f
 run — loads skills from exactly two places:
 
 - the skills and plugins enabled for your **claude.ai account**, and
-- the **cloned repository's** own `.claude/skills/`.
+- the **cloned repository's** own `.claude/skills/`. A marketplace its
+  `.claude/settings.json` declares is not added in an Anthropic-hosted cloud
+  session, so a plugin from one does not load there.
 
 It does **not** read `~/.claude/skills` from the machine you started it from.
 Whatever you have installed locally is not there, and the failure is silent: the
@@ -713,7 +715,9 @@ the container, so nothing can read a second copy from `/tmp`.
 `permissions.json` into the container's `~/.claude/settings.json` as well — see
 [Where to install it](#where-to-install-it).
 
-To see which revision a container is running, `cat ~/.claude/.agent-skills-install`:
+To see which revision a container is running, `cat ~/.claude/.agent-skills-install`
+(on the plugin route, the `.source` beside any skill under
+`~/.claude/plugins/cache/baseten/agent-skills/<version>/skills/`):
 it records the repository, the commit and its date, and when the install ran.
 Each installed skill carries the same record as `.source`, which matters because
 installing merges and never deletes: a skill whose `.source` differs from
@@ -749,12 +753,15 @@ In a setup script, run those, then `AGENT_SKILLS_SKILLS=0 bash bootstrap.sh`
 from a clone for what a plugin cannot carry: the managed block in
 `~/.claude/CLAUDE.md` and `permissions.json`. For a cloud session there is a
 route that needs no setup script: add the marketplace on claude.ai, under
-Customize > Plugins, and enable the plugin there.
+Customize > Plugins, and enable the plugin there. That route is not yet observed
+in a container (`rules/run-start-notes.md`), and it brings neither the managed
+block nor the permissions, so a session on it lacks both.
 
 **The marketplace installs the `release` branch, never `main`.** A plugin
 installs the repository as committed, and `main` commits neither each skill's
 `references/` nor its `.source` stamp. `.github/workflows/release.yml` rebuilds
-`release` from every push to `main` with `scripts/build_plugin_release.sh`,
+`release` from every push to `main` that passes its checks, with
+`scripts/build_plugin_release.sh`,
 which generates both, stamping the `main` commit the build came from so the
 version line names a revision of this repository, then force-pushes. Nobody
 edits `release`. Its plugin version is the release commit, so every build is an
@@ -764,7 +771,9 @@ agent-skills` fetch it.
 **One route per machine.** A skill installed as a copy and the same skill from
 the plugin both load, and the copy wins the bare name, so a stale copy would run
 in place of the plugin. Move a machine to the plugin by deleting the copies
-first. The skills name each other bare, which resolves to the plugin's skill
+first, and `~/.claude/.agent-skills-install` with them: the version line falls
+back to that stamp. `AGENT_SKILLS_SKILLS=0 bash bootstrap.sh` names any it
+finds. The skills name each other bare, which resolves to the plugin's skill
 where nothing else holds the name; the managed block says that a bare name and
 `agent-skills:<name>` are the same skill.
 
@@ -913,7 +922,9 @@ the shell:
 ls ~/.claude/skills
 ```
 
-Every directory under `skills/` here should appear. If the list is empty the
+Every directory under `skills/` here should appear — on the plugin route, under
+`~/.claude/plugins/cache/baseten/agent-skills/<version>/skills/` instead, with
+`~/.claude/skills` holding none of them. If the list is empty the
 setup script did not run or the clone failed; if it is short, compare it against
 this repository rather than assuming a skill was retired — `bootstrap.sh`
 deletes nothing.

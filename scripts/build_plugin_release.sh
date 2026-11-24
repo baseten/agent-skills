@@ -14,10 +14,23 @@
 #
 # main stays the only source: release is rebuilt, never edited.
 #
-# Usage: bash scripts/build_plugin_release.sh [repo-url]
+# Usage: bash scripts/build_plugin_release.sh [--allow-local] [repo-url]
 # The repo URL defaults to the GitHub Actions repository, else `unknown`.
+#
+# Outside GitHub Actions it refuses without --allow-local: the stamps it writes
+# are gitignored, so they would sit in a working checkout unseen, and where
+# ~/.claude/skills links into that checkout every skill would report a revision
+# it is not running. Pass the flag only in a throwaway clone.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+if [ "${1:-}" = "--allow-local" ]; then
+  shift
+elif [ "${GITHUB_ACTIONS:-}" != "true" ]; then
+  echo "refusing: build_plugin_release.sh stamps every skill; run it in CI," >&2
+  echo "or pass --allow-local in a throwaway clone." >&2
+  exit 1
+fi
 
 bash "$ROOT/scripts/refresh_shared_rules.sh" >/dev/null
 

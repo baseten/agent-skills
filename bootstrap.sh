@@ -9,6 +9,8 @@
 # Every directory under skills/ containing a SKILL.md is installed. Adding a
 # skill needs no edit here — create the directory and it ships. It also keeps
 # one marked block in ~/.claude/CLAUDE.md; see "Global instructions" below.
+# With AGENT_SKILLS_SKILLS=0 it installs no skills, for a machine that gets them
+# from the agent-skills plugin, and does only the block and the permissions.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -31,6 +33,18 @@ CLAUDE_DIR="$HOME/.claude"
 # and the bare name would run this copy rather than the plugin's.
 if [ "${AGENT_SKILLS_SKILLS:-1}" = "0" ]; then
   echo "Skipping skills: AGENT_SKILLS_SKILLS=0, installed as a plugin."
+  # Reported, never deleted, as everywhere here. A copy left from an earlier
+  # install wins the bare name over the plugin's skill, and a leftover
+  # install-wide stamp is what the version line falls back to.
+  for skill_path in "$SCRIPT_DIR"/skills/*/; do
+    skill="$(basename "${skill_path%/}")"
+    if [ -f "$skill_path/SKILL.md" ] && [ -d "$CLAUDE_DIR/skills/$skill" ]; then
+      echo "  ! $CLAUDE_DIR/skills/$skill is a copy beside the plugin; delete it." >&2
+    fi
+  done
+  if [ -f "$CLAUDE_DIR/.agent-skills-install" ]; then
+    echo "  ! $CLAUDE_DIR/.agent-skills-install is from a copied install; delete it." >&2
+  fi
 else
 mkdir -p "$CLAUDE_DIR/skills"
 

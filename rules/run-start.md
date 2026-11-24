@@ -29,7 +29,7 @@ says so by name in its description, holds only settings, and invokes the generic
 - **the frontmatter of every SKILL.md this session can read** under the config directory's `skills/`, account skills synced there included, its `plugins/cache/`, and the working repository's `.claude/skills/` — `grep -rlsE '^[[:space:]]+extends:[[:space:]]*<this skill>[[:space:]]*$' --include=SKILL.md "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/cache" .claude/skills`. The cache keeps versions no longer installed, so a layer found only there counts where the session's skill listing names it;
 - **the session's skill listing**, where a description says the skill extends this one.
 
-One name under two namespace prefixes (`<namespace>:<name>`) is one skill. Then:
+One name, bare or under any namespace prefix (`<namespace>:<name>`, as a plugin lists its skills), is one skill — here and wherever a skill checks that another is available. Then:
 
 | found | act |
 |---|---|

@@ -19,6 +19,12 @@ The owner's ruling: one install route per skill, generic skills from bootstrap
 only, layers from uploads only, and a generic skill that finds a layer over itself
 hands the run to it.
 
+**Widened by the owner on 2026-11-24 (issue #234, PR #235)**, when they asked for
+the skills, and the Close layers after them, to ship as plugins: a generic skill
+comes from this repository by bootstrap or by the `agent-skills` plugin, a layer
+from an upload or from a plugin of its own, and still never one skill by two
+routes on one machine.
+
 ## A skill that extends this one
 
 **Why the check is the generic skill's first step, not only the session's
@@ -86,7 +92,11 @@ the reliable channel where they exist, the listing the fallback.
   directory as it does locally, `metadata` intact;
 - that a skill uploaded to claude.ai can invoke a bootstrap-installed skill in the
   same cloud session, which every layer depends on;
-- that the `grep` above, or the listing, finds the layer there.
+- that the `grep` above, or the listing, finds the layer there;
+- that a plugin enabled on a claude.ai account, or installed by a setup script's
+  `claude plugin install`, lands under the config directory's `plugins/cache/`
+  in a container as it does locally, with its `.source`, and that a layer
+  shipped as a plugin is found there.
 
 **The first real cloud run of a layered skill must confirm all three**, and
 record the result here: the transcript's version lines (both, layer first) show

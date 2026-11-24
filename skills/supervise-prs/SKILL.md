@@ -46,7 +46,7 @@ This file is the contract; the reasoning and incident history behind its rules l
 - `review-docs` — where a PR's routing names it (`references/review-trigger.md`, *Documentation-review routing*);
 - `swarm` — where `repair dispatch` is `swarm`: each pass is dispatched, countermanded and released under it.
 
-A composed skill that is unavailable → the pass reports it and repairs nothing through it. Never improvise a replacement workflow.
+A composed skill that is unavailable, listed neither bare nor under a `<plugin>:` prefix → the pass reports it and repairs nothing through it. Never improvise a replacement workflow.
 
 ## One PR, one supervisor
 
