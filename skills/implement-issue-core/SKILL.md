@@ -15,7 +15,7 @@ This file is the contract. The reasoning behind each rule — incident history, 
 
 **As the entry point it stops before any write** — no branch, push, comment or PR:
 
-- `implement-issue` available in this session, and nothing told this session it does not supervise (a worker's countermand) → invoke it with the same arguments; it calls this skill back as its primitive;
+- `implement-issue` available in this session, listed bare or as `<plugin>:implement-issue`, and nothing told this session it does not supervise (a worker's countermand) → invoke it with the same arguments; it calls this skill back as its primitive;
 - otherwise → return `BLOCKED`: `implement-issue` is not installed in this environment, or the caller's inputs are missing from a worker's prompt. Never implement alone: nothing would supervise the PR but the platform's posture (NOTES).
 
 ## Inputs

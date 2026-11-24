@@ -26,10 +26,10 @@ says so by name in its description, holds only settings, and invokes the generic
 
 **First, before the version line or any other read or write, find every available skill that extends this one**, from both sources:
 
-- **the frontmatter of every SKILL.md this session can read** under the config directory's `skills/`, account skills synced there included, and the working repository's `.claude/skills/` — `grep -rlsE '^[[:space:]]+extends:[[:space:]]*<this skill>[[:space:]]*$' --include=SKILL.md "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills" .claude/skills`;
+- **the frontmatter of every SKILL.md this session can read** under the config directory's `skills/`, account skills synced there included, its `plugins/cache/`, and the working repository's `.claude/skills/` — `grep -rlsE '^[[:space:]]+extends:[[:space:]]*<this skill>[[:space:]]*$' --include=SKILL.md "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/cache" .claude/skills`. The cache keeps versions no longer installed, so a layer found only there counts where the session's skill listing names it;
 - **the session's skill listing**, where a description says the skill extends this one.
 
-One name under two namespace prefixes (`<namespace>:<name>`) is one skill. Then:
+One name, bare or under any namespace prefix (`<namespace>:<name>`, as a plugin lists its skills), is one skill — here and wherever a skill checks that another is available. Then:
 
 | found | act |
 |---|---|
@@ -50,7 +50,7 @@ running <skill> @ <commit> (<date>)
 
 `<skill>` is this skill's own frontmatter `name`. **The version is read, never written from memory**, from the first of these that reads:
 
-1. `.source` in this skill's own directory — the one its SKILL.md was loaded from, else the config directory's `skills/<skill>/` — its `commit` and `committed` values, written by the installer;
+1. `.source` in this skill's own directory — the one its SKILL.md was loaded from, else the config directory's `skills/<skill>/` — its `commit` and `committed` values, written by the installer, or for a plugin by the build its release came from;
 2. this skill's own frontmatter `metadata.version`, `<commit> <committed>`, which the packaging of an uploaded skill writes;
 3. the config directory's `.agent-skills-install`, **only where this skill's own directory cannot be found at all** — a directory found without a `.source` was left by an earlier install or came from elsewhere, and the install-wide stamp does not describe it.
 

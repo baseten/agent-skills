@@ -1,0 +1,9 @@
+{
+  "name": "agent-skills",
+  "description": "Issue implementation, PR supervision and repair, backlog orchestration, stacked-PR merging and dependency-upgrade skills, with the shared rules each one applies.",
+  "author": {
+    "name": "Alex Prokop"
+  },
+  "homepage": "https://github.com/baseten/agent-skills",
+  "repository": "https://github.com/baseten/agent-skills"
+}

@@ -305,7 +305,7 @@ bash skills/swarm/scripts/test-checkpoint-capture.sh
 python3 -I scripts/test_work_queue_prdata.py         # conductor's work-queue scripts, against a stubbed gh
 bash scripts/test_bootstrap_stamp.sh
 bash scripts/test_bootstrap_instructions.sh
-shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh scripts/test_bootstrap_stamp.sh scripts/test_bootstrap_instructions.sh
+shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh scripts/test_bootstrap_stamp.sh scripts/test_bootstrap_instructions.sh scripts/build_plugin_release.sh
 bash scripts/eval_reminder.sh origin/main
 ```
 

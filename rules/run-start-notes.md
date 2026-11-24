@@ -19,6 +19,12 @@ The owner's ruling: one install route per skill, generic skills from bootstrap
 only, layers from uploads only, and a generic skill that finds a layer over itself
 hands the run to it.
 
+**Widened by the owner on 2026-11-24 (issue #234, PR #235)**, when they asked for
+the skills, and the Close layers after them, to ship as plugins: a generic skill
+comes from this repository by bootstrap or by the `agent-skills` plugin, a layer
+from an upload or from a plugin of its own, and still never one skill by two
+routes on one machine.
+
 ## A skill that extends this one
 
 **Why the check is the generic skill's first step, not only the session's
@@ -86,12 +92,26 @@ the reliable channel where they exist, the listing the fallback.
   directory as it does locally, `metadata` intact;
 - that a skill uploaded to claude.ai can invoke a bootstrap-installed skill in the
   same cloud session, which every layer depends on;
-- that the `grep` above, or the listing, finds the layer there.
+- that the `grep` above, or the listing, finds the layer there;
+- that a plugin enabled on a claude.ai account, or installed by a setup script's
+  `claude plugin install`, lands under the config directory's `plugins/cache/`
+  in a container as it does locally, with its `.source`, and that a layer
+  shipped as a plugin is found there.
 
 **The first real cloud run of a layered skill must confirm all three**, and
 record the result here: the transcript's version lines (both, layer first) show
 the invocation worked; a generic skill invoked directly in that container,
 handing off, shows the detection worked.
+
+**Why the plugin cache is searched, and why a layer found only there needs the
+listing (2026-11-24, issue #234).** A layer shipped as a plugin installs under
+the config directory's `plugins/cache/<marketplace>/<plugin>/<version>/skills/`,
+which the old grep never read, so only the listing could find it. But the cache
+keeps a version directory after an update or an uninstall, so a grep there alone
+would hand the run to a layer the owner removed, or stop it over two "layers"
+that are one plugin's old and new versions. The listing is what the session
+actually loaded; the cache supplies the frontmatter the listing's description may
+not state.
 
 ## The version line
 
@@ -114,6 +134,27 @@ claude.ai accepts only `name`, `description`, `license`, `compatibility`,
 `metadata` and `allowed-tools` in frontmatter, so `metadata` is the one place a
 packager can write a version. The packager writes it into the packaged copy, never
 into the tracked file, for the same reason the stamp is not committed.
+
+**Why a plugin's stamp comes from the release build (2026-11-24, issue #234).**
+A plugin install runs nothing on the installing machine, so no installer writes
+`.source`. `scripts/build_plugin_release.sh` writes it into the `release` branch
+the marketplace installs, with the four keys `bootstrap.sh` writes and the `main`
+commit the build came from, never the release commit, which exists only to carry
+generated files. So the first source in the order reads the same way on both
+routes and the order did not change. Observed on 2026-11-24: a local install
+of the built tree put `.source` with `main`'s commit beside each skill's
+`SKILL.md` under `plugins/cache/baseten/agent-skills/<version>/skills/`.
+
+**What a bare name resolves to under a plugin (observed 2026-11-24, Claude Code
+2.1.331).** The plugin docs document a bare name only for a skill whose
+frontmatter `name` is set, and say nothing of the Skill tool. So it was run: a
+plugin `probe` holding skill `zz-bare-probe`, loaded with `--plugin-dir`, and
+`claude -p` asked to call the Skill tool with the bare `zz-bare-probe`, then to
+run `/zz-bare-probe`. Both ran the plugin's skill. With a project
+`.claude/skills/zz-bare-probe` beside it, the same bare call ran the project
+skill. So the skills keep naming each other bare, which resolves to the plugin
+where nothing else holds the name, and a machine takes one install route: a
+leftover copy wins the bare name over the plugin. README, *Install as a plugin*.
 
 **Why a consumer applies the rule however it was invoked.** A first draft said a
 skill composed inside a run applies neither part; the contradiction pass before

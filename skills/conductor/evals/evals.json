@@ -1712,6 +1712,31 @@
         "it records the run's route in the ledger and uses that route's tools for later operations"
       ],
       "files": []
+    },
+    {
+      "id": 132,
+      "name": "layer-found-in-the-plugin-cache-is-handed-off-to",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: the owner types `/agent-skills:conductor acme/web` in a fresh session. CLAUDE_CONFIG_DIR is not set. ~/.claude/skills holds no SKILL.md declaring metadata.extends. Under ~/.claude/plugins/cache/ there are two: ~/.claude/plugins/cache/acme/acme-tools/4f1c2a9e0b7d/skills/acme-conductor/SKILL.md and ~/.claude/plugins/cache/old/old-tools/91aa03c2e5f1/skills/legacy-conductor/SKILL.md, both with frontmatter `metadata:\\n  extends: conductor`. The session's skill listing shows `acme-tools:acme-conductor` and `agent-skills:conductor`, and no legacy-conductor. Nothing invoked conductor except the owner's command. Question: what do you do first?",
+      "expected_output": "It hands off before reading, writing or printing anything of its own: it invokes acme-tools:acme-conductor with `acme/web` verbatim and follows it. The plugin cache is one of the places the layer search covers, and acme-conductor is found there and named in the skill listing, so it is an installed layer. legacy-conductor is found only in the cache and not in the listing: the cache keeps versions no longer installed, so it does not count, and there is no second layer to ask about.",
+      "assertions": [
+        "the answer hands off to acme-conductor (acme-tools:acme-conductor) with the owner's argument verbatim",
+        "the answer does not count legacy-conductor as a layer, because it is found only in the plugin cache and the skill listing does not name it",
+        "the answer does not stop to ask the owner which of two layers to run",
+        "the answer reads or writes nothing of the conductor's own before the hand-off"
+      ],
+      "files": []
+    },
+    {
+      "id": 133,
+      "name": "dispatch-skill-check-accepts-a-plugin-prefix",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Scenario: you are a fresh session dispatched by a conductor. Your prompt opens with the conductor's fresh-run text, naming as required skills: implement-issue, implement-issue-core, create-pr, supervise-prs, repair-pr, resolve-pr-comment, settle-and-merge, summarize-wave. Your skill listing shows each of them as `agent-skills:<name>` (for example `agent-skills:create-pr`) and none under its bare name. Question: does the availability check pass, and what do you do next?",
+      "expected_output": "The check passes: the dispatch text counts a skill with or without a `<plugin>:` prefix, so `agent-skills:create-pr` is create-pr. The session invokes the run's skill (implement-issue) as the prompt goes on to say, and sends no missing-skills failure report.",
+      "assertions": [
+        "the answer says every required skill is available, counting the `agent-skills:` listings as the named skills",
+        "the answer does not send or print a `failed: missing skills` report",
+        "the answer goes on to invoke implement-issue"
+      ],
+      "files": []
     }
   ]
 }

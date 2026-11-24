@@ -13,6 +13,8 @@ This file is the contract. The reasoning behind each rule — incident history, 
 
 ## Composed skills — all required
 
+Each counts as available listed bare or under a `<plugin>:` prefix.
+
 | skill | role |
 |---|---|
 | `implement-issue-core`, `create-pr` | implementation |

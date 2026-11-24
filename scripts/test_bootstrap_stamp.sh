@@ -206,6 +206,40 @@ if [ "$(git -C "$C" rev-parse --is-shallow-repository)" = true ] \
 [ $ok -eq 0 ] || cat "$H.log"
 report "depth-1 clone stamped with its HEAD" $ok
 
+# --- AGENT_SKILLS_SKILLS=0: the plugin route installs no skill and no stamp --
+# Copying the skills beside the plugin would load each twice, and the bare name
+# would run the copy. Permissions and the global block still install.
+C="$TMP/plugin-route"; H="$TMP/h-plugin-route"; ok=1
+git_copy "$C" https://github.com/example/fork
+mkdir -p "$H"
+if AGENT_SKILLS_SKILLS=0 HOME="$H" bash "$C/bootstrap.sh" >"$H.log" 2>&1 \
+   && [ ! -e "$H/.claude/skills" ] && [ ! -e "$(rec_of "$H")" ] \
+   && [ -f "$H/.claude/settings.json" ] && [ -f "$H/.claude/CLAUDE.md" ]; then ok=0; fi
+[ $ok -eq 0 ] || cat "$H.log"
+report "AGENT_SKILLS_SKILLS=0 skips skills and stamps, keeps permissions" $ok
+
+# --- the plugin release build stamps every skill as bootstrap does ----------
+# The release branch carries these stamps, since a plugin install runs nothing;
+# the version line reads them exactly as it reads bootstrap's.
+C="$TMP/release-build"; ok=1
+git_copy "$C" https://github.com/example/fork
+if ! GITHUB_ACTIONS='' bash "$C/scripts/build_plugin_release.sh" https://github.com/example/fork >/dev/null 2>&1 \
+   && [ ! -e "$C/skills/conductor/.source" ] \
+   && bash "$C/scripts/build_plugin_release.sh" --allow-local https://github.com/example/fork >"$C.log" 2>&1; then
+  ok=0
+  for skill_md in "$C"/skills/*/SKILL.md; do
+    d="$(dirname "$skill_md")"
+    [ "$(wc -l < "$d/.source" | tr -d ' ')" = 4 ] \
+      && [ "$(field "$d/.source" repo)" = https://github.com/example/fork ] \
+      && [ "$(field "$d/.source" commit)" = "$(head_of "$C")" ] \
+      && [ "$(field "$d/.source" committed)" = "$(date_of "$C")" ] \
+      && [ -d "$d/references" ] \
+      || { echo "  bad stamp or references: $d"; ok=1; }
+  done
+fi
+[ $ok -eq 0 ] || cat "$C.log"
+report "release build refuses outside CI, then stamps every skill and bundles references" $ok
+
 echo "passed $PASS, failed $FAILED"
 [ "$FAILED" -eq 0 ] && echo "ALL PASS"
 [ "$FAILED" -eq 0 ]

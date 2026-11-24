@@ -1,0 +1,76 @@
+# Rebuilds the `release` branch the plugin marketplace points at, from main,
+# once main's checks pass (README, *Install as a plugin*).
+#
+# A plugin installs the repository as committed, and main never commits the
+# two things an install generates: each skill's references/, from rules/, and
+# each skill's .source stamp. release is main plus exactly those, rebuilt by
+# scripts/build_plugin_release.sh and force-pushed, so it is never edited by
+# hand and main stays the only source.
+name: release
+
+on:
+  workflow_run:
+    workflows: [checks]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: plugin-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    # Only a green push to main, or a manual run on main: a manual run on any
+    # other ref would publish that branch to every install.
+    if: >-
+      (github.event_name == 'workflow_run'
+        && github.event.workflow_run.event == 'push'
+        && github.event.workflow_run.conclusion == 'success')
+      || (github.event_name == 'workflow_dispatch'
+        && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+
+      # A green run for an older commit can finish after a newer push; only
+      # main's current tip is published.
+      - name: Still main's tip
+        id: tip
+        run: |
+          if [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "HEAD is no longer main's tip; a later run publishes it."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build the plugin tree
+        if: steps.tip.outputs.publish == 'true'
+        run: bash scripts/build_plugin_release.sh
+
+      # The same check CI runs on main, against the tree release will carry.
+      - name: Shared rules are bundled and unmodified
+        if: steps.tip.outputs.publish == 'true'
+        run: python3 scripts/check_shared_rules.py
+
+      - name: Validate the plugin
+        if: steps.tip.outputs.publish == 'true'
+        run: npx --yes @anthropic-ai/claude-code@2.1.331 plugin validate .
+
+      # -f: references/ and .source are gitignored on main, which is the point.
+      - name: Push release
+        if: steps.tip.outputs.publish == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B release
+          git add -f skills/*/references skills/*/.source
+          git commit -q -m "Release $(git rev-parse HEAD)"
+          git push -f origin release

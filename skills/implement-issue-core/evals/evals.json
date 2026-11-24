@@ -352,6 +352,18 @@
         "The answer says that dropping it leaves the PR with no charter and the supervising run's scope check unavailable"
       ],
       "files": []
+    },
+    {
+      "id": 29,
+      "name": "entry-point-counts-a-plugin-prefixed-implement-issue",
+      "prompt": "You are executing the implement-issue-core skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A person invokes `/agent-skills:implement-issue-core https://github.com/acme/web/issues/91` directly in a fresh local session; nothing in the session's prompt is a worker's countermand. The session's skill listing shows `agent-skills:implement-issue`, `agent-skills:create-pr` and the rest of the plugin's skills, each with that prefix, and no bare `implement-issue`. Question: what do you do first, and do you return BLOCKED?",
+      "expected_output": "It invokes implement-issue (listed as agent-skills:implement-issue) with the same arguments and follows it; implement-issue calls this skill back as its primitive. It does not return BLOCKED: implement-issue is available, listed under a plugin prefix, and it writes nothing before invoking it.",
+      "assertions": [
+        "the answer invokes implement-issue (agent-skills:implement-issue) with the same issue URL",
+        "the answer does not return BLOCKED or say implement-issue is not installed",
+        "the answer writes nothing (no branch, push, comment or PR) before invoking implement-issue"
+      ],
+      "files": []
     }
   ]
 }

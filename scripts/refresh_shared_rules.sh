@@ -10,8 +10,9 @@
 #
 # So the rule is held once under rules/ and copied into each applying skill's
 # references/ at install time - bootstrap.sh, ai-alex's update-local-claude-skills, the eval
-# runner and CI all run this first. The copies are gitignored, never committed:
-# rules/ is the only copy in the repository.
+# runner, CI and the plugin release build all run this first. The copies are
+# gitignored, never committed to main: rules/ is the only copy in the
+# repository, and the release branch that carries them is rebuilt, never edited.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 

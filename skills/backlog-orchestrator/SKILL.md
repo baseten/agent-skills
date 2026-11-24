@@ -165,7 +165,7 @@ Also detect:
 - authenticated `gh`;
 - GitHub MCP;
 - tracker-specific tooling (for example Linear);
-- installed required skills.
+- installed required skills, listed bare or under a `<plugin>:` prefix.
 
 Prefer native/runtime capabilities when they implement the required behavior safely, but retain tracker + GitHub remote state as recovery truth.
 

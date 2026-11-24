@@ -105,7 +105,7 @@ jobs:
       # (checkpoint-capture.sh's `A && B && C || { usage; }`) is intentional:
       # any missing argument must reach the usage block.
       - name: Shell scripts
-        run: shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh scripts/test_bootstrap_stamp.sh scripts/test_bootstrap_instructions.sh
+        run: shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh scripts/test_bootstrap_stamp.sh scripts/test_bootstrap_instructions.sh scripts/build_plugin_release.sh
 
       - name: Eval coverage reminder
         if: github.event_name == 'pull_request'
