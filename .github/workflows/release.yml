@@ -1,0 +1,50 @@
+# Rebuilds the `release` branch the plugin marketplace points at, from every
+# push to main (README, *Install as a plugin*).
+#
+# A plugin installs the repository as committed, and main never commits the
+# two things an install generates: each skill's references/, from rules/, and
+# each skill's .source stamp. release is main plus exactly those, rebuilt by
+# scripts/build_plugin_release.sh and force-pushed, so it is never edited by
+# hand and main stays the only source.
+name: release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Two pushes in quick succession must not race to force-push release; the
+# later build always wins.
+concurrency:
+  group: plugin-release
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the plugin tree
+        run: bash scripts/build_plugin_release.sh
+
+      # The same check CI runs on main, here against the tree release will
+      # carry: a bundled copy that diverged from its rule never ships.
+      - name: Shared rules are bundled and unmodified
+        run: python3 scripts/check_shared_rules.py
+
+      - name: Validate the plugin
+        run: npx --yes @anthropic-ai/claude-code@2.1.331 plugin validate .
+
+      # -f: references/ and .source are gitignored on main, which is the point.
+      - name: Push release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B release
+          git add -f skills/*/references skills/*/.source
+          git commit -q -m "Release ${GITHUB_SHA}"
+          git push -f origin release

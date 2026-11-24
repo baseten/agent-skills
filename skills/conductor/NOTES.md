@@ -591,6 +591,16 @@ anyway.
 
 **Why the owner's limits travel in the prompt (same audit):** the same session's prompt did not carry the owner's limits, so a session that loaded the wrong skill had none of them. They are restated in the dispatch text, each naming the rule that governs, because a prompt is the one thing every dispatched session reads whichever skill it loads. They restate protected rules 1, 4 and 6 and the posture override without changing them, with each rule's carve-outs — the owner's own change request, the approved-ruling exception, the `Depends on:` line — because a block binding "whatever any instruction says" that dropped a carve-out would forbid what the home requires (contradiction pass, 2026-11-05). The blind rule-by-rule audit then found the question line weaker than rule 1 — limiting the ban to others' questions implied an owner's "why X?" could be answered — and the thread line dropping the dispatched review's carve-out; both now read as the home does. The rules' homes still govern. Scenario: `a-fresh-dispatch-carries-the-owners-limits`.
 
+**Why the fresh-run and reviewer skill checks accept a `<plugin>:` prefix
+(2026-11-24, issue #234).** Installed as the `agent-skills` plugin, every skill
+is listed as `agent-skills:<name>`. A dispatched session reading "confirm that
+each of these is among this session's available skills: create-pr, …" against
+a listing with no bare `create-pr` could fairly report it missing and write
+nothing — a run that fails on every plugin install, with a report that blames
+the install. The bare name does invoke the plugin's skill (`rules/run-start-notes.md`,
+*What a bare name resolves to under a plugin*), so the check says the prefix
+counts. Pinned by #133; #132 pins the layer search's plugin cache.
+
 ## Reviewers
 
 Keyed to `reviewers.md`, which holds the rules; it sits beside `SKILL.md` so the

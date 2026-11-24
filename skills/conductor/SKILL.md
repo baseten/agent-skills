@@ -626,7 +626,8 @@ posture* shared rule, and the *agent policy* shared rule's *Branch updates*; tho
 
 ```text
 First, before invoking any skill: confirm that each of these is among this
-session's available skills: <skills>. If any is not, write nothing (no branch,
+session's available skills, with or without a `<plugin>:` prefix: <skills>.
+If any is not, write nothing (no branch,
 push, comment or PR) and invoke nothing. Where you hold send_message or
 SendMessage, send <conductor id> one message, exactly:
   https://claude.ai/code/<your session id> (local: "local <your session id>") · <site> · no PR

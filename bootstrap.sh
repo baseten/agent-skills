@@ -24,6 +24,14 @@ CLAUDE_DIR="$HOME/.claude"
 # attempt was a way to destroy somebody's work: refusing collisions froze every
 # pre-sidecar install, and adopting them took over skills that were never ours.
 # So this deletes nothing, and a retired skill is reported for you to remove.
+#
+# AGENT_SKILLS_SKILLS=0 skips this whole section, stamps included, for a
+# machine that installs the skills as the agent-skills plugin instead (README,
+# *Install as a plugin*). Copying them as well would load every skill twice,
+# and the bare name would run this copy rather than the plugin's.
+if [ "${AGENT_SKILLS_SKILLS:-1}" = "0" ]; then
+  echo "Skipping skills: AGENT_SKILLS_SKILLS=0, installed as a plugin."
+else
 mkdir -p "$CLAUDE_DIR/skills"
 
 # Each skill carries copies of the shared rules it cites, generated here from
@@ -155,6 +163,7 @@ done
 echo "  Installed: $(ls "$CLAUDE_DIR/skills" | tr '\n' ' ')"
 write_stamp "$CLAUDE_DIR/.agent-skills-install"
 echo "  Source: $stamp_repo @ $stamp_commit"
+fi
 
 # --- Permissions ---
 #

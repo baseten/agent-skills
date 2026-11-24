@@ -38,7 +38,7 @@ The posting-identity, agent-policy and review-feedback rules were extracted from
 
 A shared rule cannot simply sit at the repo root and be read from an installed skill: `bootstrap.sh` copies `skills/<name>/` and nothing else, so `../../rules/x.md` does not exist on a machine that installed one skill. Nor can it live inside one skill, because whichever skill owned it would become a dependency the others carry for a rule they only read.
 
-So `scripts/refresh_shared_rules.sh` copies each rule into `skills/<name>/references/` for every skill that applies it, **at install time**: `bootstrap.sh` and ai-alex's `update-local-claude-skills` run it before copying, the eval runner rebuilds each arm's references from that revision's `rules/`, and CI runs it before the checks. The copies are gitignored and never committed, so `rules/` is the only copy in the repository; run the script yourself to see them in a checkout. The copies travel with a skill that is installed alone or moved into a plugin, and `scripts/check_shared_rules.py` fails the build when a copy diverges from its source, when a skill cites a reference it does not carry, when a skill lacks a rule it carries only because another carried rule cites it (the generator derives that carriage; the consumer lists name only the skills that apply a rule, and those must cite it), or carries a generated copy that is neither declared nor derived, when a rule is cited by nothing, when a bundle is left behind with no `SKILL.md` beside it, when a source is deleted while its copies remain, when a skill the generator declares a consumer does not exist, does not cite the rule, or does not carry it, and when the generator stops naming a consumer list the check can read at all. Every one is file-level; none reads the prose.
+So `scripts/refresh_shared_rules.sh` copies each rule into `skills/<name>/references/` for every skill that applies it, **at install time**: `bootstrap.sh` and ai-alex's `update-local-claude-skills` run it before copying, the eval runner rebuilds each arm's references from that revision's `rules/`, and CI runs it before the checks. The copies are gitignored and never committed to `main`, so `rules/` is the only copy in the repository — the plugin's `release` branch carries them, rebuilt from `main` and never edited (*Install as a plugin*); run the script yourself to see them in a checkout. The copies travel with a skill that is installed alone or moved into a plugin, and `scripts/check_shared_rules.py` fails the build when a copy diverges from its source, when a skill cites a reference it does not carry, when a skill lacks a rule it carries only because another carried rule cites it (the generator derives that carriage; the consumer lists name only the skills that apply a rule, and those must cite it), or carries a generated copy that is neither declared nor derived, when a rule is cited by nothing, when a bundle is left behind with no `SKILL.md` beside it, when a source is deleted while its copies remain, when a skill the generator declares a consumer does not exist, does not cite the rule, or does not carry it, and when the generator stops naming a consumer list the check can read at all. Every one is file-level; none reads the prose.
 
 The check reads the generator rather than the tree for which bundles are generated and which skills consume each, precisely so that a deleted source with its copies left behind is still detectable. `scripts/test_shared_rules.py` holds a broken repository per failure it claims to catch, and asserts each is rejected by the guard that names it rather than by a neighbour — without which the check stays green over a guard someone deleted, because the tree it runs against in CI is always already correct.
 
@@ -89,13 +89,15 @@ docs/             audits and workflows that outlive one PR
 permissions.json
 global-instructions.md  the block bootstrap.sh keeps in ~/.claude/CLAUDE.md
 bootstrap.sh
+.claude-plugin/   the plugin manifest and the `baseten` marketplace
 scripts/          repo-level checks (run in CI, runnable locally)
 .github/workflows/
 .claude/          this repository's own orchestrator policy
 ```
 
-Adding a skill requires no change to `bootstrap.sh` — create a directory under
-`skills/` with a `SKILL.md` in it and the next bootstrap run installs it.
+Adding a skill requires no change to `bootstrap.sh` or the plugin manifest —
+create a directory under `skills/` with a `SKILL.md` in it and the next
+bootstrap run, or the next release build, ships it.
 
 ### Personal skills stay out
 
@@ -678,16 +680,16 @@ Where a repository opted into auto-merge, the invariant 12 gate is evaluated onl
 A cloud session — Claude Code on the web, a Desktop cloud container, an auto-fix
 run — loads skills from exactly two places:
 
-- the skills enabled for your **claude.ai account**, and
-- the **cloned repository's** own `.claude/skills/`, plus any plugins its
-  `.claude/settings.json` declares.
+- the skills and plugins enabled for your **claude.ai account**, and
+- the **cloned repository's** own `.claude/skills/`.
 
 It does **not** read `~/.claude/skills` from the machine you started it from.
 Whatever you have installed locally is not there, and the failure is silent: the
 session simply behaves as though the skill was never written.
 
-So there are two ways to get these skills into one, and this repository is
-built for the first.
+So there are three ways to get these skills into one: a setup script that
+installs them on disk, either as copies or as the plugin, or the plugin enabled
+on your claude.ai account.
 
 ### Install from a setup script
 
@@ -732,6 +734,40 @@ This is verified at the **Trusted** [network access
 level](https://code.claude.com/docs/en/cloud-environments#access-levels), which
 is the default. A more restrictive level may not permit the clone.
 
+### Install as a plugin
+
+The same skills ship as the `agent-skills` plugin, from the `baseten`
+marketplace this repository declares in `.claude-plugin/marketplace.json`
+(`agent-skills` is a name Claude Code reserves for Anthropic's own marketplace):
+
+```bash
+claude plugin marketplace add baseten/agent-skills
+claude plugin install agent-skills@baseten --scope user
+```
+
+In a setup script, run those, then `AGENT_SKILLS_SKILLS=0 bash bootstrap.sh`
+from a clone for what a plugin cannot carry: the managed block in
+`~/.claude/CLAUDE.md` and `permissions.json`. For a cloud session there is a
+route that needs no setup script: add the marketplace on claude.ai, under
+Customize > Plugins, and enable the plugin there.
+
+**The marketplace installs the `release` branch, never `main`.** A plugin
+installs the repository as committed, and `main` commits neither each skill's
+`references/` nor its `.source` stamp. `.github/workflows/release.yml` rebuilds
+`release` from every push to `main` with `scripts/build_plugin_release.sh`,
+which generates both, stamping the `main` commit the build came from so the
+version line names a revision of this repository, then force-pushes. Nobody
+edits `release`. Its plugin version is the release commit, so every build is an
+update; `claude plugin marketplace update baseten` then `claude plugin update
+agent-skills` fetch it.
+
+**One route per machine.** A skill installed as a copy and the same skill from
+the plugin both load, and the copy wins the bare name, so a stale copy would run
+in place of the plugin. Move a machine to the plugin by deleting the copies
+first. The skills name each other bare, which resolves to the plugin's skill
+where nothing else holds the name; the managed block says that a bare name and
+`agent-skills:<name>` are the same skill.
+
 ### Why this repository is public
 
 Because a setup script cannot reach a private one. The cloud GitHub proxy scopes
@@ -751,9 +787,11 @@ ledger's home, a review trigger — **extends** it rather than copying it. It
 declares `metadata: {extends: <generic skill>}` in its frontmatter, says so in
 its description, and invokes the generic skill with its settings as invocation
 arguments. Each skill reaches a cloud session by **one install route**: a
-generic skill only from this repository's bootstrap, and a layer only from a
-claude.ai upload — never a generic skill uploaded too, which would give the
-session two copies of it.
+generic skill only from this repository, by bootstrap or the plugin, and a layer
+only from its own route — a claude.ai upload, or a plugin of its own that
+depends on this one — never a generic skill uploaded too, which would give the
+session two copies of it. A layer installed as a plugin is found by the
+run-start check in the plugin cache (`rules/run-start.md`).
 
 Two things keep a session on the layer the owner meant. Bootstrap's managed
 block in `~/.claude/CLAUDE.md` says to prefer a skill that extends another; and a

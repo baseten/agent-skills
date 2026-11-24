@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 11734,
+      "budget": 11740,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -187,7 +187,7 @@
       "target": 1500
     },
     "rules/run-start.md": {
-      "budget": 867,
+      "budget": 902,
       "target": 1500
     },
     "rules/wake-budget.md": {
@@ -219,7 +219,7 @@
       "target": 3000
     },
     "skills/conductor/reviewers.md": {
-      "budget": 995,
+      "budget": 1001,
       "target": 1500
     },
     "skills/conductor/work-queue.md": {

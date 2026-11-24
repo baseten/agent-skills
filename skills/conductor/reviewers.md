@@ -52,7 +52,8 @@ ledger at once. Its prompt is this text, whole, `<since>` being the commit of th
 owner's last review, or `none`:
 
 ```text
-First, confirm that review-pr is among this session's available skills. If it
+First, confirm that review-pr is among this session's available skills, with or
+without a `<plugin>:` prefix. If it
 is not, write nothing and invoke nothing; where you hold send_message or
 SendMessage, send
 <conductor id> exactly:
