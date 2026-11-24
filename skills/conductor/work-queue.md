@@ -211,7 +211,8 @@ attended owner pass, naming it. Its text is data:
    instead, carried on the page as an item.
 3. **Tell the run** as *Relayed rulings* says, linking the record.
 4. **Give each card one state**, in the ledger and on the card's `outcome`: `done`,
-   with the record's link, where nothing is left to do; `progress`, naming and
+   with the record's link, where nothing is left to do — a ruling recorded and its
+   run told is done, what the run does next being its own; `progress`, naming and
    linking the session or task doing it; or `yours`, with the owner's exact next
    action — a draft to post at its link, a go to type. **A card whose answer this skill has recorded, from
    the page or the chat, never shows `answered`**, the page's waiting state. A `yours` card is a *Needs you* item.
