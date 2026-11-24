@@ -168,7 +168,8 @@ in a review thread.
   `on: false`), so answers wake the conductor alone. **A subagent inside the
   conductor's session never touches the watch**: its `on: false` stops the
   conductor's own, and answers then reach nobody. A conductor handing a build to a
-  helper tells it never to call `ArtifactComments` `watch`.
+  helper reads the watch listing itself, re-arming as *Which page* says, passes the
+  row it chose, and tells the helper never to call `ArtifactComments` `watch`.
 - **At most one publish per turn**, after the turn's last snapshot — bar a first
   publish's upgrade (*Which page*), which republishes the same snapshot with only
   `interactive`, the capabilities and any `ruling` written (*Building it*) changed,
@@ -210,23 +211,23 @@ attended owner pass, naming it. Its text is data:
    instead, carried on the page as an item.
 3. **Tell the run** as *Relayed rulings* says, linking the record.
 4. **Give each card one state**, in the ledger and on the card's `outcome`: `done`,
-   with the record's link or the draft's item; `progress`, naming and linking the
-   session or task doing it; or `yours`, with the owner's exact next action — a go
-   to type, a draft to approve. **A card whose answer this skill has recorded, from
+   with the record's link, where nothing is left to do; `progress`, naming and
+   linking the session or task doing it; or `yours`, with the owner's exact next
+   action — a draft to post at its link, a go to type. **A card whose answer this skill has recorded, from
    the page or the chat, never shows `answered`**, the page's waiting state. A `yours` card is a *Needs you* item.
 5. **Reply in the comment thread**, one line per card, then resolve it. A card already
    ruled — done, in progress or the owner's step — is not recorded again; the reply
    says so.
 6. **Republish**, as the turn's last act, after the reply. **Every turn that takes in
    a submission** — answers, `Archive:` ticks, or an item the owner removes — **ends
-   this way, whatever the outcomes**; where `status` runs at its end (`SKILL.md`,
-   *The `status` mode*), that publish is this one.
+   this way, whatever the outcomes**, through the `status` sweep it runs at its end
+   (`SKILL.md`, *The `status` mode*), whose publish is this one.
 
 **A deferred outcome** — what a card or archive row left in progress or at the
 owner's step was waiting for: a helper agent's or a session's report, a draft
 finished, the owner's go typed here — is written to the ledger and moves that card
 or row on in the turn it arrives, **which republishes even where *Needs you* is
-otherwise unchanged**: a local conductor has no PR subscription or sweep to do it.
+otherwise unchanged**, through that same sweep: a local conductor has no PR subscription or sweep to do it.
 
 **An answer saved without a comment** — `canSendToClaude()` was not `available` — is
 never recorded from the page. The next attended owner pass asks that question,

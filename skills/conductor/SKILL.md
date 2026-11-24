@@ -68,7 +68,8 @@ ruling nothing, and acts only as a scheduled firing may** (*The fallback
 check-in*). A mode, never a recorded argument; with no ledger found, it says so
 and stops. **It also runs unasked** at the end of a turn that took no snapshot and
 whose event changed *Needs you* — a run's reply or push, a work-queue answer —
-once however many events the turn took in; other changes wait for the next sweep.
+or that took in a work-queue submission or deferred outcome (`work-queue.md`,
+*Answers*), once however many events the turn took in; other changes wait for the next sweep.
 
 ## Configuration
 
@@ -741,7 +742,9 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
 - every pending draft, in full — held replies and draft answers only named on a
   `github-issue` ledger (*Rules*);
 - the gates between streams, each linked to its record;
-- the open decisions, each linked to its site;
+- the open decisions, each linked to its site; each work-queue card answered, with
+  its state and `outcome`, and each archive row's `outcome` (`work-queue.md`,
+  *Answers*);
 - the ordered owner steps, each with what it unblocks;
 - **standing owner rulings** — merge authority where a repository's policy grants
   it, repair allowances, schema-bump rules, owner-gated flags, never-rules — each
