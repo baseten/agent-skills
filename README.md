@@ -86,7 +86,9 @@ skills/*/references/  generated at install from rules/ (gitignored)
 CLAUDE.md         how to change a skill, and what a complete fix means here
 AGENTS.md         pointer to CLAUDE.md, for agents whose convention looks for it
 docs/             audits and workflows that outlive one PR
-global-instructions.md  the block bootstrap.sh keeps in ~/.claude/CLAUDE.md
+global-instructions.md  the block bootstrap.sh keeps in ~/.claude/CLAUDE.md, and the
+                        plugin's SessionStart hook prints
+hooks/            the plugin's SessionStart hook
 bootstrap.sh
 .claude-plugin/   the plugin manifest and the `baseten` marketplace
 scripts/          repo-level checks (run in CI, runnable locally)
@@ -180,7 +182,8 @@ bash skills/swarm/scripts/test-checkpoint-capture.sh
 python3 -I scripts/test_work_queue_prdata.py          # conductor's work-queue scripts, against a stubbed gh
 bash scripts/test_bootstrap_stamp.sh                  # bootstrap.sh's install stamp, against a scratch HOME
 bash scripts/test_bootstrap_instructions.sh          # bootstrap.sh's managed block in ~/.claude/CLAUDE.md
-shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh scripts/test_bootstrap_stamp.sh scripts/test_bootstrap_instructions.sh scripts/build_plugin_release.sh
+bash scripts/test_session_instructions.sh            # the plugin's SessionStart hook
+shellcheck --severity=warning bootstrap.sh skills/*/scripts/*.sh scripts/test_bootstrap_stamp.sh scripts/test_bootstrap_instructions.sh scripts/build_plugin_release.sh hooks/*.sh scripts/test_session_instructions.sh
 bash scripts/eval_reminder.sh origin/main             # advisory, never fails
 ```
 
@@ -462,13 +465,25 @@ claude plugin marketplace add baseten/agent-skills
 claude plugin install agent-skills@baseten --scope user
 ```
 
-In a setup script, run those, then `AGENT_SKILLS_SKILLS=0 bash bootstrap.sh`
-from a clone for what a plugin cannot carry: the managed block in
-`~/.claude/CLAUDE.md`. For a cloud session there is a
-route that needs no setup script: add the marketplace on claude.ai, under
-Customize > Plugins, and enable the plugin there. That route is not yet observed
-in a container (`rules/run-start-notes.md`), and it does not bring the managed
-block, so a session on it lacks it.
+**The plugin carries `global-instructions.md` itself**, through a
+`SessionStart` hook (`hooks/`) that prints it into the session's context at
+every session start: startup, resume, `/clear` and compaction. Resume is
+included because a conversation begun before the plugin was enabled, or before
+an update, otherwise carries no rules or stale ones; a resumed session may then
+hold two copies, which is harmless. The hook prints nothing when the
+user's `CLAUDE.md` (`$CLAUDE_CONFIG_DIR/CLAUDE.md`, else `~/.claude/CLAUDE.md`)
+already holds a block opening `<!-- agent-skills:begin`, so a machine that also
+runs `bootstrap.sh`, or an installer that writes the rules into a generated
+`CLAUDE.md` inside those markers, reads them once. The rules arrive as hook
+output at the start of the session rather than as a `CLAUDE.md` file, so look
+for them there (verified with `claude -p --plugin-dir <checkout>`).
+
+For a cloud session there is a route that needs no setup script: add the
+marketplace on claude.ai, under Customize > Plugins, and enable the plugin
+there. That route, and whether a plugin's hooks run on it, is not yet observed
+in a container (`rules/run-start-notes.md`). Until it is, a setup script that
+also runs `AGENT_SKILLS_SKILLS=0 bash bootstrap.sh` from a clone writes the
+managed block as well, which the hook then defers to.
 
 **The marketplace installs the `release` branch, never `main`.** A plugin
 installs the repository as committed, and `main` commits neither each skill's
