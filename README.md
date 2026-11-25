@@ -467,7 +467,10 @@ claude plugin install agent-skills@baseten --scope user
 
 **The plugin carries `global-instructions.md` itself**, through a
 `SessionStart` hook (`hooks/`) that prints it into the session's context at
-startup, after `/clear` and after compaction. The hook prints nothing when the
+every session start: startup, resume, `/clear` and compaction. Resume is
+included because a conversation begun before the plugin was enabled, or before
+an update, otherwise carries no rules or stale ones; a resumed session may then
+hold two copies, which is harmless. The hook prints nothing when the
 user's `CLAUDE.md` (`$CLAUDE_CONFIG_DIR/CLAUDE.md`, else `~/.claude/CLAUDE.md`)
 already holds a block opening `<!-- agent-skills:begin`, so a machine that also
 runs `bootstrap.sh`, or an installer that writes the rules into a generated
