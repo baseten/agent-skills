@@ -123,8 +123,9 @@ yourself under the same name.
 
 The one thing it replaces is its own marked block in `~/.claude/CLAUDE.md`,
 which carries `global-instructions.md`: rules a session needs before any skill
-is loaded, such as linking every issue a chat reply names, and preferring a
-skill that extends another over the one it extends. The
+is loaded, such as linking every issue a chat reply names, preferring a
+skill that extends another over the one it extends, and what may be written
+without the user's approval, in a review thread or as a draft. The
 markers make that block provably its own, so a re-run swaps it in place and
 leaves the rest of the file alone.
 
