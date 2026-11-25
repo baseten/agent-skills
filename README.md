@@ -424,7 +424,8 @@ the container, so nothing can read a second copy from `/tmp`.
 
 `bootstrap.sh` discovers every directory under `skills/` containing a
 `SKILL.md`, so the install list never drifts from the repository. It writes no
-permission rules (*Permissions*).
+permission rules: *Permissions* says why, and points to the way back if a worker
+stalls on a prompt for a Claude Code Remote tool.
 
 To see which revision a container is running, `cat ~/.claude/.agent-skills-install`
 (on the plugin route, the `.source` beside any skill under
@@ -636,10 +637,6 @@ Every directory under `skills/` here should appear — on the plugin route, unde
 setup script did not run or the clone failed; if it is short, compare it against
 this repository rather than assuming a skill was retired — `bootstrap.sh`
 deletes nothing.
-
-For confirming the permission rules are live rather than merely written, see
-[Verifying the rules are live in a
-container](#verifying-the-rules-are-live-in-a-container).
 
 The orchestration skills are environment-agnostic and work identically from a
 local Claude Code setup.
