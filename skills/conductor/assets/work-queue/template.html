@@ -95,6 +95,7 @@ details.note textarea { margin-top: 6px; width: 100%; box-sizing: border-box; fo
 .answer .who { color: var(--muted); font-size: 13px; }
 .status { font-size: 13px; font-weight: 500; color: var(--reply); }
 .status.ok { color: var(--ship); }
+.status.yours { color: var(--hot); }
 .outcome { font-size: 14px; margin: 0; }
 .draft { font-family: var(--mono); font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; margin: 8px 0 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); }
 button.copy { font: inherit; font-family: var(--body); font-size: 12.5px; font-weight: 600; padding: 2px 10px; border-radius: 4px; border: 1px solid var(--accent); background: transparent; color: var(--accent); cursor: pointer; }
@@ -216,7 +217,7 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
 
   function decisionCard(d) {
     var pick = picks[d.id];
-    var cls = 'card' + (d.status === 'answered' ? ' answered' : d.status === 'done' ? ' done' : '') + (pick && pick.choice ? ' picked' : '');
+    var cls = 'card' + (d.status === 'answered' ? ' answered' : d.status === 'progress' ? ' progress' : d.status === 'yours' ? ' yours' : d.status === 'done' ? ' done' : '') + (pick && pick.choice ? ' picked' : '');
     var kids = [h('div', { class: 'area', text: d.area }), h('h3', { text: d.question })];
     if (d.context) kids.push(h('p', { class: 'ctx' }, rich(d.context)));
     var lr = linkRow(d.links); if (lr) kids.push(lr);
@@ -245,8 +246,12 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
       if (a.note) ans.push(h('div', { text: 'Note: ' + a.note }));
       ans.push(h('div', { class: 'who', text: 'Sent ' + fmt(a.at) + (a.messaged === true ? ' · sent to the conductor' : a.messaged === false ? ' · saved only; the conductor puts it to you to confirm' : '') }));
       kids.push(h('div', { class: 'answer' }, ans));
+      // once the conductor has read an answer the card is done, in progress or the owner's step, never waiting
       if (d.status === 'answered') kids.push(h('div', { class: 'status', text: 'Waiting for the conductor to act on it' }));
-      else {
+      else if (d.status === 'progress' || d.status === 'yours') {
+        kids.push(h('div', { class: 'status' + (d.status === 'yours' ? ' yours' : ''), text: d.status === 'yours' ? 'Your step now' : 'In progress' }));
+        if (d.outcome) kids.push(h('p', { class: 'outcome' }, rich(d.outcome)));
+      } else {
         kids.push(h('div', { class: 'status ok', text: 'Done ' + fmt(d.doneAt) }));
         if (d.outcome) kids.push(h('p', { class: 'outcome' }, rich(d.outcome)));
       }
@@ -368,7 +373,9 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
       onchange: function (e) { toggle('session', se, e.target.checked); } });
     box.checked = done;
     var kids = [h('div', { class: 'what' }, rich(se.title))];
-    if (se.why) kids.push(h('div', { class: 'why' }, rich(se.done ? 'Archive requested; the conductor is on it.' : se.why)));
+    // a tick the conductor has read carries its outcome (in progress, or the owner's step); only an unread one waits
+    var seWhy = se.outcome || (se.done ? 'Archive requested; the conductor is on it.' : se.why);
+    if (seWhy) kids.push(h('div', { class: 'why' }, rich(seWhy)));
     var lr = linkRow([{ k: 'ses', label: 'Open session', href: 'https://claude.ai/code/' + encodeURIComponent(se.id) }].concat(se.links || [])); if (lr) kids.push(lr);
     var changed = ticks.hasOwnProperty('session:' + se.id);
     return h('li', { class: (done ? 'is-done' : '') + (changed ? ' changed' : '') }, [box, h('div', null, kids)]);
@@ -416,6 +423,8 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
     var focused = document.activeElement && document.activeElement.id;
     var open = state.decisions.filter(function (d) { return d.status === 'open'; });
     var sent = state.decisions.filter(function (d) { return d.status === 'answered'; });
+    var acting = state.decisions.filter(function (d) { return d.status === 'progress'; });
+    var yours = state.decisions.filter(function (d) { return d.status === 'yours'; });
     var done = state.decisions.filter(function (d) { return d.status === 'done'; });
     var replies = state.replies;
     var postedCount = replies.filter(function (r) { return isDone('reply', r); }).length;
@@ -430,14 +439,16 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
     });
     var wrap = h('div', { class: 'wrap' }, [
       h('header', null, [h('h1', { text: TITLE }),
-        h('div', { class: 'meta', text: 'Read ' + fmt(state.updated) + ' by the conductor\u2019s last sweep · next check-in ' + (state.nextCheckin || '') + ' · ' + open.length + ' decisions open · ' + (replies.length - postedCount) + ' replies to post' }),
+        h('div', { class: 'meta', text: 'Read ' + fmt(state.updated) + ' by the conductor\u2019s last sweep · next check-in ' + (state.nextCheckin || '') + ' · ' + open.length + ' decisions open · ' + yours.length + ' steps yours · ' + (replies.length - postedCount) + ' replies to post' }),
         notice()]),
       refreshCard(),
       state.merge.length || state.prs.length ? h('section', { id: 'prs' }, [h('div', { class: 'tier' }, [h('h2', { text: 'Your PRs' }), h('p', { text: 'Approved PRs with review settled first, then every other open PR of a run. Steps are read from GitHub at each check-in.' })]),
         h('ol', { class: 'mlist' }, state.merge.map(mergeRow).concat(state.prs.map(prItem)))]) : null,
       h('section', { id: 'decisions' }, [h('div', { class: 'tier' }, [h('h2', { text: 'Decisions waiting on you' }), h('p', { text: 'Recommended options are marked. A note is optional.' })]),
-        open.length ? h('div', { class: 'cards' }, open.map(decisionCard)) : h('div', { class: 'empty', text: 'Nothing waiting on you.' })]),
+        open.length ? h('div', { class: 'cards' }, open.map(decisionCard)) : h('div', { class: 'empty', text: yours.length ? 'No decision to make; your next steps are below.' : 'Nothing waiting on you.' })]),
+      yours.length ? h('section', { id: 'yours' }, [h('div', { class: 'tier' }, [h('h2', { text: 'Your step now' }), h('p', { text: 'Answered; each needs one more thing from you.' })]), h('div', { class: 'cards' }, yours.map(decisionCard))]) : null,
       sent.length ? h('section', null, [h('div', { class: 'tier' }, [h('h2', { text: 'Sent to the conductor' })]), h('div', { class: 'cards' }, sent.map(decisionCard))]) : null,
+      acting.length ? h('section', null, [h('div', { class: 'tier' }, [h('h2', { text: 'In progress' })]), h('div', { class: 'cards' }, acting.map(decisionCard))]) : null,
       replies.length ? h('section', { id: 'replies' }, (function () {
         var todo = replies.filter(function (r) { return !r.done || ticks.hasOwnProperty('reply:' + r.id); });
         var posted = replies.filter(function (r) { return r.done && !ticks.hasOwnProperty('reply:' + r.id); });
@@ -446,7 +457,7 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
         if (posted.length) kids.push(h('details', { class: 'posted' }, [h('summary', { text: 'Posted (' + posted.length + ')' }), h('ol', { class: 'list' }, posted.map(replyItem))]));
         return kids;
       })()) : null,
-      state.sessions.length ? h('section', { id: 'sessions' }, [h('div', { class: 'tier' }, [h('h2', { text: 'Sessions to archive' }), h('p', { text: 'Finished sessions with nothing left to do. Tick the ones to archive and send; the conductor archives them.' })]),
+      state.sessions.length ? h('section', { id: 'sessions' }, [h('div', { class: 'tier' }, [h('h2', { text: 'Sessions to archive' }), h('p', { text: 'Finished sessions with nothing left to do. Tick the ones to archive and send; the conductor archives them, or says what is left for you.' })]),
         h('ol', { class: 'list' }, state.sessions.map(sessionItem))]) : null,
     ].concat(grouped, [
       later.length ? h('section', null, [h('div', { class: 'tier' }, [h('h2', { text: 'When there’s time' })]), h('ol', { class: 'list' }, later.map(workItem))]) : null,

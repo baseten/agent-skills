@@ -383,6 +383,15 @@ def main():
         r = build(noprd)
         assert r.returncode != 0 and "PR item acme/api#102" in r.stderr, r.stderr
         print("ok  build.py refuses a PR item with steps stamped but no prdata stamp")
+        for status in ("done", "progress", "yours"):
+            bare = {"title": "Work queue", "decisions": [{"id": "d9", "status": status, "options": [],
+                                                          "answer": {"choice": "a"}}]}
+            r = build(bare)
+            assert r.returncode != 0 and "d9" in r.stderr, (status, r.stderr)
+            r = build({"title": "Work queue", "decisions": [dict(bare["decisions"][0],
+                                                                 outcome="Session [B](https://x) is on it.")]})
+            assert r.returncode == 0, (status, r.stderr)
+        print("ok  build.py refuses a read answer's card with no outcome: done, in progress or your step")
 
         # carry.py: the owner's answers and the conductor's own content both survive a rebuild
         def carry(live_state, new_state):
@@ -423,6 +432,16 @@ def main():
         assert "reply r1" in err and "decision d3" in err and "r3" not in err, err
         print("ok  carry.py carries held replies and decisions the rebuild dropped, names them,"
               " and leaves out what closed lists")
+        got, _ = carry({"decisions": [{"id": "e1", "status": "progress", "outcome": "Drafting.", "options": []},
+                                      {"id": "e2", "status": "answered", "answer": "a", "options": []}]},
+                       {"decisions": [{"id": "e1", "status": "yours", "outcome": "Type go.", "options": []},
+                                      {"id": "e2", "status": "progress", "outcome": "Run B.", "answer": "a",
+                                       "options": []}]})
+        dec = {d["id"]: d for d in got["decisions"]}
+        assert (dec["e1"]["status"], dec["e1"]["outcome"]) == ("yours", "Type go."), dec["e1"]
+        assert (dec["e2"]["status"], dec["e2"]["outcome"]) == ("progress", "Run B."), dec["e2"]
+        print("ok  carry.py never puts a read card back to waiting, and the ledger's state wins between"
+              " in progress and your step")
         for label, item in (("no done", {"repo": REPO, "pr": "7", "steps": [{"label": "Merge"}],
                                           "stepsReadAt": "2026-11-19T09:00:00Z"}),
                             ("no stamp", {"repo": REPO, "pr": "7", "steps": [{"label": "Merge", "done": False}]})):

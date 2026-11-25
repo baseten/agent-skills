@@ -7,7 +7,8 @@ one a refused publish handed over), so a republish never drops what the owner
 saved from inside the page, nor what the conductor put there in an earlier turn.
 
 - **The owner's marks**: a decision the live page shows answered or done keeps
-  that status and outcome; a reply or item keeps its `done`, as does a session row
+  that status and outcome, as does one in progress or the owner's step over a
+  build that has it less far on; a reply or item keeps its `done`, as does a session row
   the build wrote no `done` for.
 - **The owner's saved answer wins over the build's status**: where the live page
   carries an answer the build lacks, it is kept and the decision is at least
@@ -40,7 +41,9 @@ if not m:
 live = json.loads(m.group(1))
 st = json.load(open(a.state, encoding="utf-8"))
 
-ORDER = {"open": 0, "answered": 1, "done": 2}
+# progress and yours are the conductor's states for an answer it has read; between
+# them the build, read from the ledger, wins
+ORDER = {"open": 0, "answered": 1, "progress": 2, "yours": 2, "done": 3}
 closed = {str(i) for i in st.get("closed") or []}
 by_id = {d["id"]: d for d in live.get("decisions", [])}
 for d in st.get("decisions", []):
