@@ -1,10 +1,11 @@
 #!/bin/bash
 # test_bootstrap_stamp.sh - runs bootstrap.sh against a throwaway HOME and
-# checks the install stamp it writes. Run after any edit to bootstrap.sh's
-# stamp section. Exits 0 with "ALL PASS" only when every case passes.
+# checks the install stamp it writes, and the one-time removal of the retired
+# permissions. Run after any edit to bootstrap.sh's stamp or retired-permissions
+# section. Exits 0 with "ALL PASS" only when every case passes.
 #
 # HOME is replaced for every run, and AGENT_SKILLS_GH_MCP is unset, so the
-# permissions and MCP steps only ever touch $HOME/.claude and $HOME/.claude.json
+# settings and MCP steps only ever touch $HOME/.claude and $HOME/.claude.json
 # inside the scratch directory - never the real ones.
 set -u
 
@@ -208,15 +209,39 @@ report "depth-1 clone stamped with its HEAD" $ok
 
 # --- AGENT_SKILLS_SKILLS=0: the plugin route installs no skill and no stamp --
 # Copying the skills beside the plugin would load each twice, and the bare name
-# would run the copy. Permissions and the global block still install.
+# would run the copy. The global block still installs.
 C="$TMP/plugin-route"; H="$TMP/h-plugin-route"; ok=1
 git_copy "$C" https://github.com/example/fork
 mkdir -p "$H"
 if AGENT_SKILLS_SKILLS=0 HOME="$H" bash "$C/bootstrap.sh" >"$H.log" 2>&1 \
    && [ ! -e "$H/.claude/skills" ] && [ ! -e "$(rec_of "$H")" ] \
-   && [ -f "$H/.claude/settings.json" ] && [ -f "$H/.claude/CLAUDE.md" ]; then ok=0; fi
+   && [ ! -e "$H/.claude/settings.json" ] && [ -f "$H/.claude/CLAUDE.md" ]; then ok=0; fi
 [ $ok -eq 0 ] || cat "$H.log"
-report "AGENT_SKILLS_SKILLS=0 skips skills and stamps, keeps permissions" $ok
+report "AGENT_SKILLS_SKILLS=0 skips skills and stamps, writes no settings.json" $ok
+
+# --- the retired permissions: removed once where the record says they are ours -
+# An earlier bootstrap merged an allowlist and recorded it. Only what the record
+# names goes; a hand-added entry and every other key stay; the record goes.
+H="$TMP/h-retired"; ok=1
+mkdir -p "$H/.claude"
+printf '%s\n' '{"allow":["Skill","mcp__github__get_commit"],"deny":["Bash(rm -rf /)"]}' \
+  > "$H/.claude/.agent-skills-permissions.json"
+printf '%s\n' '{"model":"x","permissions":{"allow":["Skill","Read(~/notes)","mcp__github__get_commit"],"deny":["Bash(rm -rf /)","Bash(curl *)"],"defaultMode":"auto"}}' \
+  > "$H/.claude/settings.json"
+if install "$ROOT" "$H" \
+   && [ ! -e "$H/.claude/.agent-skills-permissions.json" ] \
+   && [ "$(jq -c . "$H/.claude/settings.json")" = '{"model":"x","permissions":{"allow":["Read(~/notes)"],"deny":["Bash(curl *)"],"defaultMode":"auto"}}' ]; then ok=0; fi
+[ $ok -eq 0 ] || { cat "$H.log"; cat "$H/.claude/settings.json"; }
+report "retired permissions: recorded entries removed, hand-added kept, record deleted" $ok
+
+# --- with no record, settings.json is never touched ---------------------------
+H="$TMP/h-no-record"; ok=1
+mkdir -p "$H/.claude"
+printf '%s\n' '{ "permissions": { "allow": ["Skill"] } }' > "$H/.claude/settings.json"
+cp "$H/.claude/settings.json" "$TMP/no-record-before.json"
+if install "$ROOT" "$H" && cmp -s "$TMP/no-record-before.json" "$H/.claude/settings.json"; then ok=0; fi
+[ $ok -eq 0 ] || cat "$H.log"
+report "no retired-permissions record: settings.json byte-identical" $ok
 
 # --- the plugin release build stamps every skill as bootstrap does ----------
 # The release branch carries these stamps, since a plugin install runs nothing;

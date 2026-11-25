@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install this repo's skills and permissions into ~/.claude for a Claude Code
+# Install this repo's skills into ~/.claude for a Claude Code
 # cloud/container session. Run from within a checkout of this repo, e.g.:
 #
 #   git clone --depth 1 https://github.com/baseten/agent-skills.git /tmp/agent-skills
@@ -10,7 +10,7 @@
 # skill needs no edit here — create the directory and it ships. It also keeps
 # one marked block in ~/.claude/CLAUDE.md; see "Global instructions" below.
 # With AGENT_SKILLS_SKILLS=0 it installs no skills, for a machine that gets them
-# from the agent-skills plugin, and does only the block and the permissions.
+# from the agent-skills plugin, and does only the block.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -24,7 +24,7 @@ CLAUDE_DIR="$HOME/.claude"
 # is ours — a name collision with something you installed yourself looks
 # identical. Two review rounds went into trying to infer that ownership and each
 # attempt was a way to destroy somebody's work: refusing collisions froze every
-# pre-sidecar install, and adopting them took over skills that were never ours.
+# older install, and adopting them took over skills that were never ours.
 # So this deletes nothing, and a retired skill is reported for you to remove.
 #
 # AGENT_SKILLS_SKILLS=0 skips this whole section, stamps included, for a
@@ -179,75 +179,40 @@ write_stamp "$CLAUDE_DIR/.agent-skills-install"
 echo "  Source: $stamp_repo @ $stamp_commit"
 fi
 
-# --- Permissions ---
+# --- Retired permissions ---
 #
-# permissions.json is a MANAGED SET, not an additive one. Bootstrap records
-# what it installed in a sidecar and, on the next run, subtracts that record
-# before adding the current file. Entries this repo has retired therefore
-# disappear; anything you added to settings.json by hand survives untouched.
-#
-# The sidecar is what makes retirement possible at all. A plain
-# `(existing + new | unique)` union can only ever grow, so a container that
-# once installed a wrong entry kept it forever - and a wrong entry is
-# invisible, because a rule that matches nothing looks exactly like one that
-# works until an agent stops on it.
-PERMISSIONS_FILE="$SCRIPT_DIR/permissions.json"
+# This repository used to merge an allowlist into settings.json and record what
+# it merged in .agent-skills-permissions.json. It ships none now (README,
+# *Permissions*). Where that record is left from an earlier run, the entries it
+# names are subtracted from settings.json once and the record deleted; entries
+# added by hand survive. With no record, settings.json is never touched.
 SETTINGS_FILE="$CLAUDE_DIR/settings.json"
 MANAGED_FILE="$CLAUDE_DIR/.agent-skills-permissions.json"
 
 mkdir -p "$CLAUDE_DIR"
 chmod 700 "$CLAUDE_DIR"
 
-# Record what we just installed, so the next run knows what it owns.
-record_managed() {
-  cp "$PERMISSIONS_FILE" "$MANAGED_FILE"
-  chmod 600 "$MANAGED_FILE"
-}
-
-if [ ! -f "$PERMISSIONS_FILE" ]; then
-  echo "No permissions.json found, skipping"
-elif [ -f "$SETTINGS_FILE" ] && command -v jq >/dev/null 2>&1; then
-  echo "Merging permissions into existing $SETTINGS_FILE..."
-
-  PREV_FILE="$MANAGED_FILE"
-  CLEANUP_PREV=""
-  if [ ! -f "$PREV_FILE" ]; then
-    # No record of a previous install, so nothing can be attributed to us and
-    # nothing can be retired this run. Everything already in settings.json is
-    # indistinguishable from a deliberate hand edit, so it is kept.
-    PREV_FILE="$(mktemp)"
-    CLEANUP_PREV="$PREV_FILE"
-    printf '{"allow":[],"deny":[]}\n' > "$PREV_FILE"
-    echo "  No prior install record. Existing entries are all preserved, so"
-    echo "  any this repo has since retired will still be present. To install"
-    echo "  a clean copy instead:"
-    echo "    rm $SETTINGS_FILE && bash $0"
-  fi
-
-  jq --slurpfile perms "$PERMISSIONS_FILE" --slurpfile prev "$PREV_FILE" '
-    .permissions //= {} |
-    .permissions.allow =
-      ((((.permissions.allow // []) - $prev[0].allow) + $perms[0].allow) | unique) |
-    .permissions.deny =
-      ((((.permissions.deny  // []) - $prev[0].deny ) + $perms[0].deny ) | unique)
-  ' "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp"
-  mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
-  [ -n "$CLEANUP_PREV" ] && rm -f "$CLEANUP_PREV"
-  record_managed
-elif [ -f "$SETTINGS_FILE" ]; then
-  echo "WARNING: $SETTINGS_FILE already exists and jq is unavailable to merge." >&2
-  echo "Leaving it untouched - install jq or merge permissions.json by hand." >&2
-else
-  echo "Writing permissions to new $SETTINGS_FILE..."
-  if command -v jq >/dev/null 2>&1; then
-    jq -n --slurpfile perms "$PERMISSIONS_FILE" '{permissions: $perms[0]}' > "$SETTINGS_FILE"
+if [ -f "$MANAGED_FILE" ]; then
+  if [ ! -f "$SETTINGS_FILE" ]; then
+    rm -f "$MANAGED_FILE"
+    echo "Removed the retired permissions record"
+  elif command -v jq >/dev/null 2>&1 \
+       && jq --slurpfile prev "$MANAGED_FILE" '
+            if .permissions then
+              .permissions.allow = ((.permissions.allow // []) - ($prev[0].allow // [])) |
+              .permissions.deny  = ((.permissions.deny  // []) - ($prev[0].deny  // []))
+            else . end
+          ' "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp"; then
+    mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
+    chmod 600 "$SETTINGS_FILE"
+    rm -f "$MANAGED_FILE"
+    echo "Removed the retired agent-skills permissions from $SETTINGS_FILE"
   else
-    printf '{\n  "permissions": %s\n}\n' "$(cat "$PERMISSIONS_FILE")" > "$SETTINGS_FILE"
+    rm -f "$SETTINGS_FILE.tmp"
+    echo "WARNING: could not remove the retired agent-skills permissions from" >&2
+    echo "  $SETTINGS_FILE (jq missing or the file does not parse). Remove the" >&2
+    echo "  entries listed in $MANAGED_FILE by hand, then delete it." >&2
   fi
-  record_managed
-fi
-if [ -f "$SETTINGS_FILE" ]; then
-  chmod 600 "$SETTINGS_FILE"
 fi
 
 # --- Global instructions ---
@@ -296,9 +261,6 @@ fi
 
 # --- Extra GitHub MCP server ---
 #
-# Deliberately not called a sidecar: that word already means
-# ~/.claude/.agent-skills-permissions.json everywhere else in this repository.
-#
 # A cloud session's built-in GitHub MCP server is provisioned with no feature
 # flags and a restricted toolset list, so two things are missing from it, for
 # unrelated reasons:
@@ -331,18 +293,11 @@ fi
 # credential fails to connect on every session start, and it is unnecessary
 # locally, where an authenticated `gh` already reads cross-repo edges.
 MCP_CONFIG_FILE="$HOME/.claude.json"
-# Deliberately NOT configurable, and load-bearing for the allowlist.
-# permissions.json allows mcp__github-deps__* - a glob is permitted in the tool
-# position but only after a literal mcp__<server>__ prefix, so the server
-# segment is the one part that must not move. A configurable name would
-# silently stop matching, and the symptom is a permission prompt mid-run on a
-# tool that looks allowlisted, exactly as the dual Claude Code Remote
-# registration does.
-#
-# The tool and toolset variables below stay configurable precisely because the
-# allowlist is a glob over this prefix: whatever surface they select is covered,
-# including tools upstream renames. Narrowing that glob to fixed tool names
-# would make every override drift out of the allowlist.
+# Deliberately NOT configurable: a permission rule names a tool by its literal
+# mcp__<server>__ prefix, so a rule you write for mcp__github-deps__* stops
+# matching the moment the server segment moves, and the symptom is a prompt on
+# a tool that looks allowed. The tool and toolset variables below stay
+# configurable, because such a rule globs over whatever they select.
 MCP_NAME="github-deps"
 # features= is the query-parameter channel (github/github-mcp-server#3146)
 # rather than X-MCP-Features, because the header wins whenever it is present -
@@ -367,8 +322,7 @@ if [ "${AGENT_SKILLS_GH_MCP:-0}" != "1" ]; then
   # Remove rather than merely skip. An entry left behind by an earlier run with
   # the flag set keeps connecting on every Claude start, and if the credential
   # went away at the same time that is precisely the repeated startup failure
-  # the opt-in exists to avoid - a wrong entry that is invisible, the same
-  # failure mode permissions.json keeps a managed-set record for. Only this
+  # the opt-in exists to avoid - a wrong entry that is invisible. Only this
   # entry is touched; unrelated configuration is preserved.
   if [ -f "$MCP_CONFIG_FILE" ] && command -v jq >/dev/null 2>&1 \
      && jq -e --arg n "$MCP_NAME" '.mcpServers[$n] // empty' \

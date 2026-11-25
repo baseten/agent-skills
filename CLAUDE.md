@@ -295,7 +295,6 @@ python3 scripts/check_skills.py
 bash scripts/refresh_shared_rules.sh                 # generate references/ first; they are not committed
 python3 scripts/check_shared_rules.py                # and that every bundled rule matches its source
 python3 scripts/test_shared_rules.py                 # and that each of that check's guards can fail
-python3 scripts/check_permissions.py
 python3 scripts/check_no_machine_paths.py            # no local machine paths in skills
 python3 scripts/test_no_machine_paths.py             # and that check's guards can fail
 python3 scripts/test_run_evals.py                    # the eval runner's deterministic half

@@ -220,13 +220,6 @@ def main() -> int:
 
     check_policy_schema()
 
-    perms = ROOT / "permissions.json"
-    if perms.exists():
-        try:
-            json.loads(perms.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as exc:
-            error("permissions.json", f"does not parse: {exc}")
-
     for w in warnings:
         print(f"warning: {w}")
     for e in errors:

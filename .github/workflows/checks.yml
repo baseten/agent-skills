@@ -41,9 +41,6 @@ jobs:
       - name: Shared rule guard fixtures
         run: python3 scripts/test_shared_rules.py
 
-      - name: Permissions file shape
-        run: python3 scripts/check_permissions.py
-
       - name: No machine-specific paths in skills
         run: python3 scripts/check_no_machine_paths.py
 
