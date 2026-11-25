@@ -153,7 +153,7 @@ instructions may still arm a wake or stop to ask. *Blocked workers* is the
 backstop for that.
 
 **Do not read a quiet session list as proof the countermand held — the quiet case
-is the expensive one.** Where workers inherit an allowlist granting the trigger
+is the expensive one.** Where a worker's session allows the trigger
 tools, a worker that arms a wake can disarm and re-arm it, so it never blocks:
 *Blocked workers* never sees it, and it wakes hourly to re-read a merged PR for as
 long as the account pays. A worker that arms a wake it *cannot* disarm at least

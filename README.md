@@ -86,7 +86,6 @@ skills/*/references/  generated at install from rules/ (gitignored)
 CLAUDE.md         how to change a skill, and what a complete fix means here
 AGENTS.md         pointer to CLAUDE.md, for agents whose convention looks for it
 docs/             audits and workflows that outlive one PR
-permissions.json
 global-instructions.md  the block bootstrap.sh keeps in ~/.claude/CLAUDE.md
 bootstrap.sh
 .claude-plugin/   the plugin manifest and the `baseten` marketplace
@@ -172,7 +171,6 @@ bash scripts/refresh_shared_rules.sh                  # generate references/ fir
 python3 scripts/check_skills.py
 python3 scripts/check_shared_rules.py                # bundled rules match rules/, and no skill cites one it lacks
 python3 scripts/test_shared_rules.py                  # and each of those guards can actually fail
-python3 scripts/check_permissions.py                  # the shape of permissions.json, and the README's claims
 python3 scripts/check_no_machine_paths.py             # no skill depends on one machine's filesystem
 python3 scripts/test_no_machine_paths.py              # and that detector can actually fail
 python3 scripts/check_word_budgets.py --report       # no contract outgrows its budget; --report adds runtime load
@@ -241,7 +239,7 @@ the way its regex expected.
 The pattern is one thing pointed four ways: a string matcher aimed at meaning. It is
 evadable by rewording, trips on innocent overlap, and covers only the phrasings its author
 anticipated. What remains in CI reads **tokens** — a frontmatter name against its directory,
-an `evals.json` that parses, an allowlist entry that carries no arguments — because a token
+an `evals.json` that parses — because a token
 cannot be paraphrased and still be itself. Whether the prose *means* the right thing is
 answered by reading it, and by the eval corpus (`CLAUDE.md`, on comparing two readings of a
 change that should not alter meaning).
@@ -308,301 +306,15 @@ be compared rather than scored as a new skill.
 
 ## Permissions
 
-`permissions.json` is merged into `~/.claude/settings.json` by `bootstrap.sh`, so
-a skill run does not stop on a prompt for a call the skill is expected to make.
-
-**This file holds tool-name allow rules and nothing else** — no `Bash(...)`
-entries, and an empty `deny`. That is the whole design, and it follows from how
-auto mode treats each kind of rule. See *There is no deny list* for why the deny
-side went too.
-
-### Why the tool-name entries are load-bearing under auto mode
-
-Cloud containers and most Pro/Max/Team sessions start in **auto mode**, where a
-classifier reviews actions instead of the user. Auto mode already permits the
-ordinary work these skills do — local file operations, dependency installs,
-`git` and `gh` against the session's own repository, pushing to any branch of it,
-opening a PR that matches the request — so shell allow rules for that work buy
-nothing but a saved classifier round-trip.
-
-The tool-name entries are different, because several tools **decline to approve
-themselves in auto mode**. Their own permission hook returns `passthrough` with
-a message such as *"Scheduling a cron prompt requires classifier review"*, and
-the permission pipeline converts an unresolved `passthrough` into **`ask`**. In
-an unattended fan-out an `ask` stops the worker until a human answers it
-(`swarm`, *Blocked workers*): a stall, not a delay.
-
-A matched whole-tool allow rule is evaluated **before** that conversion, so the
-rule is what keeps the tool from asking. The only tools that ignore a whole-tool
-allow rule declare `ignoresWholeToolAllowRule`, and none of the tools listed here
-do.
-
-**What that argues, and what it does not.** The mechanism is general: a matched
-whole-tool rule is honoured, and a `passthrough` nothing resolves becomes `ask`.
-Which tools *return* `passthrough` is verified behaviourally for `CronCreate`
-alone (below), and the `Cron`/session-management family returns it through the
-same hook. The rest of the entries are kept as cheap insurance rather than
-demonstrated to be load-bearing — a tool-name rule costs nothing and admits no
-arguments, so the asymmetry favours keeping them, but this file does not claim
-that removing any one of them reintroduces a stop.
-
-Two entries were removed for the opposite reason — auto mode drops them, so they
-never did anything there:
-
-| Removed | Why |
-| --- | --- |
-| `Agent` | Auto mode drops `Agent` allow rules on entry |
-| All `Bash(...)` entries | Wildcarded interpreters and package-manager run commands are dropped; the rest duplicate what auto mode already allows — **in auto mode**, which is the qualifier the next section is about |
-
-Dropping the shell rules also retires the injection surface documented below:
-a tool-name rule admits no trailing arguments, so there is nothing for a flag to
-ride in on.
-
-### What dropping the shell rules costs outside auto mode
-
-In **Manual** and `acceptEdits` no classifier reviews anything, so there the
-shell rules were not redundant — they were the entire grant. Removing them means
-a local session in one of those modes now prompts for routine `git`/`gh` work it
-used to run straight through, and **an existing install loses them on its next
-`bootstrap.sh` run**, because the sidecar subtracts retired entries by design
-(*`permissions.json` is a managed set*). An unattended run in one of those modes
-stops at the first prompt.
-
-That cost is accepted rather than overlooked. **A `Bash(...)` allow rule ending
-in `*` admits arbitrary trailing flags**, and `git` and `gh` are full of flags
-that name a command to run or a file to read (*What this allowlist is, and is
-not*, which lists what five review rounds found) — so those rules bought a saved
-classifier round-trip in the one mode these skills actually run in, and carried
-an injection surface into every other. The same reasoning, applied to the other
-side of the file, is why there is no deny list either: both halves were paying a
-real cost for a benefit confined to a mode that is optional.
-
-If you do run them locally in Manual or `acceptEdits`, there are three
-non-interactive paths and none of them is this file:
-
-| Option | Note |
-| --- | --- |
-| Run in auto mode | What cloud containers do, and where the classifier already permits this work |
-| Add the shell rules to your own `~/.claude/settings.json` by hand | Bootstrap **keeps** hand-added entries — with no install record they are indistinguishable from a deliberate edit, so they are never subtracted |
-| Managed settings | Route (2) below, if an organization wants them for everyone |
-
-### Where to install it
-
-1. **Per container — the working default.** `bootstrap.sh` writes
-   `~/.claude/settings.json`. Claude Code watches its settings files and reloads
-   `permissions` edits into a running session, so a bootstrap that finishes after
-   the session starts still applies. `~/.claude` is per-container and disappears
-   with it.
-2. **Org-wide — the durable option.** An Owner or Primary Owner can paste the
-   same `permissions.allow` into **Managed settings** at
-   [claude.ai/admin-settings/claude-code](https://claude.ai/admin-settings/claude-code).
-   Server-managed settings are the *only* managed channel that reaches cloud
-   sessions — an MDM profile or a device `managed-settings.json` does not — and
-   they sit at the highest precedence tier. This needs no per-repo file and no
-   bootstrap write.
-3. **Per repository — usually unnecessary.** Committing these entries to a
-   repo's `.claude/settings.json` works, but it puts agent configuration in a
-   shared repo for no gain over (1) or (2). Permission allow/deny lists **merge**
-   across every scope rather than overriding, so a repo copy adds nothing that
-   the union does not already contain.
-
-### Verifying the rules are live in a container
-
-`/permissions` does not exist in a cloud session, which is the one place this
-question matters. Use a behavioural probe instead: call **`CronCreate`** with a
-harmless one-shot job, then `CronDelete` it.
-
-```
-CronCreate  cron: "43 3 24 12 *"  prompt: "probe"  recurring: false
-CronDelete  id: <returned id>
-```
-
-`CronCreate` is the right probe because it refuses to approve itself under auto
-mode — its own hook returns `passthrough`, which the pipeline converts to `ask`.
-So if the job is scheduled with no prompt, a whole-tool allow rule matched, and
-the only file in a bootstrapped container that supplies one is
-`~/.claude/settings.json`. If instead a permission prompt appears, the rules are
-not reaching the session.
-
-Confirmed working this way on Claude Code v2.1.252 in a cloud container: the
-session's diagnostics log (`$CLAUDE_CODE_DIAGNOSTICS_FILE`) reports
-`settings_load_completed` with `source_count: 4, error_count: 0`, and the probe
-schedules without prompting.
-
-**The documentation is easy to misread here.** *Settings in cloud sessions* lists
-user settings (`~/.claude/settings.json`) as "not read". That is about *your
-machine's* copy not being uploaded — the same table says the same of
-`~/.claude/skills/`, which bootstrap populates and which demonstrably loads. A
-file written inside the container is a live scope.
-
-### There is no deny list
-
-`deny` is empty on purpose, and this is the second time that decision has been
-made — the list was extended before being dropped, so the reasoning is worth
-keeping.
-
-**Auto mode's classifier already blocks what it named** — force push,
-`git reset --hard`, `git clean -fd`, amending a pushed commit — and auto mode is
-what cloud containers and most Pro/Max/Team sessions run in. A deny rule adds
-nothing there.
-
-**The two modes that prompt do not need it either.** Manual and `acceptEdits`
-both ask before running a shell command — `acceptEdits` auto-accepts file edits,
-not `Bash` — so a deny rule only stops you approving something at a prompt you
-are already reading.
-
-**That leaves `bypassPermissions`, where a deny rule genuinely is the only thing
-still evaluated.** `checkPermissions` runs before the mode-based allow, so a
-`deny` result returns first. It is a real gap and it is accepted knowingly: if
-you run these skills with prompts turned off, add the rules to your own
-`~/.claude/settings.json`, where bootstrap keeps hand-added entries and never
-subtracts them.
-
-**What settled it was the record.** Every glob in that list was matched against
-commands by a check precisely because prose about globs ships bugs, and it still
-produced five false positives — `git push -u origin ref` denied outright by
-`-*f`, then a branch named `feature+metrics`, then `feature--force`, then an
-attached push-option value `-ofoo` — against no incident it is known to have
-prevented. **A deny rule is the only part of this file that can stop a command
-in every mode, auto mode included**, so its bugs break real work while its
-benefit is confined to one mode nobody is required to use. Twelve of the file's
-entries and every one of its defects came from that trade.
-
-Removing them is not silent for existing installs: the sidecar subtracts what it
-previously wrote (*`permissions.json` is a managed set*), so the next
-`bootstrap.sh` run drops the shipped deny rules and leaves anything you added by
-hand.
-
-**If you re-add any, put them in this file rather than by hand and re-add the
-matrix with them** — the check asserts `deny` stays empty exactly so that a
-re-add is a deliberate edit to both, not a quiet one-liner.
-
-### `permissions.json` is a managed set
-
-`bootstrap.sh` records what it installed in `~/.claude/.agent-skills-permissions.json`
-and subtracts that record on the next run before adding the current file. So:
-
-| Entry | On the next bootstrap |
-| --- | --- |
-| Still shipped here | kept |
-| **Retired from here** | **removed** |
-| You added it to `settings.json` by hand | kept |
-
-This matters because the merge used to be a plain `(existing + new | unique)`
-union, which can only ever grow. A container that had once installed a wrong
-entry kept it forever, and re-running bootstrap could not correct it — a wrong
-entry is invisible, since a rule that matches nothing looks exactly like one
-that works until an agent stops on it. Two such entries shipped from here for
-months: `Bash(git push)` as an exact match, which covers neither
-`git push -u origin <branch>` nor `git push --force-with-lease origin <branch>`,
-and the Linear names `create_comment` / `update_issue`, which do not exist —
-the real ones are `save_comment` / `save_issue`.
-
-**Containers bootstrapped before the sidecar existed cannot be corrected in
-place.** With no install record, every entry already in `settings.json` is
-indistinguishable from a deliberate hand edit, so bootstrap keeps all of them
-and prints a note saying so. To get a clean copy:
-
-```bash
-rm ~/.claude/settings.json && bash bootstrap.sh
-```
-
-Anything you had added by hand goes with it, so check the file first if that
-matters.
-
-### What this allowlist is, and is not
-
-**It is a convenience layer. It is not a security boundary, and it cannot be made
-into one.** Do not reason about it as though a hostile or prompt-injected agent
-is contained by it — it isn't, by construction rather than by oversight.
-
-This file no longer carries `Bash(...)` rules, which removes the sharpest edge
-of that statement — the history below is kept because it is the reason the rules
-went, and because anyone tempted to add one back needs it.
-
-Permission rules are **prefix matches**, so any rule ending in `*` admits
-arbitrary trailing arguments. `git` and `gh` are both full of flags that name a
-command to run or a file to read, and those flags simply ride along after
-whatever prefix is granted. Five rounds of automated review found:
-
-| rule | vector |
-|---|---|
-| `Bash(gh *)` | shell, via `gh alias set --shell` |
-| `Bash(git rebase*)` | shell, via `-x` |
-| `Bash(gh auth status*)` | prints the credential, via `--show-token` |
-| `Bash(git fetch*)` / `Bash(git push*)` | local shell, via `--upload-pack=` / `--receive-pack=` against a `.` remote |
-| `Bash(gh api*)` | reads a local file and publishes it, via `-F key=@<path>` |
-
-Each was removed or replaced with a wildcard-free form, and the whole class is
-now gone from this file.
-
-The fifth round is the one that settles the question. `Bash(git commit*)` and
-`Bash(git push)` are each safe in isolation — the second takes no arguments at
-all — yet compose into `git commit -F <secret>` followed by a push, which writes
-an arbitrary local file into remote history. **No single rule is wrong there.**
-Closing it means gating every commit or every push, and in an unattended fan-out
-a worker stopped on a permission prompt holds its slot until a human answers it
-(`swarm`, *Blocked workers*), and gating every commit puts every worker there:
-a stall, not a delay.
-
-So: any rule set broad enough to let an agent commit and push unattended is
-broad enough to exfiltrate a file. Narrowing relocates the hole; it does not
-remove it. The controls that actually hold are elsewhere — container isolation,
-credential scoping, egress policy, and what the token can reach.
-
-Auto mode is now the layer doing that work for shell commands, which is why the
-`Bash(...)` rules could go rather than be narrowed a sixth time. It is not a
-boundary either, but it is a reviewer, and a reviewer beats a prefix match.
-
-Judge additions to this file by "does a skill need this to run without
-prompting, and does auto mode not already allow it", not by "is this safe to
-grant an adversary". A `Bash(...)` entry should now be an argued exception with a
-named tool that stopped, not a default.
-
-### Two things that are easy to get wrong
-
-- **The Claude Code Remote MCP server is registered under two different names
-  depending on the surface.** A cloud/web session exposes its tools as
-  `mcp__Claude_Code_Remote__<tool>`; the CLI registers the same server as
-  `claude-code-remote`. Rule matching is on the literal tool name, so an entry
-  under one spelling does not cover the other. Every Claude Code Remote tool is
-  therefore listed under both.
-
-  A wildcard cannot collapse them: an allow rule permits a glob only in the
-  **tool** position, after a literal `mcp__<server>__` prefix, so
-  `mcp__<server>__*` is valid and `mcp__*__delete_trigger` is not. The
-  enumeration is the only option, and it is fragile by construction — a fourth
-  registration would go unnoticed the same way the UUID one did. A prompt for a
-  tool that looks allowlisted is the symptom; check the literal server segment
-  in the pending tool name before assuming the entry is wrong.
-- **Scheduled wakes have two implementations.** `backlog-orchestrator` arms a
-  check-in when a run settles and disarms it once every PR is merged or closed
-  (see Arming the wait when nothing is in flight), and `implement-issue` keeps one
-  armed after `PR_OPEN` (its *Completion*). Depending on the session that
-  is either the Claude Code Remote trigger tools (`create_trigger`,
-  `list_triggers`, `delete_trigger`, `send_later`) or the built-in Routines tools
-  (`CronCreate`, `CronList`, `CronDelete`), which are plain tool names with no
-  `mcp__` prefix. Both sets are allowed.
-
-- **Workers inherit this allowlist** wherever a dispatched session runs
-  `bootstrap.sh`, which merges the same file into that session's settings. So
-  granting the trigger tools fixes the deadlock — a worker that arms a wake can
-  now disarm it — without touching the reason it armed one. The duplicate
-  watcher remains, defended only by the dispatch-time countermand.
-
-  That is the right trade, since a worker deadlocked mid-run is worse than a
-  redundant watcher. But it changes what the evidence afterwards can prove: a
-  clean session list is equally consistent with the countermand working and with
-  workers arming wakes exactly as before and tidying up after themselves. Only
-  the checkpoint output's `Worker sessions:` line and its blocked-worker
-  reporting separate those two, so read them rather than the session list.
-
-Nothing here grants merge authority: `merge_pull_request` is allowed because
-`merge-stack` is an explicitly invoked skill, and `backlog-orchestrator` and
-`implement-issue` merge only through the invariant 12 gate, and
-`npm-dependency-upgrade-orchestrator` only through its own dependency gate — each
-off by default, opt-in per repository via `.claude/agent-policy.json` — which are
-skill rules, not a permission boundary.
+This repository ships no permission rules. It used to merge a `permissions.json`
+allowlist into `~/.claude/settings.json`, and stopped on 2026-11-25: auto mode is
+where these skills run, claude.ai connector tools are named
+`mcp__claude_ai_<Name>__<tool>` in the CLI so the file's connector entries never
+matched there, and in cloud sessions those tools follow the connector's own
+settings on claude.ai. `bootstrap.sh` removes, once, the entries an earlier run
+recorded in `~/.claude/.agent-skills-permissions.json`, keeping anything added
+by hand. The evidence, and the way back if a worker stalls on a prompt, are in
+`skills/swarm/NOTES.md`, *Blocked workers*.
 
 ## Local Codex usage
 
@@ -711,9 +423,9 @@ afterwards leaves the installed copy under `~/.claude/skills` as the only one in
 the container, so nothing can read a second copy from `/tmp`.
 
 `bootstrap.sh` discovers every directory under `skills/` containing a
-`SKILL.md`, so the install list never drifts from the repository, and it writes
-`permissions.json` into the container's `~/.claude/settings.json` as well — see
-[Where to install it](#where-to-install-it).
+`SKILL.md`, so the install list never drifts from the repository. It writes no
+permission rules: *Permissions* says why, and points to the way back if a worker
+stalls on a prompt for a Claude Code Remote tool.
 
 To see which revision a container is running, `cat ~/.claude/.agent-skills-install`
 (on the plugin route, the `.source` beside any skill under
@@ -751,11 +463,11 @@ claude plugin install agent-skills@baseten --scope user
 
 In a setup script, run those, then `AGENT_SKILLS_SKILLS=0 bash bootstrap.sh`
 from a clone for what a plugin cannot carry: the managed block in
-`~/.claude/CLAUDE.md` and `permissions.json`. For a cloud session there is a
+`~/.claude/CLAUDE.md`. For a cloud session there is a
 route that needs no setup script: add the marketplace on claude.ai, under
 Customize > Plugins, and enable the plugin there. That route is not yet observed
-in a container (`rules/run-start-notes.md`), and it brings neither the managed
-block nor the permissions, so a session on it lacks both.
+in a container (`rules/run-start-notes.md`), and it does not bring the managed
+block, so a session on it lacks it.
 
 **The marketplace installs the `release` branch, never `main`.** A plugin
 installs the repository as committed, and `main` commits neither each skill's
@@ -894,12 +606,9 @@ The tools arrive under the server segment —
 not the bare names the upstream documentation uses. Two consequences, both
 already handled:
 
-- `permissions.json` allowlists them under that full name, because rule matching
-  is on the literal tool name. This is why the server name is **not**
-  configurable: a renamed server would silently stop matching, and the symptom
-  is a permission prompt mid-run on a tool that looks allowlisted — the same
-  trap as the dual Claude Code Remote registration under [`permissions.json` is
-  a managed set](#permissionsjson-is-a-managed-set).
+- A permission rule you write for them names that full prefix, because rule
+  matching is on the literal tool name. This is why the server name is **not**
+  configurable: a renamed server would silently stop matching such a rule.
 - Under tool search a model sees names first and loads schemas on demand, so one
   that does not know this server exists will not stumble onto it.
   `validate-backlog` therefore names the prefixed tool in its transport table
@@ -915,7 +624,7 @@ differing from the session's.
 
 ### Verifying the install landed
 
-`/plugin` and `/permissions` are unavailable in a cloud session, so check from
+`/plugin` is unavailable in a cloud session, so check from
 the shell:
 
 ```bash
@@ -928,10 +637,6 @@ Every directory under `skills/` here should appear — on the plugin route, unde
 setup script did not run or the clone failed; if it is short, compare it against
 this repository rather than assuming a skill was retired — `bootstrap.sh`
 deletes nothing.
-
-For confirming the permission rules are live rather than merely written, see
-[Verifying the rules are live in a
-container](#verifying-the-rules-are-live-in-a-container).
 
 The orchestration skills are environment-agnostic and work identically from a
 local Claude Code setup.

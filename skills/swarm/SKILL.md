@@ -420,8 +420,8 @@ nothing, and the head it found — because the releasable test compares the two
 (*Releasing a worker*, condition 2).
 
 **Verify at dispatch time that the worker can write the sink it is asked to
-use.** It is not satisfiable by instruction, and an allowlist entry does not
-settle it either — the entry has to name an operation the connected server
+use.** It is not satisfiable by instruction, and permission to call a tool does
+not settle it either — the tool has to be an operation the connected server
 actually exposes. Where the sink is unreachable, dispatch that
 task on a tier whose return value reaches this run — unless the caller marks the
 sink **best-effort**, its absence already covered by its own contract, as an
@@ -498,10 +498,9 @@ is never dropped: it is the safety net for the message that never comes.
 message**: it replies in one line at most, naming its successor where it knows one, and
 leaves the work to the run that adopted it.
 
-**Wherever the return channel is used, the send tool is allowlisted** —
-`permissions.json` carries both spellings, `mcp__claude-code-remote__send_message`
-and `mcp__Claude_Code_Remote__send_message` — so its permission prompt should never
-appear. The hold below is the fallback for a runtime where it still does.
+**The send tool can stop on a permission prompt**: nothing this repository
+installs allows it, and auto mode never approves the runtime's cross-session
+messaging safeguards. The hold below applies where it does.
 
 **A worker stopped on a permission prompt for the send tool has delivered no
 report this run can count** — the message is the blocked call, and for a gate
@@ -713,7 +712,7 @@ Read the blocked state explicitly each cycle, and resolve it in this order:
    task, the session, **where to answer it — the session's URL —** and **the exact
    tool being requested**: the literal string the runtime gave, server segment
    included, never tidied. An MCP server can be registered under a display name, a
-   slug or its bare UUID, the allowlist matches the literal name, and an entry
+   slug or its bare UUID, a permission rule matches the literal name, and a rule
    under one spelling still prompts under another.
 
    **The slot is held, not recovered** — no redispatch removes a permission
@@ -724,7 +723,7 @@ Read the blocked state explicitly each cycle, and resolve it in this order:
    the session by step 3's path for this checkout: capture then archive where it
    is reachable; where it is not, that request is the owner's authority to archive
    that the run lacked. Then redispatch the same work unit only where the owner
-   allowlisted the tool or asked for a redispatch; otherwise the work unit stays
+   allowed the tool for new sessions or asked for a redispatch; otherwise the work unit stays
    `NEEDS_USER` with no worker and the slot is free. A run that ends with the hold
    standing reports that session as alive and left to the owner, with its URL and
    the tool string — not failed, and not clean.
@@ -734,7 +733,7 @@ Read the blocked state explicitly each cycle, and resolve it in this order:
    **Not this branch: a filesystem search for the worker's own source files** — a
    bare `find`, a repository-root probe, a request for a path the dispatch prompt
    named. Read that session's `sources` first. Where they are empty, it is a
-   worker dispatched with no checkout: allowlisting the tool buys nothing, and the
+   worker dispatched with no checkout: allowing the tool buys nothing, and the
    recovery is step 3 — whichever path the checkout selects — redispatching with
    `source_url` and `source_revision` passed explicitly. **Step 3's capture
    requirement applies in full**: empty `sources` records what was provisioned at
@@ -776,7 +775,7 @@ never on the owner's word or an unverified report:
 |---|---|---|
 | **resumed** | step 3's unreachable hold and step 4's only — **never a mismatch**, whose worker has usually returned and never read blocked | the blocked-state field no longer reads blocked, and the session is working or has returned (a permission granted or denied, a question answered in place) |
 | **released on the releasable test** | all three; for a mismatch the only release that ends it | any pass of the releasable test; for a mismatch, only the commit its report names becoming reachable, or its PR merging or closing. An archive on the owner's request is not this ending — it ends a hold only through a redispatch or the exception below |
-| **redispatched** | all three | the same work unit on a new worker, on the owner's instruction or after step 4's allowlist change, supervised like any other from there |
+| **redispatched** | all three | the same work unit on a new worker, on the owner's instruction or after the owner allowed step 4's tool, supervised like any other from there |
 
 **A changed blocked reading is a resume and a new block** — for step 3's and step
 4's holds. Where the worker reads blocked again on a different pending tool or
@@ -790,7 +789,7 @@ reachable.
 **The retirement record** is written where the item lives (this run's report, where
 it has no site of its own), dated: the session, how the hold ended ("permission
 granted, worker resumed", "released: reported commit reachable", "redispatched
-after the tool was allowlisted"), and the observation that established it — an
+after the tool was allowed"), and the observation that established it — an
 observation, never a ruling. It is an authored write carrying the run's
 attribution footer (its session link), a marker that identifies
 nothing: it is known as a retirement **only by the write id the parent recorded
@@ -807,7 +806,7 @@ asked about it again.
 with no redispatch, over unfinished work** (no PR, or a PR the owner has not
 accepted). There is no worker left to hold, so the item is **no longer a held
 worker's item**: restate it as an ordinary `NEEDS_USER` item on the work unit with
-its options — redispatch it (for a permission hold once `<tool>` is allowlisted;
+its options — redispatch it (for a permission hold once `<tool>` is allowed;
 for a question hold with the answer in the dispatch); leave the unit out of the
 wave; and, for a mismatch whose PR is open, accept that PR as it is. From there
 the ordinary routes retire it, never this section: a reply the caller's reply
