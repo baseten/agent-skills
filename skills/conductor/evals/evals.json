@@ -1808,6 +1808,19 @@
         "the draft is offered for Mark ready because its ready history was read"
       ],
       "files": []
+    },
+    {
+      "id": 139,
+      "name": "field-feedback-is-drafted-at-a-context-clear",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, NOTES.md and references/ from the skill directory you were given). The operator approved a /clear. Since the last clear, you noted one thing: Runtime's check-in row says a local check-in is a one-shot CronCreate, but this session also holds a tool named `ScheduleWakeup` that schedules this session's own next turn, which the contract never mentions. You also think the Report section is too long. Question: what happens to these at the clear, and where does the result go?",
+      "expected_output": "At the dump (8. Context clear, step 1) it drafts the field feedback: one draft whose one finding is a native replacement naming ScheduleWakeup by its exact name, since the session holds it, with the Runtime row as where it applies; the Report's length is phrasing, not a finding. It searches open issues first. The draft is kept in full with the ledger's pending drafts and listed once at low urgency, never filed by the conductor and never put as a decision.",
+      "assertions": [
+        "the draft is written at the clear's dump step",
+        "ScheduleWakeup is a native-replacement finding, named exactly",
+        "the Report's length is not a finding",
+        "the draft is kept with the pending drafts, never filed by the conductor"
+      ],
+      "files": []
     }
   ]
 }

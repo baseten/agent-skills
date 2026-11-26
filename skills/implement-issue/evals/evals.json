@@ -614,6 +614,19 @@
         "the push carries context, options, a recommendation and the site"
       ],
       "files": []
+    },
+    {
+      "id": 49,
+      "name": "field-feedback-reports-a-workaround-not-a-phrasing",
+      "prompt": "You are executing the implement-issue skill (read its SKILL.md, NOTES.md and references/ from the skill directory you were given). Your run is settling: its PR merged. During the run: (1) your environment's instructions barred `gh`, so to read the PR's review threads you used plain REST reads, which this skill does not describe; (2) you thought the Settle section's wording was long-winded. The open issues in the skills' repository include none about either. Question: what field feedback, if any, does your return carry, and do you file it?",
+      "expected_output": "One draft, carrying only the REST workaround as a finding (kind: workaround), naming the step where it happened, with a proposed change and acceptance, in the rule's Title / Summary / What happened / Proposed changes / Acceptance form. The Settle wording is not a finding: phrasing is excluded. It searched open issues first. It does not file the issue: the draft goes in its return for the owner to file.",
+      "assertions": [
+        "the return carries exactly one field-feedback draft",
+        "the REST workaround is a finding, naming where it happened",
+        "the wording complaint is not a finding",
+        "the run does not file the issue"
+      ],
+      "files": []
     }
   ]
 }

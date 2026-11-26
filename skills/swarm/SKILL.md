@@ -1039,7 +1039,9 @@ State, for the run — alongside what the sections above say to report:
   decided, and per worker whether a message arrived, whether it was the report, and whether the forge agreed;
 - every wake a worker was observed to arm;
 - what was **not** covered — tasks deferred, reads skipped, a tier's guarantee the
-  runtime could not provide.
+  runtime could not provide;
+- the field feedback (`references/field-feedback.md`): drafted where the user
+  invoked this skill, passed as notes where a caller did.
 
 A swarm that reports only outcomes has withheld the part that says whether the
 outcomes can be trusted.
