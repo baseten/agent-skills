@@ -283,6 +283,16 @@ def rest_route(tmp, gh_out):
     r = subprocess.run(args + ["--live", out], capture_output=True, text=True, env=env)
     assert r.returncode == 0 and "merge:" not in r.stdout, (r.stdout, r.stderr)
     print("ok  refresh.py --live: carry.py over the published page; nothing reported changed")
+    page = open(out).read()
+    a, b = page.index('<script id="state" type="application/json">'), page.index("</script>", page.index('id="state"'))
+    head = page[:a] + '<script id="state" type="application/json">'
+    live = json.loads(page[len(head):b].replace("\\u003c", "<"))
+    live["merge"] = []  # the live page as it stood before #101's row
+    with open(out, "w") as f:
+        f.write(head + json.dumps(live).replace("<", "\\u003c") + page[b:])
+    r = subprocess.run(args + ["--live", out], capture_output=True, text=True, env=env)
+    assert r.returncode == 0 and "merge: +['acme/api#101']" in r.stdout, (r.stdout, r.stderr)
+    print("ok  refresh.py --live onto --out: the change is read against the live page, not the new build")
     r = subprocess.run(args[:-4] + ["--out", out, "--first"], capture_output=True, text=True, env=env)
     assert r.returncode != 0 and "refresh stopped at prdata.py" in r.stderr, r
     print("ok  refresh.py: a repository with no document and no gh stops the refresh")

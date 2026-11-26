@@ -88,6 +88,8 @@ def main():
     for e in load(a.prs) + load(a.notes) + (load(a.state).get("replies") or []):
         by_repo.setdefault(e["repo"], set()).add(str(e["pr"]))
 
+    # read before build.py runs: --out may name the live page itself
+    old = live_state(a.live) if a.live else {}
     work = os.path.dirname(os.path.abspath(a.state))
     rows = []
     for repo in sorted(by_repo):
@@ -115,7 +117,7 @@ def main():
     run("build.py", "--state", a.state, "--template", os.path.join(HERE, "template.html"),
         "--out", a.out)
 
-    new, old = load(a.state), (live_state(a.live) if a.live else {})
+    new = load(a.state)
     print(f"page: {os.path.abspath(a.out)}")
     print(f"read: {len(rows)} PRs in {len(by_repo)} repositories"
           + (f", {', '.join(sorted(docs))} from JSON" if docs else ""))
