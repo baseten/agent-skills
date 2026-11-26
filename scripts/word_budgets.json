@@ -3,7 +3,7 @@
   "slack_percent": 2,
   "files": {
     "skills/backlog-orchestrator/SKILL.md": {
-      "budget": 26705,
+      "budget": 26715,
       "target": 8000
     },
     "skills/backlog-orchestrator/artifact-collisions.md": {
@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 12147,
+      "budget": 12163,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -39,7 +39,7 @@
       "target": 3000
     },
     "skills/implement-issue/SKILL.md": {
-      "budget": 5829,
+      "budget": 5835,
       "target": 8000
     },
     "skills/implement-issue-core/SKILL.md": {
@@ -99,11 +99,11 @@
       "target": 3000
     },
     "skills/supervise-prs/SKILL.md": {
-      "budget": 9706,
+      "budget": 9729,
       "target": 8000
     },
     "skills/swarm/SKILL.md": {
-      "budget": 11166,
+      "budget": 11185,
       "target": 8000
     },
     "skills/swarm/runtime-remote.md": {
@@ -209,6 +209,10 @@
     "skills/plan-feature/SKILL.md": {
       "budget": 2812,
       "target": 3000
+    },
+    "rules/field-feedback.md": {
+      "budget": 566,
+      "target": 1500
     },
     "rules/linear-mechanics.md": {
       "budget": 601,

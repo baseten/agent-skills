@@ -269,6 +269,8 @@ nobody invokes it, and it has no `SKILL.md`.
   with.
 - `linear-mechanics.md` — how reads and writes to Linear actually behave.
 - `node-and-pnpm-upgrades.md` — moving a project to a new Node or pnpm version.
+- `field-feedback.md` — how a long-running run reports, once at wrap-up, what
+  in its own contract did not work.
 
 A shared rule cannot just sit at the repository root, because an installed
 skill cannot read `../../rules/`. Nor can it live inside one skill, which would
