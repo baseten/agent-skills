@@ -33,9 +33,8 @@ installed, so the stale copy is what ran.
 So the skills come in three layers, each shipped as its own plugin:
 
 1. **This repository, the `agent-skills` plugin.** The process, and the rules
-   that govern it. It holds nothing company-specific or personal, and
-   `scripts/check_no_machine_paths.py` keeps it that way (*Personal skills stay
-   out*).
+   that govern it. It holds nothing company-specific or personal (*Personal
+   skills stay out*); `scripts/check_no_machine_paths.py` rejects machine paths.
 2. **A company layer.** Thin skills that each extend a generic one and carry
    only the company's facts, plus any company-only tools. A layer skill declares
    `metadata.extends: <generic skill>` in its frontmatter and invokes the
@@ -104,7 +103,7 @@ To update later, `claude plugin marketplace update baseten`, then
   to that stamp. `AGENT_SKILLS_SKILLS=0 bash bootstrap.sh` names any it finds.
 - **Old uploads shadow the plugin.** A skill zip-uploaded to claude.ai under the
   same name as a plugin's skill wins over it. Delete the upload.
-- **A synced plugin's dependencies count only if they are synced too.** A
+- **A CLI-installed plugin's dependency isn't met by a synced one.** A
   CLI-installed layer beside a claude.ai-synced `agent-skills` does not load.
   Install both the same way.
 
@@ -354,6 +353,7 @@ python3 scripts/check_no_machine_paths.py             # no skill depends on one 
 python3 scripts/test_no_machine_paths.py              # and that detector can actually fail
 python3 scripts/check_word_budgets.py --report       # no contract outgrows its budget; --report adds runtime load
 python3 scripts/test_check_word_budgets.py            # and each of its guards can actually fail
+python3 scripts/test_run_evals.py                    # the eval runner's own tests
 bash skills/swarm/scripts/test-checkpoint-capture.sh
 python3 -I scripts/test_work_queue_prdata.py          # conductor's work-queue scripts, against a stubbed gh
 bash scripts/test_bootstrap_stamp.sh                  # bootstrap.sh's install stamp, against a scratch HOME

@@ -21,8 +21,7 @@ session simply behaves as though the skill was never written.
 
 So there are three ways to get these skills into one: the plugin enabled on
 your claude.ai account, which is the recommended route and needs nothing in the
-environment, or a setup script that installs them on disk, either as copies or
-as the plugin.
+environment, or a setup script that installs them on disk as copies.
 
 ## Install from a setup script
 
