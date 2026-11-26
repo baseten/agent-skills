@@ -1769,6 +1769,45 @@
         "a lost watch is re-armed by the conductor with a watch call at the next build, then the listing read again"
       ],
       "files": []
+    },
+    {
+      "id": 136,
+      "name": "a-run-report-that-changes-needs-you-sweeps-through-refresh",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, work-queue.md and NOTES.md from the skill directory you were given). You are a cloud conductor holding the Artifact tool, with an interactive work queue. The owner is not in this turn. Run A's reply arrives: its PR acme/api#101 merged, and it now has a held decision for the owner about #102. Your previous turn published the page 20 minutes ago. Question: what do you do in this turn, in order, and how is the work queue updated?",
+      "expected_output": "It verifies the merge and the held decision on the forge, re-verifying any conditional go the merge could satisfy. The reply changed Needs you and is not only a merge report, so it is not deferred: the status sweep runs at the turn's end, updating the ledger from that sweep's snapshot, and the work queue is rebuilt by refresh.py (after writing state.json, prs.json and the merge notes and reading the watch listing and the live page) and published. It does not relay the report and add a changelog line without the sweep, and it never hand-patches state.json. Then it reports in the Report's shape.",
+      "assertions": [
+        "it verifies the merge and the decision on the forge before using them",
+        "the status sweep runs at the end of this turn, not deferred",
+        "the page is rebuilt with refresh.py over the live page, never hand-patched",
+        "the ledger update comes from the sweep, not only a changelog line"
+      ],
+      "files": []
+    },
+    {
+      "id": 137,
+      "name": "back-to-back-merge-reports-are-swept-once",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, work-queue.md and NOTES.md from the skill directory you were given). You are a cloud conductor with a work queue. Nobody has invoked you. At 14:00, 14:02, 14:03, 14:05 and 14:07 five runs each report, in separate turns, that their PR merged; each merge removes a Needs you item, none reports anything else, and no conditional go waits on any of them. The fallback check-in is next due at 14:40. At 14:06 the owner types: 'anything for me?'. Question: what happens at each of those times, and how many ledger writes and publishes do these events cause?",
+      "expected_output": "14:00: it verifies the merge on the forge and pulls the one fallback check-in forward from 14:40 to 14:05, replacing it, never arming a second; it prints the quiet-turn line naming 14:05; no sweep, ledger write or publish. 14:02 and 14:03: each verifies its merge and leaves the check-in, already due sooner. 14:05: the check-in fires and sweeps the three merges with one ledger write and one publish, re-arming on its hourly schedule. 14:06: the owner's message is attended, so it sweeps and reports at once. 14:07: a merge report alone pulls the check-in forward again, to 14:12, whose firing sweeps with one ledger write and one publish.",
+      "assertions": [
+        "the 14:00 report defers its sweep by pulling the existing check-in forward to about 14:05, never arming a second check-in",
+        "the 14:02 and 14:03 reports leave the check-in as it is",
+        "the 14:00-14:03 merges cause one ledger write and one publish, at the 14:05 firing",
+        "the owner's 14:06 message sweeps at once"
+      ],
+      "files": []
+    },
+    {
+      "id": 138,
+      "name": "a-session-with-no-gh-and-no-mcp-builds-from-rest",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, work-queue.md and NOTES.md from the skill directory you were given). You are a cloud conductor holding the Artifact tool. Your environment's instructions say not to use gh. The GitHub MCP server failed to connect, and GraphQL returns 'not available from Claude Code sessions', but plain REST reads of api.github.com work from this session. Your ledger has one run with open PR acme/api#41, a draft whose run reported it awaiting the owner's publish. Question: do you build the work queue, and if so, how do you read #41 and what does the page offer for it?",
+      "expected_output": "It builds the page. It does not use gh. It makes REST reads — pulls/41, issues/41/timeline, pulls/41/reviews (and each PENDING review's comments), pulls/41/ccr/review_threads with pulls/41/comments, and the head commit's check-runs and status — writes them into prdata.py's REST document form, and runs refresh.py with --from-json for acme/api. Since the timeline was read, the draft's ready history is known: where it was never ready, the page offers Mark ready as the owner's step. It does not fall back to no page.",
+      "assertions": [
+        "it builds the page rather than falling back to the ledger link",
+        "it does not use gh",
+        "it reads the PR over REST, review threads from the ccr route, and runs prdata.py or refresh.py with --from-json",
+        "the draft is offered for Mark ready because its ready history was read"
+      ],
+      "files": []
     }
   ]
 }

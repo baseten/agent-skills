@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 11791,
+      "budget": 12147,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -191,7 +191,7 @@
       "target": 1500
     },
     "rules/wake-budget.md": {
-      "budget": 2158,
+      "budget": 2218,
       "target": 1500
     },
     "rules/watch-and-read.md": {
@@ -199,7 +199,7 @@
       "target": 1500
     },
     "rules/operator-output.md": {
-      "budget": 2149,
+      "budget": 2188,
       "target": 1500
     },
     "skills/write-spec/SKILL.md": {
@@ -223,7 +223,7 @@
       "target": 1500
     },
     "skills/conductor/work-queue.md": {
-      "budget": 2931,
+      "budget": 3081,
       "target": 1500
     },
     "rules/node-and-pnpm-upgrades.md": {

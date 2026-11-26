@@ -123,7 +123,7 @@ for e in json.load(open(a.prs, encoding="utf-8")):
     def named(slug, name):
         return wanted and wanted in (str(slug or "").lower(), str(name or "").lower())
     requested = any(named(t.get("slug"), t.get("name")) for t in d.get("requested_teams") or [])
-    # unread requests (the JSON route): the step stays the owner's, labelled unverified
+    # unread requests (the MCP route): the step stays the owner's, labelled unverified
     unread_requests = d.get("requested_teams_read") is False and not d.get("reviewed_by")
     members = next((t.get("members") for s, t in (d.get("teams") or {}).items()
                     if named(s, t.get("name")) and t.get("members") is not None), None)

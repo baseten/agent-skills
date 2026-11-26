@@ -1172,6 +1172,62 @@ Two shapes differ from REST: a review's user carries no type, so a login ending 
 The default branch's CI on this route is read from its Actions workflow runs, not
 its head commit's check runs.
 
+## Every event, the refresh, and the REST route (2026-11-26)
+
+`SKILL.md`, *On every event*; `work-queue.md`, *Which page*, *Building it* and
+*Publishing*; `refresh.py`; `prdata.py`'s REST form; `build.py`'s warning.
+**The incident:** a multi-day cloud conductor on 2026-11-25 (conductor @ 289564e)
+repeatedly took in a run's merge report, relayed it and wrote a changelog line,
+but ran no `status` sweep, so the work queue went stale; when it did refresh the
+page, it hand-patched `state.json`, and the PRs rendered as plain items rather
+than "Your PRs". The owner noticed both. The contract was right; it failed where
+it was read and in what it cost.
+
+**Why a section of its own:** the event trigger lived in one sentence of *The
+`status` mode*, which a turn handling a run's report never reads: it reads *2.
+Ask*, *3. Reconcile* and *Report*. Those now point at *On every event*, which holds
+the order once. The `status` mode keeps only a pointer, so the rule has one home.
+
+**Why `refresh.py`:** the right path was six scripts in order plus two reads, and
+the wrong one was one edit. A conductor that judged the patch "close enough" was
+choosing the cheap path, so the wrapper makes the right path the cheap one. It
+derives the PRs to read from the same files the build renders (prs.json, the merge
+notes, the held replies), so the read and the page cannot disagree about which PRs
+there are. It reads no watch listing and publishes nothing: those are tool calls
+the session makes, and the row they choose is *Which page*'s. `build.py` now warns
+on an item that links a PR and asks to merge it, mark it ready or request review —
+a warning, not a refusal, since an item may link a PR for another reason.
+
+**Why a REST route, and why inside `--from-json`:** in that session `gh` was barred
+by instruction, the MCP server failed to connect and GraphQL was refused, so the
+route list read literally built no page; the conductor built one from REST reads
+by hand, which the contract never described. REST reads carry more than the MCP
+tools — the timeline, the requested teams, a pending review's comments — so the
+REST form adds those keys, and the threads come from the same ccr route `gh`
+falls back to, through one function (`ccr_rows`). One transform still states the
+settled-thread rule and the stops. Run: a REST-form document for two PRs, one
+with the owner's pending review, gave the ready history, requested teams and the
+pending draft count as read; `refresh.py --first`, then `--live` over its output,
+built both pages; a missing document stopped the refresh at `prdata.py`.
+
+**Why back-to-back merges defer, and why only those:** each merge arrived as its own
+turn and changed *Needs you*, so five merges in ten minutes meant five ledger
+rewrites and five publishes; the 5-minute skip never applied. A merge report alone
+asks nothing of the owner, and the forge holds the merge, so deferring it loses
+nothing. Only a turn that owes a sweep defers: a merge that changes no *Needs you*
+item waits for the next sweep, as before. Anything else — the owner's message, an
+answer, a question from a run, an executed conditional go — still sweeps at once.
+**Why the fallback check-in is pulled forward rather than a second one armed:** the
+contradiction pass before review found a one-shot beside the fallback broke the
+shared wake rule (re-arming replaces, never adds; a check-in that cannot be
+cancelled blocks arming), had no prompt or liveness guard of its own, and kept its
+armed state only in this session. Pulling the one check-in forward avoids all
+but the cancel, and where the runtime cannot cancel, the turn sweeps at once
+(protected-rule audit, 2026-11-26); `references/wake-budget.md` and `references/operator-output.md`
+state it, the latter giving the deferred turn its line. "A PR merged or closed" left
+the list of waking events: the conductor holds no PR watch, so a merge reaches it
+only as a run's report or in its own sweep.
+
 ## The contradiction pass before the review round (PR #201)
 
 **What a scheduled firing may do is stated the same at every decision point:** it
