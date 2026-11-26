@@ -86,22 +86,18 @@ set):
 That is why the check reads both sources and the `grep` recurses: the files are
 the reliable channel where they exist, the listing the fallback.
 
-**Assumed, and not yet observed in a cloud container:**
+**Observed in a cloud container (2026-11-25), with both layers enabled as
+claude.ai plugins and no setup script:** a plugin enabled on a claude.ai account
+lands under the config directory's `plugins/synced/<org>_<user>/<plugin>/`, never
+`plugins/cache/`, and no `installed_plugins.json` is written. The same sync
+reaches a local CLI on v2.1.275 or later. A layer (`close-conductor`) handed its run
+to the generic skill in the same session, and the generic skill's version line
+followed the layer's. Skills uploaded to claude.ai as zips are no longer used, so
+whether one reaches a container's disk with its `metadata` was never settled.
 
-- that an uploaded skill reaches a cloud session's disk under the config
-  directory as it does locally, `metadata` intact;
-- that a skill uploaded to claude.ai can invoke a bootstrap-installed skill in the
-  same cloud session, which every layer depends on;
-- that the `grep` above, or the listing, finds the layer there;
-- that a plugin enabled on a claude.ai account, or installed by a setup script's
-  `claude plugin install`, lands under the config directory's `plugins/cache/`
-  in a container as it does locally, with its `.source`, and that a layer
-  shipped as a plugin is found there.
-
-**The first real cloud run of a layered skill must confirm all three**, and
-record the result here: the transcript's version lines (both, layer first) show
-the invocation worked; a generic skill invoked directly in that container,
-handing off, shows the detection worked.
+**Still assumed:** that a generic skill invoked directly in a container, with the
+layer present only as a synced plugin, finds it by the `grep` as well as by the
+listing. The first such run records it here.
 
 **Why the plugin cache is searched, and why a layer found only there needs the
 listing (2026-11-24, issue #234).** A layer shipped as a plugin installs under
@@ -112,6 +108,16 @@ would hand the run to a layer the owner removed, or stop it over two "layers"
 that are one plugin's old and new versions. The listing is what the session
 actually loaded; the cache supplies the frontmatter the listing's description may
 not state.
+
+**Why `plugins/synced/` is searched too (2026-11-26):** once layers moved to
+claude.ai plugins, `close` reached sessions only through `plugins/synced/`, which
+the grep never read; only the listing found the layer. `synced/` keeps a
+regenerated plugin's earlier folder (a `~g<N>` suffix that comes and goes, listed
+under the manifest's `staleDirs`), so a layer found there alone is held to the same
+listing test as one found only in the cache. Run on a work machine: the grep for
+`conductor` returned `synced/…/close/`, the stale `synced/…/close~g2/` and a
+deleted upload under `skills/.trash/` — three files, one name, so one layer under
+the one-name rule above.
 
 ## The version line
 
