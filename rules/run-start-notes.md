@@ -121,7 +121,7 @@ comment makes the same argument for the stamp. So the line reports what the
 installer wrote and `unknown` where it wrote nothing.
 
 **Why the install-wide stamp is the last source, and only where the skill's own
-directory cannot be found.** `README.md`, *Install from a setup script*: a skill
+directory cannot be found.** `docs/other-install-routes.md`, *Install from a setup script*: a skill
 with no `.source` came from an install older than the stamp, or from somewhere
 else. In both cases `.agent-skills-install` describes a different install, and
 reporting it would put a confident, wrong commit in the transcript. It remains

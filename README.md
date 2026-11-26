@@ -1,114 +1,318 @@
 # Agent Skills
 
-Reusable Claude Code skills for issue implementation, PR workflows, backlog validation/orchestration, stacked PR management, and dependency upgrades.
+Claude Code skills for the whole life of a change: planning a feature into
+issues, implementing them in parallel, opening and supervising the pull
+requests, repairing what CI and review find, and settling and merging what is
+done. Alongside them sit the shared rules every skill applies, and a short set
+of general rules for every session.
+
+They are generic on purpose. Nothing here knows which company you work for or
+how you write. That comes from layers you put on top.
 
 ## A note on how the skills read
 
-The `SKILL.md` files are dense and not easily human readable. That is deliberate, and it was tested rather than assumed: [issue #51](https://github.com/baseten/agent-skills/issues/51) benchmarked a plain-English rewrite of the densest section against the current text — all 21 eval scenarios, on Sonnet and on Haiku — and the plain version made the models no better (identical on Sonnet, worse-to-indistinguishable on Haiku). The density costs the models nothing; they interpret this register at least as well as plain prose, so the skills are written for their actual reader. Humans get their own entry points instead: a skill's `NOTES.md` explains the reasoning behind its rules, and `backlog-orchestrator/README.md` gives a plain-language overview and a glossary of the coined terms.
+The `SKILL.md` files are dense, and that is deliberate.
+[Issue #51](https://github.com/baseten/agent-skills/issues/51) benchmarked a
+plain-English rewrite of the densest section against the current text, across
+all 21 eval scenarios on Sonnet and Haiku. The plain version made the models no
+better: identical on Sonnet, worse-to-indistinguishable on Haiku. So the skills
+are written for their actual reader. People get their own entry points instead:
+each skill's `NOTES.md` explains the reasoning behind its rules, and
+`skills/backlog-orchestrator/README.md` has a plain-language overview and a
+glossary of the coined terms.
+
+## How the layers fit
+
+At first glance a set of generic skills looks like it should be enough. In
+practice every team needs its own facts (which repositories, which tracker, what
+the base branch is called, how to trigger the review bot), and every person
+needs their own voice. The obvious fix is to fork the generic skills and add
+them. I tried that, and every fork drifted: the stale copy is what got
+installed, so the stale copy is what ran.
+
+So the skills come in three layers, each shipped as its own plugin:
+
+1. **This repository, the `agent-skills` plugin.** The process, and the rules
+   that govern it. It holds nothing company-specific or personal (*Personal
+   skills stay out*); `scripts/check_no_machine_paths.py` rejects machine paths.
+2. **A company layer.** Thin skills that each extend a generic one and carry
+   only the company's facts, plus any company-only tools. A layer skill declares
+   `metadata.extends: <generic skill>` in its frontmatter and invokes the
+   generic skill with its settings as arguments. Its plugin declares a
+   dependency on `agent-skills@baseten`.
+3. **A personal layer.** Voice, style guides and identity values such as
+   accounts and a branch prefix, printed into the session's context by a plugin's
+   SessionStart hook. It is data, not a third wrapper skill: a company layer
+   that writes prose uses whichever guide the session's instructions name, so
+   anyone can plug in their own.
+
+Two things keep a session on the layer you meant. The general rules tell it to
+prefer a skill that extends another over the one it extends, and a generic skill
+that starts a run hands the run to an installed layer over it, unless that layer
+is what invoked it (`rules/run-start.md`).
+
+The general rules themselves are `global-instructions.md`. The plugin's
+SessionStart hook prints them under **General rules (agent-skills plugin)** at
+every session start, resume, `/clear` and compaction included. It prints nothing
+when the user's `CLAUDE.md` (`$CLAUDE_CONFIG_DIR/CLAUDE.md`, else
+`~/.claude/CLAUDE.md`) already holds a block opening `<!-- agent-skills:begin`,
+so a machine that writes the rules there reads them once.
+
+## Install as a plugin
+
+The plugin is `agent-skills`, from the `baseten` marketplace that
+`.claude-plugin/marketplace.json` declares. (`agent-skills` is a marketplace
+name Claude Code reserves for Anthropic's own.)
+
+### On claude.ai
+
+This is the route to use. A plugin enabled on a claude.ai account reaches every
+session signed in to that account: Claude Code on the web, a self-hosted runner
+and the local CLI alike.
+
+1. On claude.ai, open **Customize > Plugins**, choose **Add > Add marketplace**
+   and enter `baseten/agent-skills`.
+2. Enable `agent-skills`, and any layer plugins you use, from the same page.
+3. Update Claude Code to v2.1.275 or later, the release that syncs account
+   plugins into terminal sessions.
+4. Start a new session. Plugins sync when a session starts; an open session says
+   so and picks them up with `/reload-plugins`.
+
+To keep a machine out of the sync, set `syncClaudeAiPlugins` (and, for skills
+uploaded to the account, `syncClaudeAiSkills`) to `false` in its user settings.
+
+### From the CLI
+
+Where claude.ai is not an option, such as a machine signed in with an API key:
+
+```bash
+claude plugin marketplace add baseten/agent-skills
+claude plugin install agent-skills@baseten --scope user
+```
+
+To update later, `claude plugin marketplace update baseten`, then
+`claude plugin update agent-skills`.
+
+### Gotchas
+
+- **One route per machine.** Don't CLI-install a plugin you've also enabled on
+  claude.ai, or a session gets two of it. The same goes for a copied skill
+  beside the plugin, which loads too and wins the bare name, so a stale copy
+  runs in place of the plugin. Move a machine off copies by deleting them, and
+  `~/.claude/.agent-skills-install` with them, since the version line falls back
+  to that stamp. `AGENT_SKILLS_SKILLS=0 bash bootstrap.sh` names any it finds.
+- **Old uploads shadow the plugin.** A skill zip-uploaded to claude.ai under the
+  same name as a plugin's skill wins over it. Delete the upload.
+- **A CLI-installed plugin's dependency isn't met by a synced one.** A
+  CLI-installed layer beside a claude.ai-synced `agent-skills` does not load.
+  Install both the same way.
+
+The skills name each other bare, which resolves to the plugin's skill where
+nothing else holds the name. The general rules say that a bare name and
+`agent-skills:<name>` are the same skill.
+
+### What the plugin installs
+
+**The marketplace installs the `release` branch, never `main`.** A plugin
+installs the repository as committed, and `main` commits neither each skill's
+`references/` nor its `.source` stamp. `.github/workflows/release.yml` rebuilds
+`release` from every push to `main` that passes its checks, with
+`scripts/build_plugin_release.sh`, which generates both. It stamps the `main`
+commit the build came from, so the version line names a revision of this
+repository, then force-pushes. Nobody edits `release`. Its plugin version is the
+release commit, so every build is an update.
+
+To see which revision a session loaded, read its version line: every skill that
+starts a run opens with `running <skill> @ <commit> (<date>)`, read from that
+`.source` (`rules/run-start.md`). On disk, a synced plugin lives under
+`<config dir>/plugins/synced/` and a CLI install under
+`<config dir>/plugins/cache/baseten/agent-skills/`.
+
+### Other routes
+
+`bootstrap.sh` predates the plugin, and it is no longer the way to install the
+skills. It stays for three things: a cloud environment's setup script where the
+plugin is not available, the managed rules block it writes into
+`~/.claude/CLAUDE.md` (`AGENT_SKILLS_SKILLS=0` writes only that), and the one
+thing the plugin cannot do, which is provision a second GitHub MCP server that
+reads cross-repository issue dependencies and Projects v2 in a cloud session
+(`AGENT_SKILLS_GH_MCP=1`). `docs/other-install-routes.md` covers all three, and
+Codex.
+
+## Permissions
+
+This repository ships no permission rules. It used to merge a `permissions.json`
+allowlist into `~/.claude/settings.json`, and stopped on 2026-11-25: auto mode is
+where these skills run, claude.ai connector tools are named
+`mcp__claude_ai_<Name>__<tool>` in the CLI so the file's connector entries never
+matched there, and in cloud sessions those tools follow the connector's own
+settings on claude.ai. `bootstrap.sh` removes, once, the entries an earlier run
+recorded in `~/.claude/.agent-skills-permissions.json`, keeping anything added
+by hand. The evidence, and the way back if a worker stalls on a prompt, are in
+`skills/swarm/NOTES.md`, *Blocked workers*.
+
+## The skills
+
+Each skill's `SKILL.md` description says when to use it; this is the map.
+
+**Implementing and shipping**
+
+- `implement-issue` — one tracked issue, or a branch with no PR, from
+  implementation through supervision to settle and merge.
+- `implement-issue-core` — internal: implements exactly one issue to a durable
+  remote PR; invoked only by `implement-issue`, `backlog-orchestrator` or a
+  `swarm` worker.
+- `ship-branch` — the findable name for taking already-committed work through
+  `implement-issue`'s supervised path.
+- `create-pr` — opens a correctly linked PR, keeps stack bases and
+  `Depends on:`, and triggers the repository's review automation.
+- `supervise-prs` — watches a set of open PRs until each is finished, routing
+  feedback and dispatching bounded repairs; never merges.
+- `repair-pr` — one bounded repair pass on a PR, for a CI failure, a review
+  round or a settle-time finding.
+- `resolve-pr-comment` — addresses one review thread under the repository's
+  review workflow.
+- `swarm` — fans independent tasks out to parallel isolated workers and
+  supervises them, including everything a remote worker session needs.
+
+**Reviewing**
+
+- `review-pr` — drafts a review of someone else's PR as one unsubmitted pending
+  review for the owner to edit and submit.
+- `review-docs` — checks a PR's documentation against the codebase, in a review
+  that ends by contract after one pass and one re-check.
+- `review-skill` — reviews a change to a prose contract by what it makes a
+  reader decide, against the scenarios that pin it.
+
+**Planning and coordinating**
+
+- `conductor` — the owner's daily view across repositories: which epics run,
+  in what order, dispatching and checking on every run.
+- `write-spec` — turns a brief into one spec document and returns its link.
+- `plan-feature` — plans a parent issue, epic or brief into PR-sized child
+  issues, each a full spec.
+- `validate-backlog` — validates a bounded issue DAG before anything runs on
+  it.
+- `normalize-github-dependencies` — converts dependencies described in issue
+  text into GitHub's native blocked-by links.
+- `backlog-orchestrator` — runs a validated issue set as parallel waves of
+  workers, supervising every PR it opens.
+- `owner-steps` — walks the owner through a `[Manual]` issue one command at a
+  time, judging each pasted output.
+
+**Settling and merging**
+
+- `settle-and-merge` — the closing sequence over a set of PRs: summary,
+  decisions, ranking, then the merge gate.
+- `summarize-wave` — a plain-language account of what a settled wave did, and
+  what a person still has to handle.
+- `settle-outstanding-decisions` — walks the owner through the decisions only
+  they can make, one at a time, and records each.
+- `plan-merge-order` — ranks a settled wave's open PRs by how much each
+  unblocks; read-only.
+- `merge-stack` — merges one PR or a stack and restacks the descendants.
+
+**Dependency upgrades**
+
+- `upgrade-npm-dependency` — upgrades one package or coupled group, proven by
+  characterization tests written before the bump.
+- `npm-dependency-upgrade-orchestrator` — triages a batch of upgrades and
+  dispatches them through `swarm`, merging only where the repository opted in.
+
+`docs/orchestration-overview.md` explains how the orchestration skills behave
+once started: runtimes, autonomy, per-repository policy, recovery, PR
+supervision and settled waves.
 
 ## Shared rules
 
-`rules/` holds a rule that more than one skill applies. It is **not** a skill: nobody invokes it, and it has no `SKILL.md`.
+`rules/` holds each rule more than one skill applies. A rule is not a skill:
+nobody invokes it, and it has no `SKILL.md`.
 
-- `rules/absence-is-not-a-verdict.md` — a query that returned nothing is evidence about the query. An empty review endpoint is not a clean review, an ungraded scenario is not a passing one, and an enabled automation is not a performed action.
-- `rules/establish-do-not-assume.md` — a claim is not evidence and neither is an assumption. What a worker, a reviewer, a previous session or a convention block asserts is checkable; so is what an automated reviewer actually triggers on. And what was established holds only as of when it was read: a multi-item read is a composite of instants.
-- `rules/prose-review-round-budget.md` — prose has no oracle, so a reviewer of it terminates on a ceiling fixed in advance: one pass, one re-check, no third round, counted off the pull request.
-- `rules/a-passing-test-is-not-a-verified-fix.md` — what defeats "make the test fail first", as a checklist against a new or changed test.
-- `rules/authored-write-form.md` — the shape of any write an agent authors on a forge: length, what a body is for, what must never be in it, the attribution footer as a marker, the precedence of required contents over brevity, when a PR body may be edited after creation, and that on an issue the run did not create only metadata is free — prose needs the owner's permission and a comment for a person is drafted, bar a ruling the owner approved word for word. Every skill that writes to a forge applies it, each carrying a generated copy under its own `references/`. Extracted from `backlog-orchestrator` so that a skill needing the rule does not have to carry a 41,000-word orchestrator, nor a paraphrase of the one section it uses, which is how a rule drifts.
-- `rules/posting-identity.md` — which author a forge or tracker write carries: identity is established only by reading back a write the run made anyway, held as a map per `(transport, credential)` pair and write kind, and degraded to the invoking user silently in behaviour and loudly in the record. It also owns the review trigger's exception, the one write that must come from the invoking user.
-- `rules/agent-policy.md` — the contract of `.claude/agent-policy.json`: where it lives and why it is a file rather than prose, the precedence of an invocation argument over the file over the built-ins (except for the off-only keys its *Precedence* lists), per-PR resolution from a start-of-run read no worker can influence, fail-closed handling, and what `auto-merge` grants. Which keys a skill reads, and their defaults, each skill states itself; `schemas/agent-policy.schema.json` indexes them.
-- `rules/review-feedback.md` — what a run may auto-fix (decided by what a comment asks for, not by who wrote it, bar the invoking user's question-shaped change requests), the thread-root test that decides what counts as feedback at all, the rule that a run never roots a review thread (a dispatched review session's own review excepted), the reservation of a thread that wants an answer for its owner, and which threads a supervising run still counts as unhandled and dispatches.
-- `rules/draft-state.md` — when a run may promote a draft PR (never on its own judgement; on a repository's own convention, on that convention's conditions; as a step of a gate-passing merge), that it never returns a PR to draft, and the only definition of an explicitly held draft — currently a draft and ever ready, read from the forge's timeline — which the merge gate excludes.
-- `rules/repair-rounds.md` — the dispatching layer's rules for a repair round: escalate to the strongest model on evidence (a finding on a locus an earlier repair wrote), never on exhaustion; an escalated round still consumes its cycle; the remaining budget is read off the PR's record at dispatch and never raised by a repository instruction; and the finding budget is a counter of its own.
-- `rules/mechanical-pushes.md` — which pushes to a PR are mechanical (identity, location or formatting only, validated by the repository's checks) and never re-trigger or re-review, and which are substantive. Cannot tell → substantive.
-- `rules/review-trigger.md` — what an automated review trigger is: the repository's documented convention or the default, a documentation-review convention invoked rather than posted (and re-invoked, never re-posted), the fallback when that skill is unavailable, the invoking user's account and no footer, how a trigger is confirmed to have taken effect, a reviewer's out-of-budget answer as a refused round that is never reissued, a round stalled in progress past 20 minutes as re-triggered once per round, and one still stalled after that raised to the owner as a decision, a re-trigger after every substantive push the workflow makes — none for a reviewer the repository's committed configuration says reviews every push, whose review is confirmed instead — and none on a CI run, a mechanical push or a refused round. It is also the only review action a run takes: no human reviewer is ever requested, re-requested or removed.
-- `rules/ci-and-review-verdicts.md` — what establishes that a PR's CI is green (every required check concluded on the current head; an empty rollup is not green) and that its review ran and came back clean (the summary comment's `Reviewed commit:` for existence, with no other request on the round still in flight, the threads for severity), and that either verdict holds only for the commit it was computed on.
-- `rules/ci-attribution.md` — whether a red check is the PR's own failure: per check, an environment hypothesis confirmed before it counts (the default branch or unrelated branches failing the same job), expected-red after a producer merge in another repository, and a narrowing signature read rather than retried.
-- `rules/watch-and-read.md` — when a supervising run arms the watch on what it tracks (on adoption, followed by a reconciling read), the no-change preflight that stops it reporting quiet over something nothing was listening to, and when it reads, within allowances that belong to the credential rather than the run.
-- `rules/platform-pr-posture.md` — invoking a supervising skill is the user's instruction that overrides the drive-to-green posture a platform attaches to a PR-activity subscription: what the override reaches and what it leaves standing, every wake answered by the skill's own cycle — or, in a session that supervises nothing, by no act at all — the watch ended with the run, and what the run tells the user.
-- `rules/wake-budget.md` — the subscription and bounded check-in a run with nothing in flight arms: one unproductive-wake budget, a backoff from 20 minutes to 4 hours (with a slower, shorter schedule for a watch kept past a settled result, and a flat hourly one that stops after three empty sweeps for a conductor's fallback sweep, and an hourly cap with a status read of each live worker session), what counts as a delta, and the report when a watch stops.
-- `rules/manual-step-issues.md` — every owner step a run identifies (a post-deploy check, a key, a backfill, a console action) is filed, where the repository opts in, as a `[Manual]` issue under the repository's manual-steps epic, one per sitting, in a fixed form — a dependency header, server access, numbered steps with exact commands, what to paste back, *Done when* — and never carries a secret. Filed by `conductor`, `backlog-orchestrator` and `plan-feature`, walked by `owner-steps`; a repository's `manual-steps` policy opts into filing (off by default) and names its epic and server access.
-- `rules/conductor-exchange.md` — the run's side of a conductor's coordination, for `backlog-orchestrator` and `implement-issue` alike: its title, in a table that is also the owner's session vocabulary — conductor, orchestrator, worker, reviewer and planner, each with its skill and title prefix — how it answers a status request and what it pushes unprompted, when it adopts a new conductor id, how it takes on new work or is folded into another run, and the one test by which a run recognises an owner ruling the conductor relayed.
-- `rules/operator-output.md` — what an orchestration run writes to the owner in its own chat: only what needs them, what changed state and answers to their questions; a reporting turn that ends in a fixed order (*Needs you* by action, *Changed since*, *Unchanged*, the ledger link and any work queue beside it); a linked heading on every block — a work stream a `##` heading of one sentence and at most four bullets — and every reference a link; decisions asked one per structured question, bar a planner's blocking questions; a meta answer in its own block; a recurring record printed only when it changed; and a quiet turn that writes one minimal line, a quiet check-in updating the session title's suffix instead.
-- `rules/run-start.md` — the two things a skill that starts a run does first: hand the run to an installed skill that extends it (see [Layered skills](#layered-skills)), unless that skill is what invoked it, then open its first output with `running <skill> @ <commit> (<date>)`, read from the install stamp and never kept by hand. Applied by the conductor, the orchestrators, the planners, `implement-issue`, `ship-branch`, `owner-steps` and `review-pr`.
-- `rules/linear-mechanics.md` — how a write to, or a read from, Linear actually behaves: `+++` collapsibles and no HTML, `addLabels` appending where `labels` replaces, single-select label groups swapping, a re-read before any retry because saves are eventually consistent, patching rather than rewriting a description, Markdown links rather than bare identifiers, inline image upload, the relation filters' treatment of completed blockers, and where a PR's review page, closing issues and unsubmitted drafts are read. Applied by `plan-feature` and `conductor`.
-- `rules/field-feedback.md` — how a long-running run reports, once at wrap-up, what in its own contract did not work: a failure, a workaround, a contradiction, or a native tool the session holds that replaces a step. At most one issue draft, in a fixed form, searched against open issues, never filed by the run. Applied by `conductor`, `backlog-orchestrator`, `implement-issue`, `supervise-prs` and `swarm`.
-- `rules/node-and-pnpm-upgrades.md` — moving a project to a new Node or pnpm version: targets read from Node's release index and pnpm's docs, one PR per tool with Node first, pnpm installed without Corepack, and the Claude Code cloud environment's setup script and its rollout. Applied by `upgrade-npm-dependency` and `npm-dependency-upgrade-orchestrator`, and pointed to from `global-instructions.md`.
+- `absence-is-not-a-verdict.md` — a query that returned nothing is evidence
+  about the query, not a clean result.
+- `establish-do-not-assume.md` — a claim or an assumption is checkable, not
+  evidence, and holds only as of when it was read.
+- `prose-review-round-budget.md` — a prose review ends on a fixed budget: one
+  pass, one re-check.
+- `a-passing-test-is-not-a-verified-fix.md` — what defeats "make the test fail
+  first".
+- `authored-write-form.md` — the shape of any write an agent authors on a
+  forge, its footer, and when a PR body may change.
+- `posting-identity.md` — which author a forge or tracker write carries,
+  established by reading one back.
+- `agent-policy.md` — the contract of `.claude/agent-policy.json`, including
+  what `auto-merge` grants.
+- `review-feedback.md` — what a run may auto-fix, and which threads it must
+  leave to a person.
+- `draft-state.md` — when a run may promote a draft PR, and what an explicitly
+  held draft is.
+- `repair-rounds.md` — repair escalation and budgets, from the dispatching
+  side.
+- `mechanical-pushes.md` — which pushes are mechanical and never re-trigger
+  review.
+- `review-trigger.md` — what an automated review trigger is, and the only
+  review action a run takes.
+- `ci-and-review-verdicts.md` — what makes CI green and a review clean, on one
+  commit.
+- `ci-attribution.md` — whether a red check is the PR's own failure.
+- `watch-and-read.md` — when a supervising run arms its watch and reads.
+- `platform-pr-posture.md` — how a supervising skill overrides the platform's
+  drive-to-green posture.
+- `wake-budget.md` — the bounded check-ins a run with nothing in flight arms.
+- `manual-step-issues.md` — how owner steps are filed as `[Manual]` issues.
+- `conductor-exchange.md` — a run's side of a conductor's coordination, and the
+  session vocabulary.
+- `operator-output.md` — what an orchestration run writes to the owner, and in
+  what order.
+- `run-start.md` — the layer hand-off and the version line every run opens
+  with.
+- `linear-mechanics.md` — how reads and writes to Linear actually behave.
+- `node-and-pnpm-upgrades.md` — moving a project to a new Node or pnpm version.
+- `field-feedback.md` — how a long-running run reports, once at wrap-up, what
+  in its own contract did not work.
 
-The posting-identity, agent-policy and review-feedback rules were extracted from `backlog-orchestrator` in #134, for the same reason: standalone skills such as `create-pr`, `merge-stack` and `resolve-pr-comment` applied them by pointing into an orchestrator they never run under. `rules/draft-state.md` followed in #138, so that `settle-and-merge`'s gate and `implement-issue` stopped pointing up into it for the held-draft definition. `rules/repair-rounds.md` (from `backlog-orchestrator`) and `rules/mechanical-pushes.md` (from `create-pr`) followed in #140, so that `implement-issue` and `review-docs` stopped pointing up into a skill they never run under, or that invokes them. `rules/review-trigger.md` (from `create-pr`) followed in #142, because the orchestrators and `implement-issue` issue triggers under it too, `npm-dependency-upgrade-orchestrator` on PRs that never pass through `create-pr`. The verdict, attribution, watch and wake rules followed in #144, with the snapshot rule added to `rules/establish-do-not-assume.md` and trigger confirmation to `rules/review-trigger.md`: `swarm`, `settle-and-merge`, `repair-pr` and `review-docs` pointed into `backlog-orchestrator`, or held a second copy, for rules that PR supervision applies wherever it runs.
+A shared rule cannot just sit at the repository root, because an installed
+skill cannot read `../../rules/`. Nor can it live inside one skill, which would
+make that skill a dependency of every other. So `scripts/refresh_shared_rules.sh`
+copies each rule into `skills/<name>/references/` for every skill that applies
+it, at install or release time. The copies are gitignored and never committed to
+`main`, and `scripts/check_shared_rules.py` fails the build when one diverges
+from its source or a skill cites a rule it does not carry.
 
-A shared rule cannot simply sit at the repo root and be read from an installed skill: `bootstrap.sh` copies `skills/<name>/` and nothing else, so `../../rules/x.md` does not exist on a machine that installed one skill. Nor can it live inside one skill, because whichever skill owned it would become a dependency the others carry for a rule they only read.
-
-So `scripts/refresh_shared_rules.sh` copies each rule into `skills/<name>/references/` for every skill that applies it, **at install time**: `bootstrap.sh` and ai-alex's `update-local-claude-skills` run it before copying, the eval runner rebuilds each arm's references from that revision's `rules/`, and CI runs it before the checks. The copies are gitignored and never committed to `main`, so `rules/` is the only copy in the repository — the plugin's `release` branch carries them, rebuilt from `main` and never edited (*Install as a plugin*); run the script yourself to see them in a checkout. The copies travel with a skill that is installed alone or moved into a plugin, and `scripts/check_shared_rules.py` fails the build when a copy diverges from its source, when a skill cites a reference it does not carry, when a skill lacks a rule it carries only because another carried rule cites it (the generator derives that carriage; the consumer lists name only the skills that apply a rule, and those must cite it), or carries a generated copy that is neither declared nor derived, when a rule is cited by nothing, when a bundle is left behind with no `SKILL.md` beside it, when a source is deleted while its copies remain, when a skill the generator declares a consumer does not exist, does not cite the rule, or does not carry it, and when the generator stops naming a consumer list the check can read at all. Every one is file-level; none reads the prose.
-
-The check reads the generator rather than the tree for which bundles are generated and which skills consume each, precisely so that a deleted source with its copies left behind is still detectable. `scripts/test_shared_rules.py` holds a broken repository per failure it claims to catch, and asserts each is rejected by the guard that names it rather than by a neighbour — without which the check stays green over a guard someone deleted, because the tree it runs against in CI is always already correct.
-
-Reasoning for a rule lives beside it as `rules/<name>-notes.md`, and is deliberately not bundled — its reader is someone editing the rule, and they have this checkout.
-
-## Core workflow skills
-
-- `implement-issue-core` — internal: invoked only by `implement-issue`, `backlog-orchestrator` or a `swarm` worker prompt naming it, and otherwise hands off to `implement-issue` or stops. It implements exactly one tracked issue to a durable remote PR state, including remote branch/checkpoint pushes for restart recovery. It does not own long-lived CI/review monitoring.
-- `repair-pr` — performs one bounded repair pass on an existing PR — a CI failure, a review round, or a settle-time finding (an `IN_FLIGHT_FIX` action point or a code-changing walkthrough ruling) — and pushes the repair.
-- `implement-issue` — convenient standalone single-issue orchestrator. It composes `implement-issue-core`, supervises that one PR through `supervise-prs`, and settles and merges it through `settle-and-merge`. Given an existing branch with no PR instead, it opens the PR with `create-pr` and runs the same supervision, settle and gate from there, with or without an issue.
-- `ship-branch` — the findable name for that existing-branch entry: work committed from a Slack thread or prose, taken through `implement-issue`'s supervised path. It holds no rule of its own.
-- `supervise-prs` — supervises a set of open PRs from adoption until each is individually finished: arms a watch that wakes, attributes each red check, routes review feedback, dispatches bounded `repair-pr` passes within per-PR budgets, adopts heads, re-triggers review, and returns an outcome per PR. It never merges. Callers pass their inputs as values — the PR set, budgets, the identity map, how repairs are dispatched, any head check of their own — and either run it inside their own loop (`backlog-orchestrator`, `npm-dependency-upgrade-orchestrator`) or let it run its own (`implement-issue`). Extracted in #144 from the three copies those skills held.
-- `create-pr` — creates correctly linked PRs, preserves explicit stack bases, adds `Depends on:` for direct stack parents, verifies tracker linkage, and triggers repository review automation unless explicitly deferred.
-- `resolve-pr-comment` — addresses one PR review thread using the repository's review workflow.
-- `review-pr` — reviews a PR someone else opened and leaves the review as one unsubmitted GitHub pending review for the owner to read, edit and submit, ending with a short report: where the drafts are, a recommendation and the blocking points. It never submits, approves, requests changes, posts a live comment or triggers the review bot, and a skill extending it may draft on a tracker that mirrors the PR instead. The `conductor` dispatches it as a reviewer session.
-- `review-skill` — reviews a change to a prose contract by checking what it makes a reader decide, against the scenarios that pin it, two arms from git. Terminates on the same budget as `review-docs`.
-- `review-docs` — reviews the documentation in a PR by checking what it claims about the codebase against the codebase, and terminates by contract: one pass plus one re-check reading only that pass's findings, never a third. It replaces automated code review on a documentation-only PR and runs alongside it over the prose of a mixed one, reporting once per round in a single comment rather than a thread per finding. Read-only. Built after a spec PR ran nine review rounds and 28 threads, all 28 of them checking the document against itself; `create-pr` routes to it where a repository documents the convention.
-
-## Backlog / orchestration skills
-
-- `validate-backlog` — validates a bounded issue DAG. Shallow and deep differ in how far they read; `validate-backlog` states the split and its one cross-repository exception for missing or incorrect dependencies.
-- `normalize-github-dependencies` — converts high-confidence description-based GitHub dependencies into native blocked-by/blocking relationships where GitHub write capabilities are available.
-- `backlog-orchestrator` — policy layer for a bounded build-order/parent issue or issue set. It validates the DAG, fans out isolated workers via `implement-issue-core` on a model selected per issue, through `swarm`'s worker mechanics, (onto a Claude Code **Dynamic Workflow** when the user explicitly opts into one for this invocation, otherwise onto native/background sessions or ordinary supervised subagents), supervises every PR it tracks through `supervise-prs` from inside its own parent-level loop, and enforces stack/budget/recovery rules. It owns when a wave is settled and hands what settling does to `settle-and-merge`.
-- `settle-and-merge` — the sequence both orchestrators end a run with, over a set of PRs: `summarize-wave`, then the `settle-outstanding-decisions` walkthrough, then `plan-merge-order` where the caller ranks, then the merge gate (invariant 12, whose only definition is `settle-and-merge`, *The merge gate*) and the merge itself — publishing a draft first and checking that a green still describes the current tree — after reconciling each PR body against its diff at the start of the settle. The caller decides when to settle and passes its own inputs: `backlog-orchestrator` a wave, `implement-issue` one PR.
-- `summarize-wave` — writes a short plain-language summary of what a settled wave actually did, plus the action points a human still has to manage: follow-up issues to open, verified bugs left unfixed, decisions waiting, scope deliberately cut. Read-only by default; it proposes issues rather than opening them. `settle-and-merge` invokes it per settled wave, before ranking — for `backlog-orchestrator`, and for `implement-issue` when its one issue reaches a terminal state, a wave of one.
-- `plan-merge-order` — ranks a settled wave's open PRs by how much downstream work each unblocks, and emits a review order, a merge batching plan, and the hard sequencing constraints as a table. Read-only; it never merges. `settle-and-merge` invokes it when a `backlog-orchestrator` run settles.
-- `settle-outstanding-decisions` — walks the owner through the human-only decisions a settled run left outstanding, one at a time via `AskUserQuestion` with enough context to answer on the spot, and records each ruling durably where the decision lives. Run it yourself after a wave, or let a settled step request it — `backlog-orchestrator` between summary and ranking, `implement-issue` between summary and merge gate — on by default, gated by `auto-request-settle`. Either way it refuses to prompt where nobody is present: a run settling on a scheduled wake gets a one-line decline, and the decisions stay in the summary's action points. Collect-and-record only; acting on the rulings stays with their owners.
-- `merge-stack` — safely merges one PR, part of a stack, or an explicitly authorized whole stack while rebasing/restacking descendants.
-- `conductor` — the owner's daily view and portfolio scheduler over a configured set of repositories: which epics run, in what order and how many at once, and the gates between them. It takes in epics a planner wrote, dispatches each batch or issue to a `backlog-orchestrator`, `implement-issue` or `ship-branch` run on the owner's go, sweeps for runs, asks each for status without waiting, verifies every claim and the default branch's CI and deploy on the forge, relays verified facts between runs, puts pending decisions and owner steps to the owner in one attended pass, on the owner's request starts `review-pr` reviewers to draft their reviews of PRs waiting only on them and archives each drafted one once the owner submits, replans across streams, executes a conditional go once its condition holds, and retires runs on the owner's go, keeping its state in a configurable ledger and one bounded hourly check-in, pulled forward to sweep back-to-back merge reports once — one conductor and one ledger per workstream, several running in parallel, each leaving a peer's runs alone. Settings may arrive as invocation arguments, and every run's dispatch passes them on. On an issue it did not create it drafts rather than posts, bar a ruling the owner approved word for word and a go; every go is the owner's, posted by the owner or, from the owner's answer in its own session and verified in that session's transcript before it is acted on, by the conductor, for a dispatch or conditional go only — a reviewer's aside — and never from a local session. It runs in a cloud session or a local Claude Code one, dispatching runs where it runs unless the owner sends a run to the cloud. It never plans features, supervises, repairs, merges or approves.
-- `write-spec` — turns a brief (prose, a Slack thread, a pitch document, a design link or a product issue) into one spec document: code read through subagents that return conclusions, only the questions that change the spec, the full draft shown and amended in place, and written on the owner's go where the repository's `spec` policy says — by default a markdown file on a branch with a draft PR. Returns the link; never writes issues.
-- `plan-feature` — plans one parent (a product issue, an epic, a project or a brief) into PR-sized child issues under it, one level per run: agrees the working set, reads every comment, researches each repository at its remote default branch, and drafts each child as a full spec — a plain-language section plus a collapsed section for agents — or a stub, a question for the team that owns that side. Blockers come only from real constraints, priority is build order where configured, every child carries its design frame inline, and a fresh subagent checks each one. The draft plan lives where its `plan-doc` policy names and is amended in place; children are written in dependency order on the owner's go, and the report leads with what is startable today and ends with a `Ready to dispatch` pointer for the `conductor`. Hands back to `write-spec` where the spec is wrong. Also files one ticket of a given kind, and audits a parent's metadata. Configured by `feature-plan` policy or invocation arguments.
-- `owner-steps` — walks the owner through one `[Manual]` owner-steps issue a step at a time while they run each command on the live server or console and paste the output back: confirms the blockers are cleared, gives each exact command with where and as whom to run it, judges each paste and diagnoses a failure instead of advancing, records each step done or not done on the issue (its output kept, redacted, in the session) and ticks it, and closes the issue when its *Done when* holds. Follows the repository's runbooks and its `manual-steps` server access from the policy file (by default the deploy user over SSH without sudo; root only in the provider's web console, through a short script where the console cannot paste), and never asks for or repeats a secret. The issue form is `rules/manual-step-issues.md`, shared with the skills that file them.
-
-## Dependency upgrade skills
-
-- `upgrade-npm-dependency` — upgrades one package, or one coupled group of them, across any version whose breaking-change risk has not been ruled out: viability gate, research verified against the published artifact, usage audit, then characterization tests written and proven green on the current version and re-run unmodified after the bump.
-- `npm-dependency-upgrade-orchestrator` — triages a batch of upgrades, establishes coupling and viability, selects a model per upgrade by failure mode, and dispatches bounded-concurrency workers through `swarm`: one per upgrade or coupled group running `upgrade-npm-dependency`, plus a single batched task for the routine bumps triage cleared, which need no migration workflow. Supervises CI while separating infrastructure failure from real failure. It merges only where the repository opted in with `auto-merge-dependencies`, and then only through its dependency gate.
-- `swarm` — fans a set of independent tasks out to parallel isolated workers and supervises them: picks the runtime that is actually available, one worktree per worker off a stated base, a model per task by how its failure would show, one watcher, the parent, and a default cap on how many run at once that a caller overrides. It also owns what every remote worker session needs whoever dispatched it: the arguments it is created with, the countermand to its inherited habit of watching its own PR, how its report reaches the parent, when it is released, checkpoint compliance — including the parent-side capture of a worker's uncommitted work, with its tested script — and what to do with one that blocks or is lost. `backlog-orchestrator` and `npm-dependency-upgrade-orchestrator` use it for their dispatch phase, and cite it for all of that.
+Reasoning for a rule lives beside it as `rules/<name>-notes.md`, and is
+deliberately not bundled: its reader is someone editing the rule, and they have
+this checkout. `docs/shared-rules.md` keeps the longer description of each rule
+and how the rules came to be extracted.
 
 ## Repository layout
 
 ```
-skills/           every directory with a SKILL.md ships
-skills/*/references/  generated at install from rules/ (gitignored)
-CLAUDE.md         how to change a skill, and what a complete fix means here
-AGENTS.md         pointer to CLAUDE.md, for agents whose convention looks for it
-docs/             audits and workflows that outlive one PR
-global-instructions.md  the block bootstrap.sh keeps in ~/.claude/CLAUDE.md, and the
-                        plugin's SessionStart hook prints
-hooks/            the plugin's SessionStart hook
-bootstrap.sh
-.claude-plugin/   the plugin manifest and the `baseten` marketplace
-scripts/          repo-level checks (run in CI, runnable locally)
-.github/workflows/
-.claude/          this repository's own orchestrator policy
+skills/                 every directory with a SKILL.md ships
+skills/*/references/    generated from rules/ (gitignored)
+rules/                  shared rules, each with its -notes.md
+global-instructions.md  the general rules the SessionStart hook prints
+hooks/                  the plugin's SessionStart hook
+.claude-plugin/         the plugin manifest and the `baseten` marketplace
+schemas/                the agent-policy.json schema
+CLAUDE.md               how to change a skill, and what a complete fix means here
+AGENTS.md               pointer to CLAUDE.md, for agents that look for it
+docs/                   audits, workflows and reference that outlive one PR
+scripts/                repository checks (run in CI, runnable locally)
+bootstrap.sh            the setup-script installer (docs/other-install-routes.md)
+.github/workflows/      checks, and the release build
+.claude/                this repository's own policy and skills
 ```
 
-Adding a skill requires no change to `bootstrap.sh` or the plugin manifest —
-create a directory under `skills/` with a `SKILL.md` in it and the next
-bootstrap run, or the next release build, ships it.
+Adding a skill needs no change to the plugin manifest or `bootstrap.sh`: create a
+directory under `skills/` with a `SKILL.md` in it, and the next release build
+ships it.
 
 ### Personal skills stay out
 
 This repository is public, so it holds general engineering workflow skills and
-nothing personal. Skills that depend on someone's own writing samples, voice
-guide, or internal material live in a private checkout instead, and reach cloud
-sessions by being enabled for a claude.ai account — cloud sessions load skills
-from your claude.ai account and from the cloned repository's `.claude/skills/`,
-so a public repo was never required to reach them.
+nothing personal. Skills that depend on someone's writing samples, voice guide
+or internal material live in a private repository, and reach sessions as a
+plugin of their own enabled on a claude.ai account.
 
 `check_no_machine_paths.py` enforces this. A skill referencing a path like
 `~/Documents/...` or `/Users/someone/...` fails the build, because that skill
@@ -119,50 +323,20 @@ fine — those exist wherever the agent runs. `test_no_machine_paths.py` holds t
 forms it must reject and the ones it must not, and asserts the rejections come
 from the detector rather than the harness.
 
-`bootstrap.sh` deletes nothing. It merges each skill over whatever is installed
-and **reports** a skill this repository has retired rather than removing it,
-because nothing in a script can tell its own stale copy from one you wrote
-yourself under the same name.
-
-The one thing it replaces is its own marked block in `~/.claude/CLAUDE.md`,
-which carries `global-instructions.md`: rules a session needs before any skill
-is loaded, such as linking every issue a chat reply names, preferring a
-skill that extends another over the one it extends, and what may be written
-without the user's approval, in a review thread or as a draft. The
-markers make that block provably its own, so a re-run swaps it in place and
-leaves the rest of the file alone.
-
-
 ## Changing the skills
 
-The `SKILL.md` files are prose contracts executed by models, and they cross-reference each
-other, so a finding on one is rarely local to where it was reported. What counts as a
-complete fix is therefore not the code-shaped criterion — "the flagged line now reads
-correctly" — and that difference is what produces ten rounds of review on a single change.
-`CLAUDE.md`, *A rule change is not complete until its dependents agree*, states the
-criterion itself.
+The `SKILL.md` files are prose contracts executed by models, and they
+cross-reference each other, so a finding on one is rarely local to where it was
+reported. **`CLAUDE.md` carries the binding rules** for changing them: how to
+classify a review round's findings, the consequence sweep, and when a change
+owes a guard. Read them there rather than in a summary here, which is exactly
+where a condition gets dropped. `AGENTS.md` points at the same file.
 
-**`CLAUDE.md` carries the binding rules** — how to classify a review round's findings,
-when a finding is one assumption failing in several places rather than several defects, the
-consequence sweep and its scope, and when a change owes a mechanical guard. Read it there
-rather than here: each of those rules has conditions attached, and a compressed copy in this
-file that dropped one is a defect of exactly the kind the rules exist to prevent. (Codex
-round one on the PR that added them found precisely that — this paragraph had made the guard
-obligation unconditional.) `AGENTS.md` points at the same file for agents whose convention
-looks for that name.
-
-`docs/review-fix-workflow.md` is the long form, with the evidence from this repository's own
-history. `docs/invariant-12-gate-audit.md` is the worked example of the axis walk, and
-`docs/review-fix-workflow.md` explains what it demonstrates.
-
-Running these skills against this repository has **three known mismatches, none of which
-announces itself** — see `CLAUDE.md`, *Using this repository's own automation on this
-repository*, which names them and what to do about each. They are why this repository's
-`.claude/agent-policy.json` raises `review-repair-cycles` and
-`repair-model-escalations` above their defaults; budgets are policy and live only in that
-file. `review-repair-cycles` counts **pushed repair passes, not review rounds** — a round
-that repairs nothing consumes no cycle, nor does a round answering the invoking user's own
-comments — so a high observed round count is not by itself a reason to raise it.
+`docs/review-fix-workflow.md` is the long form, with the evidence from this
+repository's history, and `docs/invariant-12-gate-audit.md` is the worked
+example of walking a whole axis at once. Running these skills against this
+repository has three known mismatches: `CLAUDE.md`, *Using this repository's own
+automation on this repository*, names them.
 
 ## Checks
 
@@ -179,6 +353,7 @@ python3 scripts/check_no_machine_paths.py             # no skill depends on one 
 python3 scripts/test_no_machine_paths.py              # and that detector can actually fail
 python3 scripts/check_word_budgets.py --report       # no contract outgrows its budget; --report adds runtime load
 python3 scripts/test_check_word_budgets.py            # and each of its guards can actually fail
+python3 scripts/test_run_evals.py                    # the eval runner's own tests
 bash skills/swarm/scripts/test-checkpoint-capture.sh
 python3 -I scripts/test_work_queue_prdata.py          # conductor's work-queue scripts, against a stubbed gh
 bash scripts/test_bootstrap_stamp.sh                  # bootstrap.sh's install stamp, against a scratch HOME
@@ -276,7 +451,7 @@ companion's `SKILL.md` and `NOTES.md` into both arms' contract directories, as
 and the reader's packet says they are part of the contract. Any other top-level `.md`
 beside a `SKILL.md` — `swarm`'s `runtime-remote.md`, which its contract has a tier-2 run
 read — joins the contract the same way, for the skill itself and for each companion,
-because `bootstrap.sh` installs the whole skill directory; so does every file in a
+because an install carries the whole skill directory; so does every file in a
 `schemas/` directory beside it, kept at `schemas/<name>` so the contract's citation of it
 resolves. That is what lets a rule
 move between skills and be compared: without it, the new arm reads a pointer to a rule it
@@ -308,352 +483,3 @@ says so: its scores are a baseline for the next round, not a result, because the
 nothing to disagree with. **A skill renamed in this branch is not new**: `prepare` finds
 the rename in git and reads the old arm from the old directory at the base, so a rename can
 be compared rather than scored as a new skill.
-
-## Permissions
-
-This repository ships no permission rules. It used to merge a `permissions.json`
-allowlist into `~/.claude/settings.json`, and stopped on 2026-11-25: auto mode is
-where these skills run, claude.ai connector tools are named
-`mcp__claude_ai_<Name>__<tool>` in the CLI so the file's connector entries never
-matched there, and in cloud sessions those tools follow the connector's own
-settings on claude.ai. `bootstrap.sh` removes, once, the entries an earlier run
-recorded in `~/.claude/.agent-skills-permissions.json`, keeping anything added
-by hand. The evidence, and the way back if a worker stalls on a prompt, are in
-`skills/swarm/NOTES.md`, *Blocked workers*.
-
-## Local Codex usage
-
-Codex reads a subset of the skills via symlinks in `~/.codex/skills/`. Point
-`REPO` at your checkout of this repository:
-
-```bash
-REPO=$HOME/src/agent-skills
-bash "$REPO/scripts/refresh_shared_rules.sh"   # references/ is generated, not committed
-for s in create-pr resolve-pr-comment implement-issue; do
-  ln -sfn "$REPO/skills/$s" "$HOME/.codex/skills/$s"
-done
-```
-
-Personal writing skills are not in this repository — see [Personal skills stay
-out](#personal-skills-stay-out).
-
-## Runtime model
-
-`backlog-orchestrator` separates **policy** from **execution runtime**.
-
-A Claude Code Dynamic Workflow is only used for the bounded implementation fan-out, and only when the invoking user's own prompt opts into one (e.g. "use a workflow to run backlog-orchestrator on ...") or the session already has `/effort ultracode` on — the skill has no way to switch one on itself. When used, the workflow gives the fan-out persistent multi-agent scheduling and worker lifecycle up front, but it does not persist across a session exit and cannot receive events mid-run, so it is never used for PR supervision (see below).
-
-Preferred runtime order for the implementation fan-out:
-
-1. Claude Code Dynamic Workflows, when the user opted in for this invocation;
-2. remote Claude Code worker sessions, when the session exposes `create_session` (agent-team primitives may substitute here where that experimental feature is enabled);
-3. ordinary isolated subagents with an explicit parent supervision loop — only where the invocation named them (`runtime: subagents`) or the preflight's one question chose them, since a background subagent dies with its parent session;
-4. serialized execution when safe parallel isolation is unavailable.
-
-The orchestrator picks a tier itself from the tools actually callable in the session, probes a failing tier at most twice before degrading, and asks the user only that one subagents question, at preflight. None of these replace the orchestrator's validated issue DAG, scope boundary, model policy, worktree isolation, repair budgets, stack topology, or tracker/GitHub recovery semantics.
-
-## Autonomy after dispatch
-
-`backlog-orchestrator` is meant to run unattended once the validation preflight clears. Anything it has a documented default for — runtime tier (bar that one question), concurrency, the budget cap when scope exceeds it, and a session branch mandate that conflicts with per-issue branches — is resolved by applying the default and reporting it in the checkpoint output. Only a platform-owned approval prompt, `NEEDS_USER` after exhausted budgets, a `FAIL` validation with no safe path, or an undocumented conflict that would lose unrecoverable work may interrupt the run.
-
-Invoking the skill is itself the authorization to dispatch workers, so a session whose standing guidance is "no subagents unless asked" needs no extra confirmation for the fan-out — except that subagent workers still take the preflight's one runtime question.
-
-## Per-repository policy
-
-A repository can tune the agent workflows for its own PRs with `.claude/agent-policy.json`. [`schemas/agent-policy.schema.json`](schemas/agent-policy.schema.json) lists every key, its default and which skills read it; point the file at it with `"$schema"` and an editor shows the same. For `backlog-orchestrator` that is the defaults the skill documents (concurrency, budgets, repair cycles, `auto-request-settle`) plus one permission: `auto-merge`, whether the invariant 12 merge gate may open at all (`ci-mode: integration-branch`, below, grants a narrower one) (a gate-authorized merge publishes a still-draft PR as a step of merging it — a merge never happens on a draft — and never touches an explicitly held draft). `npm-dependency-upgrade-orchestrator` reads a second permission, `auto-merge-dependencies`: triage-cleared minor and patch bumps merge on CI, and majors or bumps needing application changes merge after a clean automated review. `ci-mode`, `per-pr` by default and changed only by the file, spends less CI: `deferred` (the old `minimize-ci-runs`) defers a PR's CI until the PR stops changing and then runs it once (`supervise-prs`, *Deferred CI*); `integration-branch` has `backlog-orchestrator` batch a run's PRs into an integration branch of its own, named from the `integration-branch-prefix` key, gated on a local gate, and run CI on the one PR from it into the default branch — once on opening, and once per budgeted repair (`skills/backlog-orchestrator/integration-branch.md`). `review-defer-severity`, `off` by default and file-only too, files an automated reviewer's findings at or below a severity as follow-up issues instead of spending repair rounds on them (`resolve-pr-comment`, *Findings deferred to a follow-up*). The file was `.claude/backlog-orchestrator.json` before it was shared, and that name is still read where the new one is absent. It is entirely optional and absence is the common case.
-
-**There is no reviewer-identity option, and a repository needs no file to get safe review behaviour.** What the run may auto-fix is decided by the comment, not its author (bar the invoking user's own question-shaped change requests, which are repaired): a thread asking for a code change the pass can make and verify is repaired, whoever rooted it; a thread needing intent, design, rationale or a decision is `NEEDS_USER` — reserved for the owner, never answered on the run's own authority, and holding the merge gate shut. **An escalated thread comes back with a draft reply**, because the pass that read the thread and the surrounding code should not hand the owner a blank page: a question answerable from the work gets the answer and its evidence, a question only the owner can decide gets the options and their costs and deliberately no pick, and assumptions are marked inline. The draft is material for a person and is never posted by the resolver, on any path; `settle-outstanding-decisions` carries it into the walkthrough so an intent question can be answered on the spot, and posts the text the owner approved or edited there, marked as their ruling — the single path on which a run ever puts a drafted answer in a thread, and only in one no person other than the owner is in; where one is, the owner is handed the text to post. **Nor does invoking the resolver by hand change that**: attended on a named comment it still hands the drafted answer to the person who invoked it rather than posting it, so a reviewer never reads an answer in the owner's voice that the owner has not seen. Everything the skills post is short, and a write may carry a `Generated by Claude Code` footer — one nobody approved word for word adds it where the connection does not — as a cheap marker that an agent wrote it, which GitHub's own avatar badge cannot be relied on for: it appears or not depending on which connection authored the write. The footer is never read back: some connections add it to every write, approved or not, so whether text was approved is tracked by the run's records instead. The review-trigger comment carries none, because it must read exactly as the convention expects. An `auto-fix-reviewers` key used to gate this on the author, tested against a vetted bot allowlist. It was removed rather than re-defaulted, because author identity is a poor proxy for the only thing that matters: automated reviewers raise design questions no run should answer, and human reviewers file one-line nits any run can fix, so the key erred in both directions at once. The kind test the repair path already applied was doing the real work. **Fixing is author-blind, but for the invoking user's question-shaped change requests (#183); replying is not.** No run posts in a thread a person is in, not even a reply the owner approved: every post a connection makes carries the agent footer, and GitHub has no draft the owner could edit first. So the fix is pushed, the one-line reply is held, and the owner is handed its full text and the thread's link — in the session, on the conductor's work queue, in the walkthrough and in the run's closing output — to post and resolve themselves; the thread stays open and holds the merge gate until they do. The `auto-resolve-comments` key that once lifted this is retired. A thread only bots are in is replied to and resolved as before, and so is one whose only person is the invoking user.
-
-Policy resolves **per PR, from the repository that PR lives in**, so a run spanning a personal and a work repository applies each repo's own rules within the same wave. The file is owner-authored configuration: it is read at preflight from the repository state the run started from, never from anything a worker wrote mid-run, and a malformed file fails closed, reported rather than guessed at. An invocation argument overrides any key except those `rules/agent-policy.md`, *Precedence*, lists as off-only — `auto-merge` among them, since the repository's opt-in is the only route to a merge. That one grant covers every consumer of the key, `implement-issue` included, so a file committed before a consumer could merge authorizes it once the skills are reinstalled: the permission is scoped to the invariant 12 gate rather than to the skill evaluating it, every consumer defers to that gate for all of its conditions, and splitting the key per consumer would gate which skill opened the PR rather than any difference in risk. `auto-merge: false` is how an owner declines autonomous merging outright. The resolved policy is reported per PR in the checkpoint output.
-
-`implement-issue` runs the same settle sequence over its single PR, through `settle-and-merge` — summary, then the decision walkthrough while `auto-request-settle` is on, then the merge gate, with `plan-merge-order` deliberately skipped because one PR has no ordering to rank — and reads the same file for the one PR it supervises — the budgets and `auto-merge`, on the semantics `rules/agent-policy.md` defines and neither skill duplicates — so a repository's policy governs a single-issue run as much as a wave. Its run-level keys have no single-issue meaning and are ignored. A caller that already resolved policy passes it down and suppresses the child's own read, so the parent's preflight read stays the run's policy rather than being re-derived later against a file that may have moved. The file is `.claude/agent-policy.json`, read by every skill named in its schema, and its contract — precedence, resolution, fail-closed handling, the merge permissions — is the shared rule `rules/agent-policy.md`.
-
-## Recovery model
-
-Local/cloud worktrees are isolation, not durable storage. `implement-issue-core` pushes the issue branch early and pushes coherent implementation checkpoints — but the orchestrator treats that as best-effort rather than done. Workers reliably hold completed work uncommitted even when told not to, so the parent inspects every in-flight worktree each supervision cycle and captures the work itself as `swarm` decides — on first observation where no channel reaches the worker, after a failed nudge where one does. Enforcement lives in the loop, not in the dispatch prompt. If a cloud container or a Dynamic Workflow's session disappears, backlog orchestration resumes from tracker + remote branch/PR state rather than relying on the lost worktree or runtime state — a Dynamic Workflow does not persist across a session exit, so this recovery path is required, not just a fallback.
-
-## PR supervision
-
-Implementation workers return after durable PR creation, and from there every PR is supervised by `supervise-prs` — once, by one party. The platform may observe CI and review events; the skill remains the policy owner, deciding whether a budget allows another `repair-pr` pass and on which model. If the platform's own background auto-merge is on, the skill has it turned off or reports its merges as outside every gate.
-
-Under `backlog-orchestrator` and `npm-dependency-upgrade-orchestrator` the skill runs inside the caller's loop, and the caller arms the one wait; `implement-issue` lets it run its own. Either way the wait is bounded by the wake budget, and whichever session answers a subscription's wakes answers them under the skill's policy, not the platform's drive-to-green posture (`rules/platform-pr-posture.md`). What it may do to a PR — the repair budgets, what it may auto-fix, mechanical pushes, draft promotion under a repository's own convention and never on its own judgement, and that it never returns a PR to draft — is stated once in that skill and the shared rules it applies.
-
-## Settled waves
-
-A run is **settled** when nothing more can start right now and every open PR is finished or already put to the owner — `backlog-orchestrator`, *Settled wave*, owns the predicate. The run has produced everything it can for now; the next move belongs to the owner or to whoever holds merge authority.
-
-At that point `backlog-orchestrator` runs `settle-and-merge`, which owns everything from here to the merge. It invokes `summarize-wave` first — a short account of what the wave did plus the action points needing a human, run per wave because its findings come from run context the next session will not have, and because a follow-up discovered mid-run needs to exist while later waves can still pick it up.
-
-Between the summary and the ranking — when `auto-request-settle` is on, the default — it requests `settle-outstanding-decisions` over the summary's decision items, seeded from the summary so the two skills cannot disagree about what is outstanding. The walkthrough asks only where someone is present; unattended it declines in one line and the decisions stay in the summary's action points. It runs before the ranking because a ruling can change what should merge.
-
-Then it invokes `plan-merge-order`, which ranks the open PRs by downstream leverage and returns the review order, merge batches, and forced orderings. Stack ancestry is one input to that ranking, not the whole of it: the highest-leverage PR is often not a stack base, and a PR can unblock nothing on its own while still gating a large subtree behind it.
-
-Where a repository opted into auto-merge, the invariant 12 gate is evaluated only after the summary, walkthrough, and ranking — its decision/merge-risk inputs do not exist earlier — and any merge it performs is reported with the gate evidence. A summary `IN_FLIGHT_FIX`, or a walkthrough ruling that requires code to change, un-settles the run instead: it dispatches one `repair-pr` pass with `repair type = finding`, bounded by its own `finding-repair-cycles` budget, then settles again from a fresh summary. And a PR whose dependency view was never proven complete — a run whose transport cannot read the dependency graph, accepted for dispatch — holds the gate for that PR: proceedable is not mergeable, and its merge stays the owner's.
-
-## Cloud bootstrap
-
-### What a cloud session can and cannot see
-
-A cloud session — Claude Code on the web, a Desktop cloud container, an auto-fix
-run — loads skills from exactly two places:
-
-- the skills and plugins enabled for your **claude.ai account**, and
-- the **cloned repository's** own `.claude/skills/`. A marketplace its
-  `.claude/settings.json` declares is not added in an Anthropic-hosted cloud
-  session, so a plugin from one does not load there.
-
-It does **not** read `~/.claude/skills` from the machine you started it from.
-Whatever you have installed locally is not there, and the failure is silent: the
-session simply behaves as though the skill was never written.
-
-So there are three ways to get these skills into one: a setup script that
-installs them on disk, either as copies or as the plugin, or the plugin enabled
-on your claude.ai account.
-
-### Install from a setup script
-
-Put this in the **Setup script** field of your [cloud
-environment](https://code.claude.com/docs/en/cloud-environments) — on claude.ai,
-Settings > Cloud environments, then the environment you use:
-
-```bash
-git clone --depth 1 https://github.com/baseten/agent-skills.git /tmp/agent-skills
-bash /tmp/agent-skills/bootstrap.sh
-rm -rf /tmp/agent-skills
-```
-
-That field runs **before Claude Code launches**, which is what makes this work:
-the skills are on disk before anything looks for them. Removing the clone
-afterwards leaves the installed copy under `~/.claude/skills` as the only one in
-the container, so nothing can read a second copy from `/tmp`.
-
-`bootstrap.sh` discovers every directory under `skills/` containing a
-`SKILL.md`, so the install list never drifts from the repository. It writes no
-permission rules: *Permissions* says why, and points to the way back if a worker
-stalls on a prompt for a Claude Code Remote tool.
-
-To see which revision a container is running, `cat ~/.claude/.agent-skills-install`
-(on the plugin route, the `.source` beside any skill under
-`~/.claude/plugins/cache/baseten/agent-skills/<version>/skills/`):
-it records the repository, the commit and its date, and when the install ran.
-Each installed skill carries the same record as `.source`, which matters because
-installing merges and never deletes: a skill whose `.source` differs from
-`~/.claude/.agent-skills-install` is left over from an earlier install and can
-be deleted. One with no `.source` came from an install older than the stamp or
-from somewhere else entirely, which this script cannot tell apart, so check it
-before deleting it. Whatever the install cannot read - no
-`.git`, no recognisable origin - is recorded as `unknown` rather than guessed.
-
-A session reads the stamp itself: every skill that starts a run opens its first
-output with `running <skill> @ <commit> (<date>)`, from its own `.source` (or, for
-an uploaded skill, its frontmatter's `metadata.version`), and `unknown` where
-neither reads (`rules/run-start.md`). A coordinated run carries that line in each
-report to its conductor, which records it in its ledger, so an audit can tell
-which revision every session ran.
-
-This is verified at the **Trusted** [network access
-level](https://code.claude.com/docs/en/cloud-environments#access-levels), which
-is the default. A more restrictive level may not permit the clone.
-
-### Install as a plugin
-
-The same skills ship as the `agent-skills` plugin, from the `baseten`
-marketplace this repository declares in `.claude-plugin/marketplace.json`
-(`agent-skills` is a name Claude Code reserves for Anthropic's own marketplace):
-
-```bash
-claude plugin marketplace add baseten/agent-skills
-claude plugin install agent-skills@baseten --scope user
-```
-
-**The plugin carries `global-instructions.md` itself**, through a
-`SessionStart` hook (`hooks/`) that prints it into the session's context at
-every session start: startup, resume, `/clear` and compaction. Resume is
-included because a conversation begun before the plugin was enabled, or before
-an update, otherwise carries no rules or stale ones; a resumed session may then
-hold two copies, which is harmless. The hook prints nothing when the
-user's `CLAUDE.md` (`$CLAUDE_CONFIG_DIR/CLAUDE.md`, else `~/.claude/CLAUDE.md`)
-already holds a block opening `<!-- agent-skills:begin`, so a machine that also
-runs `bootstrap.sh`, or an installer that writes the rules into a generated
-`CLAUDE.md` inside those markers, reads them once. The rules arrive as hook
-output at the start of the session rather than as a `CLAUDE.md` file, so look
-for them there (verified with `claude -p --plugin-dir <checkout>`).
-
-For a cloud session there is a route that needs no setup script: add the
-marketplace on claude.ai, under Customize > Plugins, and enable the plugin
-there. That route, and whether a plugin's hooks run on it, is not yet observed
-in a container (`rules/run-start-notes.md`). Until it is, a setup script that
-also runs `AGENT_SKILLS_SKILLS=0 bash bootstrap.sh` from a clone writes the
-managed block as well, which the hook then defers to.
-
-**The marketplace installs the `release` branch, never `main`.** A plugin
-installs the repository as committed, and `main` commits neither each skill's
-`references/` nor its `.source` stamp. `.github/workflows/release.yml` rebuilds
-`release` from every push to `main` that passes its checks, with
-`scripts/build_plugin_release.sh`,
-which generates both, stamping the `main` commit the build came from so the
-version line names a revision of this repository, then force-pushes. Nobody
-edits `release`. Its plugin version is the release commit, so every build is an
-update; `claude plugin marketplace update baseten` then `claude plugin update
-agent-skills` fetch it.
-
-**One route per machine.** A skill installed as a copy and the same skill from
-the plugin both load, and the copy wins the bare name, so a stale copy would run
-in place of the plugin. Move a machine to the plugin by deleting the copies
-first, and `~/.claude/.agent-skills-install` with them: the version line falls
-back to that stamp. `AGENT_SKILLS_SKILLS=0 bash bootstrap.sh` names any it
-finds. The skills name each other bare, which resolves to the plugin's skill
-where nothing else holds the name; the managed block says that a bare name and
-`agent-skills:<name>` are the same skill.
-
-### Why this repository is public
-
-Because a setup script cannot reach a private one. The cloud GitHub proxy scopes
-access to the repositories **attached to the session**, so a script cloning an
-unattached private repository gets a 403. A session attaches the repository you
-are working in, which is never this one.
-
-That constraint is the whole reason for the split described in [Personal skills
-stay out](#personal-skills-stay-out): a public repository is the only kind a
-setup script can install, and anything that cannot be public has to reach cloud
-sessions through a claude.ai account upload instead.
-
-### Layered skills
-
-A private skill that only adds settings to a generic one here — repositories, a
-ledger's home, a review trigger — **extends** it rather than copying it. It
-declares `metadata: {extends: <generic skill>}` in its frontmatter, says so in
-its description, and invokes the generic skill with its settings as invocation
-arguments. Each skill reaches a cloud session by **one install route**: a
-generic skill only from this repository, by bootstrap or the plugin, and a layer
-only from its own route — a claude.ai upload, or a plugin of its own that
-depends on this one — never a generic skill uploaded too, which would give the
-session two copies of it. A layer installed as a plugin is found by the
-run-start check in the plugin cache (`rules/run-start.md`).
-
-Two things keep a session on the layer the owner meant. Bootstrap's managed
-block in `~/.claude/CLAUDE.md` says to prefer a skill that extends another; and a
-generic skill that starts a run, invoked directly while a layer over it is
-installed, hands the run to that layer unless the layer is what invoked it
-(`rules/run-start.md`). Whether an uploaded skill can invoke a bootstrap-installed
-one in a cloud session, and whether the generic skill can see the layer's
-frontmatter there, is not yet observed; `rules/run-start-notes.md` records what
-is, and what the first cloud run must confirm.
-
-### Reading issue dependencies and Projects v2
-
-A cloud session's built-in GitHub MCP server arrives with no feature flags and a
-restricted toolset list, so two things are missing from it — for unrelated
-reasons, which is why each is switched back on differently:
-
-| missing | why | how it is asked for |
-| --- | --- | --- |
-| `issue_dependency_read` / `_write` (native blocked-by/blocking) | behind the `issue_dependencies` **feature flag** | `?features=` on the URL |
-| Projects v2 | `projects` is not one of the default **toolsets** (`context`, `issues`, `pull_requests`, `repos`, `users`) | `X-MCP-Toolsets` |
-
-`bootstrap.sh` can install a second GitHub MCP server that has both. It is
-**off by default** — set `AGENT_SKILLS_GH_MCP=1` — because a server configured
-without a working credential fails to connect on every session start, and it is
-unnecessary locally where an authenticated `gh` already reads cross-repo edges.
-
-A second server is the only route. The built-in one's URL and headers are fixed
-before the session starts, and a `.mcp.json` committed to the repository cannot
-help either: a cloned repository is an untrusted folder, so
-`enableAllProjectMcpServers` in it is ignored and the server sits at *Pending
-approval* with nobody able to approve it. User scope written by the setup
-script is what works, for the same reason the skills themselves are installed
-that way — see [Install from a setup script](#install-from-a-setup-script).
-
-#### Why `curl` is not enough
-
-The dependency REST endpoints do answer from a cloud session. But they answer
-through the same GitHub proxy described in [Why this repository is
-public](#why-this-repository-is-public), which scopes access to the
-repositories attached to the session — and here that scoping is **silent**.
-Asking for an unattached repository directly gives the familiar 403; asking for
-it *inside another repository's response body* gives `200` and an empty array:
-
-```
-GET /repos/OWNER/ATTACHED/issues/192/dependencies/blocked_by   → 200, same-repo edge
-GET /repos/OWNER/ATTACHED/issues/192/dependencies/blocking     → 200, []
-GET /repos/OWNER/UNATTACHED/issues/106                         → 403, "use add_repo"
-```
-
-An empty `200` is indistinguishable from "no dependencies", so a graph read this
-way cannot report its own incompleteness. A PAT does not widen it — the proxy's
-scope applies regardless of the credentials supplied — and neither does running
-`github-mcp-server` inside the container, whose calls exit the same way.
-Projects v2 is GraphQL-only and unreachable through the proxy at all.
-`api.githubcopilot.com` sidesteps this by making its GitHub calls server-side,
-resolving visibility from its own token rather than the session's repository
-set.
-
-#### Configuring it
-
-| Variable | Default | Meaning |
-| --- | --- | --- |
-| `AGENT_SKILLS_GH_MCP` | `0` | `1` installs the server |
-| `AGENT_SKILLS_GH_MCP_AUTH` | `proxy` | `proxy` or `pat` |
-| `AGENT_SKILLS_GH_MCP_URL` | `…/mcp/?features=issue_dependencies` | feature flags |
-| `AGENT_SKILLS_GH_MCP_TOOLSETS` | `projects` | `X-MCP-Toolsets` — replaces the defaults |
-| `AGENT_SKILLS_GH_MCP_TOOLS` | `issue_dependency_read,issue_dependency_write` | `X-MCP-Tools` — named individually |
-
-**`proxy` (preferred).** Add an **API credential** to the cloud environment:
-type Bearer, allowed website `api.githubcopilot.com`, header `Authorization`,
-prefix `Bearer`, value a PAT. The agent proxy attaches it after the request
-leaves the VM, so the token never enters the container, and credential hosts
-bypass the network allowlist. Needs an org admin role.
-
-**`pat`.** Set `GITHUB_MCP_PAT` as an environment variable. No admin role, but
-the token is readable by the session and everything it runs. Only the
-unexpanded `${GITHUB_MCP_PAT}` is written to `~/.claude.json`; Claude Code
-expands it at load time, so the secret lands in no file either way.
-
-Use a **fine-grained PAT scoped to every repository whose issues take part in a
-dependency edge** — that repository list is exactly what decides cross-repo
-visibility, and it is the whole reason this reads what the proxy cannot. Issues:
-Read (Read & write for `issue_dependency_write`), Projects: Read or Read &
-write. Organization-owned projects need the *organization* Projects permission,
-and an org may require approval for fine-grained PATs.
-
-#### Finding the tools, and keeping the two servers apart
-
-The tools arrive under the server segment —
-`mcp__github-deps__issue_dependency_read`, `mcp__github-deps__projects_list` —
-not the bare names the upstream documentation uses. Two consequences, both
-already handled:
-
-- A permission rule you write for them names that full prefix, because rule
-  matching is on the literal tool name. This is why the server name is **not**
-  configurable: a renamed server would silently stop matching such a rule.
-- Under tool search a model sees names first and loads schemas on demand, so one
-  that does not know this server exists will not stumble onto it.
-  `validate-backlog` therefore names the prefixed tool in its transport table
-  rather than describing the capability abstractly.
-
-Keep the second server **additive**. At these defaults the two surfaces do not
-overlap — only this one offers `issue_dependency_read` and `projects_*`, only
-the built-in offers `issue_read` and the rest — so nothing has to arbitrate
-between them. Setting `X-MCP-Toolsets` at all replaces the defaults, which is
-what prevents a duplicate GitHub surface. Widening it to include `issues` would
-give two servers both offering `issue_read`, with the PAT's scope silently
-differing from the session's.
-
-### Verifying the install landed
-
-`/plugin` is unavailable in a cloud session, so check from
-the shell:
-
-```bash
-ls ~/.claude/skills
-```
-
-Every directory under `skills/` here should appear — on the plugin route, under
-`~/.claude/plugins/cache/baseten/agent-skills/<version>/skills/` instead, with
-`~/.claude/skills` holding none of them. If the list is empty the
-setup script did not run or the clone failed; if it is short, compare it against
-this repository rather than assuming a skill was retired — `bootstrap.sh`
-deletes nothing.
-
-The orchestration skills are environment-agnostic and work identically from a
-local Claude Code setup.
