@@ -277,12 +277,13 @@ fi
 # untrusted folder, so a committed enableAllProjectMcpServers is ignored and the
 # server sits at "Pending approval" with nobody able to approve it. A second
 # server in USER scope is the only route, which is why this lives here and has
-# to run from the setup script - see README, "Install from a setup script".
+# to run from the setup script - see docs/other-install-routes.md, "Install
+# from a setup script".
 #
 # The REST fallback cannot substitute. Requests to api.github.com exit through
-# the cloud GitHub proxy already described under "Why this repository is
-# public": it scopes access to the repositories attached to the session. A
-# dependency edge pointing into an unattached repository therefore comes back as
+# the cloud GitHub proxy described in the same document, under "Why this
+# repository is public": it scopes access to the repositories attached to the
+# session. A dependency edge pointing into an unattached repository therefore comes back as
 # HTTP 200 and an empty array - the same 403 that stops a clone, but silent and
 # inside a response body, so a truncated graph is indistinguishable from an
 # empty one. Projects v2 is GraphQL-only and unreachable that way at all.
