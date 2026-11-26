@@ -4,10 +4,11 @@
     python3 -I prdata.py --repo owner/name --owner LOGIN [--team SLUG] --from-json reads.json [101 102]
 
 The first form reads GitHub through `gh api`. The second reads nothing: it takes
-the GitHub MCP tools' reads (where `gh` is limited to search) as one JSON
-document, `-` for stdin, and emits the same output, with what those tools cannot
-read written unread. Both feed one transform, `pr_row`. The document's form is at
-`JsonSource` below.
+reads made some other way as one JSON document, `-` for stdin, and emits the same
+output — the GitHub MCP tools' reads, with what those tools cannot read written
+unread, or plain REST reads, where neither `gh` nor the MCP tools are available
+(a cloud session whose instructions bar `gh`). Both feed one transform, `pr_row`.
+The document's form is at `JsonSource` below.
 
 Run as part of the sweep: its output is that sweep's snapshot of these PRs
 (conductor, *The status snapshot*), and mergeq.py and prsteps.py render from it
@@ -103,6 +104,24 @@ def threads_graphql(repo, n):
     return out
 
 
+def ccr_rows(entries, by_id, pending_comments, single):
+    """Threads from pulls/{n}/ccr/review_threads, each unresolved one's last comment
+    looked up in by_id (pulls/{n}/comments), then in the pending review's comments,
+    then through `single`, the one-comment read."""
+    by_id = {**by_id, **pending_comments}
+    out = []
+    for t in entries:
+        login, body, pending = None, "", False
+        if not t["resolved"] and t.get("comment_ids"):
+            cid = t["comment_ids"][-1]  # thread order, so the last is the newest
+            c = by_id.get(cid) or single(cid)
+            login, body = (c.get("user") or {}).get("login"), c.get("body") or ""
+            pending = cid in pending_comments
+        out.append(dict(resolved=t["resolved"], outdated=bool(t.get("outdated")),
+                        login=login, body=body, pending=pending))
+    return out
+
+
 def threads_ccr(repo, n, pending_comments):
     entries = [t for page in gh_try("--paginate", "--slurp",
                                     f"repos/{repo}/pulls/{n}/ccr/review_threads")
@@ -110,19 +129,8 @@ def threads_ccr(repo, n, pending_comments):
     # one paginated read of the PR's review comments; a single read only for a miss
     by_id = {c["id"]: c for page in pages(f"repos/{repo}/pulls/{n}/comments?per_page=100")
              for c in page}
-    # a pending review's comments are in neither read: taken from main's read of them
-    by_id.update(pending_comments)
-    out = []
-    for t in entries:
-        login, body, pending = None, "", False
-        if not t["resolved"] and t.get("comment_ids"):
-            cid = t["comment_ids"][-1]  # thread order, so the last is the newest
-            c = by_id.get(cid) or gh(f"repos/{repo}/pulls/comments/{cid}")
-            login, body = (c.get("user") or {}).get("login"), c.get("body") or ""
-            pending = cid in pending_comments
-        out.append(dict(resolved=t["resolved"], outdated=bool(t.get("outdated")),
-                        login=login, body=body, pending=pending))
-    return out
+    return ccr_rows(entries, by_id, pending_comments,
+                    lambda cid: gh(f"repos/{repo}/pulls/comments/{cid}"))
 
 
 def threads(repo, n, pending_comments):
@@ -208,8 +216,9 @@ class GhSource:
 
 
 class JsonSource:
-    """The GitHub MCP tools' reads, handed over as one document. Gather every page
-    of each read (`page`, or `after` for review threads) before writing it:
+    """Reads handed over as one document, from the GitHub MCP tools or from REST.
+    Gather every page of each read (`page`, or `after` for review threads) before
+    writing it. From the MCP tools:
 
     {"viewer": "LOGIN" | null,                  # get_me
      "teams": {"SLUG": {"name": ..., "members": [LOGIN, ...]}},   # get_team_members
@@ -232,6 +241,27 @@ class JsonSource:
     `teams` has null name and members. Any other key the document lacks is a read
     that failed, and stops the script as the gh route does, `status` included:
     an external check (Chromatic, a deploy preview) may report only there.
+
+    The REST route writes the same document from plain REST reads, with every
+    page of each, where neither `gh` nor the MCP tools are available:
+
+     "viewer": GET user's login, else null
+     "teams": orgs/{org}/teams/{slug} and its /members, where readable
+     "prs": {"101": {
+        "pull": pulls/{n},                      # carries requested_teams: read
+        "timeline": issues/{n}/timeline,        # the ready history: read
+        "reviews": pulls/{n}/reviews,
+        "pending_review_comments": {"<review id>": pulls/{n}/reviews/{id}/comments},
+                                                # one per PENDING review returned
+        "ccr_review_threads": pulls/{n}/ccr/review_threads,
+        "comments": pulls/{n}/comments,         # in place of review_threads
+        "check_runs": commits/{sha}/check-runs,
+        "status": commits/{sha}/status}}
+
+    GraphQL is not needed: the ccr threads route is the one the gh route falls
+    back to, read by the same rule. A key this route adds and the document lacks
+    is unread, as on the MCP route, never zero; a thread's last comment found in
+    neither `comments` nor a pending review's stops the script.
     """
 
     def __init__(self, doc):
@@ -258,7 +288,7 @@ class JsonSource:
         return p
 
     def timeline(self, n):
-        return None  # no MCP read: unread
+        return self._pr(n).get("timeline")  # absent on the MCP route: unread
 
     def team(self, org, slug):
         t = (self.doc.get("teams") or {}).get(slug) or {}
@@ -269,9 +299,17 @@ class JsonSource:
         return self._need(n, "reviews")
 
     def review_comments(self, n, rid):
-        return None  # no MCP read of a pending review's comments: unread
+        # no MCP read of a pending review's comments: unread unless REST gave them
+        return (self._pr(n).get("pending_review_comments") or {}).get(str(rid))
 
     def threads(self, n, pending_comments):
+        if self._pr(n).get("ccr_review_threads") is not None:  # the REST route
+            by_id = {c["id"]: c for c in self._need(n, "comments")}
+
+            def missing(cid):
+                sys.exit(f"--from-json: PR {n}: comment {cid} is in neither `comments` "
+                         "nor a pending review's comments")
+            return ccr_rows(self._pr(n)["ccr_review_threads"], by_id, pending_comments, missing)
         out = []
         for t in self._need(n, "review_threads"):
             cs = t.get("comments") or []

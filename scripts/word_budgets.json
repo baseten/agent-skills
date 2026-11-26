@@ -31,7 +31,7 @@
       "target": 1500
     },
     "skills/conductor/SKILL.md": {
-      "budget": 11791,
+      "budget": 12118,
       "target": 3000
     },
     "skills/create-pr/SKILL.md": {
@@ -223,7 +223,7 @@
       "target": 1500
     },
     "skills/conductor/work-queue.md": {
-      "budget": 2931,
+      "budget": 3081,
       "target": 1500
     },
     "rules/node-and-pnpm-upgrades.md": {

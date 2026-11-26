@@ -52,7 +52,14 @@ report's link says the page is read-only and answers go in the chat (`SKILL.md`,
    any other team pass none. The default branch's CI on this route is its
    Actions workflow runs (`actions_list`, `list_workflow_runs`, on that branch),
    not its head commit's check runs.
-3. **Where neither is available, no page is built**: the session takes the first
+3. **Otherwise, plain REST reads** — any read of the REST API this session may
+   make other than a barred `gh`, as from a cloud session whose instructions bar
+   `gh` and whose MCP server and GraphQL are unavailable — written into the REST
+   form of that same document and run with `--from-json`. GraphQL is not needed:
+   review threads come from `pulls/{n}/ccr/review_threads` with
+   `pulls/{n}/comments`, and the ready history, the requested teams and the
+   owner's pending review are all read.
+4. **Where none is available, no page is built**: the session takes the first
    row's fallback, the ledger link and the chat, and its report says why.
 
 **Nothing this skill must read depends on a call from the page to a connector, on
@@ -71,12 +78,16 @@ merge row or PR item whose `prdataReadAt` stamp is not this turn's, and says wha
 to re-run.
 
 Each build, from the turn's snapshot: write `state.json` from it, the title naming
-the workstream; run `prdata.py` as part of the sweep's read of every open PR of a
-run in this ledger, every PR the merge notes name and every held reply's PR
-(*1. Sweep*, step 7, whose read of a run's PR reads its reviews too), then
-`mergeq.py`, `prsteps.py` and `prune.py` over that output — never a
-second read of the forge (*The status snapshot*); then `carry.py` over the live
-version (below), then `build.py`. **Every link is a recorded URL** — a local session, which has none, shown as text — a PR's
+the workstream, and `prs.json` and the merge notes from the ledger; read the watch
+listing (*Which page*) and the live version (*Publishing*); then **run
+`refresh.py`**, the whole pipeline in its order: `prdata.py` as part of the
+sweep's read of every open PR of a run in this ledger, every PR the merge notes
+name and every held reply's PR (*1. Sweep*, step 7, whose read of a run's PR reads
+its reviews too), each repository by its route above; then `mergeq.py`,
+`prsteps.py` and `prune.py` over that output — never a second read of the forge
+(*The status snapshot*); then `carry.py` over the live version, then `build.py`.
+It prints the page's path and what changed. Running the steps by hand is the same
+build, never a shortcut past one. **Every link is a recorded URL** — a local session, which has none, shown as text — a PR's
 `html_url`, a thread's `html_url` as carried — never one built from a repository
 name. **The merge notes** — the order and blockers the owner gave for PRs waiting on
 their merge — **are kept in the ledger**, and the notes file is written from it each
@@ -178,7 +189,8 @@ in a review thread.
   than `status` that changes no *Needs you* item within 5 minutes of the last
   publish skips its publish; the next publishing turn or the check-in carries the
   change. **Never a turn that takes in a submission or a deferred outcome**
-  (*Answers*): it always publishes.
+  (*Answers*): it always publishes. **Runs' merge reports arriving back to back
+  publish once**, with the sweep `SKILL.md`, *On every event*, defers.
 
 ## Answers
 

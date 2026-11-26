@@ -18,11 +18,17 @@ FRESH_MINUTES of this build's own clock. A stamp that is missing or older means 
 PR list was reused rather than read this turn: re-run prdata.py, then mergeq.py and
 prsteps.py, and build again. The window is no proof the rest of the state is this
 turn's (conductor, work-queue.md, *Building it*), only that the PR list is.
+**An item that links a pull request and asks to merge it, mark it ready or request
+review is warned of**, not refused: it is how a hand-patched state shows a PR's
+steps, which belong in "Your PRs" from prsteps.py, but an item can link a PR for
+another reason.
 """
 import argparse
 import datetime
 import html
 import json
+import re
+import sys
 
 FRESH_MINUTES = 30
 
@@ -59,6 +65,17 @@ unread = [f'{p.get("repo")}#{p.get("pr")}' for p in st.get("prs") or []
           or any(not isinstance(s.get("done"), bool) for s in p["steps"])]
 if unread:
     raise SystemExit("PR items whose steps were not read by prsteps.py: " + ", ".join(unread))
+# a PR's merge or review step belongs in "Your PRs", through prsteps.py; an item that
+# links a pull request and asks for one of those steps is likely a hand-written copy
+PR_STEP = re.compile(r"\b(merge|mark (it )?ready|request (a )?review|request \w+ review)\b", re.I)
+hand = [str(i.get("id")) for i in st.get("items") or []
+        if any(re.search(r"/pull/\d+", str(l.get("href") or "")) for l in i.get("links") or [])
+        and PR_STEP.search(f'{i.get("what") or ""} {i.get("why") or ""}')]
+if hand:
+    print("warning: items that link a PR and ask to merge, mark it ready or request review: "
+          + ", ".join(hand) + ". A PR's steps come from prsteps.py into \"Your PRs\" "
+          "(work-queue.md, Building it); run refresh.py rather than writing them as items",
+          file=sys.stderr)
 now = datetime.datetime.now(datetime.timezone.utc)
 
 

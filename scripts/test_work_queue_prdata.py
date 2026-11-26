@@ -12,7 +12,9 @@ ids appear in the thread listing but 404 on pulls/comments/{id}. Each case
 asserts what the scripts emit, and that every other failed read still stops.
 
 prdata.py's --from-json route is run on the GitHub MCP tools' reads, in the shapes
-they returned live (2026-11-20), including what they cannot read.
+they returned live (2026-11-20), including what they cannot read, and on the same
+fixture's REST reads in the document's REST form, which must emit what `gh` does.
+refresh.py runs the whole pipeline over that REST document.
 """
 import json
 import os
@@ -221,6 +223,71 @@ def json_route(tmp, gh_out):
         print(f"ok  --from-json: {label} stops the script")
 
 
+def rest_doc(fx):
+    """The gh fixture's REST reads, written into the document's REST form."""
+    p = f"repos/{REPO}/pulls/{N}"
+    sha = fx[p]["head"]["sha"]
+    pending = {str(r["id"]): fx[f"{p}/reviews/{r['id']}/comments"]
+               for r in fx[f"{p}/reviews"] if r["state"] == "PENDING"}
+    pr = {"pull": fx[p], "reviews": fx[f"{p}/reviews"], "pending_review_comments": pending,
+          "ccr_review_threads": fx[f"{p}/ccr/review_threads"], "comments": fx[f"{p}/comments"],
+          "check_runs": fx[f"repos/{REPO}/commits/{sha}/check-runs"],
+          "status": fx[f"repos/{REPO}/commits/{sha}/status"]}
+    if f"repos/{REPO}/issues/{N}/timeline" in fx:
+        pr["timeline"] = fx[f"repos/{REPO}/issues/{N}/timeline"]
+    return {"viewer": fx["user"]["login"], "prs": {N: pr}}
+
+
+def rest_route(tmp, gh_out):
+    fx = base_fixture()
+    fx[f"repos/{REPO}/issues/{N}/timeline"] = []
+    r = run_json(tmp, rest_doc(fx))
+    assert r.returncode == 0, r.stderr
+    strip = lambda rows: [{k: v for k, v in d.items() if k != "readAt"} for d in rows]
+    assert strip(json.loads(r.stdout)) == strip(json.loads(gh_out)), \
+        f"REST form differs from gh: {r.stdout} vs {gh_out}"
+    print("ok  --from-json REST form: the gh route's output exactly, pending review and"
+          " requested teams read, threads by the ccr route")
+    doc = rest_doc(fx)
+    doc["prs"][N]["comments"] = []
+    r = run_json(tmp, doc)
+    assert r.returncode != 0 and "neither" in r.stderr, r
+    print("ok  --from-json REST form: a thread's last comment in no read stops the script")
+    doc = rest_doc(fx)
+    del doc["prs"][N]["timeline"]
+    doc["prs"][N]["pull"] = dict(doc["prs"][N]["pull"], draft=True)
+    d = json.loads(run_json(tmp, doc).stdout)[0]
+    assert (d["ever_ready"], d["ever_ready_read"]) == (None, False), d
+    print("ok  --from-json REST form: a draft with no timeline key is unread, never 'never ready'")
+
+    st = json.load(open(os.path.join(WQ, "state.example.json")))
+    st.update(merge=[], prs=[], replies=[], interactive=False)
+    paths = {}
+    for name, v in (("state", st), ("prs", [{"repo": REPO, "pr": N, "team": "fe-platform"}]),
+                    ("notes", [{"repo": REPO, "pr": N}]), ("reads", rest_doc(fx))):
+        paths[name] = os.path.join(tmp, f"r-{name}.json")
+        with open(paths[name], "w") as f:
+            json.dump(v, f)
+    out = os.path.join(tmp, "r-index.html")
+    args = [sys.executable, "-I", os.path.join(WQ, "refresh.py"), "--state", paths["state"],
+            "--prs", paths["prs"], "--notes", paths["notes"], "--owner", OWNER,
+            "--from-json", f"{REPO}={paths['reads']}", "--out", out]
+    env = {"PATH": "/nonexistent"}  # no gh: a repository with a document reads nothing else
+    r = subprocess.run(args + ["--first"], capture_output=True, text=True, env=env)
+    assert r.returncode == 0, r.stderr
+    built = json.load(open(paths["state"]))
+    assert [m["pr"] for m in built["merge"]] == [N] and built["merge"][0]["ready"] is False, built["merge"]
+    assert "merge: +['acme/api#101']" in r.stdout and os.path.exists(out), r.stdout
+    print("ok  refresh.py: the REST document through mergeq, prsteps, prune and build;"
+          " the owner's unsubmitted review keeps the row from Ready")
+    r = subprocess.run(args + ["--live", out], capture_output=True, text=True, env=env)
+    assert r.returncode == 0 and "merge:" not in r.stdout, (r.stdout, r.stderr)
+    print("ok  refresh.py --live: carry.py over the published page; nothing reported changed")
+    r = subprocess.run(args[:-4] + ["--out", out, "--first"], capture_output=True, text=True, env=env)
+    assert r.returncode != 0 and "refresh stopped at prdata.py" in r.stderr, r
+    print("ok  refresh.py: a repository with no document and no gh stops the refresh")
+
+
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         gh = os.path.join(tmp, "gh")
@@ -231,6 +298,7 @@ def main():
         out = expect_counts("ccr route, owner's pending review",
                             run_prdata(tmp, base_fixture()))
         json_route(tmp, out)
+        rest_route(tmp, out)
         d = json.loads(out)[0]
         assert (d["requested_teams"], d["reviewed_by"]) == ([{"slug": "fe-platform", "name": "FE Platform"}], ["rev"]), d
         assert d["teams"] == {"fe-platform": {"name": None, "members": None}} and d["ever_ready"] is False, d

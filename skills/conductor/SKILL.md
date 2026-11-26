@@ -66,10 +66,41 @@ to *3. Reconcile*, and renders its outputs (*The status snapshot*), **republishi
 the work queue even where it is unchanged. It skips *4. Owner pass*, asking and
 ruling nothing, and acts only as a scheduled firing may** (*The fallback
 check-in*). A mode, never a recorded argument; with no ledger found, it says so
-and stops. **It also runs unasked** at the end of a turn that took no snapshot and
-whose event changed *Needs you* — a run's reply or push, a work-queue answer —
-or that took in a work-queue submission or deferred outcome (`work-queue.md`,
-*Answers*), once however many events the turn took in; other changes wait for the next sweep.
+and stops. **It also runs unasked**, after an event that owes it (*On every
+event*).
+
+## On every event
+
+**A turn woken by an event** — a run's reply or push, a PR merged or closed, a
+work-queue comment, a deferred outcome — **takes it in this order, and skips
+none**:
+
+1. **Verify it on the forge** (*3. Reconcile*); a reply or push reporting a merge
+   re-verifies every pending conditional go it could satisfy (*2. Ask*).
+2. **Sweep, where it changed *Needs you*** — a run's reply or push, a work-queue
+   answer — **or took in a work-queue submission or deferred outcome**
+   (`work-queue.md`, *Answers*): the `status` sweep runs at the turn's end, once
+   however many events the turn took in, where the turn took no snapshot of its
+   own. Its ledger update (*7. Ledger*) and its work-queue publish, built by
+   `assets/work-queue/refresh.py` (`work-queue.md`, *Building it*), are the
+   event's record and publish. Other changes wait for the next sweep.
+3. **Report**, in *Report*'s shape.
+
+**Never skip the sweep an event owes, nor hand-patch the work queue in its
+place**: a changelog line and a relayed report are not the sweep, and a page
+patched by hand shows PRs it never read.
+
+**Back-to-back merges are swept once.** A turn whose only events are runs'
+reports of a PR merged or closed — the owner not invoking it, no submission or
+deferred outcome taken in, no conditional go executed — defers its sweep: it
+verifies each merge, arms one one-shot check-in (*Runtime*) 5 minutes out, none
+where one is already armed for this, and replies in one line naming when the
+sweep runs. That firing runs the `status` sweep over every merge since, with one
+ledger write and one publish; nothing waits only in this session meanwhile, since
+the forge holds each merge and the sweep reads it there. **Any other event before
+it fires** — the owner's message, an answer, a run's question — sweeps at once,
+and the deferred check-in is cancelled. It is the one exception to *The fallback
+check-in*'s single check-in: it fires once and is never re-armed.
 
 ## Configuration
 
@@ -391,7 +422,8 @@ firing sweeps, reports, executes a verified dispatch go, plain or conditional, l
 the runs ready to retire for the next attended turn, and archives a drafted reviewer
 whose review the owner submitted (`reviewers.md`); it rules nothing, starts no
 reviewer, retires no run, and dispatches or archives nothing else.**
-One check-in, never two — per conductor, a peer's being its own; record its id and
+One check-in, never two — per conductor, a peer's being its own, and a deferred
+sweep's one-shot aside (*On every event*); record its id and
 next time in the ledger.
 
 # 2. Ask
@@ -413,7 +445,8 @@ Do not dispatch or merge because of this message.
 cannot be awaited inside this turn and must not be polled for. Send every request,
 finish this turn's forge reads, and reconcile what has arrived. A reply landing
 later is folded in at its own turn — before the owner pass where that has not
-started, and as an addendum to it where it has. A reply is its own wake; the
+started, and as an addendum to it where it has, in *On every event*'s order. A
+reply is its own wake; the
 fallback check-in covers the silence. **A reply or push reporting a merge
 re-verifies, on the forge, every pending conditional go it could satisfy**, and
 executes one whose condition now holds (*1. Sweep*, step 9).
@@ -425,7 +458,7 @@ refused — locally, one a delivery notice reports held or refused — makes tha
 
 # 3. Reconcile
 
-**Verify every claim in a reply against the forge before using it** — merged,
+An event's turn reconciles, then sweeps where *On every event* says. **Verify every claim in a reply against the forge before using it** — merged,
 closed, CI green on the head it names, an issue's state, a gate's wording. Where
 the forge disagrees, the forge is the state, and the disagreement is reported with
 the stream.
@@ -945,7 +978,8 @@ answer `work-queue.md`, *Answers*, accepts. **A report whose *Needs
 you* changed, or a PR item's links, draft count or steps** — emptied, or on a scheduled
 firing, included — **every `status` turn, and every turn that takes in a work-queue
 submission or a deferred outcome** (`work-queue.md`, *Answers*), **publish it**, paced as `work-queue.md`,
-*Publishing*, says: to the URL the ledger records,
+*Publishing*, says (a merge report deferred as *On every event* says publishes
+with its sweep): to the URL the ledger records,
 or, where none is recorded, as a new page whose URL the ledger then records
 (*7. Ledger*). **Any sweep — attended, scheduled or `status` — that finds no
 work-queue URL in the ledger while this session holds the Artifact tool builds and
