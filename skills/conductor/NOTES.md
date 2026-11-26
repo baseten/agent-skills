@@ -1221,8 +1221,9 @@ answer, a question from a run, an executed conditional go — still sweeps at on
 contradiction pass before review found a one-shot beside the fallback broke the
 shared wake rule (re-arming replaces, never adds; a check-in that cannot be
 cancelled blocks arming), had no prompt or liveness guard of its own, and kept its
-armed state only in this session. Pulling the one check-in forward has none of
-those problems; `references/wake-budget.md` and `references/operator-output.md`
+armed state only in this session. Pulling the one check-in forward avoids all
+but the cancel, and where the runtime cannot cancel, the turn sweeps at once
+(protected-rule audit, 2026-11-26); `references/wake-budget.md` and `references/operator-output.md`
 state it, the latter giving the deferred turn its line. "A PR merged or closed" left
 the list of waking events: the conductor holds no PR watch, so a merge reaches it
 only as a run's report or in its own sweep.

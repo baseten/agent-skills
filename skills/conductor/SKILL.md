@@ -94,7 +94,8 @@ reports of a PR merged or closed — the owner not invoking it, no submission or
 deferred outcome taken in, no conditional go executed — defers it: it verifies
 each merge and **pulls the one fallback check-in forward** to 5 minutes out
 (`references/wake-budget.md`, *A conductor's fallback sweep*), replacing it, or
-arming it where none is armed, and leaving it where it is due sooner. Its reply
+arming it where none is armed, and leaving it where it is due sooner; where the
+runtime cannot cancel the pending one, it sweeps at once instead. Its reply
 is the quiet-turn line naming when the sweep runs (`references/operator-output.md`,
 *Quiet turns*). That firing sweeps every merge since, with one ledger write and
 one publish, and re-arms the check-in on its usual schedule. **Any other event
