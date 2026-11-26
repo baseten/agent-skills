@@ -11,11 +11,15 @@ published yet, --first. It reads no watch listing and publishes nothing: choosin
 the page's row (*Which page*) and the publish stay the session's.
 
 The PRs it reads are exactly the ones the build shows: each in prs.json, each the
-merge notes name, and each held reply's in state.json, grouped by repository. A
-repository with a --from-json document is read from it (prdata.py's `JsonSource`:
-the MCP or REST route); any other through `gh api`. Then, over that one read:
-prdata.py -> mergeq.py -> prsteps.py -> prune.py -> carry.py (unless --first) ->
-build.py. Any step that fails stops the refresh, naming it, and nothing is built.
+merge notes name, and each held reply's in state.json, grouped by repository —
+bar a held reply carry.py brings back from the live page, which it names for the
+ledger. Repositories are read through `gh api`, or, with any --from-json, each from
+its document (prdata.py's `JsonSource`: the MCP or REST route) and never through
+`gh`: a session that may not use `gh` passes one per repository, and one missing
+stops the refresh. Then, over that one read: prdata.py -> mergeq.py -> prsteps.py
+-> prune.py -> carry.py (unless --first) -> build.py. Any step that fails stops
+the refresh, naming it, and no page is written; state.json may be part-rebuilt,
+and a re-run rebuilds it.
 
 It prints the page's path and what changed against the live page: the merge rows,
 PR items, decisions, replies, items and sessions added or dropped, and the merge
@@ -92,6 +96,9 @@ def main():
             args += ["--team", t]
         if repo in docs:
             args += ["--from-json", docs[repo]]
+        elif docs:
+            sys.exit(f"refresh stopped: {repo} has no --from-json document, and with any "
+                     "document no repository is read through gh; nothing was built")
         rows += json.loads(run("prdata.py", *args, *sorted(by_repo[repo], key=int)))
     prdata = os.path.join(work, "prdata.json")
     with open(prdata, "w", encoding="utf-8") as f:

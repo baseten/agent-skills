@@ -1214,11 +1214,18 @@ built both pages; a missing document stopped the refresh at `prdata.py`.
 turn and changed *Needs you*, so five merges in ten minutes meant five ledger
 rewrites and five publishes; the 5-minute skip never applied. A merge report alone
 asks nothing of the owner, and the forge holds the merge, so deferring it loses
-nothing. Anything else — the owner's message, an answer, a question from a run, an
-executed conditional go — still sweeps at once, so nobody waits on the window. The
-one-shot is a named exception to the single check-in rather than a pull-forward of
-the fallback check-in, whose hourly schedule `references/wake-budget.md` sets.
-Scenarios: conductor#136 #137 #138.
+nothing. Only a turn that owes a sweep defers: a merge that changes no *Needs you*
+item waits for the next sweep, as before. Anything else — the owner's message, an
+answer, a question from a run, an executed conditional go — still sweeps at once.
+**Why the fallback check-in is pulled forward rather than a second one armed:** the
+contradiction pass before review found a one-shot beside the fallback broke the
+shared wake rule (re-arming replaces, never adds; a check-in that cannot be
+cancelled blocks arming), had no prompt or liveness guard of its own, and kept its
+armed state only in this session. Pulling the one check-in forward has none of
+those problems; `references/wake-budget.md` and `references/operator-output.md`
+state it, the latter giving the deferred turn its line. "A PR merged or closed" left
+the list of waking events: the conductor holds no PR watch, so a merge reaches it
+only as a run's report or in its own sweep.
 
 ## The contradiction pass before the review round (PR #201)
 

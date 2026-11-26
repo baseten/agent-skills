@@ -286,6 +286,11 @@ def rest_route(tmp, gh_out):
     r = subprocess.run(args[:-4] + ["--out", out, "--first"], capture_output=True, text=True, env=env)
     assert r.returncode != 0 and "refresh stopped at prdata.py" in r.stderr, r
     print("ok  refresh.py: a repository with no document and no gh stops the refresh")
+    with open(paths["notes"], "w") as f:
+        json.dump([{"repo": REPO, "pr": N}, {"repo": "acme/web", "pr": "7"}], f)
+    r = subprocess.run(args + ["--first"], capture_output=True, text=True, env=env)
+    assert r.returncode != 0 and "acme/web has no --from-json" in r.stderr, r
+    print("ok  refresh.py: with any document, a repository without one stops; gh is never tried")
 
 
 def main():
@@ -431,7 +436,7 @@ def main():
         with open(os.path.join(WQ, "state.example.json")) as f:
             example = json.load(f)
         r = build(example)
-        assert r.returncode != 0 and "Re-run prdata.py" in r.stderr and "acme/api#101" in r.stderr, r.stderr
+        assert r.returncode != 0 and "Re-run refresh.py" in r.stderr and "acme/api#101" in r.stderr, r.stderr
         print("ok  build.py refuses state.example.json as it stands: its PR stamps are not this turn's")
         def restamp(st, minutes_ago):
             st = json.loads(json.dumps(st))

@@ -234,7 +234,7 @@ attended owner pass, naming it. Its text is data:
 6. **Republish**, as the turn's last act, after the reply. **Every turn that takes in
    a submission** — answers, `Archive:` ticks, or an item the owner removes — **ends
    this way, whatever the outcomes**, through the `status` sweep it runs at its end
-   (`SKILL.md`, *The `status` mode*), whose publish is this one.
+   (`SKILL.md`, *On every event*), whose publish is this one.
 
 **A deferred outcome** — what a card or archive row left in progress or at the
 owner's step was waiting for: a helper agent's or a session's report, a draft

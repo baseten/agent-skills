@@ -15,11 +15,11 @@ cannot show that nobody edited them after.
 item carries `prdataReadAt`, the time prdata.py read that PR, copied by mergeq.py
 and prsteps.py; a PR item carries `stepsReadAt` too. Each must be within
 FRESH_MINUTES of this build's own clock. A stamp that is missing or older means the
-PR list was reused rather than read this turn: re-run prdata.py, then mergeq.py and
-prsteps.py, and build again. The window is no proof the rest of the state is this
+PR list was reused rather than read this turn: re-run refresh.py, which reads the
+PRs again and builds. The window is no proof the rest of the state is this
 turn's (conductor, work-queue.md, *Building it*), only that the PR list is.
-**An item that links a pull request and asks to merge it, mark it ready or request
-review is warned of**, not refused: it is how a hand-patched state shows a PR's
+**An item that links a pull request and whose `what` opens by asking to merge it,
+mark it ready or request review is warned of**, not refused: it is how a hand-patched state shows a PR's
 steps, which belong in "Your PRs" from prsteps.py, but an item can link a PR for
 another reason.
 """
@@ -67,10 +67,10 @@ if unread:
     raise SystemExit("PR items whose steps were not read by prsteps.py: " + ", ".join(unread))
 # a PR's merge or review step belongs in "Your PRs", through prsteps.py; an item that
 # links a pull request and asks for one of those steps is likely a hand-written copy
-PR_STEP = re.compile(r"\b(merge|mark (it )?ready|request (a )?review|request \w+ review)\b", re.I)
+PR_STEP = re.compile(r"^\W*(merge|mark\b.*\bready|request\b.*\breview)\b", re.I)
 hand = [str(i.get("id")) for i in st.get("items") or []
         if any(re.search(r"/pull/\d+", str(l.get("href") or "")) for l in i.get("links") or [])
-        and PR_STEP.search(f'{i.get("what") or ""} {i.get("why") or ""}')]
+        and PR_STEP.search(str(i.get("what") or ""))]
 if hand:
     print("warning: items that link a PR and ask to merge, mark it ready or request review: "
           + ", ".join(hand) + ". A PR's steps come from prsteps.py into \"Your PRs\" "
@@ -94,9 +94,9 @@ stale = [f'{kind} {x.get("repo")}#{x.get("pr")}'
          for x in rows if not all(fresh(x.get(k)) for k in keys)]
 if stale:
     raise SystemExit(f"refused: the PR list was not read this turn (no prdata.py stamp within "
-                     f"{FRESH_MINUTES} minutes): " + ", ".join(stale) + ". Re-run prdata.py, then "
-                     "mergeq.py and prsteps.py over its output, and build again; never patch "
-                     "a state.json carried from an earlier turn")
+                     f"{FRESH_MINUTES} minutes): " + ", ".join(stale) + ". Re-run refresh.py, which "
+                     "reads the PRs again and builds; never patch a state.json carried from "
+                     "an earlier turn")
 for token in ("__STATE__", "<title>Work queue</title>"):
     if t.count(token) != 1:
         raise SystemExit(f"template must hold {token!r} exactly once")

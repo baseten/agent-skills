@@ -284,6 +284,8 @@ if both are sound, the minimal line can go.
 be reported, never silent, because an expired watch is a cost decision the owner
 must know about. It is one message, not a recurring one.
 
+**Why a conductor's deferred turn prints the quiet line (2026-11-26):** a turn that takes in only a run's merge report and defers its sweep to the pulled-forward check-in (the *wake budget* rule, *A conductor's fallback sweep*) has verified the merge but recorded nothing yet, so it has no report to give; the sweep that follows does. It is not a quiet turn in this rule's sense, since the merge is a delta, so it says when the sweep runs, and leaves the title for that sweep to change.
+
 ## Collapsing
 
 **Why leaving out beats collapsing:** `<details>` renders as a collapsed block on

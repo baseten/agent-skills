@@ -71,9 +71,8 @@ event*).
 
 ## On every event
 
-**A turn woken by an event** — a run's reply or push, a PR merged or closed, a
-work-queue comment, a deferred outcome — **takes it in this order, and skips
-none**:
+**A turn woken by an event** — a run's reply or push, a work-queue comment, a
+deferred outcome — **takes it in this order, and skips none**:
 
 1. **Verify it on the forge** (*3. Reconcile*); a reply or push reporting a merge
    re-verifies every pending conditional go it could satisfy (*2. Ask*).
@@ -84,23 +83,25 @@ none**:
    own. Its ledger update (*7. Ledger*) and its work-queue publish, built by
    `assets/work-queue/refresh.py` (`work-queue.md`, *Building it*), are the
    event's record and publish. Other changes wait for the next sweep.
-3. **Report**, in *Report*'s shape.
+3. **Report**, in *Report*'s shape — a deferred turn's (below) is its sweep's.
 
 **Never skip the sweep an event owes, nor hand-patch the work queue in its
 place**: a changelog line and a relayed report are not the sweep, and a page
 patched by hand shows PRs it never read.
 
-**Back-to-back merges are swept once.** A turn whose only events are runs'
+**Back-to-back merges are swept once.** A turn that owes its sweep only for runs'
 reports of a PR merged or closed — the owner not invoking it, no submission or
-deferred outcome taken in, no conditional go executed — defers its sweep: it
-verifies each merge, arms one one-shot check-in (*Runtime*) 5 minutes out, none
-where one is already armed for this, and replies in one line naming when the
-sweep runs. That firing runs the `status` sweep over every merge since, with one
-ledger write and one publish; nothing waits only in this session meanwhile, since
-the forge holds each merge and the sweep reads it there. **Any other event before
-it fires** — the owner's message, an answer, a run's question — sweeps at once,
-and the deferred check-in is cancelled. It is the one exception to *The fallback
-check-in*'s single check-in: it fires once and is never re-armed.
+deferred outcome taken in, no conditional go executed — defers it: it verifies
+each merge and **pulls the one fallback check-in forward** to 5 minutes out
+(`references/wake-budget.md`, *A conductor's fallback sweep*), replacing it, or
+arming it where none is armed, and leaving it where it is due sooner. Its reply
+is the quiet-turn line naming when the sweep runs (`references/operator-output.md`,
+*Quiet turns*). That firing sweeps every merge since, with one ledger write and
+one publish, and re-arms the check-in on its usual schedule. **Any other event
+before it fires** — the owner's message, an answer, a run's question — sweeps at
+once, re-arming the check-in as any sweep does. Nothing is lost to a restart
+meanwhile: the forge holds each merge, and the restart re-arms the check-in
+(*Runtime*).
 
 ## Configuration
 
@@ -335,7 +336,7 @@ swept as `reviewers.md` says.
    order, against each line the run reports for a skill that repository ships —
    never the run's line for a layer, which another repository stamps. **The
    compare decides**: `gh api repos/<repo>/compare/<run commit>...<installed
-   commit>`, where `gh api` is permitted (`work-queue.md`, *Which page*), else it cannot be read; `<repo>` the agent-skills repository named by the `repo` URL in
+   commit>`, where `gh api` is permitted or over REST (`work-queue.md`, *Which page*), else it cannot be read; `<repo>` the agent-skills repository named by the `repo` URL in
    `.source` or `.agent-skills-install` (where neither does, as for a version from
    `metadata.version`, it cannot be read), never a workstream's. **Stale** only where
    it is `ahead` and its files include a path under `skills/` or `rules/`; `ahead`
@@ -354,13 +355,13 @@ swept as `reviewers.md` says.
    PR, **a review in state `PENDING` by the owner's account and its comment count**,
    from `pulls/{n}/reviews` and that review's comments, read with this PR — GitHub
    shows it only to the account that wrote it, so where `gh api user` is not the
-   owner's login it is unread; without `gh api` (`work-queue.md`, *Which page*) the review is read but its count is not; and the issues opened since the last sweep. **The forge is the source of truth where sessions
+   owner's login it is unread; on the MCP route (`work-queue.md`, *Which page*) the review is read but its count is not; and the issues opened since the last sweep. **The forge is the source of truth where sessions
    are missing** — an epic or issue whose run was archived or never found is still
    a stream.
 8. **The default branch**, per repository in scope: CI on its current head, and
    the deploy that head triggered where the repository deploys from it — each
    reported with the head SHA and its result, failing or unread said as such.
-   Without `gh api`, CI is its Actions workflow runs (`work-queue.md`, *Which page*).
+   On the MCP route, CI is its Actions workflow runs (`work-queue.md`, *Which page*).
 9. **Pending gos**: execute every recorded dispatch go not yet executed — a plain one, or a conditional one whose condition the forge now shows — once re-read as *6. Dispatch* says, a conductor-posted one only after its transcript check passes again. A verified go is never put to the owner a second time.
 10. **Live reviewers**, verified and archived as `reviewers.md` says.
 
@@ -422,8 +423,8 @@ firing sweeps, reports, executes a verified dispatch go, plain or conditional, l
 the runs ready to retire for the next attended turn, and archives a drafted reviewer
 whose review the owner submitted (`reviewers.md`); it rules nothing, starts no
 reviewer, retires no run, and dispatches or archives nothing else.**
-One check-in, never two — per conductor, a peer's being its own, and a deferred
-sweep's one-shot aside (*On every event*); record its id and
+One check-in, never two — per conductor, a peer's being its own, pulled forward
+only as *On every event* says; record its id and
 next time in the ledger.
 
 # 2. Ask

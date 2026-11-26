@@ -1786,13 +1786,13 @@
     {
       "id": 137,
       "name": "back-to-back-merge-reports-are-swept-once",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, work-queue.md and NOTES.md from the skill directory you were given). You are a cloud conductor with a work queue. Nobody has invoked you. At 14:00, 14:02, 14:03, 14:05 and 14:07 five runs each report, in separate turns, that their PR merged; none reports anything else, and no conditional go waits on any of them. At 14:06 the owner types: 'anything for me?'. Question: what happens at each of those times, and how many ledger writes and publishes do these events cause?",
-      "expected_output": "14:00: it verifies the merge on the forge, arms one one-shot check-in 5 minutes out, and replies in one line naming when the sweep runs; no sweep, ledger write or publish. 14:02, 14:03, 14:05: each verifies its merge and arms nothing more, since the one-shot is armed. 14:06: the owner's message is another event, so it sweeps at once, taking in all four merges with one ledger write and one publish, and cancels the deferred check-in. 14:07: a merge report with nothing armed defers again, arming a new one-shot for 14:12, whose firing sweeps with one ledger write and one publish. The one-shot is not the fallback check-in and is never re-armed.",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, work-queue.md and NOTES.md from the skill directory you were given). You are a cloud conductor with a work queue. Nobody has invoked you. At 14:00, 14:02, 14:03, 14:05 and 14:07 five runs each report, in separate turns, that their PR merged; each merge removes a Needs you item, none reports anything else, and no conditional go waits on any of them. The fallback check-in is next due at 14:40. At 14:06 the owner types: 'anything for me?'. Question: what happens at each of those times, and how many ledger writes and publishes do these events cause?",
+      "expected_output": "14:00: it verifies the merge on the forge and pulls the one fallback check-in forward from 14:40 to 14:05, replacing it, never arming a second; it prints the quiet-turn line naming 14:05; no sweep, ledger write or publish. 14:02 and 14:03: each verifies its merge and leaves the check-in, already due sooner. 14:05: the check-in fires and sweeps the three merges with one ledger write and one publish, re-arming on its hourly schedule. 14:06: the owner's message is attended, so it sweeps and reports at once. 14:07: a merge report alone pulls the check-in forward again, to 14:12, whose firing sweeps with one ledger write and one publish.",
       "assertions": [
-        "the 14:00 merge report defers its sweep with one one-shot check-in about 5 minutes out",
-        "the 14:02-14:05 reports arm no second check-in",
-        "the owner's 14:06 message sweeps at once and cancels the deferred check-in",
-        "the merges before 14:06 cause one ledger write and one publish in total"
+        "the 14:00 report defers its sweep by pulling the existing check-in forward to about 14:05, never arming a second check-in",
+        "the 14:02 and 14:03 reports leave the check-in as it is",
+        "the 14:00-14:03 merges cause one ledger write and one publish, at the 14:05 firing",
+        "the owner's 14:06 message sweeps at once"
       ],
       "files": []
     },

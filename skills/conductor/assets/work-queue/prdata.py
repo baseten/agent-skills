@@ -49,7 +49,7 @@ owner_pending_drafts is null and owner_pending_read false, never 0. A pending la
 comment by any other login counts as unresolved. Every other failed read still stops the
 script.
 
-`ever_ready_read` is false only where the timeline had no read (the JSON route):
+`ever_ready_read` is false only where the timeline had no read (the MCP route):
 `ever_ready` is then null, and prsteps.py offers that draft no "Mark ready".
 
 A review counts as a bot's where its user's type is Bot or, where the type is not
@@ -259,9 +259,11 @@ class JsonSource:
         "status": commits/{sha}/status}}
 
     GraphQL is not needed: the ccr threads route is the one the gh route falls
-    back to, read by the same rule. A key this route adds and the document lacks
-    is unread, as on the MCP route, never zero; a thread's last comment found in
-    neither `comments` nor a pending review's stops the script.
+    back to, read by the same rule. Absent `timeline` is unread, as on the MCP
+    route, never "never ready". `pending_review_comments` is required for each
+    PENDING review the reviews list returns: without it the review's count is
+    unread, and a thread whose last comment is in it is found in no read, which
+    stops the script, as does any thread comment found in neither read.
     """
 
     def __init__(self, doc):
