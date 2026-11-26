@@ -288,7 +288,8 @@ The per-PR record, plus:
 - promotions performed; every explicitly held draft; the body-drift flags passes returned;
 - reads deferred, and when the allowance resets;
 - what woke this pass — a subscription event, by kind, the check-in, a returning pass, or several;
-- under `wait owner = self`, the watch's state — armed, with the check-in's id and next firing time, its unproductive count by kind, or expired and why.
+- under `wait owner = self`, the watch's state — armed, with the check-in's id and next firing time, its unproductive count by kind, or expired and why;
+- once the watch ends, the field feedback (`references/field-feedback.md`): drafted where the user invoked this skill, passed as notes where a caller did.
 
 And for the run: **that the platform's posture was overridden, on the authority of the run's invocation as the user's instruction — this skill's, or its caller's — and, per PR, the toggle line — turned on by this run's subscription and unsubscribed, or still subscribed and why — with the instruction to switch it off by hand where unsubscribing was unavailable or its effect on the toggle is unknown** (`references/platform-pr-posture.md`, *Saying so*); **the posting-identity map with every entry passes observed**, under its `(transport, credential)` key, `unestablished` where no write was read back, and **the transport record as it now stands**.
 

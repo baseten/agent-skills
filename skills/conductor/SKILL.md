@@ -858,8 +858,9 @@ Never force a clear, and never skip a step to beat compaction.
    (absent for the run, or not), whether it answered this sweep, and its context
    use; each reviewer's row; this session's id; the work queue's URL, or that none
    is recorded; the resolved `conductor-clear-at` and its source; the
-   last clear proposal's level, if unanswered; and what the next sweep must do
-   first.
+   last clear proposal's level, if unanswered; what the next sweep must do
+   first; and the field feedback since the last clear, drafted now and kept with
+   the pending drafts (`references/field-feedback.md`).
 2. **Verify.** Re-read the ledger body from its home and compare it with what was
    meant to be written. Fix any difference and re-read. **The dump does not count
    until the read-back matches.**

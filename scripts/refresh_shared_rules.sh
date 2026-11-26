@@ -32,7 +32,7 @@ RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
   repair-rounds mechanical-pushes review-trigger ci-and-review-verdicts
   ci-attribution watch-and-read wake-budget platform-pr-posture
   manual-step-issues conductor-exchange operator-output linear-mechanics
-  run-start node-and-pnpm-upgrades"
+  run-start node-and-pnpm-upgrades field-feedback"
 
 # Each list names only the skills that APPLY the rule, and every one of them
 # must cite it in its own SKILL.md (check_shared_rules.py). A rule that cites
@@ -132,6 +132,8 @@ RUN_START="conductor backlog-orchestrator implement-issue ship-branch plan-featu
 # Skills that write a plan's issues, or a ledger kept as a document, to Linear.
 # Others that comment on Linear issues do not carry it yet (follow-up).
 LINEAR_MECHANICS="plan-feature conductor"
+
+FIELD_FEEDBACK="conductor backlog-orchestrator implement-issue supervise-prs swarm"
 
 # Skills that write or change a test as part of their work.
 A_PASSING_TEST_IS_NOT_A_VERIFIED_FIX="implement-issue-core repair-pr
