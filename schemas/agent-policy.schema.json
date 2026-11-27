@@ -229,11 +229,11 @@
         }
       },
       "default": null,
-      "description": "Per-repository values for owner steps: whether they are filed as [Manual] issues (opt-in), under which epic, and how the live server is reached. Absent or null: nothing filed, and owner-steps' server-access defaults. Never a secret. Read by: backlog-orchestrator, conductor, owner-steps, plan-feature.",
+      "description": "Per-repository values for owner steps: whether they are filed as [Manual] issues (opt-in), under which epic, and how the live server is reached. Absent or null: nothing filed, and walk-owner-steps' server-access defaults. Never a secret. Read by: backlog-orchestrator, conductor, walk-owner-steps, plan-feature.",
       "x-read-by": [
         "backlog-orchestrator",
         "conductor",
-        "owner-steps",
+        "walk-owner-steps",
         "plan-feature"
       ]
     },
@@ -533,11 +533,11 @@
         "merge"
       ],
       "default": "rebase",
-      "description": "How a run brings a stale PR branch up to its base: rebase with a force-with-lease pinned to the recorded head (the default for every PR branch), or merge the base in. Two exceptions: never force-push a branch another session is pushing to, and the run's own integration branch merges the default branch in (rules/agent-policy.md, Branch updates). An invocation may set merge only; an invalid value or an unreadable file resolves to merge. Read by: backlog-orchestrator, implement-issue, npm-dependency-upgrade-orchestrator, settle-and-merge, supervise-prs.",
+      "description": "How a run brings a stale PR branch up to its base: rebase with a force-with-lease pinned to the recorded head (the default for every PR branch), or merge the base in. Two exceptions: never force-push a branch another session is pushing to, and the run's own integration branch merges the default branch in (rules/agent-policy.md, Branch updates). An invocation may set merge only; an invalid value or an unreadable file resolves to merge. Read by: backlog-orchestrator, implement-issue, npm-upgrade-orchestrator, settle-and-merge, supervise-prs.",
       "x-read-by": [
         "backlog-orchestrator",
         "implement-issue",
-        "npm-dependency-upgrade-orchestrator",
+        "npm-upgrade-orchestrator",
         "settle-and-merge",
         "supervise-prs"
       ]
@@ -588,9 +588,9 @@
     "auto-merge-dependencies": {
       "type": "boolean",
       "default": false,
-      "description": "Let dependency PRs merge: triage-cleared minor/patch bumps on CI alone; majors and bumps needing application changes after a clean automated review. Only this file can turn it on. On, it also lets a run edit the body of a published dependency PR it governs. Read by: npm-dependency-upgrade-orchestrator.",
+      "description": "Let dependency PRs merge: triage-cleared minor/patch bumps on CI alone; majors and bumps needing application changes after a clean automated review. Only this file can turn it on. On, it also lets a run edit the body of a published dependency PR it governs. Read by: npm-upgrade-orchestrator.",
       "x-read-by": [
-        "npm-dependency-upgrade-orchestrator"
+        "npm-upgrade-orchestrator"
       ]
     }
   }

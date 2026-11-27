@@ -48,7 +48,7 @@ Owner steps. Not for an orchestrator · Blocked by: <full URLs | none> · Unbloc
 
 ## Server access
 <host and how it is reached for each step: SSH as which user, or which
-provider's web console as root — per owner-steps' server access rules>
+provider's web console as root — per walk-owner-steps' server access rules>
 
 ## Steps
 - [ ] 1. <what> — run as <user>, where <host/console>:

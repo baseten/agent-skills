@@ -154,16 +154,18 @@ done
 # Skills this repository has removed, and the old names of skills it has
 # renamed - a rename installs the new directory beside the old one, which then
 # goes stale exactly as a removed skill does (summarize-tranche is now
-# summarize-wave). Reported, never deleted: an install that has one may have got
-# it from here or may have its own, and this script cannot tell. Naming it is
-# enough — the reader can.
-RETIRED="draft-blog-post draft-slack-message upgrade-major-dependency dependency-upgrade-orchestrator summarize-tranche"
+# summarize-wave, npm-dependency-upgrade-orchestrator is now
+# npm-upgrade-orchestrator, owner-steps is now walk-owner-steps). Reported,
+# never deleted: an install that has one may have got it from here or may have
+# its own, and this script cannot tell. Naming it is enough — the reader can.
+RETIRED="draft-blog-post draft-slack-message upgrade-major-dependency dependency-upgrade-orchestrator summarize-tranche
+  npm-dependency-upgrade-orchestrator owner-steps"
 for prev in $RETIRED; do
   # Match a whole entry, not a substring. `installed` holds one name per line,
   # so prefixing a newline delimits every entry on both sides; without it a
   # retired name that is a SUFFIX of a current one matches the current one and
-  # the warning is skipped. `dependency-upgrade-orchestrator` inside
-  # `npm-dependency-upgrade-orchestrator` is exactly that case.
+  # the warning is skipped. `owner-steps` inside `walk-owner-steps` is exactly
+  # that case.
   case $'\n'"$installed" in
     *$'\n'"$prev"$'\n'*) continue ;;
   esac

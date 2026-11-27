@@ -521,7 +521,7 @@ the report; the rest follow it** (`references/operator-output.md`, *Questions*).
    superseding only this conductor's own earlier order, since a peer may post
    its own there; where it does not, the steps
    themselves are the list. Either way the order goes in the ledger, and the owner works each step
-   with `owner-steps`. Respect every owner constraint the repository records. No
+   with `walk-owner-steps`. Respect every owner constraint the repository records. No
    secret goes in an issue, a comment or this pass.
 4. **Write every ruling to the ledger first**, with the owner's exact words, and read
    it back; **then record it where its decision lives** (*Rules*) — the issue, the epic, the PR

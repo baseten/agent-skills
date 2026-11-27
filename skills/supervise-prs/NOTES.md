@@ -2,7 +2,7 @@
 
 Companion to `SKILL.md`. That file is the contract; this one holds the reasoning, incident history, and answers to "why not the obvious other reading?" — keyed by the contract's section names. Nothing here overrides the contract.
 
-Extracted in #144 from the three skills that each supervised PRs in their own words — `backlog-orchestrator` (about nine thousand words of it), `implement-issue`'s *Phase 2* and `npm-dependency-upgrade-orchestrator`'s *Supervise*. Entries moved here from those skills' notes keep their original wording; "the run", "the parent" and "this skill" in them are the skill they were written for, as it stood then.
+Extracted in #144 from the three skills that each supervised PRs in their own words — `backlog-orchestrator` (about nine thousand words of it), `implement-issue`'s *Phase 2* and `npm-upgrade-orchestrator`'s *Supervise*. Entries moved here from those skills' notes keep their original wording; "the run", "the parent" and "this skill" in them are the skill they were written for, as it stood then.
 
 ## Supervise PRs
 
