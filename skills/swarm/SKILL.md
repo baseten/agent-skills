@@ -1,6 +1,6 @@
 ---
 name: swarm
-description: Fan a set of independent tasks out to parallel isolated workers and supervise them — select the execution runtime from what is actually available, give each worker its own worktree off a stated base, choose a model per task by how its failure would show, bound how many run at once, and hold policy at the parent — including, on remote worker sessions, the countermand to their ambient self-supervision, the report carrier, the release test, blocked-worker handling and the capture of work a worker left uncommitted. Use when asked to work through several independent tasks at once, to parallelise, to fan out, to swarm, or to dispatch subagents over a list. Also used by backlog-orchestrator and npm-dependency-upgrade-orchestrator for their dispatch phase, which is why the mechanics live here once rather than in each.
+description: Fan a set of independent tasks out to parallel isolated workers and supervise them — select the execution runtime from what is actually available, give each worker its own worktree off a stated base, choose a model per task by how its failure would show, bound how many run at once, and hold policy at the parent — including, on remote worker sessions, the countermand to their ambient self-supervision, the report carrier, the release test, blocked-worker handling and the capture of work a worker left uncommitted. Use when asked to work through several independent tasks at once, to parallelise, to fan out, to swarm, or to dispatch subagents over a list. Also used by backlog-orchestrator and npm-upgrade-orchestrator for their dispatch phase, which is why the mechanics live here once rather than in each.
 ---
 
 # Swarm
@@ -845,7 +845,7 @@ was lost.
 
 **At most 4 workers run at once, unless the caller sets its own bound**, which
 replaces this one — `backlog-orchestrator`'s `concurrent-workers`,
-`npm-dependency-upgrade-orchestrator`'s ceiling (its *Dispatch*, *Bound
+`npm-upgrade-orchestrator`'s ceiling (its *Dispatch*, *Bound
 concurrency*) — or, invoked directly, an invocation argument. **The same holds for
 a task's lost-worker budget**: a caller's (`backlog-orchestrator`'s
 `lost-worker-redispatches`) sets it, and otherwise a task gets one redispatch
@@ -1004,7 +1004,7 @@ deferred reconciliation has nobody to perform it.
 
 **A recovery ref is dropped only once a durable carrier the run will actually
 read holds its contents.** A caller with no PR-state ender of its own —
-`npm-dependency-upgrade-orchestrator`, and this skill invoked directly — uses the
+`npm-upgrade-orchestrator`, and this skill invoked directly — uses the
 ending rule above as written. A caller that keys its ender on PR state replaces
 its reachability half, and the rest of this lifecycle still applies; for
 `backlog-orchestrator`, that is its four-state rule under *Checkpoint compliance*.
