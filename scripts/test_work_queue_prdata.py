@@ -636,6 +636,17 @@ def main():
             {"id": "s1", "kind": "slack", "done": True},
             {"id": "l1", "kind": "linear", "url": "https://linear.app/x"}], "closed": ["l1"]}, merged)
         assert [x["id"] for x in got["drafts"]] == ["t2", "n1", "s1"], got["drafts"]
+        assert got["closed"] == ["l1", "t1", "b1"], got["closed"]
+        lp = os.path.join(tmp, "prune-live.html")
+        with open(lp, "w") as f:
+            f.write('<script id="state" type="application/json">' + json.dumps(
+                {"drafts": [{"id": "t1", "kind": "pr-thread", "repo": REPO, "pr": "7", "done": True}]})
+                    + "</script>")
+        r = subprocess.run([sys.executable, "-I", os.path.join(WQ, "carry.py"), "--live", lp, "--state",
+                            os.path.join(tmp, "prune-state.json")], capture_output=True, text=True)
+        assert r.returncode == 0 and "t1" not in [x["id"] for x in json.load(
+            open(os.path.join(tmp, "prune-state.json")))["drafts"]], (r.stderr,)
+        print("ok  prune.py lists what it pruned under closed, so carry.py does not bring it back from the live page")
         print("ok  prune.py drops a posted review-thread reply or body edit once its PR merged, keeps an"
               " unposted one, never prunes a Notion or Slack draft on a PR's state, and drops what closed lists")
         got = prune({"replies": [{"id": "r1", "repo": REPO, "pr": "7", "done": True},

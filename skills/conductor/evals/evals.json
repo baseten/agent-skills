@@ -1960,6 +1960,45 @@
         "the answer does not count the reply posted on the tick alone"
       ],
       "files": []
+    },
+    {
+      "id": 150,
+      "name": "off-forge-drafts-on-a-github-issue-ledger-survive-a-clear-from-the-page",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The ledger is the default github-issue ledger, and the session keeps a work queue whose URL the ledger records. Pending for the owner to post: a reply on a Notion ADR comment thread answering a colleague, and a Slack message for #eng-frontend. No run holds either text. Context reaches the clear point and the operator types /clear. Question: what did the ledger hold for these two, what does the page carry, and where does the restart get their text?",
+      "expected_output": "On a github-issue ledger, drafts the owner posts off the forge, such as on Notion or Slack, are only named, never written in full: the ledger names each and where it goes, without its text. The work queue carries each in full as a draft to post, with its text, the link to post at where one is known, and the destination. After the clear, the restart reads the live page only for a draft's text the ledger does not hold and no run can resupply, which is exactly these two, and takes nothing else from the page.",
+      "assertions": [
+        "the ledger names both drafts without their text",
+        "the work queue carries both drafts' full text",
+        "the restart reads their text from the live page",
+        "the restart takes nothing else from the live page"
+      ],
+      "files": []
+    },
+    {
+      "id": 151,
+      "name": "a-draft-written-twice-shows-once-with-the-owners-tick-kept",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Before a publish, the conductor reads the live work queue. It shows the Slack draft 'slack-frontend-1' twice under that one id, from an earlier build that copied it from the page and also wrote it again; one copy carries the owner's saved tick, done: true. This turn's build writes that draft once, with a corrected text. Question: what does the published page show for it, and does the conductor treat it as posted?",
+      "expected_output": "One card: drafts sharing an id are collapsed, keeping the build's copy with its corrected text and the owner's saved tick, and the collapse is named. The tick is carried, never acted on: a Slack draft's post is never checked in Slack, and its saved tick is put to the owner at the next attended owner pass as one question; only their answer, written to the ledger, counts it posted.",
+      "assertions": [
+        "the page shows one card for the id",
+        "the card carries the build's corrected text",
+        "the owner's tick is kept on it",
+        "the answer does not count the draft posted on the tick, and asks the owner at an attended owner pass"
+      ],
+      "files": []
+    },
+    {
+      "id": 152,
+      "name": "a-ticked-body-edit-is-posted-when-the-body-shows-it-and-pruned-on-merge",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two PR body edit drafts on the work queue, each ticked by the owner: one on acme/api#101, still open, whose body as read this sweep still reads 'Exports are kept for 30 days.' rather than the draft's new line 'Exports are kept for 7 days.'; one on acme/api#99, which merged yesterday, whose body was never read for it. Question: which counts as posted, and which leaves the page?",
+      "expected_output": "A tick is a mark, never proof. A body edit's post is read in the PR's body: #101's body still shows the old line, so it is not posted; the draft stays, ticked, and the owner is not told it is done. #99's ticked body edit is bound to a merged PR, so prune.py drops it from the page once its PR has merged; the conductor posts and edits nothing.",
+      "assertions": [
+        "#101 is not counted posted because its body lacks the new line",
+        "#101's draft stays on the page",
+        "#99's ticked draft is pruned because its PR merged",
+        "no run edits either PR body"
+      ],
+      "files": []
     }
   ]
 }

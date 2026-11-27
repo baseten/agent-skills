@@ -383,7 +383,7 @@ author's account, so a sweep reading as any other account would see "none" where
 there is one; a run under the owner's account can read it, which is why the item
 says no run acts on it, not that none can see it. **Why step 7 reads the reviews
 itself:** the first version took the count from `prdata.py`, which runs only over
-the PRs the merge section or a held reply names, so a run's PR outside both was
+the PRs the merge section or a held reply names (since 2026-11-27, a PR-bound draft), so a run's PR outside both was
 never read; the review read is now part of step 7's read of each run's PR, and
 `prdata.py` keeps its field for the merge section. Scenario:
 `an-owner-pending-review-is-surfaced-not-misread`.
@@ -1202,7 +1202,7 @@ the order once. The `status` mode keeps only a pointer, so the rule has one home
 the wrong one was one edit. A conductor that judged the patch "close enough" was
 choosing the cheap path, so the wrapper makes the right path the cheap one. It
 derives the PRs to read from the same files the build renders (prs.json, the merge
-notes, the held replies), so the read and the page cannot disagree about which PRs
+notes, the held replies — since 2026-11-27 the PR-bound drafts), so the read and the page cannot disagree about which PRs
 there are. It reads no watch listing and publishes nothing: those are tool calls
 the session makes, and the row they choose is *Which page*'s. `build.py` now warns
 on an item that links a PR and asks to merge it, mark it ready or request review —
@@ -1286,7 +1286,13 @@ The warning was rendered through the DOM shim. Scenario:
 another kind on a PR's state:** it has none to read, so a Notion draft would either
 never leave or leave wrongly; it leaves only when the build omits it and `closed`
 lists it. `prune.py` now also drops any draft whose id `closed` lists, since the
-ledger shows it finished.
+ledger shows it finished. **Why `prune.py` adds what it prunes to `closed` (a
+reader in the eval round on #249):** `carry.py` runs after it and carries back any
+draft the live page holds and the build lacks, so a ticked reply pruned on its
+merged PR came straight back; this held for `replies` since `carry.py` began
+carrying the conductor's half. Listing the pruned ids under `closed` stops that,
+and the printed ids are read back into the ledger. `scripts/test_work_queue_prdata.py`
+reproduces it: prune, then carry over a live page still holding the draft.
 
 **Why a tick is checked only where the site can be read:** the page is a view, and
 a tick a convenience the conductor never acts on (*The work queue*). A review
@@ -1369,6 +1375,14 @@ asked about. **A second round on 146 and 147 alone**, same method: new 9/11, old
 6/11; gained 146's copy-and-tick and 147's question, pruning and no-post assertions;
 regressed 146's body edit showing its old line, which only `drafts.py` stated, so
 *Drafts to post* now says it. Both arms still missed grouping by page on 146.
+**A third round, on scenarios 150–152** (added after a review-skill pass on #249
+named three unpinned behaviours: off-forge drafts across a clear on a
+`github-issue` ledger, a draft written twice, a ticked body edit): new 11/12, old
+6/12; gained all four of 150, 151's owner-pass question and 152's prune on merge;
+regressed 152's "no run edits either body", which the answer did not mention and
+the scenario did not ask, read as reader variance. A reader in that round asked
+whether `carry.py` brings back a draft `prune.py` dropped; it did (*Why `prune.py`
+adds what it prunes to `closed`*, above).
 
 ## The contradiction pass before the review round (PR #201)
 
