@@ -1,0 +1,109 @@
+# CI and review verdicts
+
+This is the rule other skills mean when they cite *CI and review verdicts*: what establishes that a PR's CI is green and that its review ran and came back clean, and on which commit either verdict holds.
+
+**It is not a skill and nobody invokes it.** It is a shared rule, held once at
+`rules/ci-and-review-verdicts.md` and copied into each skill that applies it by
+`scripts/refresh_shared_rules.sh`. A skill reads its own
+`references/ci-and-review-verdicts.md`, which works after `bootstrap.sh` has
+installed only that skill's directory, and travels with the skill if it is
+moved into a plugin. Edit the source, never a copy; check_shared_rules.py fails if a generated copy diverges.
+
+It binds every skill that gates on either verdict or supervises a PR toward one. Which review conventions a PR's routing requires is the *review trigger* shared rule's; what happens when a round is refused, or a trigger never took effect, is that rule's too. This one says how to read the answer.
+
+## A verdict attaches to a commit
+
+**A verdict attaches to the commit it was computed on, not to the PR**, and the
+head moves under it. Where a review names a commit other than the current head,
+there is no review for the current head: that is `NOT REVIEWED`, not a stale
+clean verdict. Findings routinely exist only after a repair push, so re-trigger
+and wait rather than reading the earlier verdict forward. The same holds for CI:
+an arriving check event is evidence about the SHA it names, and a name that is
+not the head is no signal yet rather than a green.
+
+**So filter an event against the head before anything is counted or posted.**
+Compare the event's `head_sha` with the PR's current head — as read, not as
+remembered — and do it before attribution, a budget or a comment sees the event:
+
+- **an event naming another commit is not a signal about this PR**, red or
+  green. It uses no repair cycle, dispatches nothing and gets no PR comment,
+  whatever the wake's text asks;
+- **a run cancelled because a newer run superseded it is not a failure**, and
+  neither is an aggregate check whose only non-successful inputs were cancelled
+  that way — a rollup job reporting `failure` over shards that report
+  `cancelled`. Concurrency cancels superseded runs, so this is the ordinary
+  shape of a push landing mid-run. It uses no cycle and gets no comment either;
+  on the current head, the newer run is the one to read, and until it concludes
+  the check is waiting, not green;
+- **a cancel with no newer run on the head is not that case** — a job that
+  exceeded its time limit, or a run cancelled by hand. It is a red check on the
+  head like any other, and goes to attribution.
+
+## CI is green
+
+**Green means every check the repository actually requires has concluded successfully on the current head**, a check the workflow filters keep off that head aside (*Path filters*). Enumerate what is required rather than gating on whichever check you happened to read. Two false passes share one root here, and closing only the second leaves the first:
+
+- **an empty or barely populated rollup is not green.** A rollup is populated asynchronously and is briefly empty after a push — particularly one that cancels an in-flight run — and an empty rollup satisfies any predicate of the form "no failures and nothing pending" (the *absence is not a verdict* shared rule). A check that has not registered has not concluded. **The one empty rollup that is green** is a head where *Path filters* shows every workflow filtered off and branch protection requires no check by name: that is green by not applying, established by the filter read, never by the empty rollup;
+- **one required check concluding is not green** where several are required and another is still pending or failing.
+
+Neither is a pass.
+
+**Under `ci-mode: integration-branch`, a PR whose base is the integration branch is gated on its local gate record instead** (`supervise-prs`, *Integration-branch CI*): green means a record in which every locally runnable check of the derived per-PR gate passed — a `filtered off` one aside, read below — each at the current head or at an earlier one every push since which is mechanical (`references/mechanical-pushes.md`) — a worker's pass included, as that section takes one — and, at the merge gate, its merged-tip check passed (`settle-and-merge`, *Merge behavior*); a `not locally runnable` one is owed by the integration PR's CI, which runs it, and that section says so in its record. **A `filtered off` one** — a check CI's path filters or change-set tooling would not run for the PR's whole diff against its base, failing closed (`implement-issue-core`, *Final local verification*) — is neither passed nor owed by this PR: whether it was owed is read on the integration PR's CI, over the batch's files, by *Path filters*. It counts only for the head and base — the base branch and the merge base its diff was taken from, since a retarget grows the diff with no push — the record says its filters were last read for: on another head or base it stands only where they were re-read for that diff, still leave it off and the entry was restamped to it; one they now select, or one stamped with another head or base, is `not run` on the current head, a check this PR's gate must pass. No such record is not green — a record for an earlier head with a substantive push since is no signal, as a check event naming another commit is not (*A verdict attaches to a commit*) — and a moved base does not make a record's passes stale, a `filtered off` entry aside, as above. The PR from the integration branch into the default branch is read by the rest of this section, on its CI.
+
+## Path filters
+
+**"No check run on the head" is ambiguous once a workflow filters its `pull_request` trigger** — by `paths` or `paths-ignore`, or by `branches` or `branches-ignore` on the PR's base. Before reading it as missing CI, as not green or as a conflict, read each workflow's filters from the workflow file **on both the base and the head**, and compare them with the PR's changed files and its base branch:
+
+- **a workflow is filtered off** when its `branches` filters exclude the PR's base, when no changed file matches its `paths`, or when every changed file matches its `paths-ignore`. It legitimately did not trigger. It is not missing CI, and a check only it produces is satisfied by not applying, unless branch protection requires that check by name (below). That is not reading a check that never ran as one that succeeded (the *absence is not a verdict* shared rule): the filters, read against the PR, positively establish the check was never owed;
+- **`types` is part of the trigger, and never filters a workflow off.** A workflow whose `pull_request` `types` name only `ready_for_review` runs on a publish and never on a push, so a required check only it produces is missing CI on any head pushed after the publish: report it, naming the trigger, and hold the PR — never satisfied, never waited on;
+- **every other workflow should have run**, and no run from it is missing CI, never satisfied. That includes one with no filters, one whose filters differ between base and head, one whose file the PR changes, and one whose filters cannot be read: each counts as matching. A PR cannot filter itself out of CI by editing the filter.
+
+**A required check that never reports because of a filter is reported, not waited on.** Where branch protection requires a check by name and the only workflow producing it was filtered off this head, the forge blocks the merge on a status that is never coming. That check is not green and never will be: report it, its workflow and the filter, and hold the PR, rather than reading it as pending. The remedy is a workflow or protection change, which is the owner's.
+
+**A mergeable state of `dirty` is conflicted, whatever CI shows or did not run.**
+
+## A review is clean
+
+**The two review sources are either/or, not summary-and-detail** — each is empty
+exactly where the other carries the answer, which is why reading them in the
+wrong order produces a confident wrong result. A clean review creates no review
+object and no threads, so no endpoint can distinguish *clean* from *never ran*
+without the second read.
+
+1. **Existence is the summary comment, always.** Require a `Reviewed commit:`
+   matching the current head. No match → `NOT REVIEWED`: never merge — a
+   stalled round an owner chose to merge without, its `DECISION` retired,
+   apart — and request the
+   round — **except a round recorded `refused`, which is not re-requested, and
+   one this workflow already requested and unanswered, which gets no further
+   request but the one the *review trigger* shared rule allows, or one an owner
+   reply chose from its stalled round's `DECISION`**
+   (*A refused round*, *Re-triggers*, *A stalled round*). **A match is not
+   enough while another review request on any head the round spans is
+   unanswered and shows its provider's mark, running or queued, or is a trigger
+   still inside its confirmation window**, whatever mark remains after an
+   answer: it can still root findings on the code the round reviewed, so the
+   review is not clean until that request answers or an owner reply chooses,
+   from its stalled round's `DECISION`, to merge without it and that item is
+   retired — nothing else releases it, and a gate with no walkthrough to
+   retire the item never takes the choice (*A stalled round*). This read is not
+   skippable, because a thread does not say *which round produced it*: a
+   resolved, non-outdated thread left by an earlier round or by a person
+   satisfies any existence test built on threads, and a new trigger that
+   silently no-ops then merges behind it.
+2. **Severity is the threads, always.** Any unresolved thread means not clean,
+   whatever the summary says, and an owner-reserved thread holds the gate
+   regardless of the rest.
+3. Both — existence released only as item 1 allows — or the PR does not merge. They are either/or as *sources* — each is
+   empty exactly where the other carries the answer — and both as *conditions*.
+
+**The summary comment is never evidence of severity.** A review that found things
+may post a summary carrying no verdict, so its wording decides nothing — only the
+thread list does. The prohibition is on that endpoint *for severity*, and it is
+scoped deliberately: it is the wrong source for what a review found and the only
+source for whether one happened, and a rule that forbade it outright misfired in
+the opposite direction once already.
+
+**Where the routed convention is a review skill invoked rather than a reviewer triggered** — `review-docs` is the case that exists — existence is that skill's completed pass and the review comment it posts, whose `Reviewed commit:` line is the one item 1 reads. What its decline means is the *review trigger* shared rule's (*Documentation-review routing*).
+
+**Under `ci-mode` `deferred` or `integration-branch`, a round carries forward.** Where a PR's mode has effect (`supervise-prs`, *Deferred CI*, *Integration-branch CI*), a round on head H counts for a later head where every push since H is mechanical by `references/mechanical-pushes.md`, conditions included — the deferred-CI trigger's base update and the merge gate's overlap update among them — so item 1's head match may read H. **A round spans the head it was requested on and every later head it counts for** — here, or at a gate that carries rounds the same way — and item 1's hold reads requests on all of them; item 2 still reads the threads as they stand on the current head. It is the rule the dependency gate already applies (`npm-upgrade-orchestrator`, *Merge*). Under `per-pr`, item 1 stands as written, and outside such a gate a round spans only the head it was requested on.
