@@ -126,10 +126,11 @@ same snapshot, so their version lines match. A few things come with it:
 
 - **Sync is off for every claude.ai plugin in that environment**, not only this
   one. Account skills still sync.
-- **A private layer can't follow.** The setup script can't clone a private
-  marketplace ([Why this repository is
+- **A private layer needs a token.** The setup script has no GitHub
+  credentials for a private marketplace ([Why this repository is
   public](docs/other-install-routes.md#why-this-repository-is-public)), so a
-  layer like `close` doesn't reach these environments until the bug is fixed.
+  layer like `close` needs a read-only token in the environment; the layer's
+  own README says how.
 - **The version is the snapshot's.** The setup script runs once and its result
   is reused for about seven days, so the plugin stays at the `release` it
   installed. Any edit to the script rebuilds it sooner.
