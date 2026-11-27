@@ -131,11 +131,12 @@ their version lines match. A few things come with it:
 
 - **Sync is off for every claude.ai plugin in that environment**, not just this
   one. Account skills still sync.
-- **A private layer needs a token.** The setup script has no GitHub credentials
-  for a private marketplace ([Why this repository is
-  public](docs/other-install-routes.md#why-this-repository-is-public)), so a
-  layer like `close` needs a read-only token in the environment. The layer's own
-  README says how.
+- **A private layer can't install this way.** The setup script has no GitHub
+  credentials for a private marketplace ([Why this repository is
+  public](docs/other-install-routes.md#why-this-repository-is-public)), and it
+  runs before the environment's variables are set, so a token saved there
+  doesn't reach it either. A layer like `close` needs a self-hosted
+  environment, whose created sessions do get claude.ai plugins, or a local run.
 - **The version is the snapshot's.** The setup script runs once and its result
   is reused for about seven days, so the plugin stays at the `release` it
   installed. Any edit to the script rebuilds it sooner.
