@@ -169,6 +169,12 @@ def run_json(tmp, doc, stdin=False, team=()):
     return subprocess.run(args + ["--from-json", dp], capture_output=True, text=True, env=env)
 
 
+def without_read_at(stdout):
+    """The rows minus readAt, the wall-clock time of the read: two runs a moment
+    apart straddle a second often enough to fail CI."""
+    return [{k: v for k, v in d.items() if k != "readAt"} for d in json.loads(stdout)]
+
+
 def json_route(tmp, gh_out):
     r = run_json(tmp, mcp_doc(), team=["fe-platform"])
     assert r.returncode == 0, r.stderr
@@ -187,7 +193,8 @@ def json_route(tmp, gh_out):
     print("ok  --from-json: the owner's non-question reply is answered, a question is not;"
           " a [bot] login never approves; mergeable unknown stays unknown")
     r2 = run_json(tmp, mcp_doc(), stdin=True, team=["fe-platform"])
-    assert r2.returncode == 0 and r2.stdout == r.stdout, r2.stderr
+    assert r2.returncode == 0, r2.stderr
+    assert without_read_at(r2.stdout) == without_read_at(r.stdout), (r2.stdout, r.stdout)
     print("ok  --from-json - reads the document from stdin")
     doc = mcp_doc()
     doc["prs"][N]["status"]["statuses"] = [{"context": "UI Tests", "state": "pending"}]
@@ -248,8 +255,7 @@ def rest_route(tmp, gh_out):
     fx[f"repos/{REPO}/issues/{N}/timeline"] = []
     r = run_json(tmp, rest_doc(fx))
     assert r.returncode == 0, r.stderr
-    strip = lambda rows: [{k: v for k, v in d.items() if k != "readAt"} for d in rows]
-    assert strip(json.loads(r.stdout)) == strip(json.loads(gh_out)), \
+    assert without_read_at(r.stdout) == without_read_at(gh_out), \
         f"REST form differs from gh: {r.stdout} vs {gh_out}"
     print("ok  --from-json REST form: the gh route's output exactly, pending review and"
           " requested teams read, threads by the ccr route")
