@@ -10,11 +10,11 @@ checks, keys, backfills, console actions — were surfacing in PR bodies, wrap-u
 comments and chat, where nothing tracked whether they had been done and the next
 session could not find them. The owner asked for every one to be filed as a
 `[Manual]` issue under the repository's manual-steps epic. Three skills produce these issues (`conductor`, `backlog-orchestrator`, and `plan-feature` since 2026-11-04) and
-one consumes them (`owner-steps`), so the form is stated once here rather than
+one consumes them (`walk-owner-steps`), so the form is stated once here rather than
 three times; a producer that drifted from the consumer's expectations would file
-issues `owner-steps` cannot walk.
+issues `walk-owner-steps` cannot walk.
 
-**Why one issue per sitting:** `owner-steps` walks one issue at a time with the
+**Why one issue per sitting:** `walk-owner-steps` walks one issue at a time with the
 owner at a server; an issue that mixes a root console step with a later check
 that waits on a deploy cannot be finished in one session, and its *Done when*
 never reads true at the end of one.

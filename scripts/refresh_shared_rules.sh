@@ -17,8 +17,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # rule source  ->  skills that apply it
-AUTHORED_WRITE_FORM="write-spec plan-feature backlog-orchestrator conductor owner-steps settle-and-merge create-pr normalize-github-dependencies
-  npm-dependency-upgrade-orchestrator implement-issue-core
+AUTHORED_WRITE_FORM="write-spec plan-feature backlog-orchestrator conductor walk-owner-steps settle-and-merge create-pr normalize-github-dependencies
+  npm-upgrade-orchestrator implement-issue-core
   merge-stack repair-pr resolve-pr-comment review-docs review-pr review-skill settle-outstanding-decisions
   summarize-wave upgrade-npm-dependency validate-backlog supervise-prs"
 
@@ -50,14 +50,14 @@ RULES="authored-write-form absence-is-not-a-verdict prose-review-round-budget
 #
 # Skills that make an authored forge/tracker write and select its author, or
 # that pass or merge the run's posting-identity map.
-POSTING_IDENTITY="write-spec plan-feature backlog-orchestrator conductor owner-steps settle-and-merge swarm create-pr implement-issue
+POSTING_IDENTITY="write-spec plan-feature backlog-orchestrator conductor walk-owner-steps settle-and-merge swarm create-pr implement-issue
   implement-issue-core merge-stack repair-pr resolve-pr-comment review-docs review-pr
   settle-outstanding-decisions supervise-prs normalize-github-dependencies
   review-skill summarize-wave upgrade-npm-dependency validate-backlog"
 
 # Skills that read .claude/agent-policy.json, or gate on what it grants.
-AGENT_POLICY="write-spec plan-feature backlog-orchestrator conductor owner-steps merge-stack settle-and-merge implement-issue resolve-pr-comment
-  npm-dependency-upgrade-orchestrator supervise-prs"
+AGENT_POLICY="write-spec plan-feature backlog-orchestrator conductor walk-owner-steps merge-stack settle-and-merge implement-issue resolve-pr-comment
+  npm-upgrade-orchestrator supervise-prs"
 
 # Skills that promote a draft, decline to, or gate on the drafts it defines as held.
 DRAFT_STATE="backlog-orchestrator conductor settle-and-merge supervise-prs"
@@ -68,21 +68,21 @@ REPAIR_ROUNDS="supervise-prs"
 # Skills that decide whether a push re-triggers review, or is re-reviewed, or
 # whether a conflict resolution in a refresh is mechanical.
 MECHANICAL_PUSHES="review-docs backlog-orchestrator repair-pr
-  npm-dependency-upgrade-orchestrator supervise-prs"
+  npm-upgrade-orchestrator supervise-prs"
 
 # Skills that issue or re-trigger an automated review, or gate on the rounds
 # its routing requires.
 REVIEW_TRIGGER="create-pr backlog-orchestrator conductor
-  npm-dependency-upgrade-orchestrator settle-and-merge supervise-prs"
+  npm-upgrade-orchestrator settle-and-merge supervise-prs"
 
 # Skills that gate on, or supervise a PR toward, green CI or a clean review.
 CI_AND_REVIEW_VERDICTS="implement-issue-core
-  npm-dependency-upgrade-orchestrator settle-and-merge merge-stack supervise-prs"
+  npm-upgrade-orchestrator settle-and-merge merge-stack supervise-prs"
 
 # Skills that decide whether a red check - on CI or in a local run - is the
 # change's own failure.
 CI_ATTRIBUTION="backlog-orchestrator
-  npm-dependency-upgrade-orchestrator repair-pr implement-issue-core supervise-prs
+  npm-upgrade-orchestrator repair-pr implement-issue-core supervise-prs
   settle-and-merge"
 
 # Skills that supervise what they track: arm its watch, report no-change
@@ -90,13 +90,13 @@ CI_ATTRIBUTION="backlog-orchestrator
 WATCH_AND_READ="swarm backlog-orchestrator supervise-prs"
 
 # Skills that arm a recurring check-in and bound it.
-WAKE_BUDGET="backlog-orchestrator supervise-prs npm-dependency-upgrade-orchestrator implement-issue conductor
+WAKE_BUDGET="backlog-orchestrator supervise-prs npm-upgrade-orchestrator implement-issue conductor
   swarm"
 
 # Skills whose session arms a PR-activity subscription, receives its wakes, or
 # reports to the user that the platform's posture was overridden.
 PLATFORM_PR_POSTURE="backlog-orchestrator supervise-prs implement-issue-core
-  npm-dependency-upgrade-orchestrator implement-issue"
+  npm-upgrade-orchestrator implement-issue"
 
 # Skills that classify, repair, report or gate on review threads.
 REVIEW_FEEDBACK="backlog-orchestrator repair-pr resolve-pr-comment
@@ -104,15 +104,15 @@ REVIEW_FEEDBACK="backlog-orchestrator repair-pr resolve-pr-comment
 
 # Skills that act on something asserted by an agent, assumed about a provider,
 # or that author a write making claims about existing code or current state.
-ESTABLISH_DO_NOT_ASSUME="write-spec plan-feature backlog-orchestrator conductor owner-steps swarm settle-and-merge repair-pr
+ESTABLISH_DO_NOT_ASSUME="write-spec plan-feature backlog-orchestrator conductor walk-owner-steps swarm settle-and-merge repair-pr
   validate-backlog review-pr review-skill implement-issue-core create-pr resolve-pr-comment
   summarize-wave settle-outstanding-decisions implement-issue supervise-prs"
 
 # Skills that file an owner step as a [Manual] issue, or walk one.
-MANUAL_STEP_ISSUES="plan-feature backlog-orchestrator conductor owner-steps"
+MANUAL_STEP_ISSUES="plan-feature backlog-orchestrator conductor walk-owner-steps"
 
 # Skills that upgrade dependencies, which is where a Node or pnpm move is reached.
-NODE_AND_PNPM_UPGRADES="upgrade-npm-dependency npm-dependency-upgrade-orchestrator"
+NODE_AND_PNPM_UPGRADES="upgrade-npm-dependency npm-upgrade-orchestrator"
 
 # Skills a conductor coordinates, and the conductor itself: status requests,
 # pushes, conductor-id adoption, new work and folds, and relayed rulings.
@@ -127,7 +127,7 @@ OPERATOR_OUTPUT="write-spec plan-feature conductor backlog-orchestrator implemen
 # session's outermost skill. Each hands off to a layer that extends it, then
 # names its version.
 RUN_START="conductor backlog-orchestrator implement-issue ship-branch plan-feature review-pr
-  write-spec npm-dependency-upgrade-orchestrator owner-steps"
+  write-spec npm-upgrade-orchestrator walk-owner-steps"
 
 # Skills that write a plan's issues, or a ledger kept as a document, to Linear.
 # Others that comment on Linear issues do not carry it yet (follow-up).

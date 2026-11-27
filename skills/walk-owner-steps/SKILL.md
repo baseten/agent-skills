@@ -1,5 +1,5 @@
 ---
-name: owner-steps
+name: walk-owner-steps
 description: Walk the owner through one `[Manual]` owner-steps issue, one step at a time, while they run each command on the live server or console and paste the output back — confirm its blockers are cleared on GitHub, give each exact command with where and as whom to run it and what to expect, judge each pasted result against that expectation and diagnose a failure rather than advancing, record each step done or not done on the issue, with its output kept redacted in the session, and tick it, and close the issue only when its "Done when" holds. It follows the repository's runbooks and its recorded server access (by default SSH as the deploy user without sudo; root only in the provider's web console, through a short script where the console cannot paste), never suggests an unrequested destructive command, and never asks for or repeats a secret. Use when the owner wants to work through a manual step, a `[Manual]` issue, a post-deploy check, a backfill or a key placement.
 ---
 

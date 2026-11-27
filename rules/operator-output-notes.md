@@ -299,5 +299,5 @@ linked, works on every surface.
 invoked directly — and the settle steps whose output lands in their chat:
 `settle-and-merge`, `settle-outstanding-decisions` and `summarize-wave`.
 `ship-branch` holds no rule of its own and inherits it through `implement-issue`. `write-spec` and `plan-feature` apply its links and *Questions* (2026-11-04); they write no report, since a planning turn ends with a draft, a question or a hand-off line.
-`npm-dependency-upgrade-orchestrator` prints to the owner too, but was outside the
+`npm-upgrade-orchestrator` prints to the owner too, but was outside the
 owner's list; adopting it is a follow-up, tracked on #202.

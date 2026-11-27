@@ -192,8 +192,8 @@ consumer list in `scripts/refresh_shared_rules.sh`:
 
 - applies it — `conductor`, `backlog-orchestrator`, `implement-issue`,
   `ship-branch`, `plan-feature`, `write-spec`,
-  `npm-dependency-upgrade-orchestrator`: each is invoked by a person or a
-  dispatch prompt as its session's outermost skill. `owner-steps` too: the owner
+  `npm-upgrade-orchestrator`: each is invoked by a person or a
+  dispatch prompt as its session's outermost skill. `walk-owner-steps` too: the owner
   invokes it directly to walk an issue.
 - does not — `implement-issue-core`, since #207 an entry point only in that it
   hands off to `implement-issue`, which prints the line; `swarm`,

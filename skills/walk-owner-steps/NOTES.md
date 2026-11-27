@@ -1,4 +1,4 @@
-# owner-steps — design notes
+# walk-owner-steps — design notes
 
 Reasoning behind `SKILL.md`, keyed by its section names. NOTES explains; it never
 overrides.

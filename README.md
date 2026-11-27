@@ -250,8 +250,8 @@ Each skill's `SKILL.md` description says when to use it; this is the map.
   text into GitHub's native blocked-by links.
 - `backlog-orchestrator` — runs a validated issue set as parallel waves of
   workers, supervising every PR it opens.
-- `owner-steps` — walks the owner through a `[Manual]` issue one command at a
-  time, judging each pasted output.
+- `walk-owner-steps` — walks the owner through a `[Manual]` issue one command
+  at a time, judging each pasted output.
 
 **Settling and merging**
 
@@ -269,8 +269,8 @@ Each skill's `SKILL.md` description says when to use it; this is the map.
 
 - `upgrade-npm-dependency` — upgrades one package or coupled group, proven by
   characterization tests written before the bump.
-- `npm-dependency-upgrade-orchestrator` — triages a batch of upgrades and
-  dispatches them through `swarm`, merging only where the repository opted in.
+- `npm-upgrade-orchestrator` — triages a batch of upgrades and dispatches them
+  through `swarm`, merging only where the repository opted in.
 
 `docs/orchestration-overview.md` explains how the orchestration skills behave
 once started: runtimes, autonomy, per-repository policy, recovery, PR
@@ -497,7 +497,7 @@ The split is the point — a reader that has seen either is grading its own answ
 `name` is withheld too, because a scenario name telegraphs its verdict in three words.
 
 **A skill that cites another's rules as its own names it in `"companions"`** at the top
-of its `evals.json` — `backlog-orchestrator` and `npm-dependency-upgrade-orchestrator`
+of its `evals.json` — `backlog-orchestrator` and `npm-upgrade-orchestrator`
 name `swarm`, which holds the worker mechanics both apply. `prepare` then puts each
 companion's `SKILL.md` and `NOTES.md` into both arms' contract directories, as
 `<companion>-SKILL.md` and `<companion>-NOTES.md`, each arm's taken from its own revision,

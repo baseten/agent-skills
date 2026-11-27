@@ -54,11 +54,11 @@
       "budget": 1867,
       "target": 3000
     },
-    "skills/npm-dependency-upgrade-orchestrator/SKILL.md": {
+    "skills/npm-upgrade-orchestrator/SKILL.md": {
       "budget": 5453,
       "target": 8000
     },
-    "skills/owner-steps/SKILL.md": {
+    "skills/walk-owner-steps/SKILL.md": {
       "budget": 1310,
       "target": 3000
     },
