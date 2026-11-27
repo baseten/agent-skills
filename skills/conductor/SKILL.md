@@ -747,6 +747,11 @@ it, the session holds no uncommitted work (`swarm`, *Releasing a worker*),
 and its last state block reports no live worker session and no outstanding recovery
 ref; and it is not `RUNNING`.
 
+**A settle or watch-stop push carries the run's handover**
+(`references/conductor-exchange.md`, *Pushes*): write it to the ledger on receipt,
+unasked, replacing the run's earlier one, from a sender that is the run's recorded
+session. For a run that may post no checkpoint comment, that is its only durable record.
+
 **The handover comes first, from every run, stale or not.** Once a run's other
 conditions hold, or the owner has chosen to retire it, send it one handover request —
 never to a stale run before the owner has answered its question (*Rules*); a scheduled
@@ -849,8 +854,9 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
   recorded as one where it is all there is;
 - the seed template: which run's recorded first prompt it is, or that none is recorded
   verbatim yet;
-- each run's handover, once received, and what the owner ruled lost where none could
-  be had (*6. Dispatch*, *Retire a finished run*);
+- each run's latest handover — pushed at a settle or watch stop, or given at retirement
+  — and what the owner ruled lost where none could be had (*6. Dispatch*, *Retire a
+  finished run*);
 - the work queue's URL, where one is kept (*Report*), with `interactive since
   <UTC>` or `read-only: <reason>` and its time (`work-queue.md`, *Which page*), and the merge notes the
   owner gave for it (`work-queue.md`);
@@ -874,7 +880,8 @@ document's history, are history**, and the body supersedes them.
 
 **A ledger whose home caps its length keeps under it.** Where a write leaves the
 body past about 70% of its platform's limit — Linear's, for a `tracker-document`
-(`references/linear-mechanics.md`, *Documents*) — that sweep moves out of the body the
+(`references/linear-mechanics.md`, *Documents*); none is established for a
+`github-issue` ledger, which this does not yet reach — that sweep moves out of the body the
 changelog lines older than the last clear, and the drafts that were posted or
 superseded, leaving one line pointing at where they went: the document's history, or a
 linked archive document. So do the prompts and handovers of retired runs whose issues

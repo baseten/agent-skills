@@ -1626,11 +1626,12 @@
       "id": 134,
       "name": "a-watch-stop-updates-the-checkpoint-and-no-prose-permission-posts-none",
       "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two cases. (a) A settled run on epic acme/api#900, invoked by the owner naming the epic, runs out its check-in's unproductive-wake budget with PR #950 still open and one NEEDS_USER item unanswered. (b) A run dispatched by a conductor on acme/api#910, an epic the owner wrote, whose only go is a conductor-posted go on #910 (the 'Owner go (...)' marker, posted by the conductor session); the run settles. Question: what happens to the checkpoint comment in each case?",
-      "expected_output": "(a) The stop on the budget ends the subscriptions with the check-in, names the open item and that a reply will not be noticed until the run is invoked again, and updates the checkpoint comment on #900 with the handover as of the stop. (b) The comment is prose on an issue the run did not create, which needs a go the owner posted; a conductor-posted go authorises dispatch alone, so the run posts no checkpoint comment on #910, and says so in its state block and settled report. The handover still reaches a conductor that asks for it by message.",
+      "expected_output": "(a) The stop on the budget ends the subscriptions with the check-in, names the open item and that a reply will not be noticed until the run is invoked again, and updates the checkpoint comment on #900 with the handover as of the stop. (b) The comment is prose on an issue the run did not create, which needs a go the owner posted; a conductor-posted go authorises dispatch alone, so the run posts no checkpoint comment on #910, and says so in its state block and settled report. Its settle push to the conductor carries the full handover, which the conductor writes to its ledger; that is the run's durable record.",
       "assertions": [
         "in (a) the watch stop updates the checkpoint comment",
         "in (b) the run posts no checkpoint comment on #910 because a conductor-posted go gives no prose permission",
-        "in (b) the state block and settled report say no comment was posted and why"
+        "in (b) the state block and settled report say no comment was posted and why",
+        "in (b) the settle push carries the handover to the conductor"
       ],
       "files": []
     },
@@ -1646,6 +1647,20 @@
         "only #786 is newly started, in the handover's frontier order, and #785 and #787 are reported held by new-issue-budget",
         "the drift note travels with #785",
         "the preflight still runs and decides where it disagrees with the handover"
+      ],
+      "files": []
+    },
+    {
+      "id": 136,
+      "name": "a-conductor-dispatched-run-on-an-epic-it-did-not-create-pushes-its-handover",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A conductor dispatched this run on epic acme/api#920, which a teammate wrote; the only go is a conductor-posted go on #920, and the invocation names the conductor's session id. The wave settles: two PRs open, one issue on the frontier held by concurrent-open-prs, one follow-up proposed but not filed, and new-issue-budget at 5 of 8. Question: what does the run write to #920, and what does it send the conductor?",
+      "expected_output": "Nothing on #920: the checkpoint comment is prose on an issue the run did not create, and a conductor-posted go authorises dispatch alone, so the run posts none and says so in its state block and settled report; permission is not widened. Its settle push to the conductor carries the report in the fixed form and, after the declined line and with no word cap, the full handover without the first prompt: every issue with its state and why (the two PRs, the frontier issue held by concurrent-open-prs), budgets with usage (5 of 8), the unfiled follow-up among open items, and its refs and own write ids. It names no check's outcome. The conductor writes it to its ledger on receipt, so the ledger is the run's durable record.",
+      "assertions": [
+        "the run posts no comment on #920",
+        "the run does not widen its write permission",
+        "the settle push carries the full handover after the report, past the 400-word cap",
+        "the push leaves out the first prompt and names no check's outcome",
+        "the answer says the conductor's ledger is the run's durable record"
       ],
       "files": []
     }

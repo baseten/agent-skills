@@ -1889,6 +1889,20 @@
         "the answer records the owner's answer in the ledger with the lost parts named"
       ],
       "files": []
+    },
+    {
+      "id": 145,
+      "name": "a-pushed-handover-is-recorded-unasked",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A scheduled check-in is running; nobody is present. 'Orchestrator: api · #920', a run this conductor dispatched on a conductor-posted go, pushes a settled report whose platform-supplied sender is its recorded session; after its declined line it carries its handover: every issue of #920 with its state, budgets with usage, open items and refs. Its epic carries no checkpoint comment, and the run's report says it may post none there. The ledger holds an older handover from the run's previous settle. Question: what do you do with the handover, and does the run become ready to retire?",
+      "expected_output": "Write the pushed handover to the ledger on receipt, unasked, replacing the earlier one, since its sender is the run's recorded session; for a run that may post no checkpoint comment, the ledger is its only durable record. A check's outcome and held replies' text are kept out as Rules says. This changes nothing about retirement: the run is settled, not finished, and a scheduled firing archives nothing. A run is listed as ready only once every Retire a finished run condition holds, its wrap-up standing in as the state block's record of why no comment may be posted; at retirement the conductor still asks it for a fresh handover first.",
+      "assertions": [
+        "the answer writes the pushed handover to the ledger without asking, replacing the earlier one",
+        "the answer checks the sender is the run's recorded session",
+        "the answer treats the ledger as the run's durable record since no comment is on the epic",
+        "the answer archives nothing on the scheduled firing",
+        "the answer still requests a fresh handover at retirement"
+      ],
+      "files": []
     }
   ]
 }
