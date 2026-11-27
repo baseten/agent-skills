@@ -162,18 +162,23 @@ for the owner (*Answers*, step 2), a Notion or Linear comment, a Slack message, 
 line to change in a published PR body, or text for any other link.
 `assets/work-queue/drafts.py` names each kind's fields: where it goes, which the
 page groups by; the link to post at, as recorded, which a Slack message may lack;
-whom it answers; a gist; the exact text, shown verbatim; and any note, such as a
-held reply's fix SHA, checked on the pushed head. Not drafts: text a run posts
+whom it answers; a gist; the exact text, shown verbatim so inline-code marks survive
+a copy; and any note, such as a held reply's fix SHA, checked on the pushed head,
+and every comment posted in its thread since the fix, re-read at the build.
+Each offers Copy and "Copy, open and tick", or "Copy and tick" with no link. Not drafts: text a run posts
 once approved (*Approve drafts*), and a reviewer's drafts (`reviewers.md`).
 
-**The ledger holds each draft's full text** (`SKILL.md`, *Rules*, names what a
-`github-issue` ledger only names) until it is posted or superseded.
+**The ledger holds each draft's full text**, bar what a `github-issue` ledger only
+names (`SKILL.md`, *Rules*), until it is posted or superseded.
 
 **A tick is a mark, never proof of a post.** Whether a draft was posted is read
 at its site where this session can: the review thread (*4. Owner pass*, step 2),
 the PR body, the Linear comments. A Notion, Slack or other draft is never checked
-there: its tick, read back into the ledger as the owner's unverified mark, counts
-it posted. The next build omits a posted draft and lists its id under `closed`.
+there, and its saved tick, like any carried mark, is never acted on: the next
+attended owner pass puts every such tick to the owner as one question naming the
+drafts, and their answer, written to the ledger with their words, counts each
+posted, unverified at its site. The next build omits a posted draft and lists its
+id under `closed`.
 `prune.py` also drops a ticked review-thread reply or body edit once its PR merges
 or closes; no other draft leaves on a PR's state. **The page offers no thread
 resolution**, and nothing on it asks this skill to post a draft or resolve a

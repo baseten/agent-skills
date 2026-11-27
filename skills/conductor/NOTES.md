@@ -870,10 +870,10 @@ waiting on them. The tracker's review page sits beside the PR, marked with the d
 *Approve drafts* is in the chat. **Since the owner's ruling of 2026-11-16, a reply or
 ruling the owner is to post in a thread where no run posts** (`resolve-pr-comment`,
 *Replies held for the owner*) **is carried on the page in full** — text, the
-thread's recorded `html_url` and the fix SHA — (widened to every draft the owner posts, from any surface, on 2026-11-27: *Drafts to post*, below) — because the owner now copies, edits
+thread's recorded `html_url` and the fix SHA — because the owner now copies, edits
 and posts it themselves, and a page that only names where the text is held makes
 them go and fetch it. The page is private and is not the ledger, so the
-`github-issue` ledger's rule of naming such drafts only does not reach it. A draft's location is a claim about current state,
+`github-issue` ledger's rule of naming such drafts only does not reach it. (Widened on 2026-11-27 to every draft the owner posts, from any surface: *Drafts to post*, below.) A draft's location is a claim about current state,
 so it is read each sweep (*establish, do not assume*), never carried from memory,
 and a change in a PR item's links or draft count republishes the page even where
 the list is otherwise unchanged: otherwise a submitted draft would stay counted on
@@ -1277,9 +1277,21 @@ ledger shows it finished.
 **Why a tick is checked only where the site can be read:** the page is a view, and
 a tick a convenience the conductor never acts on (*The work queue*). A review
 thread, a PR body and a Linear issue's comments can be read, so the post is
-confirmed there; Notion and Slack posts are not checked, per the owner's brief, so
-the tick is recorded in the ledger as the owner's mark, unverified, and that is
-what closes the draft. **Why not every draft is one:** text a run posts once the
+confirmed there; Notion and Slack posts are not checked, per the owner's brief.
+**Why such a tick is asked, not acted on (contradiction pass before review):** the
+first version closed a Notion or Slack draft on its saved tick. A draft tick is
+saved with no comment and so no author, and every other carried mark is never acted
+on (*The work queue*; a saved archive tick is asked for the same reason), and
+closing a draft moves its text out of the ledger under the size budget. So the next
+attended owner pass asks about every such tick in one question, and the owner's
+answer, in the ledger with their words, counts the post, unverified at its site.
+The same pass named where a body edit and a Linear comment are read (*4. Owner
+pass*, step 2), which *Drafts to post* had listed with no step to read them, and
+that a held reply's draft shows the comments since its fix (`rules/review-feedback.md`,
+*Held replies*). **Why a `github-issue` ledger names off-forge drafts:** a `[PLAN]`
+issue would otherwise hold a colleague's Notion thread or a Slack message in full,
+which is the reason it already names held replies; the brief kept full text for
+tracker-document ledgers. **Why not every draft is one:** text a run posts once the
 owner approves it stays an *Approve drafts* item, and a reviewer's drafts stay on
 their surface for the owner to submit (`reviewers.md`, which now says so at its own
 decision point). **Why a PR body line is a draft:** a created PR's body is edited
@@ -1301,8 +1313,7 @@ script's own directory by an explicit path keeps that guarantee.
 **Protected rules.** No protected rule's text changed. The change sits beside rule
 1 (a held reply is never posted by a run: still the owner's, and nothing on the
 page asks this skill to post or resolve), rule 6 (the body edit is reported, never
-made) and rule 7 (the page is not a forge write, so a tick's verification is
-recorded in the ledger and never posted). `rules/operator-output.md`'s *Post
+made) and rule 7, untouched: whether a draft was posted is not a check's outcome. `rules/operator-output.md`'s *Post
 yourself* widened from review threads to every draft the owner posts
 (`rules/operator-output-notes.md`).
 
@@ -1326,6 +1337,21 @@ draft and the decision once. Scenarios: `every-draft-the-owner-posts-is-on-the-q
 `a-reply-the-owner-posts-is-on-the-queue-in-full` (rewritten: it had a reply no run
 may post shown as an *Approve drafts* item linking the ledger, the very shape the
 incident found).
+
+**Two-arm round (`scripts/run_evals.py`, base origin/main, conductor scenarios 36,
+40, 45, 51, 67, 97, 99, 101, 134, 146, 147, 148):** one Haiku reader per batch of
+three per arm, each holding only its arm's contract, and one blind Sonnet grader
+seeing the two answers per scenario as A and B. New 53/58, old 46/58. Gained: 40
+(comments since the fix shown), 45 (grouped by action; held reply's text off the
+list line), 97 (each item's full text), 134 (the owner's step names the draft at
+its link), 146 (grouped by page; body edit's old and new lines), 147 (Notion and
+Slack never checked; no non-PR draft pruned on a PR). Regressed: 45 (narration in
+the *Unchanged* line) and 101 (carry before the republish not mentioned), neither
+on text this change touches, so read as reader variance. Both arms failed 146's
+copy-and-tick and verbatim assertions, because *Drafts to post* no longer named
+the control; it now does. 147 was rewritten after the round, when the
+contradiction pass changed a Notion or Slack tick from closing the draft to being
+asked about.
 
 ## The contradiction pass before the review round (PR #201)
 

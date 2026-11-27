@@ -491,7 +491,7 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
       drafts.length ? h('section', { id: 'drafts' }, (function () {
         var todo = drafts.filter(function (r) { return !r.done || ticks.hasOwnProperty('draft:' + r.id); });
         var posted = drafts.filter(function (r) { return r.done && !ticks.hasOwnProperty('draft:' + r.id); });
-        var kids = [h('div', { class: 'tier' }, [h('h2', { text: 'Drafts to post' }), h('p', { text: 'Copy, open where it goes, paste and post, then tick. A tick is your mark: the conductor checks a GitHub or Linear post where it can, never a Notion or Slack one. Posted drafts fold away.' })])];
+        var kids = [h('div', { class: 'tier' }, [h('h2', { text: 'Drafts to post' }), h('p', { text: 'Copy, open where it goes, paste and post, then tick. A tick is your mark: the conductor checks a GitHub or Linear post where it can, never a Notion, Slack or other one, which it asks you about. Posted drafts fold away.' })])];
         if (todo.length) kids = kids.concat(byDest(todo)); else kids.push(h('div', { class: 'empty', text: 'Nothing to post.' }));
         if (posted.length) kids.push(h('details', { class: 'posted' }, [h('summary', { text: 'Posted (' + posted.length + ')' })].concat(byDest(posted))));
         return kids;

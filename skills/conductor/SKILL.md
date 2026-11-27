@@ -243,14 +243,15 @@ starts there is read from the forge alone (*1. Sweep*, step 7).
   neither a forge write (protected rule 7 on a forge ledger).
 - **A draft exists only with its full text.** The full text of every pending draft —
   an issue, a comment, a message — goes into the ledger as it is written; nothing
-  is called a draft without it. **On the default `github-issue` ledger, held replies
-  and draft answers to a person's question are only named, never written in full**
+  is called a draft without it. **On the default `github-issue` ledger, held replies,
+  draft answers to a person's question and drafts the owner posts off the forge,
+  such as on Notion, Linear or Slack, are only named, never written in full**
   (`resolve-pr-comment`, *Replies held for the owner*, *The draft reply*): their text
   is held in this session and carried on the work queue, which is not the ledger
   (*Report*). Where those drafts matter, as at work, configure the
   `tracker-document` ledger, which holds them in full. **Every draft the owner must
-  post, from any surface, is also on the work queue in full**, never an item
-  pointing at the ledger (`work-queue.md`, *Drafts to post*). A reviewer's drafts are
+  post, from any surface, is also on the work queue in full**, where one is kept,
+  never an item pointing at the ledger (`work-queue.md`, *Drafts to post*). A reviewer's drafts are
   never copied: they live on their surface, linked (`reviewers.md`).
 - **Report costs.** Every plan states its expected CI runs (*5. Intake and replan*).
 - **Nothing depends on an in-turn background result surviving a restart.** A
@@ -509,7 +510,11 @@ the report; the rest follow it** (`references/operator-output.md`, *Questions*).
    **Held replies are collected across runs and listed, never asked**: each one's
    full text, thread link and fix SHA, with every comment posted in its thread
    since the fix, read fresh, for the owner to post and resolve — no run, this one
-   included, posts there (`resolve-pr-comment`, *Replies held for the owner*). A draft answer to a person's question is never among them: that is a
+   included, posts there (`resolve-pr-comment`, *Replies held for the owner*). **Every
+   other draft the owner posts is listed the same way**, and its post read where its
+   site can be — a PR body edit in the PR's body, a Linear comment in the issue's
+   comments; the work queue's saved ticks on any other draft are asked as one
+   question (`work-queue.md`, *Drafts to post*). A draft answer to a person's question is never among them: that is a
    decision, asked as one. **A run's force-push held for approval is asked too** — "approve the force-push of <branch> in <session>?" — and the answer written to the ledger as the decision, never relayed to the run; the chat then says plainly that the click must still happen in the run's own session, since a relayed approval does not satisfy that session's permission mode, and links it. This is the
    conductor's own pass; where it invokes `settle-outstanding-decisions` for a run — its
    records on issues this skill did not create made as *Rules* says —
@@ -839,8 +844,8 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
   session's link and its state, `drafted` or `failed` once reported (`reviewers.md`);
 - the owner's rulings given in this chat, each dated, in their exact words, linked
   to where each was recorded;
-- every pending draft, in full — held replies and draft answers only named on a
-  `github-issue` ledger (*Rules*);
+- every pending draft, in full — held replies, draft answers and drafts posted off
+  the forge only named on a `github-issue` ledger (*Rules*);
 - the gates between streams, each linked to its record;
 - the open decisions, each linked to its site; each work-queue card answered, with
   its state and `outcome`, and each archive row's `outcome` (`work-queue.md`,
@@ -865,7 +870,8 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
 - the fallback check-in's id, next time and empty count — locally, that it is
   session-only;
 - the invocation arguments this skill was given;
-- owner-comment ids — each go, ruling or draft the owner posted — kept apart from
+- owner-comment ids — each go, ruling or draft the owner posted, where the post was
+  read at its site — kept apart from
   this skill's own-write ids;
 - own-write ids — each write this skill posted, with its site, a conductor-posted go
   tagged as one beside the owner's answer it quotes;
