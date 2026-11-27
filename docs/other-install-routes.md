@@ -21,7 +21,11 @@ session simply behaves as though the skill was never written.
 
 So there are three ways to get these skills into one: the plugin enabled on
 your claude.ai account, which is the recommended route and needs nothing in the
-environment, or a setup script that installs them on disk as copies.
+environment; the plugin installed from the CLI by the environment's setup
+script; or a setup script that installs them on disk as copies, below. A
+session another session creates gets no account plugins today, so an
+environment a cloud conductor dispatches into needs the second
+(README, *Sessions a conductor creates*).
 
 ## Install from a setup script
 

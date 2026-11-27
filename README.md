@@ -68,7 +68,9 @@ name Claude Code reserves for Anthropic's own.)
 
 This is the route to use. A plugin enabled on a claude.ai account reaches every
 session signed in to that account: Claude Code on the web, a self-hosted runner
-and the local CLI alike.
+and the local CLI alike. The one exception today is a cloud session that another
+session creates, which is how a conductor dispatches its runs; see
+[Sessions a conductor creates](#sessions-a-conductor-creates).
 
 1. On claude.ai, open **Customize > Plugins**, choose **Add > Add marketplace**
    and enter `baseten/agent-skills`.
@@ -92,6 +94,52 @@ claude plugin install agent-skills@baseten --scope user
 
 To update later, `claude plugin marketplace update baseten`, then
 `claude plugin update agent-skills`.
+
+### Sessions a conductor creates
+
+A cloud session created by another session's `create_session` tool gets the
+account's skills but none of its plugins. It starts without the variable that
+turns plugin sync on, so its synced-plugins folder stays empty
+([anthropics/claude-code#111802](https://github.com/anthropics/claude-code/issues/111802),
+open as of 2026-11-27). Every run a cloud conductor dispatches then stops at its
+preamble with `failed: missing skills`, having written nothing.
+
+Until that's fixed, install the plugin from the CLI in the environment's setup
+script, and turn claude.ai plugin sync off there so no session gets two copies:
+
+```bash
+{
+  claude plugin marketplace add baseten/agent-skills
+  claude plugin install agent-skills@baseten
+  python3 - <<'EOF'
+import json, os
+p = os.path.expanduser("~/.claude/settings.json")
+s = json.load(open(p)) if os.path.exists(p) else {}
+s["syncClaudeAiPlugins"] = False
+json.dump(s, open(p, "w"), indent=2)
+EOF
+} >>~/agent-skills-setup.log 2>&1 || true
+```
+
+The conductor and its runs then load the same `agent-skills:*` skills from the
+same snapshot, so their version lines match. A few things come with it:
+
+- **Sync is off for every claude.ai plugin in that environment**, not only this
+  one. Account skills still sync.
+- **A private layer can't follow.** The setup script can't clone a private
+  marketplace ([Why this repository is
+  public](docs/other-install-routes.md#why-this-repository-is-public)), so a
+  layer like `close` doesn't reach these environments until the bug is fixed.
+- **The version is the snapshot's.** The setup script runs once and its result
+  is reused for about seven days, so the plugin stays at the `release` it
+  installed. Any edit to the script rebuilds it sooner.
+- **Fixing it in the run itself doesn't hold up.** A dispatched run can clone
+  and install the skills mid-session, and they do load, but it stops to ask
+  permission to download and run the script, and nothing in its prompt avoids
+  that.
+
+When the bug is fixed, delete the block. The snapshot rebuilds and the synced
+plugin comes back.
 
 ### Gotchas
 
