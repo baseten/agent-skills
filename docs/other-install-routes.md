@@ -24,8 +24,8 @@ your claude.ai account, which is the recommended route and needs nothing in the
 environment; the plugin installed from the CLI by the environment's setup
 script; or a setup script that installs them on disk as copies, below. A
 session another session creates gets no account plugins today, so an
-environment a cloud conductor dispatches into needs the second
-(README, *Sessions a conductor creates*).
+environment a cloud `conductor`, `backlog-orchestrator` or `swarm` starts
+sessions in needs the second (README, *Sessions another session creates*).
 
 ## Install from a setup script
 

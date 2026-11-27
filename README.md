@@ -69,8 +69,9 @@ name Claude Code reserves for Anthropic's own.)
 This is the route to use. A plugin enabled on a claude.ai account reaches every
 session signed in to that account: Claude Code on the web, a self-hosted runner
 and the local CLI alike. The one exception today is a cloud session that another
-session creates, which is how a conductor dispatches its runs; see
-[Sessions a conductor creates](#sessions-a-conductor-creates).
+session creates, which is how `conductor`, `backlog-orchestrator` and `swarm`
+start their runs and workers; see
+[Sessions another session creates](#sessions-another-session-creates).
 
 1. On claude.ai, open **Customize > Plugins**, choose **Add > Add marketplace**
    and enter `baseten/agent-skills`.
@@ -95,14 +96,16 @@ claude plugin install agent-skills@baseten --scope user
 To update later, `claude plugin marketplace update baseten`, then
 `claude plugin update agent-skills`.
 
-### Sessions a conductor creates
+### Sessions another session creates
 
 A cloud session created by another session's `create_session` tool gets the
 account's skills but none of its plugins. It starts without the variable that
 turns plugin sync on, so its synced-plugins folder stays empty
 ([anthropics/claude-code#111802](https://github.com/anthropics/claude-code/issues/111802),
-open as of 2026-11-27). Every run a cloud conductor dispatches then stops at its
-preamble with `failed: missing skills`, having written nothing.
+open as of 2026-11-27). That is every cloud session `conductor` dispatches,
+`swarm` starts as a worker, and `backlog-orchestrator` starts through `swarm`.
+A conductor's run stops at its preamble with `failed: missing skills`, having
+written nothing, and a worker starts without the skills its brief names.
 
 Until that's fixed, install the plugin from the CLI in the environment's setup
 script, and turn claude.ai plugin sync off there so no session gets two copies:
@@ -121,8 +124,8 @@ EOF
 } >>~/agent-skills-setup.log 2>&1 || true
 ```
 
-The conductor and its runs then load the same `agent-skills:*` skills from the
-same snapshot, so their version lines match. A few things come with it:
+The session and the sessions it creates then load the same `agent-skills:*`
+skills from the same snapshot, so their version lines match. A few things come with it:
 
 - **Sync is off for every claude.ai plugin in that environment**, not only this
   one. Account skills still sync.
@@ -134,7 +137,7 @@ same snapshot, so their version lines match. A few things come with it:
 - **The version is the snapshot's.** The setup script runs once and its result
   is reused for about seven days, so the plugin stays at the `release` it
   installed. Any edit to the script rebuilds it sooner.
-- **Fixing it in the run itself doesn't hold up.** A dispatched run can clone
+- **Fixing it in the created session doesn't hold up.** It can clone
   and install the skills mid-session, and they do load, but it stops to ask
   permission to download and run the script, and nothing in its prompt avoids
   that.
