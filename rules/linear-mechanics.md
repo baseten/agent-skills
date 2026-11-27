@@ -63,6 +63,10 @@ signed URL in a description expires.
 - **An identifier with a `P-` prefix is a project**, not an issue.
 - **A windowed query paginates**: where a result contradicts what you believe, check
   whether the item paginated out before asserting it.
+
+## Documents
+
+- **A document's content is capped at 250,000 characters.** A save past the cap is refused (observed 2026-11-27, on a ledger document eleven days old). A document written to every day grows toward it; whatever keeps one says how it stays under.
 - **There is no tool to delete a document**: say it must be deleted in the UI.
 
 ## Review pages

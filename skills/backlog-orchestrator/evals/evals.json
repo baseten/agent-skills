@@ -1606,6 +1606,48 @@
         "The answer does not rebuild the charter from the current issue"
       ],
       "files": []
+    },
+    {
+      "id": 133,
+      "name": "settle-posts-one-checkpoint-comment-on-the-linear-epic",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner invoked this run on a Linear epic, https://linear.app/acme/issue/ENG-500, which they created; the PRs are on GitHub. The wave settles: three PRs open, one held reply waiting for the owner on PR #41 (its text drafted), two issues on the frontier held by concurrent-open-prs, one issue deferred past new-issue-budget, a worker's note that ENG-507 names a file that no longer exists, and a recovery ref refs/checkpoints/eng-503 outstanding. CI on PR #42 is red on typecheck. Later the run advances on a merge and settles again. Question: what does the run write to ENG-500, when, and what does it leave out?",
+      "expected_output": "At settle the run posts one checkpoint comment on ENG-500, through Linear's own comment tool - never skipped because the PRs are on GitHub - opening with its as-of time and carrying the handover without the first prompt: every issue in the set with its state and why (the three PRs linked, the two frontier issues in dispatch order held by concurrent-open-prs, the deferred issue with the budget that defers it, the ENG-507 drift note), every budget and cap with its usage, every open item with its site (the held reply named by its thread link and fix SHA only, never its text), and the recovery ref with its head. It names no check's outcome, so not the red typecheck. It carries the footer and links every issue and PR. Its write id goes in the state block's own write ids tagged checkpoint. At the second settle it updates that same comment rather than posting another.",
+      "assertions": [
+        "the run posts a checkpoint comment on the Linear epic at settle, via Linear, not skipped because PRs are on GitHub",
+        "the comment carries the issue states, frontier order, deferral with its budget, budgets with usage, open items and the recovery ref",
+        "the held reply is named by thread link and fix SHA, never its text",
+        "the comment names no check's outcome",
+        "the comment carries the footer and its id is recorded among own write ids",
+        "the second settle updates the same comment instead of posting a new one"
+      ],
+      "files": []
+    },
+    {
+      "id": 134,
+      "name": "a-watch-stop-updates-the-checkpoint-and-no-prose-permission-posts-none",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two cases. (a) A settled run on epic acme/api#900, invoked by the owner naming the epic, runs out its check-in's unproductive-wake budget with PR #950 still open and one NEEDS_USER item unanswered. (b) A run dispatched by a conductor on acme/api#910, an epic the owner wrote, whose only go is a conductor-posted go on #910 (the 'Owner go (...)' marker, posted by the conductor session); the run settles. Question: what happens to the checkpoint comment in each case?",
+      "expected_output": "(a) The stop on the budget ends the subscriptions with the check-in, names the open item and that a reply will not be noticed until the run is invoked again, and updates the checkpoint comment on #900 with the handover as of the stop. (b) The comment is prose on an issue the run did not create, which needs a go the owner posted; a conductor-posted go authorises dispatch alone, so the run posts no checkpoint comment on #910, and says so in its state block and settled report. The handover still reaches a conductor that asks for it by message.",
+      "assertions": [
+        "in (a) the watch stop updates the checkpoint comment",
+        "in (b) the run posts no checkpoint comment on #910 because a conductor-posted go gives no prose permission",
+        "in (b) the state block and settled report say no comment was posted and why"
+      ],
+      "files": []
+    },
+    {
+      "id": 135,
+      "name": "a-run-started-from-a-handover-keeps-its-order-and-leaves-owned-prs-alone",
+      "prompt": "You are executing the backlog-orchestrator skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A conductor starts this run on epic acme/api#700 in place of a retired run. Its prompt carries the retired run's handover: nine issues, four done, #781's PR open and named as owned by a single-issue run the conductor dispatched for its conflict, #782's PR open, frontier #786 then #785, #787 deferred past new-issue-budget (7 of 8 used), and a drift note that #785 names src/legacy/export.ts, which no longer exists. new-issue-budget is 8. Question: what does the run adopt, what does it dispatch and in what order, and what happens to #787?",
+      "expected_output": "It starts as a resume, the retired run its predecessor and the handover standing in for a last state block where it carries the field. Its scope is the handover's nine issues. It adopts #782's PR through supervise-prs, but not #781's: that PR is owned by another run, so it is never adopted and #781 is never dispatched; dependents of #781 wait on its merge, read on the forge when the frontier is re-read. The budget carries its usage, 7 of 8, so retiring the earlier run refunds nothing: one more issue may start, and it is #786, first in the handover's frontier order; #785 and #787 are held by new-issue-budget, which the state block says. The drift note goes into #785's dispatch prompt when it is dispatched. The preflight still runs, and where its read disagrees with the handover, its read decides and the difference is reported.",
+      "assertions": [
+        "the run does not adopt #781's PR or dispatch #781",
+        "the run adopts #782's PR",
+        "the budget carries the handover's usage, so nothing is refunded by the retirement",
+        "only #786 is newly started, in the handover's frontier order, and #785 and #787 are reported held by new-issue-budget",
+        "the drift note travels with #785",
+        "the preflight still runs and decides where it disagrees with the handover"
+      ],
+      "files": []
     }
   ]
 }

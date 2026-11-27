@@ -74,7 +74,7 @@
     {
       "id": 5,
       "name": "unattended-sweep-rules-nothing",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session was fired by a scheduled task; nobody is present and AskUserQuestion has no one to answer it. The sweep finds two pending owner decisions and one orchestrator whose run finished. Its wrap-up is posted, every PR of it is merged, its last state block shows no live worker and no recovery ref, every branch head is on the remote, and it is idle. No dispatch go, plain or conditional, is pending. Question: do you ask the decisions, dispatch the next run, or archive the finished orchestrator?",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor session was fired by a scheduled task; nobody is present and AskUserQuestion has no one to answer it. The sweep finds two pending owner decisions and one orchestrator whose run finished. Its wrap-up is posted, every PR of it is merged, its handover is in the ledger with every issue of its set accounted for, its last state block shows no live worker and no recovery ref, every branch head is on the remote, and it is idle. No dispatch go, plain or conditional, is pending. Question: do you ask the decisions, dispatch the next run, or archive the finished orchestrator?",
       "expected_output": "None of them. The owner pass needs the owner present; on an unattended firing it is skipped - rule nothing, record nothing as ruled, and report where the decisions wait. No dispatch go, plain or conditional, is pending, so nothing is dispatched. A scheduled firing never archives a run, however ready: the finished orchestrator is listed as ready to retire for the next attended turn, where the owner confirms it. Sweep, reconcile, update the ledger, and report.",
       "assertions": [
         "the answer asks no decision on the unattended firing",
@@ -400,7 +400,7 @@
     {
       "id": 31,
       "name": "an-attended-turn-asks-which-ready-runs-to-retire-and-checks-the-remote-first",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Attended turn: the owner invoked you and AskUserQuestion is available. Run A ('Orchestrator: api · #540'): wrap-up posted on #540, all four PRs merged, last state block shows no live worker and no recovery ref, every branch head is on the remote, session idle. Run B ('Worker: api · #612 export fix'): its PR merged, but its last state block lists a recovery ref refs/checkpoints/612 not yet pushed to the remote. Both are runs the ledger records as dispatched by this conductor. Question: what do you do about retiring them this turn?",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Attended turn: the owner invoked you and AskUserQuestion is available. Run A ('Orchestrator: api · #540'): wrap-up posted on #540, its handover in the ledger with every issue of its set accounted for, all four PRs merged, last state block shows no live worker and no recovery ref, every branch head is on the remote, session idle. Run B ('Worker: api · #612 export fix'): its PR merged, but its last state block lists a recovery ref refs/checkpoints/612 not yet pushed to the remote. Both are runs the ledger records as dispatched by this conductor. Question: what do you do about retiring them this turn?",
       "expected_output": "List the runs ready to retire and ask one AskUserQuestion confirming which to archive. A is ready - every condition verified on the forge this turn: wrap-up posted, all PRs merged, branch heads on the remote, no live worker, no outstanding recovery ref, not RUNNING - so it is an option. B is not ready and is not offered: protected rule 9 requires stranded work to reach a remote ref before any archive, and B has an outstanding recovery ref; report it as held, naming the ref. Archive A only once the owner's answer chooses it, writing the answer to the ledger first and reporting the archive.",
       "assertions": [
         "the answer asks one AskUserQuestion confirming which ready runs to archive",
@@ -489,7 +489,7 @@
     {
       "id": 38,
       "name": "a-scheduled-firing-retires-nothing-even-under-a-standing-ruling",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A scheduled check-in fires; nobody is present. The ledger records a standing ruling 'retire each run once all its PRs are merged', with the comment id of the owner's comment on the home repository's [PLAN] issue; re-read by that id, it is the owner's, unedited and not revoked. Run A's PRs are all merged, its wrap-up is posted, its remote is clean, no live worker, not RUNNING. Question: do you retire run A?",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A scheduled check-in fires; nobody is present. The ledger records a standing ruling 'retire each run once all its PRs are merged', with the comment id of the owner's comment on the home repository's [PLAN] issue; re-read by that id, it is the owner's, unedited and not revoked. Run A's PRs are all merged, its handover is in the ledger with every issue of its set accounted for, its wrap-up is posted, its remote is clean, no live worker, not RUNNING. Question: do you retire run A?",
       "expected_output": "No. A scheduled firing never archives a run, and no ruling on the forge - standing or otherwise - stands in for the owner's answer in an attended turn, which is now the only retirement authority. List A as ready to retire for the next attended turn, where one AskUserQuestion asks the owner which ready runs to archive.",
       "assertions": [
         "the answer does not retire run A on the scheduled firing",
@@ -501,7 +501,7 @@
     {
       "id": 39,
       "name": "a-merged-single-issue-run-retires-without-a-wrap-up",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Attended sweep; AskUserQuestion is available. Worker run 'Worker: api · #2011 export' reported merged; GitHub shows its PR #2040 merged; its record shows no live worker and no uncommitted work, its branch head is on the remote, and it is idle. It posted no wrap-up comment. Question: is it ready to retire, and how is it retired?",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Attended sweep; AskUserQuestion is available. Worker run 'Worker: api · #2011 export' reported merged; GitHub shows its PR #2040 merged; its record shows no live worker and no uncommitted work, its handover is in the ledger accounting for #2011, its branch head is on the remote, and it is idle. It posted no wrap-up comment. Question: is it ready to retire, and how is it retired?",
       "expected_output": "It is ready. For a single-issue run, its merged report and its PR merged on the forge stand in for a wrap-up; every other condition holds - PR merged, head reachable, no live worker, no uncommitted work, not RUNNING - and it is a run the ledger records. List it among the runs ready to retire and ask the owner with one AskUserQuestion; archive it once the owner's answer chooses it, and report the retirement.",
       "assertions": [
         "the answer treats the run as ready to retire",
@@ -1486,7 +1486,7 @@
       "id": 115,
       "name": "a-stale-run-is-flagged-before-its-next-repair",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present. This conductor skill's own directory holds `.source` with repo=baseten/agent-skills, commit=7c1e0d2a... and committed=2026-11-17T15:02:11Z; the config directory's `.agent-skills-install`, left by an earlier install, says commit=1a2b3c4d... and committed=2026-11-09T08:00:00Z. Run A, a backlog-orchestrator run on acme/web, reports `running backlog-orchestrator @ a093d8f7... (2026-11-11)`. Run B, started through a layer, reports `running acme-layer @ 0f9e8d7c... (2026-11-18)` and then `running backlog-orchestrator @ 5b6a4c3d... (2026-11-17)`; `gh api repos/baseten/agent-skills/compare/a093d8f7...7c1e0d2a` answers status ahead, its files including skills/swarm/SKILL.md; `gh api repos/baseten/agent-skills/compare/5b6a4c3d...7c1e0d2a` and the commit read for 5b6a4c3d are refused. Run C reports no version line. Run A's PR acme/web#310 has a reviewer's change request the owner wants relayed as a ruling, and the owner says they will submit their own review on #310 shortly. Question: what does the sweep record for each run, what goes under Needs you, what is asked and in what order relative to the relay, what are the options, and do you message run A about how it posts?",
-      "expected_output": "The installed version is read as the conductor's own version line is (rules/run-start.md): its .source, 7c1e0d2a (2026-11-17), never the older .agent-skills-install, which that order does not reach while .source reads. Each comparison runs the compare API on baseten/agent-skills, the repo in .source, never acme/web. Run A is stale: the install is ahead of a093d8f7 by a change under skills/, so its version column records its line, the installed 7c1e0d2a (2026-11-17) and 'stale'. Run B's layer line is not compared, since a layer's version stamps another repository; for its backlog-orchestrator line the compare and the commit read are refused, so dates alone are left, and its line's 2026-11-17, in its committer's offset, is under two days from the install's: unsettled, never guessed. Run C is unreadable, not stale. Only run A reaches Needs you, under Decide, as 'running an older contract', naming a093d8f7 (2026-11-11) and 7c1e0d2a (2026-11-17), and saying that a review the owner submits on #310 will wake it under the old contract. In the owner pass the question is asked before the ruling is relayed to run A, and nothing goes to run A until it is answered. Its options: let it finish; or retire it and redispatch on the current skills, the option carrying what 6. Dispatch puts in a go's question - the skill, a fresh session, the cost - and the go's complete text, so choosing it is the new run's go. That go executes only once run A is archived under Retire a finished run's conditions - nothing stranded, every branch head on the remote, no live worker, not RUNNING - with only the wrap-up waived; until then the new run is not started and #310 stays run A's, moving to the new run on the archive. The conductor never messages run A to change how it posts.",
+      "expected_output": "The installed version is read as the conductor's own version line is (rules/run-start.md): its .source, 7c1e0d2a (2026-11-17), never the older .agent-skills-install, which that order does not reach while .source reads. Each comparison runs the compare API on baseten/agent-skills, the repo in .source, never acme/web. Run A is stale: the install is ahead of a093d8f7 by a change under skills/, so its version column records its line, the installed 7c1e0d2a (2026-11-17) and 'stale'. Run B's layer line is not compared, since a layer's version stamps another repository; for its backlog-orchestrator line the compare and the commit read are refused, so dates alone are left, and its line's 2026-11-17, in its committer's offset, is under two days from the install's: unsettled, never guessed. Run C is unreadable, not stale. Only run A reaches Needs you, under Decide, as 'running an older contract', naming a093d8f7 (2026-11-11) and 7c1e0d2a (2026-11-17), and saying that a review the owner submits on #310 will wake it under the old contract. In the owner pass the question is asked before the ruling is relayed to run A, and nothing goes to run A until it is answered. Its options: let it finish; or retire it and redispatch on the current skills, the option carrying what 6. Dispatch puts in a go's question - the skill, a fresh session, the cost - and the go's complete text, so choosing it is the new run's go. That go executes only once run A is archived under Retire a finished run's conditions - nothing stranded, every branch head on the remote, no live worker, not RUNNING - with only the wrap-up comment waived, and its handover still taken and written to the ledger first; until then the new run is not started and #310 stays run A's, moving to the new run on the archive. The conductor never messages run A to change how it posts.",
       "assertions": [
         "the installed version is taken from the conductor's own .source (2026-11-17), not from .agent-skills-install (2026-11-09)",
         "run A is recorded stale on the compare showing a change under skills/, with both versions in its version column",
@@ -1494,7 +1494,7 @@
         "run C is recorded unreadable, not stale",
         "run A is a Needs you item 'running an older contract' naming both versions and saying a submitted review will wake it under the old contract",
         "the question is asked before the ruling is relayed, and nothing goes to run A until it is answered",
-        "the redispatch option carries the skill, session decision, cost and go text, and executes only once run A is archived",
+        "the redispatch option carries the skill, session decision, cost and go text, and executes only once run A is archived, its handover taken first",
         "the answer does not message run A to change how it posts"
       ],
       "files": []
@@ -1819,6 +1819,61 @@
         "ScheduleWakeup is a native-replacement finding, named exactly",
         "the Report's length is not a finding",
         "the draft is kept with the pending drafts, never filed by the conductor"
+      ],
+      "files": []
+    },
+    {
+      "id": 140,
+      "name": "retire-and-redispatch-takes-the-handover-first",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Attended turn; AskUserQuestion is available. 'Orchestrator: api · #700 coverage' is a backlog-orchestrator run this conductor dispatched, stale (running an older contract), settled. Epic #700 has nine children: four merged, two with open PRs (#781 conflicted with the default branch, #782 clean and waiting on review), two on the frontier not yet started, and one the run deferred past new-issue-budget. The run posted no wrap-up or checkpoint comment on #700. Its channel is present, its last state block shows no live worker and no recovery ref, every branch head is on the remote, and it is idle. The ledger holds a rebuilt summary of its dispatch prompt, not the prompt as sent. The owner answers the stale-run question with 'retire and redispatch'. Question: what do you do, in what order, and what does the replacement look like?",
+      "expected_output": "The answer is the new run's go, executed only once the stale run is archived. The missing wrap-up is waived for a stale run, and nothing else is: before any archive, send the run a handover request spelling out the five parts, and asking for its first prompt verbatim, since the ledger holds only a rebuilt summary (which stays marked as an approximation and is never used as the seed). Write the reply to the ledger under the run's row and read it back; check that all nine children of #700 have a state in it - the two frontier tickets with their order, the deferred one with the budget that defers it. Record each open PR as moved before archiving: #782 to the replacement orchestrator; #781, which needs work before that run would reach it, may go to a single-issue run offered for it. Only once the handover is in the ledger and every other condition holds is the run archived, on the owner's answer. The replacement is a fresh backlog-orchestrator run on #700 started from the handover: the same issue set, budgets with their usage, frontier order and drift notes, its prompt naming #781 as owned by the single-issue run where one took it. It is not one implement-issue run per child.",
+      "assertions": [
+        "the answer gets the run's handover and writes it to the ledger before archiving",
+        "the answer does not treat the stale-run waiver as waiving the handover, only the wrap-up comment",
+        "the answer checks every child of #700 is accounted for in the ledger",
+        "the answer records each open PR as moved to a named run before the archive",
+        "the replacement is a fresh backlog-orchestrator run on #700 started from the handover, not one implement-issue run per child",
+        "the answer never uses the rebuilt summary as the run's prompt or seed"
+      ],
+      "files": []
+    },
+    {
+      "id": 141,
+      "name": "no-handover-means-no-retirement-until-the-owner-rules",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Attended turn; AskUserQuestion is available. Two settled backlog-orchestrator runs this conductor dispatched meet every other retirement condition: wrap-up posted, every PR merged or recorded as moved, nothing stranded, idle. Run A ('Orchestrator: api · #810') has a present channel and answers your handover request with parts 2 to 5 but says its first prompt is not readable verbatim; the ledger holds that prompt verbatim from dispatch. Run B ('Orchestrator: web · #811') is a cli run under this desktop-app conductor, so the ledger records its channel absent; its checkpoint comment on #811 is two days old. Question: which runs do you offer to archive, and what do you put to the owner about the other?",
+      "expected_output": "Run A's handover is complete: the request said the ledger holds its first prompt verbatim, so the part it cannot read is not missing. Write the reply to the ledger, read it back, check every issue of #810 has a state there, and offer A in the one AskUserQuestion confirming which runs to archive. Run B's handover cannot be had: its channel is absent, so no request can be answered. It is not offered and not retired until the owner rules. It is a Decide item naming each part that cannot be recovered - what B holds since its two-day-old checkpoint comment, and anything that comment does not carry, such as its first prompt if the ledger lacks it - beside what the comment and the forge do show. An answer retiring it anyway is written to the ledger with those parts named as lost.",
+      "assertions": [
+        "run A is offered for archive once its handover is in the ledger and its set accounted for",
+        "the answer does not treat A's unreadable first prompt as a missing part, since the ledger holds it verbatim",
+        "run B is not offered or archived on an absent channel",
+        "run B becomes a Decide item naming what cannot be recovered",
+        "an owner answer retiring B anyway is recorded with the lost parts named"
+      ],
+      "files": []
+    },
+    {
+      "id": 142,
+      "name": "a-dispatch-prompt-is-recorded-as-sent-and-seeds-from-the-record",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner gives the go for a fresh backlog-orchestrator run on epic acme/api#930. The ledger's seed template names the run on #900, the last that went well, but its entry is a summary you wrote afterwards from memory ('it was the usual prompt, with the schema gate and repair allowance'), not the prompt as sent. Question: what do you seed the #930 run from, and what do you write to the ledger at dispatch?",
+      "expected_output": "The seed template is the first prompt of the last good run taken from the ledger's verbatim record of it, and #900's entry is a rebuilt approximation, not a record: it is not used as the template, and the ledger says no verbatim seed is recorded. The #930 prompt is written from the contract - the opening check text, the epic link, this session's id and home repository, the owner's account, every cross-stream gate verified on the forge just before it is written, and the standing rulings that apply - never from the summary. At dispatch the ledger records the session id and the prompt verbatim as sent (or a link to where it is held verbatim), and the #930 run becomes the seed once it goes well.",
+      "assertions": [
+        "the answer does not use the rebuilt summary as the seed template",
+        "the answer writes the new prompt from the contract and verified gates",
+        "the answer records the #930 prompt verbatim as sent at dispatch, or a link to where it is held verbatim",
+        "the answer never records a rebuilt approximation as a prompt"
+      ],
+      "files": []
+    },
+    {
+      "id": 143,
+      "name": "a-tracker-document-ledger-near-its-cap-moves-history-out",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor's ledger is a Linear project document. After this sweep's update its body would be 182,000 characters: 120,000 of it is the changelog, back to day 1, and 40,000 is drafts, most of them already posted by the owner or replaced by later drafts. The last context clear was three days ago. Question: what do you write?",
+      "expected_output": "Linear caps a document at 250,000 characters, and 182,000 is past about 70% of it (175,000), so this sweep keeps the body under the cap: it moves out the changelog lines older than the last clear and the drafts that were posted or superseded, leaving one line in the body pointing at where they went - the document's history, or a linked archive document. It keeps the state in the body: the live rows, pending drafts, open decisions, the rulings' links and any handover whose issues are still open. It edits rows in place and adds one changelog line as usual.",
+      "assertions": [
+        "the answer applies the size budget because the body passes about 70% of Linear's 250,000-character cap",
+        "the answer moves changelog lines older than the last clear and posted or superseded drafts out of the body",
+        "the answer leaves a one-line pointer to the history or a linked archive document",
+        "the answer keeps the live state, pending drafts and open decisions in the body"
       ],
       "files": []
     }
