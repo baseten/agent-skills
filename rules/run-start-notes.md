@@ -95,6 +95,15 @@ to the generic skill in the same session, and the generic skill's version line
 followed the layer's. Skills uploaded to claude.ai as zips are no longer used, so
 whether one reaches a container's disk with its `metadata` was never settled.
 
+**Observed in cloud containers (2026-11-26 and 27): a session created by another
+session's `create_session` tool gets no claude.ai plugins.** Its `plugins/synced/`
+bucket is created and stays empty while account skills arrive under
+`skills/synced/` (anthropics/claude-code#111802). The README's workaround, a CLI
+install in the environment's setup script with `syncClaudeAiPlugins` off, puts
+the plugin under `plugins/cache/`, which the lookup above already searches; it
+loaded all 25 skills in a conductor and in the session it created, with no
+duplicates.
+
 **Still assumed:** that a generic skill invoked directly in a container, with the
 layer present only as a synced plugin, finds it by the `grep` as well as by the
 listing. The first such run records it here.
