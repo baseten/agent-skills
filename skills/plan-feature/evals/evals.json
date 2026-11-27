@@ -284,6 +284,19 @@
         "the answer dispatches nothing itself"
       ],
       "files": []
+    },
+    {
+      "id": 23,
+      "name": "the-plan-document-opens-with-the-plan-not-the-run",
+      "prompt": "You are executing the plan-feature skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Your installed copy's stamp reads commit 4f2a9c1, committed 2026-11-20. You have drafted four children for the GitHub epic 'Saved views' and are about to write the draft to a new plan issue and show it in chat. Two points were settled with the owner earlier in this session. A draft you are considering opens: 'Planner: plan-feature @ 4f2a9c1 · Owner: the invoking user' then 'Status: draft. Nothing is filed until the owner says go', and has a heading 'Owner rulings'. Question: what are the first lines of the plan document, what heading holds the two settled points, and where does the version line go?",
+      "expected_output": "The version line, running plan-feature @ 4f2a9c1 (2026-11-20), is printed in chat as the run's first output and never written into the plan document. The document's first line is one plain sentence saying what the plan is, for example that it splits the Saved views epic into four PR-sized changes; it carries no planner, owner, version or draft-status line — that the draft awaits the go is said in chat. The settled points go under a plain heading such as 'Decided so far', never 'Owner rulings'. A rejection's changes: list later goes in chat, not the document. Any footer the authored write form adds stays.",
+      "assertions": [
+        "the answer's plan document opens with one plain sentence describing the plan, not the run",
+        "the answer puts no version line, planner, owner or draft-status line in the plan document",
+        "the answer prints the version line in chat",
+        "the answer heads the settled points plainly, not 'Owner rulings'"
+      ],
+      "files": []
     }
   ]
 }

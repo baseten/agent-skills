@@ -114,6 +114,26 @@ issue, which the shared permission rule forbids unasked, and the normal path on
 GitHub, where an epic has no project document. A plan issue this run creates is its
 own to write and amend.
 
+**Why the plan document is written for people (owner's ruling, 2026-11-27):** a
+run's plan document opened with `Planner: plan-feature @ <sha> Owner: …` and
+`Status: draft. Nothing is filed until the owner says go`, and headed its sections
+*Owner rulings* and `changes:` — a run log, in a document the owner and their team
+read. The owner ruled: the document is people-facing; its first line is one plain
+sentence saying what the plan is; rulings become plain headings such as *Decided so
+far*, or stay in chat; the version line goes in chat only. The cause was the start
+pointer's "open this run's first output with the version line": this skill writes
+the document when it first shows it, so the document read as the first output.
+`rules/run-start.md` was checked first and needed no change — it places the line as
+the first thing the run *prints*, and names a forge write only for the writes that
+carry it (a ledger row, a checkpoint comment); nothing requires it in a document a
+skill writes for people. So the pointer now says *in chat*, and the rule sits in
+*Rules* beside the plan document's own bullet, the decision point. The footer is
+kept explicitly: under protected rule 1 a document written before the owner's go
+is a write nobody approved, and the footer is a marker, not bookkeeping.
+`write-spec` was checked and left alone: it writes nothing before the go, so its
+first output is always chat, and its template opens on *Problem*. Scenario:
+`the-plan-document-opens-with-the-plan-not-the-run`.
+
 **Why human signatures are never applied:** a readiness label or title marker says
 a person reviewed the issue. A run applying one forges that sign-off, and everything
 downstream that trusts it inherits the forgery.
@@ -300,6 +320,8 @@ Pinned in `evals/evals.json`:
 - the hand-off is a pointer (`the-hand-off-is-a-pointer-not-a-dispatch`);
 - re-scope edits in place (`re-scope-edits-in-place`);
 - the go approves only text shown in chat (`the-go-approves-only-text-shown-in-chat`);
+- the owner's ruling, 2026-11-27: the plan document opens with the plan, not the
+  run (`the-plan-document-opens-with-the-plan-not-the-run`);
 - the owner's rulings, 2026-11-05: audit mode (`audit-reports-and-changes-nothing-unasked`);
   one ticket (`one-ticket-writes-a-single-child-of-the-asked-kind`); arguments forwarded
   in the pointer (`the-pointer-carries-the-invocation-arguments`);
