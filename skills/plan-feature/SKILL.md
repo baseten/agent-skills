@@ -16,8 +16,8 @@ This file is the contract. The reasoning lives in `NOTES.md`, keyed by section;
 NOTES explains, never overrides.
 
 **First, `references/run-start.md`**: hand off to an installed skill that extends
-this one where that rule says to, then open this run's first output with the
-version line.
+this one where that rule says to, then print the version line in chat as this
+run's first output — never in the plan document (*Rules*).
 
 **Wrong tool**: no spec for work bigger than a brief — `write-spec` first;
 dispatching — the `conductor`. One ticket is this skill's *One ticket* mode.
@@ -65,6 +65,11 @@ Each repository a child lands in resolves its own `manual-steps` (*5. Draft*).
 - **The draft plan is a document where `plan-doc` names**, written there when first
   shown — for a brief, held in chat until the go — and **amended in place on every
   rejection, never regenerated**.
+- **The plan document is for people, never a run log.** Its first line is one
+  plain sentence saying what the plan is; its headings are plain — *Decided so
+  far*, never *Owner rulings*. It carries no version line, planner, owner or draft
+  status: those, and a rejection's `changes:` list, go in chat. The footer
+  `references/authored-write-form.md` adds is a marker, and stays.
 - **Children are written only on the owner's go on the plan**, exactly as shown,
   plus what only the write can supply — a sibling's link, an uploaded image.
 - **Hand up, never patch around.** Where planning finds the spec wrong, or missing
@@ -223,8 +228,8 @@ and **no child ranked above its own blocker**.
 Write the draft to the plan document and **show it in chat in full** — each child's
 kind, title, blockers, repository, priority, estimate and full text, which is what
 the owner's go approves. On a rejection, **amend the document in place** and show
-only the changed section, under a short `changes:` list whose last bullet names what
-was left untouched. A rejection that says the spec is wrong is a hand-up.
+in chat only the changed section, under a short `changes:` list whose last bullet
+names what was left untouched. A rejection that says the spec is wrong is a hand-up.
 
 # 8. Write
 
