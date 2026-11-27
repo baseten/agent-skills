@@ -112,8 +112,8 @@ script, and turn claude.ai plugin sync off there so no session gets two copies:
 
 ```bash
 {
-  claude plugin marketplace add baseten/agent-skills
-  claude plugin install agent-skills@baseten
+  claude plugin marketplace add baseten/agent-skills &&
+  claude plugin install agent-skills@baseten &&
   python3 - <<'EOF'
 import json, os
 p = os.path.expanduser("~/.claude/settings.json")
@@ -124,7 +124,8 @@ EOF
 } >>~/agent-skills-setup.log 2>&1 || true
 ```
 
-The session and the sessions it creates then load the same `agent-skills:*`
+Sync goes off only once the install succeeds, so a failed install leaves the
+environment on synced plugins rather than none. The session and the sessions it creates then load the same `agent-skills:*`
 skills from the same snapshot, so their version lines match. A few things come with it:
 
 - **Sync is off for every claude.ai plugin in that environment**, not only this
