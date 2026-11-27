@@ -21,6 +21,8 @@ shown verbatim), and may carry `who` (whom it answers) and `note`. By kind:
 
 Only pr-thread and pr-body are bound to a PR: they are the only kinds whose PR is
 read from GitHub, and the only ones pruned on its state.
+refresh.py stamps a PR-bound draft `prUnread`, with the reason, where its PR could
+not be read: the page shows it as a warning, and prune.py never prunes it.
 
 `replies` is the earlier name, for pr-thread drafts only, and still loads: each
 entry becomes a pr-thread draft labelled with its PR number, unless `drafts`

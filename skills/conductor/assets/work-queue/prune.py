@@ -5,7 +5,8 @@
 Reads the sweep's prdata.json for each PR-bound draft's PR: a reply in a review
 thread or a PR body edit (drafts.py). An unposted draft stays, merged PR or not:
 the person who asked is still unanswered. A draft whose PR the sweep did not read
-stays too. **A draft bound to no PR — Notion, Linear, Slack, any other site — is
+stays too: an unread PR is unknown, never merged or closed, as on a draft
+refresh.py stamped `prUnread`. **A draft bound to no PR — Notion, Linear, Slack, any other site — is
 never pruned on a PR's state**: it leaves the page only when the build omits it
 and lists its id under `closed`, once its posted tick is read back into the ledger
 (conductor, work-queue.md, *Drafts to post*). A draft whose id `closed` lists is

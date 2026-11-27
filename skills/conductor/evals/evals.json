@@ -1946,6 +1946,20 @@
         "the answer does not invent a character limit for Notion"
       ],
       "files": []
+    },
+    {
+      "id": 149,
+      "name": "an-unreadable-draft-pr-warns-and-the-page-builds",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A sweep builds the work queue. Its drafts include a held reply in a review thread on acme/legacy#12 that a reviewer is in, which the owner ticked posted last turn, and acme/legacy is a repository this session cannot read: the read of #12 is refused. Every PR in Your PRs, all on acme/api, reads fine. Question: does the page build, what happens to the acme/legacy draft, and is it pruned?",
+      "expected_output": "The page builds. A PR that only a draft names is read on its own, and its failed read never stops the refresh: the draft stays on the page, its card saying the PR could not be read, with the reason. It is never pruned: an unread PR is unknown, never merged or closed, whatever its tick says. Your PRs builds from its own reads, which would still stop the refresh if they failed. The tick stays a mark; the reply is counted posted only once read in the thread.",
+      "assertions": [
+        "the answer builds the page rather than stopping",
+        "the draft stays on the page with a warning that its PR could not be read",
+        "the answer does not prune the draft despite its tick",
+        "the answer keeps Your PRs' own reads failing closed",
+        "the answer does not count the reply posted on the tick alone"
+      ],
+      "files": []
     }
   ]
 }

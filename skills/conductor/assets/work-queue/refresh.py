@@ -19,7 +19,13 @@ here, and never stops the refresh. A state carrying only `replies` is read as
 review-thread drafts. Repositories are read through `gh api`, or, with any --from-json, each from
 its document (prdata.py's `JsonSource`: the MCP or REST route) and never through
 `gh`: a session that may not use `gh` passes one per repository, and one missing
-stops the refresh. Then, over that one read: prdata.py -> mergeq.py -> prsteps.py
+stops the refresh for a PR in prs.json or the merge notes.
+
+**A PR that only a draft names is read on its own, and a failed read never stops
+the refresh** (owner's ruling, 2026-11-27): the draft is kept, stamped `prUnread`
+with the reason, which the page shows as a warning, and prune.py, finding no read
+of its PR, never prunes it. Every other draft's `prUnread` is cleared. The PRs the
+page lists itself still fail closed. Then, over that one read: prdata.py -> mergeq.py -> prsteps.py
 -> prune.py -> carry.py (unless --first) -> build.py. Any step that fails stops
 the refresh, naming it, and no page is written; state.json may be part-rebuilt,
 and a re-run rebuilds it.
@@ -92,9 +98,13 @@ def main():
             ap.error(f"--from-json takes owner/name=FILE, not {spec!r}")
         docs[repo] = path
     by_repo = {}
-    bound = [d for d in drafts.normalise(load(a.state))["drafts"] if drafts.pr_bound(d)]
-    for e in load(a.prs) + load(a.notes) + bound:
+    for e in load(a.prs) + load(a.notes):
         by_repo.setdefault(e["repo"], set()).add(str(e["pr"]))
+    st = drafts.normalise(load(a.state))
+    # a PR only a draft names is read on its own; its failed read marks the draft, never stops
+    draft_only = sorted({(d.get("repo"), str(d.get("pr"))) for d in st["drafts"] if drafts.pr_bound(d)
+                         and str(d.get("pr")) not in by_repo.get(d.get("repo"), set())},
+                        key=lambda x: (str(x[0]), x[1]))
 
     # read before build.py runs: --out may name the live page itself
     old = live_state(a.live) if a.live else {}
@@ -110,6 +120,35 @@ def main():
             sys.exit(f"refresh stopped: {repo} has no --from-json document, and with any "
                      "document no repository is read through gh; nothing was built")
         rows += json.loads(run("prdata.py", *args, *sorted(by_repo[repo], key=int)))
+    unread = {}
+    for repo, pr in draft_only:
+        args = ["--repo", str(repo), "--owner", a.owner]
+        for t in a.team:
+            args += ["--team", t]
+        if repo in docs:
+            args += ["--from-json", docs[repo]]
+        elif docs:
+            unread[(repo, pr)] = f"no --from-json document for {repo}"
+            continue
+        r = subprocess.run([sys.executable, "-I", os.path.join(HERE, "prdata.py"), *args, pr],
+                           capture_output=True, text=True)
+        if r.returncode != 0:
+            last = (r.stderr.strip().splitlines() or [f"exit {r.returncode}"])[-1]
+            unread[(repo, pr)] = last[:200]
+            continue
+        rows += json.loads(r.stdout)
+    for d in st["drafts"]:
+        why = unread.get((d.get("repo"), str(d.get("pr")))) if drafts.pr_bound(d) else None
+        if why:
+            d["prUnread"] = why
+        else:
+            d.pop("prUnread", None)
+    with open(a.state, "w", encoding="utf-8") as f:
+        json.dump(st, f, ensure_ascii=False, indent=1)
+    if unread:
+        print("drafts kept with their PR unread: " + ", ".join(
+            f"{r}#{n} ({w})" for (r, n), w in sorted(unread.items(), key=lambda x: (str(x[0][0]), x[0][1]))),
+            file=sys.stderr)
     prdata = os.path.join(work, "prdata.json")
     with open(prdata, "w", encoding="utf-8") as f:
         json.dump(rows, f, indent=1)
@@ -127,7 +166,7 @@ def main():
 
     new = load(a.state)
     print(f"page: {os.path.abspath(a.out)}")
-    print(f"read: {len(rows)} PRs in {len(by_repo)} repositories"
+    print(f"read: {len(rows)} PRs in {len(set(by_repo) | {r for r, _ in draft_only})} repositories"
           + (f", {', '.join(sorted(docs))} from JSON" if docs else ""))
     for key in ("merge", "prs", "decisions", "drafts", "items", "sessions"):
         added, dropped = ids(new, key) - ids(old, key), ids(old, key) - ids(new, key)

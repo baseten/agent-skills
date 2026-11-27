@@ -181,7 +181,10 @@ drafts, and their answer, written to the ledger with their words, counts each
 posted, unverified at its site. The next build omits a posted draft and lists its
 id under `closed`.
 `prune.py` also drops a ticked review-thread reply or body edit once its PR merges
-or closes; no other draft leaves on a PR's state. **The page offers no thread
+or closes; no other draft leaves on a PR's state. **A draft whose PR cannot be
+read never stops the build**: it stays, never pruned, its card saying the PR could
+not be read, and the rest of the page builds; the PRs "Your PRs" lists still fail
+closed. **The page offers no thread
 resolution**, and nothing on it asks this skill to post a draft or resolve a
 thread.
 

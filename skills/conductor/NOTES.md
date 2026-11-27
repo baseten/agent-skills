@@ -1266,9 +1266,23 @@ to that page.
 
 **Why only PR-bound drafts are read from GitHub, and still fail closed:** a Notion,
 Linear, Slack or other draft has no PR, so `refresh.py` skips it rather than
-stopping. A review-thread reply or a body edit is read with its PR as before: its
-PR's state is what prunes it, and a read that fails still stops the refresh, since
-an unread state is never written as open or closed. **Why `prune.py` never prunes
+stopping. A review-thread reply or a body edit is read with its PR: its PR's state
+is what prunes it. **Why an unreadable draft PR no longer stops the build (owner's
+ruling on #249, 2026-11-27):** the first version kept that read failing closed, and
+the owner's brief had listed a build stopped by a draft's unreadable PR as part of
+the problem: one draft cost the owner the whole page. So `refresh.py` reads a PR
+that only a draft names on its own, and where that read fails — no `--from-json`
+document for its repository, a PR the document lacks, a refused read — it stamps the
+draft `prUnread` with the reason, the page shows it on the card, and the rest
+builds. Failing closed still holds where it matters: `prune.py` finds no read of
+that PR and treats it as unknown, never merged or closed, so the draft is never
+pruned; and the PRs "Your PRs" lists, from `prs.json` and the merge notes, still
+stop the refresh when unread, since a count there is never written as zero. Run:
+`scripts/test_work_queue_prdata.py` builds a page with a review-thread draft in a
+repository with no document and a ticked body edit on a PR the document lacks, both
+kept with the warning, the merge rows built; a draft whose PR was read carries none.
+The warning was rendered through the DOM shim. Scenario:
+`an-unreadable-draft-pr-warns-and-the-page-builds`. **Why `prune.py` never prunes
 another kind on a PR's state:** it has none to read, so a Notion draft would either
 never leave or leave wrongly; it leaves only when the build omits it and `closed`
 lists it. `prune.py` now also drops any draft whose id `closed` lists, since the

@@ -318,8 +318,32 @@ def rest_route(tmp, gh_out):
             {"id": "w7", "kind": "pr-thread", "label": "#7", "repo": "acme/web", "pr": "7", "gist": "g",
              "text": "t", "url": "https://github.com/acme/web/pull/7#discussion_r7"}]), f)
     r = subprocess.run(args + ["--first"], capture_output=True, text=True, env=env)
-    assert r.returncode != 0 and "acme/web has no --from-json" in r.stderr, r
-    print("ok  refresh.py: a review-thread draft's PR is read like any other, so its repository needs a document")
+    assert r.returncode == 0, (r.stdout, r.stderr)
+    w7 = [d for d in json.load(open(paths["state"]))["drafts"] if d["id"] == "w7"]
+    assert w7 and "no --from-json document for acme/web" in w7[0]["prUnread"], w7
+    assert "drafts kept with their PR unread: acme/web#7" in r.stderr and os.path.exists(out), r.stderr
+    print("ok  refresh.py: a draft whose PR cannot be read (no document) is kept with a warning;"
+          " the rest of the page builds")
+    with open(paths["state"], "w") as f:
+        json.dump(dict(st, drafts=st["drafts"] + [
+            {"id": "u9", "kind": "pr-body", "label": "#999 body", "repo": REPO, "pr": "999", "gist": "g",
+             "old": "o", "text": "t", "url": f"https://github.com/{REPO}/pull/999", "done": True}]), f)
+    r = subprocess.run(args + ["--first"], capture_output=True, text=True, env=env)
+    assert r.returncode == 0, (r.stdout, r.stderr)
+    built = json.load(open(paths["state"]))
+    u9 = [d for d in built["drafts"] if d["id"] == "u9"]
+    assert u9 and u9[0].get("prUnread") and u9[0]["done"] is True, u9
+    assert [m["pr"] for m in built["merge"]] == [N], built["merge"]
+    page = open(out).read()
+    assert '"prUnread"' in page and "read the PR: " in page, "the template shows the warning"
+    print("ok  refresh.py: a ticked body edit whose PR the document lacks is kept, never pruned, with"
+          " its warning, and the merge rows still build")
+    with open(paths["state"], "w") as f:
+        json.dump(dict(st, drafts=st["drafts"] + [dict(u9[0], pr=N, id="u10")]), f)
+    r = subprocess.run(args + ["--first"], capture_output=True, text=True, env=env)
+    assert r.returncode == 0 and not [d for d in json.load(open(paths["state"]))["drafts"]
+                                      if d.get("prUnread")], (r.stdout, r.stderr)
+    print("ok  refresh.py: a draft whose PR was read carries no warning, a stale one cleared")
     old = {k: v for k, v in st.items() if k != "drafts"}
     old["replies"] = [{"id": "r1", "repo": REPO, "pr": N, "who": "rev", "gist": "g", "text": "t",
                        "url": f"https://github.com/{REPO}/pull/{N}#discussion_r1"}]

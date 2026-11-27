@@ -287,6 +287,8 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
     if (r.who) tag.push(h('span', { class: 'urg', text: 'to ' + r.who }));
     var kids = [h('div', { class: 'tags' }, tag), h('div', { class: 'what', text: r.gist })];
     if (r.note) kids.push(h('div', { class: 'why' }, rich(r.note)));
+    // a PR this build could not read: the draft stays, never pruned, and says so
+    if (r.prUnread) kids.push(h('div', { class: 'chips' }, [h('span', { class: 'chip warn', text: 'Couldn\u2019t read the PR: ' + r.prUnread })]));
     if (r.kind === 'pr-body' && r.old) kids.push(h('pre', { class: 'draft oldline', text: r.old }));
     var pre = h('pre', { class: 'draft', id: 'draft-' + r.id, text: r.text });
     kids.push(pre);
