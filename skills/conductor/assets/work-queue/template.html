@@ -171,6 +171,14 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
   var KEY = 'queue-pending';
 
   try { var saved = JSON.parse(sessionStorage.getItem(KEY) || 'null'); if (saved) { picks = saved.picks || {}; ticks = saved.ticks || {}; } } catch (e) {}
+  // An earlier view saved a review-thread draft's pending tick as 'reply:<id>'.
+  // Move it to 'draft:<id>', the one key rendering, toggling and sending read.
+  Object.keys(ticks).forEach(function (k) {
+    if (k.indexOf('reply:') !== 0) return;
+    var nk = 'draft:' + k.slice(6);
+    if (!ticks.hasOwnProperty(nk)) ticks[nk] = ticks[k];
+    delete ticks[k];
+  });
   Object.keys(picks).forEach(function (id) { var d = find(state.decisions, id); if (!d || d.status !== 'open') delete picks[id]; });
   function persist() { try { sessionStorage.setItem(KEY, JSON.stringify({ picks: picks, ticks: ticks })); } catch (e) {} }
 
@@ -566,8 +574,7 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
     });
     c.ticks.forEach(function (key) {
       var kind = key.split(':')[0], id = key.slice(kind.length + 1);
-      // 'reply:' is the earlier tick key for a review-thread draft, kept by a reloaded view
-      var obj = find(kind === 'draft' || kind === 'reply' ? next.drafts : kind === 'session' ? next.sessions : next.items, id);
+      var obj = find(kind === 'draft' ? next.drafts : kind === 'session' ? next.sessions : next.items, id);
       if (obj) { obj.done = ticks[key]; obj.doneAt = ticks[key] ? at : null; }
     });
     var wake = c.answers.length || c.archives.length;
