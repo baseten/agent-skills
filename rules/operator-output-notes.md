@@ -62,6 +62,8 @@ a conductor's reviewer only drafts on a PR no run owns.
 
 **Why *Post yourself* is its own group (owner's ruling, 2026-11-16):** no run posts in a review thread a person other than the owner is in, not even a reply the owner approved (`resolve-pr-comment/NOTES.md`, *Replies held for the owner*). Listed under *Approve drafts*, such a reply would ask for an approval that changes nothing; what the owner does is copy, edit, post and resolve, so the group names that act.
 
+**Why *Post yourself* covers every draft the owner posts (a live conductor, 2026-11-27):** the group named only review threads, so a reply the owner had to post on a Notion comment thread, a Slack message or a line of a published PR body had no group, and a conductor listed nineteen Notion replies and two Slack messages as plain items with their text pointing at the ledger. What the owner does is the same wherever the text goes, and nobody's approval lets a run post any of them, so they share the group; the full text goes on the work queue (`conductor`, `work-queue.md`, *Drafts to post*).
+
 **Why *Changed since* is in the chat at all:** PR #201's conductor rule kept every
 change out of chat, and a sweep with nothing for the owner was one line. The
 owner's design keeps state changes — a merge, a run started, a run failed — in the

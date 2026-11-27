@@ -18,6 +18,17 @@ FRESH_MINUTES of this build's own clock. A stamp that is missing or older means 
 PR list was reused rather than read this turn: re-run refresh.py, which reads the
 PRs again and builds. The window is no proof the rest of the state is this
 turn's (conductor, work-queue.md, *Building it*), only that the PR list is.
+**Drafts are checked by kind** (drafts.py): each carries its id, kind, label, gist
+and text, and what its kind needs to be posted (a PR-bound draft its repo, PR and
+url; a PR body edit its old line; every kind but slack its url, https). One that
+lacks any is refused, since the page could not show the owner where to post it.
+A state carrying only `replies`, as pages built before drafts did, still builds:
+each becomes a review-thread draft.
+**One entry per id**: decisions, items and drafts that share an id, as where a
+build copies cards from the live page and also writes them again, are collapsed to
+one, the first copy kept with any saved owner answer or tick from the others, and
+named on stderr. carry.py, which sees the live page, collapses them first and
+prefers the build's copy.
 **An item that links a pull request and whose `what` opens by asking to merge it,
 mark it ready or request review is warned of**, not refused: it is how a hand-patched state shows a PR's
 steps, which belong in "Your PRs" from prsteps.py, but an item can link a PR for
@@ -26,9 +37,16 @@ another reason.
 import argparse
 import datetime
 import html
+import importlib.util
 import json
+import os
 import re
 import sys
+
+_spec = importlib.util.spec_from_file_location(
+    "wq_drafts", os.path.join(os.path.dirname(os.path.abspath(__file__)), "drafts.py"))
+drafts = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(drafts)
 
 FRESH_MINUTES = 30
 
@@ -42,6 +60,16 @@ with open(a.state, encoding="utf-8") as f:
     st = json.load(f)
 with open(a.template, encoding="utf-8") as f:
     t = f.read()
+drafts.normalise(st)
+dup = drafts.dedupe(st)
+if dup:
+    print("warning: entries sharing an id were collapsed to one: " + ", ".join(dup)
+          + ". Write each card once (work-queue.md, Publishing)", file=sys.stderr)
+# every draft carries what the owner needs to post it (work-queue.md, Drafts to post)
+bad = [f'{d.get("id")} ({"; ".join(p)})' for d in st["drafts"] for p in [drafts.problems(d)] if p]
+if bad:
+    raise SystemExit("refused: drafts lacking what their kind needs (work-queue.md, Drafts to "
+                     "post): " + ", ".join(bad))
 if st.get("interactive") is True:
     # an answer records the option's ruling text: a card without one cannot be answered
     unruled = [f'{d.get("id")}/{o.get("id")}' for d in st.get("decisions") or []

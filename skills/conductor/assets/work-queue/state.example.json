@@ -136,9 +136,11 @@
    "status": "open"
   }
  ],
- "replies": [
+ "drafts": [
   {
    "id": "1234567890",
+   "kind": "pr-thread",
+   "label": "#101",
    "repo": "acme/api",
    "pr": "101",
    "url": "https://github.com/acme/api/pull/101#discussion_r1234567890",
@@ -146,6 +148,60 @@
    "gist": "One-line summary of their comment",
    "text": "Draft reply text, with no footer: the owner posts it.",
    "note": "Fix in abc12345."
+  },
+  {
+   "id": "api-101-body",
+   "kind": "pr-body",
+   "label": "#101 body",
+   "repo": "acme/api",
+   "pr": "101",
+   "url": "https://github.com/acme/api/pull/101",
+   "gist": "The body still says exports are kept for 30 days",
+   "old": "Exports are kept for 30 days.",
+   "text": "Exports are kept for 7 days.",
+   "note": "The PR is not a draft, so no run edits its body."
+  },
+  {
+   "id": "notion-retention-1",
+   "kind": "notion",
+   "label": "Notion · Export retention ADR",
+   "url": "https://www.notion.so/example/Export-retention-ADR-0123456789abcdef?d=1111",
+   "who": "a reviewer",
+   "gist": "Asked why 7 days rather than 30",
+   "text": "We chose 7 days: exports are rebuilt on demand, and `retention_days` stays configurable per account."
+  },
+  {
+   "id": "notion-retention-2",
+   "kind": "notion",
+   "label": "Notion · Export retention ADR",
+   "url": "https://www.notion.so/example/Export-retention-ADR-0123456789abcdef?d=2222",
+   "who": "a reviewer",
+   "gist": "Asked who owns the cleanup job",
+   "text": "The billing team owns it; the cleanup job is in `jobs/export_gc.py`.",
+   "note": "Not yet true: file the cleanup issue first."
+  },
+  {
+   "id": "linear-acme-42",
+   "kind": "linear",
+   "label": "Linear · ACME-42",
+   "url": "https://linear.app/acme/issue/ACME-42/bulk-export#comment-abc",
+   "gist": "Status for the issue's watchers",
+   "text": "The export endpoint is in review as acme/api#101; paging follows in #102."
+  },
+  {
+   "id": "slack-frontend-1",
+   "kind": "slack",
+   "label": "#eng-frontend",
+   "gist": "Heads-up that the export list now pages",
+   "text": "Heads-up: the export list pages from today (`?cursor=`). Nothing to change unless you read all exports at once."
+  },
+  {
+   "id": "post-forum-1",
+   "kind": "post",
+   "label": "Forum · Exports thread",
+   "url": "https://forum.example.com/t/exports/42",
+   "gist": "Answer to the forum question on limits",
+   "text": "Exports are capped at 10,000 rows each; larger ones page."
   }
  ],
  "items": [

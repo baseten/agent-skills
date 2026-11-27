@@ -243,12 +243,15 @@ starts there is read from the forge alone (*1. Sweep*, step 7).
   neither a forge write (protected rule 7 on a forge ledger).
 - **A draft exists only with its full text.** The full text of every pending draft —
   an issue, a comment, a message — goes into the ledger as it is written; nothing
-  is called a draft without it. **On the default `github-issue` ledger, held replies
-  and draft answers to a person's question are only named, never written in full**
+  is called a draft without it. **On the default `github-issue` ledger, held replies,
+  draft answers to a person's question and drafts the owner posts off the forge,
+  such as on Notion, Linear or Slack, are only named, never written in full**
   (`resolve-pr-comment`, *Replies held for the owner*, *The draft reply*): their text
   is held in this session and carried on the work queue, which is not the ledger
   (*Report*). Where those drafts matter, as at work, configure the
-  `tracker-document` ledger, which holds them in full. A reviewer's drafts are
+  `tracker-document` ledger, which holds them in full. **Every draft the owner must
+  post, from any surface, is also on the work queue in full**, where one is kept,
+  never an item pointing at the ledger (`work-queue.md`, *Drafts to post*). A reviewer's drafts are
   never copied: they live on their surface, linked (`reviewers.md`).
 - **Report costs.** Every plan states its expected CI runs (*5. Intake and replan*).
 - **Nothing depends on an in-turn background result surviving a restart.** A
@@ -507,7 +510,11 @@ the report; the rest follow it** (`references/operator-output.md`, *Questions*).
    **Held replies are collected across runs and listed, never asked**: each one's
    full text, thread link and fix SHA, with every comment posted in its thread
    since the fix, read fresh, for the owner to post and resolve — no run, this one
-   included, posts there (`resolve-pr-comment`, *Replies held for the owner*). A draft answer to a person's question is never among them: that is a
+   included, posts there (`resolve-pr-comment`, *Replies held for the owner*). **Every
+   other draft the owner posts is listed the same way**, and its post read where its
+   site can be — a PR body edit in the PR's body, a Linear comment in the issue's
+   comments; the work queue's saved ticks on any other draft are asked as one
+   question (`work-queue.md`, *Drafts to post*). A draft answer to a person's question is never among them: that is a
    decision, asked as one. **A run's force-push held for approval is asked too** — "approve the force-push of <branch> in <session>?" — and the answer written to the ledger as the decision, never relayed to the run; the chat then says plainly that the click must still happen in the run's own session, since a relayed approval does not satisfy that session's permission mode, and links it. This is the
    conductor's own pass; where it invokes `settle-outstanding-decisions` for a run — its
    records on issues this skill did not create made as *Rules* says —
@@ -837,8 +844,8 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
   session's link and its state, `drafted` or `failed` once reported (`reviewers.md`);
 - the owner's rulings given in this chat, each dated, in their exact words, linked
   to where each was recorded;
-- every pending draft, in full — held replies and draft answers only named on a
-  `github-issue` ledger (*Rules*);
+- every pending draft, in full — held replies, draft answers and drafts posted off
+  the forge only named on a `github-issue` ledger (*Rules*);
 - the gates between streams, each linked to its record;
 - the open decisions, each linked to its site; each work-queue card answered, with
   its state and `outcome`, and each archive row's `outcome` (`work-queue.md`,
@@ -863,7 +870,8 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
 - the fallback check-in's id, next time and empty count — locally, that it is
   session-only;
 - the invocation arguments this skill was given;
-- owner-comment ids — each go, ruling or draft the owner posted — kept apart from
+- owner-comment ids — each go, ruling or draft the owner posted, where the post was
+  read at its site — kept apart from
   this skill's own-write ids;
 - own-write ids — each write this skill posted, with its site, a conductor-posted go
   tagged as one beside the owner's answer it quotes;
@@ -881,9 +889,10 @@ document's history, are history**, and the body supersedes them.
 **A ledger whose home caps its length keeps under it.** Where a write leaves the
 body past about 70% of its platform's limit — Linear's, for a `tracker-document`
 (`references/linear-mechanics.md`, *Documents*); none is established for a
-`github-issue` ledger, which this does not yet reach — that sweep moves out of the body the
-changelog lines older than the last clear, and the drafts that were posted or
-superseded, leaving one line pointing at where they went: the document's history, or a
+`github-issue` ledger or a `document-store-page`, such as a Notion page, which this
+does not yet reach — that sweep moves out of the body the
+changelog lines older than the last clear, and the drafts that were posted, as
+`work-queue.md`, *Drafts to post*, counts one, or superseded, leaving one line pointing at where they went: the document's history, or a
 linked archive document. So do the prompts and handovers of retired runs whose issues
 are all closed, bar the seed template's. Never the state: the rows, the pending drafts,
 the open decisions, the rulings' links, or a handover whose issues are still open. A conductor whose context
@@ -1019,7 +1028,7 @@ it does in *6. Dispatch*:
 
 **In this session, shaped as `references/operator-output.md` says.** *Needs you*
 is what needs the owner to act: decisions and approvals (asked as *4. Owner pass*
-says), owner steps, replies and rulings to post yourself, a failure only the owner can clear — a red default branch, a
+says), owner steps, drafts to post yourself, wherever they go, a failure only the owner can clear — a red default branch, a
 run whose push contradicted the forge — any PR whose run pushed that its watch stopped with the PR still open, each
 drafted review to submit (`reviewers.md`), and each run's force-push held for approval, under *Confirm in a session*,
 linking its session (a `cli` run, `claude attach <id>`) and naming the literal tool string and the exact command waiting.
@@ -1079,11 +1088,12 @@ the recorded reason, and that answers go here, in this chat — a line beside th
 link, never a *Needs you* item, since the owner has nothing to do about it
 (`work-queue.md`, *Which page*).
 
-**On the page, an item about a PR carries its links in the order `references/operator-output.md` gives an item**: the run's session, where one owns the PR; the PR on the forge; the tracker's review page for it, where the repository is linked to Linear, read as `references/linear-mechanics.md`, *Review pages*, says, or where a layer supplies its own (`work-queue.md`, *Building it*) — **marked with the count of unsubmitted drafts only where it was read**, labelled with the tracker account that holds them, since the tracker returns only the calling account's drafts, so the item never implies a draft is on the forge; then every issue the PR closes, or a plain "no linked issue". A draft held anywhere else is linked to where it is held, labelled so — **bar a
-reply or ruling the owner is to post in a thread where no run posts, which the page
-carries in full**: its text, the link to post at — the thread's `html_url` as
-recorded, never rebuilt — and the fix SHA where there is one; the page is private
-and is not the ledger. The chat's lines keep
+**On the page, an item about a PR carries its links in the order `references/operator-output.md` gives an item**: the run's session, where one owns the PR; the PR on the forge; the tracker's review page for it, where the repository is linked to Linear, read as `references/linear-mechanics.md`, *Review pages*, says, or where a layer supplies its own (`work-queue.md`, *Building it*) — **marked with the count of unsubmitted drafts only where it was read**, labelled with the tracker account that holds them, since the tracker returns only the calling account's drafts, so the item never implies a draft is on the forge; then every issue the PR closes, or a plain "no linked issue". A draft held anywhere else is linked to where it is held, labelled so — **bar
+every draft the owner is to post themselves, from any surface, which the page
+carries in full** as `work-queue.md`, *Drafts to post*, says: its text, the link to
+post at as recorded, never rebuilt — a thread's `html_url`, a Notion or Linear
+comment, a Slack channel where one is known — and the fix SHA where there is one;
+the page is private and is not the ledger. The chat's lines keep
 `references/operator-output.md`'s form. **Every link and draft count is read each
 sweep**, a layer's by that layer (`references/establish-do-not-assume.md`, *You are about to assert it*) —
 a subagent may gather them, returning only compact JSON.

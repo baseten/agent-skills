@@ -858,13 +858,15 @@
     },
     {
       "id": 67,
-      "name": "a-reply-draft-held-in-the-ledger-is-linked-and-labelled",
-      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present and the session keeps a work queue. The ledger is a tracker-document ledger. A reply to a teammate's thread on acme/api#845 is drafted in full in the ledger, held for the owner's approval because a teammate is in the thread. Question: how does the queue show this draft?",
-      "expected_output": "Under Approve drafts, the item links the draft where it actually is - the ledger, at its entry - and labels it as held in the ledger, not on the forge or the tracker. Its text is not printed on the page; the item links it. Its location is read from the ledger each sweep, never remembered.",
+      "name": "a-reply-the-owner-posts-is-on-the-queue-in-full",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present and the session keeps a work queue. The ledger is a tracker-document ledger. A reply to a teammate's thread on acme/api#845 is drafted in full in the ledger, held because a teammate is in the thread, so no run may post it. Question: how does the queue show this draft?",
+      "expected_output": "As a draft to post, never an item pointing at the ledger: the page carries its full text verbatim, the thread's html_url as recorded to post at, whom it answers and the fix SHA, with Copy and 'Copy, open and tick'. It sits under Post yourself in the chat, not Approve drafts, since nobody's approval lets a run post it. The ledger still holds its full text until it is posted, which is read in the thread; a tick on the page is only the owner's mark.",
       "assertions": [
-        "the item links the draft at its place in the ledger",
-        "the item labels the draft as held in the ledger",
-        "the answer does not present the draft as on the forge or the tracker"
+        "the page carries the reply's full text, not only a link to the ledger",
+        "the draft links the thread's recorded html_url to post at",
+        "the answer does not list it under Approve drafts or have a run post it",
+        "the answer keeps the full text in the tracker-document ledger too",
+        "the answer treats a tick as a mark, with the post read in the thread"
       ],
       "files": []
     },
@@ -1901,6 +1903,100 @@
         "the answer treats the ledger as the run's durable record since no comment is on the epic",
         "the answer archives nothing on the scheduled firing",
         "the answer still requests a fresh handover at retirement"
+      ],
+      "files": []
+    },
+    {
+      "id": 146,
+      "name": "every-draft-the-owner-posts-is-on-the-queue-with-its-text",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner is present; the ledger is a tracker-document ledger and the session keeps an interactive work queue. Waiting for the owner to post: 19 replies the owner must post on comment threads of one Notion ADR page, each answering a colleague, several quoting identifiers such as `retention_days`; two Slack messages for #eng-frontend, for which no channel URL is recorded; and one line of acme/api#101's body, which a run opened, which is no longer a draft, whose body the owner has since edited, with no merge opt-in in force, that still reads 'Exports are kept for 30 days.' and should read 'Exports are kept for 7 days.'. Question: how does the work queue carry these, and what does the ledger hold?",
+      "expected_output": "Each is a draft entry on the page with its full text, never an item whose why points at the ledger or carries the text: the Notion replies as Notion drafts, each with its thread's link as recorded and whom it answers, all nineteen grouped under the one page; the Slack messages labelled with the channel, with Copy and 'Copy and tick' since no link is known; the body line as a PR body edit showing the old line and the new, linking the PR. The text is shown verbatim, so the inline-code marks survive a copy. The body line is the owner's to change: no run edits that PR's body now, so the drift is reported with its replacement. The tracker-document ledger holds every draft's full text until it is posted or superseded.",
+      "assertions": [
+        "the answer puts each draft on the page with its full text, not as an item pointing at the ledger",
+        "the Notion replies are grouped by their page",
+        "the Slack messages have no link and are offered copy and tick",
+        "the body edit shows the old line and the new line and is not made by a run",
+        "the text is shown verbatim so inline-code marks survive copying",
+        "the ledger holds each draft's full text"
+      ],
+      "files": []
+    },
+    {
+      "id": 147,
+      "name": "a-tick-is-a-mark-read-at-the-site-where-it-can-be",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). At a sweep, the work queue's live page shows ticks the owner saved since the last build on: a held reply in a review thread on acme/api#101 that a reviewer is in; a Linear comment draft on ACME-42; three Notion ADR replies; and one Slack message. Question: which of these does the conductor count as posted, and how do they leave the page?",
+      "expected_output": "The ticks are carried onto the rebuild, never acted on: a tick is a mark, never proof of a post. The review-thread reply is counted posted only once the owner's reply is read in the thread; the Linear comment only once it is read in the issue's comments. The Notion and Slack drafts are never checked there, and their saved ticks are not acted on either: the next attended owner pass asks the owner about them in one question naming the drafts, and the owner's answer, written to the ledger with their words, counts them posted, unverified. A posted draft is then omitted from the next build and its id listed under closed; the review-thread reply also drops off once ticked and its PR merges or closes, which no Notion or Slack draft does. The conductor posts none of the drafts and resolves no thread.",
+      "assertions": [
+        "the answer reads the GitHub thread and the Linear comments before counting those posted",
+        "the answer never checks Notion or Slack, and asks the owner about those saved ticks rather than closing the drafts on them",
+        "the answer removes posted drafts by omitting them and listing them under closed",
+        "the answer prunes no Notion or Slack draft on a PR's state",
+        "the answer posts nothing and resolves no thread"
+      ],
+      "files": []
+    },
+    {
+      "id": 148,
+      "name": "a-notion-page-ledger-has-no-size-budget-yet",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). This conductor's ledger is a document-store-page, a Notion page, because neither a [PLAN] issue nor a tracker document could be written. After eleven days the page body is about 180,000 characters; it still holds every posted Notion reply's text and every changelog line since day one. Question: does the ledger's size budget make this sweep move anything out of the body?",
+      "expected_output": "No. The budget acts at about 70% of the platform's limit, and a limit is established only for Linear's documents; none is established for a github-issue ledger or a document-store-page such as a Notion page, so the budget does not yet reach this ledger and nothing is moved for it. The body stays maintained, not appended to, and the state never moves. Where a limit for the page is later established, the drafts that were posted or superseded and the changelog lines older than the last clear are what leave, with a pointer.",
+      "assertions": [
+        "the answer says no limit is established for a document-store-page or Notion page ledger",
+        "the answer moves nothing out of the body for the budget this sweep",
+        "the answer does not invent a character limit for Notion"
+      ],
+      "files": []
+    },
+    {
+      "id": 149,
+      "name": "an-unreadable-draft-pr-warns-and-the-page-builds",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). A sweep builds the work queue. Its drafts include a held reply in a review thread on acme/legacy#12 that a reviewer is in, which the owner ticked posted last turn, and acme/legacy is a repository this session cannot read: the read of #12 is refused. Every PR in Your PRs, all on acme/api, reads fine. Question: does the page build, what happens to the acme/legacy draft, and is it pruned?",
+      "expected_output": "The page builds. A PR that only a draft names is read on its own, and its failed read never stops the refresh: the draft stays on the page, its card saying the PR could not be read, with the reason. It is never pruned: an unread PR is unknown, never merged or closed, whatever its tick says. Your PRs builds from its own reads, which would still stop the refresh if they failed. The tick stays a mark; the reply is counted posted only once read in the thread.",
+      "assertions": [
+        "the answer builds the page rather than stopping",
+        "the draft stays on the page with a warning that its PR could not be read",
+        "the answer does not prune the draft despite its tick",
+        "the answer keeps Your PRs' own reads failing closed",
+        "the answer does not count the reply posted on the tick alone"
+      ],
+      "files": []
+    },
+    {
+      "id": 150,
+      "name": "off-forge-drafts-on-a-github-issue-ledger-survive-a-clear-from-the-page",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The ledger is the default github-issue ledger, and the session keeps a work queue whose URL the ledger records. Pending for the owner to post: a reply on a Notion ADR comment thread answering a colleague, and a Slack message for #eng-frontend. No run holds either text. Context reaches the clear point and the operator types /clear. Question: what did the ledger hold for these two, what does the page carry, and where does the restart get their text?",
+      "expected_output": "On a github-issue ledger, drafts the owner posts off the forge, such as on Notion or Slack, are only named, never written in full: the ledger names each and where it goes, without its text. The work queue carries each in full as a draft to post, with its text, the link to post at where one is known, and the destination. After the clear, the restart reads the live page only for a draft's text the ledger does not hold and no run can resupply, which is exactly these two, and takes nothing else from the page.",
+      "assertions": [
+        "the ledger names both drafts without their text",
+        "the work queue carries both drafts' full text",
+        "the restart reads their text from the live page",
+        "the restart takes nothing else from the live page"
+      ],
+      "files": []
+    },
+    {
+      "id": 151,
+      "name": "a-draft-written-twice-shows-once-with-the-owners-tick-kept",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Before a publish, the conductor reads the live work queue. It shows the Slack draft 'slack-frontend-1' twice under that one id, from an earlier build that copied it from the page and also wrote it again; one copy carries the owner's saved tick, done: true. This turn's build writes that draft once, with a corrected text. Question: what does the published page show for it, and does the conductor treat it as posted?",
+      "expected_output": "One card: drafts sharing an id are collapsed, keeping the build's copy with its corrected text and the owner's saved tick, and the collapse is named. The tick is carried, never acted on: a Slack draft's post is never checked in Slack, and its saved tick is put to the owner at the next attended owner pass as one question; only their answer, written to the ledger, counts it posted.",
+      "assertions": [
+        "the page shows one card for the id",
+        "the card carries the build's corrected text",
+        "the owner's tick is kept on it",
+        "the answer does not count the draft posted on the tick, and asks the owner at an attended owner pass"
+      ],
+      "files": []
+    },
+    {
+      "id": 152,
+      "name": "a-ticked-body-edit-is-posted-when-the-body-shows-it-and-pruned-on-merge",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Two PR body edit drafts on the work queue, each ticked by the owner: one on acme/api#101, still open, whose body as read this sweep still reads 'Exports are kept for 30 days.' rather than the draft's new line 'Exports are kept for 7 days.'; one on acme/api#99, which merged yesterday, whose body was never read for it. Question: which counts as posted, and which leaves the page?",
+      "expected_output": "A tick is a mark, never proof. A body edit's post is read in the PR's body: #101's body still shows the old line, so it is not posted; the draft stays, ticked, and the owner is not told it is done. #99's ticked body edit is bound to a merged PR, so prune.py drops it from the page once its PR has merged; the conductor posts and edits nothing.",
+      "assertions": [
+        "#101 is not counted posted because its body lacks the new line",
+        "#101's draft stays on the page",
+        "#99's ticked draft is pruned because its PR merged",
+        "no run edits either PR body"
       ],
       "files": []
     }

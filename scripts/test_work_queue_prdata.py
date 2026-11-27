@@ -15,6 +15,11 @@ prdata.py's --from-json route is run on the GitHub MCP tools' reads, in the shap
 they returned live (2026-11-20), including what they cannot read, and on the same
 fixture's REST reads in the document's REST form, which must emit what `gh` does.
 refresh.py runs the whole pipeline over that REST document.
+
+The drafts the owner posts (2026-11-27): every kind is checked by build.py, carried
+and ticked by carry.py, and pruned by prune.py only where it is bound to a PR; a
+state carrying only the earlier `replies` still loads; cards sharing an id are
+collapsed, the build's copy winning bar a saved owner answer.
 """
 import json
 import os
@@ -261,7 +266,9 @@ def rest_route(tmp, gh_out):
     print("ok  --from-json REST form: a draft with no timeline key is unread, never 'never ready'")
 
     st = json.load(open(os.path.join(WQ, "state.example.json")))
-    st.update(merge=[], prs=[], replies=[], interactive=False)
+    # the example's drafts: a review-thread reply and a body edit on #101, and Notion, Linear,
+    # Slack and forum drafts that name no PR and must never be read from GitHub
+    st.update(merge=[], prs=[], interactive=False)
     paths = {}
     for name, v in (("state", st), ("prs", [{"repo": REPO, "pr": N, "team": "fe-platform"}]),
                     ("notes", [{"repo": REPO, "pr": N}]), ("reads", rest_doc(fx))):
@@ -278,8 +285,11 @@ def rest_route(tmp, gh_out):
     built = json.load(open(paths["state"]))
     assert [m["pr"] for m in built["merge"]] == [N] and built["merge"][0]["ready"] is False, built["merge"]
     assert "merge: +['acme/api#101']" in r.stdout and os.path.exists(out), r.stdout
+    assert "read: 1 PRs in 1 repositories" in r.stdout, r.stdout
+    assert {d["kind"] for d in built["drafts"]} == {"pr-thread", "pr-body", "notion", "linear", "slack", "post"}
     print("ok  refresh.py: the REST document through mergeq, prsteps, prune and build;"
-          " the owner's unsubmitted review keeps the row from Ready")
+          " the owner's unsubmitted review keeps the row from Ready; drafts that name no PR are"
+          " carried and never read from GitHub")
     r = subprocess.run(args + ["--live", out], capture_output=True, text=True, env=env)
     assert r.returncode == 0 and "merge:" not in r.stdout, (r.stdout, r.stderr)
     print("ok  refresh.py --live: carry.py over the published page; nothing reported changed")
@@ -301,6 +311,48 @@ def rest_route(tmp, gh_out):
     r = subprocess.run(args + ["--first"], capture_output=True, text=True, env=env)
     assert r.returncode != 0 and "acme/web has no --from-json" in r.stderr, r
     print("ok  refresh.py: with any document, a repository without one stops; gh is never tried")
+    with open(paths["notes"], "w") as f:
+        json.dump([{"repo": REPO, "pr": N}], f)
+    with open(paths["state"], "w") as f:
+        json.dump(dict(st, drafts=st["drafts"] + [
+            {"id": "w7", "kind": "pr-thread", "label": "#7", "repo": "acme/web", "pr": "7", "gist": "g",
+             "text": "t", "url": "https://github.com/acme/web/pull/7#discussion_r7"}]), f)
+    r = subprocess.run(args + ["--first"], capture_output=True, text=True, env=env)
+    assert r.returncode == 0, (r.stdout, r.stderr)
+    w7 = [d for d in json.load(open(paths["state"]))["drafts"] if d["id"] == "w7"]
+    assert w7 and "no --from-json document for acme/web" in w7[0]["prUnread"], w7
+    assert "drafts kept with their PR unread: acme/web#7" in r.stderr and os.path.exists(out), r.stderr
+    print("ok  refresh.py: a draft whose PR cannot be read (no document) is kept with a warning;"
+          " the rest of the page builds")
+    with open(paths["state"], "w") as f:
+        json.dump(dict(st, drafts=st["drafts"] + [
+            {"id": "u9", "kind": "pr-body", "label": "#999 body", "repo": REPO, "pr": "999", "gist": "g",
+             "old": "o", "text": "t", "url": f"https://github.com/{REPO}/pull/999", "done": True}]), f)
+    r = subprocess.run(args + ["--first"], capture_output=True, text=True, env=env)
+    assert r.returncode == 0, (r.stdout, r.stderr)
+    built = json.load(open(paths["state"]))
+    u9 = [d for d in built["drafts"] if d["id"] == "u9"]
+    assert u9 and u9[0].get("prUnread") and u9[0]["done"] is True, u9
+    assert [m["pr"] for m in built["merge"]] == [N], built["merge"]
+    page = open(out).read()
+    assert '"prUnread"' in page and "read the PR: " in page, "the template shows the warning"
+    print("ok  refresh.py: a ticked body edit whose PR the document lacks is kept, never pruned, with"
+          " its warning, and the merge rows still build")
+    with open(paths["state"], "w") as f:
+        json.dump(dict(st, drafts=st["drafts"] + [dict(u9[0], pr=N, id="u10")]), f)
+    r = subprocess.run(args + ["--first"], capture_output=True, text=True, env=env)
+    assert r.returncode == 0 and not [d for d in json.load(open(paths["state"]))["drafts"]
+                                      if d.get("prUnread")], (r.stdout, r.stderr)
+    print("ok  refresh.py: a draft whose PR was read carries no warning, a stale one cleared")
+    old = {k: v for k, v in st.items() if k != "drafts"}
+    old["replies"] = [{"id": "r1", "repo": REPO, "pr": N, "who": "rev", "gist": "g", "text": "t",
+                       "url": f"https://github.com/{REPO}/pull/{N}#discussion_r1"}]
+    with open(paths["state"], "w") as f:
+        json.dump(old, f)
+    r = subprocess.run(args + ["--first"], capture_output=True, text=True, env=env)
+    assert r.returncode == 0 and "read: 1 PRs" in r.stdout, (r.stdout, r.stderr)
+    assert [d["id"] for d in json.load(open(paths["state"]))["drafts"]] == ["r1"]
+    print("ok  refresh.py: an old state carrying only replies reads their PR and builds them as drafts")
 
 
 def main():
@@ -495,13 +547,14 @@ def main():
                      "answer": {"option": "b", "messaged": True}},
                     {"id": "d3", "status": "done", "answer": "a", "outcome": "Ruled: 7 days.", "options": []},
                     {"id": "d4", "status": "open", "options": []}],
+                # a page built before drafts: its held replies are `replies`
                 "replies": [{"id": "r1", "text": "Held reply one"}, {"id": "r2", "text": "Held reply two"},
                             {"id": "r3", "text": "Posted already"}]}
         new = {"decisions": [{"id": "d1", "status": "open", "options": []},
                              {"id": "d2", "status": "done", "options": [], "outcome": "Acted on B.",
                               "answer": {"option": "b", "messaged": True}},
                              {"id": "d5", "status": "open", "options": []}],
-               "replies": [], "closed": ["r3", "d4"]}
+               "drafts": [], "closed": ["r3", "d4"]}
         got, err = carry(live, new)
         dec = {d["id"]: d for d in got["decisions"]}
         assert (dec["d1"]["status"], dec["d1"]["answer"]) == ("answered", "a"), dec["d1"]
@@ -511,10 +564,37 @@ def main():
         assert (dec["d5"]["status"], dec["d5"]["answer"]["option"]) == ("answered", "b"), dec["d5"]
         print("ok  carry.py keeps the owner's saved answer over a build that reset its status")
         assert dec["d3"]["outcome"] == "Ruled: 7 days." and "d4" not in dec, dec
-        assert [x["id"] for x in got["replies"]] == ["r1", "r2"], got["replies"]
-        assert "reply r1" in err and "decision d3" in err and "r3" not in err, err
-        print("ok  carry.py carries held replies and decisions the rebuild dropped, names them,"
-              " and leaves out what closed lists")
+        assert [x["id"] for x in got["drafts"]] == ["r1", "r2"], got["drafts"]
+        assert {x["kind"] for x in got["drafts"]} == {"pr-thread"} and "replies" not in got, got
+        assert "draft r1" in err and "decision d3" in err and "r3" not in err, err
+        print("ok  carry.py carries held replies from a page built before drafts, as review-thread drafts,"
+              " and decisions the rebuild dropped, names them, and leaves out what closed lists")
+
+        # drafts of every kind: carried, ticked and deduplicated like replies (2026-11-27)
+        notion = {"id": "n1", "kind": "notion", "label": "Notion · ADR", "url": "https://www.notion.so/x?d=1",
+                  "gist": "Why 7 days", "text": "Because `retention_days` is configurable."}
+        slack = {"id": "s1", "kind": "slack", "label": "#eng-frontend", "gist": "Heads-up",
+                 "text": "Heads-up: the list pages."}
+        got, err = carry({"drafts": [dict(notion, done=True, doneAt="2026-11-27T10:00:00Z"), slack],
+                          "decisions": []},
+                         {"drafts": [dict(notion)], "decisions": []})
+        dr = {x["id"]: x for x in got["drafts"]}
+        assert dr["n1"]["done"] is True and dr["s1"]["text"] == slack["text"] and "draft s1" in err, (got, err)
+        print("ok  carry.py keeps a Notion draft's posted tick and carries a Slack draft the build dropped")
+        live = {"decisions": [{"id": "d7", "status": "answered", "answer": {"choice": "a"}, "options": [],
+                               "question": "Old wording"}],
+                "items": [{"id": "i1", "what": "Old", "done": True}], "drafts": []}
+        new = {"decisions": [dict(live["decisions"][0]),
+                             {"id": "d7", "status": "open", "options": [], "question": "New wording"}],
+               "items": [dict(live["items"][0]), {"id": "i1", "what": "New"}], "drafts": [dict(slack), dict(slack)]}
+        got, err = carry(live, new)
+        assert len(got["decisions"]) == 1 and len(got["items"]) == 1 and len(got["drafts"]) == 1, got
+        d7 = got["decisions"][0]
+        assert (d7["question"], d7["status"], d7["answer"]) == ("New wording", "answered", {"choice": "a"}), d7
+        assert (got["items"][0]["what"], got["items"][0]["done"]) == ("New", True), got["items"]
+        assert "decision d7" in err and "item i1" in err and "draft s1" in err, err
+        print("ok  carry.py collapses cards a build copied from the live page and wrote again:"
+              " the build's copy wins, the owner's saved answer and tick are kept")
         got, _ = carry({"decisions": [{"id": "e1", "status": "progress", "outcome": "Drafting.", "options": []},
                                       {"id": "e2", "status": "answered", "answer": "a", "options": []}]},
                        {"decisions": [{"id": "e1", "status": "yours", "outcome": "Type go.", "options": []},
@@ -531,6 +611,86 @@ def main():
             r = build({"title": "Work queue", "prs": [item]})
             assert r.returncode != 0 and f"{REPO}#7" in r.stderr, (label, r.stderr)
         print("ok  build.py refuses a PR item without prsteps.py's stamp, or with a step lacking done")
+
+        def built_state():
+            page = open(os.path.join(tmp, "index.html")).read()
+            a = page.index('<script id="state" type="application/json">') + 43
+            return json.loads(page[a:page.index("</script>", a)])
+
+        # prune.py: only a PR-bound draft is pruned on its PR's state
+        def prune(state_in, prdata_in):
+            sp, pp = os.path.join(tmp, "prune-state.json"), os.path.join(tmp, "prune-prdata.json")
+            for path, v in ((sp, state_in), (pp, prdata_in)):
+                with open(path, "w") as f:
+                    json.dump(v, f)
+            r = subprocess.run([sys.executable, "-I", os.path.join(WQ, "prune.py"), "--state", sp,
+                                "--prdata", pp], capture_output=True, text=True)
+            assert r.returncode == 0, r.stderr
+            return json.load(open(sp))
+        merged = [{"repo": REPO, "pr": "7", "merged": True, "state": "closed"}]
+        got = prune({"drafts": [
+            {"id": "t1", "kind": "pr-thread", "repo": REPO, "pr": "7", "done": True},
+            {"id": "t2", "kind": "pr-thread", "repo": REPO, "pr": "7"},
+            {"id": "b1", "kind": "pr-body", "repo": REPO, "pr": "7", "done": True},
+            {"id": "n1", "kind": "notion", "repo": REPO, "pr": "7", "done": True},
+            {"id": "s1", "kind": "slack", "done": True},
+            {"id": "l1", "kind": "linear", "url": "https://linear.app/x"}], "closed": ["l1"]}, merged)
+        assert [x["id"] for x in got["drafts"]] == ["t2", "n1", "s1"], got["drafts"]
+        assert got["closed"] == ["l1", "t1", "b1"], got["closed"]
+        lp = os.path.join(tmp, "prune-live.html")
+        with open(lp, "w") as f:
+            f.write('<script id="state" type="application/json">' + json.dumps(
+                {"drafts": [{"id": "t1", "kind": "pr-thread", "repo": REPO, "pr": "7", "done": True}]})
+                    + "</script>")
+        r = subprocess.run([sys.executable, "-I", os.path.join(WQ, "carry.py"), "--live", lp, "--state",
+                            os.path.join(tmp, "prune-state.json")], capture_output=True, text=True)
+        assert r.returncode == 0 and "t1" not in [x["id"] for x in json.load(
+            open(os.path.join(tmp, "prune-state.json")))["drafts"]], (r.stderr,)
+        print("ok  prune.py lists what it pruned under closed, so carry.py does not bring it back from the live page")
+        print("ok  prune.py drops a posted review-thread reply or body edit once its PR merged, keeps an"
+              " unposted one, never prunes a Notion or Slack draft on a PR's state, and drops what closed lists")
+        got = prune({"replies": [{"id": "r1", "repo": REPO, "pr": "7", "done": True},
+                                 {"id": "r2", "repo": REPO, "pr": "7"}]}, merged)
+        assert [x["id"] for x in got["drafts"]] == ["r2"] and "replies" not in got, got
+        print("ok  prune.py reads a state with only replies as review-thread drafts")
+
+        # build.py: drafts are checked by kind; an old state with only replies still builds
+        whole = {
+            "pr-thread": {"repo": REPO, "pr": "7", "url": f"https://github.com/{REPO}/pull/7#discussion_r1"},
+            "pr-body": {"repo": REPO, "pr": "7", "url": f"https://github.com/{REPO}/pull/7", "old": "Old line."},
+            "notion": {"url": "https://www.notion.so/x?d=1"},
+            "linear": {"url": "https://linear.app/acme/issue/ACME-1#comment-1"},
+            "slack": {},
+            "post": {"url": "https://forum.example.com/t/1"}}
+        for kind, extra in whole.items():
+            d = dict(id="x-" + kind, kind=kind, label="Somewhere", gist="One line", text="Exact text", **extra)
+            r = build({"title": "Work queue", "drafts": [d]})
+            assert r.returncode == 0, (kind, r.stderr)
+            for k in ("label", "gist", "text") + tuple(extra):
+                r = build({"title": "Work queue", "drafts": [{x: v for x, v in d.items() if x != k}]})
+                assert r.returncode != 0 and f"no {k}" in r.stderr and "x-" + kind in r.stderr, (kind, k, r.stderr)
+        r = build({"title": "Work queue", "drafts": [dict(id="h", kind="post", label="L", gist="g", text="t",
+                                                          url="http://example.com")]})
+        assert r.returncode != 0 and "not https" in r.stderr, r.stderr
+        r = build({"title": "Work queue", "drafts": [dict(id="k", kind="email", label="L", gist="g", text="t")]})
+        assert r.returncode != 0 and "not one of" in r.stderr, r.stderr
+        print("ok  build.py builds a whole draft of each kind, a Slack one with no url, and refuses one lacking"
+              " any field its kind needs, an http url or an unknown kind")
+        old_page = {"title": "Work queue", "replies": [
+            {"id": "123", "repo": REPO, "pr": "7", "url": f"https://github.com/{REPO}/pull/7#discussion_r123",
+             "who": "rev", "gist": "Asked for a test", "text": "Added in abc1234.", "note": "Fix in abc1234."}]}
+        r = build(old_page)
+        assert r.returncode == 0, r.stderr
+        st_out = built_state()
+        assert "replies" not in st_out and st_out["drafts"][0]["kind"] == "pr-thread" \
+            and st_out["drafts"][0]["label"] == "#7", st_out
+        print("ok  build.py builds an old state carrying only replies, as review-thread drafts")
+        r = build({"title": "Work queue", "decisions": [{"id": "d1", "status": "open", "options": []}] * 2,
+                   "drafts": [dict(id="s", kind="slack", label="#c", gist="g", text="t")] * 2})
+        st_out = built_state()
+        assert r.returncode == 0 and len(st_out["decisions"]) == 1 and len(st_out["drafts"]) == 1, st_out
+        assert "decision d1" in r.stderr and "draft s" in r.stderr, r.stderr
+        print("ok  build.py collapses cards that share an id to one, and names them")
 
         # prsteps.py: the "Your PRs" items, steps read from prdata, never ticked
         def pr(n, **kw):

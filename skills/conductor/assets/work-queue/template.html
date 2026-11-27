@@ -2,7 +2,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,600&display=swap">
 <style id="page-style">
-/* Generic conductor work queue (skills/conductor/work-queue.md). Layout: one reading column. Decisions you answer in place, replies to copy and post, then the run order, later items and done. A sticky bar sends everything you changed in one go. */
+/* Generic conductor work queue (skills/conductor/work-queue.md). Layout: one reading column. Decisions you answer in place, drafts to copy and post wherever they go, then the run order, later items and done. A sticky bar sends everything you changed in one go. */
 :root {
   --bg: #f6f7f9; --surface: #ffffff; --fg: #1b2230; --muted: #5d6676; --line: #dde1e8;
   --accent: #2f5bd3; --accent-soft: #e8eefc; --tracker: #5e5ad8; --gh: #24292f;
@@ -52,6 +52,8 @@ input[type=checkbox] { width: 18px; height: 18px; margin: 3px 0 0; accent-color:
 .kind.review { color: var(--review); border: 1px solid var(--review); }
 .kind.ship { color: var(--ship); border: 1px solid var(--ship); }
 .kind.reply { color: var(--reply); border: 1px solid var(--reply); }
+.dest { font-size: 13px; font-weight: 600; color: var(--muted); margin: 10px 0 4px; }
+.oldline { text-decoration: line-through; color: var(--muted); }
 .urg { color: var(--muted); }
 .what { font-weight: 500; }
 .why { color: var(--muted); font-size: 13.5px; margin-top: 2px; }
@@ -149,7 +151,18 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
   var INTERACTIVE = state.interactive === true;
   document.title = TITLE;
   state.refresh = state.refresh || null;
-  state.decisions = state.decisions || []; state.replies = state.replies || []; state.items = state.items || []; state.sessions = state.sessions || []; state.doneRecent = state.doneRecent || [];
+  state.decisions = state.decisions || []; state.drafts = state.drafts || []; state.items = state.items || []; state.sessions = state.sessions || []; state.doneRecent = state.doneRecent || [];
+  // `replies` is the earlier name for review-thread drafts: a state carrying it still loads
+  (state.replies || []).forEach(function (r) {
+    if (find(state.drafts, r.id)) return;
+    state.drafts.push(Object.assign({ kind: 'pr-thread', label: r.pr != null ? '#' + r.pr : 'Review thread' }, r));
+  });
+  delete state.replies;
+  // one entry per id: a state that carries a card twice shows it once (build.py collapses them too)
+  ['decisions', 'items', 'drafts'].forEach(function (k) {
+    var seen = {};
+    state[k] = state[k].filter(function (x) { var id = String(x.id); if (seen[id]) return false; seen[id] = true; return true; });
+  });
   var app = document.getElementById('app');
   var artifactNs = null, commentsNs = null;
   var mode = 'connecting', canSend = 'checking';
@@ -158,6 +171,14 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
   var KEY = 'queue-pending';
 
   try { var saved = JSON.parse(sessionStorage.getItem(KEY) || 'null'); if (saved) { picks = saved.picks || {}; ticks = saved.ticks || {}; } } catch (e) {}
+  // An earlier view saved a review-thread draft's pending tick as 'reply:<id>'.
+  // Move it to 'draft:<id>', the one key rendering, toggling and sending read.
+  Object.keys(ticks).forEach(function (k) {
+    if (k.indexOf('reply:') !== 0) return;
+    var nk = 'draft:' + k.slice(6);
+    if (!ticks.hasOwnProperty(nk)) ticks[nk] = ticks[k];
+    delete ticks[k];
+  });
   Object.keys(picks).forEach(function (id) { var d = find(state.decisions, id); if (!d || d.status !== 'open') delete picks[id]; });
   function persist() { try { sessionStorage.setItem(KEY, JSON.stringify({ picks: picks, ticks: ticks })); } catch (e) {} }
 
@@ -259,40 +280,68 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
     return h('article', { class: cls, id: 'd-' + d.id }, kids);
   }
 
-  function replyItem(r) {
-    var done = isDone('reply', r);
-    var url = r.url;
-    var label = 'Open thread';
-    var box = h('input', { type: 'checkbox', id: 'tick-reply-' + r.id, 'aria-label': 'Posted: ' + r.gist, disabled: !INTERACTIVE || mode !== 'ready' || sending,
-      onchange: function (e) { toggle('reply', r, e.target.checked); } });
+  var KIND_TAG = { 'pr-thread': 'reply', 'pr-body': 'PR body', notion: 'Notion', linear: 'Linear', slack: 'Slack', post: 'post' };
+  var OPEN_LABEL = { 'pr-thread': 'Open thread', 'pr-body': 'Open PR', notion: 'Open in Notion', linear: 'Open in Linear', slack: 'Open in Slack', post: 'Open' };
+
+  // A draft is text the owner posts themselves. Its text is shown verbatim in a <pre>,
+  // never through rich(), so what is copied is exactly what was drafted.
+  function draftItem(r) {
+    var done = isDone('draft', r);
+    var url = /^https:\/\//.test(String(r.url || '')) ? r.url : null;
+    var box = h('input', { type: 'checkbox', id: 'tick-draft-' + r.id, 'aria-label': 'Posted: ' + r.gist, disabled: !INTERACTIVE || mode !== 'ready' || sending,
+      onchange: function (e) { toggle('draft', r, e.target.checked); } });
     box.checked = done;
-    var kids = [h('div', { class: 'tags' }, [h('span', { class: 'kind reply', text: 'reply' }), h('span', { class: 'urg', text: '#' + r.pr + ' · ' + r.who })]),
-      h('div', { class: 'what', text: r.gist })];
+    var tag = [h('span', { class: 'kind reply', text: KIND_TAG[r.kind] || 'draft' })];
+    if (r.who) tag.push(h('span', { class: 'urg', text: 'to ' + r.who }));
+    var kids = [h('div', { class: 'tags' }, tag), h('div', { class: 'what', text: r.gist })];
     if (r.note) kids.push(h('div', { class: 'why' }, rich(r.note)));
+    // a PR this build could not read: the draft stays, never pruned, and says so
+    if (r.prUnread) kids.push(h('div', { class: 'chips' }, [h('span', { class: 'chip warn', text: 'Couldn\u2019t read the PR: ' + r.prUnread })]));
+    if (r.kind === 'pr-body' && r.old) kids.push(h('pre', { class: 'draft oldline', text: r.old }));
     var pre = h('pre', { class: 'draft', id: 'draft-' + r.id, text: r.text });
     kids.push(pre);
-    var copy = h('button', { type: 'button', class: 'copy', text: 'Copy reply', onclick: function () { copyText(copy, pre); } });
-    var row = [copy, h('a', { class: 'k gh', href: url, target: '_blank', rel: 'noopener', text: label })];
+    var copy = h('button', { type: 'button', class: 'copy', text: 'Copy', onclick: function () { copyText(copy, pre, 'Copy'); } });
+    var row = [copy];
+    if (url) row.push(h('a', { class: 'k gh', href: url, target: '_blank', rel: 'noopener', text: OPEN_LABEL[r.kind] || 'Open' }));
     if (!done && INTERACTIVE) {
-      var all = h('a', { class: 'copygo', href: url, target: '_blank', rel: 'noopener', text: 'Copy, open and tick',
-        onclick: function () { copyQuiet(pre.textContent, all, 'Copy, open and tick'); ticks['reply:' + r.id] = true; persist(); setTimeout(render, 50); } });
-      row.push(all);
+      if (url) {
+        var all = h('a', { class: 'copygo', href: url, target: '_blank', rel: 'noopener', text: 'Copy, open and tick',
+          onclick: function () { copyQuiet(pre.textContent, all, 'Copy, open and tick', 'Opened; copy didn’t work, use Copy'); ticks['draft:' + r.id] = true; persist(); setTimeout(render, 50); } });
+        row.push(all);
+      } else {
+        var tick = h('button', { type: 'button', class: 'copy', text: 'Copy and tick',
+          onclick: function () { copyQuiet(pre.textContent, tick, 'Copy and tick', 'Copy didn’t work, use Copy'); ticks['draft:' + r.id] = true; persist(); setTimeout(render, 1200); } });
+        row.push(tick);
+      }
     }
     kids.push(h('div', { class: 'row' }, row));
-    var changed = ticks.hasOwnProperty('reply:' + r.id);
+    var changed = ticks.hasOwnProperty('draft:' + r.id);
     return h('li', { class: (done ? 'is-done' : '') + (changed ? ' changed' : '') }, [box, h('div', null, kids)]);
   }
 
-  function copyText(btn, el) {
-    function flash(t) { btn.textContent = t; setTimeout(function () { btn.textContent = 'Copy reply'; }, 2000); }
+  // Drafts sit under their destination, in the order the build wrote them, so every
+  // reply to one page or thread is together.
+  function byDest(list) {
+    var dests = [];
+    list.forEach(function (r) { var l = String(r.label || ''); if (dests.indexOf(l) < 0) dests.push(l); });
+    var out = [];
+    dests.forEach(function (l) {
+      out.push(h('div', { class: 'dest', text: l }));
+      out.push(h('ol', { class: 'list' }, list.filter(function (r) { return String(r.label || '') === l; }).map(draftItem)));
+    });
+    return out;
+  }
+
+  function copyText(btn, el, label) {
+    function flash(t) { btn.textContent = t; setTimeout(function () { btn.textContent = label; }, 2000); }
     function selectIt() { var r = document.createRange(); r.selectNodeContents(el); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); flash('Selected: press Ctrl/Cmd+C'); }
     try { navigator.clipboard.writeText(el.textContent).then(function () { flash('Copied'); }, selectIt); } catch (e) { selectIt(); }
   }
 
-  function copyQuiet(text, el, label) {
+  function copyQuiet(text, el, label, failed) {
     try {
-      navigator.clipboard.writeText(text).then(function () { el.textContent = 'Copied, opening…'; setTimeout(function () { el.textContent = label; }, 2500); },
-        function () { el.textContent = 'Opened; copy didn’t work, use Copy reply'; setTimeout(function () { el.textContent = label; }, 4000); });
+      navigator.clipboard.writeText(text).then(function () { el.textContent = el.tagName === 'A' ? 'Copied, opening…' : 'Copied'; setTimeout(function () { el.textContent = label; }, 2500); },
+        function () { el.textContent = failed; setTimeout(function () { el.textContent = label; }, 4000); });
     } catch (e) {}
   }
 
@@ -426,8 +475,8 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
     var acting = state.decisions.filter(function (d) { return d.status === 'progress'; });
     var yours = state.decisions.filter(function (d) { return d.status === 'yours'; });
     var done = state.decisions.filter(function (d) { return d.status === 'done'; });
-    var replies = state.replies;
-    var postedCount = replies.filter(function (r) { return isDone('reply', r); }).length;
+    var drafts = state.drafts;
+    var postedCount = drafts.filter(function (r) { return isDone('draft', r); }).length;
     // Needs you items keep the report's groups, in the order the build wrote them;
     // only items with no group, which the report puts at low urgency, wait for time.
     var later = state.items.filter(function (i) { return !i.group; });
@@ -439,7 +488,7 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
     });
     var wrap = h('div', { class: 'wrap' }, [
       h('header', null, [h('h1', { text: TITLE }),
-        h('div', { class: 'meta', text: 'Read ' + fmt(state.updated) + ' by the conductor\u2019s last sweep · next check-in ' + (state.nextCheckin || '') + ' · ' + open.length + ' decisions open · ' + yours.length + ' steps yours · ' + (replies.length - postedCount) + ' replies to post' }),
+        h('div', { class: 'meta', text: 'Read ' + fmt(state.updated) + ' by the conductor\u2019s last sweep · next check-in ' + (state.nextCheckin || '') + ' · ' + open.length + ' decisions open · ' + yours.length + ' steps yours · ' + (drafts.length - postedCount) + ' drafts to post' }),
         notice()]),
       refreshCard(),
       state.merge.length || state.prs.length ? h('section', { id: 'prs' }, [h('div', { class: 'tier' }, [h('h2', { text: 'Your PRs' }), h('p', { text: 'Approved PRs with review settled first, then every other open PR of a run. Steps are read from GitHub at each check-in.' })]),
@@ -449,12 +498,12 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
       yours.length ? h('section', { id: 'yours' }, [h('div', { class: 'tier' }, [h('h2', { text: 'Your step now' }), h('p', { text: 'Answered; each needs one more thing from you.' })]), h('div', { class: 'cards' }, yours.map(decisionCard))]) : null,
       sent.length ? h('section', null, [h('div', { class: 'tier' }, [h('h2', { text: 'Sent to the conductor' })]), h('div', { class: 'cards' }, sent.map(decisionCard))]) : null,
       acting.length ? h('section', null, [h('div', { class: 'tier' }, [h('h2', { text: 'In progress' })]), h('div', { class: 'cards' }, acting.map(decisionCard))]) : null,
-      replies.length ? h('section', { id: 'replies' }, (function () {
-        var todo = replies.filter(function (r) { return !r.done || ticks.hasOwnProperty('reply:' + r.id); });
-        var posted = replies.filter(function (r) { return r.done && !ticks.hasOwnProperty('reply:' + r.id); });
-        var kids = [h('div', { class: 'tier' }, [h('h2', { text: 'Replies to post' }), h('p', { text: 'Copy, open the thread, paste and post, then tick. Posted replies fold away and drop off once their PR merges or closes.' })])];
-        kids.push(todo.length ? h('ol', { class: 'list' }, todo.map(replyItem)) : h('div', { class: 'empty', text: 'Nothing to post.' }));
-        if (posted.length) kids.push(h('details', { class: 'posted' }, [h('summary', { text: 'Posted (' + posted.length + ')' }), h('ol', { class: 'list' }, posted.map(replyItem))]));
+      drafts.length ? h('section', { id: 'drafts' }, (function () {
+        var todo = drafts.filter(function (r) { return !r.done || ticks.hasOwnProperty('draft:' + r.id); });
+        var posted = drafts.filter(function (r) { return r.done && !ticks.hasOwnProperty('draft:' + r.id); });
+        var kids = [h('div', { class: 'tier' }, [h('h2', { text: 'Drafts to post' }), h('p', { text: 'Copy, open where it goes, paste and post, then tick. A tick is your mark: the conductor checks a GitHub or Linear post where it can, never a Notion, Slack or other one, which it asks you about. Posted drafts fold away.' })])];
+        if (todo.length) kids = kids.concat(byDest(todo)); else kids.push(h('div', { class: 'empty', text: 'Nothing to post.' }));
+        if (posted.length) kids.push(h('details', { class: 'posted' }, [h('summary', { text: 'Posted (' + posted.length + ')' })].concat(byDest(posted))));
         return kids;
       })()) : null,
       state.sessions.length ? h('section', { id: 'sessions' }, [h('div', { class: 'tier' }, [h('h2', { text: 'Sessions to archive' }), h('p', { text: 'Finished sessions with nothing left to do. Tick the ones to archive and send; the conductor archives them, or says what is left for you.' })]),
@@ -525,7 +574,7 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-vis
     });
     c.ticks.forEach(function (key) {
       var kind = key.split(':')[0], id = key.slice(kind.length + 1);
-      var obj = find(kind === 'reply' ? next.replies : kind === 'session' ? next.sessions : next.items, id);
+      var obj = find(kind === 'draft' ? next.drafts : kind === 'session' ? next.sessions : next.items, id);
       if (obj) { obj.done = ticks[key]; obj.doneAt = ticks[key] ? at : null; }
     });
     var wake = c.answers.length || c.archives.length;
