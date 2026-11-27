@@ -789,6 +789,8 @@ so the next context, after a clear, does not rediscover and re-report them.
 
 **Why a size budget, at about 70% (same deployment, day 11):** "maintained, not appended to" did not hold. The changelog kept every line since day one, and posted or superseded drafts stayed in the body, until a Linear document save was refused at 250,000 characters (`rules/linear-mechanics.md`, *Documents*). A refused ledger write loses the sweep's record, so the budget acts well before the cap: at about 70% the history that the body does not need — changelog lines older than the last clear, drafts no longer pending — leaves the body for the document's history or a linked archive document, with a one-line pointer. The state never moves, since the body is what a restart reads. It names the platform's limit rather than a number so another tracker's cap applies the same way.
 
+**Why a `document-store-page` is named beside `github-issue` (review of #248, folded into the drafts change, 2026-11-27):** the budget named Linear's cap and said none is established for a `github-issue` ledger, and left the Notion-page fallback unnamed, which a reader could take as covered by Linear's number or as forgotten. No cap on a Notion page's body has been observed here, so it is stated in the same place as not established, and the budget does not reach it yet. **How the budget and the drafts agree:** a pending draft is state and stays in the body in full; it moves out once posted or superseded, and "posted" is the event `work-queue.md`, *Drafts to post*, defines — read at its site, or for a Notion or Slack draft the owner's tick read back — so the page and the ledger close a draft on one event. Scenario: `a-notion-page-ledger-has-no-size-budget-yet`.
+
 ## The work queue
 
 *Report*, its last paragraph; *7. Ledger*, the queue's URL; *Rules*, where a check's
@@ -868,7 +870,7 @@ waiting on them. The tracker's review page sits beside the PR, marked with the d
 *Approve drafts* is in the chat. **Since the owner's ruling of 2026-11-16, a reply or
 ruling the owner is to post in a thread where no run posts** (`resolve-pr-comment`,
 *Replies held for the owner*) **is carried on the page in full** — text, the
-thread's recorded `html_url` and the fix SHA — because the owner now copies, edits
+thread's recorded `html_url` and the fix SHA — (widened to every draft the owner posts, from any surface, on 2026-11-27: *Drafts to post*, below) — because the owner now copies, edits
 and posts it themselves, and a page that only names where the text is held makes
 them go and fetch it. The page is private and is not the ledger, so the
 `github-issue` ledger's rule of naming such drafts only does not reach it. A draft's location is a claim about current state,
@@ -891,7 +893,7 @@ Scenarios: `a-changed-needs-you-republishes-the-work-queue-in-the-same-turn`,
 `a-red-default-branch-is-on-the-page-never-in-a-forge-ledger`,
 `a-tracker-review-draft-is-marked-on-the-queue-item`,
 `a-pr-with-no-linked-issue-says-so`,
-`a-reply-draft-held-in-the-ledger-is-linked-and-labelled`,
+`a-reply-the-owner-posts-is-on-the-queue-in-full` (renamed from `a-reply-draft-held-in-the-ledger-is-linked-and-labelled`, 2026-11-27, below),
 `a-quiet-sweep-with-no-work-queue-recorded-builds-the-first-page`.
 
 **Why the work queue and the check-in are per conductor (owner's ruling, 2026-11-16):** each is bound
@@ -1235,6 +1237,95 @@ but the cancel, and where the runtime cannot cancel, the turn sweeps at once
 state it, the latter giving the deferred turn its line. "A PR merged or closed" left
 the list of waking events: the conductor holds no PR watch, so a merge reaches it
 only as a run's report or in its own sweep.
+
+## Drafts to post (a live conductor, 2026-11-27)
+
+`work-queue.md`, *Drafts to post* and *Publishing*; `SKILL.md`, *Rules*, *7. Ledger*
+and *Report*; `drafts.py`, `build.py`, `carry.py`, `prune.py`, `refresh.py`, the
+template. **The incident:** a live conductor on 2026-11-27 had nineteen replies the
+owner had to post on the comment threads of one Notion ADR page, and two Slack
+messages. The page's copy control rendered only for `replies`, which were shaped
+for a review thread (repo, PR, thread URL), and `refresh.py` read every reply's PR,
+so a reply with no GitHub PR would have stopped the build. So all twenty-one went
+on the page as plain items, their text in `why`, where `rich()` turned backticks
+into `<code>`: a copy of the rendered text lost the inline-code marks. The owner
+asked why they were not copy and navigate, like the review-thread replies.
+
+**Why every draft the owner posts is one kind of entry:** what the owner does is
+the same wherever the text goes — copy it, open the site, paste, post, tick — so one
+model carries it, and only what the site needs differs by kind (`drafts.py`).
+**Why a sibling `drafts` rather than generalising `replies`:** most kinds are not
+replies, and a field named for one kind would mislead the next reader. Old pages
+keep loading: a published page carries its own script and state, so it renders as
+before; `carry.py`, `prune.py`, `refresh.py`, `build.py` and the template all fold a
+state's `replies` into review-thread drafts, and a tick under the old `reply:` key is
+read as a draft's. **Why the text sits in a `<pre>`, never through `rich()`:** what is
+copied must be exactly what was drafted; the page's formatting is for its own
+prose. **Why grouped by `label`:** twelve replies to one Notion page are one visit
+to that page.
+
+**Why only PR-bound drafts are read from GitHub, and still fail closed:** a Notion,
+Linear, Slack or other draft has no PR, so `refresh.py` skips it rather than
+stopping. A review-thread reply or a body edit is read with its PR as before: its
+PR's state is what prunes it, and a read that fails still stops the refresh, since
+an unread state is never written as open or closed. **Why `prune.py` never prunes
+another kind on a PR's state:** it has none to read, so a Notion draft would either
+never leave or leave wrongly; it leaves only when the build omits it and `closed`
+lists it. `prune.py` now also drops any draft whose id `closed` lists, since the
+ledger shows it finished.
+
+**Why a tick is checked only where the site can be read:** the page is a view, and
+a tick a convenience the conductor never acts on (*The work queue*). A review
+thread, a PR body and a Linear issue's comments can be read, so the post is
+confirmed there; Notion and Slack posts are not checked, per the owner's brief, so
+the tick is recorded in the ledger as the owner's mark, unverified, and that is
+what closes the draft. **Why not every draft is one:** text a run posts once the
+owner approves it stays an *Approve drafts* item, and a reviewer's drafts stay on
+their surface for the owner to submit (`reviewers.md`, which now says so at its own
+decision point). **Why a PR body line is a draft:** a created PR's body is edited
+only while it is a draft, footered, or under a merge opt-in, and otherwise the
+drift is reported with its replacement (protected rule 6); the replacement is now
+carried in full, old line beside new, for the owner to make.
+
+**Why cards are collapsed by id (same conductor):** its own build script copied
+decisions from the live page and also wrote the cards again, and the page showed
+each twice. `carry.py`, which sees the live page, keeps the copy that differs from
+the live page's — the build's — and keeps a saved owner answer or tick from the
+other, under its existing rule that a saved answer wins over the build's status
+but never over an answer the ledger holds; `build.py` collapses any left, first copy
+first, and both name them; the template shows one per id for a page published
+before. **Why `drafts.py` is loaded by path:** the scripts run under `python3 -I`,
+which keeps the working directory off the import path; loading the module from the
+script's own directory by an explicit path keeps that guarantee.
+
+**Protected rules.** No protected rule's text changed. The change sits beside rule
+1 (a held reply is never posted by a run: still the owner's, and nothing on the
+page asks this skill to post or resolve), rule 6 (the body edit is reported, never
+made) and rule 7 (the page is not a forge write, so a tick's verification is
+recorded in the ledger and never posted). `rules/operator-output.md`'s *Post
+yourself* widened from review threads to every draft the owner posts
+(`rules/operator-output-notes.md`).
+
+**Run:** `scripts/test_work_queue_prdata.py`, extended: `build.py` builds a whole
+draft of each kind, a Slack one without a link, refuses one lacking any field its
+kind needs, an `http` link or an unknown kind, builds an old state carrying only
+`replies`, and collapses duplicated cards; `carry.py` carries a page's `replies` as
+drafts, a Notion draft's tick and a dropped Slack draft, and collapses a decision
+and an item written twice, keeping the build's wording and the owner's answer and
+tick; `prune.py` drops a ticked reply and body edit on a merged PR, keeps an unposted
+one, a ticked Notion draft naming that PR and a ticked Slack draft, and drops what
+`closed` lists; `refresh.py` builds `state.example.json`'s six kinds reading one PR,
+stops where a review-thread draft's repository has no document, and builds an old
+`replies`-only state. The template, built from `state.example.json` and from a
+`replies`-only state carrying a decision twice, was rendered through a DOM shim
+under node: every kind showed its text verbatim, backticks intact, under its
+destination; a Slack draft offered "Copy and tick", every other "Copy, open and
+tick"; a ticked draft folded under *Posted*; the old state rendered its reply as a
+draft and the decision once. Scenarios: `every-draft-the-owner-posts-is-on-the-queue-with-its-text`,
+`a-tick-is-a-mark-read-at-the-site-where-it-can-be`,
+`a-reply-the-owner-posts-is-on-the-queue-in-full` (rewritten: it had a reply no run
+may post shown as an *Approve drafts* item linking the ledger, the very shape the
+incident found).
 
 ## The contradiction pass before the review round (PR #201)
 

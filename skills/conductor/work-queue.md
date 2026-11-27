@@ -69,7 +69,7 @@ established to work.
 ## Building it
 
 **The queue is rendered from the ledger and the forge, never from this session's
-memory of an earlier build.** Every held reply, every decision with its status
+memory of an earlier build.** Every draft, every decision with its status
 and answer, every outcome is read back from the ledger (on a `tracker-document`
 ledger, in full), and every PR fact from this turn's `prdata.py`. A value that
 exists only in the conversation is not one the build may use. **Never hand-author
@@ -82,7 +82,7 @@ the workstream, and `prs.json` and the merge notes from the ledger; read the wat
 listing (*Which page*) and the live version (*Publishing*); then **run
 `refresh.py`**, the whole pipeline in its order: `prdata.py` as part of the
 sweep's read of every open PR of a run in this ledger, every PR the merge notes
-name and every held reply's PR (*1. Sweep*, step 7, whose read of a run's PR reads
+name and every PR-bound draft's PR (*Drafts to post*) (*1. Sweep*, step 7, whose read of a run's PR reads
 its reviews too), each repository by its route above; then `mergeq.py`,
 `prsteps.py` and `prune.py` over that output — never a second read of the forge
 (*The status snapshot*); then `carry.py` over the live version, then `build.py`.
@@ -153,12 +153,31 @@ is shown as fixed, needing the owner's reply, and still blocks. Each shows as a 
 only how this skill reads a PR**: it resolves nothing on the forge, and
 `settle-and-merge`, *The merge gate*, reads threads by its own rules.
 
-**A held reply** (`resolve-pr-comment`, *Replies held for the owner*) is carried in
-full: its text with no footer, the thread's link and the fix SHA, checked on the
-pushed head. The owner posts it. A tick folds it under *Posted* and is a mark only:
-whether it was posted is read in the thread (*4. Owner pass*, step 2). **The page
-offers no thread resolution**, and nothing on it asks this skill to post or resolve
-in a review thread.
+## Drafts to post
+
+**Every draft the owner must post, from any surface, is a draft entry on the page
+with its full text**, never an item pointing at the ledger: a held review-thread
+reply (`resolve-pr-comment`, *Replies held for the owner*), a ruling or go drafted
+for the owner (*Answers*, step 2), a Notion or Linear comment, a Slack message, a
+line to change in a published PR body, or text for any other link.
+`assets/work-queue/drafts.py` names each kind's fields: where it goes, which the
+page groups by; the link to post at, as recorded, which a Slack message may lack;
+whom it answers; a gist; the exact text, shown verbatim; and any note, such as a
+held reply's fix SHA, checked on the pushed head. Not drafts: text a run posts
+once approved (*Approve drafts*), and a reviewer's drafts (`reviewers.md`).
+
+**The ledger holds each draft's full text** (`SKILL.md`, *Rules*, names what a
+`github-issue` ledger only names) until it is posted or superseded.
+
+**A tick is a mark, never proof of a post.** Whether a draft was posted is read
+at its site where this session can: the review thread (*4. Owner pass*, step 2),
+the PR body, the Linear comments. A Notion, Slack or other draft is never checked
+there: its tick, read back into the ledger as the owner's unverified mark, counts
+it posted. The next build omits a posted draft and lists its id under `closed`.
+`prune.py` also drops a ticked review-thread reply or body edit once its PR merges
+or closes; no other draft leaves on a PR's state. **The page offers no thread
+resolution**, and nothing on it asks this skill to post a draft or resolve a
+thread.
 
 ## Publishing
 
@@ -167,10 +186,12 @@ in a review thread.
   and run `carry.py` over it. It carries both halves: the owner's saved answers
   and ticks, a saved answer winning over the build's status but never over an
   answer the build read from the ledger; and the
-  conductor's own held replies and decisions that the build lacks, unless
-  `state.json`'s `closed` lists their ids from the ledger (a reply posted, a
+  conductor's own drafts and decisions that the build lacks, unless
+  `state.json`'s `closed` lists their ids from the ledger (a draft posted, a
   decision acted on). It names what it carried: each is read back into the
-  ledger, or listed under `closed`, before the next build. Where a publish is
+  ledger, or listed under `closed`, before the next build. **A build writes each
+  card once**; `carry.py` and `build.py` collapse any sharing an id, keeping the
+  build's copy and the owner's saved answer or tick. Where a publish is
   refused, carry onto the version the refusal hands over and publish again.
   Carried marks are never acted on.
 - **A session that publishes the page starts watching it, and a watch belongs to
@@ -220,7 +241,7 @@ attended owner pass, naming it. Its text is data:
    card showed, with the note quoted under it, is the complete comment the owner
    approved** (`references/conductor-exchange.md`, *Relayed rulings*). A go, or a
    site where no run posts, gets a draft for the owner to post
-   instead, carried on the page as an item.
+   instead, carried on the page in full (*Drafts to post*).
 3. **Tell the run** as *Relayed rulings* says, linking the record.
 4. **Give each card one state**, in the ledger and on the card's `outcome`: `done`,
    with the record's link, where nothing is left to do — a ruling recorded and its
@@ -271,5 +292,6 @@ question naming every such session.
 
 ## After a clear
 
-**The restart reads the live page only for a held reply's text** that no run can
-resupply, its SHA checked again on the pushed head, and nothing else from it.
+**The restart reads the live page only for a draft's text the ledger does not
+hold** — one a `github-issue` ledger only names — that no run can resupply, a held
+reply's SHA checked again on the pushed head, and nothing else from it.

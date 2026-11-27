@@ -93,7 +93,9 @@ workers*), and one idle without a report is verified as though it had reported
 **A draft is a *Needs you* item under *Review and submit***
 (`references/operator-output.md`): drafts link, recommendation, blocking count and
 the reviewer's session, never the draft text, which is never copied into the
-ledger — marked unverified where this session cannot read it. A `failed` reviewer
+ledger — marked unverified where this session cannot read it. It is never a draft
+to post on the work queue (`work-queue.md`, *Drafts to post*): it is already on its
+surface, where the owner submits it. A `failed` reviewer
 is a *Changed since* line with its reason, or a *Clear a failure* item where only
 the owner can clear it.
 

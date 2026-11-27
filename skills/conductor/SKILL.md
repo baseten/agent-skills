@@ -248,7 +248,9 @@ starts there is read from the forge alone (*1. Sweep*, step 7).
   (`resolve-pr-comment`, *Replies held for the owner*, *The draft reply*): their text
   is held in this session and carried on the work queue, which is not the ledger
   (*Report*). Where those drafts matter, as at work, configure the
-  `tracker-document` ledger, which holds them in full. A reviewer's drafts are
+  `tracker-document` ledger, which holds them in full. **Every draft the owner must
+  post, from any surface, is also on the work queue in full**, never an item
+  pointing at the ledger (`work-queue.md`, *Drafts to post*). A reviewer's drafts are
   never copied: they live on their surface, linked (`reviewers.md`).
 - **Report costs.** Every plan states its expected CI runs (*5. Intake and replan*).
 - **Nothing depends on an in-turn background result surviving a restart.** A
@@ -881,9 +883,10 @@ document's history, are history**, and the body supersedes them.
 **A ledger whose home caps its length keeps under it.** Where a write leaves the
 body past about 70% of its platform's limit — Linear's, for a `tracker-document`
 (`references/linear-mechanics.md`, *Documents*); none is established for a
-`github-issue` ledger, which this does not yet reach — that sweep moves out of the body the
-changelog lines older than the last clear, and the drafts that were posted or
-superseded, leaving one line pointing at where they went: the document's history, or a
+`github-issue` ledger or a `document-store-page`, such as a Notion page, which this
+does not yet reach — that sweep moves out of the body the
+changelog lines older than the last clear, and the drafts that were posted, as
+`work-queue.md`, *Drafts to post*, counts one, or superseded, leaving one line pointing at where they went: the document's history, or a
 linked archive document. So do the prompts and handovers of retired runs whose issues
 are all closed, bar the seed template's. Never the state: the rows, the pending drafts,
 the open decisions, the rulings' links, or a handover whose issues are still open. A conductor whose context
@@ -1019,7 +1022,7 @@ it does in *6. Dispatch*:
 
 **In this session, shaped as `references/operator-output.md` says.** *Needs you*
 is what needs the owner to act: decisions and approvals (asked as *4. Owner pass*
-says), owner steps, replies and rulings to post yourself, a failure only the owner can clear — a red default branch, a
+says), owner steps, drafts to post yourself, wherever they go, a failure only the owner can clear — a red default branch, a
 run whose push contradicted the forge — any PR whose run pushed that its watch stopped with the PR still open, each
 drafted review to submit (`reviewers.md`), and each run's force-push held for approval, under *Confirm in a session*,
 linking its session (a `cli` run, `claude attach <id>`) and naming the literal tool string and the exact command waiting.
@@ -1079,11 +1082,12 @@ the recorded reason, and that answers go here, in this chat — a line beside th
 link, never a *Needs you* item, since the owner has nothing to do about it
 (`work-queue.md`, *Which page*).
 
-**On the page, an item about a PR carries its links in the order `references/operator-output.md` gives an item**: the run's session, where one owns the PR; the PR on the forge; the tracker's review page for it, where the repository is linked to Linear, read as `references/linear-mechanics.md`, *Review pages*, says, or where a layer supplies its own (`work-queue.md`, *Building it*) — **marked with the count of unsubmitted drafts only where it was read**, labelled with the tracker account that holds them, since the tracker returns only the calling account's drafts, so the item never implies a draft is on the forge; then every issue the PR closes, or a plain "no linked issue". A draft held anywhere else is linked to where it is held, labelled so — **bar a
-reply or ruling the owner is to post in a thread where no run posts, which the page
-carries in full**: its text, the link to post at — the thread's `html_url` as
-recorded, never rebuilt — and the fix SHA where there is one; the page is private
-and is not the ledger. The chat's lines keep
+**On the page, an item about a PR carries its links in the order `references/operator-output.md` gives an item**: the run's session, where one owns the PR; the PR on the forge; the tracker's review page for it, where the repository is linked to Linear, read as `references/linear-mechanics.md`, *Review pages*, says, or where a layer supplies its own (`work-queue.md`, *Building it*) — **marked with the count of unsubmitted drafts only where it was read**, labelled with the tracker account that holds them, since the tracker returns only the calling account's drafts, so the item never implies a draft is on the forge; then every issue the PR closes, or a plain "no linked issue". A draft held anywhere else is linked to where it is held, labelled so — **bar
+every draft the owner is to post themselves, from any surface, which the page
+carries in full** as `work-queue.md`, *Drafts to post*, says: its text, the link to
+post at as recorded, never rebuilt — a thread's `html_url`, a Notion or Linear
+comment, a Slack channel where one is known — and the fix SHA where there is one;
+the page is private and is not the ledger. The chat's lines keep
 `references/operator-output.md`'s form. **Every link and draft count is read each
 sweep**, a layer's by that layer (`references/establish-do-not-assume.md`, *You are about to assert it*) —
 a subagent may gather them, returning only compact JSON.

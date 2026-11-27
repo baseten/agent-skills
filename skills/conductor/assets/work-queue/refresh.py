@@ -11,9 +11,12 @@ published yet, --first. It reads no watch listing and publishes nothing: choosin
 the page's row (*Which page*) and the publish stay the session's.
 
 The PRs it reads are exactly the ones the build shows: each in prs.json, each the
-merge notes name, and each held reply's in state.json, grouped by repository —
-bar a held reply carry.py brings back from the live page, which it names for the
-ledger. Repositories are read through `gh api`, or, with any --from-json, each from
+merge notes name, and each PR-bound draft's in state.json — a review-thread reply
+or a PR body edit (drafts.py) — grouped by repository, bar a draft carry.py brings
+back from the live page, which it names for the ledger. **A draft bound to no PR —
+Notion, Linear, Slack, any other site — is never read from GitHub**: it is skipped
+here, and never stops the refresh. A state carrying only `replies` is read as
+review-thread drafts. Repositories are read through `gh api`, or, with any --from-json, each from
 its document (prdata.py's `JsonSource`: the MCP or REST route) and never through
 `gh`: a session that may not use `gh` passes one per repository, and one missing
 stops the refresh. Then, over that one read: prdata.py -> mergeq.py -> prsteps.py
@@ -22,7 +25,7 @@ the refresh, naming it, and no page is written; state.json may be part-rebuilt,
 and a re-run rebuilds it.
 
 It prints the page's path and what changed against the live page: the merge rows,
-PR items, decisions, replies, items and sessions added or dropped, and the merge
+PR items, decisions, drafts, items and sessions added or dropped, and the merge
 rows now Ready. carry.py's own lines (what it carried back) pass through on stderr;
 each is read back into the ledger before the next build.
 """
@@ -30,10 +33,14 @@ import argparse
 import json
 import os
 import re
+import importlib.util
 import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+_spec = importlib.util.spec_from_file_location("wq_drafts", os.path.join(HERE, "drafts.py"))
+drafts = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(drafts)
 
 
 def run(step, *args, stdout=None):
@@ -52,7 +59,7 @@ def load(path):
 def live_state(path):
     page = open(path, encoding="utf-8").read()
     m = re.search(r'<script id="state" type="application/json">(.*?)</script>', page, re.S)
-    return json.loads(m.group(1)) if m else {}
+    return drafts.normalise(json.loads(m.group(1))) if m else {}
 
 
 def ids(st, key):
@@ -85,7 +92,8 @@ def main():
             ap.error(f"--from-json takes owner/name=FILE, not {spec!r}")
         docs[repo] = path
     by_repo = {}
-    for e in load(a.prs) + load(a.notes) + (load(a.state).get("replies") or []):
+    bound = [d for d in drafts.normalise(load(a.state))["drafts"] if drafts.pr_bound(d)]
+    for e in load(a.prs) + load(a.notes) + bound:
         by_repo.setdefault(e["repo"], set()).add(str(e["pr"]))
 
     # read before build.py runs: --out may name the live page itself
@@ -121,7 +129,7 @@ def main():
     print(f"page: {os.path.abspath(a.out)}")
     print(f"read: {len(rows)} PRs in {len(by_repo)} repositories"
           + (f", {', '.join(sorted(docs))} from JSON" if docs else ""))
-    for key in ("merge", "prs", "decisions", "replies", "items", "sessions"):
+    for key in ("merge", "prs", "decisions", "drafts", "items", "sessions"):
         added, dropped = ids(new, key) - ids(old, key), ids(old, key) - ids(new, key)
         if added or dropped:
             print(f"{key}: +{sorted(added)} -{sorted(dropped)}")
