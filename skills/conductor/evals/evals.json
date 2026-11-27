@@ -114,7 +114,7 @@
       "id": 8,
       "name": "retiring-an-orchestrator-needs-the-go-and-a-clean-remote",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). The owner says 'go' to retiring 'Orchestrator: api · #540 follow-ups', a session this conductor did not create. Its wrap-up is posted on epic #540 and all its PRs are merged. Its last state block reports one live worker session and an outstanding recovery ref refs/checkpoints/fe-31. Its session reads IDLE. Question: do you archive it?",
-      "expected_output": "Not yet. The owner's go is the authority for archiving a session this conductor did not create, but the remote-state condition fails: its last state block reports a live worker session and an outstanding recovery ref, so its run may have work stranded off the remote. Report that, naming the worker session and the ref, and archive only once its integration branch head is on the remote and its state block shows no live worker and no outstanding ref.",
+      "expected_output": "Not yet. The owner's go is the authority for archiving a session this conductor did not create, but the remote-state condition fails: its last state block reports a live worker session and an outstanding recovery ref, so its run may have work stranded off the remote. Report that, naming the worker session and the ref, and archive only once its integration branch head is on the remote, its state block shows no live worker and no outstanding ref, and its handover is in the ledger with every issue of its set accounted for.",
       "assertions": [
         "the answer does not archive it yet",
         "the answer names the live worker and the outstanding recovery ref as the blocking conditions",
@@ -1651,7 +1651,7 @@
       "id": 127,
       "name": "an-owner-named-cloud-run-from-a-local-conductor",
       "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). You are a local conductor (a Claude Code CLI session). The owner answers your dispatch question for the backlog-orchestrator run on epic https://github.com/acme/api/issues/900 with: 'go, but run this one in the cloud — runtime: cloud'. Later, the run's PR #950 is open and you want to know its state, and another run's merge of #941 is a fact that matters to it. Question: how is the cloud run started and recorded, how do you get its status, how do you relay the #941 fact, is your go for it posted by you, and how is it retired when finished?",
-      "expected_output": "The owner's word sends this run to the cloud; the ledger row records `runtime: cloud`. `claude --cloud` starts a session only interactively, so the conductor cannot start it: it drafts the full dispatch prompt and the owner starts the session (claude --cloud in a terminal in the checkout, or claude.ai/code) and gives its id, which the conductor records as dispatched. The go is owner-posted, since a local conductor never posts a go itself: no run can read its transcript. The channel is one-way: the conductor can deliver with `claude -p \"<message>\" --cloud <id>` but the session cannot answer, so it sends no status request; the run's state is read from the forge (PR #950, its CI, the epic) as an absent channel's is, and it is not in the local listing. The verified #941 fact may be relayed one-way with claude -p --cloud. Retiring still takes the owner's answer and every retirement condition, and the owner archives the session on claude.ai.",
+      "expected_output": "The owner's word sends this run to the cloud; the ledger row records `runtime: cloud`. `claude --cloud` starts a session only interactively, so the conductor cannot start it: it drafts the full dispatch prompt and the owner starts the session (claude --cloud in a terminal in the checkout, or claude.ai/code) and gives its id, which the conductor records as dispatched. The go is owner-posted, since a local conductor never posts a go itself: no run can read its transcript. The channel is one-way: the conductor can deliver with `claude -p \"<message>\" --cloud <id>` but the session cannot answer, so it sends no status request; the run's state is read from the forge (PR #950, its CI, the epic) as an absent channel's is, and it is not in the local listing. The verified #941 fact may be relayed one-way with claude -p --cloud. Retiring still takes the owner's answer and every retirement condition; with no channel back, its handover cannot be had, so it is a Decide item naming what cannot be recovered before the owner rules, and the owner archives the session on claude.ai.",
       "assertions": [
         "the ledger records runtime: cloud for this run on the owner's word",
         "the owner starts the cloud session from the conductor's drafted prompt and gives its id, because claude --cloud is interactive only",
@@ -1874,6 +1874,19 @@
         "the answer moves changelog lines older than the last clear and posted or superseded drafts out of the body",
         "the answer leaves a one-line pointer to the history or a linked archive document",
         "the answer keeps the live state, pending drafts and open decisions in the body"
+      ],
+      "files": []
+    },
+    {
+      "id": 144,
+      "name": "retiring-without-a-handover-waives-only-the-handover",
+      "prompt": "You are executing the conductor skill (read its SKILL.md, and NOTES.md if present, from the skill directory you were given). Attended turn; AskUserQuestion is available. 'Orchestrator: web · #811', a run this conductor dispatched, has an absent channel, so its handover cannot be had. You raised that as a Decide item, and the owner answers: 'retire it anyway, I accept losing what is not on the epic.' Its last state block names branch web-818 whose head 4c2e9a1 is not reachable on the remote; every other condition holds. Question: do you archive it?",
+      "expected_output": "No, not yet. The owner's answer waives the handover alone; every other retirement condition still binds, and protected rule 9 requires stranded work to reach a remote ref before any archive. Write the answer to the ledger with the unrecoverable parts named as lost, report that the run is held on web-818's head 4c2e9a1 not being on the remote, and archive only once it is reachable and every other condition holds.",
+      "assertions": [
+        "the answer does not archive the run",
+        "the answer treats the owner's answer as waiving only the handover",
+        "the answer names the unreachable head on web-818 as the blocking condition",
+        "the answer records the owner's answer in the ledger with the lost parts named"
       ],
       "files": []
     }

@@ -735,7 +735,8 @@ shows it idle with nothing uncommitted or unpushed. **A scheduled firing never a
 next attended turn. No ruling on the forge, standing or otherwise, and no go this
 skill posts stands in for that answer. A run is ready only once its wrap-up is posted on its
 epic or issue — a `backlog-orchestrator` run's is its checkpoint comment as of its last
-settle or watch stop (that skill, *The checkpoint comment*), and a single-issue run's
+settle or watch stop (that skill, *The checkpoint comment*), or its state block's record
+of why it may post none, and a single-issue run's
 `merged` report and its PR merged on the forge stand in for one —; **its handover is in
 the ledger** (below); **every issue in its set, as its epic or issue reads on the forge this turn,
 is accounted for there**; every PR of its run is merged, closed or recorded as moved to another
@@ -747,35 +748,43 @@ and its last state block reports no live worker session and no outstanding recov
 ref; and it is not `RUNNING`.
 
 **The handover comes first, from every run, stale or not.** Once a run's other
-conditions hold, or the owner has chosen to retire it, send it one handover request
+conditions hold, or the owner has chosen to retire it, send it one handover request —
+never to a stale run before the owner has answered its question (*Rules*); a scheduled
+firing sends one as it sends a status request
 (`references/conductor-exchange.md`, *The handover*). It spells the parts out, since a
 stale run's contract may not hold them:
 
 ```text
 Handover request from conductor <this session id>, before this run is retired.
 Reply with send_message (SendMessage in a CLI session) to this message's sender:
-one message, no word cap, about your own epic or issue only, from durable state:
+one message, no word cap, opening "As of: <UTC>", about your own epic or issue
+only, from durable state:
 1. your first prompt, verbatim from your transcript, or "not readable verbatim"
    <or: "omit: the ledger holds it verbatim">;
 2. every issue in your set: its PR, or frontier with its dispatch order, held
-   and by what, deferred and by which budget or gate, excluded and why, or
-   done; each drift note with its issue;
+   and by what (an item's link, never a check's outcome), deferred and by which
+   budget or gate, excluded and why, or done; each drift note with its issue;
 3. every budget and cap, with its usage;
 4. every open item, with its site: owner decisions, held replies (full text,
    thread link, fix SHA), review notes asking a person to check something,
-   follow-ups proposed but not filed, owner steps;
-5. every ref you created that is not a PR head, with its head.
+   follow-ups proposed but not filed, owner steps; follow-ups filed, by URL;
+5. every ref you created that is not a PR head, with its head and its PR; the
+   ids of your own writes outside PRs, your checkpoint comment's among them.
 Name no check's outcome. Do not stop, post, dispatch or merge because of this
 message.
 ```
 
-Write the reply to the ledger under the run's row, held replies as *Rules* says, and
-read it back. **Its set is accounted for** only where every issue of the run's set on
+Only a reply whose platform-supplied sender is the run's recorded session is its
+handover. Write it to the ledger under the run's row, held replies and any check's
+outcome as *Rules* says, and read it back. **Its set is accounted for** only where every issue of the run's set on
 the forge has a state in it. **Where it cannot be had** — the channel absent, the session
 gone, the request refused, or a reply missing a part — the run is not retired until the
 owner rules: it is a *Decide* item naming each part that cannot be recovered, beside what
-the run's checkpoint comment and the forge do show. An answer retiring it anyway is
-written to the ledger with those parts named as lost.
+the run's checkpoint comment, at the URL its last state block gives, and the forge do show.
+A run with no channel back, such as a local conductor's cloud run, always takes this
+route. An answer retiring it anyway waives
+the handover alone, every other condition still binding, and is written to the ledger
+with those parts named as lost.
 
 **A stale run the owner chose to retire and redispatch** (*Report*) needs no wrap-up
 comment on its epic; that waiver reaches nothing else, its handover included, and it waits,
@@ -783,15 +792,16 @@ still listed, until every other condition holds. That answer is the new run's di
 any go is, and **executed only once the stale run is archived**: until then the new
 run is not started, the PRs stay the stale run's, and what goes to it stays held
 (*Rules*). **Before any archive, each open PR of the run is recorded in the ledger as moved
-to the run that takes it** — the replacement, or a single-issue run offered for it
-(below) — and the move takes effect with the archive.
+to the run that takes it** — a single-issue run offered for it (below) once its go is
+recorded, else the replacement — and the move takes effect with the archive.
 
 **The replacement for an orchestrator retired mid-epic is a fresh
-`backlog-orchestrator` run on the same epic, started from the handover**: the same issue
+`backlog-orchestrator` run on the same epic, started from the handover**, on its own
+dispatch go (a stale run's retire-and-redispatch answer is one): the same issue
 set, budgets and frontier order, its drift notes carried, its first prompt seeded from
 the recorded one. **A single-issue run per open PR is offered only for a PR that needs
-work before that run would reach it**, such as a conflicted branch, and the new run's
-prompt names each such PR as owned by that run (`backlog-orchestrator`, *Started from a
+work before that run would reach it**, such as a conflicted branch, each on its own go,
+and the new run's prompt names each such PR as owned by that run (`backlog-orchestrator`, *Started from a
 handover*).
 
 **A tick the owner sends on the work queue is the owner's answer choosing that
@@ -834,8 +844,9 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
   linked to where it is recorded;
 - pending conditional gos, each with its condition and its record;
 - **every dispatch's prompt — a fresh prompt or a reuse message — verbatim as sent**,
-  recorded at dispatch, or a link to where it is held verbatim; never an approximation
-  rebuilt afterwards, which is recorded as one where it is all there is;
+  recorded at dispatch, or a link to where it is held verbatim, a check's outcome in it
+  withheld as *Rules* says; never an approximation rebuilt afterwards, which is
+  recorded as one where it is all there is;
 - the seed template: which run's recorded first prompt it is, or that none is recorded
   verbatim yet;
 - each run's handover, once received, and what the owner ruled lost where none could
@@ -866,8 +877,9 @@ body past about 70% of its platform's limit — Linear's, for a `tracker-documen
 (`references/linear-mechanics.md`, *Documents*) — that sweep moves out of the body the
 changelog lines older than the last clear, and the drafts that were posted or
 superseded, leaving one line pointing at where they went: the document's history, or a
-linked archive document. Never the state: the rows, the pending drafts, the open
-decisions, the rulings' links, or a handover whose issues are still open. A conductor whose context
+linked archive document. So do the prompts and handovers of retired runs whose issues
+are all closed, bar the seed template's. Never the state: the rows, the pending drafts,
+the open decisions, the rulings' links, or a handover whose issues are still open. A conductor whose context
 fills clears it in this same session, on the operator's `/clear` (*8. Context
 clear*); **it never hands off to a new session.**
 
@@ -974,7 +986,7 @@ that id, which is what lets a run adopt it (`references/conductor-exchange.md`,
 
 ## Runs are never cleared
 
-Runs rely on their own checkpoints — the run's state and the checkpoint comment on its epic —
+Runs rely on their own checkpoints — the run's state and, for an orchestrator, the checkpoint comment on its epic —
 and on auto-compaction; their workers, subscriptions and check-ins are tied to their
 session, so a clear mid-run costs more there. **This skill never clears one, and
 never asks the operator to.** Each sweep it records every active run's context use

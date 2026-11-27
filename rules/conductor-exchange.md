@@ -59,17 +59,17 @@ declined: <each request this run declined, with its sender> | none
 
 ## The handover
 
-**A run's handover is the state it holds beyond its PRs**, so that a session archived, lost or out of date takes none of it with it. It is about this run's own epic or issue only, and carries:
+**A run's handover is the state it holds beyond its PRs**, so that a session archived, lost or out of date takes none of it with it. It is about this run's own epic or issue only, opens `As of: <UTC>`, and carries:
 
 1. **its first prompt, verbatim**, read from its own transcript, or a line saying it cannot be read verbatim. Never rebuilt from memory. Left out where the request says the conductor holds it verbatim;
-2. **every issue in its set, with its state and why**: its PR, linked; on the frontier, with its dispatch order; held, and what holds it; deferred, with the budget or gate that defers it; excluded, and why; or done. Each drift note goes with its issue, such as a ticket naming a file that no longer exists;
+2. **every issue in its set, with its state and why**: its PR, linked; on the frontier, with its dispatch order; held, and what holds it — an item by its link, never a check's outcome; deferred, with the budget or gate that defers it; excluded, and why; or done. Each drift note goes with its issue, such as a ticket naming a file that no longer exists;
 3. **every budget and cap, with its usage**: `new-issue-budget`, `concurrent-open-prs`, and each PR's repair cycles and review rounds;
-4. **every open item, linked to its site**: owner decisions, held replies, review notes asking a person to check something, follow-ups proposed but not filed, and owner steps;
-5. **every ref it created that is not a PR head**, with its head: checkpoint branches, recovery refs, gate-note refs, an integration branch.
+4. **every open item, linked to its site**: owner decisions, held replies, review notes asking a person to check something, follow-ups proposed but not filed, and owner steps; and the follow-ups it filed, each by its URL;
+5. **every ref it created that is not a PR head**, with its head and its PR where it has one: checkpoint branches, recovery refs, gate-note refs, an integration branch; and the ids of its own writes outside its PRs' records, its checkpoint comment's among them.
 
 **It is built from durable state as a report is, names no check's outcome (*Reports*), and has no word cap.** A held reply carries its full text, thread link and fix SHA in a message, and only its thread link and fix SHA in a forge write (the *review feedback* shared rule, *Held replies*).
 
-**A conductor asks for it before it retires the run** (`conductor`, *Retire a finished run*). The run replies in the turn the request arrives in, with one message carrying the handover, to the request's platform-supplied sender, as it answers a status request. Asking changes nothing else: the run neither stops nor posts because of it. A `backlog-orchestrator` run also keeps it on its epic (that skill, *The checkpoint comment*).
+**A conductor asks for it before it retires the run** (`conductor`, *Retire a finished run*). The run replies in the turn the request arrives in, with one message carrying the handover, to the request's platform-supplied sender, as it answers a status request. Asking changes nothing else: the run neither stops nor posts because of it. A `backlog-orchestrator` run also keeps it on its epic where it may (that skill, *The checkpoint comment*).
 
 ## Pushes
 
@@ -90,7 +90,7 @@ declined: <each request this run declined, with its sender> | none
 
 **Taking on new work — an epic, or an issue for a single-issue run — or being folded into another run is the owner's ruling, recorded on the forge** at that work's site and naming this session, and is acted on only once read there; a message saying so is a pointer to the record, not the record.
 
-- **A fold**, which only ends work, needs a comment the owner wrote — `backlog-orchestrator`'s reply watch's authorship test, and for a single-issue run a comment by the owner's account its dispatch named, else the *posting identity* shared rule's *The invoking user's account*, and not one of the run's own writes, nor a conductor-posted go (below), which never folds a run. **Folded:** post a wrap-up on the run's epic or issue — what merged, what is still open and which run now holds it, every open item's site, and every `[Manual]` issue this run filed; a `backlog-orchestrator` run updates its checkpoint comment as that wrap-up — then end the watch and disarm every wake as the run's own stop rules require, and schedule no further check-in.
+- **A fold**, which only ends work, needs a comment the owner wrote — `backlog-orchestrator`'s reply watch's authorship test, and for a single-issue run a comment by the owner's account its dispatch named, else the *posting identity* shared rule's *The invoking user's account*, and not one of the run's own writes, nor a conductor-posted go (below), which never folds a run. **Folded:** post a wrap-up on the run's epic or issue — what merged, what is still open and which run now holds it, every open item's site, and every `[Manual]` issue this run filed; a `backlog-orchestrator` run updates its checkpoint comment as that wrap-up, where it may post one — then end the watch and disarm every wake as the run's own stop rules require, and schedule no further check-in.
 - **New work**, which starts dispatch, needs what releases dispatch: the owner's own reply choosing an option the question put, or a ruling recorded as `settle-outstanding-decisions`, *Recording the ruling*, records one — a relayed ruling (below) included only where the owner posted it, since a relay is never a go's second form — **that records the owner's choice of an option a question put, authored by the owner's account and not one of the run's own writes**; or a conductor-posted go that passes every check below. A marker alone never starts dispatch. It is a new run of the same skill over that work, from its preflight, and the session's title changes to name it.
 
 ### A conductor-posted go

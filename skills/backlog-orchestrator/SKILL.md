@@ -475,10 +475,11 @@ A fresh orchestration session must be able to recover from tracker + GitHub remo
 
 ## Started from a handover
 
-**A run a conductor starts in place of a retired one carries that run's handover in its prompt** (`conductor`, *Retire a finished run*) and starts from it as a resume does (`restart-resume.md`), the retired run its predecessor, the handover standing in for a last state block wherever it carries the field:
+**A run a conductor starts in place of a retired one carries that run's handover in its prompt** (`conductor`, *Retire a finished run*) and starts from it as a resume does (`restart-resume.md`), the retired run its predecessor, stopped by its archive, the handover standing in for a last state block wherever it carries the field:
 
 - **its scope is the handover's issue set**, its dispatch order the handover's frontier order, and each drift note goes into the dispatch prompt of the issue it concerns;
-- **its budgets are the handover's caps, with the handover's usage counted against them**, so retiring a run refunds no budget;
+- **its budgets are the handover's caps, never above what its own preflight resolves, with the higher of the handover's usage and the preflight's counted against them**, so retiring a run refunds no budget;
+- **the handover's open items are this run's**: the reply watch reads their sites as it reads items this run raised, and counts the handover's own write ids as this run's;
 - **an open PR the prompt names as owned by another run is not this run's**: never adopted, its issue never dispatched, and its dependents wait on its merge, read on the forge when the frontier is re-read, as on any unmerged work;
 - the preflight still runs (`restart-resume.md`, step 2): where its read and the handover disagree, its read decides, and the difference is reported.
 
@@ -1096,7 +1097,7 @@ If only external CI/review remains and the runtime cannot safely stay active, re
 
 ## The checkpoint comment
 
-**At settle, when its watch stops, and before any return, the run posts one checkpoint comment on its epic, or updates the one it posted.** The epic is the root issue under mode 1; under the other modes it is the tracker issue the invocation names as the run's record, and otherwise there is none, which the state block says. **The comment carries the run's handover** (`references/conductor-exchange.md`, *The handover*) as of that moment, first line `As of: <UTC>`, its first prompt left out. So a session archived, lost or out of date never takes the run's state with it: a conductor asks for the handover by message, and the comment is what remains when no session can answer.
+**At settle, when its watch stops, and before any return, the run posts one checkpoint comment on its epic, or updates the one it posted.** The epic is the root issue under mode 1; under the other modes it is the tracker issue the invocation names as the run's record, and otherwise there is none, which the state block says. **The comment carries the run's handover** (`references/conductor-exchange.md`, *The handover*) as of that moment, first line `As of: <UTC>`, its first prompt left out. So a session archived, lost or out of date never takes the run's state with it: a conductor asks for the handover by message, and the comment is what remains when no session can answer. A turn that only answers a status or handover request is not a return. A fold's update adds which run now holds each open PR and every `[Manual]` issue this run filed (`references/conductor-exchange.md`, *New work, or a fold*).
 
 - **One comment, edited in place.** Its write id goes among the state block's own write ids, tagged `checkpoint`, so the reply watch never reads it as the owner's and a resume updates it. Where the id is lost, post a new one and leave the old.
 - **On the tracker the epic is on.** A Linear epic takes a Linear comment through that tracker's own write tools, whatever forge the PRs are on. It is never skipped because the run's other writes went to GitHub; where no tool can write there, the state block and the settled report say so.
