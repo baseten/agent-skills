@@ -39,3 +39,5 @@ without reading it; that cost was accepted over a second copy in the conductor. 
 `conductor`'s work queue reads them (its NOTES, *The work queue*), because a review
 draft left in Linear is invisible from the forge, and an item linking only the
 forge PR told the owner nothing was waiting there.
+
+**Why a document's cap is stated (a conductor in a real deployment, 2026-11-27):** a conductor's ledger, a Linear project document, had a save refused on its eleventh day for passing 250,000 characters. The changelog and the posted or superseded drafts had grown without bound, though the conductor's contract said the ledger is maintained, not appended to. The number is the owner's observation of that refusal, not a documented limit; Linear's MCP tools describe none. Writing it here lets the `conductor`'s size budget (its *7. Ledger*) name the cap without restating it. The bullet on deleting a document moved here from *Reading* with it.

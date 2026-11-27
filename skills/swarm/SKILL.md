@@ -632,7 +632,7 @@ one carve-out is a session ended at dispatch for having no checkout
 (`runtime-remote.md`, *Ending a failed start*) — stopped the same way and charged
 nothing; never one discovered later, which is captured like any other. And a
 session **this run did not create** — decided by provenance, never a title
-(*Runtime*) — which is not this run's to reclaim, a stopped predecessor's that a caller's resume adopts aside, and one the owner rules archived (a `conductor` retiring a run on the owner's go, its *6. Dispatch*), which still takes every other condition here (`backlog-orchestrator`, `restart-resume.md`, step 1).
+(*Runtime*) — which is not this run's to reclaim, a stopped predecessor's that a caller's resume adopts aside, and one the owner rules archived (a `conductor` retiring a run on the owner's answer, its *6. Dispatch*, which takes the run's handover first), which still takes every other condition here (`backlog-orchestrator`, `restart-resume.md`, step 1).
 
 ### Blocked workers
 

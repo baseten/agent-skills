@@ -39,6 +39,18 @@ section here leaves it out. **Planner covers `write-spec` as well as `plan-featu
 2026-11-09)**: both are planning sessions the owner runs directly, and the *operator
 output* rule already treats both as planners.
 
+## The handover
+
+**Why a handover, and why here (a conductor in a real deployment, 2026-11-27):** a conductor took over three settled `backlog-orchestrator` runs, one per sub-epic of a coverage epic, that ran an older agent-skills revision. The owner chose "retire and redispatch". The conductor checked each run only for unpushed work, live workers and PR heads, archived two orchestrators, and dispatched one single-issue run per conflicted PR. What it missed is that an orchestrator owns more than its PR branches: it holds the issue set's state — the frontier and its dispatch order, issues deferred past `new-issue-budget`, budgets and repair cycles used, review notes asking a person to check something, follow-ups proposed but not filed, and drift notes such as a ticket naming a file that no longer exists. None of the three had posted anything on its epic, so all of it lived only in the sessions. One orchestrator was archived with two PRs open and moved to no run. The sessions were unarchived and asked for a handover, and nothing was lost; the owner asked that the skills make that loss impossible. The handover is defined here, once, because two parties use it: the run that produces it, and the conductor that records it. A copy in each would drift.
+
+**Why the first prompt is in it, verbatim:** the same conductor's ledger held a rebuilt approximation of each dispatch prompt, not the prompt sent, and the seed template is "the first prompt of the last good run". A rebuilt prompt is a guess about what worked. The run's transcript holds the real one; where the conductor's ledger already holds it verbatim (`conductor`, *7. Ledger*), the request says so and the part is left out.
+
+**Why no word cap, and why a held reply's text stays out of forge writes:** a report's 400 words is a reading budget for a status line; a handover is a record, and cutting it is the loss it exists to prevent. Its forge copy, the orchestrator's checkpoint comment, names a held reply by its thread link and fix SHA only, because no run posts a held reply's text anywhere a person in the thread reads it as said (`rules/review-feedback.md`, *Held replies*); the full text travels by message, as a report's does. It names no check's outcome for the same reason a report does: a conductor's ledger is a forge write (protected rule 7).
+
+**Why settle and watch-stop pushes carry it (owner's ruling on #248, 2026-11-27):** a run started on a conductor-posted go alone may not post prose on an epic it did not create, so it posts no checkpoint comment there. The owner ruled against widening that permission. Instead the run's state goes to the conductor unasked at the two points where it changes most and a session is most likely to sit idle afterwards, and the conductor writes it to its ledger on receipt. Those pushes alone pass the 400-word cap, because a handover cut to fit is the loss it exists to prevent. The first prompt is left out because the conductor records it at dispatch.
+
+**Why a run answers it like a status request, and does nothing else:** retiring is the owner's decision and the conductor's act (`conductor`, *Retire a finished run*). A request that also stopped the run, or made it post, would be a message changing what a run does, which this rule rules out. The fold's wrap-up now names the checkpoint comment for an orchestrator so that a folded run's record and a retired run's record are the same thing.
+
 ## Pushes
 
 **Why milestones and not a period:** a conductor sweeps on its own schedule and

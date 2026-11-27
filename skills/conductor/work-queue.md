@@ -257,9 +257,8 @@ one the ledger does not record, a peer conductor's included.
 **A tick sent in a comment, as an answer is — from the owner's login, as *Answers*
 requires — is the owner's answer choosing that session to archive**, as one given in an attended turn: written to the ledger with
 the owner's words before anything is archived (*Rules*). It waives nothing: a run
-is archived only once *6. Dispatch*'s retirement conditions hold — nothing stranded,
-every branch head on the remote, no live worker and no outstanding recovery ref — and
-a reviewer as `reviewers.md` says. Then archive it (`SKILL.md`, *Runtime*, release — a
+is archived only once every condition of `SKILL.md`, *Retire a finished run*, holds,
+its handover in the ledger among them, and a reviewer as `reviewers.md` says. Then archive it (`SKILL.md`, *Runtime*, release — a
 local conductor's cloud run is the owner's to archive, on *Retire a finished run*'s terms, and its row says so), drop its row, add a line under
 *Done recently* and to the ledger's changelog. **Where an archive fails
 or a condition does not hold**, keep the row with `done: false` and `why` saying what

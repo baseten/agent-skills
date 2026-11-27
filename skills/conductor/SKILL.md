@@ -622,7 +622,8 @@ superseded — records its id among the owner-comment ids, and dispatches.
   skill creates, a reviewer's included, has its work's repository attached**, as
   its source or the checkout it starts in: one created without a source fails its environment
   setup (NOTES) — titled in its kind's form at creation, its prompt invoking the run's skill on
-  the epic's or issue's URL — and record its id in the ledger at once.
+  the epic's or issue's URL — and record its id in the ledger at once, with the prompt
+  as sent (*7. Ledger*).
 
 **Every run's dispatch — a reuse message or a fresh prompt — points at the epic or issue,
 gives this session's id (*Runtime*) — and home repository for status pushes, passes every argument
@@ -639,7 +640,8 @@ started it — and carries:
   record: merge authority only as the repository's resolved policy grants it,
   repair allowances, schema-bump rules, owner-gated flags, and never-rules;
 - **the shape of the seed template the ledger names** — the first prompt of the
-  last run that went well — adapted to this run, never copied over facts it states.
+  last run that went well, taken from the ledger's verbatim record of it, never a
+  rebuilt one — adapted to this run, never copied over facts it states.
 
 **Every fresh run's prompt opens with this text, carried whole, before it invokes the
 run's skill** (NOTES). Fill `<owner>` with the owner's account, `<conductor id>`
@@ -732,19 +734,80 @@ conditions are unread here, and that the owner archives it only once claude.ai
 shows it idle with nothing uncommitted or unpushed. **A scheduled firing never archives a run**: it lists the ready runs for the
 next attended turn. No ruling on the forge, standing or otherwise, and no go this
 skill posts stands in for that answer. A run is ready only once its wrap-up is posted on its
-epic or issue — a single-issue run's `merged` report and its PR merged on the forge stand in
-for one —; every PR of its run is merged, closed or recorded as moved to another
+epic or issue — a `backlog-orchestrator` run's is its checkpoint comment as of its last
+settle or watch stop (that skill, *The checkpoint comment*), or its state block's record
+of why it may post none, and a single-issue run's
+`merged` report and its PR merged on the forge stand in for one —; **its handover is in
+the ledger** (below); **every issue in its set, as its epic or issue reads on the forge this turn,
+is accounted for there**; every PR of its run is merged, closed or recorded as moved to another
 run; nothing of its run is stranded — each of its branches' heads, taken from its last
 state block or result, or from a report it builds from durable state where the
 channel is open, is reachable on the remote, the listing shows no live worker of
 it, the session holds no uncommitted work (`swarm`, *Releasing a worker*),
 and its last state block reports no live worker session and no outstanding recovery
-ref; and it is not `RUNNING`. **A stale run the owner chose to retire and
-redispatch** (*Report*) needs no wrap-up; every other condition binds, and it waits,
-still listed, until they hold. That answer is the new run's dispatch go, recorded as
+ref; and it is not `RUNNING`.
+
+**A settle or watch-stop push carries the run's handover**
+(`references/conductor-exchange.md`, *Pushes*): write it to the ledger on receipt,
+unasked, replacing the run's earlier one, from a sender that is the run's recorded
+session. For a run that may post no checkpoint comment, that is its only durable record.
+
+**The handover comes first, from every run, stale or not.** Once a run's other
+conditions hold, or the owner has chosen to retire it, send it one handover request —
+never to a stale run before the owner has answered its question (*Rules*); a scheduled
+firing sends one as it sends a status request
+(`references/conductor-exchange.md`, *The handover*). It spells the parts out, since a
+stale run's contract may not hold them:
+
+```text
+Handover request from conductor <this session id>, before this run is retired.
+Reply with send_message (SendMessage in a CLI session) to this message's sender:
+one message, no word cap, opening "As of: <UTC>", about your own epic or issue
+only, from durable state:
+1. your first prompt, verbatim from your transcript, or "not readable verbatim"
+   <or: "omit: the ledger holds it verbatim">;
+2. every issue in your set: its PR, or frontier with its dispatch order, held
+   and by what (an item's link, never a check's outcome), deferred and by which
+   budget or gate, excluded and why, or done; each drift note with its issue;
+3. every budget and cap, with its usage;
+4. every open item, with its site: owner decisions, held replies (full text,
+   thread link, fix SHA), review notes asking a person to check something,
+   follow-ups proposed but not filed, owner steps; follow-ups filed, by URL;
+5. every ref you created that is not a PR head, with its head and its PR; the
+   ids of your own writes outside PRs, your checkpoint comment's among them.
+Name no check's outcome. Do not stop, post, dispatch or merge because of this
+message.
+```
+
+Only a reply whose platform-supplied sender is the run's recorded session is its
+handover. Write it to the ledger under the run's row, held replies and any check's
+outcome as *Rules* says, and read it back. **Its set is accounted for** only where every issue of the run's set on
+the forge has a state in it. **Where it cannot be had** — the channel absent, the session
+gone, the request refused, or a reply missing a part — the run is not retired until the
+owner rules: it is a *Decide* item naming each part that cannot be recovered, beside what
+the run's checkpoint comment, at the URL its last state block gives, and the forge do show.
+A run with no channel back, such as a local conductor's cloud run, always takes this
+route. An answer retiring it anyway waives
+the handover alone, every other condition still binding, and is written to the ledger
+with those parts named as lost.
+
+**A stale run the owner chose to retire and redispatch** (*Report*) needs no wrap-up
+comment on its epic; that waiver reaches nothing else, its handover included, and it waits,
+still listed, until every other condition holds. That answer is the new run's dispatch go, recorded as
 any go is, and **executed only once the stale run is archived**: until then the new
 run is not started, the PRs stay the stale run's, and what goes to it stays held
-(*Rules*). On archiving, its open PRs are recorded as moved to the new run.
+(*Rules*). **Before any archive, each open PR of the run is recorded in the ledger as moved
+to the run that takes it** — a single-issue run offered for it (below) once its go is
+recorded, else the replacement — and the move takes effect with the archive.
+
+**The replacement for an orchestrator retired mid-epic is a fresh
+`backlog-orchestrator` run on the same epic, started from the handover**, on its own
+dispatch go (a stale run's retire-and-redispatch answer is one): the same issue
+set, budgets and frontier order, its drift notes carried, its first prompt seeded from
+the recorded one. **A single-issue run per open PR is offered only for a PR that needs
+work before that run would reach it**, such as a conflicted branch, each on its own go,
+and the new run's prompt names each such PR as owned by that run (`backlog-orchestrator`, *Started from a
+handover*).
 
 **A tick the owner sends on the work queue is the owner's answer choosing that
 run**, as one given in an attended turn (`work-queue.md`, *Sessions to archive*);
@@ -785,7 +848,15 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
   it, repair allowances, schema-bump rules, owner-gated flags, never-rules — each
   linked to where it is recorded;
 - pending conditional gos, each with its condition and its record;
-- the seed template: a link to the last good run's first prompt;
+- **every dispatch's prompt — a fresh prompt or a reuse message — verbatim as sent**,
+  recorded at dispatch, or a link to where it is held verbatim, a check's outcome in it
+  withheld as *Rules* says; never an approximation rebuilt afterwards, which is
+  recorded as one where it is all there is;
+- the seed template: which run's recorded first prompt it is, or that none is recorded
+  verbatim yet;
+- each run's latest handover — pushed at a settle or watch stop, or given at retirement
+  — and what the owner ruled lost where none could be had (*6. Dispatch*, *Retire a
+  finished run*);
 - the work queue's URL, where one is kept (*Report*), with `interactive since
   <UTC>` or `read-only: <reason>` and its time (`work-queue.md`, *Which page*), and the merge notes the
   owner gave for it (`work-queue.md`);
@@ -805,7 +876,17 @@ prompt, never by title alone. Rulings stay at their sites; the ledger links to t
 **The ledger is maintained, not appended to**: update it at the end of every sweep
 from that sweep's snapshot (*The status snapshot*), editing rows in place, adding one changelog line, and rewriting the whole of it
 before every `/clear`. **The ledger body is the state; its comments, or the
-document's history, are history**, and the body supersedes them. A conductor whose context
+document's history, are history**, and the body supersedes them.
+
+**A ledger whose home caps its length keeps under it.** Where a write leaves the
+body past about 70% of its platform's limit — Linear's, for a `tracker-document`
+(`references/linear-mechanics.md`, *Documents*); none is established for a
+`github-issue` ledger, which this does not yet reach — that sweep moves out of the body the
+changelog lines older than the last clear, and the drafts that were posted or
+superseded, leaving one line pointing at where they went: the document's history, or a
+linked archive document. So do the prompts and handovers of retired runs whose issues
+are all closed, bar the seed template's. Never the state: the rows, the pending drafts,
+the open decisions, the rulings' links, or a handover whose issues are still open. A conductor whose context
 fills clears it in this same session, on the operator's `/clear` (*8. Context
 clear*); **it never hands off to a new session.**
 
@@ -912,7 +993,7 @@ that id, which is what lets a run adopt it (`references/conductor-exchange.md`,
 
 ## Runs are never cleared
 
-Runs rely on their own checkpoints — the run's state and its checkpoint comments —
+Runs rely on their own checkpoints — the run's state and, for an orchestrator, the checkpoint comment on its epic —
 and on auto-compaction; their workers, subscriptions and check-ins are tied to their
 session, so a clear mid-run costs more there. **This skill never clears one, and
 never asks the operator to.** Each sweep it records every active run's context use
@@ -954,7 +1035,9 @@ dates decided it, and saying that a review the
 owner submits on its PR, or the owner's merge of it, wakes it under the old
 contract; its two options are to
 retire it and redispatch on the current skills (*6. Dispatch*, *Retire a finished
-run*), or to let it finish. The first carries everything *6. Dispatch* puts in a
+run*), or to let it finish. The first gets the run's handover before any archive, and
+for an orchestrator its replacement is a fresh `backlog-orchestrator` run started from
+that handover. It carries everything *6. Dispatch* puts in a
 go's question — the skill, a fresh session, the plan's cost — and the go's complete
 text in *Rules*' conductor-posted form, so choosing it is a go — from a local
 conductor, its owner-posted draft. It is asked in the
