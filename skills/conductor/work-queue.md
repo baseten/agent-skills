@@ -159,7 +159,8 @@ only how this skill reads a PR**: it resolves nothing on the forge, and
 with its full text**, never an item pointing at the ledger: a held review-thread
 reply (`resolve-pr-comment`, *Replies held for the owner*), a ruling or go drafted
 for the owner (*Answers*, step 2), a Notion or Linear comment, a Slack message, a
-line to change in a published PR body, or text for any other link.
+line to change in a published PR body, shown beside the line it replaces, or text
+for any other link.
 `assets/work-queue/drafts.py` names each kind's fields: where it goes, which the
 page groups by; the link to post at, as recorded, which a Slack message may lack;
 whom it answers; a gist; the exact text, shown verbatim so inline-code marks survive

@@ -1351,7 +1351,10 @@ on text this change touches, so read as reader variance. Both arms failed 146's
 copy-and-tick and verbatim assertions, because *Drafts to post* no longer named
 the control; it now does. 147 was rewritten after the round, when the
 contradiction pass changed a Notion or Slack tick from closing the draft to being
-asked about.
+asked about. **A second round on 146 and 147 alone**, same method: new 9/11, old
+6/11; gained 146's copy-and-tick and 147's question, pruning and no-post assertions;
+regressed 146's body edit showing its old line, which only `drafts.py` stated, so
+*Drafts to post* now says it. Both arms still missed grouping by page on 146.
 
 ## The contradiction pass before the review round (PR #201)
 
